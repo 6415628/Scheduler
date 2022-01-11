@@ -1,0 +1,66 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_ExecuteClient (structured[LibPTF_TestScript] testscripts, String str) as String id:Method_LibPTF_pnlTestController_PTF_ExecuteClient
+{
+  #keys: '[102890.0.1874250332]'
+  Body:
+  [*
+    // Checks the status of the expected clients and launched clients in all the scripts and launch the next batches of clients when the previous batches of clients complete its execution
+    tracker := construct( Strings );
+    rows    := str.Tokenize( ";" );
+    
+    traverse( rows, Elements, row )
+    {
+      columns := row.Tokenize( "|" );
+    
+      user                 := columns.Element( 0 );
+      reqsessions          := [Number]columns.Element( 1 );
+      reqconsessions       := [Number]columns.Element( 2 );
+      executedsessions_o   := [Number]columns.Element( 3 );
+      executingsessions_o  := [Number]columns.Element( 4 );
+      remainingsessions    := [Number]columns.Element( 5 );
+      starttime_o          := columns.Element( 6 );
+      endtime              := columns.Element( 7 );
+      // elapsedtime       := columns.Element( 8 ); Not being used
+      startoffset          := columns.Element( 9 );
+    
+      remainingconsessions := reqconsessions - executingsessions_o;
+      script               := select( testscripts,
+                                      Elements,
+                                      s,
+                                      true,
+                                      s.User() = user
+                                    );
+    
+      if( remainingsessions > 0
+          and this.PTF_ConvertStringToDateTime( lblStartTime.Text() ) + [Duration]startoffset <= DateTime::ActualTime()
+        )
+      {
+        noofstart := minvalue( remainingsessions, remainingconsessions );
+    
+        this.PTF_ExecuteClientByScript( script,
+                                            noofstart,
+                                            executedsessions_o,
+                                            executingsessions_o,
+                                            starttime_o
+                                          );
+      }
+    
+      columns.Flush();
+      columns.Add( user );
+      columns.Add( [String]reqsessions );
+      columns.Add( [String]reqconsessions );
+      columns.Add( [String]executedsessions_o );
+      columns.Add( [String]executingsessions_o );
+      columns.Add( [String]remainingsessions );
+      columns.Add( starttime_o );
+      columns.Add( endtime );
+      columns.Add( this.PTF_GetTotalDuration( starttime_o, endtime ) );
+      columns.Add( startoffset );
+    
+      tracker.Add( columns.ToString( "|" ) );
+    }
+    
+    return tracker.ToString( ";" );
+  *]
+}

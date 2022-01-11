@@ -1,0 +1,78 @@
+Quintiq file version 2.0
+#parent: #root
+EDIBroker Broker_ImportDemandBatchTypes
+{
+  MDSDefinition: Schedule
+  TimeZone: 'ACT'
+  UseOSTimeZone: false
+  EDIModelLink.Destination DestinationImportDemandBatchTypes
+  {
+    EDIMLTable ImportedDemandBatchRoutingStep
+    {
+      PrimaryKeyColumns: BatchType
+      PrimaryKeyColumns: SequenceNr
+      TargetType: ImportedDemandBatchRoutingStep
+      TypeIndex: ImportedDemandBatchRoutingStep
+      EDIMLColumn BatchType { Attribute: BatchType ValueType: String }
+      EDIMLColumn OperationType { Attribute: OperationType ValueType: String }
+      EDIMLColumn SequenceNr { Attribute: SequenceNr ValueType: Number }
+      EDIMLTableOwner
+      {
+        TargetType: ImportedDemandBatchType
+        TypeIndex: ImportedDemandBatchType
+        EDIMLForeignKeyColumn
+        {
+          Column: BatchType
+          TypeIndexAttribute: BatchType
+        }
+      }
+    }
+    EDIMLTable ImportedDemandBatchType
+    {
+      PrimaryKeyColumns: BatchType
+      TargetType: ImportedDemandBatchType
+      TypeIndex: ImportedDemandBatchType
+      EDIMLColumn BatchType { Attribute: BatchType ValueType: String }
+      EDIMLColumn MaxBatchSize { Attribute: MaxBatchSize ValueType: Real }
+    }
+  }
+  EDITransformation.Transformation TransformationImportDemandBatchTypes
+  {
+    EDITableTransformation
+    {
+      InputTable: DemandBatchRoutingStep
+      OutputTable: ImportedDemandBatchRoutingStep
+      EDIColumnMatch { InputColumn: BatchType OutputColumn: BatchType }
+      EDIColumnMatch { InputColumn: OperationType OutputColumn: OperationType }
+      EDIColumnMatch { InputColumn: SequenceNr OutputColumn: SequenceNr }
+    }
+    EDITableTransformation
+    {
+      InputTable: DemandBatchType
+      OutputTable: ImportedDemandBatchType
+      EDIColumnMatch { InputColumn: BatchType OutputColumn: BatchType }
+      EDIColumnMatch { InputColumn: MaxBatchSize OutputColumn: MaxBatchSize }
+    }
+  }
+  EDIXLSLink.Source SourceImportDemandBatchTypes
+  {
+    FileName: 'SC_DemandBatchTypes.xlsx'
+    EDIXLSLinkTable DemandBatchRoutingStep
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn BatchType { ValueType: String }
+        EDIXLSLinkColumn SequenceNr { ValueType: Number }
+        EDIXLSLinkColumn OperationType { ValueType: String }
+      ]
+    }
+    EDIXLSLinkTable DemandBatchType
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn BatchType { ValueType: String }
+        EDIXLSLinkColumn MaxBatchSize { ValueType: Real }
+      ]
+    }
+  }
+}

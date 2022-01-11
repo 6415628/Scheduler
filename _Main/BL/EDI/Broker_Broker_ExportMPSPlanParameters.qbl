@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+EDIBroker Broker_ExportMPSPlanParameters
+{
+  MDSDefinition: Schedule
+  TimeZone: 'ACT'
+  UseOSTimeZone: false
+  EDIModelLink.Source SourceExportMPSPlanParameters
+  {
+    EDIMLTable IntegrationConfiguration
+    {
+      TargetType: IntegrationConfiguration
+      EDIMLColumn MPSPlanHorizon { Attribute: MPSPlanHorizon ValueType: Duration }
+    }
+  }
+  EDITransformation.Transformation TransformationExportMPSPlanParameters
+  {
+    EDITableTransformation
+    {
+      InputTable: IntegrationConfiguration
+      OutputTable: SchedulerMPSPlanParameters
+      EDIColumnMatch { InputColumn: MPSPlanHorizon OutputColumn: SchedulerMPSPlanHorizon }
+    }
+  }
+  EDIXLSLink.Destination DestinationExportMPSPlanParameters
+  {
+    FileName: 'SchedulerMPSPlanParameters'
+    MDSDependent: true
+    TemplateFileName: 'SchedulerMPSPlanParameters.xlsx'
+    EDIXLSLinkTable SchedulerMPSPlanParameters
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn SchedulerMPSPlanHorizon { ValueType: Duration }
+      ]
+    }
+  }
+}

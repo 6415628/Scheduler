@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_ValidateScript (String script) as String id:Method_LibPTF_dlgCreateEditTestScript_PTF_ValidateScript
+{
+  #keys: '[103546.0.109833688]'
+  Body:
+  [*
+    // Checks the script with various validation
+    scriptwithoutcomment := this.PTF_RemoveComment( script );
+    rows                 := scriptwithoutcomment.Tokenize( String::NewLine() );
+    rownr                := 0;
+    errormsg             := "";
+    
+    traverse( rows, Elements, row, errormsg.Length() = 0 )
+    {
+      parameters := null( Strings );
+      rownr++;
+    
+      row := row.TrimBoth();
+    
+      if( row.Length() > 0 )
+      {
+        // Line by line basic validation
+        row      := row.ReplaceAll( ";", "" );
+        action   := this.PTF_GetActionAndParameters( row, parameters );
+        errormsg := this.PTF_ValidateStatement( action, parameters );
+      }
+    }
+    
+    if( errormsg.Length() > 0 )
+    {
+      errormsg := "Line #" + [String]rownr + ": " + errormsg;
+    }
+    else
+    {
+      // Validation considering more than just the line itself
+      errormsg := this.PTF_ValidateComment( scriptwithoutcomment );
+    
+      if( errormsg.Length() = 0 )
+      {
+        errormsg := this.PTF_ValidateLoop( scriptwithoutcomment );
+      }
+    }
+    
+    return errormsg;
+  *]
+}

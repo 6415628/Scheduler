@@ -1,0 +1,94 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_CheckClientStatusByScript (LibPTF_TestScript script, Number executedsessions, Number reqsessions, 
+  output Number executingsessions_o, output String endtime_o, output Boolean alldone_o) id:Method_LibPTF_pnlTestController_PTF_CheckClientStatusByScript
+{
+  #keys: '[104342.0.777090175]'
+  Body:
+  [*
+    // Checks the PTF execution status of a single script and perform some post-PTF execution routine for individual script when the script has been executed successfully
+    user                := script.User();
+    
+    resultfiles         := OS::ScanDirectory( this.PTF_GetResultLogPath(), LibPTF::FileExtEndResult() );
+    resultfilecount     := this.PTF_GetFileCountFromResultLog( user, LibPTF::FileExtEndResult() )
+    tempfilecount       := this.PTF_GetFileCountFromResultLog( user, LibPTF::FileExtTempResult() )
+    timeoutbooting      := executedsessions - ( resultfilecount + tempfilecount );
+    executingsessions_o := timeoutbooting + tempfilecount;
+    
+    
+    if( resultfilecount < reqsessions )
+    {
+      alldone_o := false;
+      if( executedsessions > 0 )
+      {
+        endtime_o := this.PTF_GetCurrentDatetime();
+      }
+    }
+    else
+    {
+      scriptfullpath := this.PTF_GetScriptPath() + script.User() + "_" + script.Project() + LibPTF::FileExtRunningScript();
+    
+      // Check if UI logging is required
+      if( script.LoggingOptions() = "Full"
+          and OS::IsFile( scriptfullpath )
+        )
+      {
+        // Create execution result and result line object
+        traverse( resultfiles, Elements, result )
+        {
+          fileuser := "";
+          clientid := "";
+          this.PTF_GetInfoFromResultLogPath( fileuser, clientid, result );
+    
+          if( fileuser.ToUpper() = user.ToUpper() )
+          {
+            file := OSFile::Construct();
+            file.Open( result, "Read", true );
+            scriptresult := file.ReadTextToEnd();
+            file.Close();
+    
+            totalduration := Duration::Zero();
+            if( scriptresult.TrimBoth().Length() > 0 )
+            {
+              totalduration := [Duration]this.PTF_GetTotalDurationFromResultLines( scriptresult )
+            }
+            execresult := LibPTF_ExecResult::Create( script,
+                                                     [Number]clientid,
+                                                     totalduration ,
+                                                     fileuser
+                                                   );
+    
+            traverse( scriptresult.Tokenize( String::NewLine() ), Elements, line )
+            {
+              if( line.Length() > 0 )
+              {
+                linebycol       := line.Tokenize( "|" );
+                starttime       := linebycol.Element( 1 ).TrimBoth();
+                endtime         := linebycol.Element( 2 ).TrimBoth();
+                overallduration := [Number]linebycol.Element( 3 ).TrimBoth();
+                actualduration  := [Number]linebycol.Element( 4 ).TrimBoth();
+                action          := linebycol.Element( 5 );
+                isRunSuccess    := [Boolean]linebycol.Element( 6 ).TrimBoth();
+                information     := linebycol.Element( 7 ).TrimBoth();
+    
+                LibPTF_ExecResultLine::Create( execresult,
+                                               action,
+                                               overallduration,
+                                               actualduration,
+                                               this.PTF_ConvertStringToDateTime( starttime ),
+                                               this.PTF_ConvertStringToDateTime( endtime ),
+                                               isRunSuccess,
+                                               information
+                                             );
+              }
+            }
+    
+          } // end if of fileuser check
+        } // end of traversing result file logs
+      } // end if of logging option
+    
+      // SUCCESSFULLY finishes the test script execution, REMOVE QRUNSCRIPT files
+      OS::RemoveFile( scriptfullpath );
+    } // end of else block
+  *]
+}

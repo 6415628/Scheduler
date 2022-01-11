@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+EDIBroker Broker_ExportOptimizerSolution
+{
+  MDSDefinition: Schedule
+  EDIModelLink.Source SourceExportSolution
+  {
+    EDIMLTable OptimizerPlanElementInSnapshot
+    {
+      TargetType: OptimizerPlanElementInSnapshot
+      WithInstanceFilter: true
+      EDIMLColumn CompleteSolutionId { Attribute: CompleteSolutionId ValueType: Number }
+      EDIMLColumn End { Attribute: End ValueType: DateTime }
+      EDIMLColumn OperationId { Attribute: OperationId ValueType: String }
+      EDIMLColumn ResourceName { Attribute: ResourceName ValueType: String }
+      EDIMLInstanceFilter
+      {
+        ArgumentExpression:
+        [*
+          selectset( this, Optimizer.LastSnapshotInOptimizer.OptimizerPlanElementInSnapshot,
+                            planelementinsol,
+                            true );
+        *]
+      }
+    }
+  }
+  EDITransformation.Transformation TransformationExportSolution
+  {
+    EDITableTransformation
+    {
+      InputTable: OptimizerPlanElementInSnapshot
+      OutputTable: OptimizerPlanElementInCompleteSolution
+      EDIColumnMatch { InputColumn: CompleteSolutionId OutputColumn: CompleteSolutionId }
+      EDIColumnMatch { InputColumn: End OutputColumn: End }
+      EDIColumnMatch { InputColumn: OperationId OutputColumn: OperationId }
+      EDIColumnMatch { InputColumn: ResourceName OutputColumn: ResourceName }
+    }
+  }
+  EDIXLSLink.Destination DestinationExportSolution
+  {
+    FileName: 'SC_Solution_Optimizer'
+    MDSDependent: true
+    TemplateFileName: 'SC_Solution_Optimizer.xlsx'
+    EDIXLSLinkTable OptimizerPlanElementInCompleteSolution
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn CompleteSolutionId { ValueType: Number }
+        EDIXLSLinkColumn End { ValueType: DateTime }
+        EDIXLSLinkColumn OperationId { ValueType: String }
+        EDIXLSLinkColumn ResourceName { ValueType: String }
+      ]
+    }
+  }
+}

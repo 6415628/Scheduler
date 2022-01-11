@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_RemoveTextBetweenKeepNewLines (String body, String startsymbol, String endsymbol) as String id:Method_LibPTF_dlgCreateEditTestScript_PTF_RemoveTextBetweenKeepNewLines
+{
+  #keys: '[104342.0.875298696]'
+  Body:
+  [*
+    // Helper method to remove strings between the start and end indicator
+    resultbody := body;
+    
+    // Remove everything between startsymbol and endsymbol.
+    // Both startsymbol and endsymbol are also removed, unless the last character of endsymbol is a newline.
+    // In that case the newline is not removed.
+    idxstart := resultbody.FindString( startsymbol, 0 );
+    while( idxstart >= 0 )
+    {
+      idxend := resultbody.FindString( endsymbol, idxstart + 1 );
+    
+      if( idxend < 0 )
+      {
+        idxend := resultbody.Length() - endsymbol.Length();
+      }
+    
+      // Keep number of newlines found before deleting the comments
+      textremovelength := idxend - idxstart + endsymbol.Length();
+      texttoremove     := resultbody.SubString( idxstart, textremovelength )
+      nfofnewlines     := texttoremove.NrOccurrences( String::NewLine(), 0, true );
+    
+      resultbody := resultbody.Replace( idxstart, textremovelength, "" );
+    
+      // Insert Newlines back to the resultbody
+      while( nfofnewlines > 0 )
+      {
+        resultbody := resultbody.Insert( idxstart, String::NewLine() );
+        nfofnewlines--;
+      }
+    
+      idxstart := resultbody.FindString( startsymbol, idxstart );
+    }
+    
+    return resultbody;
+  *]
+}

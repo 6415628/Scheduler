@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #DomainModel
+ServerStartup
+{
+  Text:
+  [*
+    // MODELING HANDLE SC
+    // Auto upgrade physical tables option is enabled for full-storage datasets in development environment.
+    // This should certainly not be done on production servers.
+    DomainModel::Domain().MDSStorageDefinitionManager().AutoUpgradePhysicalTables( true );
+    
+    // model handling qc :: upgrade scenario manager quill component - get dataset default storage state
+    storage_state := Constants::GetStorageState();
+    
+    Schedule::OnServerStartUp();
+    
+    LibSM_ScenarioManager::OnServerStartup( LibSM_ModelExtensions::GetDatasetFolderName(),
+                                            'LibSM_ScenarioManager',
+                                            storage_state );
+    
+    LibDEF_API::OnServerStartup();
+    
+    /* SceMng code MODELING HANDLE
+    /* QC_SM MODELING HANDLE, create ScenarioManager dataset with the right storage for your model
+    Availble storage ( with static method string ):
+    1. Full Storage    : LibSM_ScenarioManager::GetStorageStateFull()
+    2. Partial Storage : LibSM_ScenarioManager::GetStorageStatePartial()
+    3. Memory only     : LibSM_ScenarioManager::GetStorageStateMemoryOnly()
+    */
+    
+    // -- ScenarioManager_SC::OnServerStartup( LibSM_ScenarioManager::GetStorageStateMemoryOnly() );
+    
+    // Initialize by creating and loading UTF dataset as well as importing test suites
+    Schedule::InitializeUTF( storage_state );
+    
+    // Initialize the Optimization Manager if needed. 
+    Schedule::InitializeOptimizationManager();
+    
+    // Create memory only dataset for the KPI Tracker
+    KpiTracker::OnServerStartup();
+    
+    // added to make sure QServer always connects to QIntegrator
+    LibInt_IntegratorProxy::InitializeIntegrationLibrary();
+    
+    // Data migration framework
+    DMF_API::OnServerStartup();
+  *]
+}

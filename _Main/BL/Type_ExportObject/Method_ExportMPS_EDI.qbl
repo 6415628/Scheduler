@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExportMPS_EDI #extension
+{
+  TextBody:
+  [*
+    // Execute broker
+    this.Schedule().Broker_ExportMPS().Execute();
+    
+    // Copy destination file to integration folder
+    broker := select( DomainModel::Domain().EDIDefinitionManager(), BrokerDefinitions, b, b.Name() = typeof( Broker_ExportMPS ).Name() );
+    brokerfilename := broker.Destination().astype( EDIXLSLinkDefinition ).FileName();
+    
+    integrationConfiguration := this.Schedule().IntegrationConfiguration();
+    integrationfolderpath := Constants::GetIntegrationFolderPath();
+    source := FileSystems::QFSPathToHardwarePath( DomainModel::GetDataDirectory().Path() ) + "\" + Constants::ScheduleDataset() + "\" + 
+                                                  this.Schedule().MDSSchedule().Name() + '\' + brokerfilename + '.xlsx';
+    destfilname := guard( integrationConfiguration.MPSDestinationFilePath() + integrationConfiguration.MPSDestinationFileName(), '' );
+    
+    if( integrationfolderpath <> '' )
+    {
+      destfilname := integrationfolderpath + guard( integrationConfiguration.MPSDestinationFileName(), '' );
+    }
+    
+    iswebplayground := CommandLine::Instance().SimpleArgument( Constants::Configset_Webplayground() );
+        
+    // Workaround for webplayground environment because QAE and TCE on separate machines. Bypass file copy
+    if( not iswebplayground )
+    {
+      try
+      {
+        OS::CopyFile( source, destfilname );
+      }
+      onerror
+      {
+        error( Translations::SC_ExportMPS_Error_FilePathNotFound() );
+      }
+    }
+  *]
+}

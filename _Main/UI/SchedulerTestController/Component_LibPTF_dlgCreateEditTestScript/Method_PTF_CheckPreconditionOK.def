@@ -1,0 +1,102 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_CheckPreconditionOK (Boolean singleeditmode, output String feedback_o) as Boolean id:Method_LibPTF_dlgCreateEditTestScript_PTF_CheckPreconditionOK
+{
+  #keys: '[103546.0.59539049]'
+  Body:
+  [*
+    // Checks various precondition before user allow to press OK button
+    this.PTF_IsReadyToRun( feedback_o );
+    
+    if( edtTotalNrOfSessions.Text().TrimBoth().Length() > 0
+        and edtNrOfSimultaneousSessions.Text().TrimBoth().Length() > 0 )
+    {
+      session    := [Number]edtTotalNrOfSessions.Text();
+      concurrent := [Number]edtNrOfSimultaneousSessions.Text();
+    
+      if( not session >= concurrent )
+      {
+        feedback_o := feedback_o + "The number of concurrent sessions should be less than or equal to the total number of sessions" + String::NewLine();
+      }
+    }
+    
+    if( durMinStartClientDelay.Duration() > durMaxStartClientDelay.Duration() )
+    {
+      feedback_o := feedback_o + "Start client delay range is invalid" + String::NewLine();
+    }
+    
+    if( singleeditmode )
+    {
+      if( edtUser.Text().TrimBoth().Length() = 0 )
+      {
+        feedback_o := feedback_o + "User name cannot be empty" + String::NewLine();
+      }
+    
+      if( not selClientType.BoundValue().Length() > 0 )
+      {
+        feedback_o := feedback_o + "Client type cannot be empty" + String::NewLine();
+      }
+    
+      if( not selLogging.BoundValue().Length() > 0 )
+      {
+        feedback_o := feedback_o + "Logging cannot be empty" + String::NewLine();
+      }
+    
+      if( edtDatasetKind.Text().TrimBoth().Length() = 0 )
+      {
+        feedback_o := feedback_o + "Dataset kind cannot be empty" + String::NewLine();
+      }
+    
+      if( edtDatasetFolder.Text().TrimBoth().Length() = 0 )
+      {
+        feedback_o := feedback_o + "Dataset folder cannot be empty" + String::NewLine();
+      }
+    
+      if( edtDataset.Text().TrimBoth().Length() = 0 )
+      {
+        feedback_o := feedback_o + "Dataset instance cannot be empty" + String::NewLine();
+      }
+    
+      if( not selProject.BoundValue().Length() > 0 )
+      {
+        feedback_o := feedback_o + "Project cannot be empty" + String::NewLine();
+      }
+    
+      if( edtTotalNrOfSessions.Text().TrimBoth().Length() = 0 )
+      {
+        feedback_o := feedback_o + "Sessions cannot be empty" + String::NewLine();
+      }
+    
+      if( edtNrOfSimultaneousSessions.Text().TrimBoth().Length() = 0 )
+      {
+        feedback_o := feedback_o + "Concurrent sessions cannot be empty" + String::NewLine();
+      }
+    
+      if( edtActionScript.Text().TrimBoth().Length() = 0 )
+      {
+        feedback_o := feedback_o + "Test script cannot be empty" + String::NewLine();
+      }
+    }
+    else
+    {
+      requiredtotalnrofsession := edtTotalNrOfSessions.Text().TrimBoth().Length() = 0
+                                  and edtNrOfSimultaneousSessions.Text().TrimBoth().Length() > 0;
+    
+      requirednrofsimultaneoussession := edtTotalNrOfSessions.Text().TrimBoth().Length() > 0
+                                         and edtNrOfSimultaneousSessions.Text().TrimBoth().Length() = 0;
+    
+      if( requiredtotalnrofsession )
+      {
+        feedback_o := feedback_o + "Sessions cannot be empty" + String::NewLine();
+      }
+    
+      if( requirednrofsimultaneoussession )
+      {
+        feedback_o := feedback_o + "Concurrent sessions cannot be empty" + String::NewLine();
+      }
+    
+    }
+    
+    return feedback_o = "";
+  *]
+}

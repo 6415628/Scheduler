@@ -1,0 +1,82 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_ValidateLoop (String script) as String id:Method_LibPTF_dlgCreateEditTestScript_PTF_ValidateLoop
+{
+  #keys: '[104342.0.868898838]'
+  Body:
+  [*
+    // Validate the loop statements in the script - if there is equal match of Loop to EndLoop statement
+    regnumber             := 0;
+    loopindex             := 0;
+    largestregnum         := 0;
+    linenr                := 0;
+    startfindendloopindex := 0;
+    loopwithoutendloop    := false;
+    loopidentifier        := "";
+    errormsg              := "";
+    keywordloop           := LibPTF_StandardAction::Loop();
+    keywordendloop        := LibPTF_StandardAction::EndLoop();
+    
+    // Create identifier of each Loop
+    while( script.NrOccurrences( keywordloop + " ", 0, true ) > 0 )
+    {
+      regnumber++;
+    
+      loopindex := script.FindString( keywordloop + " ", loopindex );
+      script    := script.Insert( loopindex + keywordloop.Length(), [String]regnumber );
+    }
+    
+    largestregnum := regnumber;
+    
+    // Create identifier of its corresponding EndLoop
+    while( regnumber > 0 )
+    {
+      loopindex    := script.FindString( keywordloop + [String]regnumber, 0 );
+      endloopindex := script.FindString( keywordendloop + ";", loopindex );
+    
+      if( endloopindex <> -1 )
+      {
+        script := script.Insert( endloopindex + keywordendloop.Length(), [String]regnumber );
+      }
+      regnumber--;
+    }
+    
+    // Check if all Loop has its corresponding EndLoop
+    while( largestregnum > 0 and not loopwithoutendloop )
+    {
+      loopidentifier        := keywordloop + [String]largestregnum;
+      startfindendloopindex := script.FindString( loopidentifier, 0 )
+      loopwithoutendloop    := script.FindString( keywordendloop + [String]largestregnum + ";", startfindendloopindex ) = -1;
+    
+      largestregnum--;
+    }
+    
+    // If Loop without EndLoop found, construct error message
+    if( loopwithoutendloop )
+    {
+      // Get information about the problematic loop
+      loopendofline := script.FindString( ";", startfindendloopindex );
+      loopline      := script.SubString( startfindendloopindex, loopendofline - startfindendloopindex );
+      iterationnr   := loopline.ReplaceAll( loopidentifier, "" );
+    
+      scriptprior := script.SubString( 0, startfindendloopindex );
+      linenr      := scriptprior.NrOccurrences( String::NewLine(), 0, true ) + 1;
+    
+      errormsg := "Line #" + [String]linenr + ": " + keywordloop + iterationnr + " without " + keywordendloop;
+    }
+    else
+    {
+      // Check if EndLoop without Loop found
+      endloopwithoutregnum := keywordendloop + ";";
+      if( script.FindString( endloopwithoutregnum, 0 ) <> -1 )
+      {
+        scriptprior := script.SubString( 0, script.FindString( keywordendloop + ";", 0 ) );
+        linenr      := scriptprior.NrOccurrences( String::NewLine(), 0, true ) + 1;
+    
+        errormsg := "Line #" + [String]linenr + ": " + keywordendloop + " without " + keywordloop;
+      }
+    }
+    
+    return errormsg;
+  *]
+}

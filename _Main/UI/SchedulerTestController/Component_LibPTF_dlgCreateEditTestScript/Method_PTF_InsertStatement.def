@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_InsertStatement () id:Method_LibPTF_dlgCreateEditTestScript_PTF_InsertStatement
+{
+  #keys: '[103546.0.78315835]'
+  Body:
+  [*
+    // Insert the user selected action and the entered parameters into the Script Editor
+    keyword      := selKeyWord.BoundValue();
+    keywordparam := ""
+    endkeyword   := ""
+    
+    // Insert additional statements for the LOOP keyword
+    if( keyword.ToUpper().FindString( LibPTF_StandardAction::Loop().ToUpper(), 0 ) > -1 )
+    {
+      endkeyword := ";" + String::NewLine() + "  << DEFINE YOUR TASK >>" + String::NewLine() + LibPTF_StandardAction::EndLoop();
+    }
+    
+    if( edtKeyWordParameter.Text().TrimBoth().Length() > 0 )
+    {
+      keywordparam := " " + edtKeyWordParameter.Text().TrimBoth();
+    }
+    
+    // Retrieve the action(keyword) and the set of parameters from a statement
+    parameters := construct( Strings );
+    this.PTF_GetActionAndParameters( keyword + keywordparam, parameters );
+    
+    // Validate the set of parameters based on action(keyword)
+    errormsg := this.PTF_ValidateStatement( keyword, parameters );
+    
+    // Format the error message when there is an error in validation
+    if( errormsg.Length() > 0 )
+    {
+      errormsg := "The following error is found in the script:" + String::NewLine() + String::NewLine()
+                  + errormsg + String::NewLine() + "Do you still want to add the action into the script?";
+    }
+    
+    // When validation passed, or user insists to insert the invalid statement, perform insert.
+    if( errormsg.Length() = 0 or MessageBox::Warning( this, errormsg, '&Yes|&No', 1 ) = 0 )
+    {
+      // Append new script
+      if( edtActionScript.Text().TrimBoth().Length() = 0 )
+      {
+        edtActionScript.CursorToBegin();
+      }
+      else
+      {
+        edtActionScript.CursorToEndOfLine();
+        edtActionScript.InsertText( String::NewLine() );
+      }
+    
+      edtActionScript.InsertText( keyword + keywordparam + endkeyword + ";" );
+    }
+  *]
+}

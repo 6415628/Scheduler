@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_HasUniqueUser (structured[LibPTF_TestScript] testscripts, Boolean scriptlevel, output String feedback_o) as Boolean id:Method_LibPTF_frmTestScenario_PTF_HasUniqueUser
+{
+  #keys: '[103546.0.99817976]'
+  Body:
+  [*
+    // Checks if all the selected test scripts has unique username entered
+    // This is because the username is currently being used as a unique identifier to identify a script
+    value := selectduplicates( testscripts,
+                               Elements,
+                               s,
+                               true,
+                               s.User().ToUpper()
+                             ).Size() = 0;
+    
+    if( not value )
+    {
+      // Different information for different levels of execution ( script / scenario )
+      if( scriptlevel )
+      {
+        feedback_o := feedback_o + "All selected test scripts must have a different user name" + String::NewLine();
+      }
+      else
+      {
+        feedback_o := feedback_o + "All test scripts of all selected scenarios must have a different user name" + String::NewLine();
+      }
+    }
+    
+    return value;
+  *]
+}

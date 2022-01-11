@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_ExecuteClientByScript (LibPTF_TestScript script, Number noofstart, output Number executedsessions_o, 
+  output Number executingsessions_o, output String starttime_o) id:Method_LibPTF_pnlTestController_PTF_ExecuteClientByScript
+{
+  #keys: '[104342.0.777049592]'
+  Body:
+  [*
+    // Checks the status of the expected clients and launched clients in a script and launch the next batches of clients when the previous batches of clients complete its execution
+    for( x := 0; x < noofstart; x++ )
+    {
+      if( executedsessions_o = 0 )
+      {
+        starttime_o := this.PTF_GetCurrentDatetime();
+      }
+    
+      // First line - [ResultLogPath], [LoggingOptions]
+      scriptwithparameters := this.PTF_GetResultLogPath() + ","
+                              + script.LoggingOptions() + ";" + String::NewLine()
+                              + script.GetActionScript();
+    
+      this.PTF_GenerateTestScript( this.PTF_GetScriptPath(),
+                                        scriptwithparameters,
+                                        script.User(),
+                                        script.Project()
+                                      );
+    
+      this.PTF_StartClient( script.User(),
+                                script.Password(),
+                                script.ClientType(),
+                                script.Project(),
+                                script.View(),
+                                script.CustomArgument(),
+                                script.MinStartClientDelay().TotalInSeconds(),
+                                script.MaxStartClientDelay().TotalInSeconds(),
+                                script.Dataset(),
+                                script.DatasetFolder(),
+                                script.DatasetKind()
+                               );
+    
+      executedsessions_o++;
+      executingsessions_o++;
+    }
+  *]
+}

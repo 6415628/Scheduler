@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: selProject
+Response OnCreated () id:Response_selProject_OnCreated
+{
+  #keys: '[103546.0.54981199]'
+  Body:
+  [*
+    //Get available user projects/applications
+    userprojects := construct( Strings );
+    
+    traverse( UserInterfaceManager::Instance(), RunnableUserInterfaceIDs, ruiid, true )
+    {
+      if( ruiid.istype( ProjectUserInterfaceID ) and ruiid.astype( ProjectUserInterfaceID ).Properties().LinkToDomainModel() )
+      {
+        userprojects.Add( ruiid.ID() + "," + ruiid.Description() );
+      }
+    }
+    
+    this.Strings( userprojects.ToString( ";" ) );
+    
+    //Set selected user projects (if available)
+    script := Dialog.Data();
+    
+    if( not isnull( script ) )
+    {
+      this.BoundValue( script.Project() );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIComponent_OnCreated'
+}

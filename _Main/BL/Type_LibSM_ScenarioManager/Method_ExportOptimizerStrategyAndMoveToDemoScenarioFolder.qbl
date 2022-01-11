@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExportOptimizerStrategyAndMoveToDemoScenarioFolder (String demoScenarioDirectory) #extension
+{
+  TextBody:
+  [*
+    this.ExportOptimizerStrategyInScenarioManager();
+    
+    if( demoScenarioDirectory <> '' )
+    {
+      broker := select( DomainModel::Domain().EDIDefinitionManager(), BrokerDefinitions, b, b.Name() = typeof( Broker_ExportOptimizerStrategyInScenarioManager ).Name() );
+      brokerfilename := broker.Destination().astype( EDIXLSLinkDefinition ).FileName();
+      dataFolder := FileSystems::QFSPathToHardwarePath(  DomainModel::GetDataDirectory().Path() ) + '/';
+      sourceFile := dataFolder + Constants::GetDatasetScenarioManager() + '/' + Constants::GetDatasetScenarioManager() + '/' + brokerfilename + '.xlsx';
+      destinationFile := demoScenarioDirectory + brokerfilename + '.xlsx';
+      
+      OS::CopyFile( sourceFile, destinationFile );
+    }
+  *]
+}

@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExportOptimizerUserParameters #extension
+{
+  TextBody:
+  [*
+    // woi1 Nov-3-2017 (created)
+    this.ExportOptimizerUserSetting();
+    
+    // Get desired file name
+    broker := select( DomainModel::Domain().EDIDefinitionManager(), BrokerDefinitions, b, b.Name() = typeof( Broker_ExportOptimizerUserSetting ).Name() );
+    brokerfilename := broker.Destination().astype( EDIXLSLinkDefinition ).FileName();
+    actualfilename := brokerfilename.Concat( Constants::Excel_XLSX() );
+    mdsname := this.MDSLibSM_ScenarioManager().Name();
+    
+    // Get Data directory
+    datadir := DomainModel::GetDataDirectory();
+    datadirectorypath := FileSystems::QFSPathToHardwarePath( datadir.Path() );
+    
+    // Copy broker exported file to Data\
+    // Getting directory of source file
+    traverse( datadir, Children, child, child.IsDirectory() and child.Name() = typeof( LibSM_ScenarioManager ).Name() ) // get directory Data\ScenarioManager\
+    {
+      traverse( child, Children, datasetdirectory, datasetdirectory.IsDirectory() and datasetdirectory.Name() = mdsname ) // get directory Data\ScenarioManager\DataSetName
+      {
+        traverse( datasetdirectory, Children, actualfile, actualfile.IsFile() and actualfile.Name() = actualfilename ) // get Data\ScenarioManager\DataSetName\SC_ExportOptimizerUserParameter.xlsx
+        {
+          // Get source file
+          sourcefilepath := FileSystems::QFSPathToHardwarePath( actualfile.Path() );
+          
+          // Get destination file path
+          destinationfilepath := datadirectorypath + '/' + actualfilename;
+          
+          OS::CopyFile( sourcefilepath, destinationfilepath ) // Data\ScenarioManager\DataSetName\SC_ExportOptimizerUserParameter.xlsx moved to Data\
+        }
+      }
+    }
+  *]
+}

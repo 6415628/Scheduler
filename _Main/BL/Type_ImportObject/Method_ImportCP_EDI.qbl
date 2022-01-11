@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportCP_EDI #extension
+{
+  TextBody:
+  [*
+    // Copy source file from integration folder
+    integrationfolderpath := Constants::GetIntegrationFolderPath();
+    
+    if( integrationfolderpath <> '' )
+    {
+      broker := select( DomainModel::Domain().EDIDefinitionManager(), BrokerDefinitions, b, b.Name() = typeof( Broker_ImportMPS ).Name() );
+      brokerfilename := broker.Source().astype( EDIXLSLinkDefinition ).FileName();
+      
+      source := integrationfolderpath + brokerfilename;
+      destfilname := FileSystems::QFSPathToHardwarePath( DomainModel::GetDataDirectory().Path() ) + "\" + Constants::ScheduleDataset() + "\" + 
+                                                         this.Schedule().MDSSchedule().Name() + '\' + brokerfilename;
+      
+      if( OS::IsFile( source ) )
+      {
+        OS::CopyFile( source, destfilname );
+      }
+    }
+    
+    // Execute broker
+    this.Schedule().Broker_ImportMPS().Execute();
+  *]
+}

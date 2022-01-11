@@ -1,0 +1,92 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_CheckClientStatus (structured[LibPTF_TestScript] testscripts, String str) as String id:Method_LibPTF_pnlTestController_PTF_CheckClientStatus
+{
+  #keys: '[102890.0.1871494620]'
+  Body:
+  [*
+    // Checks the overall PTF execution status and perform some post-PTF execution routine when all the scripts has been executed successfully
+    alldone   := true;
+    tracker   := construct( Strings );
+    rows      := str.Tokenize( ";" );
+    
+    traverse( rows, Elements, row )
+    {
+      columns := row.Tokenize( "|" );
+    
+      user                := columns.Element( 0 );
+      reqsessions         := [Number]columns.Element( 1 );
+      reqconsessions      := [Number]columns.Element( 2 );
+      executedsessions    := [Number]columns.Element( 3 );
+      executingsessions   := [Number]columns.Element( 4 );
+      remainingsessions   := [Number]columns.Element( 5 );
+      startime            := columns.Element( 6 );
+      endtime             := columns.Element( 7 );
+      // elapsedtime      := columns.Element( 8 ); Not being used
+      startoffset         := columns.Element( 9 );
+    
+      remainingsessions := reqsessions - executedsessions;
+    
+      script := select( testscripts,
+                        Elements,
+                        s,
+                        true,
+                        s.User() = user
+                      );
+    
+      this.PTF_CheckClientStatusByScript( script,
+                                          executedsessions,
+                                          reqsessions,
+                                          executingsessions,
+                                          endtime,
+                                          alldone
+                                        );
+    
+      columns.Flush();
+      columns.Add( user )
+      columns.Add( [String]reqsessions );
+      columns.Add( [String]reqconsessions );
+      columns.Add( [String]executedsessions );
+      columns.Add( [String]executingsessions );
+      columns.Add( [String]remainingsessions );
+      columns.Add( startime );
+      columns.Add( endtime );
+      columns.Add( this.PTF_GetTotalDuration( startime, endtime ) );
+      columns.Add( startoffset );
+    
+      tracker.Add( columns.ToString( "|" ) );
+    }
+    
+    // After completed all test
+    // clock the endtime time
+    // disable timer
+    if( alldone )
+    {
+      this.gt().Enabled( false );
+      lblEndTime.Text( this.PTF_GetCurrentDatetime() );
+    
+      // Only execute this if Python related execution is chosen to be executed
+      if( this.chkExecutePythonScripts().Checked() )
+      {
+        // Execute the PTF_MergeResult.bat to merge the result log files
+        LibPTF::Execute( this.PTF_GetBatchFileFullPathForMergeResult() );
+      }
+    
+      if( this.PTF_IsCopyQTransLogs() )
+      {
+        LibPTF::Execute( this.PTF_GetBatchFileFullPathForCollectQServerLog() );
+      }
+    
+      // Completed all test, remove batch file
+      OS::RemoveFile( this.PTF_GetBatchFileFullPathForKickStartClient() );
+      OS::RemoveFile( this.PTF_GetBatchFileFullPathForStartClient() );
+    
+      this.PTF_RunPostExecution();
+    
+      //Logs a line in log file as an indication of the end of a PTF run
+      LibPTF::LogRunEnded();
+    }
+    
+    return tracker.ToString( ";" );
+  *]
+}

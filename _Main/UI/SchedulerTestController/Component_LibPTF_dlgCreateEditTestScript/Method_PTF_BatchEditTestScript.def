@@ -1,0 +1,77 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_BatchEditTestScript (internal[GUIComponent] parent, structured[LibPTF_TestScript] selection) id:Method_LibPTF_dlgCreateEditTestScript_PTF_BatchEditTestScript
+{
+  #keys: '[104342.0.746836539]'
+  Body:
+  [*
+    // Batch edit test script
+    this.Title( "Bacth edit " + [String]selection.Size() + " test scripts" );
+    
+    this.PTF_ToggleBatchEditUIState( false );
+    
+    result := this.DoModal( parent );
+    
+    if( result > 0 )
+    {
+      totalnrofsessions        := 0;
+      nrofsimultaneoussessions := 0;
+      offset                   := Duration::MinDuration();
+      minstartclientdelay      := Duration::MinDuration();
+      maxstartclientdelay      := Duration::MinDuration();
+    
+      if( edtTotalNrOfSessions.Text().Length() > 0 )
+      {
+        totalnrofsessions := [Number]edtTotalNrOfSessions.Text();
+      }
+    
+      if( edtNrOfSimultaneousSessions.Text().Length() > 0 )
+      {
+        nrofsimultaneoussessions := [Number]edtNrOfSimultaneousSessions.Text();
+      }
+    
+      if( chkOffset.Checked() )
+      {
+        offset := durOffset.Duration();
+      }
+    
+      if( chkStartClientDelay.Checked() )
+      {
+        minstartclientdelay := durMinStartClientDelay.Duration();
+        maxstartclientdelay := durMaxStartClientDelay.Duration();
+      }
+    
+      if( selClientType.BoundValue().Length() > 0
+          or selLogging.BoundValue().Length() > 0
+          or selProject.BoundValue().Length() > 0
+          or edtView.Text().TrimBoth().Length() > 0
+          or edtCustomArgument.Text().TrimBoth().Length() > 0
+          or totalnrofsessions <> 0
+          or nrofsimultaneoussessions <> 0
+          or offset <> Duration::MinDuration()
+          or minstartclientdelay <> Duration::MinDuration()
+          or maxstartclientdelay <> Duration::MinDuration()
+          or edtDataset.Text().Length() > 0
+          or edtDatasetFolder.Text().Length() > 0
+          or edtDatasetKind.Text().Length() > 0
+        )
+      {
+        LibPTF_TestScript::BatchEditTestScripts( selection,
+                                               selClientType.BoundValue(),
+                                               selLogging.BoundValue(),
+                                               selProject.BoundValue(),
+                                               edtView.Text().TrimBoth(),
+                                               edtCustomArgument.Text().TrimBoth(),
+                                               totalnrofsessions,
+                                               nrofsimultaneoussessions,
+                                               offset,
+                                               minstartclientdelay,
+                                               maxstartclientdelay,
+                                               edtDataset.Text().TrimBoth(),
+                                               edtDatasetFolder.Text().TrimBoth(),
+                                               edtDatasetKind.Text().TrimBoth()
+                                             );
+      }
+    }
+  *]
+}

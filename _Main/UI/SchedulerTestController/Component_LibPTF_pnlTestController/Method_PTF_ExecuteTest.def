@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_ExecuteTest (structured[LibPTF_TestScript] testscripts) id:Method_LibPTF_pnlTestController_PTF_ExecuteTest
+{
+  #keys: '[105690.0.201964467]'
+  Body:
+  [*
+    // Execute the selected test scripts
+    validtestscripts := selectset( testscripts,
+                                   Elements,
+                                   script,
+                                   true,
+                                   script.IsScriptValid()
+                                 );
+    
+    nrtotal   := testscripts.Size();
+    nrvalid   := validtestscripts.Size();
+    nrinvalid := nrtotal - nrvalid;
+    message   := "There are " + [String]nrinvalid + " invalid test script(s)." + String::NewLine() + String::NewLine()
+                 + "Do you want to execute the other " + [String]nrvalid + " valid test script(s)?";
+    
+    // If all scripts valid or user continues to execute other valid scripts
+    if( nrvalid = nrtotal
+        or MessageBox::Warning( this, message, '&Yes|&No', 1 ) = 0 )
+    {
+      //Logs a line in log file as an indication of the beginning of a PTF run
+      LibPTF::LogRunStarted();
+    
+      this.vhResultLogFolder().Value( "PTF_result_" + DateTime::ActualTime().Format( 'YM2D2_H2ms' ) )
+      OS::CreateDirectory( LibPTF_pnlTestController.PTF_GetResultLogPath() );
+      this.gt().Enabled( true );
+    
+      //execute only valid testscript
+      ts := validtestscripts.Copy();
+      dhSelectedScripts.Data( &ts );
+    
+      str := "";
+    
+      traverse( dhSelectedScripts.Data(), Elements, script )
+      {
+        str := str + script.User() + "|"
+                   + [String]script.TotalNrOfSessions() + "|"
+                   + [String]script.NrOfSimultaneousSessions() + "|"
+                   + "0" + "|"
+                   + "0" + "|"
+                   + [String]script.TotalNrOfSessions() + "|"
+                   + "N/A" + "|"
+                   + "N/A" + "|"
+                   + "N/A" + "|"
+                   + [String]script.Offset() + ";" ;
+      }
+    
+      lstExecutionTestScript.Strings( str.SubString( 0, str.Length() - 1 ) );
+    
+      lblStartTime.Text( "" );
+      lblEndTime.Text( "N/A" );
+      lblDurationTime.Text( "N/A" );
+    }
+  *]
+}

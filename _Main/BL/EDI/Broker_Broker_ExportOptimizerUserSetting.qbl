@@ -1,0 +1,69 @@
+Quintiq file version 2.0
+#parent: #root
+EDIBroker Broker_ExportOptimizerUserSetting
+{
+  MDSDefinition: LibSM_ScenarioManager
+  TimeZone: 'ACT'
+  UseOSTimeZone: false
+  EDIModelLink.Source SourceExportOptimizerUserSetting
+  {
+    EDIMLTable OptimizerUserSettingGroupInScenarioManager
+    {
+      PrimaryKeyColumns: ID
+      TargetType: OptimizerUserSettingGroupInScenarioManager
+      TypeIndex: OptimizerUserSettingGroupInScenarioManager
+      EDIMLColumn Description { Attribute: Description ValueType: String }
+      EDIMLColumn ID { Attribute: ID ValueType: String }
+      EDIMLColumn IsDefault { Attribute: IsDefault ValueType: Boolean }
+    }
+    EDIMLTable OptimizerUserSettingSequencingInScenarioManager
+    {
+      PrimaryKeyColumns: ID
+      TargetType: OptimizerUserSettingSequencingInScenarioManager
+      TypeIndex: OptimizerUserSettingSequencingInScenarioManager
+      EDIMLColumn ID { Attribute: ID ValueType: String }
+      EDIMLColumn TimeLimit { Attribute: TimeLimit ValueType: Duration }
+    }
+  }
+  EDITransformation.Transformation TransformationExportOptimizerUserSetting
+  {
+    EDITableTransformation
+    {
+      InputTable: OptimizerUserSettingGroupInScenarioManager
+      OutputTable: OptimizerUserSettingGroupInSM
+      EDIColumnMatch { InputColumn: Description OutputColumn: Description }
+      EDIColumnMatch { InputColumn: ID OutputColumn: ID }
+      EDIColumnMatch { InputColumn: IsDefault OutputColumn: IsDefault }
+    }
+    EDITableTransformation
+    {
+      InputTable: OptimizerUserSettingSequencingInScenarioManager
+      OutputTable: OptimizerUserSettingSequencInSM
+      EDIColumnMatch { InputColumn: ID OutputColumn: ID }
+      EDIColumnMatch { InputColumn: TimeLimit OutputColumn: TimeLimit }
+    }
+  }
+  EDIXLSLink.Destination DestinationExportOptimizerUserSetting
+  {
+    FileName: 'SM_OptimizerUserSetting'
+    MDSDependent: true
+    TemplateFileName: 'SM_OptimizerUserSetting.xlsx'
+    EDIXLSLinkTable OptimizerUserSettingGroupInSM
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn Description { ValueType: String }
+        EDIXLSLinkColumn ID { ValueType: String }
+        EDIXLSLinkColumn IsDefault { ValueType: Boolean }
+      ]
+    }
+    EDIXLSLinkTable OptimizerUserSettingSequencInSM
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn ID { ValueType: String }
+        EDIXLSLinkColumn TimeLimit { ValueType: Duration }
+      ]
+    }
+  }
+}

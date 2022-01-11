@@ -1,0 +1,69 @@
+Quintiq file version 2.0
+#parent: #root
+EDIBroker Broker_ExportDemandBatchTypes
+{
+  MDSDefinition: Schedule
+  TimeZone: 'ACT'
+  UseOSTimeZone: false
+  EDIModelLink.Source SourceExportDemandBatchTypes
+  {
+    EDIMLTable DemandBatchRoutingStep
+    {
+      PrimaryKeyColumns: BatchType
+      PrimaryKeyColumns: SequenceNr
+      TargetType: DemandBatchRoutingStep
+      TypeIndex: DemandBatchRouting
+      EDIMLColumn BatchType { Attribute: BatchType ValueType: String }
+      EDIMLColumn OperationType { Attribute: OperationType ValueType: String }
+      EDIMLColumn SequenceNr { Attribute: SequenceNr ValueType: Number }
+    }
+    EDIMLTable DemandBatchType
+    {
+      PrimaryKeyColumns: BatchType
+      TargetType: DemandBatchType
+      TypeIndex: DemandBatchType
+      EDIMLColumn BatchType { Attribute: BatchType ValueType: String }
+      EDIMLColumn MaxBatchSize { Attribute: MaxBatchSize ValueType: Real }
+    }
+  }
+  EDITransformation.Transformation TransformationExportDemandBatchTypes
+  {
+    EDITableTransformation
+    {
+      InputTable: DemandBatchRoutingStep
+      OutputTable: DemandBatchRoutingStep
+      EDIColumnMatch { InputColumn: BatchType OutputColumn: BatchType }
+      EDIColumnMatch { InputColumn: OperationType OutputColumn: OperationType }
+      EDIColumnMatch { InputColumn: SequenceNr OutputColumn: SequenceNr }
+    }
+    EDITableTransformation
+    {
+      InputTable: DemandBatchType
+      OutputTable: DemandBatchType
+      EDIColumnMatch { InputColumn: BatchType OutputColumn: BatchType }
+      EDIColumnMatch { InputColumn: MaxBatchSize OutputColumn: MaxBatchSize }
+    }
+  }
+  EDIXLSLink.Destination DestinationExportDemandBatchTypes
+  {
+    FileName: 'SC_DemandBatchTypes'
+    MDSDependent: true
+    EDIXLSLinkTable DemandBatchRoutingStep
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn BatchType { ValueType: String }
+        EDIXLSLinkColumn SequenceNr { ValueType: Number }
+        EDIXLSLinkColumn OperationType { ValueType: String }
+      ]
+    }
+    EDIXLSLinkTable DemandBatchType
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn BatchType { ValueType: String }
+        EDIXLSLinkColumn MaxBatchSize { ValueType: Real }
+      ]
+    }
+  }
+}

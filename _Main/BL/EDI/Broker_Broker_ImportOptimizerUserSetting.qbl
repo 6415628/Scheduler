@@ -1,0 +1,96 @@
+Quintiq file version 2.0
+#parent: #root
+EDIBroker Broker_ImportOptimizerUserSetting
+{
+  MDSDefinition: LibSM_ScenarioManager
+  TimeZone: 'ACT'
+  UseOSTimeZone: false
+  EDIModelLink.Destination DestinationImportOptimizerUserParameter
+  {
+    EDIMLTable OptimizerUserSettingGroupInScenarioManager
+    {
+      PrimaryKeyColumns: ID
+      TargetType: OptimizerUserSettingGroupInScenarioManager
+      TypeIndex: OptimizerUserSettingGroupInScenarioManager
+      EDIMLColumn Description { Attribute: Description ValueType: String }
+      EDIMLColumn ID { Attribute: ID ValueType: String }
+      EDIMLColumn IsDefault { Attribute: IsDefault ValueType: Boolean }
+    }
+    EDIMLTable OptimizerUserSettingSequencingInScenarioManager
+    {
+      PrimaryKeyColumns: ID
+      TargetType: OptimizerUserSettingSequencingInScenarioManager
+      TypeIndex: OptimizerUserSettingSequencingInScenarioManager
+      EDIMLColumn ID { Attribute: ID ValueType: String }
+      EDIMLColumn TimeLimit { Attribute: TimeLimit ValueType: Duration }
+      EDIMLTableOwner
+      {
+        TargetType: OptimizerUserSettingGroupInScenarioManager
+        TypeIndex: OptimizerUserSettingGroupInScenarioManager
+        EDIMLForeignKeyColumn
+        {
+          Column: ID
+          TypeIndexAttribute: ID
+        }
+      }
+    }
+  }
+  EDITransformation.Transformation TransformationImportOptimizerUserParameter
+  {
+    EDITableTransformation
+    {
+      InputTable: OptimizerUserSettingGroupInSM
+      OutputTable: OptimizerUserSettingGroupInScenarioManager
+      EDIColumnMatch { InputColumn: Description OutputColumn: Description }
+      EDIColumnMatch { InputColumn: ID OutputColumn: ID }
+      EDIColumnMatch { InputColumn: IsDefault OutputColumn: IsDefault }
+    }
+    EDITableTransformation
+    {
+      InputTable: OptimizerUserSettingSequencInSM
+      OutputTable: OptimizerUserSettingSequencingInScenarioManager
+      EDIColumnMatch { InputColumn: ID OutputColumn: ID }
+      EDIColumnMatch
+      {
+        InputColumn: TimeLimit
+        OutputColumn: TimeLimit
+        Converter
+        {
+          XMLDefinition:
+          [*
+            <?xml version="1.0" encoding="UTF-16"?>
+            <StringToDuration xmlns="http://www.quintiq.com/GEB/StringToDuration" Key="@1">
+              <IsStandard>true</IsStandard>
+              <IsISO>false</IsISO>
+              <IsCustom>false</IsCustom>
+              <ConversionType>0</ConversionType>
+              <SingularDayString>day</SingularDayString>
+              <PluralDayString>days</PluralDayString>
+            </StringToDuration>
+          *]
+        }
+      }
+    }
+  }
+  EDIXLSLink.Source SourceImportOptimizerUserSetting
+  {
+    FileName: 'SM_OptimizerUserSetting.xlsx'
+    EDIXLSLinkTable OptimizerUserSettingGroupInSM
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn Description { ValueType: String }
+        EDIXLSLinkColumn IsDefault { ValueType: Boolean }
+        EDIXLSLinkColumn ID { ValueType: String }
+      ]
+    }
+    EDIXLSLinkTable OptimizerUserSettingSequencInSM
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn ID { ValueType: String }
+        EDIXLSLinkColumn TimeLimit { ValueType: String }
+      ]
+    }
+  }
+}

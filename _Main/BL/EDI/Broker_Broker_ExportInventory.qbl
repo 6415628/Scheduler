@@ -1,0 +1,147 @@
+Quintiq file version 2.0
+#parent: #root
+EDIBroker Broker_ExportInventory
+{
+  MDSDefinition: Schedule
+  TimeZone: 'ACT'
+  UseOSTimeZone: false
+  EDIModelLink.Source SourceExportInventory
+  {
+    EDIMLTable ImportedExternalSupply_SC
+    {
+      PrimaryKeyColumns: Id
+      TargetType: ImportedExternalSupply_SC
+      TypeIndex: ImportedExternalSupply_SC
+      EDIMLColumn AvailableFrom { Attribute: AvailableFrom ValueType: DateTime }
+      EDIMLColumn Id { Attribute: Id ValueType: String }
+      EDIMLColumn ProductId { Attribute: ProductId ValueType: String }
+      EDIMLColumn Quantity { Attribute: Quantity ValueType: Real }
+      EDIMLColumn StockingPointId { Attribute: StockingPointId ValueType: String }
+    }
+    EDIMLTable ImportedMaterial_SC
+    {
+      PrimaryKeyColumns: Id
+      TargetType: ImportedMaterial_SC
+      TypeIndex: ImportedMaterial_SC
+      EDIMLColumn AvailableFrom { Attribute: AvailableFrom ValueType: DateTime }
+      EDIMLColumn Id { Attribute: Id ValueType: String }
+      EDIMLColumn IsDiscrete { Attribute: IsDiscrete ValueType: Boolean }
+      EDIMLColumn Quantity { Attribute: Quantity ValueType: Real }
+      EDIMLColumn StockingPointId { Attribute: StockingPointId ValueType: String }
+      EDIMLColumn UoM { Attribute: UoM ValueType: String }
+    }
+    EDIMLTable ImportedPlannedSupply2ExternalSupply_SC
+    {
+      PrimaryKeyColumns: ExternalSupplyID
+      PrimaryKeyColumns: WorkOrderSupplyID
+      TargetType: ImportedPlannedSupply2ExternalSupply_SC
+      TypeIndex: ImportedPlannedSupply2ExternalSupply_SC
+      EDIMLColumn ExternalSupplyID { Attribute: ExternalSupplyID ValueType: String }
+      EDIMLColumn IsWorkOrderCompleted { Attribute: IsWorkOrderCompleted ValueType: Boolean }
+      EDIMLColumn Quantity { Attribute: Quantity ValueType: Real }
+      EDIMLColumn WorkOrderSupplyID { Attribute: WorkOrderSupplyID ValueType: String }
+    }
+    EDIMLTable ImportedPlannedSupply2Material_SC
+    {
+      PrimaryKeyColumns: MaterialID
+      PrimaryKeyColumns: WorkOrderOutputMaterialID
+      TargetType: ImportedPlannedSupply2Material_SC
+      TypeIndex: ImportedPlannedSupply2Material_SC
+      EDIMLColumn IsWorkOrderCompleted { Attribute: IsWorkOrderCompleted ValueType: Boolean }
+      EDIMLColumn MaterialID { Attribute: MaterialID ValueType: String }
+      EDIMLColumn Quantity { Attribute: Quantity ValueType: Real }
+      EDIMLColumn WorkOrderOutputMaterialID { Attribute: WorkOrderOutputMaterialID ValueType: String }
+    }
+  }
+  EDITransformation.Transformation TransformationExportInventory
+  {
+    EDITableTransformation
+    {
+      InputTable: ImportedExternalSupply_SC
+      OutputTable: ExternalSupply_SC
+      EDIColumnMatch { InputColumn: AvailableFrom OutputColumn: AvailableFrom }
+      EDIColumnMatch { InputColumn: Id OutputColumn: Id }
+      EDIColumnMatch { InputColumn: ProductId OutputColumn: ProductId }
+      EDIColumnMatch { InputColumn: Quantity OutputColumn: Quantity }
+      EDIColumnMatch { InputColumn: StockingPointId OutputColumn: StockingPointId }
+    }
+    EDITableTransformation
+    {
+      InputTable: ImportedMaterial_SC
+      OutputTable: Material_SC
+      EDIColumnMatch { InputColumn: AvailableFrom OutputColumn: AvailableFrom }
+      EDIColumnMatch { InputColumn: Id OutputColumn: Id }
+      EDIColumnMatch { InputColumn: IsDiscrete OutputColumn: IsDiscrete }
+      EDIColumnMatch { InputColumn: Quantity OutputColumn: Quantity }
+      EDIColumnMatch { InputColumn: StockingPointId OutputColumn: StockingPointId }
+      EDIColumnMatch { InputColumn: UoM OutputColumn: UoM }
+    }
+    EDITableTransformation
+    {
+      InputTable: ImportedPlannedSupply2ExternalSupply_SC
+      OutputTable: PlannedSupply2ExternalSupply
+      EDIColumnMatch { InputColumn: ExternalSupplyID OutputColumn: ExternalSupplyID }
+      EDIColumnMatch { InputColumn: IsWorkOrderCompleted OutputColumn: IsWorkOrderCompleted }
+      EDIColumnMatch { InputColumn: Quantity OutputColumn: Quantity }
+      EDIColumnMatch { InputColumn: WorkOrderSupplyID OutputColumn: WorkOrderSupplyID }
+    }
+    EDITableTransformation
+    {
+      InputTable: ImportedPlannedSupply2Material_SC
+      OutputTable: PlannedSupply2Material
+      EDIColumnMatch { InputColumn: IsWorkOrderCompleted OutputColumn: IsWorkOrderCompleted }
+      EDIColumnMatch { InputColumn: MaterialID OutputColumn: MaterialID }
+      EDIColumnMatch { InputColumn: Quantity OutputColumn: Quantity }
+      EDIColumnMatch { InputColumn: WorkOrderOutputMaterialID OutputColumn: WorkOrderOutputMaterialID }
+    }
+  }
+  EDIXLSLink.Destination DestinationExportInventory
+  {
+    FileName: 'SC_ImportExternalSupplies'
+    MDSDependent: true
+    TemplateFileName: 'SC_ImportExternalSupplies.xlsx'
+    EDIXLSLinkTable ExternalSupply_SC
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn Id { ValueType: String }
+        EDIXLSLinkColumn ProductId { ValueType: String }
+        EDIXLSLinkColumn StockingPointId { ValueType: String }
+        EDIXLSLinkColumn Quantity { ValueType: Real }
+        EDIXLSLinkColumn AvailableFrom { ValueType: DateTime }
+      ]
+    }
+    EDIXLSLinkTable Material_SC
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn Id { ValueType: String }
+        EDIXLSLinkColumn StockingPointId { ValueType: String }
+        EDIXLSLinkColumn Quantity { ValueType: Real }
+        EDIXLSLinkColumn AvailableFrom { ValueType: DateTime }
+        EDIXLSLinkColumn UoM { ValueType: String }
+        EDIXLSLinkColumn IsDiscrete { ValueType: Boolean }
+      ]
+    }
+    EDIXLSLinkTable PlannedSupply2ExternalSupply
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn WorkOrderSupplyID { ValueType: String }
+        EDIXLSLinkColumn ExternalSupplyID { ValueType: String }
+        EDIXLSLinkColumn Quantity { ValueType: Real }
+        EDIXLSLinkColumn IsWorkOrderCompleted { ValueType: Boolean }
+      ]
+    }
+    EDIXLSLinkTable PlannedSupply2Material
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn WorkOrderOutputMaterialID { ValueType: String }
+        EDIXLSLinkColumn MaterialID { ValueType: String }
+        EDIXLSLinkColumn Quantity { ValueType: Real }
+        EDIXLSLinkColumn IsWorkOrderCompleted { ValueType: Boolean }
+      ]
+    }
+  }
+}

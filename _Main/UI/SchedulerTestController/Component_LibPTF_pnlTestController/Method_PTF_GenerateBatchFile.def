@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_GenerateBatchFile () id:Method_LibPTF_pnlTestController_PTF_GenerateBatchFile
+{
+  #keys: '[104342.0.327949308]'
+  Body:
+  [*
+    // Generate the required batch files based on the options selected
+    globalparameter     := this.PTF_GetPTFGlobalParameters();
+    resultlogpath       := this.PTF_GetResultLogPath();
+    batchscriptencoding := "CP1252";
+    
+    // Acts as the entrance to execute the actual start client batch file. Purpose is
+    // to resolve not able to run TIMEOUT when having TestController with Thin Client
+    fullPathKickStartClient := this.PTF_GetBatchFileFullPathForKickStartClient();  // Kick start client batch file
+    fullPathStartClient     := this.PTF_GetBatchFileFullPathForStartClient();      // Start client batch file
+    
+    fileContentKickStartClient := globalparameter.GetKickStartClientBatchScript( fullPathStartClient );
+    fileContentStartClient     := globalparameter.GetStartClientBatchScript();
+    
+    binaryContentKickStartClient := BinaryData::Construct( fileContentKickStartClient, batchscriptencoding );
+    binaryContentStartClient     := BinaryData::Construct( fileContentStartClient, batchscriptencoding );
+    
+    Application.WriteBinaryFile( fullPathKickStartClient, binaryContentKickStartClient );
+    Application.WriteBinaryFile( fullPathStartClient, binaryContentStartClient );
+    
+    // If QServer and QServer transaction logs should be copied
+    if( this.PTF_IsCopyQTransLogs() )
+    {
+      fullPathCollectQServerLog      := this.PTF_GetBatchFileFullPathForCollectQServerLog();  // Collect QServer log batch file
+      fileContentCollectQServerLog   := globalparameter.GetCollectQServerLogBatchScript( resultlogpath, fullPathCollectQServerLog );
+      binaryContentCollectQServerLog := BinaryData::Construct( fileContentCollectQServerLog, batchscriptencoding );
+    
+      Application.WriteBinaryFile( fullPathCollectQServerLog, binaryContentCollectQServerLog );
+    }
+    
+    // If Python scripts should be executed
+    if( this.chkExecutePythonScripts().Checked() )
+    {
+      fullPathMergeResult         := this.PTF_GetBatchFileFullPathForMergeResult();          // Merge PTF result log batch file
+      fullPathExecutePythonScript := this.PTF_GetBatchFileFullPathForExecutePythonScript();  // Execute python scripts batch file
+    
+      fileContentMergeResult         := globalparameter.GetMergeResultBatchScript( resultlogpath, fullPathMergeResult, fullPathExecutePythonScript );
+      fileContentExecutePythonScript := globalparameter.GetExecutePythonScriptBatchScript( resultlogpath, fullPathExecutePythonScript, this.PTF_GetScriptPath() );
+    
+      binaryContentMergeScript         := BinaryData::Construct( fileContentMergeResult, batchscriptencoding );
+      binaryContentExecutePythonScript := BinaryData::Construct( fileContentExecutePythonScript, batchscriptencoding );
+    
+      Application.WriteBinaryFile( fullPathMergeResult, binaryContentMergeScript );
+      Application.WriteBinaryFile( fullPathExecutePythonScript, binaryContentExecutePythonScript );
+    }
+  *]
+}

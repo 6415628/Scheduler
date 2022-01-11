@@ -1,0 +1,92 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_PopulateParametersText () id:Method_LibPTF_dlgCreateEditTestScript_PTF_PopulateParametersText
+{
+  #keys: '[103546.0.67093836]'
+  Body:
+  [*
+    // Populate the information about parameters on the LabelKeywordArguments
+    infotext := "";
+    keyword  := selKeyWord.BoundValue();
+    
+    if( keyword = LibPTF_StandardAction::Loop() )
+    {
+      infotext := "<Nr>";
+    }
+    else if( keyword = LibPTF_StandardAction::OpenView() )
+    {
+      infotext := "<ViewName>";
+    }
+    else if( keyword = LibPTF_StandardAction::ScrollGCLeftRight()
+             or keyword = LibPTF_StandardAction::ScrollGCPageLeftRight()
+             or keyword = LibPTF_StandardAction::ScrollGCUpDown()
+             or keyword = LibPTF_StandardAction::ScrollGCPageUpDown()
+           )
+    {
+      infotext := "<TargetFormName>, <TargetGanttChartName>, <Nr>";
+    }
+    else if( keyword = LibPTF_StandardAction::ScrollGCToBottom()
+             or keyword = LibPTF_StandardAction::ScrollGCToNow()
+             or keyword = LibPTF_StandardAction::ScrollGCToTop()
+           )
+    {
+      infotext := "<TargetFormName>, <TargetGanttChartName>";
+    }
+    else if( keyword = LibPTF_StandardAction::ScrollListToLast() )
+    {
+      infotext := "<TargetFormName>, <TargetListName>";
+    }
+    else if( keyword = LibPTF_StandardAction::SelectListFrom() )
+    {
+      infotext := "<TargetFormName>, <TargetListName>, <TargetListIndex>";
+    }
+    else if( keyword = LibPTF_StandardAction::Wait() )
+    {
+      infotext := "<TimeInSeconds> or Wait <MinTimeInSeconds>, <MaxTimeInSeconds>";
+    }
+    else if( keyword = LibPTF_StandardAction::ZoomGC() )
+    {
+      infotext := "<TargetFormName>, <TargetGanttChartName>, <ZoomLevel>";
+    }
+    else if( keyword = LibPTF_StandardAction::ProfilerReset() )
+    {
+      infotext := "<Optional:ExportFileName>";
+    }
+    else if( keyword = LibPTF_StandardAction::ProfilerStop() )
+    {
+      infotext := "<Optional:ExportFileName>";
+    }
+    
+    // Disable the parameter editor if there is no parameters needed
+    keywordparameditorenabled := keyword.Length() > 0
+                                 and infotext.Length() > 0
+    
+    edtKeyWordParameter.Enabled( keywordparameditorenabled );
+    
+    // Info texts for remaining actions
+    if( infotext.Length() > 0 )
+    {
+      infotext := ' ' + keyword + ' ' + infotext;
+    }
+    else if( keyword.Length() > 0 )
+    {
+      infotext := " No argument is needed for this action.";
+    }
+    else
+    {
+      infotext := " No standard action is selected";
+    }
+    
+    lblKeywordArguments.Text( infotext );
+    
+    // Set focus
+    if( keywordparameditorenabled )
+    {
+      edtKeyWordParameter.SetFocus();
+    }
+    else
+    {
+      btnInsert.SetFocus();
+    }
+  *]
+}

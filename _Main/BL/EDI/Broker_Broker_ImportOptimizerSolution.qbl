@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+EDIBroker Broker_ImportOptimizerSolution
+{
+  MDSDefinition: Schedule
+  UseOSTimeZone: false
+  EDIModelLink.Destination DestinationImportSolution
+  {
+    EDIMLTable ImportedSingleTaskBenchmark
+    {
+      PrimaryKeyColumns: OperationId
+      TargetType: ImportedSingleTaskBenchmark
+      TypeIndex: ImportedTaskBenchmarkTypeIndex
+      EDIMLColumn End { Attribute: End ValueType: DateTime }
+      EDIMLColumn OperationId { Attribute: OperationId ValueType: String }
+      EDIMLColumn ResourceName { Attribute: ResourceName ValueType: String }
+    }
+  }
+  EDITransformation.Transformation TransformationImportSolution
+  {
+    EDITableTransformation
+    {
+      InputTable: OptimizerPlanElementInCompleteS
+      OutputTable: ImportedSingleTaskBenchmark
+      EDIColumnMatch { InputColumn: End OutputColumn: End }
+      EDIColumnMatch { InputColumn: OperationId OutputColumn: OperationId }
+      EDIColumnMatch { InputColumn: ResourceName OutputColumn: ResourceName }
+    }
+  }
+  EDIXLSLink.Source SourceImportSolution
+  {
+    FileName: 'SC_Solution_Optimizer.xlsx'
+    EDIXLSLinkTable OptimizerPlanElementInCompleteS
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn CompleteSolutionId { ValueType: String }
+        EDIXLSLinkColumn End { ValueType: DateTime }
+        EDIXLSLinkColumn OperationId { ValueType: String }
+        EDIXLSLinkColumn ResourceName { ValueType: String }
+      ]
+    }
+  }
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: gt
+Response OnTimer () id:Response_LibPTF_pnlTestController_gt_OnTimer
+{
+  #keys: '[101884.0.189400323]'
+  Body:
+  [*
+    // Execute client and check for its status
+    if( lblStartTime.Text().Length() = 0 )
+    {
+      lblStartTime.Text( LibPTF_pnlTestController.PTF_GetCurrentDatetime() );
+      LibPTF_pnlTestController.PTF_GenerateBatchFile();
+    }
+    
+    tests := dhSelectedScripts.Data()
+    
+    if( not isnull ( tests )
+      and tests.Size() > 0 )
+    {
+      tracker := lstExecutionTestScript.Strings();
+      tracker := LibPTF_pnlTestController.PTF_CheckClientStatus( tests, tracker );
+      tracker := LibPTF_pnlTestController.PTF_ExecuteClient( tests, tracker );
+    
+      lstExecutionTestScript.Strings( tracker );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUITimer_OnTimer'
+}

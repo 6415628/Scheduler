@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: tlb/btnOk
+Response OnClick () id:Response_tlb_btnOk_OnClick
+{
+  #keys: '[102890.0.1878412902]'
+  Body:
+  [*
+    if ( Dialog.PTF_IsBatchEditMode() )
+    {
+      // Batch edit mode
+      Dialog.EndModal( 1 );
+    }
+    else
+    {
+      // Single edit mode
+      errormsg := Dialog.PTF_ValidateAndAskSave();
+    
+      // When validation passed, or user insists to save the invalid script, save and close the dialog.
+      if( errormsg.Length() = 0 or MessageBox::Warning( this, errormsg, '&Yes|&No', 1 ) = 0 )
+      {
+        Dialog.ApplyChanges();
+        Dialog.EndModal( 1 );
+      }
+    }
+  *]
+  DefinitionID: 'Responsedef_GUIButtonBase_OnClick'
+  Precondition:
+  [*
+    return Dialog.PTF_CheckPreconditionOK( not Dialog.PTF_IsBatchEditMode(), feedback );
+  *]
+}

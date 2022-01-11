@@ -1,0 +1,113 @@
+Quintiq file version 2.0
+#parent: #root
+EDIBroker Broker_ExportProduct
+{
+  MDSDefinition: Schedule
+  TimeZone: 'ACT'
+  UseOSTimeZone: false
+  EDIModelLink.Source SourceExportProduct
+  {
+    EDIMLTable ImportedProductInStockingPoint_SC
+    {
+      PrimaryKeyColumns: ProductId
+      PrimaryKeyColumns: StockingPointId
+      TargetType: ImportedProductInStockingPoint_SC
+      TypeIndex: ImportedProductInStockingPoint_SC
+      EDIMLColumn ProductId { Attribute: ProductId ValueType: String }
+      EDIMLColumn StockingPointId { Attribute: StockingPointId ValueType: String }
+    }
+    EDIMLTable ImportedProduct_SC
+    {
+      PrimaryKeyColumns: Id
+      TargetType: ImportedProduct_SC
+      TypeIndex: ImportedProduct_SC
+      EDIMLColumn Id { Attribute: Id ValueType: String }
+      EDIMLColumn IsDiscrete { Attribute: IsDiscrete ValueType: Boolean }
+      EDIMLColumn Name { Attribute: Name ValueType: String }
+      EDIMLColumn PieceWeight { Attribute: PieceWeight ValueType: Real }
+      EDIMLColumn Type { Attribute: Type ValueType: String }
+      EDIMLColumn UoM { Attribute: UoM ValueType: String }
+    }
+    EDIMLTable ImportedStockingPoint_SC
+    {
+      PrimaryKeyColumns: Id
+      TargetType: ImportedStockingPoint_SC
+      TypeIndex: ImportedStockingPoint_SC
+      EDIMLColumn Id { Attribute: Id ValueType: String }
+      EDIMLColumn Index { Attribute: Index ValueType: Number }
+      EDIMLColumn MaximumStockLevel { Attribute: MaximumStockLevel ValueType: Real }
+      EDIMLColumn MinimumStockLevel { Attribute: MinimumStockLevel ValueType: Real }
+      EDIMLColumn Name { Attribute: Name ValueType: String }
+      EDIMLColumn TargetStockLevel { Attribute: TargetStockLevel ValueType: Real }
+    }
+  }
+  EDITransformation.Transformation TransformationExportProduct
+  {
+    EDITableTransformation
+    {
+      InputTable: ImportedProductInStockingPoint_SC
+      OutputTable: ProductInStockingPoint_SC
+      EDIColumnMatch { InputColumn: ProductId OutputColumn: ProductId }
+      EDIColumnMatch { InputColumn: StockingPointId OutputColumn: StockingPointId }
+    }
+    EDITableTransformation
+    {
+      InputTable: ImportedProduct_SC
+      OutputTable: Product_SC
+      EDIColumnMatch { InputColumn: Id OutputColumn: Id }
+      EDIColumnMatch { InputColumn: IsDiscrete OutputColumn: IsDiscrete }
+      EDIColumnMatch { InputColumn: Name OutputColumn: Name }
+      EDIColumnMatch { InputColumn: PieceWeight OutputColumn: PieceWeight }
+      EDIColumnMatch { InputColumn: Type OutputColumn: Type }
+      EDIColumnMatch { InputColumn: UoM OutputColumn: UoM }
+    }
+    EDITableTransformation
+    {
+      InputTable: ImportedStockingPoint_SC
+      OutputTable: StockingPoint_SC
+      EDIColumnMatch { InputColumn: Id OutputColumn: Id }
+      EDIColumnMatch { InputColumn: Index OutputColumn: Index }
+      EDIColumnMatch { InputColumn: MaximumStockLevel OutputColumn: MaximumStockLevel }
+      EDIColumnMatch { InputColumn: MinimumStockLevel OutputColumn: MinimumStockLevel }
+      EDIColumnMatch { InputColumn: Name OutputColumn: Name }
+      EDIColumnMatch { InputColumn: TargetStockLevel OutputColumn: TargetStockLevel }
+    }
+  }
+  EDIXLSLink.Destination DestinationExportProduct
+  {
+    FileName: 'SC_ImportProducts'
+    MDSDependent: true
+    EDIXLSLinkTable ProductInStockingPoint_SC
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn ProductId { ValueType: String }
+        EDIXLSLinkColumn StockingPointId { ValueType: String }
+      ]
+    }
+    EDIXLSLinkTable Product_SC
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn Id { ValueType: String }
+        EDIXLSLinkColumn Name { ValueType: String }
+        EDIXLSLinkColumn UoM { ValueType: String }
+        EDIXLSLinkColumn Type { ValueType: String }
+        EDIXLSLinkColumn PieceWeight { ValueType: Real }
+        EDIXLSLinkColumn IsDiscrete { ValueType: Boolean }
+      ]
+    }
+    EDIXLSLinkTable StockingPoint_SC
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn Id { ValueType: String }
+        EDIXLSLinkColumn Name { ValueType: String }
+        EDIXLSLinkColumn Index { ValueType: Number }
+        EDIXLSLinkColumn MinimumStockLevel { ValueType: Real }
+        EDIXLSLinkColumn MaximumStockLevel { ValueType: Real }
+        EDIXLSLinkColumn TargetStockLevel { ValueType: Real }
+      ]
+    }
+  }
+}

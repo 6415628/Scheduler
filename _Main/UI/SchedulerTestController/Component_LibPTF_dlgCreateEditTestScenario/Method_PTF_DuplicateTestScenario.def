@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_DuplicateTestScenario (internal[GUIComponent] parent, LibPTF_TestScenario selection) as LibPTF_TestScenario id:Method_LibPTF_dlgCreateEditTestScenario_PTF_DuplicateTestScenario
+{
+  #keys: '[103546.0.62981758]'
+  Body:
+  [*
+    // Duplicate test scenario
+    this.Title( "Duplicate test scenario" );
+    
+    data := shadow( selection );
+    
+    Dialog.Data( data );
+    
+    data.ExpandRecursive();
+    data.ResetWrapped();
+    
+    if( Dialog.DoModal( parent ) > 0 )
+    {
+      // Manually remove the test script results associated with the test scripts under the selected scenario.
+      traverse( data, LibPTF_TestScript, testscript )
+      {
+        testscript.LibPTF_ExecResult( relflush );
+      }
+    
+      data.Commit();
+    }
+    
+    return data.WrappedInstance();
+  *]
+}

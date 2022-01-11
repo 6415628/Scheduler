@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+EDIBroker Broker_ExportSettings
+{
+  MDSDefinition: Schedule
+  TimeZone: 'ACT'
+  UseOSTimeZone: false
+  EDIModelLink.Source SourceExportSettings
+  {
+    EDIMLTable WorkOrderColorRange
+    {
+      PrimaryKeyColumns: ColorIndex_SC
+      TargetType: WorkOrderColorRange
+      TypeIndex: WorkOrderColorRange
+      EDIMLColumn ColorCodeExport { Attribute: ColorCodeExport ValueType: String }
+      EDIMLColumn ColorIndex_SC { Attribute: ColorIndex ValueType: Number }
+    }
+  }
+  EDITransformation.Transformation TransformationExportSettings
+  {
+    EDITableTransformation
+    {
+      InputTable: WorkOrderColorRange
+      OutputTable: WorkOrderColorRange_SC
+      EDIColumnMatch { InputColumn: ColorCodeExport OutputColumn: ColorCode_SC }
+      EDIColumnMatch { InputColumn: ColorIndex_SC OutputColumn: ColorIndex_SC }
+    }
+  }
+  EDIXLSLink.Destination DestinationExportSettings
+  {
+    FileName: 'SC_Settings'
+    MDSDependent: true
+    EDIXLSLinkTable WorkOrderColorRange_SC
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn ColorCode_SC { ValueType: String }
+        EDIXLSLinkColumn ColorIndex_SC { ValueType: Number }
+      ]
+    }
+  }
+}

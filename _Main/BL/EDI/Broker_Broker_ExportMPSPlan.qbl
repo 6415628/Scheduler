@@ -1,0 +1,79 @@
+Quintiq file version 2.0
+#parent: #root
+EDIBroker Broker_ExportMPSPlan
+{
+  MDSDefinition: Schedule
+  TimeZone: 'ACT'
+  UseOSTimeZone: false
+  EDIModelLink.Source SourceExportMPSPlan
+  {
+    EDIMLTable ImportedMPSPlan
+    {
+      PrimaryKeyColumns: MPSPlanID
+      TargetType: ImportedMPSPlan
+      TypeIndex: ImportedMPSPlan
+      EDIMLColumn MPSPlanID { Attribute: MPSPlanID ValueType: String }
+      EDIMLColumn Timestamp { Attribute: Timestamp ValueType: DateTime }
+    }
+    EDIMLTable ImportedMPSPlannedOrder
+    {
+      PrimaryKeyColumns: DueDate
+      PrimaryKeyColumns: MPSPlanID
+      PrimaryKeyColumns: RoutingID
+      TargetType: ImportedMPSPlannedOrder
+      TypeIndex: ImportedMPSPlannedOrder
+      EDIMLColumn DueDate { Attribute: DueDate ValueType: DateTime }
+      EDIMLColumn MPSPeriodEnd { Attribute: MPSPeriodEnd ValueType: DateTime }
+      EDIMLColumn MPSPeriodStart { Attribute: MPSPeriodStart ValueType: DateTime }
+      EDIMLColumn MPSPlanID { Attribute: MPSPlanID ValueType: String }
+      EDIMLColumn Quantity { Attribute: Quantity ValueType: Real }
+      EDIMLColumn RoutingID { Attribute: RoutingID ValueType: String }
+    }
+  }
+  EDITransformation.Transformation TransformationExportMPSPlan
+  {
+    EDITableTransformation
+    {
+      InputTable: ImportedMPSPlan
+      OutputTable: MPSPlan
+      EDIColumnMatch { InputColumn: MPSPlanID OutputColumn: MPSPlanID }
+      EDIColumnMatch { InputColumn: Timestamp OutputColumn: Timestamp }
+    }
+    EDITableTransformation
+    {
+      InputTable: ImportedMPSPlannedOrder
+      OutputTable: MPSPlannedOrder
+      EDIColumnMatch { InputColumn: DueDate OutputColumn: DueDate }
+      EDIColumnMatch { InputColumn: MPSPeriodEnd OutputColumn: MPSPeriodEnd }
+      EDIColumnMatch { InputColumn: MPSPeriodStart OutputColumn: MPSPeriodStart }
+      EDIColumnMatch { InputColumn: MPSPlanID OutputColumn: MPSPlanID }
+      EDIColumnMatch { InputColumn: Quantity OutputColumn: Quantity }
+      EDIColumnMatch { InputColumn: RoutingID OutputColumn: RoutingID }
+    }
+  }
+  EDIXLSLink.Destination DestinationExportMPSPlan
+  {
+    FileName: 'MPSPlan'
+    MDSDependent: true
+    EDIXLSLinkTable MPSPlan
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn MPSPlanID { ValueType: String }
+        EDIXLSLinkColumn Timestamp { ValueType: DateTime }
+      ]
+    }
+    EDIXLSLinkTable MPSPlannedOrder
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn MPSPlanID { ValueType: String }
+        EDIXLSLinkColumn RoutingID { ValueType: String }
+        EDIXLSLinkColumn DueDate { ValueType: DateTime }
+        EDIXLSLinkColumn MPSPeriodStart { ValueType: DateTime }
+        EDIXLSLinkColumn MPSPeriodEnd { ValueType: DateTime }
+        EDIXLSLinkColumn Quantity { ValueType: Real }
+      ]
+    }
+  }
+}

@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_StopTestExecution () id:Method_LibPTF_pnlTestController_PTF_StopTestExecution
+{
+  #keys: '[103546.0.102755101]'
+  Body:
+  [*
+    // Halt an ongoing PTF execution
+    message   := "The test is currently running." + String::NewLine() + String::NewLine()
+                 + "Do you want to break off the current execution?";
+    
+    if( MessageBox::Warning( this, message, '&Yes|&No', 1 ) = 0 )
+    {
+      LibPTF_pnlTestController.gt().Enabled( false );
+      lstExecutionTestScript.Strings( "" );
+    
+      lblEndTime.Text( "N/A" );
+      lblStartTime.Text( "N/A" );
+      lblDurationTime.Text( "N/A" );
+    
+      // Clean up of all temporary files
+      traverse( dhSelectedScripts.Data(), Elements, s )
+      {
+        OS::RemoveFile( LibPTF_pnlTestController.PTF_GetScriptPath() + s.User() + "_" + s.Project() + LibPTF::FileExtRunningScript() );
+      }
+    
+      OS::RemoveFile( LibPTF_pnlTestController.PTF_GetBatchFileFullPathForKickStartClient() );
+      OS::RemoveFile( LibPTF_pnlTestController.PTF_GetBatchFileFullPathForStartClient() );
+    
+      if( this.chkExecutePythonScripts().Checked() )
+      {
+        // Remove batch file if stop execution
+        OS::RemoveFile( LibPTF_pnlTestController.PTF_GetBatchFileFullPathForMergeResult() );
+        // Remove batch file if stop execution
+        OS::RemoveFile( LibPTF_pnlTestController.PTF_GetBatchFileFullPathForExecutePythonScript() );
+      }
+    
+      if( this.PTF_IsCopyQTransLogs() )
+      {
+        OS::RemoveFile( LibPTF_pnlTestController.PTF_GetBatchFileFullPathForCollectQServerLog() );
+      }
+    }
+  *]
+}

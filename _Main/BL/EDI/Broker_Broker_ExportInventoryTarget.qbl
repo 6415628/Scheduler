@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+EDIBroker Broker_ExportInventoryTarget
+{
+  MDSDefinition: Schedule
+  TimeZone: 'ACT'
+  UseOSTimeZone: false
+  EDIModelLink.Source SourcExportInventoryTarget
+  {
+    EDIMLTable InventoryTarget
+    {
+      TargetType: InventoryTarget
+      EDIMLColumn MaximumStockLevel { Attribute: MaximumStockLevel ValueType: Real }
+      EDIMLColumn MinimumStockLevel { Attribute: MinimumStockLevel ValueType: Real }
+      EDIMLColumn ProductId { Attribute: ProductID ValueType: String }
+      EDIMLColumn StockingPointId { Attribute: StockingPointID ValueType: String }
+      EDIMLColumn TargetDate { Attribute: TargetDate ValueType: DateTime }
+      EDIMLColumn TargetStockLevel { Attribute: TargetStockLevel ValueType: Real }
+    }
+  }
+  EDITransformation.Transformation TransformationExportInventoryTarget
+  {
+    EDITableTransformation
+    {
+      InputTable: InventoryTarget
+      OutputTable: InventoryTarget_SC
+      EDIColumnMatch { InputColumn: MaximumStockLevel OutputColumn: MaximumStockLevel }
+      EDIColumnMatch { InputColumn: MinimumStockLevel OutputColumn: MinimumStockLevel }
+      EDIColumnMatch { InputColumn: ProductId OutputColumn: ProductID }
+      EDIColumnMatch { InputColumn: StockingPointId OutputColumn: StockingPointID }
+      EDIColumnMatch { InputColumn: TargetDate OutputColumn: TargetDate }
+      EDIColumnMatch { InputColumn: TargetStockLevel OutputColumn: TargetStockLevel }
+    }
+  }
+  EDIXLSLink.Destination DestinationExportInventoryTarget
+  {
+    FileName: 'SC_InventoryTarget'
+    MDSDependent: true
+    TemplateFileName: 'SC_InventoryTarget.xlsx'
+    EDIXLSLinkTable InventoryTarget_SC
+    {
+      Columns:
+      [
+        EDIXLSLinkColumn MaximumStockLevel { ValueType: Real }
+        EDIXLSLinkColumn MinimumStockLevel { ValueType: Real }
+        EDIXLSLinkColumn TargetDate { ValueType: DateTime }
+        EDIXLSLinkColumn TargetStockLevel { ValueType: Real }
+        EDIXLSLinkColumn ProductID { ValueType: String }
+        EDIXLSLinkColumn StockingPointID { ValueType: String }
+      ]
+    }
+  }
+}

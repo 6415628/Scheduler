@@ -1,0 +1,101 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_StartClient (String user, String password, String clienttype, 
+  String project, String view, String customargumentline, 
+  Number minstartclientdelayinsecond, Number maxstartclientdelayinsecond, String dataset, 
+  String datasetfolder, String datasetkind) id:Method_LibPTF_pnlTestController_PTF_StartClient
+{
+  #keys: '[105690.0.145844532]'
+  Body:
+  [*
+    // Construct the commandline for starting a Client with the parameters entered by user
+    argument                 := "/autostart/license=ReadWrite";
+    clientexecutable         := "";
+    fullpathclientexecutable := "";
+    
+    if( project.Length() > 0 )
+    {
+      argument := argument + '/project="' + project + '"';
+    }
+    
+    if( user.Length() > 0 )
+    {
+      argument := argument + '/user="' + user + '"';
+    }
+    
+    if( password.Length() > 0 )
+    {
+      argument := argument + '/password="' + password + '"';
+    }
+    
+    if( view.Length() > 0 )
+    {
+      argument := argument + '/view="' + view + '"';
+    }
+    
+    // Replacement values to bypass batch file reserved words
+    argument := argument.ReplaceAll( '/', '@' );
+    
+    // Dataset folder adjustment
+    datasetfolder     := datasetfolder.TrimBoth();
+    missingbeginslash := datasetfolder.SubString( 0, 1 ) <> "/"
+    extraendslash     := datasetfolder.RestString( datasetfolder.Length() -1 ) = "/"
+    if( missingbeginslash )
+    {
+      datasetfolder := "/" + datasetfolder;
+    }
+    if( extraendslash )
+    {
+      datasetfolder := datasetfolder.SubString( 0, datasetfolder.Length() - 1 );
+    }
+    
+    selectdataset := '/selectdataset="' + datasetkind + ':' + datasetfolder + '/' + dataset + '"';
+    argument      := argument + selectdataset;
+    
+    if( customargumentline.Length() > 0 )
+    {
+      customargs      := customargumentline.Tokenize( " " );
+      customarguments := "";
+    
+      traverse( customargs, Elements, customarg )
+      {
+        customarguments := customarguments + customarg.TrimBoth();
+      }
+    
+      argument := argument + customarguments;
+    }
+    
+    if( clienttype = "Thin Client" )
+    {
+      clientexecutable := "QThinClient_64.exe";
+    }
+    else if( clienttype = "Fat Client" )
+    {
+      clientexecutable := "QClient_64.exe";
+    }
+    fullpathclientexecutable := '"' + this.PTF_GetClientExecutablePath() + clientexecutable + '"';
+    
+    // The following are replaced with some other values because they are
+    // reserved words in the batch file when exectuted from command windows.
+    // The corresponding batch file will make the necessary conversion when executes
+    argument := argument.ReplaceAll( '=', '$' );
+    argument := argument.ReplaceAll( ' ', '\%20' );
+    argument := argument.ReplaceAll( '"', '#' );
+    argument := argument.ReplaceAll( ">", "gtsign" );
+    argument := argument.ReplaceAll( "<", "ltsign" );
+    
+    fullpathclientexecutable := fullpathclientexecutable.ReplaceAll( ' ', '\%20' );
+    fullpathclientexecutable := fullpathclientexecutable.ReplaceAll( '"', '#' );
+    
+    // Get random delay between the start client delay range
+    randomdelayinsecond := Number::Random( minstartclientdelayinsecond, maxstartclientdelayinsecond );
+    
+    
+    command := 'cmd /c "' + this.PTF_GetBatchFileFullPathForKickStartClient() + '" '
+               + argument
+               + ',' + [String]randomdelayinsecond
+               + ',' + fullpathclientexecutable;
+    
+    Application.ExecuteCommand( command );
+  *]
+}

@@ -1,0 +1,101 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_ValidateStatement (String action, Strings parameters) as String id:Method_LibPTF_dlgCreateEditTestScript_PTF_ValidateStatement
+{
+  #keys: '[103546.0.109833699]'
+  Body:
+  [*
+    // Checks the statement with various validation based on the action
+    errormsg  := ""
+    paramsize := parameters.Size();
+    
+    // No parameters
+    if( action = LibPTF_StandardAction::AutoClose()
+        or action = LibPTF_StandardAction::CloseAllForms()
+        or action = LibPTF_StandardAction::EndLoop()
+        or action = LibPTF_StandardAction::ProfilerStart()
+      )
+    {
+      errormsg := this.PTF_ValidateParametersSize( action, paramsize, 0 );
+    }
+    // Exactly one parameter
+    else if( action = LibPTF_StandardAction::OpenView()
+             or action = LibPTF_StandardAction::Loop()
+           )
+    {
+      errormsg := this.PTF_ValidateParametersSize( action, paramsize, 1 );
+    
+      if( errormsg.Length() = 0 and action = LibPTF_StandardAction::Loop() )
+      {
+        errormsg := this.PTF_ValidateGreaterThanZeroInteger( action, parameters.Element( 0 ), 1 );
+      }
+    }
+    // Exactly two parameter
+    else if( action = LibPTF_StandardAction::ScrollGCToBottom()
+             or action = LibPTF_StandardAction::ScrollGCToNow()
+             or action = LibPTF_StandardAction::ScrollGCToTop()
+             or action = LibPTF_StandardAction::ScrollListToLast()
+             or action = LibPTF_StandardAction::Wait()
+           )
+    {
+      errormsg := this.PTF_ValidateParametersSize( action, paramsize, 2 );
+    
+      // This whole block will be executed if action = "Wait"
+      if( action = LibPTF_StandardAction::Wait() )
+      {
+        if( errormsg.Length() = 0 )
+        {
+          errormsg := this.PTF_ValidatePositiveNumericValue( action, parameters.Element( 0 ), 1 );
+    
+          if( errormsg.Length() = 0 )
+          {
+            errormsg := this.PTF_ValidatePositiveNumericValue( action, parameters.Element( 1 ), 2 );
+          }
+        }
+        else
+        {
+          custommsg := 'Action "' + action + '" should have 1 or 2 parameters. Found ' + [String]paramsize + ' instead.' + String::NewLine();
+          errormsg := this.PTF_ValidateParametersSizeShowCustomMsg( action, paramsize, 1, custommsg );
+    
+          if( errormsg.Length() = 0 )
+          {
+            errormsg := this.PTF_ValidatePositiveNumericValue( action, parameters.Element( 0 ), 1 );
+          }
+        }
+      }
+    }
+    // Exactly three parameters
+    else if( action = LibPTF_StandardAction::ScrollGCLeftRight()
+             or action = LibPTF_StandardAction::ScrollGCPageLeftRight()
+             or action = LibPTF_StandardAction::ScrollGCPageUpDown()
+             or action = LibPTF_StandardAction::ScrollGCUpDown()
+             or action = LibPTF_StandardAction::SelectListFrom()
+             or action = LibPTF_StandardAction::ZoomGC()
+           )
+    {
+      errormsg := this.PTF_ValidateParametersSize( action, paramsize, 3 );
+    
+      if( errormsg.Length() = 0 )
+      {
+        if( action = LibPTF_StandardAction::SelectListFrom() )
+        {
+          errormsg := this.PTF_ValidatePositiveInteger( action, parameters.Element( 2 ), 3 );
+        }
+        // Other actions: "ScrollGCLeftRight", "ScrollGCPageLeftRight", "ScrollGCPageUpDown", "ScrollGCUpDown", "ZoomGC"
+        else
+        {
+          errormsg := this.PTF_ValidateInteger( action, parameters.Element( 2 ), 3 );
+        }
+      }
+    }
+    // Zero or one parameter
+    else if( action = LibPTF_StandardAction::ProfilerReset()
+             or action = LibPTF_StandardAction::ProfilerStop()
+           )
+    {
+      errormsg := this.PTF_ValidateParametersWithOptionalParamSize( action, paramsize, 0, 1 );
+    }
+    
+    return errormsg;
+  *]
+}
