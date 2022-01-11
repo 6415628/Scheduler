@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetDateOfNextOccurrence (TimeZone timezone_i, output Date dateOfRecurrence_o, Date date_i, 
+  Duration startTimeOfDay_i, Duration endTimeOfDay_i, Duration duration_i, 
+  Date earliestStart_i, Number recurrenceInterval_i, Boolean onMonday_i, 
+  Boolean onTuesday_i, Boolean onWednesday_i, Boolean onThursday_i, 
+  Boolean onFriday_i, Boolean onSaturday_i, Boolean onSunday_i) declarative remote as Date
+{
+  TextBody:
+  [*
+    // Don't start before the start of the recurrence.
+    date := maxvalue( dateOfRecurrence_o, date_i );
+    date := LibCal_RecurrencePatternWeekly::GetDateOfNextOccurrence( timezone_i, date,
+                                                                     startTimeOfDay_i, endTimeOfDay_i, duration_i, earliestStart_i,
+                                                                     onMonday_i,   onTuesday_i, onWednesday_i,
+                                                                     onThursday_i, onFriday_i,  onSaturday_i, onSunday_i );
+    if( date.IsInfinite() )
+    {
+      // Go to the next recurrence if there are no occurrences within the recurrence anymore,
+      dateOfRecurrence_o := LibCal_RecurrencePatternWeekly::GetDateOfNextRecurrence( dateOfRecurrence_o, recurrenceInterval_i );
+      
+      // Try again.
+      date := LibCal_RecurrencePatternWeekly::GetDateOfNextOccurrence( timezone_i, dateOfRecurrence_o,
+                                                                       startTimeOfDay_i, endTimeOfDay_i, duration_i, earliestStart_i,
+                                                                       onMonday_i,   onTuesday_i, onWednesday_i,
+                                                                       onThursday_i, onFriday_i,  onSaturday_i, onSunday_i );
+    }
+    
+    if( guard( date = date.StartOfNextWeek() - 1, false ) )
+    {
+      // Go to the next recurrence when the next occurrence is on the last day of the recurrence.
+      // A next occurrence does not have to be found right now, because the found occurrence is already 'valid'.
+      dateOfRecurrence_o := LibCal_RecurrencePatternWeekly::GetDateOfNextRecurrence( dateOfRecurrence_o, recurrenceInterval_i );
+    }    
+    
+    return date;
+  *]
+}

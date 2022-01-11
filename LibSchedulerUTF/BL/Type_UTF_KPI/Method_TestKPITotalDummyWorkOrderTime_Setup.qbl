@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestKPITotalDummyWorkOrderTime_Setup (Schedule schedule)
+{
+  Description: 'Test KPI TotalDummyWorkOrderTime - setup'
+  TextBody:
+  [*
+    isvariantfound := false;
+    isdummyworkorder := false;
+    ischeckkpitotal := false;
+    kpiweight := 0.0;
+    kpivalue := 0.0;
+    kpitotalvalue := 0.0;
+    
+    this.GetTestVariantForKPITotalDummyWorkOrderTime( isvariantfound,
+                                                      isdummyworkorder,
+                                                      ischeckkpitotal,
+                                                      kpiweight,
+                                                      kpivalue,
+                                                      kpitotalvalue );
+    
+    if( isvariantfound )
+    {  
+      // Set scheduling window to 1 day
+      schedule.PlanningConfiguration().SchedulingWindow( Duration::Days( 1 ) );
+      
+      // Set optimizer strategy
+      optimizerstrategy := UTFMockObjectFactory::CreateOptimizerStrategy( schedule );
+      optimizerstrategy.KPIWeightTotalDummyWorkOrderTime( kpiweight );
+      
+      // Set the program optimizer as the active optimizer (Since the dummy work order KPI is only relevant for the programs)
+      schedule.SetLastRunIsOptimizerProgram();
+      
+      // Create resource
+      resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource' );
+      
+      // Create operations and plan operations
+      this.CreateOperations( schedule, resource, true, schedule.Time() );
+      
+      // Update 1st operation
+      operation := select( schedule, PlanUnit_SC.Operation_SC, op, op.SequenceNr() = 1 );
+      operation.PlanUnit_SC().Order_SC().IsDummyWorkOrder( isdummyworkorder );
+    }
+  *]
+}

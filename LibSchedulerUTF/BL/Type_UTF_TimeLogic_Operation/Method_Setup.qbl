@@ -1,0 +1,79 @@
+Quintiq file version 2.0
+#parent: #root
+Method Setup (Schedule schedule, Boolean createinputom)
+{
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    testinstance := this.GetTestInstanceMain( variant );
+    testinstanceoperationmaterials := this.GetTestInstanceOpMaterials( variant );
+    
+    // Initialize
+    testinstanceid := testinstance.TestInstanceID();
+    
+    // Set company time
+    schedule.Time( UTFUtility::GetCompanyTime() );
+    
+    // Create order
+    order := UTFMockObjectFactory::CreateOrder ( schedule, testinstanceid );
+    
+    // Create planunit
+    planunit := UTFMockObjectFactory::CreatePlanUnit( order, testinstanceid, 1.0 );
+    planunit.Update( testinstance );
+    
+    // Create single resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, testinstanceid );
+    resource.Update( testinstance );
+    
+    // Create test object operation
+    operation := GenericOperation::Create( planunit, UTFUtility::UTF() );
+    operation.Type( UTFUtility::UTF() );
+    
+    // Create the required UTF operation material and set the UTF attributes
+    traverse( testinstanceoperationmaterials, Elements, testinstanceom )
+    {
+      om := null( UTFOperationMaterial );
+      if( createinputom )
+      {
+        om := UTFMockObjectFactory::CreateInputOperationMaterial( operation, testinstanceom.ID() );
+      }
+      else
+      {
+        om := UTFMockObjectFactory::CreateOutputOperationMaterial( operation, testinstanceom.ID() );
+      }
+      om.Update( testinstanceom );
+    }  
+    
+    if( testinstance.IsPlanned() )
+    {
+      task := UTFMockObjectFactory::CreateSingleTask( resource, operation );
+      task.Update( testinstance );  
+    }
+    
+    if( testinstance.IsStarted() or testinstance.IsEnded() )
+    {
+      taskfb := UTFMockObjectFactory::CreateFeedbackTaskInSchedule( operation, resource );
+      
+      if( testinstance.IsStarted() )
+      {
+        taskfb.ReportedStart( testinstance.FeedbackReportedStart() );
+        taskfb.ReportedProcessStart( testinstance.FeedbackReportedProcessStart() );
+      }
+      
+      if( testinstance.IsEnded() )
+      {
+        taskfb.ReportedEnd( testinstance.FeedbackReportedEnd() );
+      }
+    }
+    
+    Transaction::Transaction().Propagate();
+    
+    // Create subtasktypeonresourcegroup and set the duration
+    UTFMockObjectFactory::CreateSubTaskTypeOnResourceGroup( testinstance.TestInstanceID(), resource );
+    
+    // Propagate all declarative attributes/relations prior to assertion in the actual test method.                                       
+    Transaction::Transaction().Propagate();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

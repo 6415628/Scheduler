@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidColorHexCode (output Strings feedback_o) declarative as Boolean
+{
+  TextBody:
+  [*
+    // zi hao May-19-2017 (created)
+    isvalid :=  this.Color() = ''   // has no color
+                or Utility_SC::IsColorHexCode( this.Color() ); // has valid hex code
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      resourcegroup := this.ResourceGroup();
+      campaigntype := this.CampaignType()
+      campaign := this.Campaign();
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedCampaignInCampaignType_Instance( campaign, campaigntype, resourcegroup ),
+                                                               Translations::SC_ImportedCampaignInCampaignType_ViolateHasValidColorHexCode( this.Color() ) ));
+    }
+    
+    return isvalid;
+  *]
+}

@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_MPSPlan (CDSchedule cdSchedule)
+{
+  Description: 'Restore mps plan core data relations to planning object'
+  TextBody:
+  [*
+    traverse( cdSchedule, CDEntity.astype( CDMPSPlan ), cdMPSPlan )
+    {
+      mpsPlan := MPSPlan::FindMPSPlan( cdMPSPlan.MPSPlanID() );
+      
+      if( not isnull( mpsPlan ) )
+      {
+        importedMPSPlan := ImportedMPSPlan::FindImportedMPSPlan( cdMPSPlan.MPSPlanID() );
+        mpsPlan.ImportedMPSPlan( relset, importedMPSPlan );
+        
+        this.RestoreRelations_MPSPlannedOrder( cdSchedule, mpsPlan );
+      }  
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

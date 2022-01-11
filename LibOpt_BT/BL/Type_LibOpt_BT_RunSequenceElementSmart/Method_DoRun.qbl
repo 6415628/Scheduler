@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride DoRun () as stream[LibOpt_BT_RunSequence]
+{
+  TextBody:
+  [*
+    prev := this.Previous();
+    if ( isnull(  prev )
+         or prev.istype( LibOpt_BT_RunSequenceElementSmart )
+         or ( prev.IsCompleted() and prev.IsPassed() ) 
+       )
+    {
+      this.IsCompleted( true );
+      this.IsPassed( true );
+    }
+    else if(  prev.istype( LibOpt_BT_RunSequenceElementNormal ) )
+    {
+      normal := prev.astype( LibOpt_BT_RunSequenceElementNormal );
+      
+      cell := normal.TrackingTableCell(); // if prev is a failed run ( not added by smart queue item), re-run that first,
+      if ( normal.IsAddedBySmartElement() )  // if prev was added by smart, and still fail, go to prev cell in the table.
+      {
+         cell := normal.TrackingTableCell().GetPreviousCell();
+      }
+      
+      if(  not isnull( cell ) )  
+      {
+        element := normal.ShallowCopy().astype( LibOpt_BT_RunSequenceElementNormal );
+        element.UserName( this.UserName() );
+        element.TrackingTableCell( relset, cell );
+        element.IsCompleted( false );
+        element.IsAddedBySmartElement( true );
+        this.RunSequence().AddAfter( &element, normal );
+      }
+      else//no prev cell, first cell in the table also failed. then just proceed.
+      {
+        this.IsCompleted( true );
+        this.IsPassed( true );
+      }
+    }
+    
+    return emit( this.RunSequence() )
+  *]
+}

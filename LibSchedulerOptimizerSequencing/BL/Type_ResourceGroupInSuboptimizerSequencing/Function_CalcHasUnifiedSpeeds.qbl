@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcHasUnifiedSpeeds
+{
+  TextBody:
+  [*
+    // mbr23 Jan-27-2020 (created)
+    
+    value := true;
+    
+    if( this.Resource( relsize ) > 0 )
+    {
+      value := false;
+      // check equality of the process durations of all allowed operation on the resources:
+      if( this.HasUnifiedCapabilities() ) // comparison only applicable if the allowed replannable operations match
+      {
+        value := true;
+        anyresource := select( this, Resource, r, true );
+        any_processdurations := RealVector::Construct( selectvalues( anyresource.GetAllowedReplannableOperationsOnResourceSortet(), Elements, oor, true, oor.ProcessDuration().HoursAsReal() ) );
+        
+        traverse( this, Resource, resource, value )
+        {
+          processdurations := RealVector::Construct( selectvalues( resource.GetAllowedReplannableOperationsOnResourceSortet(), Elements, oor, true, oor.ProcessDuration().HoursAsReal() ) );
+          if( any_processdurations.Size() <> processdurations.Size() or not any_processdurations.IsEqualTo( processdurations ) ) // IsEqualTo errors if sizes differ
+          {
+            value := false;
+          }
+        }
+      }
+    }
+    
+    this.HasUnifiedSpeeds( value );
+  *]
+}

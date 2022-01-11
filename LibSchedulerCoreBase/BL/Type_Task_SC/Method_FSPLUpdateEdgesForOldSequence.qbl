@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method FSPLUpdateEdgesForOldSequence (Task_SC oldprevious, Task_SC oldnext)
+{
+  Description: 'Update edges of old sequence, remove edges between oldprevious and current, betwee oldnext and current, create edge between oldprevious and oldnext.'
+  TextBody:
+  [*
+    // WOI1 May-13-2016 (created)
+    //Replaces UpdateGraphOfOldPreviousAndNextTask
+    //Needed when task is resequenced, deleted, feedbacked, synchronizeKT
+    //we had A->B->C, B was removed so we delete A->B, B->C and add A->C
+    //remove the edges between first subtask of current task and last subtask of oldprevious task
+    traverse( this.First(), PrecedenceNode.Inputs, i, i.Input() = guard( oldprevious.Last().PrecedenceNode(), null( PrecedenceNode ) ) )
+    {
+      PrecedenceEdge::Delete( i );
+    }
+    //remove the edges between last subtask of current task and first subtask of oldnext task
+    traverse( this.Last(), PrecedenceNode.Outputs, o, o.Output() = guard( oldnext.First().PrecedenceNode(), null( PrecedenceNode ) ) )
+    {
+      PrecedenceEdge::Delete( o );
+    }
+    
+    //add a new edge between the last subtask of oldprevious and first subtask of oldnext
+    if( not isnull( oldprevious ) 
+        and not isnull( oldprevious.Last().PrecedenceNode() )
+        and not isnull( oldnext ) 
+        and not isnull( oldnext.First().PrecedenceNode() ) 
+        and oldprevious.Next() = oldnext )
+    {
+      PrecedenceEdge::Create( oldprevious.Last().PrecedenceNode(), oldnext.First().PrecedenceNode(), Constants::PrecedenceRelation_Precedes(), false );
+    }
+  *]
+}

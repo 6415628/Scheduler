@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericExternalWorkOrderDemand (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic external work order demand core data relations to planning object'
+  TextBody:
+  [*
+    traverse( cdSchedule, CDEntity.astype( CDGenericExternalWorkOrderDemand ), cdGenericExternalWorkOrderDemand )
+    { 
+      genericExternalWorkOrderDemand := ExternalWorkOrderDemand::FindExternalWorkOrderDemand( cdGenericExternalWorkOrderDemand.Id() );
+       
+      if( not isnull( genericExternalWorkOrderDemand ) )
+      {
+        importedExternalWorkOrderDemand := ImportedExternalWorkOrderDemand::FindImportedExternalWorkOrderDemand( cdGenericExternalWorkOrderDemand.Id() );
+        // ImportedWorkOrderDemand, 1-1
+        genericExternalWorkOrderDemand.ImportedWorkOrderDemand( relset, importedExternalWorkOrderDemand );
+        // ProductInStockingPoint, M-1
+        genericExternalWorkOrderDemand.ProductInStockingPoint( relset, ProductInStockingPoint::FindProductInStockingPoint( cdGenericExternalWorkOrderDemand.StockingPointId(),
+                                                                                                                           cdGenericExternalWorkOrderDemand.ProductId() ) );  
+      }                                                                                                                       
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoPreconditionCheckOnResourceGroupType (String resourceGroupType) as Boolean id:Method_DialogCreateEditResourceGroup_DoPreconditionCheckOnResourceGroupType
+{
+  #keys: '[143768.1.1659280010]'
+  Body:
+  [*
+    // Checks if input name is allowed
+    feedback := '';
+    
+    shadowResourceGroup := DialogCreateEditResourceGroup.DataHolderResourceGroup().Data();
+    resourceTypeHasChanged := guard( DropDownStringListResourceType.Text() <> shadowResourceGroup.WrappedInstance().ResourceType(), false );
+    
+    resourceGroup := ifexpr( resourceTypeHasChanged, 
+                             guard( shadowResourceGroup.WrappedInstance(), null( ResourceGroup_SC ) ),
+                             null( ResourceGroup_SC ) );
+    
+    value := ResourceGroup_SC::CanDeleteResources( resourceGroup, feedback );
+    DropDownStringListResourceType.HintClear();
+    
+    if( not value )
+    {
+      DropDownStringListResourceType.HintError( feedback );
+    }
+    return value
+  *]
+}

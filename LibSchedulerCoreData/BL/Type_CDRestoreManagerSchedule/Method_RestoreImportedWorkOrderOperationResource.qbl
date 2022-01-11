@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedWorkOrderOperationResource (CDIntegration cdintegration)
+{
+  Description: 'Restore imported work order operation resource core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedWorkOrderOperationResource
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedWorkOrderOperationResource ), cdwoor )
+    {
+      importedWorkOrderOperationResource := schedule.ImportedWorkOrderOperationResource( relnew, 
+                                                                                         WorkOrderID := cdwoor.WorkOrderID(),
+                                                                                         SequenceNr := cdwoor.SequenceNr(),
+                                                                                         ResourceID := cdwoor.ResourceID()
+                                                                                       );
+      CopyCorresponding::CopyFrom( cdwoor ).CopyTo( importedWorkOrderOperationResource );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

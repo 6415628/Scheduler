@@ -1,0 +1,83 @@
+Quintiq file version 2.0
+#parent: #root
+Method DisableEvent () id:Method_LibCal_dlgEvent_DisableEvent
+{
+  #keys: '[131094.0.1233382664]'
+  Body:
+  [*
+    // Disable the event-related controls if applicable, enable them otherwise.
+    sLeadPart   := dhLeadingParticipation.Data();
+    isInitiator := Dialog.Data().Calendar() = sLeadPart.Calendar();
+    isRecurring := not isnull( sLeadPart.RecurrencePeriod() );
+    
+    // Only the initiator can change the Event.
+    feedback := ifexpr( not isInitiator, Translations::Event_CanOnlyBeChangedByInitiator( Dialog.Data().Initiator() ), "" );
+    
+    if( feedback <> "" )
+    {
+      edtName                   .DisableWithUserFeedback( feedback );
+      rbgEventType              .DisableWithUserFeedback( feedback );
+      durStartTimeOfDay         .DisableWithUserFeedback( feedback );
+      durEndTimeOfDay           .DisableWithUserFeedback( feedback );
+      ckbIsAllDay               .DisableWithUserFeedback( feedback );
+      durStartTimeOfDayRecurring.DisableWithUserFeedback( feedback );
+      durEndTimeOfDayRecurring  .DisableWithUserFeedback( feedback );
+      ckbIsAllDayRecurring      .DisableWithUserFeedback( feedback );
+      btnAddDayRecurring                 .DisableWithUserFeedback( feedback );
+      btnSubtractDayRecurring            .DisableWithUserFeedback( feedback );
+      
+      if( isRecurring )
+      {
+        this.DisablePattern( feedback );
+      }
+      
+      // Only the initiator can change the participants.
+      btnSelectAll  .DisableWithUserFeedback( feedback );
+      btnDeselectAll.DisableWithUserFeedback( feedback ); 
+      lstSubscribers.Enabled( isInitiator );
+    }
+    else
+    {   
+      edtName                   .Enabled( true );
+      rbgEventType              .Enabled( true );
+      durStartTimeOfDay         .Enabled( not ckbIsAllDay.Checked() );
+      durEndTimeOfDay           .Enabled( not ckbIsAllDay.Checked() );
+      ckbIsAllDay               .Enabled( true );
+      durStartTimeOfDayRecurring.Enabled( not ckbIsAllDay.Checked() );
+      durEndTimeOfDayRecurring  .Enabled( not ckbIsAllDay.Checked() );
+      ckbIsAllDayRecurring      .Enabled( true );
+      btnAddDayRecurring                 .Enabled( true );
+      btnSubtractDayRecurring            .Enabled( true );
+    
+      if( isRecurring )
+      {
+        this.EnablePattern();
+      }
+    }
+    
+    // Dates can only be changed if there is no recurrence, and only by the initiator.
+    if( isRecurring )
+    {
+      feedback := Translations::Event_IsRecurring();
+      datStartDate.DisableWithUserFeedback( feedback );
+      datEndDate  .DisableWithUserFeedback( feedback );
+    }
+    else if( not isInitiator )
+    {
+      feedback := Translations::Event_CanOnlyBeChangedByInitiator( Dialog.Data().Initiator() );
+      datStartDate.DisableWithUserFeedback( feedback );
+      datEndDate  .DisableWithUserFeedback( feedback );
+    }
+    else
+    {
+      datStartDate.Enabled( true );
+      datEndDate  .Enabled( true );
+    }
+    
+    // Also show duration as disabled when everything else is disabled.
+    color := ifexpr( isInitiator or not isRecurring, Color::Black(), Color::Gray() );
+    valDuration         .TextColor( color );
+    valDurationRecurring.TextColor( color );
+    lblOneDayRecurring           .TextColor( color );
+  *]
+}

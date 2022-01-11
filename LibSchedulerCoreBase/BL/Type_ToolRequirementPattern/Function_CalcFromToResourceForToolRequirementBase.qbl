@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcFromToResourceForToolRequirementBase
+{
+  TextBody:
+  [*
+    // mbr4 Dec-2-2016 (created)
+    // We declaratively instantiate the possible combinations of Tool Requirements. These combinations are from and to resources. 
+    // Once we create the objects we need to set the from and to resource. This for loop sets these values.
+    if( this.ToolRequirementBase( relsize ) > 0 )
+    {
+      RGValuesFrom := selectvalues( this.FromResourceGroup_SC(), Resource_SC, r, isnull( this.FromResource_SC() ) or this.FromResource_SC().Name() = r.Name(), r.ResourceID() );
+      RGValuesTo := selectvalues( this.ToResourceGroup_SC(), Resource_SC, r, isnull( this.ToResource_SC() ) or this.ToResource_SC().Name() = r.Name(), r.ResourceID() );
+      pathset :=  selectsortedset( this, ToolRequirementBase, t, true, t.Key() );
+      
+      for( i := 0 ; i < pathset.Size() ; i++ )
+      {//Sets the FromResource(FR) with the respective element if there are 2 FR [A,B], 3 TF [C,D,E] and 1 tool required then there are 6 elements ( 3 x 2 x 1 )
+       // i  0 1 2 3 4 5 
+       // FR A A A B B B    
+       // TR C D E C D E
+        fromElement := i div ( pathset.Size() div RGValuesFrom.Size() );
+        pathset.Element( i ).FromResource( RGValuesFrom.Element( fromElement ) );
+        if( RGValuesTo.Size() > 0 )
+        {//the modular arithmetic ensures we iterate through each of the TRs for each sub set of FRs
+          toElement := ( RGValuesTo.Size() + i ) mod  RGValuesTo.Size();
+          pathset.Element( i ).ToResource( RGValuesTo.Element( toElement ) );
+        }
+      }//This loops over again for NrTools > 1
+    }
+  *]
+}

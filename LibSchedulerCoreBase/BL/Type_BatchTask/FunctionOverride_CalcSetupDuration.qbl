@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcSetupDuration
+{
+  Description: 'Calculates setup duration based on previous batch and current batch.'
+  TextBody:
+  [*
+    setupduration := Duration::Zero();
+    
+    if( not this.HasReportedStart() )
+    {
+      // setup is calculated on resource. This is required for optimization.
+      previousbatch := null( Batch );
+    
+      if( not isnull( this.Previous() ) )
+      {
+        previousbatch := this.Previous().astype( BatchTask ).Batch();
+      }
+    
+      setupduration := this.BatchResource().GetSetupDuration( previousbatch, this.Batch() );
+    }
+    
+    this.SetupDuration( setupduration )
+  *]
+}

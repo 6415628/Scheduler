@@ -1,0 +1,78 @@
+Quintiq file version 2.0
+#root
+#parent: #DomainModel
+Type Resource_SC
+{
+  #keys: '5[100134.0.39836871][100134.0.39836874][0.0.0][100134.0.39836870][100134.0.39836875]'
+  BaseType: Object
+  Description: 'SC'
+  OnCommit:
+  [*
+    // James Kwapien 20160831 QP#7644 Update CapacityResource.UtilizationFactor via helper attribute this.UtilizationFactor
+    // This allows the DialogResource to indirectly update CapacityResource instance as well as the Resource_SC instance
+    
+    resourcegroup := this.ResourceGroup_SC();
+    
+    // Check if there exists a related capacity resource group, then synchronize its capacity resources 
+    capacityresourcegroup := guard( resourcegroup.CapacityResourceGroup(), null( CapacityResourceGroup ) );
+    
+    if( not isnull( capacityresourcegroup ))
+    {
+      capacityresourcegroup.SynchronizeCapacityResources();
+    }
+    
+    // Check if there exists a set of related capacity resources, then we need to update them
+    capacityresourceset := selectset( resourcegroup.CapacityResourceGroup(),
+                                      CapacityResource,
+                                      cr,
+                                      cr.Name() = this.CapacityResourceName() );
+    
+    traverse( capacityresourceset, Elements, capacityresource )
+    {
+      capacityresource.UtilizationFactor( this.UtilizationFactor() );   // set UtilizationFactor using helper attribute on Resource_SC
+      
+      // James Kwapien QP#7644 We need to set the utilization factor of all other associated Resource_SCs 
+      // to match the updated CapacityResource utilization factor for least surprise for user
+      // as user interacts directly with Resource_SC.UtilizationFactor() as opposed to CapacityResource attribute
+      related_resources := selectset( capacityresource,
+                                      Resource_SC,
+                                      resources,
+                                      resources <> this );
+    
+      traverse( related_resources, Elements, resource )
+      {
+        resource.UtilizationFactor( capacityresource.UtilizationFactor() );
+      }
+    }
+    
+    if( isnew )
+    {
+      // Synchronize resource connections
+      this.Schedule().SynchronizationObject().SynchronizeResourceConnections();
+      
+      // Create resource calendar and subscribe to always available event
+      resourceCalendar := ResourceCalendar::Create( this ); // called here and OnCreate, because here is needed when we create a resource from the dialog
+      resourceCalendar.SubscribeToAlwaysAvailableEvent();
+      
+      this.ResourceGroupType( this.ResourceGroup_SC().ResourceType() );
+    }
+  *]
+  OnCreate:
+  [*
+    this.ResourceGroupType( this.ResourceGroup_SC().ResourceType() );
+    ResourceCalendar::Create( this ); // useful during ImportERP where we synchronize resource group and resources.
+  *]
+  OnDelete:
+  [*
+    // Delete resource node when delete resource
+    this.DeleteResourceNode();
+    
+    // Delete rule scope in resource
+    this.DeleteRuleScopeInResource();
+    
+    // Delete shutdown type in resource
+    this.DeleteShutdownTypeInResource();
+  *]
+  StructuredName: 'Resource_SCs'
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

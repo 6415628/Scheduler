@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateRule (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Create rule
+    rule := Rule::Create( schedule, 1 );
+    
+    // Create rule type - Allowed Difference Jump
+    ruleType := UTFMockObjectFactory::CreateRuleType( schedule, RuleConstant::RuleType_AllowedDifferenceJump() );
+    rule.RuleType( relset, ruleType );
+    
+    // Create rule subtype difference jump - Mininum Absolute Upwards
+    ruleSubtype := UTFMockObjectFactory::CreateRuleSubtypeDifferenceJump( ruleType, 
+                                                                          RuleConstant::RuleSubType_MinAbsoluteDifferenceUpwards(),
+                                                                          true, // IsAbsolute
+                                                                          RuleConstant::Direction_Upwards(), // Direction
+                                                                          RuleConstant::Limit_Min() ); // Limit
+    rule.RuleSubType( relset, ruleSubtype );
+    
+    // Create characteristic main - Operation Width
+    characteristicMain := UTFMockObjectFactory::CreateCharacteristic( schedule,
+                                                                      RuleConstant::Characteristic_OperationWidth(),
+                                                                      false, 
+                                                                      true, 
+                                                                      false, 
+                                                                      RuleConstant::ValueType_Real(), 
+                                                                      true, 
+                                                                      false );
+    
+    rule.CharacteristicMain( relset, characteristicMain );
+    
+    // Create a resource and apply rule scope to rule
+    UTFMockObjectFactory::CreateRuleScopeInSingleResource( schedule, rule, 'Single Resource' );
+    
+    // Create normal attribute in rule
+    rule.IsEnabled( true );
+    rule.RuleScopeSelected( RuleConstant::RuleScope_AllTasksOnResource() );
+    
+    // Set rule value
+    rule.RuleValue( 200.0 );
+  *]
+}

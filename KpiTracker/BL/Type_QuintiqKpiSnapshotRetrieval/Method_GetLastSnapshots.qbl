@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetLastSnapshots (Number top) as owning KpiSnapshotSetData
+{
+  TextBody:
+  [*
+    set := construct( KpiSnapshotSetData );
+    
+    storage       := this.Storage();
+    nrOfSnapshots := storage.NumberOfSnapshots();
+    
+    for ( index := nrOfSnapshots - 1; index  >= maxvalue( nrOfSnapshots - top, 0 ); index -- )
+    {
+      snapshot := storage.Snapshot( relget ).Element( index );
+      data     := DssKpiSnapshotRetrieval::ConvertSnapshotToTransportType( snapshot );
+      
+      set.SnapshotData( relinsert, &data );
+    }
+    
+    return &set;
+  *]
+}

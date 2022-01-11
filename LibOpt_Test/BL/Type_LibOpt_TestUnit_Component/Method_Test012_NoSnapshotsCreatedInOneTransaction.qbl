@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test012_NoSnapshotsCreatedInOneTransaction (LibOpt_TestDataset dataset)
+{
+  Description: 'Check whether things break when no snapshots are created in one transaction'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    
+    runs := opt.CreateAllComponents();
+    
+    se := dataset.ScopeElementMock( relnew );
+    
+    strs := construct( structured[stream[JSON]] );
+    traverse( runs, Elements, run )
+    {
+      run.HasSnapshots( false );
+      run.ConfigureForOneTransaction();
+      scope := LibOpt_ScopeFat::Create( run );
+      scope.Add( se );
+      run.SetStartScope( scope );
+      strs.Add( run->Start() );
+    }
+    
+    expected_nr_snapshots := 0;
+    
+    merge := stream[JSON]::Merge( strs );
+    this.NoException( merge->|this->( t )
+    {
+      this.Run().AssertEqual( expected_nr_snapshots, counter( runs, Elements.Snapshot, sn, true ), 'Too many snapshots are created' );
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

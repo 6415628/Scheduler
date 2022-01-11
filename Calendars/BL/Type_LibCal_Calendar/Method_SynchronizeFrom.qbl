@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeFrom (LibCal_StagingCalendar stagingCalendar_i, Boolean doDelete_i, Boolean keepIfNotImported_i)
+{
+  Description:
+  [*
+    Synchronize the calendar with the data that has been imported in a staging object. The staging object can be a different calendar.
+    The deletion behavior of events and participations is determined by the arguments:
+      doDelete_i = TRUE deletes instances that do not exist in staging (anymore). When FALSE, no instances are deleted.
+      keepIfNotImported_i = TRUE does not delete instances that do not exist in staging if they were not imported previously (i.e. have been created manually or by the application).
+  *]
+  TextBody:
+  [*
+    /*
+    LibCal_Util::Info( "LibCal_Calendar.SynchronizeFrom() : updating calendar " + this.CalendarID()   + " with stagingCalendar " + stagingCalendar_i.CalendarType() + "." + stagingCalendar_i.StagingCalendarID() + "'; " +
+                       "#StagingEvents = " + [String]stagingCalendar_i.StagingEvent( relsize ) + ", #StagingParticipations = " + [String]stagingCalendar_i.StagingParticipation( relsize ) +
+                       ", doDelete_i = " + [String]doDelete_i + ", keepIfNotImported_i = " + [String]keepIfNotImported_i );
+    */
+    
+    // Only take over data from the calendar itself (i.e. the settings), when stagingCalendar_i is 'the same' calendar.
+    if( stagingCalendar_i.CalendarType()      = this.DefinitionName() and
+        stagingCalendar_i.StagingCalendarID() = this.CalendarID() )
+    {
+      this.Base(           stagingCalendar_i.Base()           );
+      this.Window(         stagingCalendar_i.Window()         );
+      this.History(        stagingCalendar_i.History()        );
+      this.UpdateInterval( stagingCalendar_i.UpdateInterval() );
+    }
+    
+    // Subscribe to / unsubscribe from Event "Always available" if applicable.
+    this.SetIsAlwaysAvailable( stagingCalendar_i.IsAlwaysAvailable() );
+    
+    // Synchronize the events and the participations. These can be from a different calendar!
+    this.SynchronizeEvents(        stagingCalendar_i, doDelete_i, keepIfNotImported_i );
+    this.SynchronizeSubscriptions( stagingCalendar_i, doDelete_i, keepIfNotImported_i );
+    
+    // Generate the TimeIntervals.
+    this.GenerateOccurrences();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method Finalize
+{
+  Description:
+  [*
+    This method is executed right after a component has finished its operation or right before an error causes a rollback. 
+    For `LibOpt_Suboptimizers`, this method is also executed right before the `LibOpt_Suboptimizer.PostHandleResult` method is called.
+    This is to ensure that the execution time of a component is registered when a rollback occurs.
+  *]
+  TextBody:
+  [*
+    // When an error occurs on a downstream component, then LibOpt_CurrentTransaction.HandleQuillError( QuillError e ) also executes this method for all upstream components.
+    // We do not want to overwrite the original timestamp, so the 'this.PrecisionTimeStampDone() = 0' condition is required.
+    if( this.PrecisionTimeStampDone() = 0 )
+    {
+      this.TimeStampDone( DateTime::ActualTime() );
+      this.PrecisionTimeStampDone( OS::PrecisionCounter() / OS::PrecisionCounterFrequency() );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

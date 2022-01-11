@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method CleanUpAndArchive
+{
+  Description: 'Clean up and archive data'
+  TextBody:
+  [*
+    // Clean up and archive data
+    
+    // Archive cumulative characteristic value on feedback program before delete feedback task
+    traverse( this, FeedbackTaskInFeedbackProgramType.FeedbackProgramType, feedbackprogram )
+    {
+      feedbackprogram.ArchiveCumulativeCharacteristicBinaryValue( this ); 
+    }
+    
+    // Archive cumulative characteristic value on shutdown before delete feedback task
+    if( not isnull( this.PreviousShutdown() ) )
+    {
+      this.PreviousShutdown().ArchiveCumulativeCharacteristicBinaryValue( this ); 
+    }
+    
+    this.Delete();
+  *]
+}

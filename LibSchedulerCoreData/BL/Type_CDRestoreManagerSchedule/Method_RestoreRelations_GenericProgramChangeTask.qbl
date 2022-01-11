@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericProgramChangeTask (CDSchedule cdschedule)
+{
+  Description: 'Restore relations for generic program change task core data to planning object'
+  TextBody:
+  [*
+    traverse( cdschedule, CDEntity.astype( CDGenericProgramChangeTask ), cdProgramChangeTask )
+    {
+      resource := Resource_SC::FindResource_SC( cdProgramChangeTask.ResourceID() );
+      programchangetask := select( resource, Task_SC.astype( GenericProgramChangeTask ), task, task.BackupTaskID() = cdProgramChangeTask.BackupTaskID() );
+      
+      if( not isnull( programchangetask ) )
+      {
+        // Restore ProgramChange to this program change task
+        programchange := ProgramChange::FindProgramChange( cdProgramChangeTask.ProgramChangeID() );
+        programchangetask.ProgramChange( relset, programchange );
+        
+        // Move to the right position
+        previoustask := select( resource, Task_SC, task, task.BackupTaskID() = cdProgramChangeTask.PreviousTaskBackupTaskID() );
+        resource.MoveAfter( programchangetask, previoustask );    
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

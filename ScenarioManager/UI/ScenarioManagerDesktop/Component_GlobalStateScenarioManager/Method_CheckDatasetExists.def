@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckDatasetExists (LibSM_Scenario scenario) as Boolean id:Method_LibSM_GlobalState_CheckDatasetExists
+{
+  #keys: '[136398.1.587826884]'
+  Body:
+  [*
+    // Returns whether the actual dataset that matches
+    // the DatasetMDSID of the scenario.libsm_dataset could be
+    // found.
+    
+    // We are doing this here because of performance considerations,
+    // you can't make this a 'remote' method in the server code.
+    editor := ExternalMDSEditor::Editor();
+    key    := guard( scenario.Dataset().DatasetMDSID(), Key::ZeroKey() );
+    
+    objectInfo := editor.LoadedObjectInfo( key );
+    if ( isnull( objectInfo ) )
+    {
+      objectInfo := editor.ObjectInfo( key );
+    }
+    
+    return not isnull( objectInfo );
+  *]
+}

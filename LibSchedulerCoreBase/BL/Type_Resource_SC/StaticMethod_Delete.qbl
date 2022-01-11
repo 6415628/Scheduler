@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Delete (Schedule schedule, Resource_SCs resources_i)
+{
+  Description: 'Deletes an instance of Resource_SC.'
+  TextBody:
+  [*
+    // James Kwapien 20160829 #7636 Delete a Resource_SC from ListResources
+    traverse( resources_i, Elements, resource, resource.CanBeDeleted() )
+    {
+      resource.Delete();
+    }
+    
+    // synchronizes resource connection instances, not done in OnDelete because instances are not yet deleted
+    schedule.SynchronizationObject().SynchronizeResourceConnections();
+  *]
+}

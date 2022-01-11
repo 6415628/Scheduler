@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveMetadataRequestHaltDataTransfer (NamedValueTree nvt_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive a data transfer halt request.'
+  TextBody:
+  [*
+    // Jacky CHAN Aug-8-2016 (created)
+    guid         := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_DATATRANSFERGUID() );
+    dataTransfer := select( this, DataTransfer, dt, dt.GUID() = guid );
+    
+    if( not isnull( dataTransfer ) )
+    {
+      dataTransfer.CanExecute( false );
+    
+      dtEvent := dataTransfer.IntegrationEvent();
+    
+      // log in both event_i and dtEvent
+      activity := "The data transfer [GUID: " + guid + "] has been stopped.";
+      LibDEF_Util::EventLog( dtEvent, activity );
+      LibDEF_Util::EventLog( event_i, activity );
+    
+      LibDEF_IntegrationEvent::EventComplete( dtEvent );
+      LibDEF_IntegrationEvent::EventComplete( event_i );
+    }
+    else
+    {
+      // log error event_i
+      LibDEF_Util::EventLog( event_i, "The data transfer [GUID: " + guid + "] failed to be stopped." );
+    }
+  *]
+}

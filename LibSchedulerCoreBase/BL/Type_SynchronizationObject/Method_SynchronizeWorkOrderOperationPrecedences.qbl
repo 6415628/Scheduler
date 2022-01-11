@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeWorkOrderOperationPrecedences
+{
+  Description: 'Synchronizes existing work order operation dependencies with imported data from ERP system.'
+  TextBody:
+  [*
+    // WOI1 Jul-13-2016 (created)
+    allinstances := selectset( this.Schedule(), WorkOrder.WorkOrderOperation.FromWOOP, workorderoperation_precedence, true )
+    updatedinstaces := construct( WorkOrderOperationPrecedences );
+    
+    traverse( this.Schedule(), ImportedWorkOrderOperationPrecedence, row, row.IsValidDataHard() )
+    {
+      workorderoperation_precedence := WorkOrderOperationPrecedence::FindWorkOrderOperationPrecedence( row.ID() );
+        
+      // create precedence object
+      if( isnull( workorderoperation_precedence ) )
+      {
+        workorderoperation_precedence := WorkOrderOperationPrecedence::Create( this.Schedule(), row.ID() );
+      }
+      
+      workorderoperation_precedence.Update( row );
+      
+      // set FROM work order operation
+      from_workorderoperation := WorkOrderOperation::FindWorkOrderOperation( row.FromWorkOrderId(), row.FromSequenceNr() );
+      
+      if( not isnull( from_workorderoperation ) )
+      {
+        workorderoperation_precedence.AsFromWOOP( relset, from_workorderoperation );
+      }
+      
+      // set TO work order operation
+      to_workorderoperation := WorkOrderOperation::FindWorkOrderOperation( row.ToWorkOrderId(), row.ToSequenceNr() );
+      
+      if( not isnull( to_workorderoperation ) )
+      {
+        workorderoperation_precedence.AsToWOOP( relset, to_workorderoperation );
+      }
+      
+      updatedinstaces.Add( workorderoperation_precedence );
+    }
+    
+    //Delete work order precedences and relevant operation materials if they do not exist in KT
+    oldinstances := allinstances.Difference( updatedinstaces );
+    
+    // Deleting work order operation precedences
+    traverse( oldinstances, Elements, workorderoperation_precedence )
+    {
+      workorderoperation_precedence.Remove();
+    }
+  *]
+}

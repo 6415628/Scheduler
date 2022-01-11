@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+DeclarativeReferenceRelation CalcParallelTasks
+{
+  #keys: '1[118288.0.266356181]'
+  Description: 'calculate relation for parallel task'
+  Expression:
+  [*
+    t := ifexpr( this.IsParallelWithFeedback(), null( ContinuousTask ), this );
+                                                                              
+    if( not isnull( this.Previous() ) and this.IsParallelWithPrevious() )
+    {
+      t := maxselect( this.Resource_SC(), 
+                      Task_SC.astype( ContinuousTask ), 
+                      task, 
+                      not task.IsParallelWithPrevious() and task.SequenceNr() < this.SequenceNr(),
+                      task.SequenceNr() );
+    }
+    
+    return t;
+  *]
+  Relation: AsFirstTaskInParallel
+}

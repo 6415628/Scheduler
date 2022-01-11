@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanOnResourceGroup (ResourceGroup_SC resourcegroup, LibOpt_Task libopttask)
+{
+  TextBody:
+  [*
+    traverse( this, OperationOnResource, oor,
+              // Only plan on the input resource group
+              guard( oor.Resource().ResourceGroup_SC() = resourcegroup, false )
+              // and do not replan frozen elements
+              and guard( not oor.Operation().ScopeElementOperation().OnRun( libopttask.Run() ).IsLocked(), true ) )
+    {
+      operations := construct( Operation_SCs );
+      operations.Add( oor.Operation() );
+      oor.Resource().PlanLast( operations );  
+    }
+  *]
+}

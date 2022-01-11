@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCleanUpDuration (Operation_SC fromoperation, Operation_SC tooperation) declarative as Duration
+{
+  Description: 'Clean up duration for operation on this resource.'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // this method should be implemented by the QS for each specialization of SingleResource
+    // Please note that the clean up duration is being retrieved from KTs (table methods) for demo purposes only.
+    // This would cause performance issues on larger data. Do not use this as a guide for implementation.
+    
+    value := Duration::Zero();
+    
+    if( this.ResourceGroup_SC().HasCleanUp()
+        and not isnull( tooperation )
+        and not isnull( fromoperation ) )
+    {
+      // Clean up duration from product jump
+      cleanuprow := this.GetCleanUpRow( fromoperation.PlanUnit_SC().ProductType(),
+                                        fromoperation.PlanUnit_SC().ProductId(),
+                                        tooperation.PlanUnit_SC().ProductType(),
+                                        tooperation.PlanUnit_SC().ProductId() );
+    
+      if( not isnull( cleanuprow ) )
+      {
+        value := cleanuprow.CleanUpDuration();
+      }
+    }
+    
+    return value;
+  *]
+}

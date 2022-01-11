@@ -1,0 +1,112 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitSumPhaseCapacityConstraints (LibOpt_Task task, ProgramTypeConfiguration programType, PTAssignmentBucket bucket, 
+  SuboptimizerMPPTAssignment_PTAssignmentMP program, TransientDataSuboptimizerPTAssignment transientData, Boolean isHardConstraint, 
+  Boolean isMinConstraint) as SuboptimizerMPPTAssignment_PTAssignmentMP
+{
+  Description: 'Initialize the sum phase capacity constraints. If max or min rules are active for the same characteristic on all phases, we can sum this and apply the sum on program level.'
+  TextBody:
+  [*
+    // jkr8 Sep-6-2021 (created)
+    
+    phases := selectset( programType, ProgramPhaseConfiguration, phase, true );
+    characteristics := selectset( phases, Elements.RuleScopeInProgramPhase.Rule.CharacteristicMain, c, true, true );
+    
+    traverse( characteristics, Elements, characteristic )
+    {
+      
+      if( forallexists( phases, Elements, phase, 
+                        exists( phase, RuleScopeInProgramPhase.Rule, rule, true, 
+                                ( isHardConstraint xor rule.IsHardConstraintForOptimizer() )
+                                and  rule.RuleSubType().istype( RuleSubTypeMinMaxCombinedLength )
+                                and ( isMinConstraint xor rule.RuleSubType().astype( RuleSubTypeMinMaxCombinedLength ).IsMinimumCombinedLength() ) 
+                                and rule.CharacteristicMain().ID() = characteristic.ID() ) ) )
+      {     
+        // Take the rule that relates to the first phase as identifier for the constraint.
+        firstRule := null( Rule );
+        
+        // If multiple rules are configured with the same characteristic, take the most constrained rule.
+        // For a min rule, we need to take the maximum to get the strictest rule, for a max rule we need to take the minimum.              
+        if( isMinConstraint ) 
+        {
+          firstRule := maxselect( programType.First(), RuleScopeInProgramPhase.Rule, rule, 
+                                  ( isHardConstraint xor rule.IsHardConstraintForOptimizer() ) 
+                                  and rule.RuleSubType().istype( RuleSubTypeMinMaxCombinedLength )
+                                  and ( isMinConstraint xor rule.RuleSubType().astype( RuleSubTypeMinMaxCombinedLength ).IsMinimumCombinedLength() ) 
+                                  and rule.CharacteristicMain().ID() = characteristic.ID(),
+                                  rule.RuleValue() );
+        }
+        else
+        {
+          firstRule := minselect( programType.First(), RuleScopeInProgramPhase.Rule, rule, 
+                                  ( isHardConstraint xor rule.IsHardConstraintForOptimizer() )
+                                  and rule.RuleSubType().istype( RuleSubTypeMinMaxCombinedLength )
+                                  and ( isMinConstraint xor rule.RuleSubType().astype( RuleSubTypeMinMaxCombinedLength ).IsMinimumCombinedLength() )
+                                  and rule.CharacteristicMain().ID() = characteristic.ID(),
+                                  rule.RuleValue() );
+        }                 
+        constr := program.BucketCapacityConstraints().New( programType, bucket, firstRule );
+            
+              
+        traverse( transientData, OperationGroup, operationGroup )
+        {
+          capfactor := 0.0;
+          capacity := 0.0;
+          traverse( phases, Elements, phase )
+          {
+            // If multiple rules are configured with the same characteristic, take the most constrained rule.
+            // For a min rule, we need to take the maximum to get the strictest rule, for a max rule we need to take the minimum. 
+            rule := null( Rule );
+            if( isMinConstraint )
+            {
+              rule := minselect( phase, RuleScopeInProgramPhase.Rule, r, 
+                                 BooleanToReal::ISOConverter().Convert( isHardConstraint ) * BooleanToReal::ISOConverter().Convert( r.IsHardConstraintForOptimizer() ) = 1
+                                 and r.RuleSubType().istype( RuleSubTypeMinMaxCombinedLength )
+                                 and BooleanToReal::ISOConverter().Convert( isMinConstraint ) * BooleanToReal::ISOConverter().Convert( r.RuleSubType().astype( RuleSubTypeMinMaxCombinedLength ).IsMinimumCombinedLength() ) = 1
+                                 and r.CharacteristicMain().ID() = characteristic.ID(),
+                                 r.RuleValue() );
+            }
+            else
+            {
+              rule := minselect( phase, RuleScopeInProgramPhase.Rule, r, 
+                                 ( isHardConstraint xor r.IsHardConstraintForOptimizer() ) 
+                                 and r.RuleSubType().istype( RuleSubTypeMinMaxCombinedLength )
+                                 and ( isMinConstraint xor r.RuleSubType().astype( RuleSubTypeMinMaxCombinedLength ).IsMinimumCombinedLength() )
+                                 and r.CharacteristicMain().ID() = characteristic.ID(),
+                                 r.RuleValue() );
+            }
+                
+            capfactor := capfactor + operationGroup.GetCapacityFactor( task, rule );
+               
+            capacity := capacity + rule.RuleValue();                            
+          }
+              
+          constr.NewTerm( capfactor, program.NrOpsAssignedToTypeVariables().Get( operationGroup, bucket, programType ) );
+              
+          constr.NewTerm( -capacity, program.IsProgramAssignedVariables().Get( programType, bucket ) );
+        
+          coefficient := -1.0;
+          if( isMinConstraint )
+          {
+            coefficient := 1.0;
+          
+            //If the rule is Minimum combined length, the capacity of the operations should exceed the total capacity
+            constr.Sense( ">=" )
+          }                       
+          if( isHardConstraint )
+          {
+            constr.NewTerm( coefficient, program.CapacitySlackHardVariables().Get( programType, bucket, firstRule ) );
+          }
+          else
+          {
+            constr.NewTerm( coefficient, program.CapacitySlackSoftVariables().Get( programType, bucket, firstRule ) );
+          }
+       
+          constr.RHSValue( 0.0 );
+        }
+      }
+    }
+    
+    return program
+  *]
+}

@@ -1,0 +1,16 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCharacteristicRealValueForPrevCombiLegsOfSameShutdown (Characteristic characteristic) declarative remote as Real
+{
+  TextBody:
+  [*
+    // yifei Sep-21-2021 (created)
+    previouscls := selectset(  this, 
+                               StoppageTask.astype( ShutdownTask ).CombiLeg, 
+                               cl, 
+                               cl.SequenceNr() < this.SequenceNr() 
+                               and guard( cl.Leg().FirstTaskOnLeg().SequenceNr() >= this.StoppageTask().SequenceNr(), false ) );
+    
+    return sum( previouscls, Elements, cl, true, cl.GetCharacteristicValue( characteristic ) );
+  *]
+}

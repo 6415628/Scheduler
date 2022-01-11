@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method Copy (String newprogramdefinitionid, String name, Resource_SCs resources) as ProgramDefinitionConfiguration
+{
+  Description: 'Copy program definition configuration into new program definition configuration'
+  TextBody:
+  [*
+    // Copy program definition configuration into new program definition configuration
+    newprogamdefinition := ProgramDefinitionConfiguration::Create( this.Schedule(),
+                                                                   newprogramdefinitionid );
+    newprogamdefinition.Update( name, resources );
+    
+    traverse( this, ProgramSetConfiguration, programset )
+    {
+      newprogramset := programset.Copy( newprogamdefinition,
+                                        programset.ProgramSetConfigurationID(),
+                                        programset.Name(),
+                                        programset.IsProgramTypeChangeAllowed(),
+                                        programset.ProgramTypeChangeDuration(),
+                                        programset.IsSequenceRulesEnabled(),
+                                        programset.IsFreezeScheduleByProgram() );
+      // Set as leading program set
+      if( programset.IsLeading() )
+      {
+        newprogramset.SetAsLeading(); 
+      }
+    }
+    
+    return newprogamdefinition;
+  *]
+}

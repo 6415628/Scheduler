@@ -1,0 +1,67 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizePrecedenceOperationMaterials
+{
+  Description:
+  [*
+    Synchronizes operation materials from work order operation precedences in NON data driven time constraint mode or if the precedence has product flow.
+    This sync logic assumes work order operation precedences, orders, plan units and their operations have all been synchronized before this method is called.
+  *]
+  TextBody:
+  [*
+    // eg. WorkOrder 1, Operation C has operation precedences to WorkOrder 2, Operation A, C -> A. 
+    // Which means, all Operation C of all plan untis of Order 1 will have a time constraint to Operation A of all plan units of Order 2.
+    
+    schedule := this.Schedule();
+    allInstances := selectset( schedule, WorkOrderOperationPrecedence.OperationMaterial, om, true );
+    updatedInstances := construct( OperationMaterials );
+    
+    isDataDrivenTimeConstraintMode := this.Schedule().TechnicalConfiguration().IsDataDrivenTimeConstraintsMode();
+                                                  
+    traverse( schedule, WorkOrderOperationPrecedence, precedence, 
+              not isDataDrivenTimeConstraintMode 
+              or ( isDataDrivenTimeConstraintMode and precedence.HasMaterialFlow() ) )
+    {
+      // Grabs all corresponding operations of all plan units of the 'from' order
+      fromOperations := selectset( precedence, 
+                                   AsFromWOOP.WorkOrder.Order_SC.PlanUnit_SC.Operation_SC, 
+                                   op, 
+                                   op.WorkOrderSequenceNr() = precedence.FromSequenceNr() );
+                                           
+      // Grabs all corresponding operations of all plan units of the 'to' order
+      toOperations := selectset( precedence, 
+                                 AsToWOOP.WorkOrder.Order_SC.PlanUnit_SC.Operation_SC, 
+                                 op, 
+                                 op.WorkOrderSequenceNr() = precedence.ToSequenceNr() );
+      
+      // Traverse related operations of the 'from' order
+      traverse( fromOperations, Elements, fromOp )
+      {
+        // Creates the operation material from the related operations of 'from' order to the related operations of 'to' order
+        traverse( toOperations, Elements, toOp )
+        {
+          operationMaterial := select( fromOp, 
+                                       ToOperationDependency.astype( OperationMaterial ),
+                                       om,
+                                       om.ToOperation() = toOp
+                                       and om.WorkOrderOperationPrecedence() = precedence );
+          
+          if( isnull( operationMaterial ) )
+          {
+            operationMaterial := precedence.CreateOperationMaterial( fromOp, toOp );
+          }
+          
+          operationMaterial.WorkOrderOperationPrecedence( relset, precedence );
+          updatedInstances.Add( operationMaterial );
+        }
+      }
+    }
+    
+    oldInstances := allInstances.Difference( updatedInstances );
+    
+    traverse( oldInstances, Elements, old )
+    {
+      old.Delete();
+    }
+  *]
+}

@@ -1,0 +1,14 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetSpawnedReactiveCallNames (Real since) as owning Strings
+{
+  Description: 'Get the method names of the reactively called methods in the current transaction.'
+  TextBody:
+  [*
+    id := Transaction::GetCurrentTask().Id();
+    duration := Duration::Seconds( ( OS::PrecisionCounter() - since ) / OS::PrecisionCounterFrequency() );
+    return selectvalues( ModeledRunningTaskList::GetTaskList( '', Duration::Zero() ), Elements, task,
+                         task.ParentID() = id and task.Duration() <= duration,
+                         task.Description() );
+  *]
+}

@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod UpgradeDatabase (Key mdsid_i, DMF_RunStep runStep_i) as stream[Void]
+{
+  Description: 'Helper API, used by DMF to upgrade `*.sql*` database files. Unless you need to adjust the default DMF upgrade behavior, it is not expected that the end-user would need to invoke this.'
+  TextBody:
+  [*
+    ret_s := DMF_ConvertorDataset::GetDMFDataset( mdsid_i )->( dmf )
+    {
+      //upgrade the specific database file to specific upgrade script from the runstep based on its dataset and version
+      return dmf.UpgradeDatabaseBaseOnScript( runStep_i )->AsVoid();
+    }
+    
+    ret_s->Exception()->( ex )
+    {
+      msg := "Upgrade database based on script failed. Reason: ";
+      
+      DMF_Utility::LogException( msg, ex );
+    }
+    
+    return ret_s;
+  *]
+}

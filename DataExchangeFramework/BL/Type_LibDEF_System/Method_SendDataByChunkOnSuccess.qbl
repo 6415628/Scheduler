@@ -1,0 +1,121 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendDataByChunkOnSuccess (NamedValueTree nvt_i, LibDEF_DataTransfer dataTransfer_i, String messageKind_i, 
+  String messageType_i)
+{
+  Description: 'Send a Data (by chunk) message with the chunked payload of a Set.'
+  TextBody:
+  [*
+    // Jacky CHAN Aug-2-2016 (created)
+    event  := dataTransfer_i.IntegrationEvent();
+    isInit := LibDEF_DataAccessor::GetDataHeaderPropertyAsBoolean( nvt_i, LibDEF_DataAccessor::HEADER_ISINIT() );
+    
+    if( isInit )
+    {
+      // if set updated, chunking already done before sending the data transfer, thus no need to be done
+      if( not messageType_i = LibDEF_DataAccessor::TYPE_DATA_SETUPDATEDCHUNKED() 
+          and not messageType_i = LibDEF_DataAccessor::TYPE_DATA_SETCREATEDCHUNKED() )
+      {
+        // Get the payload to be chunked
+        nvtPayload := null( NamedValueTree, owning );
+        if( LibDEF_DataAccessor::GetInternalMessageHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_TYPE() ) = LibDEF_DataAccessor::TYPE_INTERNALMESSAGE_PAYLOADTOCHUNK() )
+        {
+          nvtPayload := LibDEF_DataAccessor::GetInternalMessageBodyNvt( nvt_i );
+        }
+        
+        // Give error if there is no payload to be chunked
+        if( isnull( nvtPayload ) )
+        {
+          LibDEF_Util::EventLogError( event,
+                                      "Failed to chunk payload.",
+                                      "The given NVT payload is null. Please check that the InternalMessage in the NVT is filled in with the payload to be chunked." );
+        }
+        else
+        {
+          // Chunk the payload and create data pieces
+          LibDEF_Util::EventLog( dataTransfer_i.IntegrationEvent(), "Preparing data pieces (chunking NVT)." );
+          dataTransfer_i.CreateDataPieces( nvtPayload );
+        }
+      }
+    }
+    else
+    {
+      // mark the last DataPiece as completed
+      lastSeqNr     := LibDEF_DataAccessor::GetDataHeaderPropertyAsNumber( nvt_i, LibDEF_DataAccessor::HEADER_SEQUENCENR() );
+      lastDataPiece := select( dataTransfer_i, DataPiece, piece,
+                               piece.SequenceNr() = lastSeqNr );
+      if( not isnull( lastDataPiece ) )
+      {
+        lastDataPiece.IsCompleted( true );
+      }
+    }
+    
+    if( dataTransfer_i.CanExecute() )
+    {
+      // get the chunk of payload using SubString
+      nextDataPiece := dataTransfer_i.GetNextDataPiece();
+      
+      if( not isnull( nextDataPiece ) )
+      {
+        // send the next DataPiece
+        nvt := LibDEF_DataAccessor::CreateMessageData();
+        
+        // Fill in the body of NVT with the next data piece.
+        LibDEF_DataAccessor::SetDataBodyProperty( nvt, LibDEF_DataAccessor::HEADER_CHUNKDATA(), nextDataPiece.Payload() );
+        
+        // add headers
+        datasetMDSID := LibDEF_DataAccessor::GetDataHeaderPropertyAsKey( nvt_i, LibDEF_DataAccessor::HEADER_DATASETMDSID() );
+        datasetDTD := LibDEF_DataAccessor::GetDataHeaderPropertyAsKey( nvt_i, LibDEF_DataAccessor::HEADER_DATASETDTD() );
+        datasetType := LibDEF_DataAccessor::GetDataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_DATASETMODELTYPE() );
+        LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_TYPE(), messageType_i );
+        LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_SETTYPEGUID(), dataTransfer_i.SetMeta().SetTypeMeta().GUID() );
+        LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_SETGUID(), dataTransfer_i.SetMeta().GUID() );
+        LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_SETLASTUPDATED(), dataTransfer_i.SetMeta().LastUpdated() );
+        LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_DATASETMDSID(), datasetMDSID );
+        LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_DATASETDTD(), datasetDTD );
+        LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_DATASETMODELTYPE(), datasetType );
+        
+        // add extra Header related to chunking
+        LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_ISINIT(),           false );
+        LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_DATATRANSFERGUID(), dataTransfer_i.GUID() );
+        LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_SEQUENCENR(),       nextDataPiece.SequenceNr() );
+        LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_CHUNK_CHECKSUM(),   nextDataPiece.PayloadChecksum() );
+        
+        // use ChannelMeta of the sender
+        channelName := dataTransfer_i.SetMeta().ChannelName();
+        channelMeta := select( this, DataBroker.SystemLocal.ChannelMeta, localCM,
+                               localCM.Name() = channelName );
+        eventTitle  := "Sending GetSet data piece sequence-nr #" + [String]nextDataPiece.SequenceNr() + ", total number of pieces is " + [String]dataTransfer_i.GetNumberOfDataPieces() + ".";
+        
+        if( not isnull( channelMeta ) )
+        {
+          LibDEF_Util::EventLog( event, eventTitle );
+          
+          // send the data-chunk message
+          this.DataBroker().SendData( this, nvt, messageKind_i, event, channelMeta.Name(), channelMeta.MajorVersion(), channelMeta.MinorVersion() );
+        }
+        else
+        {
+          LibDEF_Util::EventLogError( event, eventTitle, "Failed due to Channel " + channelName + " not found." );
+        }
+      }
+      else
+      {
+        // all pieces have been sent
+        LibDEF_Util::EventLog( event, "Sending of Set [GUID: "  + dataTransfer_i.SetMeta().GUID() +
+                                      "] to the System [GUID: " + dataTransfer_i.ExternalSystem().GUID() +
+                                      "] in Chunked mode has completed." );
+    
+        LibDEF_IntegrationEvent::EventComplete( event );
+      }
+    }
+    else
+    {
+      // log error and terminate subsequent sending
+      LibDEF_Util::EventLogError( event, "Data transfer failed.",
+                                         "Data transfer of sending Set [GUID: " + dataTransfer_i.SetMeta().GUID() +
+                                         "] to System [GUID: "                  + dataTransfer_i.ExternalSystem().GUID() +
+                                         "] is interrupted." );
+    }
+  *]
+}

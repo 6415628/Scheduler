@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidReportedStartEnd (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if reported start and end are valid'
+  TextBody:
+  [*
+    // jiex Sep-30-2016 (created)
+    isvalid := this.ReportedStart().IsFinite()
+               and this.ReportedEnd().IsFinite()
+               and this.ReportedStart() < this.ReportedEnd() ;
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedFeedbackCalendar_Instance( name ),
+                                                               Translations::SC_FeedbackCalendar_ValidInput_StartEnd() ) );
+    }
+    
+    return isvalid;
+  *]
+}

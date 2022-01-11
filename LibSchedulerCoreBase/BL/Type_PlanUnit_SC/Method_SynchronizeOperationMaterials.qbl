@@ -1,0 +1,66 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeOperationMaterials
+{
+  TextBody:
+  [*
+    // Only run when not in Optimization Service mode as OperationMaterials come in Flows
+    // Get all OperationMaterials:
+    // 1. NOT created from a fulfillment, and
+    // 2. NOT created from precedence
+    // 3. NOT linked to other PlanUnits and NOT created from a fulfillment
+    
+    allinstances := selectset(  this, OperationMaterial, om,
+                                isnull( om.Fulfillment() )
+                                and isnull( om.WorkOrderOperationPrecedence() )
+                                and guard( om.FromOperation().PlanUnit_SC() = this, true )
+                                and guard( om.ToOperation().PlanUnit_SC() = this, true ) );
+    
+    updatedinstances := construct( OperationMaterials );
+    previousoperation := null( Operation_SC );
+    
+    if( not this.Schedule().TechnicalConfiguration().IsDataDrivenTimeConstraintsMode() )
+    {
+      sortedoperations := selectsortedset( this, Operation_SC, operation, true, operation.SequenceNr() );
+      
+      traverse( sortedoperations, Elements, operation )
+      {
+        // Find or create the input OperationMaterial that links to the previous Operation
+        inputoperationmaterial := select( operation, FromOperationDependency.astype( OperationMaterial ), iom,
+                                          ifexpr( not isnull( previousoperation ),
+                                                  iom.FromOperation() = previousoperation,
+                                                  isnull( iom.Fulfillment() ) ) );
+        
+        if( isnull( inputoperationmaterial ) )
+        {
+          inputoperationmaterial := operation.CreateInputOperationMaterial( previousoperation, this.Quantity() );
+        }
+      
+        inputoperationmaterial.Quantity( this.Quantity() );
+        updatedinstances.Add( inputoperationmaterial );
+        previousoperation := operation;
+      }
+      
+      if( not isnull( previousoperation ) )
+      {
+        outputoperationmaterial := select( previousoperation, ToOperationDependency.astype( OperationMaterial ), oom,
+                                           isnull( oom.Fulfillment() ) );
+        
+        if( isnull( outputoperationmaterial ) )
+        {
+          outputoperationmaterial := previousoperation.CreateOutputOperationMaterial( this.Quantity() );
+        }
+        
+        outputoperationmaterial.Quantity( this.Quantity() );
+        updatedinstances.Add( outputoperationmaterial );
+      }
+    }
+    
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, instance )
+    {
+      instance.Remove();
+    }
+  *]
+}

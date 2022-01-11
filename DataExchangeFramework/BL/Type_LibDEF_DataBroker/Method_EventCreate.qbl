@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method EventCreate (LibDEF_System system_i, Boolean isReceive_i) as LibDEF_IntegrationEvent
+{
+  Description: 'Creates an IntegrationEvent assigning the SystemGUID, HostName and Port Number'
+  TextBody:
+  [*
+    event  := null( LibDEF_IntegrationEvent );
+    sys := select( this, System, sys, sys = system_i );
+    
+    if( not isnull( sys ) )
+    {
+      event := LibDEF_IntegrationEvent::Create( this,
+                                                system_i.GUID(),
+                                                system_i.HostName(),
+                                                system_i.PortNumber(),
+                                                isReceive_i );
+    }
+    else
+    {
+      LibDEF_Util::LogError( "Unable to create an IntegrationEvent. System not found." );
+    }
+    
+    return event;
+  *]
+}

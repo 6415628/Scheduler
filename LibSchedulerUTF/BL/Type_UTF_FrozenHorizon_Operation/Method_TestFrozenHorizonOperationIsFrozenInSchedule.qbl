@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestFrozenHorizonOperationIsFrozenInSchedule (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    
+    testinstance := this.GetTestInstanceMain( variant );
+    
+    // Select the middle/only operation
+    op := select( schedule, PlanUnit_SC.Operation_SC, op, op.PlanUnitId() = variant, not testinstance.HasMultipleOperation() or op.SequenceNr() = 1 );
+    
+    // Assert the result
+    this.Run().AssertTrue( testinstance.IsFrozenInSchedule() = op.IsFrozenInSchedule(), UTFUtility::GenerateFailedMessage( 'FrozenHorizon_Operation_IsFrozenInSchedule', variant ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

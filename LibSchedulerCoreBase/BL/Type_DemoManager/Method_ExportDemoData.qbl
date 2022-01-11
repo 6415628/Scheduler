@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExportDemoData (String demoScenarioFolder)
+{
+  TextBody:
+  [*
+    // Re-create exported data
+    this.CreateExportedDemoData();
+    
+    // Propogate to get all declarative attribute recomputed
+    Transaction::Transaction().Propagate();
+    
+    // Trigger EDI export
+    this.Schedule().ExportObject().ExportFunctionality();
+    this.Schedule().ExportObject().ExportResourceCalendar();
+    this.Schedule().ExportObject().ExportDemoData();
+    this.Schedule().ExportObject().ExportPlannedReservations();
+    this.Schedule().ExportObject().ExportDemoDataInternalWorkOrders();
+    this.Schedule().ExportObject().ExportOptimizerSettings();
+    this.Schedule().ExportObject().ExportOptimizerSolution();
+    // Export calendars last as it uses reactive Quill, make sure that other export logic has no dependencies to it
+    this.Schedule().ExportObject().ExportCalendars( demoScenarioFolder, false );
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

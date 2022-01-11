@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+DeclarativeReferenceRelation CalcPreviousShutdown
+{
+  #keys: '1[155630.0.2545617]'
+  Expression:
+  [*
+    shutdown := null( Shutdown );
+    
+    // Get last feedback shutdown in the resource
+    lastfeedbackshutdown := guard( this.ResponsibleResource().LastFeedbackShutdown(), null( Shutdown ) );
+    
+    // If current start >= last feedback shutdown end, it will be the previous shutdown
+    if( not isnull( lastfeedbackshutdown )
+        and this.Start() >= lastfeedbackshutdown.End() )
+    {
+      shutdown := lastfeedbackshutdown;
+    }
+    
+    return shutdown;
+  *]
+  Relation: PreviousShutdown
+}

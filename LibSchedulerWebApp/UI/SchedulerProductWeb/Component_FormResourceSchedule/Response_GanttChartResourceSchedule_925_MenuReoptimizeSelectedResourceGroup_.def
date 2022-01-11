@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: GanttChartResourceSchedule_925
+Response OnClick (Task_SC selection) id:Response_GanttChartResourceSchedule_925_MenuReoptimizeSelectedResourceGroup_OnClick
+{
+  #keys: '[145930.2.167317705]'
+  CanBindMultiple: false
+  DefinitionID => /GanttChartResourceSchedule_925/Responsedef_GanttChartResourceSchedule_925_WebMenu_OnClick
+  GroupServerCalls: true
+  Initiator: 'MenuReoptimizeSelectedResourceGroup'
+  Precondition:
+  [*
+    // Check if system contains batch and is optimizer enabled.
+    return Schedule.AllowedOptimize( feedback );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Optimize all tasks on all resources in selected task's resource group from selected task's start time
+      
+      // Clear scoped operations - which also clears DataHolderOptimizerAllScopedOperations because it has data extractors grabbing from Mandatory and Optional dataholders
+      DataHolderOptimizerScopeOperations.Data().Flush();
+      
+      // Get the selection's row
+      resource := selection.Resource_SC();
+      
+      // Scope selection
+      plannedoperations := resource.ResourceGroup_SC().GetPlannedOperations( selection.Start() ); // this includes selection
+      DataHolderOptimizerScopeOperations.Data( &plannedoperations );
+      
+      // Get all allowed resources
+      resources := selectset( resource, ResourceGroup_SC.Resource_SC, res, true );
+      
+      // Run optimizer
+      Schedule.Optimization().OptimizerSequencing().OptimizeWithDefaultSettings( DataHolderOptimizerScopeOperations.Data(), resources );
+    *]
+  }
+}

@@ -1,0 +1,75 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test060_FlagDatasetCopyConditionalForDeletion (LibOpt_TestDataset dataset)
+{
+  Description: 'Check if a `LibOpt_DatasetCopyConditional` object is deleted after the run (but not during the run), when that `LibOpt_DatasetCopyConditional` object is flagged for deletion during the run.'
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( true );
+    run := opt.CreateRun();
+    
+    switch := opt.SwitchRoundRobin( run, 'Round robin' );
+    // Calling run.Start() creates a task for the switch. 
+    // The switch is executed reactively, so the switch will only be executed after everything in this method is executed. 
+    streamrun := run.Start(); 
+    
+    // Copy the dataset at the start of the run (so before the switch is executed)
+    taskswitch := select( switch, Task, task, task.Component() = switch );
+    snapshot := LibOpt_DatasetCopyConditional::CopyDataset( taskswitch,
+                                                            "Copy_Test060", 
+                                                            true // Create a robust dataset copy
+                                                            );
+    // Create a LibOpt_DatasetCopyConditional object and attach the snapshot of the dataset copy to that LibOpt_DatasetCopyConditional object. 
+    initializeposition := select( switch, ComponentPosition, position, position.Name() = LibOpt_Component::ComponentPosition_Initialize() );
+    datasetcopyconditional := initializeposition.SetDatasetCopy();
+    snapshot.DatasetCopyConditional( relset, datasetcopyconditional );
+    
+    // Call the DeleteDatasetCopyConditional method to delete the LibOpt_DatasetCopyConditional.
+    // The DeleteDatasetCopyConditional method does not actually delete the LibOpt_DatasetCopyConditional object yet, the method only flags it for deletion. 
+    // The LibOpt_DatasetCopyConditional is not deleted,
+    // because LibOpt_DatasetCopyConditional is attached to a snapshot for which snapshot.HasExecutedDoFinalizeDatasetCopyDelete() is still false. 
+    datasetcopyconditionals := construct( LibOpt_DatasetCopyUnconditionals );
+    datasetcopyconditionals.Add( datasetcopyconditional );
+    LibOpt_DatasetCopyConditional::DeleteDatasetCopyConditional( datasetcopyconditionals );
+    
+    // Check that the LibOpt_DatasetCopyConditional is not directly deleted by calling DeleteDatasetCopyConditional.
+    this.Run().AssertTrue( not isnull( datasetcopyconditional ),
+                           "Expected that the '" 
+                           + typeof( LibOpt_DatasetCopyConditional ).Name()
+                           + "' object would not be deleted before the end of the run. The object should only be flagged for deletion. However, the '"
+                           + typeof( LibOpt_DatasetCopyConditional ).Name()
+                           + "' object has already been deleted. "
+                           );
+    
+    // Wait until the run is finished. Then check if the LibOpt_DatasetCopyConditional object is deleted.
+    str := streamrun->|void->()
+    {
+      // There shouldn't be a need to use 'conditional.OptimizerName() = opt.Name()' in the quantor,
+      // because every unit test should call DeleteDatasetCopies, which should flush the Optimization.Conditional relation.
+      // However, just in case DeleteDatasetCopies wasn't called in the previous unit test, we ensure that we only consider the Conditionals of this unit test's LibOpt_Optimizer.
+      datasetconditional := select( opt, 
+                                    Optimization.Conditional.astype( LibOpt_DatasetCopyUnconditional ), 
+                                    conditional, 
+                                    conditional.OptimizerName() = opt.Name() );
+      this.Run().AssertTrue( isnull( datasetconditional ),
+                             "Expected that the '" 
+                             + typeof( LibOpt_DatasetCopyConditional ).Name()
+                             + "' object would be deleted after the run has finished executing. However, the '"
+                             + typeof( LibOpt_DatasetCopyConditional ).Name()
+                             + "' object still exists. "
+                             + "Please verify whether the '" 
+                             + method( LibOpt_DatasetCopyConditional, DeleteConditionPostProcessing,
+                                       LibOpt_SnapshotReplannableCopyDataset, Boolean ).Name()
+                             + "' method is executed by checking the value of the 'snapshot.HasExecutedDoFinalizeDatasetCopyDelete()' attribute. "
+                             + "It is expected that the value of this attribute is 'true'. The value of this attribute is '"
+                             + [String] snapshot.HasExecutedDoFinalizeDatasetCopyDelete()
+                             + "'."
+                             );
+    }
+    this.NoException( str );
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

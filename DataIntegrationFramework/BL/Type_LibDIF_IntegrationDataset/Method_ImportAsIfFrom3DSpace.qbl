@@ -1,0 +1,63 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportAsIfFrom3DSpace (String fileRef_i, LibDIF_DataTransformation dataTransformation_i)
+{
+  Description:
+  [*
+    Fake that data is retrieved via the QIntegrator using the platform-API, while in fact the QI is reading data (in the 3DSpace-format) from disk.
+    The 'real' process flow for data retrieval is mimiced: the  file of which the reference is provided should contain the IDs of the objects that should be retrieved
+    (mimicing an API-call like 'searchResources'), after which the objects are retrieved one by one from file (mimicing an API-call like 'getResource').
+  *]
+  TextBody:
+  [*
+    // Get the filePath and the fileName.
+    // Find the last backslash in fileRef_i, which is the separator between the path and the filename.
+    idxLastBackslash := -1;
+    idx := fileRef_i.FindString( "\", 0 );
+    
+    while( idx >= 0 )
+    {
+      idxLastBackslash := idx;
+      idx := fileRef_i.FindString( "\", idx + 1 );
+    }
+    
+    filePath := fileRef_i.SubString( 0, idxLastBackslash + 1 );
+    fileName := fileRef_i.RestString(   idxLastBackslash + 1 );
+    
+    // Get the concept this is imported from the filename.
+    concept := this.GetConcept( fileName );
+    
+    // Delete the existing IntegrationObjects before creating the imported ones.
+    this.DeleteIntegrationObjects( dataTransformation_i, concept );
+    
+    // Read the JSON-file that contains the IDs of the objects that must be retrieved.
+    idsAsJSONfromFile := LibDIF_Util::ReadTextFile( fileRef_i );
+    info( "ObjectIDs are read from file", fileRef_i );
+    
+    // Let the QIntegrator echo back the JSON-data that contains the IDs as if it was retrieved using the platform-API.
+    idsAsJSONfromQI := LibDIF_Util::EchoFromQI( idsAsJSONfromFile );
+    
+    // Parse the JSON to get the ObjectIDs.
+    objectIDs := this.GetPlatformAPI( concept ).ParseObjectIDs( idsAsJSONfromQI );
+    info( ">>> Concept = '" + concept + "', #ObjectIDs =", objectIDs.Size() );
+    //info( ">>> Concept = '" + concept + "', #ObjectIDs =", objectIDs.Size(), ":", objectIDs.ToString( ", " ) );
+    
+    if( objectIDs.Size() > 0 )
+    {
+      // Retrieve the objects one by one, based on the IDs, and transform them into integration objects.
+      // The objects are expected to be represented by JSON-files in the 3DSpace-format in the same folder as the file with ObjectIDs.
+      traverse( objectIDs, Elements, objectID )
+      {
+        this.GetIntegrationObjectAsIfFrom3DSpace( objectID, concept, filePath );
+      }
+      
+      // Valdidate the imported integration objects.
+      this.ValidateIntegrationObjects( dataTransformation_i );
+    }
+    else
+    {
+      info( ">>> No ObjectIDs found..." );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

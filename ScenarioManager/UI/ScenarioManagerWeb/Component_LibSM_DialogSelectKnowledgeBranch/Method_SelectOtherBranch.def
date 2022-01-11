@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectOtherBranch (LibSM_KnowledgeBaseBranchInProfile selection) id:Method_LibSM_DialogSelectKnowledgeBranch_SelectOtherBranch
+{
+  #keys: '[136402.0.1219419362]'
+  Body:
+  [*
+    // Save the reference to the selection in a dataholder.
+    this.DataHolderSelectedBranch().Data( selection );
+    
+    // Fill up the Edit fields that contain the profile name and the 
+    // selected KB Definition.
+    this.EditFieldKnowledgeProfile().Text( selection.KnowledgeProfile().Name() );
+    this.EditFieldKnowledgeBaseDefinition().Text( selection.KBDefinitionName() );
+    
+    
+    // Get the list of KbInfo objects that are relevant for this definition.
+    kbinfos := this.GetKbInfos( selection.KBDefinitionName() );
+    // Can't put this selectsortedset in a method because then the KBInfo references will be dead. 
+    filteredInfos  := selectsortedset( kbinfos, Elements, inf, 
+                                       inf.KBFullID().ChangeNr() = max( kbinfos, Elements, el, 
+                                                                        el.KBFullID().Branch() = inf.KBFullID().Branch()
+                                                                    and el.KBFullID().Version() = inf.KBFullID().Version(),
+                                                                        el.KBFullID().ChangeNr() ),
+                                       inf.KBFullID().Branch(), inf.KBFullID().Version(), inf.KBFullID().ChangeNr() )
+    
+    // build a string to fill the StringDropDownList with 
+    // which contains the branches/versions the user can choose from.                                       
+    option        := '';
+    index         := 0;
+    selectedIndex := 0;
+    
+    traverse( filteredInfos, Elements, kbinfo )
+    {
+      // get a text representation of the KbInfo, append a semi-colon (=line-separator) and add it to the 
+      // string that will be passed to the DropDownStringList later on.
+      option := option + this.RenderKbInfoForDropDown( kbinfo ) + ';'; 
+    
+      if ( selection.KBBranchVersion() = kbinfo.KBFullID().Version() and selection.KBBranchName() = kbinfo.KBFullID().Branch() )
+      {
+        selectedIndex := index;
+      }
+      
+      index := index + 1;
+    }
+    
+    
+    // Fill up the dropdown string list with the prepared options.
+    this.DropDownStringListSelectKnowledge().Strings( option );
+    this.DropDownStringListSelectKnowledge().SetSelectedElement( selectedIndex );
+    
+    
+    // Show the dialog.
+    this.Show( 'popup' );
+  *]
+}

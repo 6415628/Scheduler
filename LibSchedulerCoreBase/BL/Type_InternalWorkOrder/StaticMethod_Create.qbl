@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (Routing routing, ProductInStockingPoint pisp, Real quantity, 
+  Number nroflots, DateTime duedate, Boolean isdummy) as InternalWorkOrder
+{
+  Description: 'Create work order instances based on routing information.'
+  TextBody:
+  [*
+    // generate unique work order id for work order created based on routing
+    id := routing.GenerateUniqueWorkOrderId();
+    
+    workorder := InternalWorkOrder::FindInternalWorkOrder( id );
+    
+    if( isnull( workorder ) )
+    {
+      // create work order instance 
+      workorder := GenericInternalWorkOrder::Create( routing.Schedule(), id );
+    }
+    // update attributes
+    workorder.Update( pisp, quantity, nroflots, duedate, routing, isdummy );
+    
+    // create work order operations for this work order
+    routingsteps := selectset( routing, RoutingStep, routingstep, true );
+    workorder.CreateWorkOrderOperationsFromRouting( routingsteps );
+    
+    return workorder;
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method Open (GUIComponent parent_i, structured[LibCal_Calendar] calendars_i) id:Method_LibCal_dlgCalendarSettings_Open_914
+{
+  #keys: '[131094.1.516409487]'
+  Body:
+  [*
+    isSingleCalendar := false;
+    
+    // Copy calendars_i in order to get ownership, which is required to put the calendars in the DataHolder.
+    calendars := calendars_i.Copy();
+    dhCalendars.Data( &calendars ); 
+    
+    // Use one of the calendars as reference to prefill the Dialog with.
+    // Use the CommonCalendar if possible, otherwise one of the others.
+    refCalendar := select( calendars_i, Elements, calendar, true, calendar.istype( LibCal_CommonCalendar ) );
+    if( isnull( refCalendar ) )
+    {
+      refCalendar := calendars_i.Element( 0 );
+    }
+    
+    this.Open( parent_i, refCalendar, isSingleCalendar );
+  *]
+}

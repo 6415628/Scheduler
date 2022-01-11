@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod FixVariable (MPVariable var, Real fixvalue)
+{
+  Description: 'Fixes a mathematical programming variable at a given value, taking care to prevent infeasibilities by fixing too tightly.'
+  TextBody:
+  [*
+    // svt1 Jul-26-2017 (created)
+    if( var.VariableType() = 'Binary' or var.VariableType() = 'Integer' )
+    {
+      var.LowerBound( fixvalue - OptimizerRun::CPLEXEpsilonForFixing() );
+      var.UpperBound( fixvalue + OptimizerRun::CPLEXEpsilonForFixing() );
+    }
+    else
+    {
+      big := OptimizerRun::CPLEXBigRealForFixingContinuousVariables();
+      lb := var.LowerBound() * big;
+      ub := var.UpperBound() * big;
+      opt := fixvalue * big;
+     
+      lb := maxvalue( lb, minvalue( ub, opt ) )
+      ub := minvalue( ub, maxvalue( lb, opt ) )
+     
+      //avoid very small range between lb and ub:
+      if( ub - lb <= 1.0 )
+      {
+        ub := lb;
+      }
+     
+      var.LowerBound( lb / big );
+      var.UpperBound( ub / big );
+    }
+  *]
+}

@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_RoutingStepCampaign (CDSchedule cdschedule, RoutingStep routingStep)
+{
+  Description: 'Restore routing step campaign core data attributes to planning object'
+  TextBody:
+  [*
+    // Restore RoutingStepInput
+    cdRoutingStepCampaigns := selectset( cdschedule, CDEntity.astype( CDRoutingStepCampaign ), cdrsc, 
+                                         cdrsc.RoutingID() = routingStep.RoutingId(),
+                                         cdrsc.SequenceNr() = routingStep.SequenceNr()
+                                       );
+    traverse( cdRoutingStepCampaigns, Elements, cdrsc )
+    {
+      routingStepCampaign := RoutingStepCampaign::Create( routingStep, 
+                                                          cdrsc.RoutingID(), 
+                                                          cdrsc.SequenceNr(),
+                                                          cdrsc.ResourceGroupName(), 
+                                                          cdrsc.CampaignTypeName(), 
+                                                          cdrsc.CampaignName());
+                                                          
+      CopyCorresponding::CopyFrom( cdrsc ).CopyTo( routingStepCampaign );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetDataForAllTestVariants (Schedule schedule, output owning Strings variants, output Booleans IsTimeConstraintModeManuals, 
+  output Numbers resultSubtasks) const
+{
+  Description: 'Return data for all test variants.'
+  TextBody:
+  [*
+    // Flush all data first
+    IsTimeConstraintModeManuals.Flush();
+    resultSubtasks.Flush();
+    variants.Flush();
+    
+    // Scenario 1 - Synchronize subtasks allowed in time constraint mode manual
+    IsTimeConstraintModeManuals.Add( true );
+    resultSubtasks.Add( counter( schedule, SubTaskType, subtask, subtask.IsAllowedInDataDrivenTimeConstraintsMode() )  );
+    variants.Add( 'Synchronize subtasks allowed in time constraint mode manual' );
+    
+    // Scenario 2 - Synchronize subtasks in non time constraint mode.
+    IsTimeConstraintModeManuals.Add( false );
+    resultSubtasks.Add( counter( schedule, SubTaskType, subtask, true )  );
+    variants.Add( 'Synchronize subtasks in non time constraint mode.' );
+  *]
+}

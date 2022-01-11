@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintMPSWindowEnd (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs, Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // zyi1 Jul-19-2021 (created)
+    latestends := POAValueSet::N( poa, SuboptimizerPOACombiLeg::NamePOAConstraintMPSWindowEnd(), Real::MaxReal() );
+    
+    schedule := this.GetSchedule();
+    
+    traverse( combilegs, Elements, combileg )
+    {
+      traverse( operations, Elements, operation, combileg.GetIsOperationAllowedHard( operation ) )
+      {
+        latestend := operation.MPS_WindowEnd()
+        if( latestend.IsFinite() )
+        {
+          end := latestend.HoursAsReal( schedule.Time() );
+          node := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation ), operation );
+          latestends.Set( node, end );
+          debuginfo( ' op: ', operation.OperationID(), ' MPS window end: ', latestend );
+        }
+      }
+    }
+    
+    constr := poa.NewEndConstraint( SuboptimizerPOACombiLeg::NamePOAConstraintMPSWindowEnd() );
+    constr.Expression( poa.Expression( SuboptimizerPOACombiLeg::NamePOAExpressionTime() ) );
+    constr.ValueSet( latestends );
+    constr.SetEnd();
+    
+    
+    constr.Hard( false );
+    // Set the KPI weight, power and offset
+    constr.Factor( this.Strategy().PenaltyParameterMPSAdherenceLateSlope_a() );
+    constr.Power( this.Strategy().PenaltyParameterMPSAdherenceLatePower_b() );
+    constr.ViolationOffset( this.Strategy().PenaltyParameterMPSAdherenceLateOffset_c() );
+  *]
+}

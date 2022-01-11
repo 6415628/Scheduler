@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method CanUnload (Key selectedPlanningDatasetMDSID) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    if( not feedback.CheckHard( this.IsLoaded() ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_General_IsNotLoaded() );
+    }
+    
+    if( not feedback.CheckHard( selectedPlanningDatasetMDSID = Key::ZeroKey()
+                                or not selectedPlanningDatasetMDSID = this.DatasetMDSID() ) )
+    {
+      // Checks that the 'selected' dataset is not the one that is now being brought offline.    
+      feedback.AddHard( Translations::LibSM_Scenario_CanSetOffline_InUse() );
+    }
+    else if( not feedback.CheckHard( not this.IsMemoryOnlyStorage() ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_CanSetOffline_IsMemoryOnlyStorage() );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeRuleConfigurations
+{
+  TextBody:
+  [*
+    allInstances := selectset( this.Schedule(), Rule, ele, true );
+    updatedInstances := construct( Rules );
+    
+    traverse( this.Schedule(), ImportedRule, ir )
+    {
+      rule := Rule::FindRule( ir.RuleID() );
+    
+      if( isnull( rule ) )
+      {
+        rule := Rule::Create( this.Schedule(), ir.RuleID() );
+      }
+      
+      rule.Update( ir );
+      rule.SynchronizeRuleType( ir );
+      rule.SynchronizeRuleDetails( ir );  
+      
+      updatedInstances.Add( rule );
+    }
+    
+    // Update last running rule ID
+    lastRunningId := ifexpr( updatedInstances.Size() > 0, 
+                             max( updatedInstances, Elements, ele, true, ele.RuleID() ),
+                             1 );
+    
+    this.Schedule().LastRunningRuleID( lastRunningId );
+    
+    // Remove old instances
+    oldInstances := allInstances.Difference( updatedInstances );
+    
+    traverse( oldInstances, Elements, rule )
+    {
+      rule.Remove();
+    }
+  *]
+}

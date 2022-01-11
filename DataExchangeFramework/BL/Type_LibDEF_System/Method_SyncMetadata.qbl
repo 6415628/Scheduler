@@ -1,0 +1,96 @@
+Quintiq file version 2.0
+#parent: #root
+Method SyncMetadata (const LibDEF_DataRepository dataRepository_i, Boolean isDatasetConstructed_i)
+{
+  Description: "Synchronize from repository's channels, set types and sets."
+  TextBody:
+  [*
+    // Jacky CHAN May-6-2016 (created)
+    // 1. Initialization: mark SoftDeleted first
+    traverse( this, SetTypeMeta, st )
+    {
+      traverse( st, SetMeta, s )
+      {
+        s.IsSoftDeleted( true );
+      }
+      st.IsSoftDeleted( true );
+    }
+    traverse( this, ChannelMeta, channel )
+    {
+      channel.IsSoftDeleted( true );
+    }
+    
+    // 2. Synchronization
+    traverse( dataRepository_i, Channel, channel )
+    {
+      channelMeta := LibDEF_ChannelMeta::CreateFromRepository( this, channel );
+      channelMeta.IsSoftDeleted( false );
+      channelMeta.SyncFromRepository( channel );
+    
+      traverse( channel, SetType, setType )
+      {
+        setTypeMeta := LibDEF_SetTypeMeta::CreateFromRepository( this, channelMeta, setType );
+        setTypeMeta.IsSoftDeleted( false );
+    
+        traverse( setType, Set, set )
+        {
+          isNew   := false;
+          setMeta := LibDEF_SetMeta::CreateFromRepository( setTypeMeta, set, isNew );
+          setMeta.IsSoftDeleted( false );
+    
+          hasUpdate := setMeta.SyncFromRepository( set );
+    
+          // broadcast to other systems if new
+          if( isNew )
+          {
+            this.SendMetadataRequestSetCreated( setMeta );
+          }
+          // Send SetUpdated if change in LastUpdated
+          else if( hasUpdate )
+          {
+            setMeta.SendSetUpdated();
+          }
+        }
+      }
+    }
+    
+    // 3. Finalization: clean-up leftovers
+    traverse( this, SetTypeMeta, st )
+    {
+      if( st.IsSoftDeleted() )
+      {
+        // Update other Systems about removal of SetType
+        this.SendMetadataRequestSetTypeDeleted( st );
+        st.Delete();
+      }
+      else
+      {
+        traverse( st, SetMeta, s, s.IsSoftDeleted() )
+        {
+          this.SendMetadataRequestSetDeleted( s );
+          s.Delete();
+        }
+      }
+    }
+    traverse( this, ChannelMeta, channel, channel.IsSoftDeleted() )
+    {
+      channel.Delete();
+    }
+    
+    // if the DataRepository just constructed (during wake-up), sync with the Domain too
+    dataBroker := this.DataBroker();
+    if( isDatasetConstructed_i and not dataBroker.IsInSyncWithDataRepository() )
+    {
+      // only connect when allowed, upon dataset constructed
+      if( LibDEF_Util::GetSettingValueConnectOnStartup() )
+      {
+        dataBroker.RequestJoinDomainOrBroadcast();
+        // also sync interests
+        LibDEF_SetInterestOfDataset::SyncDatasetStatusExternally( dataBroker );
+      }
+      dataBroker.IsInSyncWithDataRepository( true );
+    }
+    
+    LibDEF_Util::Log( "Metadata in DataBroker has been synchronized with Data in DataRepository." );
+  *]
+}

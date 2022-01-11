@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateProgramSchedulingFeedbackData (Schedule schedule)
+{
+  Description: 'Create program scheduling feedback test data'
+  TextBody:
+  [*
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, res, true );
+    programchange := select( schedule, ProgramChange, pc, true )
+    
+    // Create program change feedback
+    feedbackprogramchangetask := UTFMockObjectFactory::CreateFeedbackProgramChangeTask( schedule.FeedbackManager(),
+                                                                                        programchange );
+    programchangestart := schedule.Time() - Duration::Hours( 6 );
+    feedbackprogramchangetask.Update( programchange.ProgramChangeID(),
+                                      programchangestart,
+                                      programchangestart + Duration::Hours( 1 ),
+                                      Constants::TaskType_ProgramChange(),
+                                      resource.ResourceID(),
+                                      null( ProgramChangeTask ),
+                                      Constants::StatusEnd() );
+    
+    // Create feedback program type and program phase
+    programtypeconfig := select( schedule, ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration, t, true );
+    feedbackprogramtype := FeedbackProgramType::Create( programchange,  
+                                                         programtypeconfig.ProgramDefinitionConfigurationID(),
+                                                         programtypeconfig.ProgramSetConfigurationID(),
+                                                         programtypeconfig.ProgramTypeConfigurationID(),
+                                                         programchange.ProgramChangeID() );
+    feedbackprogramtype.Update( resource.ResourceID() );
+    feedbackprogramtype.SynchronizeFeedbackProgramPhase();
+  *]
+}

@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckNewKnowledgeBaseBranchName (String KBDefinitionName, String KBBranchName) as String id:Method_LibSM_GlobalState_CheckNewKnowledgeBaseBranchName
+{
+  #keys: '[136398.1.587826886]'
+  Body:
+  [*
+    // Checks whether the name of the branch is already used or not. Returns the message that should be used in case the answer is no.
+    msg := "";
+    
+    editor := CKBEditor::Create();
+    kbids := editor.GetKBs();
+    
+    kbid := select( kbids, Elements, kbid, kbid.Name() = KBDefinitionName );
+    kbinfos := editor.GetKBStructure( kbid );
+    
+    if( exists( kbinfos, Elements.KBFullID, k, k.Branch() = KBBranchName ) )
+    {
+      msg := Translations::LibSM_KnowledgeProfile_BranchAlreadyExists( KBBranchName, kbid.Name() );
+    }
+    
+    return msg;
+  *]
+}

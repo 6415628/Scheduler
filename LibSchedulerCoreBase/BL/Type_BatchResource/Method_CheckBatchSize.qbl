@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckBatchSize (Operation_SCs operations, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Checks batch size can fit to resource allowed batch size'
+  TextBody:
+  [*
+    // jan er Jun-10-2014 (created)
+    /*
+    Checks batch size can fit to resource allowed batch size
+    */
+    totalOperationQuantity := sum( operations, Elements.PlanUnit_SC, planunit, planunit.Quantity() );
+    value := totalOperationQuantity <= this.MaximumBatchSize();
+    
+    if( not value )
+    {
+      feedback_o := feedback_o
+                    + String::NewLine()
+                    + Translations::SC_BatchSizeNotAllowed( this );
+    }
+    
+    return value;
+  *]
+}

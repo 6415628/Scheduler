@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method ResetOptimizer
+{
+  Description: 'Resets the optimizer in case of failure.'
+  TextBody:
+  [*
+    // To be overloaded with a super.ResetOptimizer call
+    // The optimizer type should always exists if we are in this run, 
+    // so we check this and create if it is missing
+    this.Optimizer().Schedule().ObjectFactory().CreateOptimizerTypes();
+    
+    // Reset the isactive flag to release the scope again
+    this.IsActive( false );
+    
+    // Reset the flags on optimizer type
+    optimizertype := this.GetOptimizerType();
+    if( not isnull( optimizertype ) )
+    {
+      optimizertype.IsOptimizing( false );
+      optimizertype.UserAskToStop( false );
+    }
+    
+    // Also reset the parent if it exists
+    if( not isnull( this.Parent() ) )
+    {
+      this.Parent().ResetOptimizer();
+    }
+  *]
+}

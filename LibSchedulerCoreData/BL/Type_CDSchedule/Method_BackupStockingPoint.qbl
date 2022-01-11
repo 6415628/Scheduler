@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupStockingPoint (const Schedule schedule)
+{
+  Description: 'Backup stocking point, stocking point stock, product in stocking point stock core data'
+  TextBody:
+  [*
+    // Backup stocking point
+    traverse( schedule, StockingPoint, stockingpoint )
+    {
+      cdStockingPoint := this.CDEntity( relnew, CDStockingPoint );
+      CopyCorresponding::CopyFrom( stockingpoint ).CopyTo( cdStockingPoint );
+    }
+    
+    // Backup stocking point stock
+    traverse( schedule, ScheduleStock.astype( StockingPointStock ), stockingpointstock )
+    {
+      cdStockingPointStock := this.CDEntity( relnew, CDStockingPointStock );
+      CopyCorresponding::CopyFrom( stockingpointstock ).CopyTo( cdStockingPointStock );
+      
+      // Backup stock element demand
+      this.BackupStockElementDemand( stockingpointstock );
+      
+      // Backup stock element inventory target
+      this.BackupStockElementInventoryTarget( stockingpointstock );
+      
+      // Backup stock element supply
+      this.BackupStockElementSupply( stockingpointstock );
+    }
+    
+    // Backup product in stocking point stock
+    traverse( schedule, ScheduleStock.astype( ProductInStockingPointStock ), productInStockingPointStock )
+    {
+      cdProductInStockingPointStock := this.CDEntity( relnew, CDProductInStockingPointStock );
+      CopyCorresponding::CopyFrom( productInStockingPointStock ).CopyTo( cdProductInStockingPointStock );
+        
+      // Backup stock element demand
+      this.BackupStockElementDemand( productInStockingPointStock );
+      
+      // Backup stock element inventory target
+      this.BackupStockElementInventoryTarget( productInStockingPointStock );
+      
+      // Backup stock element supply
+      this.BackupStockElementSupply( productInStockingPointStock );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

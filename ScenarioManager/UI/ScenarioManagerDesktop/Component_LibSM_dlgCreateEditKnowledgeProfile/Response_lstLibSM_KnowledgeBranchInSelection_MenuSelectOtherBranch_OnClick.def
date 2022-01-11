@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: lstLibSM_KnowledgeBranchInSelection
+Response OnClick (shadow[LibSM_KnowledgeBaseBranchInProfile] selection) id:Response_lstLibSM_KnowledgeBranchInSelection_MenuSelectOtherBranch_OnClick
+{
+  #keys: '[107496.2.1552184684]'
+  Body:
+  [*
+    // Select a different knowledge branch
+    
+    canEdit := true;
+    
+    knowledgeProfile := selection.KnowledgeProfile();
+    
+    if( not isnull( knowledgeProfile ) // when creating new profile, branch to profile relation is null
+          and knowledgeProfile.IsUsed() )
+    {
+      scenarioNames := knowledgeProfile.GetAffectedScenariosName();
+    
+      message := Translations::LibSM_KnowledgeProfile_Confirmation_SelectBranch( knowledgeProfile.Name(), scenarioNames );
+      canEdit := MessageBox::Warning( this, message, Translations::LibSM_Question_YesNo(), 0, 'Select other branch' ) = 0;
+    }
+    
+    if( canEdit )
+    {
+      kbFullID := select( dhMDSKBInfosTemp.Data(), Elements.KBFullID, kbFullID, true,
+                          kbFullID.Name() = selection.KBDefinitionName() );
+    
+      dlg := construct( LibSM_dlgSelectKnowledgeBranch );
+    
+      dlg.Data( kbFullID );
+      dlg.dhKBID().Data( kbFullID.KBID() )
+      dlg.dhSelectedKBBranch().Data( selection );
+    
+      dlg.DoModal( this );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => /lstLibSM_KnowledgeBranchInSelection/Responsedef_lstLibSM_KnowledgeBranchInSelection_Menu_OnClick
+  Initiator: 'MenuSelectOtherBranch'
+}

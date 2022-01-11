@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeFulfillmentsByPlannedSupplytoExternalSupply
+{
+  Description: 'Synchronize fulfillments initially fulfilled by planned supply to now be fulfilled by external supply.'
+  TextBody:
+  [*
+    allinstances := selectset( this, FulfillmentConversion, fulfillmentConversion, true );
+    updatedinstances := construct( FulfillmentConversions );
+    
+    // Sorted fulfillments by planned supplies to be converted
+    fulfillmentsToReplace := this.GetFulfillmentsToReplace();
+    importedQtyConverted := minvalue( this.Quantity(), this.ExternalSupply().Quantity() ); // The converted quantity cannot be more than the external supply's own quantity
+    
+    traverse( fulfillmentsToReplace, Elements, fulfillmentToReplace, importedQtyConverted > 0 )
+    {
+      // GET new fulfillment for ExternalSupply because planned supply fulfillment is moved here
+      convertedFulfillment := select( this, ExternalSupply.Fulfillment, fulfillment, 
+                                      fulfillment.CheckIsFixedReservation() = fulfillmentToReplace.CheckIsFixedReservation() // Find same fixed/planned fulfillment
+                                      and fulfillment.Demand() = fulfillmentToReplace.Demand() );
+      
+      // CREATE new fulfillment for ExternalSupply because planned supply fulfillment is moved here
+      if( isnull( convertedFulfillment ) )
+      {
+        convertedFulfillment := this.CreateFulfillment( fulfillmentToReplace );
+      }
+      
+      // Find the mapping of this fulfillment conversion between fulfillmentToReplace, convertedFulfillment and PlannedSupply2Inventory
+      fulfillmentConversion := select( fulfillmentToReplace, PlannedSupplyConversion, fulfillmentConversion, 
+                                       fulfillmentConversion.PlannedSupply2Inventory() = this 
+                                       and fulfillmentConversion.ExternalSupplyFulfillment() = convertedFulfillment );
+      
+      if( isnull( fulfillmentConversion ) )
+      {
+        fulfillmentConversion := FulfillmentConversion::Create( this );
+      }
+      
+      qtyConverted := minvalue( fulfillmentToReplace.GetQuantity(), importedQtyConverted );
+      fulfillmentConversion.Update( qtyConverted, fulfillmentToReplace, convertedFulfillment );
+      convertedFulfillment.UpdateFulfillmentConversionByInventory( fulfillmentToReplace, this );
+      
+      updatedinstances.Add( fulfillmentConversion );
+      importedQtyConverted := importedQtyConverted - qtyConverted; // For the next traverse to use the updated importedQtyConverted
+    }
+    
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, old )
+    {
+      old.Delete();
+    }
+  *]
+}

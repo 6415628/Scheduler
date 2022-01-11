@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Update (ImportedFeedbackTask importedFeedbackTask, StoppageTask stoppageTask)
+{
+  TextBody:
+  [*
+    super.Update( importedFeedbackTask, stoppageTask );
+    
+    shutdownTypeID := importedFeedbackTask.ShutdownTypeID();
+    this.ShutdownTypeID( shutdownTypeID );
+    
+    // If shutdown is available, link feedback stoppage task to it. If not, create.
+    shutdown := Shutdown::FindShutdown( importedFeedbackTask.SchedulerStoppageTaskID() );
+    if( isnull( shutdown ) )
+    {
+      shutdown := Shutdown::FindShutdown( importedFeedbackTask.ExternalStoppageTaskID() );  
+    }
+    
+    if( isnull( shutdown ) )
+    {
+      shutdown := Shutdown::Create( this.FeedbackManager().Schedule(), importedFeedbackTask.ExternalStoppageTaskID() );  
+    }
+    
+    this.Shutdown( relset, shutdown );
+    shutdownType := ShutdownType::FindShutdownType( shutdownTypeID );
+    shutdown.Update( shutdownType, 
+                     Duration::Zero(), 
+                     false, 
+                     shutdown.IsTargetStartEnabled(), 
+                     shutdown.TargetStart(), 
+                     shutdown.MaxTargetStartDeviation() );
+    
+    shutdown.UnplanShutdownTask();
+  *]
+}

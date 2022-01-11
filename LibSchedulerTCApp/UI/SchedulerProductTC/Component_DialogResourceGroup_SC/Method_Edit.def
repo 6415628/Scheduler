@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method Edit (internal[GUIComponent] parent, ResourceGroup_SC selection) id:Method_DialogResourceGroup_SC_Edit
+{
+  #keys: '[129856.0.22023083]'
+  Body:
+  [*
+    // Edit ResourceGroup_SC method
+    this.Title( Translations::SC_DialogResourceGroups_EditResourceGroup_Title() );
+    
+    data := shadow( selection );
+                     
+    Dialog.Data( data );
+    
+    //Set image
+    this.SetImage();;
+    
+    this.SetDialogComponentState(); // enable/disables components based on resourcegroup
+    anyResourceWithTask := not isnull( select( selection, Resource_SC.Task_SC, task, true ) );
+    Dialog.EditorOperationType().Enabled( not anyResourceWithTask );
+    
+    if ( Dialog.DoModal( parent ) > 0 )
+    {
+      // added this line of code because when the CheckBoxPlanRelatedOperations is disabled, the binding to IsPlanRelatedOperations attribute doesn't work
+      Dialog.Data().IsPlanRelatedOperations( ifexpr( CheckBoxHasFixedSequencePlanLogic.Checked(), 
+                                                     CheckBoxPlanRelatedOperations.Checked(),
+                                                     false ) );
+      Dialog.Data().Image( LabelImageString.Text() );
+      data.Commit();  
+    }
+  *]
+}

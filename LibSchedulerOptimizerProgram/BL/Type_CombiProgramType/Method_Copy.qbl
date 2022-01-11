@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method Copy (Number copylegnum) as CombiProgramType
+{
+  TextBody:
+  [*
+    // zyi1 Jul-28-2021 (created)
+    //make a copy of this CombiProgramType,  but not necessary copy all the legs,  copylegnum decided how many legs to copy ( from the first one )
+    newcombiset := this.CombiProgramSet().Duplicate();
+    
+    newcpt := CombiProgramType::Create( newcombiset, '', this.ProgramTypeConfiguration() );
+    newcpt.CopyAttributesRelations( this );
+    
+    if(  not isnull( this.MasterCombiProgramType() ) )
+    {
+      newcpt.MasterCombiProgramType( relset, this.MasterCombiProgramType() );
+    }
+    newcpt.CopyPhasesFrom( this );
+    
+    //newly created phase combi need to calculate sequence number, otherwise can't find the right phase when copy combilegs;
+    Transaction::Transaction().Propagate( attribute( CombiProgramPhase, SequenceNr ) ); 
+    newcpt.CopyLegsFrom( this, copylegnum );
+    
+    return newcpt;
+  *]
+}

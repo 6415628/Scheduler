@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckCanDelete (PlanUnit_SCs planunits, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Checks whether these plan units can be deleted.'
+  TextBody:
+  [*
+    // WOI1 Nov-9-2016 (created)
+    // cannot delete if:
+    // 1) the plan unit is the last plan unit
+    // 2) if the operations of the plan units has feedback or is in frozen horizon
+    // it is not done individually because the feedback needs to be different
+    
+    value := PlanUnit_SC::CheckIsNotLastPlanUnit( planunits, feedback_o )
+             and PlanUnit_SC::CheckNotAllHasFeedback( planunits, feedback_o )
+             and PlanUnit_SC::CheckNotAllHasOperationInFrozenHorizon( planunits, feedback_o )
+             and PlanUnit_SC::CheckHasNoPlannedSupplyConvertedToInventory( planunits, feedback_o );
+    
+    feedback_o := feedback_o.TrimBoth();
+    
+    return value;
+  *]
+}

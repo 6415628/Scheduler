@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeCalendarData (LibDII_CalendarDataTransformation dataTransformation_i) as LibDIF_IntegrationDataset
+{
+  Description:
+  [*
+    Synchronize calendar data to the planning-dataset.
+    Is added as extension in library DII_Calendars.
+  *]
+  TextBody:
+  [*
+    // ToDo: should be input-arguments
+    context  := "";
+    doDelete := true;
+    keepIfNotCreatedByIntegration := false;
+    
+    // Get the integration objects for the calendars...
+    integrationCalendars := this.GetIntegrationObjects( dataTransformation_i );
+    
+    // ...and synchronize them.
+    synchronizedCalendars := dataTransformation_i.SynchronizeCalendarData( integrationCalendars, context, doDelete, keepIfNotCreatedByIntegration );
+    
+    // Update the calendars that have been synchronized.
+    traverse( synchronizedCalendars, Elements, calendar )
+    {
+      calendar.GenerateOccurrences();
+    }
+    
+    // If applicable, delete the Calendars that were not present in the import.
+    // This is done here at the end of the synchronization and not already in SynchronizeCalendars() because deleting calendars can result
+    // in actions in the planning (DeleteNotImportedCalendars() can be overridden) that should only done at the end of the synchronization.
+    
+    if( doDelete )
+    {
+      info( ">>> TO BE LOOKED AT !!!" );
+      //importExport_i.DeleteNotImportedCalendars( synchronizedCalendars, context_i, keepIfNotImported_i );
+    }
+    
+    return this;
+  *]
+}

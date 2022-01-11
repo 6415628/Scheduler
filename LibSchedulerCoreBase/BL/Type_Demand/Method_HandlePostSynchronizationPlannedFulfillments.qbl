@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandlePostSynchronizationPlannedFulfillments (Supply supply, Real fixedreservationquantity)
+{
+  Description: 'Decides whether to adjusts planned fulfillment quantities and remove zero quantity fulfillments.'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // Project team can adjust the behavior of quantity adjustment for planned (P) fulfillments after synchronizing fixed (F) fulfillments
+    // It is only applicable to product based material reservation
+    
+    // EXAMPLE:
+    // Currently the behavior is either to maintain the existing total reservation quantity between the same demand and supply
+    // Before sync, P.Quantity = 5. After sync F.Quantity = 3, P.Quantity adjusted to 2, to maintain total quantity remains as 5
+    
+    fulfillment := this.GetPlannedFulfillmentBySupply( supply ) // Can't use Fulfillment.IsFixedReservation because it is not propagated after fixed fulfillment creation
+    
+    // Adjust the previous planned fulfillment that has the same supply after sync of external fulfilment of the same supply
+    if( not isnull( fulfillment ) )
+    {
+      newQty := fulfillment.QuantityDecision() - fixedreservationquantity;
+      fulfillment.UpdateQuantity( newQty ); // Quantity adjustment for planned fulfillments to prevent over reservation of supply after receiving fixed fulfillment
+      
+      if( fulfillment.QuantityDecision() <= 0 ) // if lesser or equal to 0, delete the planned fulfillment because fixed fulfillment quantity > than planned fulfillment quantity
+      {
+        fulfillment.Delete();
+      }
+    }
+  *]
+}

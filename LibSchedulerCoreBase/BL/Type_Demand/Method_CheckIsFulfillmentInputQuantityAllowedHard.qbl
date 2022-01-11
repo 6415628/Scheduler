@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsFulfillmentInputQuantityAllowedHard (Supply supply, Fulfillment fulfillment, String quantity, 
+  output String feedback_o) const declarative remote as Boolean
+{
+  Description: 'Checks hard rules for whether the fulfillment input quantity is allowed.'
+  TextBody:
+  [*
+    qty := guard( StringToReal::UserConverter().Convert( quantity ), -1 ); // converter used to avoid conversion problems for different locales
+        
+    return this.CheckIsFulfillmentInputQuantityValid( supply, fulfillment, qty, true, feedback_o )
+           and this.CheckIsFulfillmentInputQuantityZero( qty, feedback_o )
+           and this.CheckIsFulfillmentInputQuantityEmpty( quantity, feedback_o )
+           and this.CheckIsFulfillmentInputQuantityExceedMax( qty, feedback_o )
+           and this.CheckIsFulfillmentInputQuantityDiscrete( supply, qty, feedback_o );
+  *]
+}

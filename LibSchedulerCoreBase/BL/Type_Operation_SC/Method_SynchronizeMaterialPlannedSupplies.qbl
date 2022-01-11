@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeMaterialPlannedSupplies
+{
+  Description: 'Synchronize material planned supplies based on work order output materials.'
+  TextBody:
+  [*
+    // WOI1 Aug-26-2016 (created)
+    allinstances := selectset( this, PlannedSupply.astype( MaterialPlannedSupply ), materialplannedsupplies, true )
+    updatedinstances := construct( MaterialPlannedSupplys );
+    schedule := this.PlanUnit_SC().Schedule();
+    
+    traverse( this, WorkOrderOperation.WorkOrderOutputMaterial, workorderoutputmaterial )
+    {
+      id := workorderoutputmaterial.GetMaterialPlannedSupplyId( this.OperationID() );
+      materialplannedsupply := MaterialPlannedSupply::FindMaterialPlannedSupply( SupplyType::MaterialPlannedSupply(), id );
+      
+      if( isnull( materialplannedsupply ) )
+      {
+        materialplannedsupply := schedule.CreateSupply( SupplyType::MaterialPlannedSupply(), id ).astype( MaterialPlannedSupply );
+      }
+      
+      materialplannedsupply.Update( workorderoutputmaterial, this );
+      updatedinstances.Add( materialplannedsupply );
+      
+      // Propagate Operation.NumberOfOutputLots which is used in synchronization of stock elements.
+      Transaction::Transaction().Propagate( attribute( Operation_SC, NumberOfOutputLots ) );
+      
+      // Synchronize stock elements
+      materialplannedsupply.SynchronizeStockElement();
+    }
+    
+    //Delete material planned supplies if they do not exist in KT
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, materialplannedsupply, materialplannedsupply.CheckCanBeDeleted() )
+    {
+      materialplannedsupply.Remove();
+    }
+  *]
+}

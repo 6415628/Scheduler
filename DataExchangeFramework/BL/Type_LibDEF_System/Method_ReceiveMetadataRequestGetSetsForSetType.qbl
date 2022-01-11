@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveMetadataRequestGetSetsForSetType (NamedValueTree nvt_i, LibDEF_System requestor_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive a Metadata message for requesting list of Sets for certain SetTypes.'
+  TextBody:
+  [*
+    LibDEF_Util::EventLog( event_i, "Receiving list of Sets for Set Type metadata request " );
+    
+    // Jacky CHAN May-17-2016 (created)
+    setTypeGUID := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SETTYPEGUID() );
+    
+    setTypeMeta := select( this, SetTypeMeta, stm, stm.GUID() = setTypeGUID );
+    
+    if( not isnull( setTypeMeta ) )
+    {
+      this.SendMetadataSuccessGetSetsForSetType( setTypeMeta, requestor_i, event_i );
+    }
+    else
+    {
+      LibDEF_Util::EventLogWarning( event_i,
+                                    "Request of GetSetsForSetType for SetType of '" + setTypeGUID + "' cannot be found." );
+    }
+  *]
+}

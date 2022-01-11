@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOAConstraintOrderDueDate (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata)
+{
+  Description: 'Adds the POA constraints corresponding to the order due date'
+  TextBody:
+  [*
+    poaepoch := this.POAEpoch(); // considers the start of the earliest frozen/feedback task before schedule time if any, else use schedule time
+    
+    // Value set used to define the due dates
+    orderend_valueset := POAValueSet::N( poa, SuboptimizerSequencingPOA::NamePOAConstraintOrderDueDate(), Real::MaxReal() );
+    
+    endorderconstraint := poa.NewEndConstraint( SuboptimizerSequencingPOA::NamePOAConstraintOrderDueDate() );
+    endorderconstraint.Expression( poa.Expression( SuboptimizerSequencingPOA::NamePOAExpressionTime() ) );
+    endorderconstraint.ValueSet( orderend_valueset );
+    
+    // Value set used to define the (potentially) varying factor per operation
+    factor := guard( this.Strategy().MRS_KPIWeightConstraintOptimizerDeliveryPerformance(), 1.0 );
+    factor_valueset := POAValueSet::N( poa, SuboptimizerSequencingPOA::NamePOAValueSetFactorForDueDates(), factor );
+    
+    // We define this constraint for all operations in the total scope, not only for the last ones.
+    traverse( transientdata, OperationInSuboptimizerSequencing, operation )
+    {
+      latestendtime := operation.Operation().OptimisticDueDateSuggested();
+      latestend := ( latestendtime - poaepoch ).HoursAsReal();
+      node := poa.Node( operation );
+      // Set the due date
+      orderend_valueset.Set( node, latestend );
+      // Set the facor
+      factor_valueset.Set( node, operation.GetFactorForDuedate() );
+    }
+    
+    // Define the power, factor and offset
+    endorderconstraint.Power( OptimizerRun::GetPOAPower( guard( this.Strategy().MRS_KPIPowerConstraintOptimizerDeliveryPerformance(), OptimizerRun::POADefaultPower() ) ) );
+    endorderconstraint.Factors( factor_valueset );
+    endorderconstraint.ViolationOffset( guard( this.Strategy().MRS_KPIOffsetConstraintOptimizerDeliveryPerformance(), 0.0 ) );
+  *]
+}

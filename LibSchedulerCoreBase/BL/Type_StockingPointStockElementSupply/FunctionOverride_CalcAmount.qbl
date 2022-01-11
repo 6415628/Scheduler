@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcAmount
+{
+  TextBody:
+  [*
+    quantity := 0.0; // we don't want unplanned operations to affect stock levels
+    
+    supplyqty := guard( this.Supply().Quantity(), quantity );
+    
+    if( not isnull( this.OutputLot() ) )
+    {
+      quantity := minvalue( supplyqty, this.OutputLot().Quantity() * guard( this.Supply().OutputFactor(), 0 ) );
+    }
+    // for external supplies or planned operations with supplies, their quantities should reflect immediately
+    else if( guard( not this.Supply().IsPlannedSupply(), false ) or guard( this.Operation_SC().IsPlanned(), false ) ) 
+    {
+      quantity := supplyqty;
+    }
+    
+    this.Amount( quantity );
+  *]
+}

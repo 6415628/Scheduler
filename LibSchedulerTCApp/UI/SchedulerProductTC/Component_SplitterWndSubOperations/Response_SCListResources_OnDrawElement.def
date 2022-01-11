@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: SCListResources
+Response OnDrawElement (Resource_SC element) id:Response_SCListResources_OnDrawElement
+{
+  #keys: '[12142.0.32510623]'
+  Body:
+  [*
+    // OnDrawElement for Resource_SC
+    
+    img := '';
+    
+    if( SplitterPaneResources.UserData() = 0 )
+    {
+      // SELECTED operations
+      operations := DataHolderSelectedOperations.Data();
+    
+      if( not isnull( operations ) and ( operations.Size() > 0 ) )
+      {
+        // Checks if ALL the selected operations are ALLOWED on the drawn resource
+        allowedop := selectset( element, AsAllowedResource.Operation_SC, operation, true, true );
+        notallowed := operations.Difference( allowedop );
+        allowedOn := notallowed.Size() = 0;
+        
+        // Checks if ALL the selected operations are PLANNED on the drawn resource
+        scheduledOn := forall( operations, 
+                               Elements, 
+                               op, 
+                               true, 
+                               not isnull( op.Task_SC() ) and op.Task_SC().Resource_SC() = element );
+    
+        if( scheduledOn )
+        {
+          img := 'ganttchart';
+        }
+        else if( allowedOn )
+        {
+          img := 'arrow_right_blue';
+        }
+      }
+    }
+    
+    drawinfo.Image( 0, img );
+  *]
+  DefinitionID: 'Responsedef_List_OnDrawElement'
+}

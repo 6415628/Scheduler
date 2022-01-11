@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenerateOccurrence
+{
+  Description: 'Generate a TimeInterval for the single occurrence of the Event.'
+  TextBody:
+  [*
+    this.Event().CalcCapacity();
+    
+    // Simply delete and re-create the TimeInterval.
+    onlySoftDeleted := false;
+    this.DeleteTimeIntervals( onlySoftDeleted );
+    
+    // Only re-create if the TimeInterval is still inside the calendar window.
+    if( this.EndTime()   > this.Calendar().Start() and
+        this.StartTime() < this.Calendar().End() )
+    {
+      leadingETI := this.CreateTimeInterval( this.StartTime(), this.EndTime(), this.Event().Capacity() );
+      this.IsChanged( false );
+    
+      // Also (re)create the TimeIntervals of the subscriptions, if they are inside the calendar window.
+      traverse( this, Subscription, subscription )
+      {
+        if( this.EndTime()   > subscription.Calendar().Start() and
+            this.StartTime() < subscription.Calendar().End() )
+        {
+          subscribingETI := subscription.CreateTimeInterval( this.StartTime(), this.EndTime(), this.Event().Capacity() );
+    
+          // Register the occurrence (i.e. the ExplicitTimeInterval) as SubscribingETI of the LeadingETI.
+          subscribingETI.LeadingETI( relset, leadingETI );
+          
+          subscription.IsChanged( false );
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

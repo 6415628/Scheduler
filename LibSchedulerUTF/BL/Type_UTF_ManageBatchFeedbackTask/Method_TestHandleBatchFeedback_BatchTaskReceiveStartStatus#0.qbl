@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestHandleBatchFeedback_BatchTaskReceiveStartStatus (Schedule schedule)
+{
+  TextBody:
+  [*
+    batchTask := select( schedule, Operation_SC.Task_SC.astype( BatchTask ), batchTask, true );
+    
+    startStatus := Constants::StatusStart();
+    batchID := batchTask.Batch().BatchID();
+    resourceID := batchTask.Resource_SC().ResourceID();
+    operations := selectset( batchTask, OperationInTask, operation, true );
+    practice := Constants::EmptyString();
+    reportedStart := DateTime::Construct( 2017, 1, 1, 4, 0, 0 );
+    reportedProcessStart := reportedStart;
+    remark := Constants::EmptyString();
+    
+    // Giving end status and reported end to the batch task.
+    schedule.FeedbackManager().BatchStart( batchID, operations, resourceID, reportedStart, reportedProcessStart, practice, remark );
+    
+    isFeedbackTaskExist := exists( schedule, FeedbackManager.FeedbackBatchInSchedule, feedbackBatchInSchedule,
+                                   feedbackBatchInSchedule.BatchID() = batchID
+                                   and feedbackBatchInSchedule.Resource() = resourceID
+                                   and feedbackBatchInSchedule.StatusReadIn() = startStatus
+                                   and feedbackBatchInSchedule.StartReadIn() = reportedStart
+                                   and feedbackBatchInSchedule.ProcessStartReadIn() = reportedProcessStart
+                                   and feedbackBatchInSchedule.EndReadIn().IsInfinite()
+                                   and feedbackBatchInSchedule.Remark() = remark );
+    
+    this.Run().AssertTrue( isFeedbackTaskExist );
+  *]
+}

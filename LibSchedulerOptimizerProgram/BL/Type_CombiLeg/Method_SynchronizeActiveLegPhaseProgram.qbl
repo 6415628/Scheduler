@@ -1,0 +1,67 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeActiveLegPhaseProgram
+{
+  TextBody:
+  [*
+    // zyi1 Jul-27-2021 (created)
+    //get or create active leg
+    res := this.GetResource();
+    leg := this.GetOrCreateLeg();
+    
+    //add tasks to leg
+    op := this.FirstOperation();
+    while( not isnull( op ) )
+    {
+      task := op.Operation_SC().Task_SC();
+      
+      if( guard( task.Leg() = leg, false ) )
+      {
+        leg.MoveLastTaskOnLeg( task );
+      }
+      else
+      {
+       
+        
+        leg.AddLastTaskOnLeg( task );
+      }
+      op := op.NextOperation();
+    }
+    
+    
+    //if it's first leg of the leading CombiProgramType,  start new programtype from the first type
+    //yifei, TODO,  this logic will start new program type for all sets,  need to adjust for the case 
+    //that non-leading programtype need to continue while
+    //leading will start a new program type  
+    firstop := this.FirstOperation();
+    
+    if( not isnull( firstop )
+        and isnull( this.PreviousLegAsLeading() )
+        and isnull( this.LeadingCombiProgramPhase().PreviousPhase() )
+        and ( guard( firstop.Operation_SC().Task_SC().Previous().istype( SingleTaskBase ), true )
+                     or isnull( firstop.Operation_SC().Task_SC().Previous() ) )  // first task and not already start of new programtype, then need to insert new programtype
+        and not guard( this.Leg().FirstTaskOnLeg().Previous().istype( ProgramChangeTask ), false ) )// the leg should not already have a program change task in front (in this case the program change has already been scheduled)
+    {
+      firsttask := firstop.Operation_SC().Task_SC();
+      proggramtypeconfigs := selectset( this, CombiLegOnCombiPhase.CombiProgramPhase.CombiProgramType.ProgramTypeConfiguration, ptc, true );
+      res.InsertProgramChange( firsttask, proggramtypeconfigs, false, Duration::Zero() );
+      
+      //with new program type created, we need to propogate following stuff to enable setting of link between CombiProgramType and ProgramType
+      Transaction::Transaction().Propagate( relation(  Task_SC, TaskInProgramSet ) );
+      Transaction::Transaction().Propagate( relation( TaskInProgramSet, ProgramType ) );
+      Transaction::Transaction().Propagate( attribute( ProgramType, ScheduledProgramID ) );
+    }
+    
+    //set the link between CombiProgramType and ProgramType
+    // the link between legs and ProgramPhases is propogated following this
+    traverse( this, CombiLegOnCombiPhase.CombiProgramPhase.CombiProgramType, cpt )
+    {
+      pt := select( firstop, Operation_SC.Task_SC.TaskInProgramSet.ProgramType, pt, pt.ProgramTypeConfiguration() = cpt.ProgramTypeConfiguration() );
+      
+      if( not isnull( pt ) )
+      {
+        cpt.ProgramTypeScheduledProgramID( pt.ScheduledProgramID() );
+      }
+    }
+  *]
+}

@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Update (PlanUnit_SC planunit)
+{
+  TextBody:
+  [*
+    // woi1 Feb-10-2017 (created)
+    super.Update( planunit );
+    
+    product := planunit.GetProduct(); // used method to get product instance, because AMC layer uses a different relation to get product, to be overloaded in industry layers eg. AMC
+    
+    this.DueDate( planunit.DueDate() );
+    this.ProductNo( guard( product.Id(), '' ) ); // guard added because SteelPlateMill scenario doesn't have products, or any other scenario that doesn't have products
+    this.ScheduledStartDate( planunit.ScheduledStartDate() );
+    this.ScheduledCompletedDate( planunit.ScheduledCompletedDate() );
+    this.UOMCode( guard( product.UoM(), '' ) ); // guard added because SteelPlateMill scenario doesn't have products, or any other scenario that doesn't have products
+    this.WipOrderType( Constants::AprisoProductionOrders() ); // apriso production orders always returns 1, currently only used for Apriso MES export
+  *]
+}

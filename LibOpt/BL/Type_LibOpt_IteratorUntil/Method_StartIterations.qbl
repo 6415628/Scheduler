@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride StartIterations (LibOpt_Task task, LibOpt_TaskContextIterator context) as stream[JSON]
+{
+  Description: 'Loop until a stop criterion is met or the `LibOpt_StopCriterion.CanStartIteration` returns that we cannot add another iteration.'
+  TextBody:
+  [*
+    stopcriterion := this.StopCriterion();
+    
+    result := stream[JSON]::Success();
+    while( this.CanStartIteration( context )
+           and stopcriterion.CanStartIteration( task )
+           and not stopcriterion.ShouldStop( task ) )
+    {
+      result := result->Merge( this.StartIteration( task, context ) );
+    }
+    
+    return result;
+  *]
+}

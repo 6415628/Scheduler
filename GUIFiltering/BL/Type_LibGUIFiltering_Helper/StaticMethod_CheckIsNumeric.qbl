@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsNumeric (LibGUIFiltering_Term term) as Boolean
+{
+  TextBody:
+  [*
+    // per Oct-4-2016 (created)
+    found := false;
+    
+    if ( term.IsRange() )
+    {                   
+      starttoken          := term.RangeStart();
+      starttokenvaluetype := '';
+      endtoken            := term.RangeEnd();
+      endtokenvaluetype   := '';
+      
+      if ( LibGUIFiltering_Helper::CheckIsNumeric( starttoken, starttokenvaluetype )
+       and LibGUIFiltering_Helper::CheckIsNumeric( endtoken  , endtokenvaluetype   ) )
+      {
+        found := true;
+        
+        term.RangeStart( starttoken );
+        term.RangeEnd( endtoken );
+    
+        if ( starttokenvaluetype = 'Real'
+          or endtokenvaluetype   = 'Real' )
+        {
+          term.ValueType( 'Real' );
+        }                          
+        else
+        {
+          term.ValueType( 'Number' );
+        }
+      }
+    }
+    else
+    {
+      token     := term.Token();
+      valuetype := term.ValueType();
+      
+      if ( LibGUIFiltering_Helper::CheckIsNumeric( token, valuetype ) )
+      {
+        found := true;
+        
+        term.Token( token );
+        term.ValueType( valuetype );
+      }
+    }
+    
+    return found;
+  *]
+}

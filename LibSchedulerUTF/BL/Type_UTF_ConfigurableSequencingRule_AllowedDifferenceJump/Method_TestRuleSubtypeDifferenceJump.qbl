@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRuleSubtypeDifferenceJump (Schedule schedule)
+{
+  Description: 'Test rule subtype difference jump'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    width1 := 0.0;
+    width2 := 0.0;
+    name := '';
+    isMultipleRangesEnabled := false;
+    ruleRangeFrom := 0.0;
+    ruleRangeTo := 0.0;
+    ruleValue := 0.0;
+    isValid := false;
+    
+    this.GetTestVariant( isvariantfound,
+                         width1,
+                         width2,
+                         name,
+                         isMultipleRangesEnabled,
+                         ruleRangeFrom,
+                         ruleRangeTo,
+                         ruleValue,
+                         isValid );
+    
+    hasNoViolateConstraint := false;
+    if( isvariantfound )
+    {
+      task2 := select( schedule, Operation_SC.Task_SC, task,
+                       task.GetOperation().OperationID() = 'Operation2' );
+      
+      // Propoagete constraint isAllLowPriorityRulesOK and isAllHighPriorityRulesOK
+      Transaction::Transaction().Propagate( constraint( Task_SC, IsAllLowPriorityRulesOK ) );
+      Transaction::Transaction().Propagate( constraint( Task_SC, IsAllHighPriorityRulesOK ) );
+      
+      hasNoViolateConstraint := task2.IsAllLowPriorityRulesOK() and 
+                                task2.IsAllHighPriorityRulesOK();
+    }
+    
+    this.Run().AssertEqual( isValid, hasNoViolateConstraint,  
+                            UTFUtility::GenerateFailedMessage( 'Rule subtype allowed difference jump failed.',
+                                                               this.Variant() ) );
+  *]
+}

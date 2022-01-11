@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedResource (CDIntegration cdintegration, ImportedResourceGroup_SC importedresourcegroup)
+{
+  Description: 'Restore imported resource core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedResource_SC
+    cdImportedResources := selectset( cdintegration, CDEntity.astype( CDImportedResource ), cdr, cdr.ResourceGroup() = importedresourcegroup.ResourceGroup() );
+    
+    traverse( cdImportedResources, Elements, cdr )
+    {
+      importedResource := ImportedResource_SC::Create( importedresourcegroup, cdr.ResourceID(), cdr.EquipmentClassID() );
+                                                       
+      CopyCorresponding::CopyFrom( cdr ).CopyTo( importedResource );
+      
+      // Restore ImportedLeadTimeStrategy_SC
+      this.RestoreImportedLeadTimeStrategy( cdintegration, importedResource );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

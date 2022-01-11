@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride AddUnsafe (LibOpt_ScopeThin scope) as LibOpt_ScopeShared
+{
+  TextBody:
+  [*
+    result := [LibOpt_ScopeShared] this;
+    
+    if( scope.Index() = 0 )
+    {
+      set := this.Set().BitOr( scope.Mask() );
+      
+      if( this.Set() <> set )
+      {
+        scope.ScopeSharedOnScope( relnew, ScopeShared := result );
+      }
+      
+      LibOpt_ScopeShared32::ChangeKeySet32( this, set, this.Group() );
+    }
+    else
+    {
+      scopes := selectset( this, ScopeSharedOnScope.ScopeThin, s, true );
+      scopes.Add( scope );
+      result := LibOpt_ScopeShared::Create( scopes, this.Group() );
+      traverse( this, ScopeElement, se )
+      {
+        result.ScopeElement( relinsert, se );
+      }
+      this.Delete();
+    }
+    
+    return result;
+  *]
+}

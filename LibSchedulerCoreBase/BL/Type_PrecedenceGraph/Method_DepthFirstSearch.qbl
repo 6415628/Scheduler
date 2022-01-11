@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method DepthFirstSearch (PrecedenceNode fromnode, PrecedenceNode tonode, output PrecedenceNodes onstack, 
+  output Number depth, output PrecedenceNodes cyclenodes)
+{
+  Description: 'Traverse the graph depth first, ends immediately when a cycle is encountered.'
+  TextBody:
+  [*
+    if( not isnull( tonode ) )
+    {
+      onstack.Add( tonode );
+      tonode.IsMarked( true );
+      depth := depth + 1;
+      
+      // ensure nextnode <> tonode.PreviousPathNode() so the detect will ignore cycle of one unless they are on the same resource
+      traverse( tonode, Outputs.Output, nextnode, nextnode <> tonode.PreviousPathNode() or nextnode.SubTask().Task_SC().Resource_SC() = tonode.SubTask().Task_SC().Resource_SC() )
+      {
+        edge := select( tonode, Outputs, out, out.Output() = nextnode );
+        edge.IsMarked( true );
+    
+        if( not nextnode.IsMarked() or exists( nextnode, Outputs, out, not out.IsMarked()) )
+        {
+          // recursive
+          nextnode.PreviousPathNode( relset, tonode );
+          this.DepthFirstSearch( tonode, nextnode, onstack, depth, cyclenodes );
+        }
+        else if( exists( onstack, Elements, stackednodes, true, stackednodes = nextnode ) )
+        {
+          for( i := onstack.Find( nextnode ); i <= onstack.Size() - 1 ; i := i + 1 )
+          {
+           cyclenodes.Add( onstack.Element( i ) );
+          }
+        }
+      }
+    
+      //remove the node from the currect path
+      onstack.Delete( onstack.Find( tonode ) );
+    
+      //tonode.IsMarked( false ); // JE FSPL QP ]#5884 5886
+      depth := depth - 1;
+    }
+  *]
+}

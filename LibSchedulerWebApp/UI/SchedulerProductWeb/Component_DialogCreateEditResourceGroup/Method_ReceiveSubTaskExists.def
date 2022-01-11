@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveSubTaskExists (shadow[SubTaskTypeOnResourceGroup] subTaskTypeOnResourceGroup, output String feedback_o) as Boolean id:Method_DialogCreateEditResourceGroup_ReceiveSubTaskExists
+{
+  #keys: '[143768.1.1633909804]'
+  Body:
+  [*
+    // If receive subtask exists, it must be the first respect routing
+    resourceGroup := DialogCreateEditResourceGroup.DataHolderResourceGroup().Data();      
+    
+    isnotoverridingreceive := true;             
+    
+    receive := select( resourceGroup,
+                       SubTaskTypeOnResourceGroup,
+                       sttorg,
+                       sttorg.SubTaskID() = Constants::SubTask_Receive() );
+                       
+    if( not isnull( receive ))
+    {
+      isnotoverridingreceive := subTaskTypeOnResourceGroup = receive;
+    }
+          
+    SubTaskTypeOnResourceGroup::ReceiveSubTaskExists( isnotoverridingreceive, feedback_o );
+                          
+    return isnotoverridingreceive;
+  *]
+}

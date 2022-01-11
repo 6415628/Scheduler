@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: GanttChartSingleTask
+Response OnDrawNode (SingleTaskBase element, Resource_SC row) id:Response_GanttChartSingleTask_OnDrawNode
+{
+  #keys: '[12910.0.790799681]'
+  Body:
+  [*
+    // OnDrawNode Tasks in the allowed resources
+    
+    // draw the targeted task that need new position
+    if( element = DialogFindBetterPosition.Data() )
+    {
+      drawinfo.AddCompartment( ColorScheme.Target(), element.End() - element.Start() );
+    }
+    else
+    {
+      // Add subtask compartments - SingleTaskBase 1
+    
+      //draw times
+      drawinfo.AddCompartment( ColorScheme.Setup(), element.GetActualSetupDuration() );
+    
+      if( not element.HasConstraintViolations() )
+      {
+    
+        color := ColorScheme.Scheduled()
+    
+        if( element.Finished() )
+        {
+          color := ColorScheme.Finished()
+        }
+        else if( element.Started() )
+        {
+          color := ColorScheme.Started()
+        }
+        
+        drawinfo.AddCompartment( color, element.GetActualProcessDuration() );
+        drawinfo.AddCompartment( ColorScheme.NoBufferWait(), element.ActualNoBufferWaitDuration() );
+        drawinfo.AddCompartment( ColorScheme.NoBufferAction(), element.ActualNoBufferActionDuration() );
+        drawinfo.AddCompartment( ColorScheme.NoBufferActionInput(), element.ActualNoBufferActionInputDuration() );
+      }
+      else
+      {
+        drawinfo.AddCompartment( drawinfo.BackgroundColor(), element.GetActualProcessDuration() );
+      }
+    }
+  *]
+  DefinitionID: 'Responsedef_GanttChart_OnDrawNode'
+}

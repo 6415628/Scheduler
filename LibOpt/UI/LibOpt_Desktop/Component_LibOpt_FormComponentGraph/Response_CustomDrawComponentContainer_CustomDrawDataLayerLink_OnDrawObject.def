@@ -1,0 +1,93 @@
+Quintiq file version 2.0
+#parent: CustomDrawComponentContainer/CustomDrawDataLayerLink
+Response OnDrawObject (LibOpt_Link object) id:Response_CustomDrawComponentContainer_CustomDrawDataLayerLink_OnDrawObject
+{
+  #keys: '[139164.3.980131598]'
+  Body:
+  [*
+    scale_x := ValueHolderScaleX.Data();
+    scale_y := ValueHolderScaleY.Data();
+    
+    // Fix issue that it thinks the Brush is already Black, but is actually White.
+    // This prevents me from making the Brush black (as it thinks it is already Black).
+    surface.Brush().Color( Color::White() );
+    
+    // Retrieve UI Color of Link
+    color_string := object.TaskTransporter().UIColor();
+    color := null( Color, owning );
+    
+    // Convert color code to Decimal, if its format is Hexadecimal
+    if( color_string.SubString( 0, 1 ) = '#' )
+    {
+      color_num := LibOpt_Utility::GetColorFromHex( color_string.SubString( 1, color_string.Length() - 1 ) );
+      color := Color::Color( color_num );
+    }
+    else
+    {
+      color := Color::Color( color_string );
+    }
+    
+    // Set link color to grey, if the origin component cannot be called
+    if( not object.GetOrigin().CanBeCalled() )
+    {                               
+      color := Color::Color( color, 0.5 );
+    }  
+    surface.Pen().Color( color );
+    surface.Brush().Color( color );
+    
+    // Retrieve UI Style of Link
+    style_string := object.TaskTransporter().UIStyle();
+    style := PenSpecification::StyleNull();
+    
+    // Define the PenSpecification style depending on the UI Style of the Link
+    if( style_string = 'Solid' )
+    {
+      style := PenSpecification::StyleSolid();
+    }
+    else if( style_string = 'Dashed' )
+    {
+      style := PenSpecification::StyleDashed();
+    }
+    else if( style_string = 'Dotted' )
+    {
+      style := PenSpecification::StyleDotted();
+    }
+    
+    // Set the style of the Pen based on the PenSpecification style
+    surface.Pen().Style( style );
+    
+    surface.Draw( shape );
+    
+    text := text.TrimBoth();
+    if( text <> '' )
+    {
+      scale := minvalue( scale_x, scale_y );
+      arrow_size := maxvalue( 3, 12 - maxvalue( 2, 2 / scale ) );
+      arrow_size_x := [Number] ( arrow_size * scale / 2 / scale_x );
+    
+      // Get the relative X coordinate of the outgoing part
+      x := object.First().First().X() - min( object, UIGraphArc.UIGraphArcPoint, p, p.X() - ifexpr( isnull( p.Next() ) and isnull( p.UIGraphArc().Next() ), arrow_size_x, 0 ) );
+      
+      origin := object.First().Origin()
+      width := origin.Width() / ( origin.Outgoing( relsize ) + 1 );
+      
+      format := TextFormat::Construct();
+      format.AlignCenter();
+      format.AlignMiddle();
+      
+      surface.Fill( [Number] ( ( x - width / 2 ) * scale_x ),
+                    0,
+                    [Number] ( width * scale_x ),
+                    [Number] ( 12 * scale_y ), Color::White() ); 
+      
+      surface.TextColor( color );
+      surface.TextFit( [Number] ( ( x - width / 2 ) * scale_x ),
+                       [Number] ( 2 * scale_y ),
+                       [Number] ( width * scale_x ),
+                       [Number] ( 10 * scale_y ),
+                       text, 1, format );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_CustomDrawDataLayer_OnDrawObject'
+}

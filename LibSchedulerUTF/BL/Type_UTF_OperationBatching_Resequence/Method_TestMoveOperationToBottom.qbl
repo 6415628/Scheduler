@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestMoveOperationToBottom (Schedule schedule)
+{
+  Description: 'Test the batch element sequence number after resequenced.'
+  TextBody:
+  [*
+    // Propogate sequence nr because it is set declaratively.
+    Transaction::Transaction().Propagate( attribute( BatchSequenceElement, SequenceNr ) );
+    
+    batch_1 := select( schedule, Batch, batch, batch.BatchID() = "Batch 1" );
+    
+    value := exists( batch_1, BatchSequenceElement.Operation_SC, operation,
+                     operation.OperationID() = "operation_1"
+                     and operation.BatchSequenceElement().SequenceNr() = 2 )
+    
+    this.Run().AssertTrue( value );
+  *]
+}

@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateDetailsForUpgrade (Strings keyValues_i)
+{
+  Description:
+  [*
+    [Extensible] Logic to handle update of detail information using data from metadata in an SQL file
+    By default, this only includes the datasets Version and Storage information
+  *]
+  TextBody:
+  [*
+    // tgn3 Apr-13-2021 (created)
+    
+    // Keep it simple - just display info exactly like it was extracted
+    delim := DMF_DBInterface::GetKeyValueDelimiter();
+    
+    detailInfos := selectvalues( keyValues_i, Elements, keyValue, true,
+                                 keyValue.ReplaceAll( delim, DMF_UpgradeabilityMetaData::GetDetailInfoDelimeter() ) );
+    
+    DMF_UpgradeabilityMetaData::FixVersionSequence( &detailInfos, delim );
+    
+    detailInfo := detailInfos.ToString( String::NewLine() );
+    
+    this.DetailInformation( detailInfo );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

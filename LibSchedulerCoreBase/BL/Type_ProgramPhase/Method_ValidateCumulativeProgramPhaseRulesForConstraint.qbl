@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValidateCumulativeProgramPhaseRulesForConstraint (Boolean ishardconstraintforoptimizer) declarative remote as Boolean
+{
+  Description: 'Validate cumulative program phase rules for constraint checking'
+  TextBody:
+  [*
+    // Validate cumulative program phase rules for constraint checking
+    isvalid := true;
+    
+    lasttaskinprogram := guard( this.LastInProgramPhase(), null( TaskInProgramSet ) );
+    
+    if( not isnull( lasttaskinprogram ) )
+    {
+      // Get all the rules related to program phase scope ( not transition program phase rules )
+      ruleswithprogramphasescope := selectset( this.ProgramPhaseConfiguration(), RuleScopeInProgramPhase.Rule, rule,
+                                               rule.IsHardConstraintForOptimizer() = ishardconstraintforoptimizer
+                                               and rule.RuleSubType().IsCumulativeValueNeeded()
+                                               and not rule.IsProgramPhaseTransitionRule()
+                                               and rule.IsEnabled()
+                                               );
+      
+      traverse( ruleswithprogramphasescope, Elements, rule, isvalid )
+      {
+        // Construct rule data object
+        dosequencingrule := lasttaskinprogram.GetRuleDataObjectForConstraintPrecondition( rule.CharacteristicMain(), true, 0.0 );
+        isvalid := rule.RuleSubType().Validate( rule, dosequencingrule );
+      }  
+    }
+    
+    return isvalid;
+  *]
+}

@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride PlanLast (Operation_SCs operations)
+{
+  Description: 'Move all single operations to last.'
+  TextBody:
+  [*
+    Operation_SC::SetIsPlanning( operations, true );
+    
+    // Unplan all operations previously planned on different resource
+    traverse( operations, Elements, operation,
+              guard( not this.IsTaskTypeMatching( operation.Task_SC() ), false ) )
+    {
+      operation.Unplan();
+    }
+    
+    traverse( operations, Elements, operation )
+    {
+      if( this.IsPlanRelatedOperations() )
+      {
+        Schedule::PlanRelatedOperationsBefore( operation, this, null( SingleTaskBase ), true, false )
+      }
+    
+      this.PlanLast( operation );
+    }
+    
+    this.Schedule().AutomaticProductBasedMaterialReservationBySorting();
+    Operation_SC::SetIsPlanning( operations, false );
+  *]
+}

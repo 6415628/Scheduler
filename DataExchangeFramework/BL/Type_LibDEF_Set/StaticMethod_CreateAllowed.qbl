@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateAllowed (LibDEF_DataRepository dataset_i, LibDEF_SetType setType_i, String name_i) const remote as Boolean
+{
+  Description: 'Checks if a new Set can be created'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    hasName := name_i <> '';
+    isExist := hasName and
+               exists( setType_i, Set, set, set.Name() = name_i );
+    
+    feedback.AddHard( hasName, Translations::LibDEF_PreconditionSetName() );
+    feedback.AddHard( not isExist, Translations::LibDEF_PreconditionSetAlreadyExists( name_i ) );
+    
+    return feedback.IsAllowed();
+  *]
+}

@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeMPSPlannedOrders
+{
+  Description: 'Synchronize MPS planned orders.'
+  TextBody:
+  [*
+    allInstances := selectset( this, MPSPlannedOrder, mpsPlannedOrder, true )
+    updatedInstances := construct( MPSPlannedOrders );
+    
+    traverse( this, ImportedMPSPlan.ImportedMPSPlannedOrder, row, row.IsValidDataHard() )
+    {
+      mpsPlannedOrder := MPSPlannedOrder::FindMPSPlannedOrder( row.MPSPlanID(), row.RoutingID(), row.DueDate() );
+    
+      if( isnull( mpsPlannedOrder ) )
+      {
+        mpsPlannedOrder := this.Schedule().ObjectFactory().CreateMPSPlannedOrder( this, row.RoutingID(), row.DueDate() );
+      }
+    
+      mpsPlannedOrder.Update( row );
+      updatedInstances.Add( mpsPlannedOrder );
+    }
+    
+    oldInstances := allInstances.Difference( updatedInstances );
+    
+    traverse( oldInstances, Elements, mpsPlannedOrder )
+    {
+      mpsPlannedOrder.Remove();
+    }
+  *]
+}

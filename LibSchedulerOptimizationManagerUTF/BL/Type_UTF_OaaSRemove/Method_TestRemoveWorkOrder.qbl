@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRemoveWorkOrder (Schedule schedule)
+{
+  Description: 'Test removing work orders based on mock 3DSpace JSON data.'
+  TextBody:
+  [*
+    workOrdersArray := this.GetJSONRemove_WorkOrdersArray().Build();
+    
+    for( i := 0; i < workOrdersArray.Size(); i++ )
+    {
+      workOrderID := workOrdersArray.Get( i ).GetString();
+      
+      isWorkOrderRemoved := not exists( schedule, 
+                                        WorkOrder.astype( ExternalWorkOrder ), 
+                                        workOrder,
+                                        workOrder.Id()= workOrderID );
+      
+      this.Run().AssertTrue( isWorkOrderRemoved,
+                             Translations::LibSchedulerOptMgrUTF_WorkOrder_NotRemoved( workOrderID ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

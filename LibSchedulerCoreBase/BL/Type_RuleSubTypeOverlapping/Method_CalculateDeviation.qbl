@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CalculateDeviation (const Rule rule, DORule_DataObjectSequencingRule do_rule) const declarative remote as Real
+{
+  TextBody:
+  [*
+    value := 0.0;
+    
+    // Get overlapping value
+    overlappingvalue := this.GetOverlappingValue( do_rule );
+    
+    if( overlappingvalue.IsFinite() )
+    {
+      // Calculate the deviation when RuleValue > Overlapping value, RuleValue is minimum overlapping value
+      value := maxvalue( rule.RuleValue() - overlappingvalue, 0 );
+    }
+    else
+    {
+      // In case there is no overlapping, the deviation will be non overlapping value + rule value
+      notoverlappingvalue := ifexpr( do_rule.CurrentMinRealValue() > do_rule.PreviousMaxRealValue(),
+                                     do_rule.CurrentMinRealValue() - do_rule.PreviousMaxRealValue(),
+                                     do_rule.PreviousMinRealValue() - do_rule.CurrentMaxRealValue() );
+      value := rule.RuleValue() + notoverlappingvalue;  
+    }
+    
+    return value;
+  *]
+}

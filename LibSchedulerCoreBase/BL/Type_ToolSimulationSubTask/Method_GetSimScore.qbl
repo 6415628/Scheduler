@@ -1,0 +1,80 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetSimScore () declarative as Real
+{
+  Description: 'Calculate the score for the subtask linked to this object to use a tool.'
+  TextBody:
+  [*
+    /*
+     Score is defined as : Distance from schedule time.
+     The subtask that result with the least distance as compared with others will be prefered.
+    */
+    subtask       := this.SubTask();
+    task          := this.Task_SC();
+    resource      := subtask.Resource_SC();
+    scheduletime  := resource.Schedule().Time();
+    
+    earlieststart := this.SubTask().GetSimEarliestStartAndAssignTool()
+    /*
+      4 Strategies of calculating the score.
+      score 1: the subtask that start earlier will get to use the tool first.
+      score 1: distance from schedule time - earliest start ( will give you negative )
+    */
+    score := this.ScoreASAP( earlieststart );
+    
+    if( not resource.ScoreResourceThroughPut() )
+    {
+      /*
+        score 2: in offset simulation, the subtask that starts earlier doesn't mean it will use the tool first
+        score 2: we will calculate as the earliest start of the subtask + offset duration,
+                 thus, the tooltask that can start first, will get to use the tool first! :)
+      */
+      score := this.ScoreOffset( earlieststart );
+    }
+    // get the previous operations of this task's operation including the task's operation itself
+    previousoperationids := construct( Strings );
+    
+    traverse( task, OperationInTask, operation )
+    {
+      traverse( operation, PlanUnit_SC.Operation_SC, opinpu, opinpu.SequenceNr() <= operation.SequenceNr() )
+      {
+        previousoperationids.Add( opinpu.OperationID() )
+      }
+    }
+    
+    blockids := selectuniquevalues( subtask, ToolTask, tt, true, tt.BlockID() );
+    
+    existspreviousblocktt := exists( task, OperationInTask.PlanUnit_SC.Operation_SC.Task_SC.ToolTask, tt,
+                                     blockids.Find( tt.BlockID() ) > -1
+                                     and previousoperationids.Find( tt.Task().GetOperation().OperationID() ) > -1
+                                     and ( tt.Task() <> task // AlexanderNg 30-Dec-2015 QP #6119
+                                           or tt.SubTask().SequenceNr() < subtask.SequenceNr() )
+                                     and guard( tt.Task().Previous().EarliestEnd(), scheduletime ) < earlieststart )
+    
+    /*
+      score 3: subtask that has previous blocking tool task should get highest priority to use the tool because the
+               previous blocking tool task is blocking a tool and might prevent other subtask from using the tool
+    */
+    if( existspreviousblocktt )
+    {
+      score := 0;
+    }
+    else
+    {
+    /*
+      score 4: subtask with next blocking tool task will be prioritize later compared to the subtask with no other
+               blocking tool task.
+    */
+      nextblockttstart := task.GetNextBlockingToolTaskStart( earlieststart, blockids );
+    
+      if( nextblockttstart.IsFinite() )
+      {
+        scorenext         := ( nextblockttstart - scheduletime ).DaysAsReal() * 10000
+        key_offset        := this.Key().MinorKey() / 10000;   // using key as tie breaker
+        score             := score -( scorenext + key_offset );
+      }
+    }
+    
+    return score;
+  *]
+}

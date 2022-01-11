@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method DeserializeScope (JSON json) as LibOpt_Scope
+{
+  TextBody:
+  [*
+    result := null( LibOpt_Scope );
+    
+    if( json.IsObject() )
+    {
+      internal_identifier := [Key] LibOpt_Message::Get( json, attribute( LibOpt_ScopeFat, InternalIdentifier ).Name() ).GetString();
+      result := select( this, Run.Scope.astype( LibOpt_ScopeFat ), s, s.InternalIdentifier() = internal_identifier );
+      if( isnull( result ) )
+      {
+        scope_serialized := LibOpt_Message::Get( json, typeof( LibOpt_Scope ).Name() );
+        if( scope_serialized.IsObject() )
+        {
+          result := LibOpt_Scope::Deserialize( this.Run(), scope_serialized );
+        }
+      }
+    }
+    
+    return result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenericPlanAfter (Batch batch, BatchTask element) as BatchTask
+{
+  Description: 'General for move after and this should be overloaded by QS'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // Method BatchResource.GenericPlanAfter : should be overloaded in specialized object
+    task    := guard( batch.BatchTask(), null( BatchTask ) );
+    oldprev := guard( task.Previous(), null( BatchTask ) );
+    oldnext := guard( task.Next(), null( BatchTask ) );
+    
+    if( isnull( task ) )
+    {
+      task := this.ConstructTask().astype( BatchTask );
+      task.Batch( relset, batch );
+      task := this.AddAfter( &task, element ).astype( BatchTask );
+    }
+    else
+    {
+      // Unfreeze tasks frozen by user if they are moved outside of the frozen horizon or onto a different resource
+      this.UnfreezeTaskFrozenByUserBefore( task, guard( element.Next(), null( BatchTask ) ) );
+      this.MoveAfter( task, element );
+    }
+    
+    // Update FSPL operation in task and FSPL graph
+    this.UpdateFSPLOperationInTaskAndGraph( task, oldprev, oldnext, null( BatchSequenceElement ) );
+    
+    return task;
+  *]
+}

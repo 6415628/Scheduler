@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupShutdown (const Schedule schedule)
+{
+  Description: 'Backup shutdown core data'
+  TextBody:
+  [*
+    traverse( schedule, Shutdown, shutdown )
+    {
+      cdShutdown := this.CDEntity( relnew, CDShutdown );
+      CopyCorresponding::CopyFrom( shutdown ).CopyTo( cdShutdown );  
+      
+      // Additonal attribute in core data to persist the shutdown type that this shutdown belongs to
+      cdShutdown.ShutdownTypeID( guard( shutdown.ShutdownType().ShutdownTypeID(), '') );
+      
+      // Additonal attribute in core data to persist the user feedback shutdown type that this shutdown belongs to
+      cdShutdown.UserFeedbackShutdownTypeID( guard( shutdown.UserFeedbackShutdownType().ShutdownTypeID(), '' ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

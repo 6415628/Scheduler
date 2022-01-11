@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericExternalWorkOrder (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic external work order core data relations to planning object'
+  TextBody:
+  [*
+    // Restore external work order core data relations
+    traverse( cdSchedule, CDEntity.astype( CDGenericExternalWorkOrder ), cdGenericExternalWorkOrder )
+    {
+      genericExternalWorkOrder := ExternalWorkOrder::FindExternalWorkOrder( cdGenericExternalWorkOrder.Id() );
+      
+      if( not isnull( genericExternalWorkOrder ) )
+      {  
+        importedExternalWorkOrder := ImportedExternalWorkOrder::FindImportedExternalWorkOrder( cdGenericExternalWorkOrder.Id() );  
+        // ImportedExternalWorkorder, 1-1
+        genericExternalWorkOrder.ImportedWorkOrder( relset, importedExternalWorkOrder );  
+        // ImportedWorkOrder, 1-1
+        genericExternalWorkOrder.ImportedExternalWorkOrder( relset, importedExternalWorkOrder );
+        // Order, 1-1
+        genericExternalWorkOrder.Order_SC( relset, Order_SC::FindOrder_SC( cdGenericExternalWorkOrder.Id() ) );
+        // InternalWorkOrderToReplace, 1-1
+        genericExternalWorkOrder.InternalWorkOrderToReplace( relset, InternalWorkOrder::FindInternalWorkOrder( cdGenericExternalWorkOrder.InternalWorkOrderToReplace() ) );
+      }    
+    }
+    
+    // Restore external work order operations
+    this.RestoreRelations_GenericExternalWorkOrderOperation( cdSchedule );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

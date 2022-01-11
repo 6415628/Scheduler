@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test050_ErrorSnapshotBelowDatasetCopySnapshot (LibOpt_TestDataset dataset)
+{
+  Description:
+  [*
+    Check if a `LibOpt_SnapshotError` snapshot is created below a `LibOpt_SnapshotReplannableCopyDataset` snapshot, if an error occurs during the creation of the dataset.
+    This error is triggered by giving the new dataset a name that is longer than the maximum length of a dataset name (which depends on the maximum Windows path length).
+  *]
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( true );
+    run := opt.CreateRun();
+    
+    switch := opt.SwitchRoundRobin( run, 'Round robin' );
+    streamrun := run.Start();
+    
+    // Copy the current dataset from the switch component
+    taskswitch := select( switch, Task, task, task.Component() = switch );
+    snapshot := LibOpt_DatasetCopyConditional::CopyDataset( taskswitch,
+                                                            "VERY_LONG_NAME_TO_TRIGGER_AN_ERROR_DURING_THE_CREATION_OF_THE_DATASET_-_VERY_LONG_NAME_TO_TRIGGER_AN_ERROR_DURING_THE_CREATION_OF_THE_DATASET_-_VERY_LONG_NAME_TO_TRIGGER_AN_ERROR_DURING_THE_CREATION_OF_THE_DATASET_-_VERY_LONG_NAME_TO_TRIGGER_AN_ERROR_DURING_THE_CREATION_OF_THE_DATASET", 
+                                                            false // Create a quick dataset copy
+                                                            );
+    str := streamrun
+    ->|stream[Void]::Wait( this.MDSEditorUpdateTime() ) // Wait some time to ensure that the dataset copy failed and that the LibOpt_SnapshotError is created.
+    ->|void->()
+    {
+      this.Run().AssertTrue( exists( snapshot, Children.astype( LibOpt_SnapshotError ), snapshoterror, true ),
+                             "Expected that a '" 
+                             + typeof( LibOpt_SnapshotError ).Name()
+                             + "' snapshot would be created below the '"
+                             + typeof( LibOpt_SnapshotReplannableCopyDataset ).Name()
+                             + "' snapshot, because an error was forced during the creation of the dataset. However, the error snapshot was not created."
+                             );
+    }
+    this.NoException( str );
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

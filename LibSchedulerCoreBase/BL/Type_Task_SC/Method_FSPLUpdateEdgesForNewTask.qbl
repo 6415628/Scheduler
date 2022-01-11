@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method FSPLUpdateEdgesForNewTask
+{
+  Description: 'Creates nodes and edges within the newly planned task.'
+  TextBody:
+  [*
+    // WOI1 May-16-2016 (created)
+    //Needed when a NEW OPERATION is planned
+    //task is created, subtask is created, but node is created HERE.
+    precedencegraph := this.Resource_SC().ResourceGroup_SC().Schedule().PrecedenceGraph();
+    
+    traverse( this, SubTask, st, isnull( st.PrecedenceNode() ) )
+    {
+      PrecedenceNode::Create( st, precedencegraph );
+    }
+    
+    //link all the subtasks in this task correctly
+    traverse( this, SubTask, st )
+    {
+      next_st := st.Next();
+      
+      if( not isnull( next_st ) )
+      {
+        //build edge to next subtask
+        //check if there is already an edge to the next subtask by testing whether it can reach the next subtask's node
+        edge_to_next_subtask := st.PrecedenceNode().GetEdgeToNode( next_st );
+        
+        if( isnull( edge_to_next_subtask ) )
+        {
+          //create the edge to the next subtask
+          PrecedenceEdge::Create( st.PrecedenceNode(), next_st.PrecedenceNode(), Constants::PrecedenceRelation_Precedes(), false );
+        }
+      }
+    }
+  *]
+}

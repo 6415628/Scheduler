@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetFormatNrDecimals (Real value1, Real value2) const declarative remote as Number
+{
+  Description: 'Get the amount of decimals needed to show a good comparison between the two values'
+  TextBody:
+  [*
+    nr_decimals := 0;
+    
+    if( value1 = value2 )
+    {
+      value := value1;
+      
+      // Determine the amount of decimals the values have
+      nr_decimals := maxvalue( 0, ([String] value ).Length() - value.Format( 'N(Dec(0))' ).Length() - 1 );
+    }
+    else
+    {
+      // Determine the smallest non-zero value.
+      smallest := abs( value2 - value1 );
+      if( value1 <> 0.0 and abs( value1 ) < smallest )
+      {
+        smallest := abs( value1 );
+      }
+      if( value2 <> 0.0 and abs( value2 ) < smallest )
+      {
+        smallest := abs( value2 );
+      }
+      
+      while( smallest < 0.95 and smallest > 0.0 )
+      {
+        smallest := smallest * 10;
+        nr_decimals++;
+      }
+    }
+    
+    return nr_decimals;
+  *]
+  InterfaceProperties { Accessibility: 'Protected' }
+}

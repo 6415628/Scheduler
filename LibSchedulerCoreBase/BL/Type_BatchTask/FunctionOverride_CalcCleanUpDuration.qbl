@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcCleanUpDuration
+{
+  Description: 'Computes the clean up duration for batch tasks'
+  TextBody:
+  [*
+    cleanupduration := Duration::Zero();
+    nextbatch := this.Next().astype( BatchTask );
+    
+    if( not this.HasReportedEnd() and not isnull( nextbatch ) )
+    {
+      cleanupduration := this.BatchResource().GetCleanUpDuration( this.Batch(), nextbatch.Batch() );
+    }
+    
+    this.CleanUpDuration( cleanupduration )
+  *]
+}

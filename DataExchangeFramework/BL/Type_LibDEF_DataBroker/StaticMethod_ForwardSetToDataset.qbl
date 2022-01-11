@@ -1,0 +1,70 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ForwardSetToDataset (String datasetModelType_i, Key datasetMDSID_i, Key datasetDTD_i, 
+  NamedValueTree nvt_i, Boolean isAutoForwarding_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Use Reflection to trigger Job ImportFromSet in the planning dataset, to pass the NVT received from external source.'
+  TextBody:
+  [*
+    // Jacky CHAN May-26-2016 (created)
+    // use reactive if DataTransformationDefinition instance key is provided
+    if ( datasetDTD_i <> Key::ZeroKey() )
+    {
+      dtd := LibDEF_DataTransformationDefinition::StreamInstance( datasetMDSID_i, datasetDTD_i );
+      
+      dtd->Exception()
+         ->( e ){
+            LibDEF_Util::LogWarning( "Failed to forward Set to Dataset: " + e.Message() );
+         }
+                
+      dtd->ProcessSet( nvt_i, isAutoForwarding_i );        
+    }
+    else
+    {
+      // use Reflection to return the Set
+      // signature is required for multiple Jobs with different argument types, due to polymorphism
+      job := Reflection::FindStaticMethodBySignature( datasetModelType_i, LibDEF_API::JOBNAME_ProcessSet(),
+                                                      typeof( MDSID ).Name(),
+                                                      typeof( NamedValueTree ).Name(),
+                                                      typeof( Boolean ).Name() );
+      if( isnull( job ) )
+      {
+        LibDEF_Util::EventLogWarning( event_i,
+                                      "Failed to forward Set to Dataset: " +
+                                      "Job '" + LibDEF_API::JOBNAME_ProcessSet() + "' cannot be found in Type '" + datasetModelType_i + "'. Make sure that the Job is implemented." );
+      }
+      else
+      {
+        // The Job can only be called if the target dataset is already loaded.
+        // First use LoadedObjectInfo, because that is much faster than using ObjectInfo.
+        datasetObjectInfo := MDSEditor::Editor().LoadedObjectInfo( datasetMDSID_i );
+        
+        if( not isnull( datasetObjectInfo ) )
+        {
+          job.AddObjectArgument( datasetObjectInfo.MDSID() );
+          job.AddObjectArgument( nvt_i );
+          job.AddArgument      ( isAutoForwarding_i );
+        
+          job.Execute();
+        }
+        else
+        {
+          // Error handling: determine what is wrong with the dataset.
+          datasetObjectInfo := MDSEditor::Editor().ObjectInfo( datasetMDSID_i );
+          datasetFound      := not isnull( datasetObjectInfo );  
+          
+          LibDEF_Util::EventLogWarning( event_i,
+                                        "Failed to forward Set to Dataset: Dataset of '" +
+                                        ifexpr( not datasetFound,
+                                                datasetModelType_i + "' with key '" + [String]datasetMDSID_i + "' does not exist",
+                                                LibDEF_Util::FormatDatasetString( datasetObjectInfo ) + "' is not loaded" ) +
+                                        ". Please make sure the dataset " +
+                                        ifexpr( not datasetFound,
+                                                "exists.",
+                                                "is loaded." ) );
+            
+        }
+      }
+    }
+  *]
+}

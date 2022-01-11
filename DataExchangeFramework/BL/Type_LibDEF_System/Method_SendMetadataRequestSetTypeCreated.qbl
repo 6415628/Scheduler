@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendMetadataRequestSetTypeCreated (LibDEF_SetTypeMeta setTypeMeta_i)
+{
+  Description: 'Send a Metadata message for channel-event when a SetType has been created.'
+  TextBody:
+  [*
+    nvt := LibDEF_DataAccessor::CreateMessageMetadata();
+    
+    channelName := setTypeMeta_i.ChannelName();
+    
+    // define Type and required Header
+    LibDEF_DataAccessor::SetMetadataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_TYPE(),        LibDEF_DataAccessor::TYPE_METADATA_SETTYPECREATED() );
+    LibDEF_DataAccessor::SetMetadataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_CHANNELNAME(), channelName                                         );
+    
+    // export SetTypeMeta
+    nvBody := LibDEF_DataAccessor::GetMetadataBody( nvt );
+    NamedValueTreeIO::Export( setTypeMeta_i, nvt, nvBody, false );
+    
+    dataBroker := this.DataBroker();
+    
+    // Send metadata updates to foreign systems
+    traverse( this.GetOtherSystemsWithCommonChannel( channelName ), Elements, system )
+    {
+      event := dataBroker.EventCreate( system, false );
+      LibDEF_Util::EventLog( event, "Sending SetType created metadata request" );
+    
+      dataBroker.SendMessage( system, nvt, LibDEF_DataAccessor::KIND_REQUEST(), event );
+    }
+  *]
+}

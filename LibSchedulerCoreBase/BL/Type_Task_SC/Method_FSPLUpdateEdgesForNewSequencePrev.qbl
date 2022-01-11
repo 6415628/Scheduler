@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method FSPLUpdateEdgesForNewSequencePrev
+{
+  TextBody:
+  [*
+    previous_task := this.Previous();
+    
+    if( not isnull( previous_task ) )
+    {
+      //Get the last subtask of the previous task
+      last_subtask_in_previous_task := previous_task.Last();
+      
+      if ( not isnull( last_subtask_in_previous_task ) )
+      {
+        //check if there is already an edge from the last subtask of the previous task to the first subtask of current task
+        edge_to_next_subtask := last_subtask_in_previous_task.PrecedenceNode().GetEdgeToNode( this.First() );
+        
+        if( isnull( edge_to_next_subtask ) )
+        {
+          //create the edge from the first subtask to the last subtask of previous task
+          PrecedenceEdge::Create( last_subtask_in_previous_task.PrecedenceNode(), this.First().PrecedenceNode(), Constants::PrecedenceRelation_Precedes(), false );
+        }
+      }
+    }
+  *]
+}

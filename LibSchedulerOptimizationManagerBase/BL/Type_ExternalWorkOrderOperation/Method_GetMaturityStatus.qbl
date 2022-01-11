@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetMaturityStatus () const declarative remote as String
+{
+  Description: '3DSpace specific. Evaluates current external work order operation and return Scheduler feedback equivalent 3DSpace maturity status.'
+  TextBody:
+  [*
+    maturity := Constants::MaturityStatus_FIRM();
+    isAllOperationCancelledAborted := forallexists( this, Operation_SC, op, op.HasBeenCancelled() or op.HasBeenAborted() );
+    isAllOperationEnded := forallexists( this, Operation_SC, op, op.HasEnded() );          
+    isAllOperationHasFeedback := forallexists( this, Operation_SC, op, op.HasFeedback() );  
+                                   
+    if( isAllOperationEnded ) // Check all ENDED
+    {
+      maturity := Constants::MaturityStatus_COMPLETED();
+    }
+    else if( isAllOperationCancelledAborted ) // Check all CANCELLED or ABORTED
+    {
+      maturity := Constants::MaturityStatus_CANCELLED();
+    }
+    else if( isAllOperationHasFeedback ) // Check whether any other feedback eg STARTED
+    {
+      maturity := Constants::MaturityStatus_WORK_IN_PROGRESS();
+    }
+    
+    return maturity;
+  *]
+}

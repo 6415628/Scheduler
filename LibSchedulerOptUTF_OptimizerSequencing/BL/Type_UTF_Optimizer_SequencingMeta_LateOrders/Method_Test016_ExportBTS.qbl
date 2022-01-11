@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test016_ExportBTS (Schedule schedule)
+{
+  Description: 'calls an EDI broker to export to a BTS with the makespan KPI.'
+  TextBody:
+  [*
+    // mbr23 Jun-3-2020 (created)
+    
+    testrun := this.Run().LibUTF_UnitTestRun().LibUTF_TestRun();
+    if( schedule.UTF_BTSExportData( relsize ) = 0 )
+    {
+      schedule.UTF_BTSExportData( relnew );
+    }
+    bts_export_data := schedule.UTF_BTSExportData();
+    bts_export_data.BranchLastCommitID( testrun.BranchLastCommitID() );
+    bts_export_data.BranchLastCommitTime( testrun.BranchLastCommitTime() );
+    bts_export_data.BranchName( testrun.BranchName() );
+    bts_export_data.CreatedTime( testrun.CreatedTime() );
+    bts_export_data.ErrorMessage( testrun.ErrorMessage() );
+    bts_export_data.Runtime( schedule.Optimization().OptimizerSequencing().LastRun().Duration() );
+    bts_export_data.MachineName( testrun.MachineName() );
+    
+    bts_export_data.UpdateAttributes();
+    
+    schedule.Broker_ExportBTS().Execute();
+  *]
+}

@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericMaterialPlannedFulfillment (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic material planned fulfillment core data attributes to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdSchedule, CDEntity.astype( CDGenericMaterialPlannedFulfillment ), cdGenericMaterialPlannedFulfillment )
+    {
+      materialdemand := select( schedule, Demand.astype( MaterialDemand ), demand,
+                                demand.DemandType() = cdGenericMaterialPlannedFulfillment.DemandType()
+                                and demand.DemandID() = cdGenericMaterialPlannedFulfillment.DemandId() );
+    
+      if( not isnull( materialdemand ) )
+      {                                                          
+        genericMaterialPlannedFulfillment := GenericMaterialPlannedFulfillment::Create( materialdemand,
+                                                                                        cdGenericMaterialPlannedFulfillment.DemandId(),
+                                                                                        cdGenericMaterialPlannedFulfillment.SupplyId() );
+      
+        CopyCorresponding::CopyFrom( cdGenericMaterialPlannedFulfillment ).CopyTo( genericMaterialPlannedFulfillment ); 
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

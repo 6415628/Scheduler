@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAvailableTool (ToolTask tooltask, Strings toolid, DateTime ttearlieststart) declarative as Tool
+{
+  Description: 'Get the tool for the the tool task.'
+  TextBody:
+  [*
+    // alexandern Jan-7-2016 (created) QP #6082
+    tool := null( Tool );
+    
+    if( tooltask.HasBlockID() and tooltask.HasBlockedToolID() )
+    {
+      tool := select( tooltask, AllowedToolTaskOnTool.Tool, t,
+                      t.ToolID() = tooltask.BlockedToolID() );
+    }
+    else
+    {
+      tool := minselect( tooltask, AllowedToolTaskOnTool.Tool, t,
+                         not t.IsBlocked() and toolid.Find( t.ToolID() ) = -1,
+                         t.ToolCalendar().NextFit( maxvalue( ttearlieststart, t.SimAvailableTime() ),
+                                                   tooltask.Duration() ) );
+    }
+    
+    return tool;
+  *]
+}

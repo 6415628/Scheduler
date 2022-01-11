@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Synchronize (String participationID_i, String calendarType_i, String calendarID_i, 
+  Boolean eventIsRecurring_i, Boolean eventIsAllDay_i, Duration eventStartTimeOfDay_i, 
+  Duration eventDuration_i, Date startDate_i, Boolean hasSpecificPeriod_i, 
+  String periodType_i, Date periodStartDate_i, Date periodEndDate_i)
+{
+  TextBody:
+  [*
+    // Don't update in case of IsAllDay.
+    // In that case the StartDate and EndDate will be updated by SetIsAllDay.
+    // Unless the participation has just been created; in that case it must be updated to initialize it.
+    // Or unless the StartDate has changed.
+    if( not eventIsAllDay_i
+        or this.StartDate().IsInfinite()
+        or this.StartDate() <> startDate_i )
+    {
+      // Calculate startTime and endTime, taking timezone and DSL into account.
+      timezone  := this.Calendar().GetTimeZone();
+      startTime := LibCal_Util::CalculateStartTime( timezone, startDate_i, eventStartTimeOfDay_i );
+      endTime   := LibCal_Util::CalculateEndTime(   timezone, startDate_i, eventStartTimeOfDay_i, eventDuration_i );
+      this.Update( startTime.Date( timezone ), endTime.Date( timezone ) );
+    }
+    
+    // Also synchronize the RecurrencePeriod.
+    super.Synchronize( participationID_i,
+                       calendarType_i,
+                       calendarID_i,
+                       eventIsRecurring_i,
+                       eventIsAllDay_i,
+                       eventStartTimeOfDay_i,
+                       eventDuration_i,
+                       startDate_i,
+                       hasSpecificPeriod_i,
+                       periodType_i,
+                       periodStartDate_i,
+                       periodEndDate_i );
+  *]
+}

@@ -1,0 +1,122 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateComponents (LibOpt_Run run, const SettingsMRSMeta settings_meta, const SettingsMRSIteration settings_iteration, 
+  const SettingsMRSPOA settings_poa, const OptimizerStrategy strategy, Duration timelimit) #extension
+{
+  TextBody:
+  [*
+    runcontext_rg := RunContextSolvedConflicts::Create( run, "solved conflicts" );
+    runcontext_endtimes := RunContextEndTimeApproximation::Create( run, "end time approximations" );
+    
+    // components:
+    
+    preprocessing_endtimeapproximator := OptimizerMRS::CreateComponentsEndTimeApproximation( run, runcontext_endtimes );
+    
+    iterator_top := this.Iterator( run, "top-level iterator" );
+    iterator_top.SetMaxLocalDuration( timelimit );
+    iterator_top.SetMaxIterations( settings_meta.MaxNrIteration() );
+    
+    selector_focus := this.SelectorAnchor( run,
+                                           "focus resource group selector",
+                                           this.AnchorSetType( typeof( ScopeElementFocusResourceGroup ) ),
+                                           this.AnchorPickerRoundRobin(),
+                                           construct( NeighborhoodCreatorFocusResourceGroup ) );
+    
+    contextresetter := ResetterRunContext::Create( run, "constraint data resetter", runcontext_rg );
+    
+    is_allowed_time_violations := false;
+    is_in_constrained_poa_mode := true;
+    poa_settings := construct( SettingsMRSPOAForSuboptimizer );
+    poa_settings.CopyFrom( settings_poa );
+    poa_strategy := construct( StrategyForMRSSuboptimizerPOA, ID := strategy.ID() );
+    poa_strategy.CopyFrom( strategy );
+    suboptimizer_solveconflicts := SuboptimizerMRSPOA::Create( run,
+                                                               runcontext_rg,
+                                                               runcontext_endtimes,
+                                                               is_allowed_time_violations,
+                                                               is_in_constrained_poa_mode,
+                                                               "POA (resolve conflicts)",
+                                                               & poa_settings,
+                                                               & poa_strategy );
+    suboptimizer_solveconflicts.RollbackKPI( relset, construct( RollbackKPISchedule ) ); // for logging; the suboptimimzer does not roll back.
+    
+    is_allowed_time_violations := true;
+    is_in_constrained_poa_mode := false;
+    poa_settings := construct( SettingsMRSPOAForSuboptimizer );
+    poa_settings.CopyFrom( settings_poa );
+    poa_strategy := construct( StrategyForMRSSuboptimizerPOA, ID := strategy.ID() );
+    poa_strategy.CopyFrom( strategy );
+    suboptimizer_optimize := SuboptimizerMRSPOA::Create( run,
+                                                         runcontext_rg,
+                                                         runcontext_endtimes,
+                                                         is_allowed_time_violations,
+                                                         is_in_constrained_poa_mode,
+                                                         "POA (optimize)",
+                                                         & poa_settings,
+                                                         & poa_strategy );
+    suboptimizer_optimize.RollbackKPI( relset, construct( RollbackKPISchedule ) ); // for logging; the suboptimimzer does not roll back.
+    
+    selector_only_focus_resource_group := run.Component( relnew,
+                                                         SelectorOnlyFocusResourceGroup,
+                                                         Name := "only focus resource group" );
+    
+    selector_conflict_rg := SelectorConflictResourceGroup::Create( run, "conflict resource group", runcontext_rg );
+    
+    subiterator := this.Iterator( run,
+                                  "conflict solving iterator",
+                                  this.StopCriterionSubiterator( settings_iteration.TimeLimit(), runcontext_rg ) );
+    
+    rollback_bestpoa := ModeledRollbackSubsnapshots::Create( run, "rollback to best child snapshot" );
+    rollback_bestpoa.RollbackKPI( relset, construct( RollbackKPISchedule ) );
+    
+    rollback_topiteration := ModeledRollbackOwn::Create( run, "rollback whole top-level iteration" );
+    rollback_topiteration.RollbackKPI( relset, construct( RollbackKPISchedule ) );
+    
+    // plumbing:
+    preprocessing_sequencer_children := construct( LibOpt_Components );
+    preprocessing_sequencer_children.Add( preprocessing_endtimeapproximator );
+    preprocessing_sequencer_children.Add( iterator_top );
+    preprocessing_sequencer := this.Sequencer( preprocessing_sequencer_children, "Preprocessing Sequencer" );
+    
+    // Only do extension if in optimization service mode
+    if( Constants::GetIsOptimizationService() )
+    {
+      // extension in LibSchedulerOptimizationManagerBase: add a reporter to optimzation manager:
+      reporter := run.Component( relnew, OptimizationStatusReporterSequencing, Name := "Optimization Manager reporter (MRS)" );
+      // extension in LibSchedulerOptimizationManagerBase: the reporter is the first thing after the top-lever iterator:
+      iterator_top.To( reporter ); 
+      reporter.To( contextresetter );
+    }
+    else
+    {
+      iterator_top.To( contextresetter );
+    }
+    
+    contextresetter.To( rollback_topiteration );
+    rollback_topiteration.To( selector_focus );
+    
+    sequencer_children := construct( LibOpt_Components );
+    sequencer_children.Add( selector_only_focus_resource_group );
+    sequencer_children.Add( rollback_bestpoa );
+    sequencer := this.Sequencer( sequencer_children, "Sequencer" );
+    
+    selector_focus.To( sequencer );
+    
+    // left subtree:
+    selector_only_focus_resource_group.To( suboptimizer_optimize );
+    // right subtree:
+    rollback_bestpoa.To( subiterator );
+    subiterator.To( selector_conflict_rg );
+    selector_conflict_rg.To( suboptimizer_solveconflicts );
+    
+    
+    // if nice UI updates are needed, we have to configure the top-level iterations to work in one transaction:
+    if( settings_meta.NiceUIUpdates() )
+    {
+      propagate_needed := true;
+      contextresetter.ConfigureForOneTransaction( propagate_needed );
+    }
+    
+    return preprocessing_sequencer;
+  *]
+}

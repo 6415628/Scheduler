@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (LibCal_Calendar owner_i, LibCal_LeadingParticipation leadingParticipation_i, Boolean includingPeriod_i) as LibCal_Subscription
+{
+  TextBody:
+  [*
+    // Create a Subscription by creating a copy of the LeadingParticipation, with a unique ID.
+    subscription := owner_i.Participation( relcopy, leadingParticipation_i, LibCal_Subscription,
+                                           ParticipationID := [String]Key::NextPersistentKey(),
+                                           IsLeading       := false,
+                                           IsSubscription  := true );
+    
+    // Set the relation with the Event.
+    subscription.Event( relset, leadingParticipation_i.Event() );
+    
+    // If applicable, also copy the RecurrencePeriod.
+    if( includingPeriod_i )
+    {
+      period := leadingParticipation_i.RecurrencePeriod().ShallowCopy().astype( LibCal_RecurrencePeriod );
+      subscription.RecurrencePeriod( relset, &period );
+    }
+    
+    return subscription;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

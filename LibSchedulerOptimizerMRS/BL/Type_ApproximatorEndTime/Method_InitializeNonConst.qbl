@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitializeNonConst (LibOpt_Task task) as owning MathematicalProgram
+{
+  TextBody:
+  [*
+    number_resourcegroups := task.Scope().ResourceGroupsConst().Size();
+    if( number_resourcegroups <> 1 )
+    {
+      error( "this suboptimizer expects exactly 1 resource group in scope, but there are", number_resourcegroups );
+    }
+    resourcegroup := task.Scope().ResourceGroups().Element( 0 );
+    
+    program := SuboptimizerApproximatorEndTime_MIPBalanceLoadSingle::Create();
+    
+    // the definition of the MIP was copied from the leagcy optimizer's OptimizerRUNMRSA::MIPBalanceLoadSingle MIP.
+    this.InitConfig( program, task );
+    this.InitVariables( program, task, resourcegroup );
+    this.InitGoals( program, task, resourcegroup );
+    this.InitConstraints( program, task, resourcegroup );
+    
+    return & program;
+  *]
+}

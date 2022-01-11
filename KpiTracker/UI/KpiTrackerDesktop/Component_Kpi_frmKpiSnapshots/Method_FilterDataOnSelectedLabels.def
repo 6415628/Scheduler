@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method FilterDataOnSelectedLabels (Boolean filterActive) id:Method_Kpi_frmKpiSnapshots_FilterDataOnSelectedLabels
+{
+  #keys: '[136398.1.502469913]'
+  Body:
+  [*
+    // Sets/unsets the filter on the snapshots based on the selection in the label filter.
+    
+    dslSnapshots.FixedFilter( '' );  
+      
+    if ( filterActive )
+    {
+      selectedLabels := dhSelectedLabelValues.Data();
+    
+      filters := construct( structured[String] );                        
+    
+      traverse( selectedLabels, Elements.Label, label )
+      {
+        values := construct( structured[String] );
+        traverse( label, Value, value, 
+                  exists( selectedLabels, Elements, selected, selected = value) )
+        {
+          values.Add( 'exists( object, Label, l, l.Name() = "' 
+                       + label.Name() 
+                       + '" and l.Value() = "' 
+                       + value.Value() 
+                       + '") ' );
+          
+        }
+        filters.Add( '(' + values.ToString( ' or ' ) + ')' );
+      }
+      filter := filters.ToString( ' and ' );
+      debuginfo( ' >>> Generated Label filter = ', filter );
+      dslSnapshots.FixedFilter( filter );
+    }
+    
+    this.SetAutoSelectTimer();
+  *]
+}

@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestProgramChangeDuration_Setup (Schedule schedule)
+{
+  Description: 'Test program change duration - setup'
+  TextBody:
+  [*
+    // Create resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Single Resource' );
+    
+    programconfigurationID := 'Program configuration ID';
+    programconfigurationName := 'Name';
+    
+    // Create program definition
+    programdefinition := ProgramDefinitionConfiguration::Create( schedule, programconfigurationID );
+    programdefinition.Name( programconfigurationName );
+    
+    // Assign program definition to resource
+    resource.AssignProgramDefinitionConfiguration( programdefinition );
+    
+    programsets := construct( ProgramSetConfigurations );
+    // Create program set
+    programset1 := ProgramSetConfiguration::Create( programdefinition, 'Program Set 1' );
+    programset1.Name( programconfigurationName );
+    programset1.ProgramTypeChangeDuration( Duration::Hours( 2 ) );
+    programsets.Add( programset1 );
+    
+    // Create program set
+    programset2 := ProgramSetConfiguration::Create( programdefinition, 'Program Set 2' );
+    programset2.Name( programconfigurationName );
+    programset2.ProgramTypeChangeDuration( Duration::Hours( 1 ) );
+    programsets.Add( programset2 );
+    
+    traverse( programsets, Elements, programset )
+    {
+      // Create program type
+      programtype := ProgramTypeConfiguration::Create( programset, programconfigurationID );
+      programtype.Name( programconfigurationName );
+      
+      // Create program phase
+      programphase := ProgramPhaseConfiguration::Create( programtype, programconfigurationID );
+      programphase.Name( programconfigurationName );
+      
+      // Create program type change
+      //UTFMockObjectFactory::CreateProgramTypeChangeConfiguration( programset, programconfigurationID, programconfigurationID );
+    }
+    
+    // Insert 2nd program change with 1 type
+    programtype2 := selectset( programset2, ProgramTypeConfiguration, pt, true );
+    task := resource.InsertProgramChange( null( Task_SC ), programtype2, false, Duration::Zero() );
+    
+    // Insert 1st program change with 2 types plan before 2nd program change task
+    programtypes := selectset( programsets, Elements.ProgramTypeConfiguration, pt, true );
+    resource.InsertProgramChange( task, programtypes, false, Duration::Zero() );
+  *]
+}

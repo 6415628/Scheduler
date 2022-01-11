@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeFulfillments
+{
+  TextBody:
+  [*
+    allsupplys          := selectset( this, BatchWorkOrder.WorkOrderOperation.Operation_SC.PlannedSupply, supply, true );
+    updatedsupplys      := construct( Supplys );
+    allfulfillments     := selectset( this, Supply.Fulfillment, fulfillment, true );
+    updatedfulfillments := construct( Fulfillments );
+    
+    lastwoo := maxselect( this, BatchWorkOrder.WorkOrderOperation, woo, true, woo.SequenceNr() );
+    supply  := select( lastwoo, Operation_SC.PlannedSupply, supply, true );
+    
+    if( not isnull( supply ) )
+    {
+      supply.DemandBatch( relset, this );
+      
+      traverse( this, DemandInBatch, demandinbatch )
+      {
+        fulfillment := select( demandinbatch, Demand.PlannedFulfillmentOfDemand, fulfillment,
+                               fulfillment.Supply() = supply );
+    
+        if( isnull( fulfillment ) )
+        {
+          fulfillment := demandinbatch.Demand().CreatePlannedFulfillment( supply );
+        }
+        
+        fulfillment.Update( demandinbatch.Quantity(), false );
+        updatedfulfillments.Add( fulfillment );
+      }
+      
+      updatedsupplys.Add( supply );
+      
+    }
+    
+    obsoletedsupplys := allsupplys.Difference( updatedsupplys );
+    obsoletedfulfillments := allfulfillments.Difference( updatedfulfillments );
+    
+    traverse( obsoletedsupplys, Elements, s )
+    {
+      s.Remove();
+    }
+    Fulfillment::DeletePlannedFulfillment( obsoletedfulfillments );
+  *]
+}

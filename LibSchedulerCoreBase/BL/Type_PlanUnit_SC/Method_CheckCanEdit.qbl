@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckCanEdit (output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Checks whether this plan unit is allowed to be edited by the user.'
+  TextBody:
+  [*
+    // WOI1 Nov-7-2016 (created)
+    // this plan unit can be edited if:
+    // 1. this plan unit has no operations with feedback
+    // 2. this plan unit has no operations in the frozen horizon
+    
+    feedback_o := feedback_o + String::NewLine() + Translations::SC_PlanUnitCannotBeEdited();
+    
+    value := this.CheckHasNoFeedbackOperation( feedback_o )
+             and this.CheckHasNoOperationInFrozenHorizon( feedback_o )
+             and this.CheckHasNoPlannedSupplyConvertedToInventory( feedback_o );
+    
+    feedback_o := feedback_o.TrimBoth();
+    
+    return value;
+  *]
+}

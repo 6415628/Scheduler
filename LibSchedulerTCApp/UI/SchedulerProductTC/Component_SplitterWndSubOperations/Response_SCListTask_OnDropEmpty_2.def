@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: SCListTask
+Response OnDropEmpty (structured[Operation_SC] information, BatchResource resource) id:Response_SCListTask_OnDropEmpty_2
+{
+  #keys: '[11932.0.390147945]'
+  Body:
+  [*
+    // OnDrop structured[Operation] --> null(Task) on BatchResource
+    
+    resource.CreateBatchAssignOperationsPlanBatch( information, resource.Last().astype( BatchTask ) );
+  *]
+  DefinitionID => /SCListTask/Responsedef_SCListTask_OnDropEmpty
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey       := dropaction.IsControl();
+    ctrlshiftkey  := dropaction.IsControlShift();
+    
+    return  ApplicationScheduler.AllowedScheduling( resource,           //batchresource
+                                                    information,        //structured operations
+                                                    ctrlkey,            //skip soft check
+                                                    ctrlshiftkey,       //ctrl shift key
+                                                    resource.Last(),    //before task
+                                                    null( Task_SC ),    //afterbatch
+                                                    Operation_SC::GetSelectedObjects( information ),
+                                                    feedback,
+                                                    isallowedhard )
+  *]
+  UserRequiresReadWrite: true
+}

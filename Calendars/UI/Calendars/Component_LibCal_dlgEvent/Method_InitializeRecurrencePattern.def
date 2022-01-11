@@ -1,0 +1,99 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitializeRecurrencePattern (shadow[LibCal_RecurrencePattern] sRecurrencePattern_i, Date startDate_i) id:Method_LibCal_dlgEvent_InitializeRecurrencePattern
+{
+  #keys: '[131094.0.1357896154]'
+  Body:
+  [*
+    // First initialize everything as new...
+    this.InitializeRecurrencePatternAsNew( startDate_i );
+    
+    // ... then take over the existing pattern (if applicable)
+    if( not isnull( sRecurrencePattern_i ) )
+    {
+      // Weekly
+      if( sRecurrencePattern_i.istype( shadow[LibCal_RecurrencePatternWeekly] ) )
+      {
+        pattern := sRecurrencePattern_i.astype( shadow[LibCal_RecurrencePatternWeekly] );
+    
+        edtEveryNrOfWeeks.Text( [String]pattern.RecurrenceInterval() );
+    
+        btnMonday   .Pressed( pattern.Monday()    );
+        btnTuesday  .Pressed( pattern.Tuesday()   );
+        btnWednesday.Pressed( pattern.Wednesday() );
+        btnThursday .Pressed( pattern.Thursday()  );
+        btnFriday   .Pressed( pattern.Friday()    );
+        btnSaturday .Pressed( pattern.Saturday()  );
+        btnSunday   .Pressed( pattern.Sunday()    );
+    
+        this.ToggleRecurrencePattern( LibCal_RecurrencePattern::TYPE_WEEKLY() );
+      }
+    
+      // Monthly
+      else if( sRecurrencePattern_i.istype( shadow[LibCal_RecurrencePatternMonthly] ) )
+      {
+        pattern := sRecurrencePattern_i.astype( shadow[LibCal_RecurrencePatternMonthly] );
+    
+        // Specific day    
+        ckbMonthlyDay.Checked( pattern.IsDay() );
+    
+        if( pattern.Day() <> 0 )
+        {
+          edtMonthlyDay.Text( [String]pattern.Day() );
+        }
+        edtMonthlyDayEveryNrOfMonths.Text( [String]pattern.RecurrenceInterval() );
+        
+        // Pattern
+        ckbMonthlyPattern.Checked( not pattern.IsDay() );
+    
+        if( pattern.PatternWeekOfMonth() <> "" and
+            pattern.PatternDayOfWeek()   <> "" )
+        {                                 
+          ssMonthlyPatternWeekOfMonth.BoundValue( pattern.PatternWeekOfMonth() );
+          ssMonthlyPatternDayOfWeek  .BoundValue( pattern.PatternDayOfWeek()   );
+        }
+        edtMonthlyPatternEveryNrOfMonths.Text( [String]pattern.RecurrenceInterval() );
+    
+        this.ToggleRecurrencePattern( LibCal_RecurrencePattern::TYPE_MONTHLY() );
+      }
+    
+      // Yearly
+      else if( sRecurrencePattern_i.istype( shadow[LibCal_RecurrencePatternYearly] ) )
+      {
+        pattern := sRecurrencePattern_i.astype( shadow[LibCal_RecurrencePatternYearly] );
+    
+        edtEveryNrOfYears.Text( [String]pattern.RecurrenceInterval() );
+    
+        // Specific date
+        ckbYearlyDay.Checked( pattern.IsDay() );
+        if( pattern.Month() <> 0 and pattern.Day() <> 0 )
+        {
+          this.SetYearlyMonthAndDay( pattern.Month(), pattern.Day() );
+        }
+        
+        // Pattern
+        ckbYearlyPattern.Checked( not pattern.IsDay() );
+        if( pattern.PatternWeekOfMonth() <> "" and
+            pattern.PatternDayOfWeek()   <> "" )
+        {
+          ssYearlyPatternWeekOfMonth.BoundValue( pattern.PatternWeekOfMonth() );
+          ssYearlyPatternDayOfWeek  .BoundValue( pattern.PatternDayOfWeek()   );
+    
+          if( pattern.Month() <> 0 )
+          {
+            this.SetYearlyPatternMonth( pattern.Month() );
+          }
+        }
+    
+        this.ToggleRecurrencePattern( LibCal_RecurrencePattern::TYPE_YEARLY() );
+      }
+    }
+    
+    else  // Show Weekly (disabled) when not recurring.
+    {
+      this.ToggleRecurrencePattern( LibCal_RecurrencePattern::TYPE_WEEKLY() );
+      this.DisableRecurrence();
+      this.ToggleRecurrencePattern( LibCal_RecurrencePattern::TYPE_NONE() );
+    }
+  *]
+}

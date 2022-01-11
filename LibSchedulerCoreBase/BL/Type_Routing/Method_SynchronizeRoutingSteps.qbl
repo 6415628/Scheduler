@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeRoutingSteps (ImportedRoutingStep_SCs importedroutingsteps)
+{
+  Description: 'Synchronizes routing steps based on imported routing steps from ERP/MES systems.'
+  TextBody:
+  [*
+    // WOI1 Oct-27-2016 (created)
+    allinstances := selectset( this, RoutingStep, routingstep, true );
+    updatedinstances := construct( RoutingSteps );
+    
+    traverse( importedroutingsteps, Elements, row, row.IsValidDataHard() )
+    {
+      routingid := row.RoutingId();
+      sequencenr := row.SequenceNr();
+      
+      routingstep := RoutingStep::FindRoutingStep( routingid, sequencenr );
+    
+      if( isnull( routingstep ) )
+      {
+        routingstep := this.CreateRoutingStep( routingid, sequencenr );
+      }
+    
+      routingstep.Update( row );
+      routingstep.SynchronizeWorkOrderOperationsFromRouting();
+      
+      updatedinstances.Add( routingstep );
+    }
+    
+    //Delete routing steps if they do not exist in ERP
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, routingstep, routingstep.CheckCanBeDeleted() )
+    {
+      routingstep.Delete();
+    }
+  *]
+}

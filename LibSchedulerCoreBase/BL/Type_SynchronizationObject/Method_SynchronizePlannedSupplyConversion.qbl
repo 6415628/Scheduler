@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizePlannedSupplyConversion
+{
+  Description: 'Synchronizes all planned supply conversions.'
+  TextBody:
+  [*
+    // QuantityConvertedFromPlannedSupply and QuantityConvertedFromPlannedSupply was zeroed at the start of SynchronizePlannedSupplyConversion, so no risk of duplicated quantities
+    // This is to support multiple planned supplies synced to the same inventory, single planend supply synced to multiple inventories
+    
+    // EXAMPLE:
+    // WorkOrderSupply (WOS1) of quantity (Q) 10 has multiple planned supplies (PS1 Q=5, PS2 Q=5) due to plan unit split, existing External Supply (ES1) has quantity of 10
+    // Both PS1 and PS2 have a reservation to Demand (D1)
+    // PlannedSupply2Inventory is imported in, mapping WOS1 to ES1 with quantity 10, naturally - External Supply is also now imported in with quantity of 20 (based on ExternalSupply table) 
+    // Fulfillments (F1 & F2) to D1 from PS1 and PS2 are now "moved" to ES1, creating F3
+    // During sync of fulfillmentToReplace F1, F3.QuantityDecision = 0 -> 5, F1.QuantityConvertedToInventory = 0 -> 5
+    // During sync of fulfillmentToReplace F2, F3.QuantityDecision = 5 -> 10, F2.QuantityConvertedToInventory = 0 -> 5
+    // In this scenario 1, F3 is formed by >1 fulfillment (F1 & F2) because split plan supplies (PS1 and PS2) were reserved for the same demand, hence F3.QuantityConvertedFromPlannedSupply is updated twice
+    // In another scenario 2, D1 could be a split WorkOrderDemand, having multiple plan demands (PD1 & PD2), in that case F3 of ES1 will be updated twice too
+    
+    // In another scenario 3, more than one row of PlannedSupply2Inventory for WOS1, mapping WOS1 to ES1 (Q=5) and WOS1 and ES2 (Q=5)
+    // A non split WOS1, having single planned supply (PS1, Q=10) reserved F1 (Q=10) for demand D1, while ES1 (Q=5) and ES2 (Q=5) have no reservations
+    // Fulfillment F1 to D1 from PS1 is now "moved" to ES1 and ES2, creating F3 and F4.
+    // During sync of fulfillmentToReplace F1 in PlannedSupply2Inventory(WOS1 -> ES1), F3.QuantityDecision = 0 -> 5, F1.QuantityConvertedToInventory = 0 -> 5
+    // During sync of fulfillmentToReplace F1 again in PlannedSupply2Inventory(WOS1 -> ES2), F4.QuantityDecision = 0 -> 5, F1.QuantityConvertedToInventory = 5 -> 10
+    
+    // In another scenario 4, more than one row of PlannedSupply2Inventory for ES2 (Q=10), mapping WOS1 to ES2 (Q=5) and WOS2 and ES2 (Q=5)
+    // A non split WOS1 and WOS2, having single planned supply (PS1 Q=5, PS2 Q=5) reserved F1 Q=5 and F2 Q=5 for demand D1, while ES1 (Q=10) has no reservations
+    // Fulfillment F1 and F2 to D1 from PS1 and PS2 is now "moved" to ES1, creating F3.
+    // During sync of fulfillmentToReplace F1 in PlannedSupply2Inventory(WOS1 -> ES1), F3.QuantityDecision = 0 -> 5, F1.QuantityConvertedToInventory = 0 -> 5
+    // During sync of fulfillmentToReplace F2 in PlannedSupply2Inventory(WOS2 -> ES1), F3.QuantityDecision = 5 -> 10, F2.QuantityConvertedToInventory = 0 -> 5
+    
+    // Because of scenario 1 & 2, QuantityDecision cannot be zeroed per fulfillmentToReplace
+    // Because of scenario 3, QuantityConvertedToInventory cannot be zeroed per PlannedSupply2Inventory or ImportedPlannedSupply2Inventory
+    // Because of scenario 4, QuantityDecision cannot be zeroed per PlannedSupply2Inventory or ImportedPlannedSupply2Inventory
+    
+    traverse( this, Schedule.Supply, supply, not supply.IsPlannedSupply() ) // Only run the logic for external supplies
+    {
+      supply.SynchronizePlannedSupplyConversion();
+    }
+  *]
+}

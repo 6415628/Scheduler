@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsPlannedOutsideFrozenPeriod () declarative remote as Boolean
+{
+  Description: 'Check if shutdown is planned outside the frozen period'
+  TextBody:
+  [*
+    // Check if shutdown is planned outside the frozen period
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    value := guard( not this.Task_SC().IsFrozenInSchedule(), true );
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      feedbackobject.AddHard( Translations::Shutdown_PlannedInFrozenPeriod() );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

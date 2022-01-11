@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleCalendarConflicts_Contain (ExplicitTimeInterval interval, output DateTime start, output DateTime end, 
+  Real capacity, String intervalid, String remark) as Boolean
+{
+  Description:
+  [*
+    Handle conflicts where the existing.Start is later or same as input start and existing.End is eariler or same as input end. (Reported interval contains existing time interval)
+    Return isdeleted check.
+  *]
+  TextBody:
+  [*
+    // jiex Sep-29-2016 (created)
+    // process conflict relation: 1. Finished by. 2. Constains. 3.Equals 4. Started
+    // delete existing interval
+    
+    isdeleted := false;
+    
+    if( interval.Start() >= start and interval.End() <= end  )
+    {
+      // External interval will take precedence over internally created interval
+      if( not interval.istype( ResourceExplicitTimeInterval ) 
+          // In the case where both intervals are external, lower capacity interval take priority
+          or interval.Capacity() > capacity )
+      {
+        interval.Delete();
+      }
+      else
+      {
+        newstart := interval.End();
+        newend := end; 
+        
+        //make sure no other conflict will happen
+        this.HandleCalendarChangeConflicts( newstart, newend, capacity, intervalid, remark );
+        
+        // Create new interval when feedback interval capacity is smaller than current capacity or feedback interval ended later than actual interval
+        if( capacity < interval.Capacity() or interval.End() < end )
+        {
+          //the interval in between has smaller capacity, split the imported capacity to 2
+          ResourceExplicitTimeInterval::Create( interval.Calendar().astype( ResourceCalendar ).Resource_SC(),
+                                                 newstart,
+                                                 newend,
+                                                 intervalid,
+                                                 remark,
+                                                 capacity );
+         }
+         
+         end := interval.Start();      
+      }
+      
+      isdeleted := true;
+    }
+    
+    return isdeleted;
+  *]
+}

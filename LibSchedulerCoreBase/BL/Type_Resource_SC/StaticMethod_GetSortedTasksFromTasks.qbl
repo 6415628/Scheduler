@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetSortedTasksFromTasks (Task_SCs tasks) as owning Task_SCs
+{
+  Description: 'Get sorted tasks from selected tasks'
+  TextBody:
+  [*
+    // Tasks should be planned according to the following sequence:
+    // 1. Planned start time
+    // 2. Resource group index
+    // 3. Resource index
+    // 4. Task key (tie breaker)
+    sortedtasks := selectsortedset( tasks, Elements, task,
+                                    true,
+                                    task.Start(),
+                                    task.Resource_SC().ResourceGroup_SC().Index(),
+                                    task.Resource_SC().Index(),
+                                    task.Key() );
+    
+    return &sortedtasks;
+  *]
+}

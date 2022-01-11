@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestConstraintHasResourceInShutdownType (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    hasDuplicateID := false;
+    shutdownTypeID := '';
+    shutdownTypeName := '';
+    defaultduration := Duration::Zero();
+    isValidForPreconCreateEdit := false;
+    hasResourceScopeInShutdownType := false;
+    isViolatedResourceScopeConstraint := false;
+    hasPlannedShutdownTask := false;
+    isValidForPreconDelete := false;
+    
+    this.GetTestVariant( hasDuplicateID,
+                         shutdownTypeID,
+                         shutdownTypeName,
+                         defaultduration,
+                         isValidForPreconCreateEdit,
+                         hasResourceScopeInShutdownType,
+                         isViolatedResourceScopeConstraint,
+                         hasPlannedShutdownTask,
+                         isValidForPreconDelete );
+    
+    shutdownType := select( schedule, ShutdownType, st, true )
+    
+    // Propagate declarative constraint
+    Transaction::Transaction().Propagate( constraint( ShutdownType, IsResourceSelectedInShutdownType ) );
+    value := not shutdownType.IsResourceSelectedInShutdownType();
+    
+    this.Run().AssertEqual( isViolatedResourceScopeConstraint, value,
+                            UTFUtility::GenerateFailedMessage( 'Shutdown type constraint "IsResourceSelectedInShutdownType" failed', this.Variant() ) );
+  *]
+}

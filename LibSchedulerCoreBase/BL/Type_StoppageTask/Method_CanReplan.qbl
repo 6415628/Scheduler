@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method CanReplan (Boolean skipsoftcheck, output String feedback_o, output Boolean isallowedhard_o) declarative remote as Boolean
+{
+  Description: 'Checks stoppage task status if it is allowed to be replanned'
+  TextBody:
+  [*
+    // Stoppage task cannot be replanned if:
+    // 1. Stoppage task is frozen (soft constraint and can be overridden)
+    
+    value := true;
+    
+    // Soft rules
+    if( not skipsoftcheck )
+    {
+      value := this.CheckIsFrozen( feedback_o ) and value;
+      value := this.CheckIsFrozenByUser( feedback_o ) and value;
+    }
+    
+    return value;
+  *]
+}

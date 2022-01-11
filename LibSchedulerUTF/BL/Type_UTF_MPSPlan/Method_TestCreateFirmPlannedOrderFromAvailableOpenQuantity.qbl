@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCreateFirmPlannedOrderFromAvailableOpenQuantity (Schedule schedule)
+{
+  Description: 'Test the creation of firm planned orders from MPS planned orders from their available open quantity.'
+  TextBody:
+  [*
+    testInstance := this.GetTestInstance( this.Variant() );
+    
+    Transaction::Transaction().Propagate( relation( MPSPlannedOrder, Routing ) ); // Need this relation propagated to create firm planned orders
+    Transaction::Transaction().Propagate( attribute( MPSPlannedOrder, QuantityOpen ) ); // Need updated open quantity to create firm planned orders
+    
+    newOpenQuantity := 3.5;
+    
+    traverse( schedule, MPSPlan.MPSPlannedOrder, mpsPlannedOrder, mpsPlannedOrder.CanCreateFirmPlannedOrder() )
+    {
+      // Create a single firm planned order for each MPSPlannedOrder first
+      mpsPlannedOrder.CreateFirmPlannedOrder();
+      // Then increase its quantity
+      mpsPlannedOrder.Quantity( mpsPlannedOrder.Quantity() + newOpenQuantity );
+    }
+    
+    // Partial propagate this attribute (which propagates MPSPlannedOrder.WorkOrder relation) for updated open quantity calculation
+    Transaction::Transaction().Propagate( attribute( MPSPlannedOrder, QuantityOpen ) );
+    
+    // Now create new firm planned orders based on the open quantity
+    traverse( schedule, MPSPlan.MPSPlannedOrder, mpsPlannedOrder, mpsPlannedOrder.CanCreateFirmPlannedOrder() )
+    {
+      mpsPlannedOrder.CreateFirmPlannedOrder();
+    }
+    
+    // Need this relation propagated to find newly created firm planned orders
+    Transaction::Transaction().Propagate( relation( MPSPlannedOrder, WorkOrder ) );
+    
+    allMPSPlannedOrderHasPartialFirmPlannedOrder := forall( schedule, 
+                                                            MPSPlan.MPSPlannedOrder, 
+                                                            mpsPlannedOrder, 
+                                                            exists( mpsPlannedOrder, WorkOrder, workOrder, workOrder.Quantity() = newOpenQuantity ) );
+    
+    // Don't need to check firm planned order creation if no mps planned orders were synchronized
+    this.Run().AssertTrue( not testInstance.IsSyncMPSPlannedOrder() or allMPSPlannedOrderHasPartialFirmPlannedOrder,
+                           UTFUtility::GenerateFailedMessage( 'Creation of additional firm planned order from available open quantity failed', '' ) );
+  *]
+}

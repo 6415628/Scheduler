@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddElement (OperationInSuboptimizer operation, POARunExpressionNode node, Resource_SC resource) as OptimizerPOARunPlanElement
+{
+  Description: 'This method helps to record the solution found by POA. It adds a plan element by adding an operation and setting the PlanOnResource_SC relation.'
+  TextBody:
+  [*
+    // mbr23 Aug-29-2019 (created), copied from legacy AddElement method and modified.
+    
+    suboptimizer := this.SnapshotMRSPOA().GetComponent().astype( SuboptimizerMRSPOA );
+    
+    result := this.CreatePOARunOperation( operation );
+    result.PlanOnResource_SC( relset, resource );
+    
+    schedule := this.GetSchedule();
+    
+    start := schedule.Time() + Duration::Hours( node.StartParticipation() );
+    result.ProcessStartPOAIteration( start );
+    
+    end := schedule.Time() + Duration::Hours( node.EndParticipation() );
+    result.EndInPOAIteration( end );
+    
+    participation := Duration::Hours( node.Participation() );
+    result.NodeDuration( participation );
+    
+    setupbefore := Duration::Hours( node.PreviousLink().Transition() );
+    result.SetupBefore( setupbefore );
+    
+    result.DurationInPOAIteration( participation + setupbefore );
+    
+    result.DueDateSuggested( suboptimizer.GetOperation( operation.Operation_SC() ).DueDateSuggested() );
+    
+    result.POAIdentifier( SuboptimizerMRSPOA::POANameNodeOperation( operation.Operation_SC() ) );
+    
+    // IsFrozen() of POARunNode is a POA attribute to tell that if a node is frozen, 
+    // no new nodes are allowed to be planned directly before the frozen node.
+    result.IsFrozenRunPlanElement( node.Node().IsFrozen() );
+    
+    // Fixed nodes are excluded from being planned or unplanned by actions
+    result.IsFixedRunPlanElement( node.Node().IsFixed() );
+    
+    return result;
+  *]
+}

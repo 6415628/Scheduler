@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeIntegrationConfiguration
+{
+  Description: 'Synchronizes imported integration configuration.'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    importedIntegrationConfiguration := schedule.ImportedIntegrationConfiguration();
+    integrationConfiguration := schedule.IntegrationConfiguration();
+    
+    if( guard( importedIntegrationConfiguration.IsValidDataHard(), false ) )
+    {
+      if( isnull( integrationConfiguration ) )
+      {
+        integrationConfiguration := schedule.CreateIntegrationConfiguration( importedIntegrationConfiguration.ID() );
+      }
+      
+      integrationConfiguration.Update( importedIntegrationConfiguration );
+      
+      schedule.CreateLibDEFDatasets();
+    }
+  *]
+}

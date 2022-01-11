@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetDurationValuesOnTypeLevel () const declarative as owning Reals
+{
+  Description: 'Get the set of duration-related values to be used in the `CalcValuesAsRealVector` function of this `LibOpt_StatisticTimeTotal` with `IsType` = `true`.'
+  TextBody:
+  [*
+    values := construct( Reals );
+    
+    iterations := selectsortedset( this, Run.Iteration, iteration,
+                                   // FILTER
+                                   true,
+                                   // SORTING
+                                   iteration.IterationNr()
+                                 );
+    
+    if( this.IsAbsolute() )
+    {
+      values := selectvalues( iterations, Elements, iteration,
+                              // FILTER
+                              true,
+                              // VALUE
+                              sum( iteration, IterationPartNM.IterationPart.SnapshotComponent, sc,
+                                   // FILTER
+                                   sc.Component().ComponentType() = this.ComponentType(),
+                                   // VALUE
+                                   sc.Duration().MinutesAsReal() * 60
+                                 )
+                            );
+    }
+    else
+    {
+      values := selectvalues( iterations, Elements, iteration,
+                              // FILTER
+                              true,
+                              // VALUE
+                              this.DivPercentage( sum( iteration, IterationPartNM.IterationPart.SnapshotComponent, sc,
+                                                       // FILTER
+                                                       sc.Component().ComponentType() = this.ComponentType(),
+                                                       // VALUE
+                                                       sc.Duration()
+                                                     ),
+                                                  iteration.Duration()
+                                                )
+                            );
+    }
+    
+    return &values;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

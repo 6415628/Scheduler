@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod M051_SuboptimizerMP_Initialize_Kappa (LibOpt_Suboptimizer self, MathematicalProgram program, LibOpt_Task task)
+{
+  Description: 'A `Initialize` method that results in a MIP with a kappa warning'
+  TextBody:
+  [*
+    x := program.NewVariable( 'x' );
+    y := program.NewVariable( 'y' );
+    
+    constr1 := program.NewConstraint( "1" );
+    constr1.NewTerm( 2.0000000005, x );
+    constr1.NewTerm( -1.0, y );
+    constr1.Sense( MPConstraintSense::GreaterOrEqual().AsString() )
+    constr1.RHSValue( -1.0 );
+    
+    constr2 := program.NewConstraint( "2" );
+    constr2.NewTerm( 2.000000001, x );
+    constr2.NewTerm( -1.0, y );
+    constr2.Sense( MPConstraintSense::LessOrEqual().AsString() )
+    constr2.RHSValue( -1.0 );
+    
+    goal := program.Goal();
+    goal.NewTerm( 1.0, x );
+    
+    program.GoalSense( MPGoalSense::Maximize() );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

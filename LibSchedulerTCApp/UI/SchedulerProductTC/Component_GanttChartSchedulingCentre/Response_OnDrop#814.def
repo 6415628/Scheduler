@@ -1,0 +1,77 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDrop (structured[DemandBatch] source, CampaignTypeOnResource droprow, CampaignTask droptarget, 
+  CampaignTask beforedroptarget, CampaignTask afterdroptarget) id:Response_GanttChartSchedulingCentre_OnDrop_814
+{
+  #keys: '[133896.0.973745018]'
+  Body:
+  [*
+    // OnDrop structured[DemandBatch] --> CampaignTask 
+    lastTask := null( Task_SC );
+    
+    sourceoperations := selectset( source, Elements.BatchWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, operation,
+                                   operation.Type() = droprow.Resource_SC().Type() );
+    
+    if( not isnull( beforedroptarget ) )
+    {
+      lastTask := beforedroptarget.LastOperationCampaign().Task_SC();
+    }  
+    
+    if( droprow.Resource_SC().istype( SingleResourceBase ) )
+    {
+      // Campaign task for single resource
+      droprow.Resource_SC().astype( SingleResourceBase ).PlanAfter( sourceoperations, lastTask.astype ( SingleTaskBase ) );
+    }
+    else
+    {
+      // Campaign task for batch resource
+      droprow.Resource_SC().astype( BatchResource ).CreateBatchAssignOperationsPlanBatch( sourceoperations, guard( lastTask.astype( BatchTask ), null( BatchTask ) )  );
+    }
+  *]
+  DefinitionID: 'Responsedef_GanttChart_OnDrop'
+  Precondition:
+  [*
+    isallowedhard := true;
+    beforetask     := guard( beforedroptarget.LastOperationCampaign().Task_SC(), null( Task_SC ));
+    aftertask    := guard( afterdroptarget.OwningTask(), null( Task_SC ));
+    ctrlkey       := dropaction.IsControl();
+    ctrlshift     := dropaction.IsControlShift();
+    
+    sourceoperations := selectset( source, Elements.BatchWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, operation,
+                                   operation.Type() = droprow.Resource_SC().Type() );
+    
+    if( not isnull( beforedroptarget ) )
+    {
+      campaigntask := beforedroptarget.NextCampaignTask();
+      beforetask   := beforedroptarget.LastOperationCampaign().Task_SC();
+      aftertask    := guard( campaigntask.OwningTask(), null( Task_SC ));
+    }
+    
+    allow := false;
+    if( droprow.Resource_SC().istype( SingleResourceBase ) )
+    {
+      allow := ApplicationScheduler.AllowedScheduling( droprow.Resource_SC().astype( SingleResourceBase ),
+                                                       sourceoperations,
+                                                       ctrlkey,
+                                                       ctrlshift,
+                                                       beforetask,
+                                                       aftertask,
+                                                       Operation_SC::GetSelectedObjects( sourceoperations ),
+                                                       feedback,
+                                                       isallowedhard );
+    }
+    else
+    {
+      allow := ApplicationScheduler.AllowedScheduling( droprow.Resource_SC().astype( BatchResource ),
+                                                       sourceoperations,
+                                                       ctrlkey,
+                                                       ctrlshift,
+                                                       beforetask,
+                                                       aftertask,
+                                                       Operation_SC::GetSelectedObjects( sourceoperations ),
+                                                       feedback,
+                                                       isallowedhard );
+    }
+    return allow;
+  *]
+}

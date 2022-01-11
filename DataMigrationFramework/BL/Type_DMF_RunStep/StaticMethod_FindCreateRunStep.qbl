@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod FindCreateRunStep (DMF_Topic owner_i, DMF_TopicStep topicStep_i, DMF_RunStep previousRunStep_i, 
+  DMF_Dataset dataset_i, DMF_DatasetInConvertorVersion datasetVersion_i) as DMF_RunStep
+{
+  Description: 'Find and create runstep'
+  TextBody:
+  [*
+    runStep := select( owner_i, RunStep, runStep, 
+                       runStep.Name() = topicStep_i.Name() and
+                       runStep.Dataset() = dataset_i and
+                       runStep.DatasetInConvertorVersion() = datasetVersion_i );
+    
+    if( isnull( runStep ) )
+    {
+      runStep := DMF_RunStep::Create( owner_i, topicStep_i, previousRunStep_i, dataset_i, datasetVersion_i );
+    }
+    
+    runStep.TopicStep( relset, topicStep_i );
+    
+    return runStep;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

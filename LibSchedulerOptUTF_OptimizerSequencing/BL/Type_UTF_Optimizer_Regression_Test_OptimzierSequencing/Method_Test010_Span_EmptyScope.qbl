@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test010_Span_EmptyScope (Schedule schedule)
+{
+  Description: 'tests the span calculation on an empty scope.'
+  TextBody:
+  [*
+    // mbr23 Jan-10-2020 (created)
+    
+    // start scenario for test is empty schedule:
+    schedule.UnplanAll();
+    
+    scope_empty := construct( LibOpt_ScopeElements );
+    run := UTF_Optimizer_Regression_Test_OptimizerSequencing::CreateSelectorScopeOnlyRun( UTF_Optimizer_Regression_Test_OptimizerSequencing::Optimizer( schedule ),
+                                                                                          scope_empty,
+                                                                                          null( SettingsSequencingNeighborhoodCreatorForSpanCreator, owning ) );
+    selector := selectobject( run, Component, c, true );
+    
+    run.Start() ->| scope_empty -> UTF_Optimizer_Regression_Test_OptimizerSequencing::AssertOutputScopeEquals( this.Run(), selector )->Exception()->(exception) {
+      this.Run().RegisterFailure( "post-optimization assert failed:\n" + exception.Message() );
+    };
+  *]
+}

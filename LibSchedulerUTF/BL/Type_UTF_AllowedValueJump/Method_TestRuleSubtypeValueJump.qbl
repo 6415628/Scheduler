@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRuleSubtypeValueJump (Schedule schedule)
+{
+  Description: 'Test rule subtype ( not ) allowed value jump'
+  TextBody:
+  [*
+    // Get variant attribute
+    allowedValueJump := false;
+    ruleChangeoverFrom := '';
+    ruleChangeoverTo := '';
+    isValid := false;
+    
+    this.GetTestVariant( allowedValueJump,
+                         ruleChangeoverFrom,
+                         ruleChangeoverTo,
+                         isValid );
+    
+    task1 := select( schedule, Operation_SC.Task_SC, task, task.GetOperation().OperationID() = 'Operation1' );
+    task2 := select( schedule, Operation_SC.Task_SC, task, task.GetOperation().OperationID() = 'Operation2' );
+    
+    value := task1.IsAllHighPriorityRulesOK() and task1.IsAllLowPriorityRulesOK()
+             and task2.IsAllHighPriorityRulesOK() and task2.IsAllLowPriorityRulesOK();
+    
+    this.Run().AssertEqual( isValid, value,
+                            UTFUtility::GenerateFailedMessage( 'Rule subtype value jump failed.',
+                                                               this.Variant() ) );
+  *]
+}

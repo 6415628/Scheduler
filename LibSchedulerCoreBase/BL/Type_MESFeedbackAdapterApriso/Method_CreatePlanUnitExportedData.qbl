@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreatePlanUnitExportedData
+{
+  Description: 'Exports plan units that are planned in the scheduling horizon to apriso.'
+  TextBody:
+  [*
+    // woi1 Feb-10-2017 (created)
+    // only export plan units that haven't received feedback for ALL their operations
+    planunits := selectset( this, FeedbackManager.TaskInSchedulingHorizon.OperationInTask.PlanUnit_SC, pu, not pu.HasAllFeedbackOperation() );
+    
+    traverse( planunits, Elements, pu )
+    {
+      puid := pu.PlanUnitID();
+      exported_pu := GenericExportedPlanUnit::FindGenericExportedPlanUnit( puid );
+    
+      exportedschedule := this.FeedbackManager().GetSchedule();
+      
+      if( isnull( exported_pu ) )
+      {
+        exported_pu := GenericExportedPlanUnit::Create( exportedschedule, puid );
+      }
+    
+      exported_pu.Update( pu );
+    }
+  *]
+}

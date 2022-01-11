@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedPlannedSupply2ExternalSupply (CDIntegration cdintegration, ImportedExternalSupply_SC importedexternalsupply)
+{
+  Description: 'Restore imported planned supply to external supply core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedPlannedSupply2ExternalSupply_SC
+    cdImportedPlannedSupply2ExternalSupplys := selectset( cdintegration, CDEntity.astype( CDImportedPlannedSupply2ExternalSupply ), cpd2es, cpd2es.ExternalSupplyID() = importedexternalsupply.Id() );
+    
+    traverse( cdImportedPlannedSupply2ExternalSupplys, Elements, cpd2es )
+    {
+      importedPlannedSupply2ExternalSupply := importedexternalsupply.ImportedPlannedSupply2ExternalSupply_SC( relnew,
+                                                                                                              ExternalSupplyID := cpd2es.ExternalSupplyID(),
+                                                                                                              WorkOrderSupplyID := cpd2es.WorkOrderSupplyID()
+                                                                                                            );
+                                                        
+      CopyCorresponding::CopyFrom( cpd2es ).CopyTo( importedPlannedSupply2ExternalSupply );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

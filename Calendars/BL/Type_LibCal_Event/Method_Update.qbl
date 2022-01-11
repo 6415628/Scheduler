@@ -1,0 +1,67 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update (String subject_i, String description_i, String type_i, 
+  Real capacity_i, Boolean isDefault_i, Duration startTimeOfDay_i, 
+  Duration endTimeOfDay_i, Duration duration_i, Boolean isAllDay_i, 
+  Boolean isFromUI_i)
+{
+  TextBody:
+  [*
+    // Register if there are changes.
+    // Change of Subject and/or IsDefault should not result in re-generation of the TimeIntervals.
+    isChanged := this.IsAllDay() <> isAllDay_i
+              or ( not isAllDay_i and
+                   ( this.StartTimeOfDay() <> startTimeOfDay_i
+                  or this.Duration()       <> duration_i ) );
+    
+    // Keep some values to check for more changes later on.
+    startTimeOfDay := this.StartTimeOfDay();
+    endTimeOfDay   := this.EndTimeOfDay();
+    duration       := this.Duration();
+    
+    this.Subject(         subject_i        );
+    this.Description(     description_i    );
+    this.Type(            type_i           );
+    this.PartialCapacity( capacity_i       );
+    this.IsDefault(       isDefault_i      );
+    this.StartTimeOfDay(  startTimeOfDay_i );
+    
+    // The logic below can only be executed when the LeadingParticipation exists.
+    // It will exist most of the time, except when this method is called during the synchronization
+    // of a newly imported event. In that case the logic is executed later during the synchronization,
+    // after the LeadingParticipation has been created.
+    if( not isnull( this.LeadingParticipation() ) )
+    {
+      // Use SetDuration() to also update LeadingParticipation.EndDate, if applicable.
+      this.SetDuration( duration_i );
+      
+      // When the update is triggered from the UI, the correct start and end have already been enforced by the UI.
+      // Otherwise, use SetIsAllDay() in order to 'overrule' the given startTimeOfDay_i and endTimeOfDay_i if necessary.
+      // This can change the StartTimeOfDay, EndTimeOfDay and/or Duration, so additional checking for changes is required.
+      if( isFromUI_i )
+      {
+        this.IsAllDay( isAllDay_i );
+      }
+      else
+      {
+        this.SetIsAllDay( isAllDay_i );
+      }
+      
+      // See if there are changes after processing IsAllDay.
+      if( not isChanged and
+          isAllDay_i )
+      {
+        isChanged := isnull( this.LeadingParticipation() )
+                  or this.StartTimeOfDay() <> startTimeOfDay
+                  or this.EndTimeOfDay()   <> endTimeOfDay
+                  or this.Duration()       <> duration;
+      }
+    }
+    
+    if( isChanged )
+    {
+      this.IsChanged( true );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

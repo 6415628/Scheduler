@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Operation (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    scope := task.Scope();
+    
+    anchorset := this.AnchorSet().GetAnchorScopeElements( scope );
+    
+    result := null( stream[JSON] );
+    
+    // Check that the anchor set did not return an empty set
+    if( anchorset.Size() = 0 )
+    {
+      result := this.OperationConflict( task, Translations::LibOpt_AnchorSelector_Operation_AnchorSetEmpty( this.Name(), typeofexpression( this.AnchorSet() ) ) );
+    }
+    else
+    {
+      run := task.Run(); 
+      
+      // Check that the anchor picker selected an anchor
+      anchor := this.AnchorPicker().SelectAnchor( anchorset );
+      if( isnull( anchor ) )
+      {
+        result := this.OperationConflict( task, Translations::LibOpt_AnchorSelector_Operation_AnchorPickerNull( this.Name(), typeofexpression( this.AnchorPicker() ) ) );
+      }
+      else
+      {
+        anchor_data := anchor.GetAnchorOrCreate( run );
+        
+        if( run.HasSnapshots() )
+        {
+          LibOpt_SnapshotSelectorAnchor::Create( run, anchor_data );
+        }
+        
+        this.UpdateAnchorData( anchor_data );
+        
+        // Create the neighborhood
+        scope := this.NeighborhoodCreator().CreateNeighborhood( anchor, scope );
+        
+        result := this.Continue( task, scope );
+      }
+    }
+    
+    return result;
+  *]
+}

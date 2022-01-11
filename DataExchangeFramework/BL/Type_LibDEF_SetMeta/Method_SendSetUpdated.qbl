@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendSetUpdated
+{
+  Description: 'Send a SetUpdated full-message or notification, based on SetInterests.'
+  TextBody:
+  [*
+    // Jacky CHAN May-24-2016 (created)
+    interestedSystems := construct( LibDEF_Systems );
+    traverse( this, SetInterestFromSystem.SystemInterestedIn, interestedSystem )
+    {
+      // if the System is local, use SetInterestOfDataset
+      if( interestedSystem.IsLocalSystem() )
+      {
+        // forward data to interested datasets
+        interestedDatasets := selectset( this, SetInterestOfDataset, datasetInterest, datasetInterest.IsDatasetOnline() );
+        //drMDSID            := LibDEF_DataRepository::GetMDSID();
+        
+        //LibDEF_DataRepository::JobForwardToDatasets( drMDSID, this.GUID(), interestedDatasets );
+        
+        drDataset := LibDEF_DataRepository::GetDataset();
+        drDataset->ForwardToDatasets( this.GUID(), interestedDatasets );
+      }
+      else
+      {
+        // forward data to interested Systems
+        interestedSystems.Add( interestedSystem );
+      }
+    }
+    
+    // For interested Systems, request DataRepository to send full data
+    // make sure no Systems receive more than once
+    uniqueSystems := interestedSystems.Unique();
+    //dbMDSID       := LibDEF_DataBroker::GetMDSID();
+    //drMDSID       := LibDEF_DataRepository::GetMDSID();
+    //LibDEF_DataBroker::JobSendUpdatedDataToSystems( dbMDSID, this.GUID(), uniqueSystems, drMDSID );
+    
+    dbDataset     := LibDEF_DataBroker::GetDataset();
+    drDataset     := LibDEF_DataRepository::GetDataset();
+    dbDataset->SendUpdatedDataToSystems( this.GUID(), uniqueSystems, drDataset );
+    
+    // For non-interested Systems, send notification of SetUpdated only
+    localSystem      := this.SetTypeMeta().System();
+    otherSystems     := localSystem.GetOtherSystemsWithCommonChannel( this.ChannelName() );
+    remainingSystems := otherSystems.Difference( uniqueSystems );
+    
+    localSystem.SendMetadataRequestSetUpdated( this, remainingSystems );
+  *]
+}

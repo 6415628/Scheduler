@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedOnResourceSoftDefault (output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Default allowed rules for operation on resource (soft rules)'
+  TextBody:
+  [*
+    // Implement default soft allowed rule here
+    value := true; 
+    
+    if( not this.Resource_SC().Schedule().IsOptimizationService() )
+    {
+      /*
+      1. Check external work order operation allowed rule
+      2. Check product type
+      3. Check operation width
+    
+      */
+      if( this.HasExternalAllowedResourceRule() )
+      {
+        //1
+        value := this.CheckExternalAllowedResourceRule( feedback_o );
+      }
+      else
+      {  
+        //2
+        value := this.CheckProductType( feedback_o );
+        
+        //3
+        value := this.CheckOperationWidth( feedback_o ) and value;
+      }
+    }  
+    
+    return value;
+  *]
+}

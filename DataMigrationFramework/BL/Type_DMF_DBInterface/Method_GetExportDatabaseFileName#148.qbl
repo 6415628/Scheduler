@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetExportDatabaseFileName (Type datasetType_i, String datasetName_i, Object rootObject_i) as String
+{
+  Description:
+  [*
+    Generate an export database file name based on the inputs.
+    If a rootObject is passed, the file is assumed to be a template
+    Otherwise, it is assumed to be a core data file
+  *]
+  TextBody:
+  [*
+    // tgn3 Apr-6-2021 (created)
+    
+    // Determine database file name
+    fileParts := construct( Strings );
+    
+    fileParts.Add( datasetType_i.Name() );
+    
+    // If a root object is specified, assume it's a template file
+    isTemplate := not isnull( rootObject_i );
+    
+    if( isTemplate )
+    {
+      metadata := DMF_UpgradeabilityMetaData::GetMetadataObjectExtensible( rootObject_i )
+      
+      fileParts.Add( metadata.GetVersionString() );
+    }
+    else
+    {  
+      fileParts.Add( datasetName_i );
+    }
+    
+    fileName   := fileParts.ToString( DMF_Utility::Underscore() );
+    dbFileName := this.GetExportDatabaseFileName( fileName, isTemplate );
+    
+    return dbFileName;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

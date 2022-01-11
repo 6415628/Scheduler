@@ -1,0 +1,63 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionInsertShutdown_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    resourceType := '';
+    leadTimeStrategy := '';
+    hasShutdownTypeInResource := false;
+    isValidForPreconInsert := false;
+    hasShutdown := false;
+    hasFeedback := false;
+    isValidForPreconDelete := false;
+    hasShutdownType := false;
+    duration := Duration::MaxDuration();
+    isValidForPreconCreateEdit := false;
+    
+    this.GetTestVariantForPreconditionChecking( isvariantfound,
+                                                resourceType,
+                                                leadTimeStrategy,
+                                                hasShutdownTypeInResource,
+                                                isValidForPreconInsert,
+                                                hasShutdown,
+                                                hasFeedback,
+                                                isValidForPreconDelete,
+                                                hasShutdownType,
+                                                duration,
+                                                isValidForPreconCreateEdit );
+    
+    if( isvariantfound )
+    {
+      // Create resource group and resource based on variant
+      resourceGroup := GenericResourceGroup::Create( schedule,
+                                                     resourceType,
+                                                     resourceType );
+      
+      // Create resource
+      if( resourceType = Constants::Resource_BatchResource() )
+      {
+        resourceGroup.HasBatches( true );
+      }
+      else if( resourceType = Constants::Resource_ContinuousResource() )
+      {
+        resourceGroup.IsContinuous( true );
+      }
+      
+      resource := resourceGroup.CreateResource( resourceType );
+      
+      // Create lead time strategy based on variant
+      LeadTimeStrategy_SC::Create( resource, Duration::Zero(), leadTimeStrategy );
+      Transaction::Transaction().Propagate( attribute( Resource_SC, StrategyName ) );
+      
+      // Create shutdown type in resource and link to resource based on variant
+      if( hasShutdownTypeInResource )
+      {
+        shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, 'Shutdown Type' );
+        UTFMockObjectFactory::CreateShutdownTypeInResource( shutdownType, resource );
+      }
+    }
+  *]
+}

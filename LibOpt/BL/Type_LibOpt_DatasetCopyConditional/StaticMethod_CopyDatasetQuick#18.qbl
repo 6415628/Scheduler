@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CopyDatasetQuick (LibOpt_Task task, String MDSKind, String namenewdataset, 
+  String componentpositionname, Key mdsid) as LibOpt_SnapshotReplannableCopyDataset
+{
+  Description:
+  [*
+    Copy the dataset in a Quick (reactive) way. Creating a dataset copy with this method is not robust against rollbacks and errors. 
+    By using this method, the dataset will be copied in its own transaction. This transaction is executed in parallel with the transactions of an optimizer run.
+    The copying will start after the current transaction finishes.
+  *]
+  TextBody:
+  [*
+    // evr3 Mar-19-2020 (created)
+        
+    options := DatasetCreateOptions::Construct( namenewdataset )
+                                                .AsCopy( mdsid )
+                                                .State( DatasetState::StandAloneStorage() );
+    
+    dataset := DatasetController::Create( MDSKind, options ); // Don't use the 'dataset' stream. This puts a RW lock on 'dataset' and the currently active dataset. 
+    
+    run := task.Component().Run();
+    snapshot := LibOpt_SnapshotReplannableCopyDataset::Create( run,
+                                                               task, 
+                                                               namenewdataset, 
+                                                               componentpositionname,
+                                                               false // IsMemoryOnly 
+                                                               );
+    // Don't reactively pass the snapshot to any method. During a rollback or error the snapshot is destroyed and recreated.
+    // This means that the snapshot that was passed to the method might not exist anymore when the reactive method is called.
+    // Use LibOpt_SnapshotReplannableCopyDataset::GetSnapshotReplannableCopyDataset instead.
+    
+    dataset 
+    ->| run 
+    // Annotate this stream to 'medium' priority. This will ensure that both the dataset copy is unloaded and the snapshot is updated as soon a possible.
+    -> Annotate( ReactiveAnnotation::Priority( 1 ) ) 
+    // Handle the created dataset copy. This method can conditionally delete the dataset if we find out during the optimizer run that it was not required to create a dataset here. 
+    -> LibOpt_DatasetCopyConditional::HandleSuccessfulDatasetCopy( namenewdataset );
+    
+    // Copying a dataset can fail (for example, if the dataset name is too long). The failure will be shown on the snapshot form.
+    dataset -> Exception() -> Annotate( ReactiveAnnotation::Priority( 1 ) ) -> LibOpt_DatasetCopyConditional::HandleFailedDatasetCopy( run, namenewdataset );
+    
+    return snapshot;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

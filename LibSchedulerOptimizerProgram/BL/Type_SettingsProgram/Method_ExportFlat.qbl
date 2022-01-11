@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExportFlat () as owning NamedValueTree
+{
+  Description: 'Like ::Export(), but does not include owned subsettings.'
+  TextBody:
+  [*
+    nvt := this.Export();
+    
+    // delete non-leaf children (owned subsettings):
+    traverse( nvt.Root().Children(), Elements, child )
+    {
+      if( child.GetValue().istype( Key ) )
+      {
+        deep := true;
+        child.Delete( deep );
+      }
+    }
+    
+    return & nvt;
+  *]
+}

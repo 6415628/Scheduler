@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestAddResourcesToProgramDefinition (Schedule schedule)
+{
+  Description: 'Test add resources to program definition'
+  TextBody:
+  [*
+    programconfigurationID := 'Program Configuration ID';
+    
+    programdefinition := select( schedule, ProgramDefinitionConfiguration, data, data.ProgramDefinitionConfigurationID() = programconfigurationID );
+    
+    value := forallexists( schedule, ResourceGroup_SC.Resource_SC, res,
+                           true,
+                           res.ProgramDefinitionConfiguration() = programdefinition );
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Assign resources to program definition failed.', this.Variant() ) );
+  *]
+}

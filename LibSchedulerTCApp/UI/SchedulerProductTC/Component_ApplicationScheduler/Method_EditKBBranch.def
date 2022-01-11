@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method EditKBBranch (Schedule schedule, String kbname) id:Method_ApplicationScheduler_EditKBBranch
+{
+  #keys: '[104006.1.86566014]'
+  Body:
+  [*
+    // Edit a kb branch with active dataset
+    componentmds := ComponentMDS::Create( Application );
+    mdsinstance := select( componentmds, ComponentMDSKinds.ComponentMDSInstances, m, m.GetMDSHandle().MDSID().MDSKey() = schedule.MDSID() );
+    mdshandle := mdsinstance.GetMDSHandle();
+    kb := select( mdsinstance.GetMDSHandle().AsSchedule().MDSSchedule(), MDSKBs, kb, kb.Name().ToUpper() = kbname.ToUpper() );
+    
+    kbfullid := KBFullID::Create( kb.Domain(), kb.Name(), kb.Branch(), kb.Version(), kb.ChangeNr() );
+    editor := CKBEditor::Create();
+    ckbhandle := editor.LoadNewestKBChange( kbfullid );
+    
+    // lock
+    editor.LockKB( ckbhandle.CKB().ID(), mdshandle );
+    
+    // edit
+    dlg := construct( dlgKnowledgeBaseEditor );
+    result := dlg.EditKnowledgeBase( mdshandle, ckbhandle, this );
+    
+    if( result > 0 and dlg.Data().NeedsSave() )
+    {
+      // save
+      editor.SaveMDSKB( mdshandle, kbfullid.KBID(), 'Edit branch' );
+    }
+    else
+    {
+      editor.UnlockKB( ckbhandle.CKB().ID(), mdshandle );
+    }
+    
+    //ScenarioManager_DP.UpdateScenarioKBInfo( scenario, kb.Name(), kb.Branch(), kb.ChangeNr(), scenario.State(), scenario.KBDescription() )
+  *]
+}

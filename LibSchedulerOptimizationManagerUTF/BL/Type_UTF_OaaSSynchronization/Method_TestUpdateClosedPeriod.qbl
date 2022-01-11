@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestUpdateClosedPeriod (Schedule schedule)
+{
+  Description: 'Test updating closed period (closed events) based on mock 3DSpace JSON data.'
+  TextBody:
+  [*
+    traverse( schedule, ImportedClosedPeriod, importedClosedPeriod )
+    {
+      start := importedClosedPeriod.Start();
+      end := importedClosedPeriod.GetEventEnd().Date();
+      duration := Duration::Days( end - start );
+      
+      eventSubject := importedClosedPeriod.GetEventSubject();
+      closedPeriod := guard( schedule.CalendarRegistry().CommonCalendar().GetEvent( importedClosedPeriod.GetEventSubject() ), 
+                             null( LibCal_Event ) );
+      
+      if( not isnull( closedPeriod ) )
+      {
+        this.Run().AssertTrue( closedPeriod.IsDefault(),
+                               UTFUtility::GenerateFailedMessage( Translations::LibSchedulerOptMgrUTF_ClosedPeriod_NotDefault( eventSubject ), '' ) );
+                               
+        this.Run().AssertEqual( LibCal_Event::TYPE_UNAVAILABLE(), closedPeriod.Type(),
+                                UTFUtility::GenerateFailedMessage( Translations::LibSchedulerOptMgrUTF_ClosedPeriod_NotUnavailable( eventSubject ), '' ) );
+                                
+        this.Run().AssertTrue( closedPeriod.IsAllDay(),
+                               UTFUtility::GenerateFailedMessage( Translations::LibSchedulerOptMgrUTF_ClosedPeriod_NotAllDay( eventSubject ), '' ) );
+        
+        this.Run().AssertEqual( duration, closedPeriod.Duration(),
+                                UTFUtility::GenerateFailedMessage( Translations::LibSchedulerOptMgrUTF_ClosedPeriod_WrongDuration( eventSubject ), '' ) );
+        
+        this.Run().AssertEqual( start, closedPeriod.LeadingParticipation().StartDate(),
+                                UTFUtility::GenerateFailedMessage( Translations::LibSchedulerOptMgrUTF_ClosedPeriod_WrongStart( eventSubject ), '' ) );
+        
+        this.Run().AssertEqual( end, closedPeriod.LeadingParticipation().EndDate(),
+                                UTFUtility::GenerateFailedMessage( Translations::LibSchedulerOptMgrUTF_ClosedPeriod_WrongEnd( eventSubject ), '' ) );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

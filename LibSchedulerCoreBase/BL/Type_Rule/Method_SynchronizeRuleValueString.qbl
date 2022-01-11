@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeRuleValueString (ImportedRule importedrule)
+{
+  Description: 'Create and update rule value string.'
+  TextBody:
+  [*
+    allinstances := selectset( this, RuleValueStrings, rulevaluestring, true );
+    updatedinstances := construct( RuleValueStringss );
+    
+    traverse( importedrule, ImportedRuleValueString, importedrulevaluestring )
+    {
+      rulevaluestring := select( this, RuleValueStrings, rvr, 
+                                 rvr.Value() = importedrulevaluestring.Value() );
+                      
+      if( isnull( rulevaluestring ) )
+      {
+        rulevaluestring := RuleValueStrings::Create( this, importedrulevaluestring );
+      }
+      updatedinstances.Add( rulevaluestring );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, rulevaluestring )
+    {
+      rulevaluestring.Remove();
+    }
+  *]
+}

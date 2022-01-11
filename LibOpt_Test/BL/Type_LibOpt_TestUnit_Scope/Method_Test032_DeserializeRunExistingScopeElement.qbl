@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test032_DeserializeRunExistingScopeElement (LibOpt_TestDataset dataset)
+{
+  Description: 'Test if a run with a scope that has an existing scope element (one that is created in a different transaction than the one with the error) can correctly be deserialized.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    
+    se := dataset.ScopeElementMock( relnew );
+    comment := 'C'
+    
+    this.NoException( void->()
+    {
+      run := opt.CreateRun();
+      
+      opt.ComponentError( run, 'E', LibOpt_ComponentErrorPosition::Operation() );
+      run.ConfigureForOneTransaction();
+      
+      run.DebugScope( true );
+      scope := LibOpt_Scope::Create( run );
+      scope.Add( se, comment );
+      run.SetStartScope( scope );
+      
+      run.Start();
+    }->IgnoreException()->|void->()
+    {
+      run := opt.RecoverLastFailedRun();
+      this.Run().AssertEqual( 1, run.Scope( relsize ), 'run.Scope( relsize )' );
+      this.Run().AssertEqual( 2, run.Snapshot( relsize ), 'run.Snapshot( relsize )' );
+      
+      scope := select( run, Scope, s, true );
+      if( not isnull( scope ) )
+      {
+        this.Run().AssertEqual( 1, scope.ScopeElements().Size(), 'scope.ScopeElements().Size()' );
+        this.Run().AssertTrue( scope.ScopeElements().First() = se, 'scope.ScopeElements().First() = se' );
+        this.Run().AssertEqual( comment, se.ScopeElementOnScope( relget ).First().Comment(), 'se.ScopeElementOnScope( relget ).First().Comment()' );
+      }
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

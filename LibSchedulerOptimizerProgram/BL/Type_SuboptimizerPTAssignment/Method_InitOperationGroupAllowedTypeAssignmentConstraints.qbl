@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitOperationGroupAllowedTypeAssignmentConstraints (LibOpt_Task task, SuboptimizerMPPTAssignment_PTAssignmentMP program, TransientDataSuboptimizerPTAssignment transientData) as SuboptimizerMPPTAssignment_PTAssignmentMP
+{
+  TextBody:
+  [*
+    // jkr8 Jul-16-2021 (created)
+    
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    // NrOpsAssignedToType_(o,t,b) <= NrOpsInGroup_o * Allowed_(o,t) * IsProgramAssigned_(t,b)  //
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    // The number of operations assigned to a type can only be positive if the operation group is allowed on the program type.
+    
+    traverse( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, programType, true )
+    {
+      traverse( transientData, OperationGroup, operationGroup, true ) 
+      {
+        traverse( transientData, Bucket, bucket, true )
+        {
+          constr := program.OperationGroupAllowedTypeAssignmentConstraints().New( operationGroup, bucket, programType );
+          
+          constr.NewTerm( 1.0, program.NrOpsAssignedToTypeVariables().Get( operationGroup, bucket, programType ) );
+          
+          coefficient := ifexpr( operationGroup.IsAllowedOnProgramType( programType ), - operationGroup.NrOperationsInGroup(), 0.0 );
+          constr.NewTerm( coefficient, program.IsProgramAssignedVariables().Get( programType, bucket ) );
+          
+          constr.RHSValue( 0 );
+        }
+      }
+    }
+    
+    return program;
+  *]
+}

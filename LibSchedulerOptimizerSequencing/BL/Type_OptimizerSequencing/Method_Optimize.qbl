@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method Optimize (Operation_SCs operations, Resource_SCs resources) as stream[JSON]
+{
+  Description: 'Create and starts a Sequencing optimizer run to optimize the given operations on the given resources.'
+  TextBody:
+  [*
+    // mbr23, 2019-09-23: moved to OptimizerMRS from legacy OptimizerMRSA
+    // mbr23, 2020-03-30: moved to OptimizerSequencing from legacy OptimizerMRS
+    operations_selected := operations.Copy();
+    
+    optimization := this.AsOptimizerSequencingForOptimization();
+    
+    resourcegroups := selectset( resources, Elements.ResourceGroup_SC, e, true );
+    
+    // We need some special handling for frozen flags for the MRS part of the optimizer.
+    // We also need some special handling for IsLocked flag and IsMandatory/IsOptional.
+    
+    // Add the frozen operations to the optimizer scope. These need to be part of the POA to make sure that the timings are correct.
+    frozenoperations := selectset( optimization, Schedule.Operation_SC, operation,
+                                   operation.IsExclusiveSingle()
+                                   and operation.IsPlanned()
+                                   and operation.IsFrozenInSchedule() );
+    operations := operations.Union( frozenoperations );
+    
+    // we need to visualize in the gantt chart which planned operations the optimizer will not touch. These are called "locked".
+    // accumulate the planned operations not selected and set them to LockedByOptimizer:
+    plannedoperations := selectset( resourcegroups,
+                                    Elements.PlannedOperation,
+                                    operation,
+                                    operation.IsExclusiveSingle(),
+                                    operations.Find( operation ) < 0 );
+    operations := operations.Union( plannedoperations );
+    // end of workaround for old MRSA behavior; needs to be refactored
+    traverse( plannedoperations, Elements, op )
+    {
+      op.IsLockedByOptimizer( true );
+    }
+    // what the optimzier locked may propagate through to more operations being locked: (used below in LockLockedAndFrozenOperationsInScope)
+    Transaction::Transaction().Propagate( attribute( Operation_SC, IsLocked ) );
+    // because IsLocked means "locked FOR optimizer"
+    
+    focus_set := resourcegroups; // all RGs need to be added as focusresourcegroups
+    scope_elements := OptimizerMRS::CreateScope( resourcegroups, operations, focus_set );
+    // Add the resources to the scope elements
+    scope_elements := OptimizerSequencing::AddResourcesToScope( scope_elements, resources );
+    
+    run := optimization.CreateRun( this, scope_elements );
+    
+    OptimizerMRS::SetLocked( run, operations, false ); // just ensures the ScopeElementOnRun objects exist. The "false" will be overridden by the next call:
+    OptimizerMRS::LockLockedAndFrozenOperationsInScope( run );
+    OptimizerMRS::SetMandatory( run, operations_selected, true );
+    OptimizerMRS::SetMandatory( run, operations.Difference( operations_selected ), false );
+    return run.Start();
+  *]
+}

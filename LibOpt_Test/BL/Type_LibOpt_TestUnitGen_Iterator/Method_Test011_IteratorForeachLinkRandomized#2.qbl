@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test011_IteratorForEachLinkRandomized (LibOpt_TestDataset dataset)
+{
+  Description: 'Create random iterator test cases, varying the number of links and max number of parallel threads. Check whether the iterator does the correct number of iterations and max number of parallel threads.'
+  TextBody:
+  [*
+    // Run randomized test
+    nr_of_links := Number::Random( 1, 20 );
+    nr_of_parallel := Number::Random( 1, 10 );
+    
+    id := ' [parallel = ' + [String] nr_of_parallel + ', links =' + [String] nr_of_links + ']';
+    
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    iterator := opt.IteratorForEachLink( run, 'Iterator' );
+    iterator.MaxParallel( nr_of_parallel );
+    
+    for( i := 0; i < nr_of_links; i++ )
+    {
+      component := opt.ComponentCounter( run, 'Counter' + [String] i );
+      component.Delay( Duration::Millis( 10 ) );
+      iterator.Fork( component );
+    }
+    
+    run.SetStartComponent( iterator );
+    
+    str := run->Start();
+    str->IgnoreException()->|void->()
+      {
+        total_nr_iterations := sum( run, Component.astype( LibOpt_ComponentCounter ), c, true, c.NrOfTimesCalled() );
+        this.Run().AssertEqual( nr_of_links, total_nr_iterations, 'Number of calls has an unexpected value' + id );
+        
+        traverse( run, Component.astype( LibOpt_ComponentCounter ), c )
+        {
+          this.Run().AssertEqual( 1, c.NrOfTimesCalled(), 'Component "' + c.Name() + '" called incorrect amount of times' + id );
+        }
+        this.CheckMaxParallel( run, nr_of_parallel );
+      }
+    str->Exception()->( e )
+    {
+      this.Run().RegisterFailure( 'Exception caught: ' + e.Message() + id  );
+    };
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

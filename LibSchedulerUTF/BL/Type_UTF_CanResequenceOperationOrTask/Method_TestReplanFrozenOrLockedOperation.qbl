@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestReplanFrozenOrLockedOperation (Schedule schedule)
+{
+  Description: 'Tests replan frozen or locked operation. Body.'
+  TextBody:
+  [*
+    feedback_o := '';
+    isAllowedHard := true;
+    operations := selectset( schedule, Order_SC.PlanUnit_SC.Operation_SC, operation, true );
+    currentVariant := this.GetCurrentVariant();
+    
+    // Propagate IsLocked and IsFrozenInSchedule attribute value for precon check
+    Transaction::Transaction().Propagate( attribute( Operation_SC, IsLocked ) );
+    Transaction::Transaction().Propagate( attribute( Operation_SC, IsFrozenInSchedule ) );
+    
+    this.Run().AssertTrue( currentVariant.CanReserveOrUnreserveMaterial() = Operation_SC::CanReplan( operations, false, feedback_o, isAllowedHard ), 
+                           'Test replan frozen or locked operation failed' );
+  *]
+}

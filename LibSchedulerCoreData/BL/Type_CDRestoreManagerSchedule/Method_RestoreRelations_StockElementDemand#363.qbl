@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_StockElementDemand (CDSchedule cdSchedule, StockingPointStock stockingpointstock)
+{
+  Description: 'Restore relations for stock element demand core data attributes to planning object'
+  TextBody:
+  [*
+    // Restore stock element demand
+    cdStockElementDemands := selectset( cdSchedule, CDEntity.astype( CDStockElementDemand ), cdStockElementDemand, 
+                                        cdStockElementDemand.ProductID() = '',
+                                        cdStockElementDemand.StockingPointID() = stockingpointstock.StockingPointID()
+                                      );
+    
+    traverse( cdStockElementDemands, Elements, cdStockElementDemand )
+    {
+      stockElementDemand := select( stockingpointstock, ScheduleStockElement.astype( StockElementDemand ), stockElementDemand, 
+                                    stockElementDemand.DemandID() = cdStockElementDemand.DemandID(),
+                                    stockElementDemand.DemandType() = cdStockElementDemand.DemandType()
+                                  );
+      if( not isnull( stockElementDemand ) )
+      {
+        // Demand, 1-1
+        demand := Demand::FindDemand( cdStockElementDemand.DemandType(), cdStockElementDemand.DemandID() );
+        stockElementDemand.Demand( relset, demand );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

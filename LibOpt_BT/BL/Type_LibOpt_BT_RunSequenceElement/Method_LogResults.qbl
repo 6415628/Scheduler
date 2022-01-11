@@ -1,0 +1,92 @@
+Quintiq file version 2.0
+#parent: #root
+Method LogResults (LibOpt_Run run) as stream[LibOpt_BT_BTS]
+{
+  TextBody:
+  [*
+    result := stream[LibOpt_BT_BTS]::Success();
+    
+    if( not this.IsAborted() )
+    {
+      btd := this.RunSequence().BenchmarkTrackingDataset();
+      
+      bts := LibOpt_BT_BTS::Create( btd, run, this.DatasetName() );
+      bts.UserName( this.UserName() );
+      bts.RunSequenceElement( relset, this );
+      bts.TrackingTableCell( relset, this.TrackingTableCell() );
+      bts.ModelVersion( relset, this.ModelVersion() );
+      bts.IsPassed( this.IsPassed() );
+      
+      run.HasIterations( true );
+      // Calculate the iterations and all related.
+      Transaction::Transaction().Propagate();
+      
+      target_comment := LibOpt_BT_RunSequenceElement::TargetValueComment();
+      types := construct( structured[Type] );
+      iterations := selectsortedset( run, Iteration, iter,
+                                     not isnull( iter.LastSnapshotKPI() ),
+                                     max( iter, IterationPartNM.IterationPart.Snapshot.astype( LibOpt_SnapshotKPI ), kpi,
+                                          not kpi.IsRolledBack()
+                                          and kpi.Comment() <> target_comment,
+                                          kpi.SequenceNr() ) );
+      
+      // Log the KPIs over time
+      traverse( iterations, Elements, iter )
+      {  
+        obj := maxselect( iter, IterationPartNM.IterationPart.Snapshot.astype( LibOpt_SnapshotKPI ), kpi,
+                          not kpi.IsRolledBack()
+                          and kpi.Comment() <> target_comment,
+                          kpi.SequenceNr() );
+        
+        
+        type := typeofexpression( obj );
+        types.Add( type );
+        
+        kpi_time := obj.TimeSince();
+        
+        json_snapshot := LibOpt_Utility::ReadSnapshot( obj )
+        for( i := 0; i < json_snapshot.Size(); i++ )
+        {
+          name := json_snapshot.Get( i ).Get( attribute( LibOpt_BT_KPIDefinition, Name ).Name() ).GetString();
+          value_type := json_snapshot.Get( i ).Get( attribute( LibOpt_BT_KPIDefinition, ValueType ).Name() ).GetString();
+          value := json_snapshot.Get( i ).Get( attribute( LibOpt_BT_KPI, Value ).Name() ).GetReal();
+          
+          kpi_definition := LibOpt_BT_KPIDefinition::FindCreate( btd, name, value_type, type.Name() );
+          kpi := LibOpt_BT_KPI::FindCreate( bts, kpi_definition );
+          kpi.DateTime( LibOpt_BT_KPI::AddRealToBinaryValue( kpi.DateTime(), kpi_time.MinutesAsReal()) );
+          kpi.Values( LibOpt_BT_KPI::AddRealToBinaryValue( kpi.Values(), value ) );
+          kpi.Value( value );
+        }
+      }
+      
+      // Log target values
+      traverse( run, Snapshot.astype( LibOpt_SnapshotKPI ), snapshot,
+                snapshot.Comment() = target_comment
+                and types.Find( typeofexpression( snapshot ) ) >= 0 )
+      {
+        type := typeofexpression( snapshot );
+        json_snapshot := LibOpt_Utility::ReadSnapshot( snapshot )
+        for( i := 0; i < json_snapshot.Size(); i++ )
+        {
+          name := json_snapshot.Get( i ).Get( attribute( LibOpt_BT_KPIDefinition, Name ).Name() ).GetString();
+          value_type := json_snapshot.Get( i ).Get( attribute( LibOpt_BT_KPIDefinition, ValueType ).Name() ).GetString();
+          value := json_snapshot.Get( i ).Get( attribute( LibOpt_BT_KPI, Value ).Name() ).GetReal();
+          
+          kpi_definition := LibOpt_BT_KPIDefinition::FindCreate( btd, name, value_type, type.Name() );
+          kpi := LibOpt_BT_KPI::Find( bts, kpi_definition );
+          if( not isnull( kpi ) )
+          {
+            kpi.InitialValue( value );
+          }
+        }
+      }
+      
+      result := emit( bts );
+    }
+    
+    this.IsCompleted( true );
+    
+    return result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

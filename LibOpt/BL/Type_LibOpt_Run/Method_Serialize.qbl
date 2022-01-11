@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method Serialize () as owning JSONBuilder
+{
+  Description: 'Write relational content of the `LibOpt_Run` to JSON.'
+  TextBody:
+  [*
+    // Convert to fat scopes as thin scopes cannot be deserialized correctly from the closure.
+    traverse( this, Scope.astype( LibOpt_ScopeThin ), scope )
+    {
+      scope.ConvertToFat();
+    }
+    
+    json := LibOpt_Message::WriteObject( this );
+    
+    json_scopes := JSON::Object();
+    
+    scope_elements := construct( LibOpt_ScopeElements );
+    traverse( this, Scope.astype( LibOpt_ScopeFat ), scope )
+    {
+      scope_elements := scope_elements.Union( scope.ScopeElements() );
+      json_scopes.Add( [String] scope.InternalIdentifier(), scope.SerializeScopeElements() );
+    }
+    
+    
+    json.Add( typeof( LibOpt_Scope ).Name(), json_scopes );
+    json.Add( attribute( LibOpt_Run, Key ).Name() + this.OptimizerName(), [String]this.Key() );
+    json.Add( attribute( LibOpt_Run, InternalIdentifier ).Name() + this.OptimizerName(), [String]this.InternalIdentifier() );
+    
+    return &json;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

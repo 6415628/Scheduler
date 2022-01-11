@@ -1,0 +1,177 @@
+Quintiq file version 2.0
+#parent: #root
+TypeDataInterface WorkOrder
+{
+  TypeKey: '[122574.0.481288719]'
+  ImageDataMember ImgDeliveryStatus
+  {
+    #keys: '1[133918.0.301968486]'
+    Description: 'Expected date is later than due date'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Is finished'
+        Image: 'CHECK'
+        Quill: 'object.Order_SC().IsFinished()'
+        Value: 'ImgIsFinished'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Work in progress'
+        Image: 'ELEMENT_INTO_INPUT'
+        Quill: 'object.Order_SC().HasFeedback()'
+        Value: 'ImgHasFeedback'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Is planned'
+        Image: 'GANTTCHART'
+        Quill: 'object.Order_SC().IsPlanned()'
+        Value: 'ImgIsPlanned'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Is Late'
+        Image: 'ALARMCLOCK'
+        Quill: 'object.Order_SC().IsDueInSchedulingHorizon() and object.Order_SC().ExpectedDate() > object.Order_SC().DueDate()'
+        Value: 'ImgIsLate'
+      }
+    ]
+  }
+  ImageDataMember ImgIsCreatedInScheduler
+  {
+    #keys: '1[133918.0.291772930]'
+    Description: 'WorkOrder is created in Scheduler system'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'WorkOrder is created in Scheduler system'
+        Image: 'ADD'
+        Quill: 'object.IsCreatedInScheduler()'
+        Value: 'ImgIsCreatedInScheduler'
+      }
+    ]
+  }
+  ImageDataMember ImgIsDueInSchedulingHorizon
+  {
+    #keys: '1[133918.0.301965100]'
+    Description: 'Is due in scheduling horizon'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Is due in scheduling horizon'
+        Image: 'LM_HORIZONTAL_GAP'
+        Quill: 'object.Order_SC().IsDueInSchedulingHorizon()'
+        Value: 'ImgIsDueInSchedulingHorizon'
+      }
+    ]
+  }
+  ImageDataMember ImgIsOnTime
+  {
+    #keys: '1[145930.2.1272045463]'
+    Description: 'Work order is scheduled on time.'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Work order is not scheduled on time.'
+        Image: 'ALARMCLOCK'
+        Quill: 'not object.IsNotLate();'
+        Value: 'Late'
+      }
+    ]
+  }
+  ImageDataMember ImgLifecycleState
+  {
+    #keys: '1[138658.0.80335200]'
+    Description: 'Work order life cycle state'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Work order has been released to external system'
+        Image: 'DOCUMENT_CHECKS'
+        Quill: 'guard( object.astype( InternalWorkOrder ).IsReleased(), false )'
+        Value: 'WorkOrderReleased'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Work order has been created in Scheduler, but is not yet released'
+        Image: 'DOCUMENT_EDIT'
+        Quill:
+        [*
+          object.IsCreatedInScheduler() 
+          and guard( not object.astype( InternalWorkOrder ).IsMarkedForRelease(), false )
+          and guard( not object.astype( InternalWorkOrder ).IsReleased(), false )
+        *]
+        Value: 'WorkOrderCreatedInScheduler'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Work order is confirmed and owned by external system'
+        Image: 'DOCUMENT_CHECK'
+        Quill: 'not object.IsCreatedInScheduler()'
+        Value: 'WorkOrderOwnedByExternalSystem'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Work order has been marked for release'
+        Image: 'DOCUMENT_OUT'
+        Quill:
+        [*
+          object.istype( InternalWorkOrder ) 
+          and object.astype( InternalWorkOrder ).IsMarkedForRelease()
+          and guard( not object.astype( InternalWorkOrder ).IsReleased(), false )
+        *]
+        Value: 'WorkOrderMarkedForRelease'
+      }
+    ]
+  }
+  ImageDataMember ImgReleasedBy
+  {
+    #keys: '1[143768.0.1290801958]'
+    Description: 'Indicate whether work order is marked for release by user or automatically'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Explicitly marked for release by user'
+        Image: 'ARROW_UP_RED'
+        Quill: 'object.istype( InternalWorkOrder ) and object.astype( InternalWorkOrder ).IsMarkedForReleaseByUser()'
+        Value: 'ImgReleasedByUser'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Automatically marked for release as it has frozen operations'
+        Image: 'SNOWFLAKE'
+        Quill: 'object.istype( InternalWorkOrder ) and object.astype( InternalWorkOrder ).IsMarkedForReleaseAutomatically()'
+        Value: 'ImgReleasedAutomatically'
+      }
+    ]
+  }
+  ImageDataMember WorkOrderType
+  {
+    #keys: '1[110838.0.892462888]'
+    Description: 'Allows to distinguish work orders created in Scheduler from work orders imported from ERP'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Work order created in Scheduler'
+        Image: 'DOCUMENT_ADD'
+        Quill: 'object.IsCreatedInScheduler()'
+        Value: 'ImgSchedulerWorkOrder'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Work order imported from ERP'
+        Image: 'DOCUMENT'
+        Quill: 'not object.IsCreatedInScheduler()'
+        Value: 'ImgERPWorkOrder'
+      }
+    ]
+  }
+}

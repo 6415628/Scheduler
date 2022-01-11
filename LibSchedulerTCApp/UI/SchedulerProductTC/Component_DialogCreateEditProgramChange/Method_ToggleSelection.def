@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method ToggleSelection (structured[shadow[ProgramTypeChangeConfiguration]] programtypeconfigurations) id:Method_DialogCreateEditProgramChange_ToggleSelection
+{
+  #keys: '[143388.0.1953518881]'
+  Body:
+  [*
+    // Toggle selected program type change configurations
+    selectedprogramtypes := selectset( programtypeconfigurations, Elements.ToProgramTypeConfiguration, type, true );
+    currentholderdata := DataHolderSelectedProgramTypeConfigurations.Data().Copy();
+    
+    // Collects to be removed and added data
+    toberemoved := DataHolderSelectedProgramTypeConfigurations.Data().Intersect( selectedprogramtypes );
+    tobeadded := selectedprogramtypes.Difference( DataHolderSelectedProgramTypeConfigurations.Data() );
+    
+    // Remove existing selections
+    currentholderdata.Remove( toberemoved );
+    
+    // Remove existing selections due to same program set with to be added program types
+    traverse( tobeadded, Elements.ProgramSetConfiguration, programset )
+    {
+      toberemovedsameprogramset := selectset( currentholderdata, Elements, type,
+                                            type.ProgramSetConfiguration() = programset );
+      currentholderdata.Remove( toberemovedsameprogramset );
+    }
+    
+    // Add new selections
+    currentholderdata := currentholderdata.Add( tobeadded );
+    
+    // Update DataHolderSelectedToProgramType
+    DataHolderSelectedProgramTypeConfigurations.Data( &currentholderdata );
+  *]
+}

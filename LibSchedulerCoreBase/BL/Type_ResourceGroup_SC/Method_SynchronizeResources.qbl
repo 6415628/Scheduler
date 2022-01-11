@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeResources
+{
+  Description: 'Synchronize the Resources with the ImportedResources.'
+  TextBody:
+  [*
+    // James Kwapien 20160901 Synchronize all resources from imported type
+    
+    allinstances := selectset( this, Resource_SC, resource, true );
+    updatedinstances := construct( Resource_SCs );
+    importedrg := this.ImportedResourceGroup_SC();
+    
+    if( not isnull( importedrg ) )
+    {
+      traverse( importedrg, ImportedResource_SC, row )
+      { 
+        resource := Resource_SC::FindResource_SC( row.ResourceID() );
+      
+        if( isnull( resource ))
+        {
+          resource := this.CreateResource( row.ResourceID() );
+        }
+    
+        resource.Update( row );
+        resource.SynchronizeLeadTimeStrategies( importedrg );
+    
+        updatedinstances.Add( resource );  
+      }
+    
+      //Delete resources if they do not exist in data broker and there are no tasks planned on them
+      oldinstances := allinstances.Difference( updatedinstances );
+      
+      traverse( oldinstances, Elements, resource, resource.CanBeDeleted() )
+      {
+        resource.Delete();
+      }
+    }
+  *]
+}

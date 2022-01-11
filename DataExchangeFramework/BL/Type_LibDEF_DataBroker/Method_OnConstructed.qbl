@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnConstructed
+{
+  Description: 'Dataset OnConstructed'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-19-2016 (created)
+    
+    // set dataset time zone based on model settings
+    timeZone := LibDEF_Util::GetSettingsValueTimeZone();
+    if ( timeZone <> '' )
+    {
+      tz := TimeZone::Construct( timeZone ).ID();
+      this.MDSLibDEF_DataBroker().TimezoneID( tz );
+    }
+    
+    this.InitializeQueues();
+    
+    // reset flag
+    this.IsInSyncWithDataRepository( false );
+    
+    // execute updates from model settings
+    this.UpdateFromModelSettings( false, null( LibDEF_IntegrationEvent ) );
+    
+    // request sync from DataRepository
+    LibDEF_DataRepository::SyncToDataBroker( true );
+    
+    // update dataset-interest status internally
+    LibDEF_SetInterestOfDataset::SyncDatasetStatusInternally( this );
+  *]
+}

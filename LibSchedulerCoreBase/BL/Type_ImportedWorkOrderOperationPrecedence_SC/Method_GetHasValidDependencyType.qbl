@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidDependencyType (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if imported object has valid dependency type.'
+  TextBody:
+  [*
+    // The valid DependencyType are {FS, FF, SS} 
+    isvalid := this.DependencyType() = Constants::TimeConstraint_DependencyType_FinishToFinish()
+               or this.DependencyType() = Constants::TimeConstraint_DependencyType_FinishToStart()
+               or this.DependencyType() = Constants::TimeConstraint_DependencyType_StartToStart();
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedWorkOrderOperationPrecedence_Instance( name ),
+                                                               Translations::SC_ImportedWorkOrderOperationPrecedence_ViolateDependencyTypeAllowedValues() ) );
+    }
+    
+    return isvalid;
+  *]
+}

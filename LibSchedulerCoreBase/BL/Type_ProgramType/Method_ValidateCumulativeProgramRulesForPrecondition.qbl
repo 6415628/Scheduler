@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValidateCumulativeProgramRulesForPrecondition (Operation_SC operation) declarative remote as Boolean
+{
+  Description: 'Validate cumulative program rules for precondition checking'
+  TextBody:
+  [*
+    // Validate cumulative program rules for precondition checking
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    lasttaskinprogram := guard( this.LastTaskInProgramSet(), null( TaskInProgramSet ) );
+    
+    if( not isnull( lasttaskinprogram ) )
+    {
+      // Get all the rules related to program scope
+      ruleswithprogramscope := selectset( this.ProgramTypeConfiguration(), RuleScopeInProgramType.Rule, rule,
+                                          rule.NeedManualPreconditionCheck()
+                                          and rule.RuleSubType().IsCumulativeValueNeeded()
+                                          and rule.IsEnabled() );
+      
+      traverse( ruleswithprogramscope, Elements, rule )
+      {
+        // Get additional value   
+        additionalvalue := ifexpr( not isnull( operation )
+                                   and not exists( operation, Task_SC.TaskInProgramSet.ProgramType, program, program = this ),
+                                   operation.GetCharacteristicAdditionalRealValue( rule.CharacteristicMain(),
+                                                                                   lasttaskinprogram.Task_SC().Resource_SC() ),
+                                   0.0 );
+                                   
+        // Construct rule data object
+        dosequencingrule := lasttaskinprogram.GetRuleDataObjectForConstraintPrecondition( rule.CharacteristicMain(), false, additionalvalue );
+        rule.RuleSubType().Validate( rule, dosequencingrule );
+      }  
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

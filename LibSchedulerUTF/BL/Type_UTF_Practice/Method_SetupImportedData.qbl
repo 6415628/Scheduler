@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetupImportedData (Schedule schedule)
+{
+  Description: 'Create imported work order operations and imported routing steps to generate practice data.'
+  TextBody:
+  [*
+    // Create imported work order operations
+    workOrderID := this.Variant();
+    ImportedExternalWorkOrder::Create( schedule, workOrderID );
+    
+    for( i := 0; i < 3; i++ )
+    {
+      importedWorkOrderOperation := ImportedExternalWorkOrderOperation::Create( schedule, workOrderID, i );
+      operationType := workOrderID.Concat( [String] i );
+      importedWorkOrderOperation.OperationType( operationType );
+      importedWorkOrderOperation.Practice( operationType );
+      
+      // Create resource group to pass sanity test
+      importedResourceGroup := schedule.ImportedResourceGroup_SC( relnew, ResourceGroup := operationType, EquipmentClassID := '' );
+      importedResourceGroup.ResourceType( operationType );
+    }
+    
+    // Create routing steps
+    routingID := workOrderID;
+    schedule.ImportedRouting_SC( relnew, RoutingId := routingID );
+    
+    for( i := 3; i < 6; i++ )
+    {
+      importedRoutingStep := schedule.ImportedRoutingStep_SC( relnew, RoutingId := routingID, SequenceNr := i );
+      operationType := routingID.Concat( [String] i );
+      importedRoutingStep.OperationType( operationType );
+      importedRoutingStep.Practice( operationType );
+      importedRoutingStep.Yield( i );
+      
+      // Create resource group to pass sanity test
+      importedResourceGroup := schedule.ImportedResourceGroup_SC( relnew, ResourceGroup := operationType, EquipmentClassID := '' );
+      importedResourceGroup.ResourceType( operationType );
+    }
+  *]
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: SCListTask
+Response OnDrop (structured[Operation_SC] information, Task_SC target, SingleResourceBase resource) id:Response_SCListTask_OnDrop
+{
+  #keys: '[12142.0.53021423]'
+  Body:
+  [*
+    // OnDrop structured[Operation] --> Task On SingleResourceBase
+    resource.PlanBefore( information, target );
+  *]
+  DefinitionID => /SCListTask/Responsedef_SCListTask_OnDrop
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey  := dropaction.IsControl();
+    ctrlshiftkey := dropaction.IsControlShift();
+    
+    return ApplicationScheduler.AllowedScheduling( resource,
+                                                   information,
+                                                   ctrlkey,
+                                                   ctrlshiftkey,
+                                                   target.Previous(),
+                                                   target,
+                                                   Operation_SC::GetSelectedObjects( information ),
+                                                   feedback,
+                                                   isallowedhard );
+  *]
+  UserRequiresReadWrite: true
+}

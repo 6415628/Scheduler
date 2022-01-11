@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method MoveDemoDataExcelsFromDemoScenarioFolder (String demoCategory, String demoDatasetName)
+{
+  Description: 'Move all demo data related Excel files from demo scenario folder to Data folder.'
+  TextBody:
+  [*
+    if( demoCategory <> '' and demoDatasetName <> '' )
+    {
+      folderPath := Constants::DemoScenarioFolderPath( demoCategory, demoDatasetName );
+      
+      if( not OS::IsDirectory( folderPath ) )
+      {
+        error( 'No valid folder path, Folderpath: ', folderPath );
+      }
+      files := OS::SimpleScanDirectory( folderPath, '*' );
+      
+      traverse( files, Elements, file )
+      {
+        datapath := DomainModel::GetDataDirectory().Path();
+        destinationFilePath := file.ReplaceAll( folderPath, FileSystems::QFSPathToHardwarePath( datapath ) + '/' );
+        
+        OS::CopyFile( file, destinationFilePath );
+      }
+    }
+  *]
+}

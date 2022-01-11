@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateFeedbackStatus (String status, String remark, String resource_id)
+{
+  Description: 'Method for update operation based on feedback status'
+  TextBody:
+  [*
+    // jiex Aug-31-2016 (created)
+    
+    if( status = Constants::StatusStart() )
+    {
+      this.HasStarted( true ); 
+      this.HasEnded( false );
+      this.HasBeenAborted( false );
+      this.HasBeenCancelled( false );
+      this.TaskCancelledOrAbortedRemark( '' );
+      this.TaskCancelledOrAbortedResource( '' ); 
+      this.SetHasFeedback( true );
+    }                         
+    else if ( status = Constants::StatusEnd() )
+    {
+      this.HasStarted( true );
+      this.HasEnded( true );
+      this.HasBeenAborted( false );
+      this.HasBeenCancelled( false );
+      this.TaskCancelledOrAbortedRemark( '' );
+      this.TaskCancelledOrAbortedResource( '' );
+      this.SetHasFeedback( true );   
+    }                       
+    else if ( status = Constants::StatusAborted() )
+    {
+      this.HasStarted( false );
+      this.HasEnded( false );
+      this.HasBeenAborted( true );
+      this.HasBeenCancelled( false );
+      this.TaskCancelledOrAbortedRemark( remark );
+      this.TaskCancelledOrAbortedResource( resource_id );
+      this.SetHasFeedback( false );  
+    }
+    else if ( status = Constants::StatusCancelled() )
+    {
+      this.HasStarted( false );
+      this.HasEnded( false );
+      this.HasBeenAborted( false );
+      this.HasBeenCancelled( true );
+      this.TaskCancelledOrAbortedRemark( remark );
+      this.TaskCancelledOrAbortedResource( resource_id );
+      this.SetHasFeedback( false ); 
+    }
+  *]
+}

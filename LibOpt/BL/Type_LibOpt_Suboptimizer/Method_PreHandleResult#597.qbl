@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method PreHandleResult (LibOpt_Task task, output LibOpt_SnapshotKPI kpi_snapshot_o) as owning RealVector
+{
+  TextBody:
+  [*
+    kpi_snapshot_o := this.LogKPI( task, Translations::LibOpt_SnapshotKPI_CommentPreHandleResult() );
+    result := null( RealVector, owning );
+    
+    if( isnull( this.RollbackKPI() ) )
+    {
+      LibOpt_SnapshotWarning::Throw( task, Translations::LibOpt_Suboptimizer_NoRollbackKPI(), LibOpt_Issue::Severity_4_High() );
+    }
+    else
+    {
+      result := this.RollbackKPI().GetKPI( task );
+    }
+    
+    return & result;
+  *]
+}

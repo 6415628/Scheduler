@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod IsValidContinuousInput (output String feedback_o, Boolean iscontinuous_i, Real continuous_length_i, 
+  Real continuous_loadwidth_i, Real continuous_loadgap_i, Real continuous_gaplength_i, 
+  Real continuous_speed_i) declarative remote as Boolean
+{
+  Description: 'Checks if a resource_SC instance has a valid continuous parametes. Called from DialogResource in Designer.'
+  TextBody:
+  [*
+    // jiex Nov-11-2016 (created)
+    isvalid := not iscontinuous_i;
+    
+    // 1. Check if the resource type is continuous 
+    if( not isvalid )
+    {
+      // 2. Validate the input of minimum gap length is greater than 0 
+      isvalid := Resource_SC::GetHasValidGapLength( feedback_o, continuous_gaplength_i );
+      // 3. Validate the input of resource length is greater than minimum gap length 
+      isvalid := Resource_SC::GetHasValidLength( feedback_o, continuous_length_i, continuous_gaplength_i ) and isvalid;
+      // 4. Validate the input of minimum parallel load gap is greater than 0
+      isvalid := Resource_SC::GetHasValidLoadGap( feedback_o, continuous_loadgap_i ) and isvalid;
+      // 5. Validate the input of maximum parallel load width is greater than minimum parallel load gap
+      isvalid := Resource_SC::GetHasValidWidth( feedback_o, continuous_loadwidth_i, continuous_loadgap_i ) and isvalid;
+      // 6. Validate the input of resource speed is greater than 0 
+      isvalid := Resource_SC::GetHasValidSpeed( feedback_o, continuous_speed_i ) and isvalid;
+    }
+    
+    return isvalid;
+  *]
+}

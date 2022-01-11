@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddGoals (SuboptimizerMRSPOA_POAOneResourceGroup poa, LibOpt_Task task)
+{
+  Description: 'the path tab of the POA'
+  TextBody:
+  [*
+    debuginfo( 'Adding goals...' );
+    
+    parameters := this.Settings();
+    
+    // Minimize the sequence penalties
+    goalsequencepenalty := poa.NewSingleGoal( SuboptimizerMRSPOA::NamePOAMinimizeSequencePenaltyGoal() );
+    goalsequencepenalty.Expression( poa.Expression( SuboptimizerMRSPOA::NamePOAMinimizeSequencePenaltyExpression() ) );
+    goalsequencepenalty.Factor( parameters.SequencePenaltyFactor() ); 
+    goalsequencepenalty.Power( OptimizerRun::GetPOAPower( parameters.SequencePenaltyPower() ) );
+    
+    // Minimize the number of operations that are planned on a non allowed resource if this goal is active
+    if( guard( this.Strategy().MRS_KPIUseConstraintNotAllowedResource(), true )  )
+    {
+      goalresourceallowedpenalty := poa.NewSingleGoal( SuboptimizerMRSPOA::NamePOAMinimizeNonAllowedResourceGoal() );
+      goalresourceallowedpenalty.Expression( poa.Expression( SuboptimizerMRSPOA::NamePOAMinimizeNonAllowedResourceExpression() ) );
+      factor := guard( this.Strategy().MRS_KPIWeightConstraintNotAllowedResource(), 1.0 );
+      if( this.IsInConstrainedPOAMode() )
+      {
+        factor := guard( this.Strategy().MRS_KPIWeightConstraintNotAllowedResourceConstrained(), 1.0 ); // a large number to make sure the constraint is not violated
+      }
+      goalresourceallowedpenalty.Factor( factor );
+      goalresourceallowedpenalty.Power( OptimizerRun::GetPOAPower( guard( this.Strategy().MRS_KPIPowerConstraintNotAllowedResource(), OptimizerRun::POADefaultPower() ) ) );
+    }
+  *]
+}

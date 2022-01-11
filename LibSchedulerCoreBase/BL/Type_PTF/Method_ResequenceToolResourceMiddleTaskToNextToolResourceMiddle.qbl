@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method ResequenceToolResourceMiddleTaskToNextToolResourceMiddle (Number nroftask)
+{
+  Description: 'Resequence task at the middle of first tool required resource to next resource'
+  TextBody:
+  [*
+    // soon hwee Jan-16-2015 (created)
+    
+    firsttoolresource := null( Resource_SC );
+    selectedtasks := this.GetTasksToBeResequencedOnToolRequiredResource( nroftask, firsttoolresource );
+    
+    if( not isnull( firsttoolresource ) and selectedtasks.Size() > 0 )
+    {
+      // Select next tool required resource
+      nexttoolresource := minselect( this.Schedule(),
+                                     ResourceGroup_SC.Resource_SC,
+                                     res,
+                                     res.Type() = firsttoolresource.Type()
+                                     and res <> firsttoolresource,
+                                     res.Index() );
+    
+      if( not isnull( nexttoolresource ) )
+      {
+        nexttoolresourcefromtaskseq := ceil( nexttoolresource.Task_SC( relsize ) / 2 ) - 1;
+    
+        aftertask := select( nexttoolresource, Task_SC, task,
+                             true,
+                             task.SequenceNr() = nexttoolresourcefromtaskseq );
+    
+        // Plan selected tasks from first tool required resource to the middle of next tool required resource
+        nexttoolresource.PlanAfter( selectedtasks, aftertask );
+      }
+    }
+  *]
+}

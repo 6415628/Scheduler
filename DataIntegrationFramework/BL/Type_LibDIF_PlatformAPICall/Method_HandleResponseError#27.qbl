@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleResponseError (NamedValueTree responseNVT_i) as Boolean
+{
+  TextBody:
+  [*
+    errorFound := false;
+    
+    // See if the body of the NVT contains an error.
+    bodyNode := responseNVT_i.Root().Child( responseNVT_i.GetHandle( "Body" ) );
+    hasError := exists( bodyNode.Children(), Elements, child, true, child.Name() = "error" );
+    
+    if( hasError )
+    {
+      errorNode := bodyNode.Child( responseNVT_i.GetHandle( "error" ) );
+      
+      // Get the error information and raise an error.
+      errorCode := errorNode.Child( responseNVT_i.GetHandle( "code"    ) ).GetValueAsString();
+      errorMsg  := errorNode.Child( responseNVT_i.GetHandle( "message" ) ).GetValueAsString();
+    
+      LibDIF_Util::Error(  errorCode + " - " + errorMsg );
+    }
+    
+    return errorFound;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericPlanningConfiguration (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic planning configuration core data relations to planning object'
+  TextBody:
+  [*
+    traverse( cdSchedule, CDEntity.astype( CDGenericPlanningConfiguration ), cdGenericPlanningConfiguration )
+    {
+      genericPlanningConfiguration := PlanningConfiguration::FindPlanningConfiguration( cdGenericPlanningConfiguration.ID() );
+      if( not isnull( genericPlanningConfiguration ) )
+      {
+        // ImportedPlanningConfiguration, 1-1
+        importedPlanningConfiguration := ImportedPlanningConfiguration::FindImportedPlannedConfiguration( cdGenericPlanningConfiguration.ID() );
+        genericPlanningConfiguration.ImportedPlanningConfiguration( relset, importedPlanningConfiguration );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

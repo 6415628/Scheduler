@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestSynchronizeKPIMetaData (KpiTracker kpiTracker)
+{
+  Description: 'Test method that executes the unit test for synchronizing KPI meta data.'
+  TextBody:
+  [*
+    kpiMetaDatas := selectset( kpiTracker, MetaData.astype( KpiMetaData_SC ), kpiMetaData, true );
+    nrOfKPIMetaData := kpiMetaDatas.Size();
+    
+    this.Run().AssertTrue( nrOfKPIMetaData = UTF_KPITrackerInitializeMetaData::GetNumberOfKPIMetaDataBase() + UTF_KPITrackerInitializeMetaData::GetNumberOfKPIMetaDataIndustryLayer(), 
+                           UTFUtility::GenerateFailedMessage( 'Synchronization of KPI meta data failed', '' ) );
+    
+    // Verify 2 KPI meta data properties.
+    kpiBatchEfficiency := select( kpiMetaDatas, Elements, kpiMetaData, kpiMetaData.Name() = Translations::SC_KPIBatchEfficiency() );
+    
+    this.Run().AssertTrue( kpiBatchEfficiency.DisplayIndex() = 11
+                           and kpiBatchEfficiency.IsMaximize() = true
+                           and kpiBatchEfficiency.IsMinimize() = false
+                           and kpiBatchEfficiency.IsPercentage() = true
+                           and kpiBatchEfficiency.IsShown() = true
+                           and kpiBatchEfficiency.UnitOfMeasure() = '%'
+                           and kpiBatchEfficiency.UnitOfMeasureDescription() = 'Percentage',
+                           UTFUtility::GenerateFailedMessage( 'Synchronization of KPI meta data failed - KPI batch efficiency is with wrong properties value', '' ) );
+    
+    kpiOperationsDueNotPlanned := select( kpiMetaDatas, Elements, kpiMetaData, kpiMetaData.Name() = Translations::SC_KPIOperationsDueNotPlanned() );
+    
+    this.Run().AssertTrue( kpiOperationsDueNotPlanned.DisplayIndex() = 7
+                           and kpiOperationsDueNotPlanned.IsMaximize() = false
+                           and kpiOperationsDueNotPlanned.IsMinimize() = true
+                           and kpiOperationsDueNotPlanned.IsPercentage() = false
+                           and kpiOperationsDueNotPlanned.IsShown() = true
+                           and kpiOperationsDueNotPlanned.UnitOfMeasure() = '#'
+                           and kpiOperationsDueNotPlanned.UnitOfMeasureDescription() = 'Number of operation',
+                           UTFUtility::GenerateFailedMessage( 'Synchronization of KPI meta data failed - KPI operations due not planned is with wrong properties value', '' ) );
+  *]
+}

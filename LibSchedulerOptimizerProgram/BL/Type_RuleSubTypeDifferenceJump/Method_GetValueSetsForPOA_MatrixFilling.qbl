@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetValueSetsForPOA_MatrixFilling (Operation_SCs operations, Rule rule, output owning Reals rulevalueset1, 
+  output owning Reals rulevalueset2, output owning Operation_SCs operationsvalueset1, output owning Operation_SCs operationsvalueset2)
+{
+  TextBody:
+  [*
+    // tvk2 Oct-13-2021 (created)
+    
+    //Initialize the value sets, we want to check every unique real value once for the current difference jump rule.
+    rulevaluesetnocondition := selectuniquevalues( operations, Elements, op, op.GetCharacteristicRealValueCurrent() );
+    rulevalueset1 := rulevaluesetnocondition.Copy();
+    rulevalueset2 := rulevaluesetnocondition.Copy();
+    operationsvalueset1 := operations.Copy();
+    operationsvalueset2 := operations.Copy();
+    
+    if( rule.IsEnabled()
+        and rule.IsConditionEnabled()
+        and not isnull( rule.CharacteristicCondition() ) )
+    {
+      //In the case a condition is active we want to have sets with operations and values that come from operations that have the condition true, as only these values will have to be checked.
+      operationswithcondition := selectset( operations, Elements, op, op.GetCharacteristicConditionBooleanValueCurrent() = rule.ConditionValue() );
+      rulevaluesetwithcondition := selectuniquevalues( operations, Elements, op, op.GetCharacteristicConditionBooleanValueCurrent() = rule.ConditionValue(), op.GetCharacteristicRealValueCurrent() );
+      
+      if( rule.IsConditionScopeFirstOnly()
+          or rule.IsConditionScopeEitherTask() )
+      {
+        //We check the values that have at least one operation with the condition true (rulevalueset1) against all possible unique values (rulevalueset2) 
+        operationsvalueset1 := operationswithcondition.Copy();
+        rulevalueset1 := rulevaluesetwithcondition.Copy();    
+      }
+      else if( rule.IsConditionScopeSecondOnly() )
+      {
+        //We check all possible unique values (rulevalueset1) against the values that have at least one operation with the condition true (rulevalueset2) 
+        operationsvalueset2 := operationswithcondition.Copy();
+        rulevalueset2 := rulevaluesetwithcondition.Copy();
+      }
+      else // both
+      {
+        //We check only the values that have at least one operation with the condition true against eachother.
+        operationsvalueset1 := operationswithcondition.Copy();
+        operationsvalueset2 := operationswithcondition.Copy();
+        rulevalueset1 := rulevaluesetwithcondition.Copy(); 
+        rulevalueset2 := rulevaluesetwithcondition.Copy();    
+      }
+    }
+  *]
+}

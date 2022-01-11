@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreatePlannedSupplyAndSetProductIDForProduct (Schedule schedule, Boolean hasdiffproduct)
+{
+  TextBody:
+  [*
+    planUnits := selectset( schedule, PlanUnit_SC, planUnit, true );
+    runningSupplyProductNr := 1;
+    
+    traverse( planUnits, Elements, planUnit )
+    {
+      operation := null( Operation_SC );
+      if( planUnit.Operation_SC( relsize ) = 0 ) 
+      {
+        operation := UTFMockObjectFactory::CreateOperation( planUnit );
+        Transaction::Transaction().Propagate();
+      }
+      else
+      {
+        operation := planUnit.Last(); 
+      }
+      
+      supply := select( planUnit, Supply.astype( GenericProductExternalSupply ), s, true );
+      if( isnull( supply ) )
+      {
+        supply := GenericProductExternalSupply::Create( schedule, SupplyType::ProductPlannedSupply(), 'Supply' + [String] runningSupplyProductNr );
+      }
+     
+      productid := ifexpr( hasdiffproduct, 'Product' + [String] runningSupplyProductNr, 'Product1' );
+      supply.ProductId( productid );
+      supply.Operation_SC( relset, operation );
+      
+      runningSupplyProductNr := runningSupplyProductNr + 1;
+    }
+    
+    // Propagate relation PlanUnit_SC.Supply which is used for precon check.
+    Transaction::Transaction().Propagate( relation( PlanUnit_SC, Supply ) );
+  *]
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateDatasetCopiesForNormalComponentPositions (LibOpt_Component component, String datasetcopytype)
+{
+  Description:
+  [*
+    Attach a `datasetcopytype` dataset copy to the 'Initialize', 'Continue' and 'Finalize' `LibOpt_BreakpointPositions`. The `datasetcopytype` dataset copy is a subclass of the `LibOpt_DatasetCopyConditional` type.
+    Note: the 'Continue' component position of `LibOpt_Iterator` components is skipped, because the UI does not allow us to set dataset copies on the 'Continue' component position of an iterator.
+    Dataset copies on this component position result in unintended behavior in the Snapshots form.
+  *]
+  TextBody:
+  [*
+    // evr3 Jul-24-2020 (created)
+    componentposition_initialize := select( component, ComponentPosition, cp, cp.Name() = LibOpt_Component::ComponentPosition_Initialize() );
+    componentposition_initialize.SetDatasetCopy( datasetcopytype );
+    
+    componentposition_finalize := select( component, ComponentPosition, cp, cp.Name() = LibOpt_Component::ComponentPosition_Finalize() );  
+    componentposition_finalize.SetDatasetCopy( datasetcopytype );
+    
+    // The UI does not allow us to set dataset copies on the 'Continue' component position of an iterator (because this results in unintended behavior in the Snapshots form),
+    // so there is no need to test this case in the unit test. 
+    if( not component.istype( LibOpt_Iterator ) )
+    {
+      componentposition_continue := select( component, ComponentPosition, cp, cp.Name() = LibOpt_Component::ComponentPosition_Continue() );
+      componentposition_continue.SetDatasetCopy( datasetcopytype );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

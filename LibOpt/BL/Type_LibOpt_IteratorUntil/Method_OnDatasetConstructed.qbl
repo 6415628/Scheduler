@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnDatasetConstructed
+{
+  Description:
+  [*
+    Migration method when loading datasets with a`LibOpt_IteratorUntil` that was created in a previous version of LibOpt.
+    This method will be removed in the next-next minor release (it needsto exist only in the iterator-refactoring transition model release).
+  *]
+  TextBody:
+  [*
+    // mbr23 Jun-26-2020 (created)
+    if( not isnull( this.Next() ) )
+    {
+      // we're an old dataset. Let's upgrade to the new Iterator structure:
+      next_destination := this.Next().Destination();
+      next_linkid := this.Next().InternalIdentfier();
+      
+      newlink := construct( LibOpt_LinkIteratorSingle,
+                            Destination := next_destination,
+                            InternalIdentfier := next_linkid );
+      // steal the task transporter from the old link:
+      newlink.TaskTransporter( relmove, this.Next().TaskTransporter() );
+      
+      // rewire all UIGraphArcs to the new link:
+      traverse( this.Next(), UIGraphArc, arc )
+      {
+        arc.Link( relset, newlink );
+      }
+      
+      this.Next().Delete();
+      this.NextByIteratorParent( relset, &newlink );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

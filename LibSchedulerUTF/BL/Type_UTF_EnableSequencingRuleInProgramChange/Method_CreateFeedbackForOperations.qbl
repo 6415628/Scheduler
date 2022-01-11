@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateFeedbackForOperations (Schedule schedule)
+{
+  Description: 'Create feedback for operations'
+  TextBody:
+  [*
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, res, true );
+    operations := selectset( schedule, PlanUnit_SC.Operation_SC, op,
+                             op.OperationID() <> 'Operation_4'
+                             and op.OperationID() <> 'Operation_5' );
+    
+    feedbackstart := schedule.Time() - Duration::Hours( operations.Size() + 1 );  
+    traverse( operations, Elements, operation )
+    {
+      schedule.FeedbackManager().TaskStart( operation, resource.ResourceID(), feedbackstart, feedbackstart, 'UTF' );
+      schedule.FeedbackManager().TaskEnd( operation, resource.ResourceID(), feedbackstart, feedbackstart, feedbackstart + Duration::Hours( 1 ), 'UTF' );
+    
+      feedbackstart := feedbackstart + Duration::Hours( 1 );  
+    }
+      
+    // Create feedback in program type ( Last operation does not linked to any feedback program )
+    firstprogramchange := minselect( schedule, ProgramChange, pc, true, pc.ProgramChangeID() );
+    traverse( firstprogramchange, FeedbackProgramType, feedbackprogramtype )
+    {
+      traverse( schedule, FeedbackManager.FeedbackTaskInSchedule, taskfb  )
+      {
+        FeedbackTaskInFeedbackProgramType::CreateUpdate( taskfb, feedbackprogramtype, false );
+      }
+    }
+  *]
+}

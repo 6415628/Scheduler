@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericMaterialCustomerOrderLine (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic material customer order line core data attributes to planning object'
+  TextBody:
+  [*
+    traverse( cdSchedule, CDEntity.astype( CDGenericMaterialCustomerOrderLine ), cdGenericMaterialCustomerOrderLine )
+    {
+      genericMaterialCustomerOrderLine := MaterialCustomerOrderLine::FindMaterialCustomerOrderLine( cdGenericMaterialCustomerOrderLine.DemandType(),
+                                                                                                    cdGenericMaterialCustomerOrderLine.DemandID() );
+                                                                                                    
+      if( not isnull( genericMaterialCustomerOrderLine ) )
+      {
+        // PlanUnit, M-1
+        planUnit := PlanUnit_SC::FindPlanUnit( cdGenericMaterialCustomerOrderLine.PlanUnitID() );
+        genericMaterialCustomerOrderLine.PlanUnit_SC( relset, planUnit );
+        
+        // Operation, M-1
+        operation := select( planUnit, Operation_SC, operation, operation.OperationID() = cdGenericMaterialCustomerOrderLine.OperationID() );
+        genericMaterialCustomerOrderLine.Operation_SC( relset, operation );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

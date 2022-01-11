@@ -1,0 +1,69 @@
+Quintiq file version 2.0
+#parent: #root
+Method SequenceNodes
+{
+  Description: 'Determine the sequence the nodes should be in.'
+  TextBody:
+  [*
+    rows := selectsortedset( this, UIGraphRow, row, true, row.RowNr() );
+    
+    toprow := this.First();
+    topnodes := selectsortedset( this, UIGraphNode, node, node.Row() = toprow.RowNr(),
+                                 -1 * counter( node.GetSubgraph(), Elements, n, not isnull( n.Component() ) ),
+                                 node.Name() );
+    
+    tailrows := selectset( this, UIGraphRow, r, not isnull( r.Previous() ) );
+    
+    nodes := construct( LibOpt_UIGraphNodes );
+    
+    traverse( topnodes, Elements, topnode )
+    {
+      if( toprow.UIGraphNode( relsize ) > 0 )
+      {
+        // Calculate the position of the nodes
+        this.PositionNodes();
+      }
+      
+      subgraph := topnode.GetSubgraph();
+      
+      new := selectsortedset( subgraph.Difference( nodes ), Elements, node, true,
+                              -node.Row() );
+      nodes := nodes.Union( subgraph );
+      not_added := construct( LibOpt_UIGraphNodes );
+      
+      // Interpolate desired X value from children
+      traverse( new, Elements, node )
+      {
+        children := selectset( node, Outgoing, arc, not isnull( arc.Destination().UIGraphRow() ) );
+        if( children.Size() > 0 )
+        {
+          node.X( average( children, Elements, arc, arc.Destination().X() ) );
+          node.UIGraphRow( relset, rows.Element( node.Row() ) );
+        }
+        else
+        {
+          not_added.Add( node );
+        }
+      }
+      
+      // Add the elements that were not added yet
+      traverse( not_added, Elements, node )
+      {
+        node.UIGraphRow( relset, rows.Element( node.Row() ) );
+        node.X( guard( node.UIGraphRow().Last().X() + 1, 0 ) );
+      }
+      
+      // Sort top row
+      toprow.SortNodes( selectsortedset( toprow, UIGraphNode, node,
+                                         true,
+                                         node.X(), node.Name() ) );
+      
+      // Sort top down
+      traverse( tailrows, Elements, row )
+      {
+        row.SortTopDown();
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

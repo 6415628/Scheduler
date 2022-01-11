@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Event_Pattern_Day_or_Pattern (String prefix_i, Boolean isDay_i, Number day_i, 
+  String weekOfMonth_i, String dayOfWeek_i, String eventInfo_i) as owning FeedbackObject
+{
+  Description:
+  [*
+    Validate a specific day of the month or year, or a more complicated pattern, e.g. 1st day of the week, or 3rd Tuesday of September .
+    Is applicable for recurrence patterns 'Monthly' and 'Yearly'.
+  *]
+  TextBody:
+  [*
+    // Use a FeedbackObject to collect the validation feedback.
+    feedback := LibCal_Validate::FeedbackObject();
+    
+    if( isDay_i )
+    { 
+      // Day
+      msg := LibCal_Validate::Event_Pattern_Day( day_i );
+      if( msg <> "" )
+      {
+        moreInfo := eventInfo_i + ", Day = " + [String]day_i;
+        LibCal_Validate::RegisterError( prefix_i + msg, moreInfo );
+      }
+    }
+    else
+    {
+      // WeekOfMonth
+      msg := LibCal_Validate::Event_Pattern_WeekOfMonth( weekOfMonth_i );
+      if( msg <> "" )
+      {
+        moreInfo := eventInfo_i + ", WeekOfMonth = " + weekOfMonth_i;
+        LibCal_Validate::RegisterError( prefix_i + msg, moreInfo );
+      }
+      
+      // DayOfWeek
+      msg := LibCal_Validate::Event_Pattern_DayOfWeek( dayOfWeek_i );
+      if( msg <> "" )
+      {
+        moreInfo := eventInfo_i + ", DayOfWeek = " + dayOfWeek_i;
+        LibCal_Validate::RegisterError( prefix_i + msg, moreInfo );
+      }
+    }
+    
+    return &feedback;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

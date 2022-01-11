@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeLinkStock2COL (output Fulfillments updatedinstances)
+{
+  Description: 'Synchronizing characteristic based external fulfillments between stock material and customer order lines.'
+  TextBody:
+  [*
+    traverse( this, Schedule.ImportedFixedMaterialStock2COL, row, row.IsValidDataHard() )
+    {
+      demandid := MaterialCustomerOrderLine::GetDemandID( row.OrderNr(), row.OrderLineNr() );
+      externalsupply := MaterialExternalSupply::FindMaterialExternalSupply( SupplyType::MaterialExternalSupply(), row.StockMaterialId() );
+      customerorderline := MaterialCustomerOrderLine::FindMaterialCustomerOrderLine( DemandType::MaterialCustomerOrderLine(), demandid );
+      
+      supplies := construct( MaterialSupplys );
+      demands := construct( MaterialDemands );
+      if( not isnull(  externalsupply ) )
+      {
+        supplies.Add( externalsupply );
+      }
+      if( not isnull( customerorderline ) )
+      {
+        demands.Add( customerorderline );
+      }
+      
+      this.SynchronizeExternalFulfillments( demands, supplies, row, updatedinstances );
+    }
+  *]
+}

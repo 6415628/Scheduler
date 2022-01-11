@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateCalendars (structured[LibCal_Calendar] calendars_i) id:Method_LibCal_dlgCalendarSettings_UpdateCalendars
+{
+  #keys: '[131094.1.614804225]'
+  Body:
+  [*
+    // Update the calendars with the changes.
+    base            :=         dtBase.DateTime();
+    updateInterval  :=         durUpdateInterval.Duration();
+    windowNrOfDays  := [Number]edtWindow .Text();
+    historyNrOfDays := [Number]edtHistory.Text();
+    
+    if( TimeZone::HasTimeZoneSupport() )
+    {
+      // Compensate for the behavior of the DateTime-control of the Base.
+      timezone := dhCalendar.Data().GetTimeZone();
+      base     := base - timezone.RawOffset() + LibCal_GlobalState.GetLocalTimeZone().RawOffset();
+    }
+    
+    LibCal_CalendarRegistry::UpdateCalendars( calendars_i,
+                                              base, updateInterval,
+                                              windowNrOfDays, historyNrOfDays );
+  *]
+}

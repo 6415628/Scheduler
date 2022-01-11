@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetIsTransitionAllowed (Operation_SC prevop, Operation_SC currentop, Boolean checkhard) declarative remote as Boolean
+{
+  Description: 'check that according to the rules on the leg,  plan the input two operations continuously allowed or not'
+  TextBody:
+  [*
+    // zyi1 Jul-22-2021 (created)
+    //if checkhard is true,  check hard rule and phase transition rules, otherwise check soft rules
+    valid := true;
+    
+    traverse( this, 
+              CombiLegOnCombiPhase.CombiProgramPhase,
+              phase )
+    {
+      valid := valid and phase.GetIsTransitionAllowed( prevop, currentop, checkhard ); 
+    }
+    
+    return valid;
+  *]
+}

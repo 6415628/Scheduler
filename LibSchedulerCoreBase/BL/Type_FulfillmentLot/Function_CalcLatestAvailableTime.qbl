@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcLatestAvailableTime
+{
+  TextBody:
+  [*
+    supply := this.Fulfillment().Supply();
+    value := DateTime::MinDateTime();
+    
+    if( this.Fulfillment().IsActive() ) // fulfillment quantity is zero during automatic material reservation, we don't want the existing reservation to affect Operation.Start
+    {
+      if( supply.HasMultipleFulfillment() )
+      {
+        value := supply.LatestAvailableFrom();
+      }
+      else
+      {
+        value := guard( this.OutputLot().LatestEnd(), supply.LatestAvailableFrom() );
+      }
+    } 
+    
+    this.LatestAvailableTime( value );
+  *]
+}

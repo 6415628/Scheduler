@@ -1,0 +1,65 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeCombis
+{
+  TextBody:
+  [*
+    // zyi1 Jul-7-2021 (created)
+    traverse( this, CombiProgramSet, cps, not cps.IsActive() )
+    {
+      cps.Delete();
+    }
+    
+    // Remove all "dead" program changes (those that are not related to an active program)
+    traverse( this, ProgramChange, pc, 
+              not pc.HasPlannedProgramTask()
+              and not pc.HasFeedbackProgram()
+              and not pc.CanBeDeleted() )
+    {
+      pc.Delete();
+    }
+    
+    traverse( this, ProgramSet, ps )
+    {
+      cps := this.CreateOrGetActiveCombi( ps );
+      
+      traverse( cps, CombiProgramType, cpt, not cpt.IsActive() )
+      {
+        cpt.Delete();
+      }
+      sortedpts := selectsortedset( ps, ProgramType, pt, true, pt.ProgramChange().TaskSequenceNr() )
+    
+      traverse( sortedpts, Elements, pt )
+      {
+        cpt := this.CreateOrGetActiveCombi( cps, pt );
+        
+        cpt.MasterCombiProgramType( relset, cpt );
+        phase := pt.FirstProgramPhase();
+        while( not isnull( phase ) )
+        {
+          cph := this.CreateOrGetActiveCombi( cpt, phase );
+          cph.SetRelationPPCOnResource( phase.ProgramPhaseConfiguration() );
+          phase := phase.NextProgramPhase();
+        }
+      }
+    }
+    
+    //build relation from combi to programtype/phases,  which will be used in combileg/leg creation
+    Transaction::Transaction().Propagate( relation( CombiProgramType, ProgramTypeAsActiveCombi ) );
+    Transaction::Transaction().Propagate( relation( CombiProgramPhase, ProgramPhaseAsActiveCombi ) );
+    
+    sortedleadingpts := selectsortedset( this, 
+                                         CombiProgramSet.CombiProgramType, 
+                                         cpt, 
+                                         cpt.CombiProgramSet().ProgramSetConfiguration().IsLeading()
+                                         and not isnull( cpt.ProgramTypeAsActiveCombi() ),
+                                         cpt.ProgramTypeAsActiveCombi().Start() );
+    
+    traverse( sortedleadingpts, Elements, cpt )
+    {
+      cpt.StartTime( cpt.ProgramTypeAsActiveCombi().Start() );
+      
+      cpt.SynchronizeActiveProgramTypeCombiElements();
+    }
+  *]
+}

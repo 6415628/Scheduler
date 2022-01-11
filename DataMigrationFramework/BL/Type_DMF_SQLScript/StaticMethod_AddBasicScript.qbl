@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod AddBasicScript (DMF_ConvertorDataset dmf_i, String fileName_i, String datasetKind_i, 
+  Numbers toVersions_i)
+{
+  Description: 'Adds a script template to the scripts directory, with default metadata update content'
+  TextBody:
+  [*
+    // tgn3 Jul-13-2021 (created)
+    
+    settings := dmf_i.Settings();
+    
+    fileName := settings.DataUpgradeScriptsDirectory().Concat( fileName_i );
+    
+    /* Debug - do not delete
+    logfile( ">>> fileName", fileName );
+    logfile( ">>> datasetKind", datasetKind_i );
+    logfile( toVersions_i.ToString( ", " ) );
+    //*/
+    
+    // Check if file exists (in case information not refreshed in UI)
+    if( not OS::IsFile( fileName ) )
+    {      
+      sql := DMF_SQLScript::GetMetadataBlock( toVersions_i.Element( 0 ), toVersions_i.Element( 1 ), toVersions_i.Element( 2 ), toVersions_i.Element( 3 ) );
+      
+      // Create the file and populate it with the basic metadata information
+      file := OSFile::Construct();
+      
+      file.Open( fileName, "Write", true );
+      file.WriteText( sql );
+      file.Close();
+    }
+    else
+    {
+      msg := "DMF_SQLScript.AddBasicScript action aborted, file [" + fileName + "] already exists!";
+      
+      DMF_Utility::LogWarning( msg );
+    }
+    
+    // Always refresh script information after either of the above
+    dmf_i.RefreshScriptInformation();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

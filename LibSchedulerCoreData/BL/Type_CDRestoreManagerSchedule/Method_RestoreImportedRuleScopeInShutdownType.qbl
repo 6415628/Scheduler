@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedRuleScopeInShutdownType (CDIntegration cdintegration, ImportedRule importedrule)
+{
+  Description: 'Restore imported rule scope in shutdown type core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedRuleScopeInShutdownType
+    cdimportedRuleScopeInShutdownTypes := selectset( cdintegration, CDEntity.astype( CDImportedRuleScopeInShutdownType ), cdirist, 
+                                                     cdirist.RuleID() = importedrule.RuleID() 
+                                                   );
+    traverse( cdimportedRuleScopeInShutdownTypes, Elements, cdirist )
+    {
+      importedRuleScopeInShutdownType := importedrule.ImportedRuleScopeInShutdownType( relnew,
+                                                                                       ShutdownTypeID := cdirist.ShutdownTypeID(),
+                                                                                       RuleID := cdirist.RuleID()
+                                                                                     );
+      CopyCorresponding::CopyFrom( cdirist ).CopyTo( importedRuleScopeInShutdownType );   
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

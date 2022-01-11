@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method AttachRoutingTableInNVT (owning NamedValueTree nvt_i) as owning NamedValueTree
+{
+  Description: 'Add the routing table into the NVT.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-25-2016 (created)
+    nvBody := LibDEF_DataAccessor::GetConfigurationBody( nvt_i );
+    traverse( this, System, system )
+    {
+      // ShallowCopy is used to prevent owned objects to be exported into NVT.
+      systemCopy := system.ShallowCopy();
+      NamedValueTreeIO::Export( systemCopy, nvt_i, nvBody, false );
+    }
+    
+    // add ChannelMetas on the same level as Systems, so that TypeIndex of ChannelMeta would not conflict during importing.
+    traverse( this, System.ChannelMeta, channelMeta )
+    {
+      NamedValueTreeIO::Export( channelMeta, nvt_i, nvBody, false );
+    }
+    
+    return &nvt_i;
+  *]
+}

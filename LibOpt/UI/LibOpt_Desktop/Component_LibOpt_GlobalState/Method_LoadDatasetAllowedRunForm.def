@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method LoadDatasetAllowedRunForm (LibOpt_Run run) as Boolean id:Method_LibOpt_GlobalState_LoadDatasetAllowedRunForm
+{
+  #keys: '[141860.2.662661557]'
+  Body:
+  [*
+    // Precondition method for the LoadDataset method. 
+    
+    feedbackobj := FeedbackObject::LocalFeedback();
+    
+    // Check if the currently loaded dataset is the dataset that we are trying to load.
+    if( not feedbackobj.CheckHard( run.MDSID() <> run.MDSIDRun() ) )
+    {
+      feedbackobj.AddHard( Translations::LibOpt_SnapshotReplannable_Precondition_AlreadyInDatasetRunForm( run ) );  
+    }
+    // Check if the dataset that we are trying to load exists.
+    else if( not feedbackobj.CheckHard( not run.IsDatasetThatExecutedRunDeleted() ) )
+    {
+      feedbackobj.AddHard( Translations::LibOpt_SnapshotReplannable_Precondition_DatasetDeletedRun( run, run.MDSIDRun() ) );
+    }
+       
+    return feedbackobj.IsAllowed();
+  *]
+}

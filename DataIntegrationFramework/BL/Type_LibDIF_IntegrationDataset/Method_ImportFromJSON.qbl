@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportFromJSON (String json_i, String integratorID_i, LibDIF_DataTransformation dataTransformation_i) as LibDIF_IntegrationDataset
+{
+  Description: 'Trigger the import of the provided JSON-data to integration objects, using the QIntegrator(-route) with the provided ID.'
+  TextBody:
+  [*
+    integrationDataset := this;
+    
+    //info( ">>> JSON" );
+    //info( json_i );
+    
+    // Create a NVT that contains the JSON as content as request for the QIntegrator.
+    requestNVT := LibDIF_IntegrationDataset::CreateRequestForQI( json_i );
+    
+    //info( ">>> RequestNVT" );
+    //info( requestNVT.ToString() );
+    
+    // Trigger the action in the QIntegrator and wait for its reply.
+    errMsg      := "";
+    responseNVT := LibInt_IntegratorProxy::SyncNvtRequest( integratorID_i, "", requestNVT, errMsg );
+    
+    if( errMsg <> "" )
+    {
+      // A 'real' error will be thrown later.
+      LibDIF_Util::Info( "ERROR received from QIntegrator" );
+      info( errMsg );
+    }
+    else
+    {
+      //info( ">>> ResponseNVT" );
+      //info( responseNVT.ToString() );
+      
+      // Delete the existing IntegrationObjects before creating the imported ones,
+      // in order to prevent problems with TypeIndices.
+      this.DeleteIntegrationObjects( dataTransformation_i );
+    
+      // Process the data that is received from the QIntegrator and validate the integration objects that are generated.
+      integrationDataset := this.ProcessDataFromQI( responseNVT, integratorID_i )
+                                .ValidateIntegrationObjects( dataTransformation_i );
+    }
+    
+    // Return a stream that can be reacted on.
+    return integrationDataset;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

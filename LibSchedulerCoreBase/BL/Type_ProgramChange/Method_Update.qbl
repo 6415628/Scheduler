@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update (ProgramTypeConfigurations toprogramtypeconfigurations, Boolean hasprogramchangedurationuser, Duration programchangedurationuser)
+{
+  Description: 'Update program change attributes and new program types'
+  TextBody:
+  [*
+    // Update attributes
+    this.HasProgramChangeDurationUser( hasprogramchangedurationuser );
+    this.ProgramChangeDurationUser( programchangedurationuser );
+    
+    // Update new program types in ProgramChangeInType object
+    existing := selectset( this, ProgramChangeInType, pt, true );
+    current := construct( ProgramChangeInTypes );
+    
+    traverse( toprogramtypeconfigurations, Elements, toprogramtypeconfig )
+    {
+      data := select( this, ProgramChangeInType, pt, pt.ToProgramTypeConfiguration() = toprogramtypeconfig );
+      if( isnull( data ) )
+      {
+        data := ProgramChangeInType::Create( this, toprogramtypeconfig ); 
+      }
+      current.Add( data );
+    }
+    
+    // Delete old ProgramChangeInType
+    tobedeleted := existing.Difference( current );
+    traverse( tobedeleted, Elements, e )
+    {
+      e.Remove();
+    }
+  *]
+}

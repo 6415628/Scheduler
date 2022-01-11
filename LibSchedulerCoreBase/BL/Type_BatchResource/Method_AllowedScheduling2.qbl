@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedScheduling (Operation_SCs operations, Task_SC beforetask, Task_SC aftertask, 
+  Boolean skipsoftcheck, output String feedback_o, output Boolean isallowedhard_o) declarative remote as Boolean
+{
+  Description: 'Checks machine allowed rules and sequencing rules'
+  TextBody:
+  [*
+    // jan er Jun-3-2014 (created)
+    /*
+    1. Checks machine allowed rules for operations
+    2. Checks machine allowed rules for batch
+    2. Checks sequencing rules
+    */
+    
+    value := this.CheckOperationsType( operations, feedback_o, isallowedhard_o );
+    
+    value := this.AllowedOnResource( operations, skipsoftcheck, feedback_o, isallowedhard_o )
+             and value;
+    
+    value := this.AllowedBatchOnResource( operations, skipsoftcheck, feedback_o, isallowedhard_o )
+             and value;
+    
+    value := this.AllowedSequence( operations, beforetask, aftertask, skipsoftcheck, feedback_o, isallowedhard_o )
+             and value;
+    
+    return value;
+  *]
+}

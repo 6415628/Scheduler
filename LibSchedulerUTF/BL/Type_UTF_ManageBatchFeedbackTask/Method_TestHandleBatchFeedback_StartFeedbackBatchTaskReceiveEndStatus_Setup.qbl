@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestHandleBatchFeedback_StartFeedbackBatchTaskReceiveEndStatus_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    this.Setup( schedule );
+    
+    // Propagate all
+    Transaction::Transaction().PropagateAll();
+    
+    batchTask := select( schedule, Operation_SC.Task_SC.astype( BatchTask ), batchTask, true );
+    
+    batchID := batchTask.Batch().BatchID();
+    resourceID := batchTask.Resource_SC().ResourceID();
+    operations := selectset( batchTask, OperationInTask, operation, true );
+    practice := Constants::EmptyString();
+    reportedStart := DateTime::Construct( 2017, 1, 1, 4, 0, 0 );
+    reportedProcessStart := reportedStart;
+    remark := Constants::EmptyString();
+    
+    // Giving end status and reported end to the batch task.
+    schedule.FeedbackManager().BatchStart( batchID, operations, resourceID, reportedStart, reportedProcessStart, practice, remark );
+  *]
+}

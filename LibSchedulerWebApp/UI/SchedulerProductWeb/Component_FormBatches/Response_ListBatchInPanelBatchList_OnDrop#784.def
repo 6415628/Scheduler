@@ -1,0 +1,63 @@
+Quintiq file version 2.0
+#parent: ListBatchInPanelBatchList
+Response OnDrop (structured[Operation_SC] source, Batch target) id:Response_ListBatchInPanelBatchList_OnDrop_784
+{
+  #keys: '[145930.4.308389733]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebList_OnDrop'
+  GroupServerCalls: true
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey       := actionmodifier.IsControl();
+    ctrlshiftkey  := ctrlkey and actionmodifier.IsShift();
+    operations := construct( Operation_SCs );
+    
+    if( not ctrlshiftkey ) //when ctrlshiftkey = false and not isnull droptarget, the intention is to merge all operations into the droptarget
+    {
+      operations  := selectset( target, BatchSequenceElement.Operation_SC, bo, true, true ); //operations from the drop target
+    }
+    
+    source := source.Union( operations )
+    result := true;
+    
+    if( target.IsPlanned() and not ctrlshiftkey )
+    {
+      batchtask := target.BatchTask();
+      result := Scheduler.AllowedScheduling( batchtask.BatchResource(), //batchresource
+                                             source,        //structured operations
+                                             ctrlkey,            //skip soft check
+                                             ctrlshiftkey,       //ctrl shift key
+                                             batchtask.Previous(),  //before task
+                                             batchtask.Next(),      //afterbatch
+                                             Operation_SC::GetSelectedObjects( source ),
+                                             feedback,
+                                             isallowedhard )
+    }
+    else
+    {
+      result := Scheduler.AllowedInBatch( source, not target.IsPlanned(), ctrlkey, ctrlshiftkey,  feedback, isallowedhard );
+    }
+    
+    return result;
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // OnDrop structured[Operation] --> Batch List
+      
+      ctrlshift := actionmodifier.IsControl() and actionmodifier.IsShift();
+      
+      if( not isnull( target ) and not ctrlshift )
+      {
+        // (Add operation to batch)
+        target.AddOperations( source );
+      }
+      else
+      {
+        Batch::CreateBatchAssignOperations( source, Schedule );
+      }
+    *]
+  }
+}

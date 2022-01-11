@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOAConstraintEarliestStart (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata)
+{
+  Description:
+  [*
+    Adds the (hard) constraint which prevents an operation to start before a certain time.
+    This time can either be its actual start time if the operations is planned and must not move (e.g. because it's the first POA node), or it is Operation.OptimizerSequencing_EarliestStart.
+  *]
+  TextBody:
+  [*
+    earlieststarts := POAValueSet::N( poa, SuboptimizerSequencingPOA::NamePOAConstraintEarliestStart(), 0.0 );
+    
+    poaepoch := this.POAEpoch(); // considers the start of the earliest frozen/feedback task before schedule time if any, else use schedule time
+    
+    traverse( transientdata, OperationInSuboptimizerSequencing, operation )
+    {
+      earliest_start := operation.EarliestStart();
+      if( earliest_start < operation.Operation().EarliestPossibleStart() )
+      {
+        earliest_start := operation.Operation().EarliestPossibleStart();
+      }
+      
+      if( earliest_start.IsFinite() )
+      {
+        estart := earliest_start.HoursAsReal( poaepoch );
+        node := poa.Node( operation );
+        earlieststarts.Set( node, estart );
+      }
+      
+      // Add the earliest start to the dummy end nodes
+        this.AddEarliestStartForDummyNodes( poa,transientdata, earlieststarts, operation );
+    }
+    
+    constr := poa.NewStartConstraint( SuboptimizerSequencingPOA::NamePOAConstraintEarliestStart() );
+    constr.Expression( poa.Expression( SuboptimizerSequencingPOA::NamePOAExpressionTime() ) );
+    constr.ValueSet( earlieststarts );
+  *]
+}

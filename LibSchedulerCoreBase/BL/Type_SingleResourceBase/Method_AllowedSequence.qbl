@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedSequence (Operation_SC operation, Task_SC beforetask, Task_SC aftertask, 
+  Boolean skipsoftcheck, output String feedback_o, output Boolean isallowedhard_o) declarative remote as Boolean
+{
+  Description: 'Checks sequencing rules'
+  TextBody:
+  [*
+    // saravanen May-21-2014 (created)
+    
+    // Hard rules
+    value := this.AllowedSequenceHardDefault( operation,
+                                              beforetask,
+                                              aftertask,
+                                              feedback_o );
+                                              
+    value := value and this.AllowedSequenceHardCustomized( operation,
+                                                           beforetask,
+                                                           aftertask,
+                                                           feedback_o );
+    
+    isallowedhard_o := isallowedhard_o and value;
+    
+    // Soft rules
+    if( value and not skipsoftcheck )
+    {
+      value := this.AllowedSequenceSoftDefault( operation,
+                                                beforetask,
+                                                aftertask,
+                                                feedback_o ) and value;
+                                                
+      value := this.AllowedSequenceSoftCustomized( operation,
+                                                   beforetask,
+                                                   aftertask,
+                                                   feedback_o ) and value;
+    }
+    
+    return value;
+  *]
+}

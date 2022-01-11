@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcJITLatestStart
+{
+  TextBody:
+  [*
+    lateststart := DateTime::MinDateTime();
+    strategyjit := this.Task_SC().StrategyJIT();
+    
+    if( not isnull( strategyjit ) )
+    {
+      latestend := DateTime::MinDateTime();
+      nextsubtask := this.Next();
+    
+      if( isnull( nextsubtask ) )
+      {
+        latestend := strategyjit.LatestEnd();
+      }
+      else
+      {
+        latestend := nextsubtask.JITLatestStart();
+      }
+    
+      om := this.OperationMaterial();
+      query := Calendar::Query();
+      
+      query.AddCalendar( this.Resource_SC().ResourceCalendar() );
+      
+      if( not isnull( om ) and not isnull( om.ReceiveSubTask() ) )
+      {
+        query.AddCalendar( om.ReceiveSubTask().Resource_SC().ResourceCalendar() );
+      }
+      
+      previousfitstart := query.PreviousFit( latestend, this.NetDuration() );
+      lateststart := query.Subtract( previousfitstart, this.NetDuration() );
+    }
+    
+    this.JITLatestStart( lateststart );
+  *]
+}

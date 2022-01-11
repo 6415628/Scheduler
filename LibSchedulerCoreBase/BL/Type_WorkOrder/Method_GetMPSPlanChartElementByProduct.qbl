@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetMPSPlanChartElementByProduct () declarative as MPSPlanChartElementByProduct
+{
+  Description: 'Retrieves the product-related planned chart element, also to allow future overriding.'
+  TextBody:
+  [*
+    order := this.Order_SC();
+    
+    return select( this, 
+                   ProductInStockingPoint.Product_SC.MPSPlanChartElementByProduct,
+                   mpsPlanChartElementByProduct, 
+                   // Check whether order was completed within the MPS Period 
+                   // Unless it is not fully scheduled, then take matching due dates
+                   // This assumes mpsPlanChartElementByProduct are created for every duedate/day
+                   ifexpr( guard( order.IsPlanned(), false ),
+                           // MPSPeriodStart <= order.CompletionTime < MPSPeriodEnd
+                           mpsPlanChartElementByProduct.MPSPeriodEnd() > order.CompletionTime() 
+                           and mpsPlanChartElementByProduct.MPSPeriodStart() <= order.CompletionTime(),
+                           mpsPlanChartElementByProduct.DueDate() = this.DueDate() ) );
+  *]
+}

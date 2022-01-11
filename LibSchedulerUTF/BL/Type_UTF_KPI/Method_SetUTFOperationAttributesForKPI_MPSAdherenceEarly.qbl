@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetUTFOperationAttributesForKPI_MPSAdherenceEarly (UTFOperation operation, Boolean isfinite_mpswindowstart, Boolean isdue, 
+  Boolean isadherenceCPPlannedStart)
+{
+  Description: 'Update UTFOperation attributes for KPI, specific for KPI MPSAdherenceEarly'
+  TextBody:
+  [*
+    // kjn10 Jul-7-2021 (created)
+    // Default value for kpi mpsAdherenceEarly
+    mpsAdherenceEarlyDeviation := 2;
+    a := 2; //PenaltyParameterMPSAdherenceEarlySlope_a
+    b := 2; //PenaltyParameterMPSAdherenceEarlyPower_b
+    c := 2; //PenaltyParameterMPSAdherenceEarlyOffset_c
+    
+    schedule := operation.PlanUnit_SC().Schedule();
+    scheduletime := schedule.Time();
+    mpswindowstart := scheduletime + Duration::Days( 1 );
+    if( isfinite_mpswindowstart )
+    {
+      operation.UseMPS_WindowStart_UTF( true );
+      operation.MPS_WindowStart_UTF( mpswindowstart );
+    }
+                                     
+    operation.UseIsDueInSchedulingHorizon_UTF( true );
+    operation.IsDueInSchedulingHorizon_UTF( isdue );
+    
+    operation.UseStart_UTF( true );
+    if( not isadherenceCPPlannedStart )
+    {
+      operation.Start_UTF( mpswindowstart - Duration::Hours( mpsAdherenceEarlyDeviation ) );
+    }
+    else
+    {
+      operation.Start_UTF( mpswindowstart + Duration::Hours( mpsAdherenceEarlyDeviation ) );
+    }
+    
+    // the following value will be reset in tear down method
+    optimizerstrategy := schedule.OptimizerStrategyInSchedule();
+    this.PenaltyParameterMPSAdherenceKPISlope_a( optimizerstrategy.PenaltyParameterMPSAdherenceEarlySlope_a() );
+    this.PenaltyParameterMPSAdherenceKPIPower_b( optimizerstrategy.PenaltyParameterMPSAdherenceEarlyPower_b() );
+    this.PenaltyParameterMPSAdherenceKPIOffset_c( optimizerstrategy.PenaltyParameterMPSAdherenceEarlyOffset_c() );
+    
+    optimizerstrategy.PenaltyParameterMPSAdherenceEarlySlope_a( a );
+    optimizerstrategy.PenaltyParameterMPSAdherenceEarlyPower_b( b );
+    optimizerstrategy.PenaltyParameterMPSAdherenceEarlyOffset_c( c );
+  *]
+}

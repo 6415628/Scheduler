@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method CleanUpPlanningData
+{
+  Description: 'Delete all planning data related to removed instances.'
+  TextBody:
+  [*
+    // Get deleted work orders and work order operations
+    workOrdersToDelete := selectset( this, WorkOrder.astype( ExternalWorkOrder ), workOrder, not workOrder.HasExternalData() );
+    workOrderOperationsToDelete := selectset( workOrdersToDelete, Elements.WorkOrderOperation.astype( ExternalWorkOrderOperation ), op, true );
+    
+    workOrderOperations := selectset( this, WorkOrder.WorkOrderOperation.astype( ExternalWorkOrderOperation ), op, not op.HasExternalData() );
+    workOrderOperationsToDelete := workOrderOperationsToDelete.Union( workOrderOperations );
+    
+    impactedPlanUnits := selectset( workOrderOperationsToDelete, Elements.Operation_SC.PlanUnit_SC, planUnit, true );
+    
+    traverse( workOrderOperationsToDelete, Elements.Operation_SC, op )
+    {
+      op.Remove3DSpace();
+    }
+    
+    PlanUnit_SC::CleanUpOperationMaterials( impactedPlanUnits );
+  *]
+}

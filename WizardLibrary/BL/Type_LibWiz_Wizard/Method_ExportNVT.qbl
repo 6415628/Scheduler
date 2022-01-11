@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExportNVT (LibWiz_InitProcess process) as BinaryValue
+{
+  TextBody:
+  [*
+    nvtObj := NamedValueTreeIO::Export( this ); 
+    
+    // Trim NVT to only export the selected process
+    // Processes can be found on the 3rd level ( empty (root) > wizard > processes )
+    nvtWizard := select( nvtObj.Root().Children(), Elements, e, true );
+    traverse( nvtWizard.Children(), Elements, e )
+    {
+      processId := select( e.Children(), Elements, c,
+                           c.Name() = LibWiz_NVTTools::Id() );
+      if( guard( processId.GetValueAsString() <> process.Id(), false ) )
+      {
+        e.Delete( true );
+      }
+    }
+    
+    // Convert NVT to BinaryValue
+    nvtBin := NamedValueTreeBinaryIO::NamedValueTreeToBinaryData( nvtObj );
+    binaryValue := nvtBin.AsBinaryValue(); 
+    
+    return binaryValue;
+  *]
+}

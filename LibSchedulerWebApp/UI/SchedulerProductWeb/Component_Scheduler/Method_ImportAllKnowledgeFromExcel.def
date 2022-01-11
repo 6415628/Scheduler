@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportAllKnowledgeFromExcel (String demoCategoryName, String demoScenarioName) id:Method_Scheduler_ImportAllKnowledgeFromExcel
+{
+  #keys: '[143768.1.1437878913]'
+  Body:
+  [*
+    // Import all knowledge bases from excel
+    
+    componentmds := ApplicationScope.ComponentMDS();
+    componentMDSKind := select( componentmds, ComponentMDSKinds, kind, kind.Kind() = typeof( Schedule ).Name() );
+    mdsinstance := select( componentMDSKind, ComponentMDSInstances, m,
+                             m.IsLoaded(),
+                             m.MDSID().Equals( Schedule.MDSID() ) );
+    
+    editor := CKBEditor::Create();
+    mdshandle := mdsinstance.GetMDSHandle();
+    kbinfos     := editor.GetMDSKBs( mdshandle );
+    
+    // Get Data directory
+    folderPath := Schedule.GetDataFolderPath() + '/';
+    
+    traverse( kbinfos, Elements, kbInfo, kbInfo.KBFullID().KBID().Name() <> Constants::GetCalendarsKnowledgeBaseName()
+                                         and kbInfo.KBFullID().KBID().Name() <> Constants::GetUTFKnowledgeBaseName() )
+    {                                         
+      fileName := kbInfo.KBFullID().KBID().Name();
+      filePath := folderPath.Concat( fileName ).Concat( Constants::Excel_XLSX() );
+      
+      data := Schedule.GetServerFileData( filePath );
+      if( data.Size() > 0 )
+      {
+        ckbhandle := editor.LoadMDSKB( mdsinstance.GetMDSHandle(), kbInfo.KBFullID().KBID() );
+        
+        templateckb := CKBEditor::Create().GetTemplateFromKB( ckbhandle.CKB() );
+        predefinedtablegroup := templateckb.CKB().GetTables();
+        
+        tablegrouphandle := XLS::LoadTableGroupFromBinaryData( data.AsBinaryData(), predefinedtablegroup, true, true );
+      
+        ckbhandle.CKB().OverwriteTables( tablegrouphandle );
+        ckbhandle.CKB().SetTables( &tablegrouphandle, true );
+        ckbhandle.CKB().SetDirty();
+        ckbhandle.CKB().ValidateAll();
+        
+        editor.LockApplySaveUnlock( mdshandle, ckbhandle, Translations::SC_ImportKTFromExcel( demoCategoryName, demoScenarioName ), false);
+        ckbhandle.CKB().ResetDirty();
+      }
+    }
+  *]
+}

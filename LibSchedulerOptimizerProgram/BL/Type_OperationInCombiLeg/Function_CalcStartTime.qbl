@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcStartTime
+{
+  TextBody:
+  [*
+    // zyi1 Jul-19-2021 (created)
+    value := ifexpr( isnull( this.GetPreviousOperationInCombiLegInLeadingCombiProgramType() ), 
+                    this.LeadingCombiProgramType().StartTime(),
+                    this.GetPreviousOperationInCombiLegInLeadingCombiProgramType().EndTime() + this.SetupDuration() );
+    
+    //consider the upstream material availability
+    
+    value := maxvalue( value, this.Operation_SC().EarliestStart() );
+    
+    this.StartTime( value );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

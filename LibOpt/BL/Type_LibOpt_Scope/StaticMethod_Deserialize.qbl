@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Deserialize (LibOpt_Run owner, JSON json) as LibOpt_Scope
+{
+  TextBody:
+  [*
+    type := json.Get( attribute( LibOpt_Scope, DefinitionName ).Name() ).GetString();
+    
+    result := null( LibOpt_Scope );
+    if( type = typeof( LibOpt_ScopeThin ).Name() )
+    {
+      result := LibOpt_ScopeThin::Create( owner );
+    }
+    else
+    {
+      result := owner.Scope( relnew, LibOpt_Scope, type );
+    }
+    
+    result.Deserialize( json );
+    result.DeserializeScopeElements( json.Get( method( LibOpt_Scope, ScopeElements ).Name() ) );
+    
+    return result;
+  *]
+}

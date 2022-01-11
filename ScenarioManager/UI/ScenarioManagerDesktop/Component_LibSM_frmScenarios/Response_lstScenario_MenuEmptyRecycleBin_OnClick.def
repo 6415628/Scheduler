@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: lstScenario
+Response OnClick () id:Response_lstScenario_MenuEmptyRecycleBin_OnClick
+{
+  #keys: '[107496.2.1625530803]'
+  Body:
+  [*
+    // Empty trash
+    scenarioManager := LibSM_GlobalState.GetScenarioManagerDataset();
+    message := Translations::LibSM_ScenarioManager_Confirmation_EmptyRecycleBin();
+    isAdmin := LibSM_GlobalState.IsAdministrator();
+    if( MessageBox::Question( this, message, Translations::LibSM_Question_YesNo() ) = 0 )
+    {
+      userName := LibSM_GlobalState.GetUserName();
+      scenarioManager.EmptyRecycleBin( userName, isAdmin );
+      Application.RemoveHistory();
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => /lstScenario/Responsedef_lstScenario_Menu_OnClick
+  Initiator: 'MenuEmptyRecycleBin'
+  Precondition:
+  [*
+    userName := LibSM_GlobalState.GetUserName();                                      
+    isAdmin  := LibSM_GlobalState.IsAdministrator();
+    return LibSM_GlobalState.HasScenarioManagerDataset()
+       and LibSM_GlobalState.GetScenarioManagerDataset().CanEmptyRecycleBin( userName, isAdmin );
+  *]
+}

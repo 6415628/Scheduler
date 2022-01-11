@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method DeleteKB (structured[LibSM_KnowledgeBranch] knowledgeBranchs) id:Method_LibSM_frmKBManagement_DeleteKB
+{
+  #keys: '[110852.0.487157757]'
+  Body:
+  [*
+    //delete kb
+    
+    editor := CKBEditor::Create();
+    scenarioManagerMDS := LibSM_GlobalState.GetScenarioManagerMDS();
+    
+    sortedBranchesByKBDefinitionName := selectsortedset( knowledgeBranchs, Elements, branch, not branch.IsUsed(), branch.KnowledgeBaseName() );
+    
+    lastKBDefinitionName := sortedBranchesByKBDefinitionName.Element( 0 ).KnowledgeBaseName();
+    
+    // so that the right KB Domain name is used
+    kb := select( scenarioManagerMDS, MDSKBs, kbbase, kbbase.Name() = lastKBDefinitionName );
+    kbid := KBID::Create( kb.Domain(), lastKBDefinitionName );
+    
+    kbinfos  := editor.GetKBStructure( kbid );
+    
+    traverse( sortedBranchesByKBDefinitionName, Elements, branch )
+    {
+      if( branch.KnowledgeBaseName() <> lastKBDefinitionName )
+      {
+        lastKBDefinitionName := branch.KnowledgeBaseName();
+    
+        kb := select( scenarioManagerMDS, MDSKBs, kbbase, kbbase.Name() = lastKBDefinitionName );
+        kbid := KBID::Create( kb.Domain(), lastKBDefinitionName );
+        kbinfos  := editor.GetKBStructure( kbid );
+      }
+    
+      kbfullid := select( kbinfos, Elements.KBFullID, e,
+                          e.Name() = branch.KnowledgeBaseName()
+                          and e.Branch() = branch.Name()
+                          and e.ChangeNr() = [Number]branch.ChangeNr() );
+    
+      if( not isnull( kbfullid ) )
+      {
+        editor.DeleteKBChange( kbfullid );
+      }
+    }
+  *]
+}

@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestKPITotalShutdownTime (Schedule schedule)
+{
+  Description: 'Test KPI TotalShutdownTime'
+  TextBody:
+  [*
+    isvariantfound := false;
+    hasshutdown := false;
+    
+    this.GetTestVariantForKPITotalAvailableAndShutdownTime( isvariantfound,
+                                                            hasshutdown );
+    kpivalue := 0.0;
+    actualkpivalue := 0.0;
+    if( isvariantfound )
+    {
+      kpivalue := ifexpr( hasshutdown, 1, 0 );
+      actualkpivalue := schedule.KPITotalShutdownTime();  
+    }
+    
+    this.Run().AssertEqual( kpivalue, actualkpivalue,
+                            UTFUtility::GenerateFailedMessage( 'Test KPI checking TotalShutdownTime failed', this.Variant() ) );
+  *]
+}

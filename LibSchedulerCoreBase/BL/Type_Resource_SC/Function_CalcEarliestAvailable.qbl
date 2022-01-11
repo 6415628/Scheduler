@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcEarliestAvailable
+{
+  Description: 'Calculate the earliest possible for the resource is available by checking next calendar available time against schedule.Time or end time for last task on the resource.'
+  TextBody:
+  [*
+    // TG080513
+    start := this.Schedule().Time();
+    
+    if( not isnull( this.Last() ) )
+    {
+      start := maxvalue( start, this.Last().End() );
+    }
+    
+    if( this.HasFeedback() )
+    {
+      start := maxvalue( start, this.LastFeedbackTaskInResource().End() );
+    }
+    
+    earliestavailable := guard( this.ResourceCalendar().NextAvailable( start ), start );
+    
+    this.EarliestAvailable( earliestavailable );
+  *]
+}

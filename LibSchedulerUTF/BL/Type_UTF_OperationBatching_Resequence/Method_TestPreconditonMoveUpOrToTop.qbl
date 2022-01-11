@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditonMoveUpOrToTop (Schedule schedule)
+{
+  Description: 'Test the precondition methods that are being used move MoveTop and MoveUp.'
+  TextBody:
+  [*
+    // Propogate sequence nr because it is set declaratively.
+    Transaction::Transaction().Propagate( attribute( BatchSequenceElement, SequenceNr ) );
+    
+    feedback := '';
+    
+    batch_1 := select( schedule, Batch, batch, batch.BatchID() = "Batch 1" );
+    
+    operation_1 := selectset( batch_1, BatchSequenceElement.Operation_SC, operation,
+                              operation.OperationID() = "operation_1"
+                              and operation.BatchSequenceElement().SequenceNr() = 0 );
+    
+    value := Batch::AllowedMoveTop( operation_1, feedback )
+             or Batch::AllowedMoveUp( operation_1, feedback );
+    
+    this.Run().AssertFalse( value );
+  *]
+}

@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidImportedStockingPoint (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if imported work order input material has valid stocking point.'
+  TextBody:
+  [*
+    // woi1 Nov-22-2017 (created)
+    isvalid := not isnull( this.ImportedStockingPoint_SC() );
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedWorkOrderInputMaterial_Instance( name ),
+                                                               Translations::SC_ImportedWorkOrderInputMaterial_ViolateHasStockingPoint() ) );
+    }
+    
+    return isvalid;
+  *]
+}

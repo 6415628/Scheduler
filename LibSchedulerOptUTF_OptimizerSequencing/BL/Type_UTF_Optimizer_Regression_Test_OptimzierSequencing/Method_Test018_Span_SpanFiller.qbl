@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test018_Span_SpanFiller (Schedule schedule)
+{
+  Description: 'Test to see whether filler span is removed when the MaxSpanElements threshold has been exceeded'
+  TextBody:
+  [*
+    // jkr8 Nov-30-2020 (created)
+    
+    operations := selectset( schedule, Operation_SC, o, true );
+    schedule.PlanOperations( operations );
+    
+    Transaction::Transaction().Propagate( attribute( Task_SC, SequenceNr ) );
+    
+    resources := construct( Resource_SCs );
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, r, r.Last().SequenceNr() > 5 );
+    resources.Add( resource );
+    
+    operations_in_scope := construct( Operation_SCs );
+    operations_in_scope.Add( resource.First().astype( SingleTaskBase ).OperationAsSingleTask() );
+    operations_in_scope.Add( resource.Last().astype( SingleTaskBase ).OperationAsSingleTask() );
+    
+    filler_operations := construct( LibOpt_ScopeElements );
+    filler_operation := select( resource, Task_SC, t, t.SequenceNr() = 3 ).astype( SingleTaskBase ).OperationAsSingleTask().GetOrCreateScopeElement();
+    filler_operations.Add( filler_operation );
+    
+    
+    scope := UTF_Optimizer_Regression_Test_OptimizerSequencing::CreateScope( operations_in_scope, resources );
+    
+    run := UTF_Optimizer_Regression_Test_OptimizerSequencing::CreateSelectorScopeOnlyRun( UTF_Optimizer_Regression_Test_OptimizerSequencing::Optimizer( schedule ),
+                                                                                          scope,
+                                                                                          null( SettingsSequencingNeighborhoodCreatorForSpanCreator, owning ) );
+    
+    
+    selector := selectobject( run, Component.astype( SelectorSpan ), c, true  );
+    
+    selector.Settings().MaxSpanElements( 1 );
+    
+    
+    
+    runstream := run.Start() ->| filler_operations -> UTF_Optimizer_Regression_Test_OptimizerSequencing::AssertOutputScopeDoesNotContains( this.Run(), selector )->Exception()->(exception) {
+      this.Run().RegisterFailure( "post-optimization assert failed:\n" + exception.Message() );
+    };
+    
+    runstream -> ( run )
+    {
+      selector.Settings().MaxSpanElements( 1000000 );
+    }
+  *]
+}

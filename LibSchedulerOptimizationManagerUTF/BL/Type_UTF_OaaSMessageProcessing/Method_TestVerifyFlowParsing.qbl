@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestVerifyFlowParsing (Schedule schedule)
+{
+  Description: 'Simulate test of parsing calendars data for given initialization request.'
+  TextBody:
+  [*
+    // -- Flows --
+    flowJSON := this.GetJSONInputData_FlowsArray().Build().Get( 0 );; // Get to grab array's first instance
+    flow := ImportedFlow::ParseFCjson( schedule, flowJSON );
+    
+    this.Run().AssertEqual( ImportedFlow::GetFlowID( flowJSON ), flow.FlowID() );
+    this.Run().AssertEqual( ImportedFlow::GetStartOperationID( flowJSON ), flow.StartOperationID() );
+    this.Run().AssertEqual( ImportedFlow::GetEndOperationID( flowJSON ), flow.EndOperationID() );
+    this.Run().AssertEqual( ImportedFlow::GetDependencyType( flowJSON ), flow.DependencyType() );
+    
+    flow.Delete();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

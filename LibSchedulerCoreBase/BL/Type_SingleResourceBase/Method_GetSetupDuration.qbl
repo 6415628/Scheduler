@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetSetupDuration (Operation_SC fromoperation, Operation_SC tooperation) declarative as Duration
+{
+  Description: 'Gets the setup duration required between operations.'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // this method should be implemented by the QS for each specialization of SingleResource
+    // Please note that the setup duration is being retrieved from KTs (table methods) for demo purposes only.
+    // This would cause performance issues on larger data. Do not use this as a guide for implementation.
+    
+    value := Duration::Zero();
+    
+    if( this.ResourceGroup_SC().HasSetup()
+        and not isnull( tooperation )
+        and not isnull( fromoperation ) )
+    {
+      // Setup duration for product jump
+      setuprow := this.GetSetupRow( fromoperation.PlanUnit_SC().ProductType(),
+                                    fromoperation.PlanUnit_SC().ProductId(),
+                                    tooperation.PlanUnit_SC().ProductType(),
+                                    tooperation.PlanUnit_SC().ProductId(),
+                                    '',
+                                    '',
+                                    fromoperation.SetupGroup(),
+                                    tooperation.SetupGroup() );
+    
+      if( not isnull( setuprow ) )
+      {
+        value := setuprow.SetupDuration();
+      }
+    }
+    
+    return value;
+  *]
+}

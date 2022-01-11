@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedScheduling (Resource_SC resource, structured[Task_SC] tasks, Boolean skipSoftCheck, 
+  Boolean ctrlShiftKey, CampaignTask beforeCampaignTask, CampaignTask afterCampaignTask, 
+  String identifier, output String feedback_o, output Boolean isAllowedHard_o) as Boolean id:Method_Scheduler_AllowedScheduling_603
+{
+  #keys: '[143768.0.364100643]'
+  Body:
+  [*
+    // Precondition to check whether tasks can be dropped on CampaignTask
+    value := guard( afterCampaignTask.CanReplan( feedback_o ), true );
+    
+    if( value )
+    {
+      operations := selectset( tasks, Elements.OperationInTask, op, true );
+      
+      value := Scheduler.AllowedScheduling( resource,
+                                            operations,
+                                            skipSoftCheck,
+                                            ctrlShiftKey,
+                                            beforeCampaignTask,
+                                            afterCampaignTask,
+                                            identifier,
+                                            feedback_o,
+                                            isAllowedHard_o );
+    }
+    
+    return value;
+  *]
+}

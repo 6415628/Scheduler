@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride ExecuteStrategy (POAAlgorithm poa) as stream[Void]
+{
+  TextBody:
+  [*
+    // mbr23, 2020-01-16 (overridden)
+    schedule := this.GetSchedule();
+    // By defining the POA strategy in a static method without any references to your model, it will be executed asynchronously.
+    
+    poatyped := poa.astype( SuboptimizerSequencingPOA_SequencingPOA );
+    result := stream[Void]::Success();
+    
+    name_logfile := schedule.MDSSchedule().Name();
+    
+    // Settings are exported as NVT such that no lock is applied on the dataset.
+    settingsnvt := this.Settings().ExportAsNVT();
+    
+    if( this.InOneTransaction() )
+    {
+      SuboptimizerSequencingPOA::Strategy( poatyped, settingsnvt, name_logfile );
+    }
+    else
+    {
+      result := poatyped->SuboptimizerSequencingPOA::Strategy( settingsnvt, name_logfile );
+    }
+    
+    return result;
+  *]
+}

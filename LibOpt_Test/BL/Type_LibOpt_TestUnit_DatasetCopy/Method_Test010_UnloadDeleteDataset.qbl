@@ -1,0 +1,82 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test010_UnloadDeleteDataset (LibOpt_TestDataset dataset)
+{
+  Description:
+  [*
+    Check that the `LibOpt_SnapshotReplannableCopyDataset::UnloadDeleteDatasetCopyManually` static method is unloading and deleting dataset copies. 
+    This method is called when the 'Unload dataset' or 'Delete dataset' button is clicked from the context menu of a `LibOpt_SnapshotReplannableCopyDataset` snapshot in the 'Snapshots' or  'Replannable snapshots' form.
+  *]
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( true );
+    run := opt.CreateRun();
+    
+    // Create any component and set a LibOpt_DatasetCopyConditional to a component position of that component.
+    switch := opt.SwitchRoundRobin( run, 'Round robin' );
+    initializeposition := select( switch, ComponentPosition, cp, cp.Name() = LibOpt_Component::ComponentPosition_Initialize() );
+    initializeposition.SetDatasetCopy();
+    
+    str := run->Start()
+    ->|stream[Void]::Wait( this.MDSEditorUpdateTime() ) // Wait some time to ensure that the dataset copy has been created and that MDSEditor::Editor().ObjectInfos() is updated. 
+    ->|void->() // Start a reactive call to handle the dataset copy
+    {
+      snapshotcopydataset := select( switch,
+                                     SnapshotComponent.Children.astype( LibOpt_SnapshotReplannableCopyDataset ), 
+                                     snapshot,
+                                     true );
+      objectinfos := MDSEditor::Editor().ObjectInfos();
+      datasetcopy := objectinfos.Find( snapshotcopydataset.DatasetName() );
+      this.Run().AssertTrue( not isnull( datasetcopy ),
+                             "Expected to find a dataset named '" 
+                             + snapshotcopydataset.DatasetName()
+                             + "' in the dataset store, but the dataset could not be found" );
+      streamdatasetcopy := stream[Void]::Success();                       
+      if( not isnull( datasetcopy ) )
+      {
+        snapshots := construct( LibOpt_SnapshotReplannableCopyDatasets );
+        snapshots.Add( snapshotcopydataset ); 
+        // Load the dataset that is attached to snapshotcopydataset
+        options := DatasetFindOptions::Construct( snapshotcopydataset.DatasetName() ).IncludeOffline( true ); 
+        mdskey := DatasetController::FindUnique( options );
+        streamdatasetcopy := mdskey->DatasetController::Load()->|void->()
+        {
+          datasetobjectinfos := MDSEditor::Editor().ObjectInfos();
+          datasetcopynew := datasetobjectinfos.Find( snapshotcopydataset.DatasetName() );
+          this.Run().AssertTrue( datasetcopynew.IsLoaded(),
+                                 "Expected that the dataset named '" 
+                                 + datasetcopynew.Name() 
+                                 + "' would be loaded. However, the dataset is still unloaded." );
+          // Unload the dataset that is attached to snapshotcopydataset.     
+          snapshotcopydataset.UnloadDatasetCopyManually( datasetobjectinfos );
+          // Unloading a dataset does not instantaniously update MDSEditor::Editor().ObjectInfos(), so we wait some time until the state of the dataset is updated.
+        }->|stream[Void]::Wait( this.MDSEditorUpdateTime() )->|void->()
+        {   
+          datasetobjectinfos := MDSEditor::Editor().ObjectInfos();   
+          datasetcopynew := datasetobjectinfos.Find( snapshotcopydataset.DatasetName() );
+          this.Run().AssertTrue( not datasetcopynew.IsLoaded(),
+                                 "Expected that the dataset named '" 
+                                 + datasetcopynew.Name() 
+                                 + "' would be unloaded. However, the dataset is still loaded" ); 
+          // Delete the dataset that is attached to snapshotcopydataset                       
+          snapshotcopydataset.DeleteDatasetCopyManually( datasetobjectinfos );
+          // It can sometimes take seconds before the deleted dataset is removed from MDSEditor::Editor().ObjectInfos().
+          // Therefore, instead of checking if the dataset cannot be found in MDSEditor::Editor().ObjectInfos(), we check if the snapshotcopydataset.IsDatasetDeletedManually() attribute is set to true.
+          this.Run().AssertTrue( snapshotcopydataset.IsDatasetDeletedManually(),
+                                 "Expected that the dataset named '" 
+                                 + guard( datasetcopynew.Name(), "" ) 
+                                 + "' would be deleted. However, the dataset still exists" ); 
+        }
+      }
+      // Return streamdatasetcopy, so that 'str' waits until streamdatasetcopy is finished.
+      return streamdatasetcopy;  
+    };
+    
+    this.NoException( str );
+    // Make sure that any dataset that is created during this method is deleted. Even when any exception occured during any parts of this method.
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateImportedMPSPlannedOrders (Schedule schedule) as owning ImportedMPSPlannedOrders
+{
+  TextBody:
+  [*
+    importedMPSPlannedOrders := construct( ImportedMPSPlannedOrders );
+    
+    // Use test variant ID for MPSPlanID
+    variant := this.Variant();
+    testInstance := this.GetTestInstance( variant );
+    
+    importedRouting := select( schedule, ImportedRouting_SC, importedRouting, importedRouting.RoutingId() = variant );
+    
+    // Create ImportedMPSPlannedOrder per ImportedMPSPlan as there may be multiple MPS plans
+    traverse( schedule, ImportedMPSPlan, importedMPSPlan )
+    {
+      mpsPlanID := importedMPSPlan.MPSPlanID();
+      routingID := importedRouting.RoutingId();
+      
+      // Deciding MPSPlanID and RoutingID based on test variant
+      mpsPlanID := ifexpr( testInstance.HasInvalidMPSPlanID(), mpsPlanID.Concat( '-Fail' ), mpsPlanID );
+      routingID := ifexpr( testInstance.HasInvalidRoutingID(), routingID.Concat( '-Fail' ), routingID );
+      
+      // Deciding MPSPeriodStart, MPSPeriodEnd and DueDate based on test variant
+      start := schedule.Time();
+      end := start + Duration::Days( 1 );
+      dueDate := ifexpr( testInstance.HasInvalidDueDate(), start, end );
+      
+      // Deciding Quantity based on test variant
+      qty := ifexpr( testInstance.HasInvalidQuantity(), -1.0, importedRouting.LotSize() * 100 );
+      
+      // Create ImportedMPSPlannedOrder based on test variant
+      importedMPSPlannedOrder := ImportedMPSPlannedOrder::FindImportedMPSPlannedOrder( mpsPlanID, routingID, dueDate );
+      
+      if( isnull( importedMPSPlannedOrder ) )
+      {
+        importedMPSPlannedOrder := ImportedMPSPlannedOrder::Create( schedule, mpsPlanID, routingID, dueDate );
+      }
+      
+      importedMPSPlannedOrder.Update( start, end, qty );
+      importedMPSPlannedOrders.Add( importedMPSPlannedOrder );
+    }
+    
+    return &importedMPSPlannedOrders;
+  *]
+}

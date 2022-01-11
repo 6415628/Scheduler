@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupImportedAprisoOperationProgress (const ImportedAprisoScheduleProgress_SC importedaprisoscheduleprogress)
+{
+  Description: 'Backup imported Apriso operation progress core data'
+  TextBody:
+  [*
+    // Backup ImportedAprisoOperationProgress
+    traverse( importedaprisoscheduleprogress, ImportedAprisoOperationProgress_SC, importedaop )
+    {
+      cdImportedAprisoOperationProgress := this.CDEntity( relnew, CDImportedAprisoOperationProgress );
+      //Nothing to copy at the moment, but keep it here in case we need it in the future. 
+      CopyCorresponding::CopyFrom( importedaop ).CopyTo( cdImportedAprisoOperationProgress );
+      
+      // Additonal attribute in core data to persist the ImportedAprioScheduleProgress_SC that this ImportedAprioOperationProgress_SC relates to
+      cdImportedAprisoOperationProgress.TimeStamp( importedaprisoscheduleprogress.TimeStamp() );
+      
+      // Backup ImportedAprisoOperation_SC
+      this.BackupImportedAprisoOperation( importedaop );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

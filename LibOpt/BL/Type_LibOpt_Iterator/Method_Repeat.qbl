@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method Repeat (LibOpt_Task task, LibOpt_TaskContextIterator context) as stream[JSON]
+{
+  Description:
+  [*
+    Helper method for iterators that work by recursively calling the `Operation` method multiple times on the same task.
+    This is intended to be called reactively after termination of an iteration. It updates the counters in the given task context and reexecutes `Operation`, returning the result stream.
+    If this method is used, the `Operation` method must first check the iterator's stop criterion before possibly spawning new transactions.
+    The `Operation` method must also increase the `LibOpt_TaskContextIterator.NrOfSubtasks` attribute with each reactively spawned iteration.
+  *]
+  TextBody:
+  [*
+    context.NrOfIterations( context.NrOfIterations() + 1 ); // an iteration has finished.
+    context.NrOfSubtasks( context.NrOfSubtasks() - 1 ); // the iteration has ended. It should not be counted as a running subtask anymore.
+    return this.Operation( task );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

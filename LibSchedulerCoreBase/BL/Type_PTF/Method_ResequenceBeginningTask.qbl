@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method ResequenceBeginningTask (Number nroftask)
+{
+  Description: 'Resequence task at the beginning of schedule'
+  TextBody:
+  [*
+    // soon hwee Dec-24-2014 (created)
+    
+    // Get the first resource
+    firstresource := minselect( this.Schedule(), ResourceGroup_SC.Resource_SC, res, true, res.Index() );
+    
+    // Select the first <nr or task> tasks. Eg. Select the first 10 tasks
+    selectedtasks := selectset( firstresource, Task_SC, task, true, task.SequenceNr() < nroftask )
+    
+    aftertask := select( firstresource, Task_SC, task, true, task.SequenceNr() = selectedtasks.Size() );
+    
+    if( selectedtasks.Size() > 0 )
+    {
+      firstresource.PlanAfter( selectedtasks, aftertask );
+    }
+  *]
+}

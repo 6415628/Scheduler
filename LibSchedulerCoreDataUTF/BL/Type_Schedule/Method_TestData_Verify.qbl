@@ -1,0 +1,63 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestData_Verify (UTF_DataIntegrity unittest)
+{
+  TextBody:
+  [*
+    run := unittest.Run();
+    
+    // Check if the kpi values at schedule before and after upgrade are the same. 
+    run.AssertEqual( this.KPIAverageDemandBatchDueDateSpread(), unittest.KPIAverageDemandBatchDueDateSpread() );
+    run.AssertEqual( this.KPIBatchEfficiency(), unittest.KPIBatchEfficiency() );
+    run.AssertEqual( this.KPIDeliveryPerformance(), unittest.KPIDeliveryPerformance() );
+    run.AssertEqual( this.KPIDemandsReserved(), unittest.KPIDemandsReserved() );
+    run.AssertEqual( this.KPIMPSAdherenceEarly(), unittest.KPIMPSAdherenceEarly() );
+    run.AssertEqual( this.KPIMPSAdherenceLate(), unittest.KPIMPSAdherenceLate() );
+    run.AssertEqual( this.KPINrOperationsOnNonAllowedResource(), unittest.KPINrOperationsOnNonAllowedResource() );
+    run.AssertEqual( this.KPINrUnplannedOperation(), unittest.KPINrUnplannedOperation() );
+    run.AssertEqual( this.KPIOperationLateness(), unittest.KPIOperationLateness() );
+    run.AssertEqual( this.KPIOperationsDueNotPlanned(), unittest.KPIOperationsDueNotPlanned() );
+    run.AssertEqual( this.KPIOperationsOnTime(), unittest.KPIOperationsOnTime() );
+    run.AssertEqual( this.KPIOperationsScheduledEarly(), unittest.KPIOperationsScheduledEarly() );
+    run.AssertEqual( this.KPIPreferenceRuleViolation(), unittest.KPIPreferenceRuleViolation() );
+    run.AssertEqual( this.KPIProductionResourceAdherence(), unittest.KPIProductionResourceAdherence() );
+    run.AssertEqual( this.KPIProductionSequenceAdherence(), unittest.KPIProductionSequenceAdherence() );
+    run.AssertEqual( this.KPIProductivity(), unittest.KPIProductivity() );
+    run.AssertEqual( this.KPIProductsCurrentStockLevelHigh(), unittest.KPIProductsCurrentStockLevelHigh() );
+    run.AssertEqual( this.KPIProductsCurrentStockLevelLow(), unittest.KPIProductsCurrentStockLevelLow() );
+    run.AssertEqual( this.KPIProductsCurrentStockLevelOK(), unittest.KPIProductsCurrentStockLevelOK() );
+    run.AssertEqual( this.KPIProductsScheduledStockLevelHigh(), unittest.KPIProductsScheduledStockLevelHigh() );
+    run.AssertEqual( this.KPIProductsScheduledStockLevelLow(), unittest.KPIProductsScheduledStockLevelLow() );
+    run.AssertEqual( this.KPIProductsScheduledStockLevelOK(), unittest.KPIProductsScheduledStockLevelOK() );
+    run.AssertEqual( this.KPIQuantityDueNotScheduled(), unittest.KPIQuantityDueNotScheduled() );
+    run.AssertEqual( this.KPITotalAvailableTime(), unittest.KPITotalAvailableTime() );
+    run.AssertEqual( this.KPITotalDummyWorkOrderTime(), unittest.KPITotalDummyWorkOrderTime()  );
+    run.AssertEqual( this.KPITotalProductionTime(), unittest.KPITotalProductionTime() );
+    run.AssertEqual( this.KPITotalSetupTime(), unittest.KPITotalSetupTime() );
+    run.AssertEqual( this.KPITotalShutdownTime(), unittest.KPITotalShutdownTime() );
+    run.AssertEqual( this.KPITotalWaitingTime(), unittest.KPITotalWaitingTime() );
+    
+    resources := selectsortedset( this, ResourceGroup_SC.Resource_SC, resource, 
+                                  true, 
+                                  resource.ResourceID()
+                                );
+    // Check if the task size on resource before and after the upgrade are the same
+    tasksizevector := NumberVector::Construct( unittest.TaskSizeOnResource() );
+    index := 0;
+    traverse( resources, Elements, resource )
+    {
+      run.AssertEqual( tasksizevector.Get( index ), resource.Task_SC( relsize ), 'The number of task on resource ' + resource.ResourceID() + ' has changed.' );
+      index++;
+    }
+    
+    // Check if the End of the last task on resource before and after the upgrade are the same
+    tasklastenddtvector := DateTimeVector::Construct( unittest.TaskLastEndDTOnResource() );
+    index := 0;
+    traverse( resources, Elements, resource )
+    {
+      run.AssertEqual( tasklastenddtvector.Get( index ), guard( resource.Last().End(), DateTime::MinDateTime() ), 'The end datetime of the last task on resource ' + resource.ResourceID() + ' has changed.' );
+      index++;
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

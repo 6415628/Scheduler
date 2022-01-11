@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateJSONOptimizationParametersInDataFolder
+{
+  Description: 'Extracts the optimization parameters for the current dataset into a "OptimizationParameters.json" file in data folder.'
+  TextBody:
+  [*
+    // 1. Create root JSON object
+    output := JSON::Object();
+    
+    // 2. Add Optimization Parameters
+    parameters := JSON::Object();
+    parameters.Add( Constants::JSON_OptimizationParameter_Strategy(), "string" );                
+    parameters.Add( Constants::JSON_OptimizationParameter_MaxDuration(), this.Optimization().OptimizerSequencing().UserSetting().TimeLimit().TotalInSeconds() );  
+    
+    // Finally adding parameters to root JSON object
+    output.Add( Constants::JSON_OptimizationParameters(), parameters );
+    
+    // Get Data directory
+    datadirectorypath := this.GetDataFolderPath();
+    fileName := Constants::FileName_OptimizationParameter();
+    destinationFilePath := datadirectorypath.Concat( Constants::SlashString() ).Concat( fileName );
+    
+    // Write to file
+    file := OSFile::Construct();
+    file.Open( destinationFilePath, Constants::FileAction_Write(), true );
+    file.WriteTextLine( output.AsString() );
+    file.Close();
+  *]
+}

@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod SynchronizeTargetKPIs (LibOpt_BT_TrackingTableCellContainers set) as owning LibOpt_BT_PromiseVoids
+{
+  TextBody:
+  [*
+    result := construct( LibOpt_BT_PromiseVoids );
+    
+    cells := LibOpt_BT_TrackingTableCellContainer::GetCells( set );
+    cells := cells.Unique();
+    
+    traverse( cells, Elements.Table, table )
+    {
+      dataset := table.Dataset();
+      
+      table_cells := selectset( cells, Elements, cell, cell.Table() = table );
+      
+      promise := LibOpt_BT_PromiseVoid::Create( table.BenchmarkTrackingDataset(),
+                                                Translations::LibOpt_BT_PromiseVoid_SynchronizeTargetKPIs( table.Description(), dataset.Name(), table_cells.Size() ) );
+      result.Add( promise );
+      copy := dataset.GetCopy( DatasetState::Temporary() );
+      
+      str := promise.Listen( copy )->AsVoid();
+      traverse( table_cells, Elements, cell )
+      {
+        // Do the following steps for every cell, so we only need 1 dataset copy per table:
+        // 1. Apply settings
+        // 2. Get snapshot values
+        // 3. Store snapshot values outside of transaction
+        // 4. Rollback transaction, undoing step 1.
+        // 5. Read stored snapshot value and store in benchmark tracking dataset
+        
+        store_key := OS::GenerateGUIDAsString();
+        str := str->|cell->SynchronizeTargetKPIs( copy, store_key )->AsVoid()
+        str := promise.Listen( str )->|str;
+      }
+    }
+    
+    return & result;
+  *]
+}

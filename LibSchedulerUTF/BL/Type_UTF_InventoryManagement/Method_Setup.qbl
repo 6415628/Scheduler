@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method Setup (Schedule schedule)
+{
+  Description: 'UTF setup logic that creates the necessary data with properties based on input knowledge table.'
+  TextBody:
+  [*
+    variant := this.Variant();
+    testInstance := this.GetTestInstance( variant );
+    schedule.SynchronizeTime( DateTime::Now() );
+    
+    // Create Product
+    UTFMockObjectFactory::CreateImportedProduct( schedule, this );
+    
+    // Create StockingPoint
+    UTFMockObjectFactory::CreateImportedStockingPoint( schedule, this );
+    
+    // Create ProductInStockingPoint
+    if( testInstance.HasProductInStockingPoint() )
+    {
+      UTFMockObjectFactory::CreateImportedProductInStockingPoint( schedule, this );
+    }
+    
+    // Create ImportedInventoryTarget
+    importedInventoryTarget := UTFMockObjectFactory::CreateImportedInventoryTarget( schedule, this );
+    
+    // Set inventory target values before synchronization
+    minStockLevel := ifexpr( testInstance.IsMinStockLevelGreaterEqualZero(), 5, -1 );
+    maxStockLevel := ifexpr( testInstance.IsMaxStocklevelGreaterEqualZero(), 15, -1 );
+    minStockLevel := ifexpr( testInstance.IsMinLessThanMaxStockLevel(), minStockLevel, maxStockLevel + 5 );
+    targetStockLevel := ifexpr( testInstance.IsTargetWithinMinMaxStockLevel(), ( minStockLevel + maxStockLevel ) / 2, minStockLevel - 1 );
+    
+    importedInventoryTarget.MinimumStockLevel( minStockLevel );
+    importedInventoryTarget.MaximumStockLevel( maxStockLevel );
+    importedInventoryTarget.TargetStockLevel( targetStockLevel );
+  *]
+}

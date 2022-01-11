@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method InterpretFeedbackData (Schedule schedule)
+{
+  Description: 'Interpret the imported feedback data into feedback object'
+  TextBody:
+  [*
+    // Create MES feedback adaptor
+    mesfeedbackadaptor := select( schedule, MESFeedbackAdapter, mesFeedbackAdapter,
+                                  mesFeedbackAdapter.ID() = Constants::MESFeedbackAdapterEDI() );
+    if( isnull( mesfeedbackadaptor ) )
+    {
+      // Create MESFeedbackAdapter and set Schedule active feedback adapter 
+      mesfeedbackadaptor := MESFeedbackAdapter::Create( schedule, Constants::MESFeedbackAdapterEDI() );
+    }
+    
+    // Transaction propagate is needed to propagate the declarative relations/attributes on imported feedback object
+    Transaction::Transaction().Propagate();
+    
+    // Interpret the imported object into feedback object    
+    mesfeedbackadaptor.InterpretFeedbackData();
+  *]
+}

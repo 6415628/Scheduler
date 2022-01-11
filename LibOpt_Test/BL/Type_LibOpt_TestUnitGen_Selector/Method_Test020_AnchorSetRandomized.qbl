@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test020_AnchorSetRandomized (LibOpt_TestDataset dataset)
+{
+  Description: 'Checks if the anchor sets return the correct number of anchors.'
+  TextBody:
+  [*
+    // Run randomized tests
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    selector_all := opt.SelectorAnchor( run, 'SelectorAll', null( LibOpt_AnchorSet, owning ), null( LibOpt_AnchorPicker, owning ), null( LibOpt_NeighborhoodCreator, owning ) );
+    selector_all.AnchorSet( relnew, LibOpt_AnchorSetAll );
+    
+    selector_type := opt.SelectorAnchor( run, 'SelectorType', null( LibOpt_AnchorSet, owning ), null( LibOpt_AnchorPicker, owning ), null( LibOpt_NeighborhoodCreator, owning ) );
+    selector_type.AnchorSet( relnew, LibOpt_AnchorSetType, TypeName := typeof( LibOpt_ScopeElementMock2 ).Name() );
+    
+    total_type1 := Number::Random( 10, 20 );
+    total_type2 := Number::Random( 0, 20 );
+    
+    scope := LibOpt_ScopeFat::Create( run, this.CreateScopeElements( dataset, total_type1 ) );
+    
+    // Add plan elements of type 2
+    for( j := 0; j < total_type2; j++ )
+    {
+      se := dataset.ScopeElementMock2( relnew );
+      scope.Add( se );
+    }
+    
+    this.Run().AssertEqual( total_type1 + total_type2, selector_all.AnchorSet().GetAnchorScopeElements( scope ).Size(), 'AnchorSetAll does not return the correct number of anchors' );
+    this.Run().AssertEqual( total_type2, selector_type.AnchorSet().GetAnchorScopeElements( scope ).Size(), 'AnchorSetType does not return the correct number of anchors' );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnFinished (DMF_RunStep runStep_i)
+{
+  Description: 'Post finish run step'
+  TextBody:
+  [*
+    status := DMF_Utility::ID_Finished();
+    this.UpdateStatus( status );
+    this.UpdateEnd( DateTime::Now() );
+    
+    // If all dataset has been updated to this version, then we can update the version of the convertor
+    convertor := this.ConvertorVersion().ConvertorDataset(); 
+    
+    // This logic might be improvable, the reason I do it this way, is as follow:
+    // To update the global version, say for example all V4 conversions are done,
+    // but some V3 conversions failed (This is possible when you have different datasettypes for different versions)
+    // The version still stays at V2, then the next time they run conversion,
+    // we run V3 and if all of them passed, then the global version becomes V4, not V3
+    version := this.GetVersionCompleted()
+    
+    if( not isnull( version ) )
+    {
+      convertor.UpdateVersion( version );
+    }
+    
+    // If there are more run steps to execute, execute them next
+    if( not isnull( runStep_i.NextRunStepInSequence() ) )
+    {
+      runStep_i.NextRunStepInSequence().InitializeRunStep();
+    }
+    else
+    { 
+      runStep_i.Topic().ExecuteRunPoints(); 
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

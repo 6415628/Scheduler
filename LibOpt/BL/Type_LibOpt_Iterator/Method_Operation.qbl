@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Operation (LibOpt_Task task) as stream[JSON]
+{
+  Description: 'Create new iterations, and after every iteration finishes, call the `Operation` again so a new iteration can be created.'
+  TextBody:
+  [*
+    result := stream[JSON]::Success();
+    
+    if( task.CanContinue() )
+    {
+      // Get the `LibOpt_TaskContextIterator` so we know the amount of iterations that are currently running and that we have created in the past.
+      context := task.TaskContext().astype( LibOpt_TaskContextIterator );
+      if( isnull( context ) )
+      {
+        context := task.TaskContext( relnew, LibOpt_TaskContextIterator );
+      }
+      
+      // Create the iterations
+      result := this.StartIterations( task, context );
+    }
+    
+    return result;
+  *]
+}

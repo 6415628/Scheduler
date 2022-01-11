@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod FormatStringOrdering (Real value) const declarative remote as String
+{
+  Description:
+  [*
+    Create a string that can be used to sort a value.
+    Normally we would sort by number, but if this is not possible, this can be a good alternative.
+  *]
+  TextBody:
+  [*
+    // Create a number of 70 chars with 20 decimal characters.
+    order := ( abs( value ) ).Format( 'N(Dec(20))', ConversionOptions::ISO() );
+    order := order.PadLeft( '0', 70 );
+    
+    if( value < 0 )
+    {
+      // Flip every digit for 9 - digit, so the negative sorting is also correct
+      for( i := 0; i <= 9; i++ )
+      {
+        order := order.ReplaceAll( [String] i, '#' + [String] i );
+      }
+      for( i := 0; i <= 9; i++ )
+      {
+        order := order.ReplaceAll( '#' + [String] i, [String] (9 - i ) );
+      }
+      order := '-' + order;
+    }
+    else
+    {
+      order := '+' + order;
+    }
+    
+    return order;
+  *]
+}

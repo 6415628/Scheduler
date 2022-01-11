@@ -1,0 +1,94 @@
+Quintiq file version 2.0
+#parent: #root
+Method FSPLFixCircularity (Task_SC task)
+{
+  Description: 'Detect and fix the cycle if it is found.'
+  TextBody:
+  [*
+    //For a task, it will do the following:
+    //a. Check if there is a cycle
+    //b. If yes, fix the cycle
+    //c. Repeat (a) and (b) until no cycle is found or the number of fixing attempts reaches the maximum.
+    
+    cyclicfound := false; 
+    taskstrings := construct( Strings );
+    
+    // First, check whether there is a cycle
+    this.ResourceGroup_SC().Schedule().PrecedenceGraph().DetectCycle( cyclicfound, taskstrings, task );
+    
+    if( cyclicfound ) //proceed if there is a valid cycle
+    {
+      //we will first need to determine whether we should do a planbefore of planafter
+      //Rule : If the task is the First among the cyclic tasks in its resource, it will be a plan before
+      //Otherwise, if the task is the Last among the cyclic tasks in its resource, it will be plan after
+    
+      cyclictasks := this.FSPLGetCyclicTasks( task, taskstrings );
+      
+      cyclic_tasks_in_resource := selectset( cyclictasks, Elements, ct, ct.Resource_SC() = task.Resource_SC() );
+    
+      first_cyclic_task_in_resource := minselect( cyclic_tasks_in_resource, Elements, ct, true, ct.FSPLSequenceNr() );
+      last_cyclic_task_in_resource := maxselect( cyclic_tasks_in_resource, Elements, ct, true, ct.FSPLSequenceNr() );
+    
+      planbefore := first_cyclic_task_in_resource = task;
+      planafter := last_cyclic_task_in_resource = task;
+    
+      if( not planbefore and not planafter )
+      {
+        //analysis shows that a cycle won't happen in the middle. But it will be good to log this information just in case there is exceptional case
+        //debuginfo( 'FSPL : task ' + task.TaskID() + ' is not the first or last cyclic task in resource');
+        debuginfo( 'FSPL : task ' + task.TaskID() + ' is not the first or last cyclic task in resource');
+      }
+    
+      count := 0;
+      fsplmaxnrofcycles := guard( this.ResourceGroup_SC().Schedule().PlanningConfiguration().FSPLMaxNrOfCycles(), Constants::MinValidFSPLMaxNrOfCycles() );
+      
+      while( cyclicfound and count < fsplmaxnrofcycles )
+      {
+        //Repeat the steps of fixing and detecting cycle
+        movedtask := this.FSPLFixCycle( task, cyclicfound, taskstrings, planbefore, planafter );
+        this.ResourceGroup_SC().Schedule().PrecedenceGraph().DetectCycle( cyclicfound, taskstrings, task );
+        
+        if( not cyclicfound ) // if we can't find a cycle with task, we shall check with movedtask
+        {
+          this.ResourceGroup_SC().Schedule().PrecedenceGraph().DetectCycle( cyclicfound, taskstrings, movedtask );
+        }
+    
+        count++;
+      }
+    
+      if( cyclicfound )
+      {
+         debuginfo( 'FSPL Cycle detected but max nr of cycles reached' );
+      }
+    }
+    
+    
+    
+    
+    
+    
+    /*
+    cyclicfound := false;
+    taskstrings := construct( Strings );
+    
+    // Quill Coded Detect Cycle
+    this.ResourceGroup_SC().Schedule().PrecedenceGraph().DetectCycle( cyclicfound, taskstrings );
+    count := 0;
+    
+    while( cyclicfound and count < this.ResourceGroup_SC().Schedule().GlobalParameters_SC().FSPLMaxNrOfCycles() )
+    {
+      traverse( tasks, Elements, task )
+      {
+        this.FixCycle( task, element, cyclicfound, taskstrings );
+        this.ResourceGroup_SC().Schedule().PrecedenceGraph().DetectCycle( cyclicfound, taskstrings );
+      }
+    
+      count++;
+    }
+    
+    if( cyclicfound )
+    {
+       debuginfo( 'FSPL Cycle detected but max nr of cycles reached' );
+    }
+  *]
+}

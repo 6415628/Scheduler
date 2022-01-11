@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CheckIsAllowedOnResource (Resource_SC resource, output Boolean isallowedhard_o) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    // 1. Checks whether the resource can apply program scheduling or not
+    // 2. Checks whether the program definition is assigned to this resource if first checks is valid
+    
+    resource.CheckCanApplyProgramScheduling();
+    if( feedbackobject.IsAllowed() )
+    {
+      this.CheckIsProgramDefinitionAssignedInResource( resource );
+    }
+    
+    isallowedhard_o := isallowedhard_o and feedbackobject.IsAllowed();
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

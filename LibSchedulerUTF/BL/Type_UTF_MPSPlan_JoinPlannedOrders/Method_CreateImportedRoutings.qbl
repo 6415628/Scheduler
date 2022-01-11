@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateImportedRoutings (Schedule schedule) as owning ImportedRouting_SCs
+{
+  TextBody:
+  [*
+    // Create 1st default routing
+    importedRoutings := super.CreateImportedRoutings( schedule );
+    
+    // Create 2nd new routing based on 1st routing except RoutingID
+    variant := this.Variant();
+    existingImportedRouting := select( importedRoutings, Elements, importedRouting, importedRouting.RoutingId() = variant );
+    newRoutingID := variant.Concat( variant ); // Prevent duplicate routings
+    
+    importedRouting := ImportedRouting_SC::FindImportedRouting_SC( newRoutingID );
+    
+    if( isnull( importedRouting ) )
+    {
+      importedRouting := ImportedRouting_SC::Create( schedule, newRoutingID );
+    }
+    
+    importedRouting.Update( variant, existingImportedRouting.LotSize(), existingImportedRouting.MinSize(), existingImportedRouting.MaxSize() );
+    importedRoutings.Add( importedRouting );
+    
+    return &importedRoutings;
+  *]
+}

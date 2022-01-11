@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CalculateProgramPhaseSequenceNr (ProgramTypeConfiguration programtypeconfiguration, Boolean isprogramchangetask, Operation_SC operation, 
+  BinaryValue currentcumulativecharacteristic, BinaryValue currentcumualtiverealvalue, Number previoustaskphasesequencenr, 
+  BinaryValue previoustaskcummulativecharacteristic, BinaryValue previoustaskcummulativerealvalue, output BinaryValue previousphasecummulativecharacteristic, 
+  output BinaryValue previousphasecummulativerealvalue) declarative as Number
+{
+  Description: 'Calculate the program phase sequence number based on transition rules'
+  TextBody:
+  [*
+    selectedphasesequencenr := -1;
+    
+    // Program change task will be defaulted to 0
+    if( isprogramchangetask )
+    {
+      selectedphasesequencenr := 0;  
+    }
+    // Only calculates if the task is not program change task
+    else 
+    {  
+      sortedprogramphases := selectsortedset( programtypeconfiguration, ProgramPhaseConfiguration, p, 
+                                              p.SequenceNr() >= previoustaskphasesequencenr, 
+                                              p.SequenceNr() );
+      
+      // Traverse all the phases from previous task phase to program type last phase
+      // Condition to exit for traverse is when it is last phase or there is selected phase for current task
+      traverse( sortedprogramphases, Elements, programphase, selectedphasesequencenr < 0 )
+      {     
+        // It is new phase when the phase seqnr not same as previous task phase seqnr
+        isnewphase := previoustaskphasesequencenr <> programphase.SequenceNr();
+        
+        // If the program phase is last phase or validation = TRUE, the selected phase will be current phase
+        if( programphase.IsLastProgramPhase() 
+            or TaskInProgramSet::ValidateProgramPhaseTransitionRules( previousphasecummulativecharacteristic, 
+                                                                      previousphasecummulativerealvalue,  
+                                                                      programphase, 
+                                                                      operation,
+                                                                      currentcumulativecharacteristic,
+                                                                      currentcumualtiverealvalue,
+                                                                      isnewphase ) )
+        {
+          selectedphasesequencenr := programphase.SequenceNr();
+        }
+        // If the program phase is not valid for this task, then set the previous task cumulative values in order to be used for next phase validation
+        else
+        {
+          previousphasecummulativecharacteristic := previoustaskcummulativecharacteristic;
+          previousphasecummulativerealvalue := previoustaskcummulativerealvalue;
+        }     
+      }
+    }
+    
+    return selectedphasesequencenr;
+  *]
+}

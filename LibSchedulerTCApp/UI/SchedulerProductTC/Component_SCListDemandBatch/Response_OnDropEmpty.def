@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDropEmpty (structured[Demand] information) id:Response_SCListDemandBatch_OnDropEmpty
+{
+  #keys: '[134372.0.67765820]'
+  Body:
+  [*
+    // [Demands] -> [Empty]
+    demandbatchtype := ApplicationScheduler.GetDemandBatchType( information );
+    
+    if( not isnull( demandbatchtype ) )
+    {
+      Schedule.CreateDemandBatches( information, demandbatchtype );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_List_OnDropEmpty'
+  Precondition:
+  [*
+    demandbatchtype := ApplicationScheduler.GetUniqueDemandBatch( information );
+    
+    skipsoftcheck := dropaction.IsControl();
+    skipbatchquantitycheck := false;
+    
+    ApplicationScheduler.CanBatchDemands( information,
+                                          null( DemandBatch ),
+                                          demandbatchtype,
+                                          skipsoftcheck,
+                                          skipbatchquantitycheck );
+    
+    // Workaround to show feedback in the old way until all responses are converted to use FeedbackObject.                                     
+    feedback := ApplicationScheduler.ShowOldStyleFeedback( FeedbackObject::CurrentFeedback().Feedback() );     
+    
+    return FeedbackObject::IsAllowedWithOverride( skipsoftcheck );
+  *]
+}

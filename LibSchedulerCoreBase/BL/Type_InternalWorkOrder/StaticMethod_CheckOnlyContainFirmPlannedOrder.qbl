@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckOnlyContainFirmPlannedOrder (InternalWorkOrders plannedOrders, Boolean isSplit) declarative remote
+{
+  Description: 'Check if input internal work orders only contain firm planned orders.'
+  TextBody:
+  [*
+    value := forall( plannedOrders, Elements, plannedOrder, true, plannedOrder.IsCreatedFromMPSPlannedOrder() );
+    feedback := Translations::InternalWorkOrder_CannotSplitInternallyCreatedWorkOrder();
+    
+    if( not isSplit )
+    {
+      feedback := Translations::InternalWorkOrder_CannotJoinInternallyCreatedWorkOrder();
+    }
+    
+    feedbackObject := FeedbackObject::LocalFeedback();
+    feedbackObject.AddHard( value, feedback );
+  *]
+}

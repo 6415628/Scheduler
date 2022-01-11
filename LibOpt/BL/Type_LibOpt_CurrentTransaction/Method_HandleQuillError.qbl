@@ -1,0 +1,61 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleQuillError (QuillError e)
+{
+  Description:
+  [*
+    This method can be found within onerror and onfinalize blocks.
+    
+    When a `QuillError` is caught we call the `HandleQuillError` method on all components that were executed in the current Quill transaction.
+    Only the last component (the one that caused the error) will be called with the actual `QuillError`, the others will receive a null instance.
+    
+    Then we make sure to undo the transaction. Since we caught an error in a try-block, the dataset may be in an incorrect state.
+    By making sure we always rollback the transaction after a rollback we can make sure that we don't end up in an incorrect dataset state.
+  *]
+  TextBody:
+  [*
+    // Handle Quill errors for all tasks
+    task := this.GetTask();
+    
+    if( e.ErrorNr() = 0 and e.DetailedInformation() = '' and e.DeveloperInformation() = '' and e.GeneralInformation() = '' )
+    {
+      e := null( QuillError );
+    }
+    
+    run := task.Run();
+    if( run.IsFinalizingTask() )
+    {
+      run.IsFailed( true );
+    }
+    
+    if( not isnull( task ) )
+    {
+      component := task.Component();
+      component.HandleQuillError( task, e );
+      LibOpt_DatasetCopyConditional::CopyDatasetConditionally( LibOpt_Component::ComponentPosition_Error(), task, true ); 
+    
+      // If component X is linked to a previous component by using a TaskTransporterOneTransaction, then DoFinalize is not called when an error occurs during the execution of component X.
+      // Therefore, all dataset copies that are created before an error is thrown are handled here instead of in LibOpt_DatasetCopyConditional::DoFinalizeDataset
+      LibOpt_DatasetCopyConditional::DoFinalizeDatasetCopyDelete( task, true );  
+      // Convert all memory-only datasets that are not deleted to standalone datasets.
+      LibOpt_DatasetCopyConditional::DoFinalizeDatasetCopyChangeToStandAlone( task );
+      
+      task := task.PreviousTaskOnCurrentTransaction();
+    }
+    
+    while( not isnull( task ) )
+    {
+      component := task.Component();
+      component.HandleQuillError( task, null( QuillError ) );
+    
+      LibOpt_DatasetCopyConditional::DoFinalizeDatasetCopyDelete( task, true );  
+      LibOpt_DatasetCopyConditional::DoFinalizeDatasetCopyChangeToStandAlone( task );
+      
+      task := task.PreviousTaskOnCurrentTransaction();  
+    }
+    
+    // Rollback the transaction
+    this.Rollback( Translations::LibOpt_Optimization_CapturedException(), e );
+  *]
+  InterfaceProperties { Accessibility: 'Protected' }
+}

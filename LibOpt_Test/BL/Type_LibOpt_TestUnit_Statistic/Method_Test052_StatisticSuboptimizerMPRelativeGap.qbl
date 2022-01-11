@@ -1,0 +1,81 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test052_StatisticSuboptimizerMPRelativeGap (LibOpt_TestDataset dataset)
+{
+  Description:
+  [*
+    Test that we get the right amount of issues for `LibOpt_StatisticSuboptimizerMPRelativeGap`
+    
+    It is tested on:
+    - a suboptimizer that has relative gaps and re-executes once
+    - a suboptimizer that has 2 goals with one of them a relative gap
+    - a suboptimizer with no gap
+  *]
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    scope := LibOpt_Scope::Create( run );
+    run.SetStartScope( scope );
+    
+    iterator := opt.IteratorForEachLink( run, 'Iterator' );
+    
+    // Test it on:
+    // - a suboptimizer that has relative gaps and re-executes once
+    // - a suboptimizer that has 2 goals with one of them a relative gap
+    // - a suboptimizer with no gap
+    rollback_kpi := opt.RollbackKPIStatic();
+    suboptimizer_relativegap := opt.SuboptimizerMPReflection( run, 'Relative gap subopt', & rollback_kpi,
+                                                             method( LibOpt_TestUnit_Statistic, M052_SuboptimizerMP_Initialize_RelativeGap_OneGoal,
+                                                                     LibOpt_Suboptimizer, MathematicalProgram, LibOpt_Task ),
+                                                             method( LibOpt_TestUnit_Statistic, M052_SuboptimizerMP_HandleResult_ReExecuteOnce,
+                                                                     LibOpt_Suboptimizer, MathematicalProgram, LibOpt_Task, Boolean ) );
+    
+    rollback_kpi := opt.RollbackKPIStatic();
+    suboptimizer_relativegap2 := opt.SuboptimizerMPReflection( run, 'Relative gap 2 subopt', & rollback_kpi,
+                                                              method( LibOpt_TestUnit_Statistic, M052_SuboptimizerMP_Initialize_RelativeGap_TwoGoals,
+                                                                      LibOpt_Suboptimizer, MathematicalProgram, LibOpt_Task ),
+                                                              method( LibOpt_SuboptimizerMPReflection, HandleResult_Empty,
+                                                                      LibOpt_Suboptimizer, MathematicalProgram, LibOpt_Task, Boolean ) );
+    
+    rollback_kpi := opt.RollbackKPIStatic();
+    suboptimizer_nogap := opt.SuboptimizerMPReflection( run, 'No gap subopt', & rollback_kpi,
+                                                        method( LibOpt_TestUnit_Statistic, M052_SuboptimizerMP_Initialize_NoGap,
+                                                                LibOpt_Suboptimizer, MathematicalProgram, LibOpt_Task ),
+                                                        method( LibOpt_SuboptimizerMPReflection, HandleResult_Empty,
+                                                                LibOpt_Suboptimizer, MathematicalProgram, LibOpt_Task, Boolean ) );
+    
+    iterator.Fork( suboptimizer_relativegap );
+    iterator.Fork( suboptimizer_relativegap2 );
+    iterator.Fork( suboptimizer_nogap );
+    run.ConfigureForOneTransaction();
+    
+    this.NoException( run->Start()->|void->( )
+    {
+      statistics := selectset( run, Statistic.astype( LibOpt_StatisticSuboptimizerMPRelativeGap ), statistic, true );
+      
+      if( this.Run().AssertEqual( 5, statistics.Size(), 'Incorrect amount of statistics' ) )
+      {
+        statistic_relativegap_ex1 := select( statistics, Elements, statistic, statistic.Component() = suboptimizer_relativegap and statistic.ExecutionNr() = 1 );
+        statistic_relativegap_ex2 := select( statistics, Elements, statistic, statistic.Component() = suboptimizer_relativegap and statistic.ExecutionNr() = 2 );
+        statistic_nogap := select( statistics, Elements, statistic, statistic.Component() = suboptimizer_nogap );
+        statistic_relativegap2_level1 := select( statistics, Elements, statistic, statistic.Component() = suboptimizer_relativegap2 and statistic.GoalLevel() = 1 );
+        statistic_relativegap2_level2 := select( statistics, Elements, statistic, statistic.Component() = suboptimizer_relativegap2 and statistic.GoalLevel() = 2 );
+        
+        this.Run().AssertEqual( 1, statistic_relativegap_ex1.NrElements(), 'Incorrect amount of elements on relative gap suboptimizer ex #1' );
+        this.Run().AssertEqual( 1, statistic_relativegap_ex2.NrElements(), 'Incorrect amount of elements on relative gap suboptimizer ex #2' );
+        this.Run().AssertEqual( 1, statistic_nogap.NrElements(), 'Incorrect amount of elements on non gap suboptimizer' );
+        this.Run().AssertEqual( 1, statistic_relativegap2_level1.NrElements(), 'Incorrect amount of elements on relative gap suboptimizer 2 with goal 1' );
+        this.Run().AssertEqual( 1, statistic_relativegap2_level2.NrElements(), 'Incorrect amount of elements on relative gap suboptimizer 2 with goal 2' );
+        
+        this.Run().AssertEqual( 1, statistic_relativegap_ex1.Issue( relsize ), 'Incorrect amount of issues on relative gap suboptimizer ex #1' );
+        this.Run().AssertEqual( 1, statistic_relativegap_ex2.Issue( relsize ), 'Incorrect amount of issues on relative gap suboptimizer ex #2' );
+        this.Run().AssertEqual( 0, statistic_nogap.Issue( relsize ), 'Incorrect amount of issues on non gap suboptimizer' );
+        this.Run().AssertEqual( 0, statistic_relativegap2_level1.Issue( relsize ), 'Incorrect amount of issues on relative gap suboptimizer 2 with goal 1' );
+        this.Run().AssertEqual( 1, statistic_relativegap2_level2.Issue( relsize ), 'Incorrect amount of issues on relative gap suboptimizer 2 with goal 2' );
+      }
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

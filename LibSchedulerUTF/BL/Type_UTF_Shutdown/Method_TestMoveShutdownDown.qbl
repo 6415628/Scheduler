@@ -1,0 +1,15 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestMoveShutdownDown (Schedule schedule)
+{
+  TextBody:
+  [*
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, r, true );
+    shutdownTask := select( resource, Task_SC.astype( ShutdownTask ), st, true );
+    
+    value := resource.Last() = shutdownTask;
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Move shutdown down failed', this.Variant() ) );
+  *]
+}

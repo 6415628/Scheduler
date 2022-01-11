@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsNotFrozen (Demands demands, String action, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Check if selected demands are not in frozen period or freeze by user.'
+  TextBody:
+  [*
+    value := not exists( demands, Elements, demand, demand.IsFrozenInSchedule() )
+    
+    if( not value )
+    {
+      if( action = Constants::Action_UnreserveMaterialForDemand() )
+      {
+        feedback_o := feedback_o + String::NewLine() + Translations::SC_Confirmation_Unreserve_Demands();
+      }
+      else if( action = Constants::Action_ReserveMaterialForDemand() )
+      {
+        feedback_o := feedback_o + String::NewLine() + Translations::SC_Confirmation_MaterialReservation_Demands();
+      }
+    }
+    
+    return value;
+  *]
+}

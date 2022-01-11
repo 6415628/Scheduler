@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericOperationBatch (CDSchedule cdschedule)
+{
+  Description: 'Restore generic operation batch core data attrbutes to planning object'
+  TextBody:
+  [*
+    // Restore operation batch
+    schedule := this.Schedule();
+    
+    traverse( cdschedule, CDEntity.astype( CDGenericOperationBatch ), cdbatch )
+    {
+      batch := GenericOperationBatch::Create( schedule, cdbatch.BatchID(), cdbatch.Type() );
+      CopyCorresponding::CopyFrom( cdbatch ).CopyTo( batch );
+      
+      // Restore batch sequence elements that belongs to this batch
+      this.RestoreAttributes_GenericBatchSequenceElement( cdschedule, batch );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

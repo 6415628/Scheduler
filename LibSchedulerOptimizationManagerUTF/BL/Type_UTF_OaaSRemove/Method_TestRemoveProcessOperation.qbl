@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRemoveProcessOperation (Schedule schedule)
+{
+  Description: 'Test removing process operations (routing steps) based on mock 3DSpace JSON data.'
+  TextBody:
+  [*
+    processOperationsArray := this.GetJSONRemove_ProcessOperationsArray().Build();
+    
+    for( i := 0; i < processOperationsArray.Size(); i++ )
+    {
+      processOperationID := processOperationsArray.Get( i ).GetString();
+      
+      isProcessOperationRemoved := not exists( schedule, 
+                                               Routing.RoutingStep, 
+                                               routingStep,
+                                               routingStep.ID()= processOperationID );
+      
+      this.Run().AssertTrue( isProcessOperationRemoved,
+                             Translations::LibSchedulerOptMgrUTF_RoutingStep_NotRemoved( processOperationID ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

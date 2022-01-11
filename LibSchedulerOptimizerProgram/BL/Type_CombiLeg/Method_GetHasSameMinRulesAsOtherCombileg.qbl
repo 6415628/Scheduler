@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasSameMinRulesAsOtherCombileg (CombiLeg combileg) as Boolean
+{
+  Description:
+  [*
+    Checks whether this combileg is a different combileg from the input combileg
+    and whether it has all the same min cumulative rules
+  *]
+  TextBody:
+  [*
+    // mvr1 Oct-8-2021 (created)
+    // The input combileg must not be the same combileg
+    // And it must have all the enabled cumulative min combined length rules that this combileg has
+    // And this combileg must have all the same rules as the input combileg
+    return ( combileg <> this
+             and forall( combileg, CombiLegOnCombiPhase.PPCOnResource.RuleOnPPCOnResource.Rule, rule,
+                         rule.IsEnabled()
+                         and rule.RuleSubType().IsCumulativeValueNeeded()
+                         and rule.RuleSubType().IsMinimumCombinedLength(),
+                         exists( this, CombiLegOnCombiPhase.PPCOnResource.RuleOnPPCOnResource.Rule, rule2,
+                                 rule2 = rule ) )
+             and forall( this, CombiLegOnCombiPhase.PPCOnResource.RuleOnPPCOnResource.Rule, rule,
+                         rule.IsEnabled()
+                         and rule.RuleSubType().IsCumulativeValueNeeded()
+                         and rule.RuleSubType().IsMinimumCombinedLength(),
+                         exists( combileg, CombiLegOnCombiPhase.PPCOnResource.RuleOnPPCOnResource.Rule, rule2,
+                                 rule2 = rule ) ) );
+  *]
+}

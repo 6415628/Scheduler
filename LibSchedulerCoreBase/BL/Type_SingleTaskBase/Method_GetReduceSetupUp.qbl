@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetReduceSetupUp () declarative as Boolean
+{
+  Description: 'Calculate the ReduceSetupUp'
+  TextBody:
+  [*
+    //VARIABLE
+    originalsetupduration   := Duration::Zero();
+    newsetupduration        := Duration::Zero();
+    previoustask            := this.Previous();
+    previousofprevioustask  := null( Task_SC );
+    nexttask                := this.Next();
+    
+    //Saravanen 03-Jul-13 #3333
+    
+    //Legend:
+    //A B C D are tasks
+    //B is C.Previous() and D is C.Next()
+    //I am Task C
+    //Brackets ( ) indicate that the setup duration of tasks inside the brackets are being calculated
+    
+    if( not isnull( previoustask ) )
+    {
+      // A ( B C ) D
+      originalsetupduration := originalsetupduration + this.GetSetupDuration( previoustask, this );
+      // A ( C B ) D
+      newsetupduration := newsetupduration + this.GetSetupDuration( this, previoustask );
+    
+      previousofprevioustask := previoustask.Previous();
+    
+      if( not isnull( previousofprevioustask ) )
+      {
+        // ( A B ) C D
+        originalsetupduration := originalsetupduration + this.GetSetupDuration( previousofprevioustask, previoustask );
+        // ( A C ) B D
+        newsetupduration := newsetupduration + this.GetSetupDuration( previousofprevioustask, this );
+      }
+    }
+    
+    if( not isnull( nexttask ) )
+    {
+      // A B ( C D )
+      originalsetupduration := originalsetupduration + this.GetSetupDuration( this, nexttask );
+    
+      if( not isnull( previoustask ) )
+      {
+        // A C ( B D )
+        newsetupduration := newsetupduration + this.GetSetupDuration( previoustask, nexttask );
+      }
+    }
+    
+    return ( newsetupduration < originalsetupduration ) and ( not isnull( previoustask ) );
+  *]
+}

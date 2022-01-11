@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod StringToReal (String realAsString_i) as Real
+{
+  TextBody:
+  [*
+    real := Real::MinReal();
+    
+    // See if realAsString_i can be converted to a Real.
+    converter := StringToReal::StandardConverter();
+    
+    if( realAsString_i.Regex( "[0-9]*[.,]?[0-9]*" ) )
+    {
+      // The decimal separator to be used depends on the locale (regional setting) of the system.
+      // Both . and , are accepted by the regular expression; find out which one to use.
+      realAsString := realAsString_i.ReplaceAll( '.', ',' );
+      if( converter.CanConvert( realAsString ) )
+      {
+        real := converter.Convert( realAsString );
+      }
+      else
+      {
+        realAsString := realAsString_i.ReplaceAll( ',', '.' );
+        if( converter.CanConvert( realAsString ) )
+        {
+          real := converter.Convert( realAsString );
+        }
+      }
+    }
+    
+    return real;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

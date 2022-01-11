@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeWorkOrderFlows (output OperationMaterials updatedInstances)
+{
+  Description: 'Synchronizes operation material based on work order flows, which is creating operation material between last operations of previous work order to first operations of next work order.'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    allInstances := selectset( schedule, PlanUnit_SC.OperationMaterial, om, true );
+    
+    traverse( schedule, ImportedWorkOrderFlow, importedWorkOrderFlow, importedWorkOrderFlow.IsValidDataHard() )
+    {
+      startWorkOrderID := importedWorkOrderFlow.StartWorkOrderID();
+      endWorkOrderID := importedWorkOrderFlow.EndWorkOrderID();
+      
+      prevWorkOrder := ImportedExternalWorkOrder::FindImportedExternalWorkOrder( startWorkOrderID );
+      nextWorKOrder := ImportedExternalWorkOrder::FindImportedExternalWorkOrder( endWorkOrderID );
+      
+      if( isnull( prevWorkOrder ) or isnull( nextWorKOrder ) )
+      {
+        debuginfo( Translations::Lib3DSpace_NoWorkOrderForFlow( importedWorkOrderFlow.WorkOrderFlowID(), startWorkOrderID, endWorkOrderID ) );
+      }
+      else
+      {
+        traverse( prevWorkOrder, ExternalWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, 
+                  prevOperation, prevOperation.CheckIsLastOperationInPlanUnit() )
+        {
+          traverse( nextWorKOrder, ExternalWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, 
+                    nextOperation, nextOperation.CheckIsFirstOperationInPlanUnit() )
+          {
+            operationMaterial := select( allInstances, Elements, om, om.ToOperation() = nextOperation and om.FromOperation() = prevOperation );
+            
+            if( isnull( operationMaterial ) )
+            {
+              operationMaterial := nextOperation.CreateInputOperationMaterial( prevOperation, prevOperation.PlanUnit_SC().Quantity() );
+            }
+            
+            operationMaterial.Update3DSpace( importedWorkOrderFlow );
+            updatedInstances.Add( operationMaterial ); 
+          }
+        }
+      }
+    }
+  *]
+}

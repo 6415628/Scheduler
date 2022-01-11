@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetEarliestEnd () declarative remote as DateTime
+{
+  Description: 'If this combileg preceeds a shutdown, then it cannot end earlier than the earliest start of the shutdown'
+  TextBody:
+  [*
+    value := this.LeadingCombiProgramPhase().CombiProgramType().CombiProgramSet().ProgramSetConfiguration().ProgramDefinitionConfiguration().Schedule().Time();
+    
+    // If there is a shutdown after this leg
+    islegbeforeshutdown := guard( this.Leg().LastTaskOnLeg() = this.Leg().NextShutdown().Task_SC().Previous(), false );
+    if( islegbeforeshutdown )
+    {
+      // then the earliest this leg should end is the earliest start of the shutdown
+      value := this.Leg().NextShutdown().TargetStartAllowedFrom();
+    }
+    
+    return value;
+  *]
+}

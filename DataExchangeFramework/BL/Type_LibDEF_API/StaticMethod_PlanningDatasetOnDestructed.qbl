@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod PlanningDatasetOnDestructed
+{
+  Description:
+  [*
+    A collection of API methods that should be implemented on the planning dataset's OnDestructed body.
+    This is a wrapper API method for easier implementation by the QSes.
+  *]
+  TextBody:
+  [*
+    dbDataset := LibDEF_DataBroker::GetDataset();
+    
+    dbDataset->Exception()
+             ->( e ){             
+                // Possible consequences of failure:
+                // - The DataBroker will not be aware that any planning dataset is deleted, DatasetInterest will remain exist.
+                // Secondary solution:
+                // - The DatasetInterest for the permanently deleted datasets has to be deleted manually.
+                //   Method LibDEF_SetInterestOfDataset.Delete( false ) should be used.
+                LibDEF_Util::LogWarning( "LibDEF_API::PlanningDatasetOnDestructed() fails due to unavailable LibDEF_DataBroker." );
+             }
+             
+    // Job: After dataset has been successfully unloaded, check if there is a need to update Set's owner/System.
+    dbDataset->DatasetUnloaded();
+  *]
+}

@@ -1,0 +1,77 @@
+Quintiq file version 2.0
+#parent: #root
+Method Initialize
+{
+  Description: 'Initialization of Schedule dataset. Called upon creation of dataset.'
+  TextBody:
+  [*
+    // initialize times to make sure plan logic is working after instantiation
+    now := DateTime::Now()
+    this.SynchronizeTime( now );
+    
+    this.LastExport( now );
+    this.LastImport( now );
+    this.LastFeedback( now );
+    
+    // Initialize import/export/synchronization object
+    this.InitializeImportObject();
+    this.InitializeExportObject();
+    this.InitializeSynchronizationObject();
+    
+    // Initialize object factory
+    this.InitializeObjectFactory();
+    
+    // create object to handle feedback
+    this.InitializeFeedbackManager();
+    
+    // For Calendars
+    this.InitializeCalendars();
+    
+    // For KPI
+    this.CreateKPIObjects();
+    
+    // For POA Optimizer
+    this.CreatePOAObject();
+    
+    // For Performance Test
+    this.CreatePerformanceTestObjects();
+    
+    PrecedenceGraph::Create( this );
+    
+    //makes sure optimizer object is instantiated
+    Optimizer::Create( this );
+    
+    // Synchronize optimizer types and parameters
+    this.Optimizer().Synchronize();
+    
+    // For enabling/disabling specific functionality in Scheduler
+    Functionality::Create( this, this.MDSSchedule().Name() );
+    
+    // Initialize sanity check manager
+    this.InitializeSanityCheckManager();
+    
+    this.CreateSubTaskTypes();
+    
+    // Create transformation for Data Framework Manager
+    dtd := DataTransformationDefinition::Create( this );
+    DataTransformationSC_Plan::Create( dtd );
+    DataTransformationMPS_Plan::Create( dtd );
+    DataTransformationMP_Plan::Create( dtd );
+    DataTransformationSC_MPSPlanParameters::Create( dtd );
+    
+    // Create default resource view
+    ResourceView::Create( this,ResourceView::Const_DefaultOverviewName() );
+    
+    // Initialize the IntegrationAPI for DIF
+    this.InitializeIntegrationAPIForDIF();
+    
+    // Industry layer-specific initalization
+    this.InitializeIndustryLayer();
+    
+    // Project-specific initialization
+    this.InitializeProject();
+    
+    // Module-specific initialization
+    this.InitializeModule();
+  *]
+}

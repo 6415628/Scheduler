@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericInternalWorkOrderOperation (const GenericInternalWorkOrder genericInternalWorkOrder)
+{
+  Description: 'Backup generic internal work order operation core data'
+  TextBody:
+  [*
+    traverse( genericInternalWorkOrder, WorkOrderOperation.astype( GenericInternalWorkOrderOperation ), genericInternalWorkOrderOperation )
+    {
+      cdGenericInternalWorkOrderOperation := this.CDEntity( relnew, CDGenericInternalWorkOrderOperation );
+      CopyCorresponding::CopyFrom( genericInternalWorkOrderOperation ).CopyTo( cdGenericInternalWorkOrderOperation );
+      
+      // Additional attributes in core data to persist the relation to RoutingStep
+      cdGenericInternalWorkOrderOperation.RoutingId( guard( genericInternalWorkOrderOperation.RoutingStep().RoutingId(), '' ) );
+    
+      /* 
+      Restore the following objects
+      1. GenericInternalWorkOrderOutputMaterial
+      2. GenericInternalWorkOrderInputMaterial
+      3. GenericInternalWorkOrderSupply
+      4. GenericInternalWorkOrderDemand
+      */
+      
+      this.BackupGenericInternalWorkOrderOutputMaterial( genericInternalWorkOrderOperation );
+      this.BackupGenericInternalWorkOrderInputMaterial( genericInternalWorkOrderOperation );
+      this.BackupGenericInternalWorkOrderSupply( genericInternalWorkOrderOperation );
+      this.BackupGenericInternalWorkOrderDemand( genericInternalWorkOrderOperation );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Operation (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    schedule := this.GetSchedule();
+    snapshot := SnapshotAutoplan::Create( task.Run() );
+    
+    // select all operations of the input scope, but sort them by earliest start:
+    operations := selectsortedset( task.Scope().Operations(),
+                                   Elements,
+                                   op,
+                                   true,
+                                   op.EarliestStart() );
+    snapshot.NrOperationsSelected( operations.Size() ); // log info in snapshot
+    
+    // plan them on earliest available resource, in the order of the struct (EarliestStart first):
+    schedule.PlanOperations( operations, task.Scope().Resources() );
+    
+    nr_planned := counter( operations, Elements, op, op.IsPlanned() );
+    snapshot.NrOperationsPlanned( nr_planned ); // log info in snapshot
+    
+    this.FinalizeSnapshot( task, task.Scope() );
+    
+    return this.Continue( task );
+  *]
+}

@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SynchronizeExportedFulfillmentsUsingWO (ExportedSchedule owner, ProductPlannedFulfillment fulfillment, ProductPlannedSupply productsupply, 
+  output ExportedPlannedFulfillments updatedinstances)
+{
+  TextBody:
+  [*
+    exported_fulfillment := ExportedPlannedReservationWO::FindExportedPlannedReservationWO( fulfillment.SupplyId(), fulfillment.DemandId() );
+    
+    if( isnull( exported_fulfillment ) )
+    {
+      exported_fulfillment := ExportedPlannedReservationWO::Create( owner, fulfillment, productsupply.WorkOrderSupplyId(), this.DemandID(), '', '', '' );
+    }
+    
+    exported_fulfillment.Update( fulfillment );
+    
+    updatedinstances.Add( exported_fulfillment );
+  *]
+}

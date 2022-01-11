@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_010_RunInOneTransaction (LibOpt_TestDataset dataset)
+{
+  Description: 'Check that runs in one transaction work'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    runcontextforutf := LibOpt_MyRunContextForUTF::Create( run );
+    
+    // Script of the rollback KPI
+    kpi_script := opt.RollbackKPIScripted( 1 );
+    for( i := 0; i <= 5; i++ )
+    {
+      kpi_script.Enqueue( 10.0 );
+    }
+    
+    iterator := opt.IteratorUntil( run, 'Iterator' );
+    iterator.SetMaxIterations( 5 );
+    c1 := opt.ComponentFlow( run, 'c1', false );
+    switch := opt.SwitchProbability( run, 'sw' );
+    c2 := opt.ComponentFlow( run, 'c2', false );
+    c3 := opt.ComponentFlow( run, 'c3', false );
+    c4 := opt.ComponentFlow( run, 'c4', false );
+    subopt := opt.MPSuboptimizer( run, 'subopt', runcontextforutf, & kpi_script );
+    
+    iterator.To( c1 );
+    c1.To( switch );
+    switch.Branch( 0.5, c2 );
+    switch.Branch( 0.5, c3 );
+    c2.To( c4 );
+    c3.To( c4 );
+    c4.To( subopt );
+    
+    opt.ConfigureForOneTransaction( run );
+    run.Start();
+    
+    this.Run().AssertEqual( 5, c1.NrTimesCalled(), 'Component 1 is not called enough times' );
+    this.Run().AssertEqual( 5, switch.NrTimesCalled(), 'Switch is not called enough times' );
+    this.Run().AssertEqual( 5, c4.NrTimesCalled(), 'Component 4 is not called enough times' );
+    this.Run().AssertEqual( 5, subopt.NrTimesCalled(), 'Suboptimizer is not called enough times' );
+    
+    Transaction::Transaction().Propagate();
+    
+    this.Run().AssertEqual( LibOpt_RunStatus::Finished(), run.Status(), 'Run is not finished' );
+    this.Run().AssertEqual( 0, run.Task( relsize ), 'Run has too many tasks' );
+    this.Run().AssertEqual( 5, subopt.SnapshotComponent( relsize ), 'Suboptimizer does not have enough snapshots' );
+    this.Run().AssertEqual( 10, counter( subopt, SnapshotComponent.Children.astype( LibOpt_SnapshotKPI ), kpi, true ), 'Suboptimizer does not have enough KPI snapshots' );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

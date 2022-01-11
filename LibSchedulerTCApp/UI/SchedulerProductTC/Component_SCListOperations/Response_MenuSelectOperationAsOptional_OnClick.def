@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[Operation_SC] selection) id:Response_SCListOperations_MenuSelectOperationAsOptional_OnClick
+{
+  #keys: '[137186.0.174089951]'
+  Body:
+  [*
+    // Add selected operations to OPTIONAL scope
+    mandatoryOperations := DataHolderOptimizerMandatoryOperations.Data();
+    optionalOperations := DataHolderOptimizerOptionalOperations.Data();
+    
+    selection := selectset( selection, Elements, e, e.AllowedOperationOnResource( relsize ) > 0 )
+    
+    DataHolderOptimizerMandatoryOperations.Data( mandatoryOperations.Difference( selection ) );
+    DataHolderOptimizerOptionalOperations.Data( optionalOperations.Union( selection ) );
+  *]
+  CanBindMultiple: false
+  DefinitionID => //FilteredList/Responsedef_FilteredList_Menu_OnClick
+  Initiator: 'MenuSelectOperationAsOptional'
+  Precondition:
+  [*
+    return Operation_SC::CheckCanAddToOptimizerScope( selection, feedback );
+  *]
+}

@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateHelperRelations (Boolean isContextSwitch_i)
+{
+  Description:
+  [*
+    This is a common flow for both the 'Refresh' and 'Prepare' structures
+    It refreshes 'DatasetTypeTopic' and 'ConvertorVersions' objects where necessary
+  *]
+  TextBody:
+  [*
+    // tgn3 Apr-28-2021 (created)
+    
+    // (Re)-create 'DatasetTypeTopic' and 'ConvertorVersion' objects
+    dmf := this.ConvertorDataset();
+    
+    topicSteps := this.Topic().TopicStep( relget );
+    
+    // Bind each dataset type to the topic steps
+    // DevNote: if datasetTypes weren't refreshed, this does nothing
+    traverse( dmf, DatasetType, datasetType )
+    {
+      // For context switch, manual flush required
+      // If there is none (Refresh flow), deletion of datasetType will
+      // automatically flush these
+      if( isContextSwitch_i )
+      {
+        datasetType.DatasetTypeTopic( relflush );
+      }
+      
+      traverse( topicSteps, Elements, topicStep )
+      {
+        DMF_DatasetTypeTopic::FindCreate( datasetType, topicStep ); 
+      }
+      
+      //Due to the flush of convertor version, all dataset status shall be reset following the runsteps reset
+      traverse( datasetType, Dataset, dataset )
+      {
+        dataset.ResetStatus();
+      }  
+    }
+    
+    // Flush all existing 'ConverterVersions'. This will also flush all DICV
+    dmf.ConvertorVersion( relflush );
+    
+    // Generate converter versions
+    this.GenerateConvertorVersions();  
+    
+    dmf.UpdateVersionTopicBindings();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

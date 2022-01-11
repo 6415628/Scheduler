@@ -1,0 +1,64 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test023_ContinueComponentMultiple (LibOpt_TestDataset dataset)
+{
+  Description:
+  [*
+    Test whether we can continue multiple components when a breakpoint is triggered.
+    We expect that the amount of components executed is equal to the amount of times the `ContinueComponent` method on `LibOpt_BreakpointEvent` is called.
+  *]
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    component1 := opt.ComponentCounter( run, 'Component1' );
+    component2 := opt.ComponentCounter( run, 'Component2' );
+    component3 := opt.ComponentCounter( run, 'Component3' );
+    component4 := opt.ComponentCounter( run, 'Component4' );
+    component5 := opt.ComponentCounter( run, 'Component5' );
+    component1.To( component2 );
+    component2.To( component3 );
+    component3.To( component4 );
+    component4.To( component5 );
+    
+    breakpoint_position := select( component1, ComponentPosition, bp, bp.Name() = LibOpt_Component::ComponentPosition_Initialize() );
+    breakpoint_position.SetBreakpoint();
+    
+    run.SetStartComponent( component1 );
+    str := run->Start();
+    
+    test := this->WaitForBreakpoint( run, this.Run() )
+      ->|void->()
+      {
+        this.Run().AssertFalse( isnull( run.BreakpointEvent() ), 'No breakpoint event [1]' );
+        this.Run().AssertEqual( 0, component1.NrOfTimesCalled(), 'Component 1: Number of calls has an unexpected value [1]' );
+        this.Run().AssertEqual( 0, component2.NrOfTimesCalled(), 'Component 2: Number of calls has an unexpected value [1]' );
+        this.Run().AssertEqual( 0, component3.NrOfTimesCalled(), 'Component 3: Number of calls has an unexpected value [1]' );
+        this.Run().AssertEqual( 0, component4.NrOfTimesCalled(), 'Component 4: Number of calls has an unexpected value [1]' );
+        this.Run().AssertEqual( 0, component5.NrOfTimesCalled(), 'Component 5: Number of calls has an unexpected value [1]' );
+        
+        run.ContinueComponent();
+        run.ContinueComponent();
+        run.ContinueComponent();
+        
+        return this->WaitForBreakpoint( run, this.Run() )
+      }
+      ->|void->()
+      {
+        this.Run().AssertFalse( isnull( run.BreakpointEvent() ), 'No breakpoint event [2]' );
+        this.Run().AssertEqual( 1, component1.NrOfTimesCalled(), 'Component 1: Number of calls has an unexpected value [2]' );
+        this.Run().AssertEqual( 1, component2.NrOfTimesCalled(), 'Component 2: Number of calls has an unexpected value [2]' );
+        this.Run().AssertEqual( 1, component3.NrOfTimesCalled(), 'Component 3: Number of calls has an unexpected value [2]' );
+        this.Run().AssertEqual( 0, component4.NrOfTimesCalled(), 'Component 4: Number of calls has an unexpected value [2]' );
+        this.Run().AssertEqual( 0, component5.NrOfTimesCalled(), 'Component 5: Number of calls has an unexpected value [2]' );
+        
+        run.ContinueComponent();
+        
+        run.Stop();
+      }
+    this.NoException( str );
+    this.NoException( test );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

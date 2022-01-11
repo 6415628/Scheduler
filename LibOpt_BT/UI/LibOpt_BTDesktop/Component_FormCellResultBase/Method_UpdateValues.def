@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateValues () id:Method_FormCellResultBase_UpdateValues
+{
+  #keys: '[139544.0.1152191112]'
+  Body:
+  [*
+    versions := DataHolderModelVersion.Data();
+    kpi_definition := DataHolderKPIDefinition.Data();
+    
+    traverse( DataHolderOwner.Data(), UICellResult, result )
+    {
+      btss := selectset( result.TrackingTableCell(), BTS, bts, versions.Find( bts.ModelVersion() ) >= 0 );
+      kpis := selectsortedset( btss, Elements.KPI, kpi, kpi.KPIDefinition() = kpi_definition, kpi.Value() );
+      result.NrOfRuns( kpis.Size() );
+      if( kpis.Size() > 0 )
+      {
+        result.Average( average( kpis, Elements, kpi, true, kpi.Value() ) );
+        result.StdDev( stddev( kpis, Elements, kpi, true, kpi.Value() ) );
+        result.Variance( result.StdDev() * result.StdDev() );
+        result.Min( kpis.Element( 0 ).Value() );
+        result.Median( 0.5 * kpis.Element( floor( ( kpis.Size() - 1 ) / 2 ) ).Value()
+                     + 0.5 * kpis.Element( ceil( ( kpis.Size() - 1 ) / 2 ) ).Value() );
+        result.Max( kpis.Element( kpis.Size() - 1 ).Value() );
+        result.TargetKPI( relset, kpis.First().TargetKPI() );
+      }
+      else
+      {
+        result.Average( 0 );
+        result.StdDev( 0 );
+        result.Variance( 0 );
+        result.Min( Real::MinReal() );
+        result.Median( 0 );
+        result.Max( Real::MaxReal() );
+        result.TargetKPI( relflush );
+      }
+    }
+  *]
+}

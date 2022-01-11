@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestTimeLogicInputLotEarliestStart (Schedule schedule)
+{
+  Description: 'Test input lot earliest start for single task.'
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    
+    testinstance := this.GetTestInstanceMain( variant );
+    
+    resource := maxselect( schedule, ResourceGroup_SC.Resource_SC, r, true, r.ResourceGroup_SC().Index() )
+    
+    // Select the last task
+    task := resource.Last();
+      
+    // Assert the result
+    this.Run().AssertEqual( testinstance.InputLotEarliestStart(), task.LastInputLot().EarliestStart(), UTFUtility::GenerateFailedMessage( 'TimeLogic_InputLot_EarliestStart', variant ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateNeighborhood (LibOpt_ScopeElement anchor, LibOpt_Scope scope) as LibOpt_Scope
+{
+  TextBody:
+  [*
+    // mbr23, 2019-09-16 (overridden)
+    
+    if( not anchor.istype( ScopeElementResourceGroup ) )
+    {
+      error( "Anchor is expected to be of type ScopeElementResourceGroup, but is", anchor.DefinitionName() );
+    }
+    resroucegroup := anchor.astype( ScopeElementResourceGroup ).ResourceGroup_SC();
+    
+    result := LibOpt_Scope::Create( scope.Run() );
+    
+    // keep all operations that are planned or plannable on the anchor resource group:
+    tokeep := selectset( scope.Operations(),
+                         Elements.ScopeElementOperation,
+                         operation,
+                         guard( operation.Operation_SC().Task_SC().Resource_SC().ResourceGroup_SC() = resroucegroup, false ) or
+                         exists( resroucegroup,
+                                 Resource_SC,
+                                 resource,
+                                 operation.Operation_SC().AllowedOnResource( resource ) ) );
+    
+    result.Add( tokeep );
+    
+    // and keep anchor:
+    result.Add( anchor );
+    
+    return result;
+  *]
+}

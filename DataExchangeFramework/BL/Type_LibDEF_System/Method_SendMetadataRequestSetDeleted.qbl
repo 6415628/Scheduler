@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendMetadataRequestSetDeleted (LibDEF_SetMeta setMeta_i)
+{
+  Description: 'Send a Metadata message for channel-event when a Set has been deleted.'
+  TextBody:
+  [*
+    // Timothy G May-24-2016 (created)
+    nvt := LibDEF_DataAccessor::CreateMessageMetadata();
+    
+    // define Type and required Header
+    LibDEF_DataAccessor::SetMetadataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_TYPE(),    LibDEF_DataAccessor::TYPE_METADATA_SETDELETED() );
+    LibDEF_DataAccessor::SetMetadataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_SETGUID(), setMeta_i.GUID()                                );
+    
+    dataBroker := this.DataBroker();
+    
+    // Send metadata updates to foreign systems
+    traverse( this.GetOtherSystemsWithCommonChannel( setMeta_i.ChannelName() ), Elements, system )
+    {
+      event := dataBroker.EventCreate( system, false );
+      LibDEF_Util::EventLog( event, "Sending Set deleted metadata request" );
+    
+      dataBroker.SendMessage( system, nvt, LibDEF_DataAccessor::KIND_REQUEST(), event );
+    }
+  *]
+}

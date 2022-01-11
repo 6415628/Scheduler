@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitializeEditDialog (Resource_SC selection) id:Method_DialogCreateEditResource_InitializeEditDialog
+{
+  #keys: '[145574.0.1339585593]'
+  Body:
+  [*
+    // Pre-fill fields with existing data
+    
+    // Resource name edit filed will be focus during edit 
+    EditFieldResourceName.Focus()
+    
+    this.HideBatchEditComponents()
+    owner := selection.ResourceGroup_SC();
+    
+    // Category tab 
+    EditFieldResourceID.Enabled( false, "" );
+    
+    
+    if( owner.HasBatches() )
+    {
+      TopNumberPickerMaxBatchSize.Number( selection.BatchResourceMaximumBatchSize() );
+      NumberPickerMaxBatchSize.Number( selection.BatchResourceMaximumBatchSize() );  
+    }
+    else
+    {
+      NumberPickerMaxBatchSize.Enabled( false, "" );
+      PanelBatchSize.Visible( false );
+    }
+    
+    // Frozen Horizon tab
+    CheckboxFrozenHorizonOnResource.Checked( selection.UseFrozenPeriodUser() );
+    DurationSelectorFrozenHorizonOnResource.Duration( selection.FrozenPeriodUser() );
+    
+    // On Hold Period tab
+    CheckboxOnHoldPeriodOnResource.Checked( selection.UseOnHoldPeriodUser() );
+    DurationSelectorOnHoldPeriodOnResource.Duration( selection.OnHoldPeriodUser() );
+    
+    // Capacity Overview tab
+    EditFieldCapacityResource.Text( selection.CapacityResourceName() );
+    RadioButtonGroupCapacityResource.BoundValue( Translations::SC_DialogResource_CapacityOverview_CombineCapacityWithAnotherResource() );
+    
+    // Continuous tab
+    if ( owner.IsContinuous() )
+    {
+      this.EnableContinuousTab();
+      PanelContinuous.Visible( true );
+    }
+  *]
+}

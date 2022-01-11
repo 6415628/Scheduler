@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsQuantityExceedMaxBatchSize (Real quantity) declarative remote as Boolean
+{
+  Description: 'Checks if the quantity specified does not make the total quantity of the batch exceeds its allowed quantity.'
+  TextBody:
+  [*
+    feedbackobject := FeedbackObject::LocalFeedback();
+    demandbatch    := this.DemandBatch();
+    batchquantity  := demandbatch.Quantity() - this.Quantity() + quantity;
+    maxbatchsize   := demandbatch.MaxBatchSize();
+    
+    value := batchquantity <= maxbatchsize;
+    
+    if( not feedbackobject.CheckSoft( value ) )
+    {
+      feedbackobject.AddSoft( Translations::SC_DemandBatch_ExceedMaxSize( batchquantity, maxbatchsize ) );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

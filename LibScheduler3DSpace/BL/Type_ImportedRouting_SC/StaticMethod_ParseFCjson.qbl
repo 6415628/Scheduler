@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ParseFCjson (Schedule owner, JSON process) as ImportedRouting_SC
+{
+  Description: 'Parse the JSON data from 3DSpace to instantiate imported routings.'
+  TextBody:
+  [*
+    routingID := ImportedRouting_SC::GetProcessID( process );
+    
+    importedRouting := select( owner, ImportedRouting_SC, importedRouting, importedRouting.RoutingId() = routingID ); 
+    
+    if( isnull( importedRouting ) )
+    {
+      importedRouting := ImportedRouting_SC::Create( owner, routingID );                             
+    }
+    
+    importedRouting.Update( process );
+    
+    return importedRouting;
+  *]
+}

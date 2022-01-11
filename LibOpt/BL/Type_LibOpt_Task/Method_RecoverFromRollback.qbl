@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method RecoverFromRollback
+{
+  TextBody:
+  [*
+    algorithm := AlgorithmStore::TryRetrieve( LibOpt_Task::AlgorithmStore_Identifier( this ) );
+    
+    
+    if( not isnull( algorithm )
+      and algorithm.IsStringStored( LibOpt_Suboptimizer::RollbackStorage_HasRollback() )
+      and algorithm.IsStringStored( LibOpt_Suboptimizer::RollbackStorage_Snapshot() ) )
+    {
+      json_string := algorithm.RetrieveString( LibOpt_Suboptimizer::RollbackStorage_Snapshot() );
+      
+      this.UpdateSnapshotComponent( JSON::Parse( json_string ) );
+    }
+    else if( this.Run().HasSnapshots() )
+    {
+      // Use the closest task with a snapshot component.
+      task := this;
+      while( not isnull( task.Parent() ) and isnull( task.SnapshotComponent() ) )
+      {
+        task := task.Parent();
+      }
+      LibOpt_SnapshotWarning::Throw( task, Translations::LibOpt_Task_RecoverFromRollbackFailure(), LibOpt_Issue::Severity_3_Medium() );
+    }
+    
+    // Any LibOpt_DatasetCopyConditional objects that were deleted right before a rollback will be restored during the rollback.
+    // We don't want these objects anymore, so we delete them again.
+    LibOpt_DatasetCopyConditional::DeleteDatasetCopyConditionalWhenFlagged( this.Run().Optimization(), false );
+  *]
+}

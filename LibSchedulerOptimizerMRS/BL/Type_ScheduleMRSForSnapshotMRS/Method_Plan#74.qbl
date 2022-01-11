@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method Plan (LibOpt_Run run)
+{
+  Description:
+  [*
+    Plans this plan copy on all actual resources that are captured by this plan copy.
+    Does not change the planning of operations that are marked as locked in the given run.
+  *]
+  TextBody:
+  [*
+    // mbr23, 2019-10-09 (created), logic copied from legacy OptimizerSnspahotMRSA::Plan(OptimizerScope) and adapted to LibOpt.
+    
+    operationsonrun_unfrozen := guard( run.StartScope().OperationsUnlocked(),
+                                       // start scope may be deleted after the run:
+                                       selectset( this,
+                                                  OperationOnResource.Operation,
+                                                  op,
+                                                  guard( not op.ScopeElementOperation().OnRunOrCreate( run ).IsLocked(), false ) ) );
+    
+    traverse( this, OperationOnResource.Resource, resource )
+    {
+      // Planned operations that should be unplanned
+      operationstounplan := selectset( operationsonrun_unfrozen,
+                                       Elements,
+                                       op,
+                                       // Operation not stored in snapshot, so not replanned
+                                       not exists( this, OperationOnResource, pe, pe.Operation() = op )
+                                       // Operation is planned
+                                       and guard( op.Task_SC().Resource_SC() = resource, false ) );
+      traverse( operationstounplan, Elements, op )
+      {
+        op.Unplan();
+      }
+      
+      // retrieve sorted list of operations to be planned on the resource:
+      planelements := selectsortedset( this, OperationOnResource, operationinsnapshot, 
+                                       guard( operationinsnapshot.Resource() = resource, false )
+                                       and guard( not operationinsnapshot.Operation().ScopeElementOperation().OnRunOrCreate( run ).IsLocked(), false ),
+                                       operationinsnapshot.End() );
+      sortedoperations := construct( Operation_SCs );
+      traverse( planelements, Elements, planelement )
+      {
+        sortedoperations.Add( planelement.Operation() );
+      }
+      // plan in order:
+      resource.PlanLast( sortedoperations );
+    }
+  *]
+}

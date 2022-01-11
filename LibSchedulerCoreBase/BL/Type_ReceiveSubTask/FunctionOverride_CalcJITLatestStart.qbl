@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcJITLatestStart
+{
+  TextBody:
+  [*
+    lateststart := DateTime::MinDateTime();
+    strategyjit := this.Task_SC().StrategyJIT();
+    
+    if( not isnull( strategyjit ) )
+    {
+      latestend := DateTime::MinDateTime();
+      nextsubtask := this.Next();
+    
+      if( isnull( nextsubtask ) )
+      {
+        latestend := strategyjit.LatestEnd();
+      }
+      else
+      {
+        latestend := nextsubtask.JITLatestStart();
+      }
+    
+      om := this.OperationMaterial();
+      query := Calendar::Query();
+      
+      query.AddCalendar( this.Resource_SC().ResourceCalendar() );
+      
+      if( not isnull( om ) and not isnull( om.TransferSubTask() ) )
+      {
+        query.AddCalendar( om.TransferSubTask().Resource_SC().ResourceCalendar() );
+      
+        // Kyle 07-Sep-2015 QP #5747
+        // Also considers the transferring resource's Machine Latest End,
+        // such that the transfer operation will not overlap with it's next task.
+        latestend := minvalue( latestend, om.TransferSubTask().Task_SC().MachineLatestEnd());
+      }
+      
+      previousfitstart := query.PreviousFit( latestend, this.NetDuration() );
+      lateststart := query.Subtract( previousfitstart, this.NetDuration() );
+    }
+    
+    this.JITLatestStart( lateststart );
+  *]
+}

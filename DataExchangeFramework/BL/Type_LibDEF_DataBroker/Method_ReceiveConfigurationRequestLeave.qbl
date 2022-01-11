@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveConfigurationRequestLeave (NamedValueTree nvt_i, NamedValue body_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive Configuration message for requesting to leave domain.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-22-2016 (created)
+    LibDEF_Util::EventLog( event_i, "Receiving leave request" );
+    
+    // retrieve requestor's guid
+    systemGUID := LibDEF_DataAccessor::GetHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SYSTEMGUID_FROM() );
+    
+    // find System with matching host and port
+    leavingSystem := LibDEF_System::FindSystemByGUID( this, systemGUID );
+    
+    if( not isnull( leavingSystem ) )
+    {
+      // reply with success
+      this.SendConfigurationSuccessLeave( leavingSystem, event_i );
+    
+      leavingSystem.Delete();
+    }
+    
+    // inform other systems
+    peers := this.GetOtherPeers( false );
+    if( peers.Size() > 0 )
+    {
+      this.SendConfigurationSuccessCopyRoutingTable( peers );
+    }
+  *]
+}

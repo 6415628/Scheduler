@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateSubscription (Boolean useLeadingPeriod_i, Boolean isRecurring_i, String periodType_i, 
+  Date startOfPeriod_i, Date endOfPeriod_i)
+{
+  TextBody:
+  [*
+    if( this.IsRecurring() )
+    {
+      wasUsingLeadingPeriod := this.UseLeadingPeriod();
+      
+      this.UseLeadingPeriod( useLeadingPeriod_i );
+      
+      if( useLeadingPeriod_i )
+      {
+        if( not wasUsingLeadingPeriod )
+        {
+          // Start using the RecurrencePeriod of the LeadingParticipation by removing the specific RecurrencePeriod and its occurrences...
+          this.RemoveRecurrencePeriod();
+      
+          // ... and copying all occurrences of the LeadingParticipation.
+          this.CopyOccurrences();
+        }
+      }
+      
+      else
+      {
+        // Remember the start and end of the current period.
+        // They are used to determine which occurrences must be created / deleted when the period was changed.
+        period := this.GetRecurrencePeriod();
+        prevStartDate := guard( period.StartDate(), Date::MinDate() );
+        prevEndDate   := guard( period.EndDate(),   Date::MaxDate() );
+      
+        // Update the RecurrencePeriod of the subscription, i.e. the subscription period.
+        this.UpdateRecurrencePeriod( isRecurring_i, periodType_i, startOfPeriod_i, endOfPeriod_i );
+      
+        // Determine the consequences of the change in start and end of the period.
+        this.AlignOccurrences( prevStartDate, prevEndDate );
+      }
+    }
+    else
+    {
+      if( not useLeadingPeriod_i )
+      {
+        LibCal_Util::Warning( "Cannot set a subscription period for a subscription to a non-recurring event | "
+                            + "ParticipationID = " + this.ParticipationID() + ", " + this.Event().GetEventInfo()
+                            + ", subscribing Calendar = '" + this.Calendar().CalendarID() + "'" );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

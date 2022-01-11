@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcStart
+{
+  TextBody:
+  [*
+    // jiex Nov-28-2016 (created)
+    
+    value := this.ScheduleStock().Schedule().Time();
+    
+    if( not isnull( this.Operation_SC() ) and this.Operation_SC().IsPlanned() )
+    {
+      value := guard( this.InputLot().Start(), this.Operation_SC().Task_SC().FirstRespectRoutingSubTask().Start() );
+    }
+    else if( isnull( this.Operation_SC() ) and guard( this.Demand().QuantityReserved() > 0 and  this.Demand().DueDate() > value , false ) )
+    {
+      value := this.Demand().DueDate();
+    }
+    
+    this.Start( value );
+  *]
+}

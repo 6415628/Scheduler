@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetIsTransitionAllowedOnSharedPhases (OperationInCombiLeg prevop, OperationInCombiLeg currentop, Boolean onlycheckhard, 
+  output Real cost) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    // zyi1 Jul-22-2021 (created)
+    sharedphases := CombiProgramPhase::GetSharedPhases( prevop, currentop ); 
+    cost := 0.0
+    
+    traverse( sharedphases, Elements, phase )
+    {
+      cost := cost + phase.GetCostTransitionViolation( prevop.Operation_SC(), currentop.Operation_SC(), onlycheckhard );
+    }
+    
+    return cost = 0.0;
+  *]
+}

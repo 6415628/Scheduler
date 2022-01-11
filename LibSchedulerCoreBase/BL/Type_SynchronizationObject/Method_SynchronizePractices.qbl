@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizePractices
+{
+  Description: 'Synchronize practices with the knowledge table practices (KT).'
+  TextBody:
+  [*
+    allInstances := selectset( this, Schedule.Practice, practice, true );
+    updatedInstances := construct( Practices );
+    
+    this.SynchronizePracticeFromWorkOrderOperations( updatedInstances );
+    this.SynchronizePracticeFromRoutingStep( updatedInstances );
+    
+    oldInstances := allInstances.Difference( updatedInstances );
+    
+    traverse( oldInstances, Elements, old, old.CheckCanBeDeleted() )
+    {
+      old.Delete();
+    }
+  *]
+}

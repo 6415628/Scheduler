@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeOperationsFromRouting
+{
+  Description: 'Updates the operations based on routing information.'
+  TextBody:
+  [*
+    // Get all existing plan units that are related to this WorkOrderOperation because we could have split them
+    planunits := selectset( this, Operation_SC.PlanUnit_SC, pu, true );
+    
+    // Synchronize with PU logic to update correct op.SequenceNr value
+    traverse( planunits, Elements, pu )
+    {
+      pu.SynchronizeOperationsMaterialsWIPDemands();
+    }
+  *]
+}

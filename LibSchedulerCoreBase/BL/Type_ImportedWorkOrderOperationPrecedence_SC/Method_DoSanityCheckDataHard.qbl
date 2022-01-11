@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride DoSanityCheckDataHard (output Strings feedback_o) declarative as Boolean
+{
+  TextBody:
+  [*
+    isvalid := this.GetHasValidFromImportedWorkOrderOperation( feedback_o );
+    isvalid := this.GetHasValidToImportedWorkOrderOperation( feedback_o ) and isvalid;
+    isvalid := this.GetHasValidNonCircularPrecedence( feedback_o ) and isvalid;
+    
+    // The following sanity checks will be checked only in time constraint mode or optimization service mode
+    if( this.Schedule().ImportedTechnicalConfiguration().IsDataDrivenTimeConstraintsMode() or this.Schedule().IsOptimizationService() )
+    {
+      isvalid := this.GetHasValidDependencyType( feedback_o ) and isvalid;
+      isvalid := this.GetHasValidNoBufferType( feedback_o ) and isvalid;
+      isvalid := this.GetHasValidOffsetRelation( feedback_o ) and isvalid;
+    }
+    
+    return isvalid;
+  *]
+}

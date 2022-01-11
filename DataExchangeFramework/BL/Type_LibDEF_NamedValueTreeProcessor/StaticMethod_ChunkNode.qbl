@@ -1,0 +1,62 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ChunkNode (NamedValueTree sourceNvt_i, structured_NamedValue sourcePath_i, NamedValueTree targetNvtTemp_i, 
+  structured_NamedValue targetPath_i, LibDEF_NamedValueTreeContainer nvtContainer_i, output Number counterNodesProcessed_o, 
+  Number nrOfNodesLimit_i)
+{
+  Description:
+  [*
+    Chunking a node is really about copying the children of the source node to the target node, and make chunk when the limit number of nodes is reached.
+    This is recursive method, hence the need of some of the weird input arguments.
+    The NVT container input argument is important to contain the resulting NVT chunks.
+    Has output argument "counterNodesProcessed" which will tell the number of children nodes that has been copied so far but not yet stored as chunk in the returned NVT container group.
+  *]
+  TextBody:
+  [*
+    sourceParentNode := LibDEF_NamedValueTreeProcessor::GetNodeInPath( sourceNvt_i, sourcePath_i );
+    targetParentNode := LibDEF_NamedValueTreeProcessor::GetNodeInPath( targetNvtTemp_i, targetPath_i );
+    
+    traverse( sourceParentNode.Children(), Elements, child )
+    {
+      // Before copying, ensure a state that can receive a new copy.
+      // If already reach limit, save the current chunk and restart with empty again.
+      if( counterNodesProcessed_o >= nrOfNodesLimit_i )
+      {
+        // Save the NVT to a the NVT object.
+        LibDEF_NamedValueTree::Create( nvtContainer_i, targetNvtTemp_i );
+        
+        // Flush target NVT and path, and repopulate with new instances of last path snapshot.
+        targetNvtTemp_i.Root().DeleteChildren(); // flush the NVT, start fresh
+        currentTargetPath := LibDEF_NamedValueTreeProcessor::CopyPathTo( sourcePath_i, targetNvtTemp_i ); // start again from same target path
+        targetPath_i.Flush();
+        traverse( currentTargetPath, Elements, e ) // use traverse (instead of copy all) to ensure sequence is the same
+        {
+          targetPath_i.Add( e );
+        }
+        targetParentNode := LibDEF_NamedValueTreeProcessor::GetNodeInPath( targetNvtTemp_i, targetPath_i ); // get the correct instance of parent node
+        counterNodesProcessed_o := 0;
+      }
+      
+      // Do deep copy if possible to save performance (eliminating the need to traverse the node's children).
+      deepCopyNrOfChild := LibDEF_NamedValueTreeProcessor::GetCumulativeNumberOfChildren( child ) + 1; // +1 to include the "child" itself
+      isDeepCopyPossible := deepCopyNrOfChild <= nrOfNodesLimit_i - counterNodesProcessed_o;
+      copiedChildAtTarget := child.Copy( targetParentNode, isDeepCopyPossible );
+      counterNodesProcessed_o := counterNodesProcessed_o + ifexpr( isDeepCopyPossible, deepCopyNrOfChild, 1 );
+      
+      // Go down to the children and extract only if deep copy not done.
+      if( not isDeepCopyPossible )
+      {
+        // Modify path to go down to the child level, both the source and target path.
+        sourcePath_i.Add( child );
+        targetPath_i.Add( copiedChildAtTarget );
+        LibDEF_NamedValueTreeProcessor::ChunkNode( sourceNvt_i, sourcePath_i, targetNvtTemp_i, targetPath_i, nvtContainer_i, counterNodesProcessed_o, nrOfNodesLimit_i );
+        
+        // Back up again.
+        sourcePath_i.Delete( sourcePath_i.Size() - 1 );
+        targetPath_i.Delete( targetPath_i.Size() - 1 );
+        targetParentNode := LibDEF_NamedValueTreeProcessor::GetNodeInPath( targetNvtTemp_i, targetPath_i );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Protected' }
+}

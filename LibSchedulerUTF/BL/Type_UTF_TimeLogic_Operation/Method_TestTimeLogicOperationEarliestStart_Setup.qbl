@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestTimeLogicOperationEarliestStart_Setup (Schedule schedule)
+{
+  Description: 'Setup by creating the required mock and dependent objects.'
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    testinstance := this.GetTestInstanceMain( variant );
+    testinstanceoperationmaterials := this.GetTestInstanceOpMaterials( variant );
+    
+    // Set company time
+    schedule.Time( UTFUtility::GetCompanyTime() );
+    
+    // Create UTF resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, testinstance.TestInstanceID() );
+    LeadTimeStrategy_SC::Create( resource, Duration::Zero(), testinstance.ResourceStrategy() )
+    
+    // Create order, plan unit
+    planunit := UTFMockObjectFactory::CreateOrderAndPlanUnit( schedule, testinstance.TestInstanceID(), 1.0 );
+    planunit.Update( testinstance );
+    
+    // Create test object operation
+    operation := GenericOperation::Create( planunit, UTFUtility::UTF() );
+    operation.Type( UTFUtility::UTF() );
+    
+    // Create the required UTF operation material and set the UTF attributes
+    traverse( testinstanceoperationmaterials, Elements, testinstanceom )
+    {
+      om := UTFMockObjectFactory::CreateInputOperationMaterial( operation, testinstanceom.ID() );
+      om.Update( testinstanceom );
+    }  
+    
+    if( testinstance.IsPlanned() )
+    {
+      // Plan the operation
+      resource.GenericPlanLastUTF( operation );   
+    }
+    
+    // Propagate relation operationonresource required for processduration setting later                                   
+    Transaction::Transaction().Propagate( relation( Operation_SC, OperationOnResource ) );
+    
+    // Create subtasktypeonresourcegroup and set the duration
+    UTFMockObjectFactory::CreateSubTaskTypeOnResourceGroup( testinstance.TestInstanceID(), resource );
+    
+    // Propagate all declarative attributes/relations prior to assertion in the actual test method.                                       
+    Transaction::Transaction().Propagate();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedSettingsSequencingConstruction (CDIntegration cdintegration, ImportedSettingsSequencing importedsettingssequencing)
+{
+  Description: 'Restore imported settings sequencing construction core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedSettingsSequencingConstruction
+    cdimportedSettingsSequencingConstructions := selectset( cdintegration, CDEntity.astype( CDImportedSettingsSequencingConstruction ), cdissc, 
+                                                            cdissc.SettingsId() = importedsettingssequencing.Id() 
+                                                          );
+    traverse( cdimportedSettingsSequencingConstructions, Elements, cdissc )
+    {
+      importedSettingsSequencingConstruction := importedsettingssequencing.ImportedSettingsSequencingConstruction( relnew,
+                                                                                                                   SettingsId := cdissc.SettingsId()
+                                                                                                                 );
+      CopyCorresponding::CopyFrom( cdissc ).CopyTo( importedSettingsSequencingConstruction );   
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

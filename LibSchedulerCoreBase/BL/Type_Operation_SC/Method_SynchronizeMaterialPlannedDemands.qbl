@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeMaterialPlannedDemands
+{
+  Description: 'Synchronize material planned demands based on work order input materials.'
+  TextBody:
+  [*
+    // WOI1 Aug-26-2016 (created)
+    allinstances := selectset( this, PlannedDemand.astype( MaterialPlannedDemand ), materialplanneddemands, true )
+    updatedinstances := construct( MaterialPlannedDemands );
+    schedule := this.PlanUnit_SC().Schedule();
+    
+    traverse( this, WorkOrderOperation.WorkOrderInputMaterial, workorderinputmaterial )
+    {
+      demandid := workorderinputmaterial.GetMaterialPlannedDemandId( this.OperationID() );
+      materialplanneddemand := MaterialPlannedDemand::FindMaterialPlannedDemand( DemandType::MaterialPlannedDemand(), demandid );
+      
+      if( isnull( materialplanneddemand ) )
+      {
+        materialplanneddemand := schedule.CreateDemand( DemandType::MaterialPlannedDemand(), demandid ).astype( MaterialPlannedDemand );
+      }
+      
+      materialplanneddemand.Update( workorderinputmaterial, this );
+      updatedinstances.Add( materialplanneddemand );
+      
+      // Propagate Operation.NumberOfInputLots which is used in synchronization of stock elements.
+      Transaction::Transaction().Propagate( attribute( Operation_SC, NumberOfInputLots ) );
+      
+      // Synchronize stock elements
+      materialplanneddemand.SynchronizeStockElement();
+    }
+    
+    //Delete material planned demands if they do not exist in KT
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, materialplanneddemand, materialplanneddemand.CheckCanBeDeleted() )
+    {
+      materialplanneddemand.Remove();
+    }
+  *]
+}

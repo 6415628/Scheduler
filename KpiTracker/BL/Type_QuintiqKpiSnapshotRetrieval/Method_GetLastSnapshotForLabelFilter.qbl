@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetLastSnapshotForLabelFilter (KpiLabelValues fixedLabels) as owning KpiSnapshotData
+{
+  TextBody:
+  [*
+    snapshot := this.Storage().LastSnapshot()
+    
+    match := false;
+    while ( not isnull( snapshot ) and not match )
+    { 
+      match := true;
+      // This traverse acts as the 'AND' part of the filter, finding
+      // at least one match per Label.
+      traverse( fixedLabels, Elements.Label, label, match ) 
+      {
+        found := false
+        // This traverse acts as the 'OR' part of the filter, flagging a possible 
+        // match if at least one of the required LabelValues for the outer Label
+        // is found on the Snapshot.
+        traverse( fixedLabels, Elements, value, value.Label() = label and not found ) 
+        {
+          if ( snapshot.HasLabel( label.Name(), value.Value() ) ) 
+          {
+            found := true
+          }
+        }  
+        match := match and found
+      } 
+      if ( not match ) 
+      {
+        snapshot := snapshot.PreviousSnapshot();
+      }
+    }
+    
+    data := null( KpiSnapshotData, owning );
+    if ( not isnull( snapshot ) ) 
+    {
+      data := DssKpiSnapshotRetrieval::ConvertSnapshotToTransportType( snapshot );
+    }
+    return &data;
+  *]
+}

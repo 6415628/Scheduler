@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateProgramSchedulingFeedbackData (Schedule schedule, Boolean createfeedbacktask, Boolean isfeedbackstarted)
+{
+  Description: 'Create program scheduling feedback test data'
+  TextBody:
+  [*
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, res, true );
+    programchange := select( schedule, ProgramChange, pc, true )
+    
+    // Create program change feedback
+    feedbackprogramchangetask := UTFMockObjectFactory::CreateFeedbackProgramChangeTask( schedule.FeedbackManager(),
+                                                                                        programchange );
+    programchangestart := schedule.Time() - Duration::Hours( 6 );
+    feedbackprogramchangetask.Update( programchange.ProgramChangeID(),
+                                      programchangestart,
+                                      programchangestart + Duration::Hours( 1 ),
+                                      Constants::TaskType_ProgramChange(),
+                                      resource.ResourceID(),
+                                      null( ProgramChangeTask ),
+                                      Constants::StatusEnd() );
+    
+    // Create feedback program type and program phase
+    programtypeconfig := select( schedule, ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration, t, true );
+    feedbackprogramtype := FeedbackProgramType::Create( programchange,  
+                                                         programtypeconfig.ProgramDefinitionConfigurationID(),
+                                                         programtypeconfig.ProgramSetConfigurationID(),
+                                                         programtypeconfig.ProgramTypeConfigurationID(),
+                                                         programchange.ProgramChangeID() );
+    feedbackprogramtype.Update( resource.ResourceID() );
+    feedbackprogramtype.SynchronizeFeedbackProgramPhase();
+    
+    // Create feedback tasks for first 5 operations       
+    if( createfeedbacktask )
+    {                          
+      sortedoperations := selectsortedset( schedule, PlanUnit_SC.Operation_SC, op, op.SequenceNr() <= 5, op.SequenceNr() );
+      taskstart := schedule.Time() - Duration::Hours( 5 );
+      traverse( sortedoperations, Elements, operation )
+      {
+        schedule.FeedbackManager().TaskStart( operation, resource.ResourceID(), taskstart, taskstart, 'UTF' );
+        if( operation.SequenceNr() <> 5 or not isfeedbackstarted )
+        {
+          schedule.FeedbackManager().TaskEnd( operation, resource.ResourceID(), taskstart, taskstart, taskstart + Duration::Hours( 1 ), 'UTF' );
+        }  
+        taskstart := taskstart + Duration::Hours( 1 );  
+      }
+      
+      // Create feedback in program type
+      feedbackprogramtype := select( schedule, ProgramChange.FeedbackProgramType, pt, true );
+      traverse( schedule, FeedbackManager.FeedbackTaskInSchedule, taskfb )
+      {
+        FeedbackTaskInFeedbackProgramType::CreateUpdate( taskfb, feedbackprogramtype, false );
+      }
+    }
+  *]
+}

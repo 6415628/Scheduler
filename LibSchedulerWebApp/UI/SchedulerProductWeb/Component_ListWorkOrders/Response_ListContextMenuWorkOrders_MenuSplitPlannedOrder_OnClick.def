@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: ListContextMenuWorkOrders/MenuSplitPlannedOrder
+Response OnClick (structured[WorkOrder] selection) id:Response_ListContextMenuWorkOrders_MenuSplitPlannedOrder_OnClick
+{
+  #keys: '[142956.0.1010140254]'
+  CanBindMultiple: false
+  DefinitionID => /ListContextMenuWorkOrders/Responsedef_ListContextMenuWorkOrders_MenuSplitPlannedOrder_OnClick
+  GroupServerCalls: true
+  Precondition:
+  [*
+    WorkOrder::CheckCanSplit( selection );
+    return FeedbackObject::CurrentFeedback().IsAllowed();
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Split planned order
+      dlg := construct( DialogSplitInternalWorkOrder );
+      internalWorkOrders := selectset( selection, Elements.astype( InternalWorkOrder ), internalworkoder, true );
+      dlg.SplitInternalWorkOrder( internalWorkOrders.First() );
+    *]
+  }
+}

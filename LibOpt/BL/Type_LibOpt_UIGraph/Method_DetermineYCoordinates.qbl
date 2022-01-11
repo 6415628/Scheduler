@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method DetermineYCoordinates
+{
+  Description: 'Determine the Y coordinate of the arcs and nodes.'
+  TextBody:
+  [*
+    y_offset := 0.0;
+    traverse( this, UIGraphRow, row )
+    {
+      max_height := max( row, UIGraphNode, node, node.Height() );
+      y_offset := y_offset + max_height / 2;
+      traverse( row, UIGraphNode, node )
+      {
+        node.Y( y_offset );
+      }
+      y_offset := y_offset + max_height / 2;
+      
+      traverse( row, UIGraphNode.Outgoing.UIGraphArcPoint, point )
+      {
+        point.Y( y_offset + point.Y() );
+      }
+      y_offset := max( row, UIGraphNode.Outgoing.UIGraphArcPoint, point, point.Y() );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

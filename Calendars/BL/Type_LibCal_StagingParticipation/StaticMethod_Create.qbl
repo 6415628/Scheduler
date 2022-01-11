@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (LibCal_StagingCalendar owner_i, LibCal_Participation participation_i) as LibCal_StagingParticipation
+{
+  Description: 'Create a staging object for export.'
+  TextBody:
+  [*
+    hasSpecificPeriod := participation_i.IsLeading()
+                      or not participation_i.astype( LibCal_Subscription ).UseLeadingPeriod();
+    
+    stagPart := owner_i.StagingParticipation( relnew,
+                                              StagingParticipationID := participation_i.ParticipationID(),
+                                              CalendarType           := owner_i.CalendarType(),
+                                              CalendarID             := owner_i.StagingCalendarID(),
+                                              EventID                := participation_i.Event().EventID(),
+                                              IsSubscription         := participation_i.IsSubscription(),
+                                              EventIsRecurring       := participation_i.IsRecurring(),  // ToDo: Is still registered at Participation, should be on Event
+                                              StartDate              := participation_i.StartDate(),
+                                              HasSpecificPeriod      := hasSpecificPeriod );
+    
+    // If applicable, fill the appropriate attributes for the RecurrencePeriod.
+    // This is in case of recurrence, for the LeadingParticipation and for the non-LeadingParticipations (i.e. subscribers)
+    // that don't follow the RecurrencePeriod of the LeadingParticipation.
+    if( participation_i.IsRecurring() and hasSpecificPeriod )
+    {
+      participation_i.GetRecurrencePeriod().Export( stagPart );
+    }
+    
+    return stagPart;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

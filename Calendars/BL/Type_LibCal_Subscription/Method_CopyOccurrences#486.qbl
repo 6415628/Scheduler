@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method CopyOccurrences
+{
+  Description: 'Copy all occurrences from the LeadingParticipation.'
+  TextBody:
+  [*
+    timezone := this.Calendar().GetTimeZone();
+    
+    if( this.IsRecurring() )
+    {
+      // If the participation ends at the start of a day, this is the start of the next day.
+      // In that case, one day should be subtracted in order to not take the next day into account. 
+      endDate := this.LeadingParticipation().RecurrencePeriod().EndDate()
+               - ifexpr( this.LeadingParticipation().EndTime() = this.LeadingParticipation().EndTime().StartOfDay( timezone ), 1, 0 );
+    
+      this.CopyOccurrences( this.LeadingParticipation().RecurrencePeriod().StartDate(), endDate );
+    }
+    else
+    {
+      // In case of a non-recurring event, there is only one occurrence (i.e. ExplicitTimeInterval),
+      // with an arbitrary Start and End. The Start and End of this occurrence must be used in order to have it copied to the subscription.
+      leadingETI := select( this.LeadingParticipation(), ExplicitTimeInterval, eti, true, true );
+    
+      if( not isnull( leadingETI ) )
+      {
+        endDate := leadingETI.End().Date( timezone )
+                 - ifexpr( leadingETI.End() = leadingETI.End().StartOfDay( timezone ), 1, 0 );
+        
+        this.CopyOccurrences( leadingETI.Start().Date( timezone ), endDate );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

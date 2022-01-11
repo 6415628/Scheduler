@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test011_Span_ScopeOneOperation (Schedule schedule)
+{
+  Description: 'tests the span calculation on a scope that consists of one operation only and an empty plan. The resulting span should be empty.'
+  TextBody:
+  [*
+    // mbr23 Jan-10-2020 (created)
+    
+    // start scenario for test is empty schedule:
+    schedule.UnplanAll();
+    
+    scope := construct( LibOpt_ScopeElements );
+    // Select one operation
+    operations := this.GetMethodOperationsInScope( this.GetCurrentMethodShortName(), schedule );
+    traverse( operations, Elements, op )
+    {
+      scope.Add( op.GetOrCreateScopeElement() );
+    }
+    this.Run().AssertEqual( 1, scope.Size(), "Input scope must have one operation" );
+    
+    run := UTF_Optimizer_Regression_Test_OptimizerSequencing::CreateSelectorScopeOnlyRun( UTF_Optimizer_Regression_Test_OptimizerSequencing::Optimizer( schedule ),
+                                                                                          scope,
+                                                                                          null( SettingsSequencingNeighborhoodCreatorForSpanCreator, owning ) );
+    selector := selectobject( run, Component, c, true );
+    
+    // assert that scope stays the same:
+    run.Start() ->| scope -> UTF_Optimizer_Regression_Test_OptimizerSequencing::AssertOutputScopeEquals( this.Run(), selector )->Exception()->(exception) {
+      this.Run().RegisterFailure( "post-optimization assert failed:\n" + exception.Message() );
+    };
+  *]
+}

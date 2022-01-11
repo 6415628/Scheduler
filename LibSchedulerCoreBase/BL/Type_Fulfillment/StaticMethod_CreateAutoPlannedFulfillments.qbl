@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateAutoPlannedFulfillments (Demands demands, Supplys supplies, Fulfillments fulfillmentsreset, 
+  Boolean issplit, Real quantity_keep) as owning Fulfillments
+{
+  Description: 'Reserve demands to supplies via greedy algorithm.'
+  TextBody:
+  [*
+    demands := selectsortedset( demands, Elements, d, true, d.DueDate(), d.Quantity(), d.DemandID() );
+    supplies := selectsortedset( supplies, Elements, supply, true, supply.AvailableFrom(), supply.Quantity(), supply.SupplyID() );
+    createdFulfillments := construct( Fulfillments );
+    
+    // Manual fulfillment will not be overwritten, unless plan unit splitting is done
+    // because we want to apply partial greedy material reservation for the limited selected demands and supplies
+    // We also do not touch converted fulfillments
+    traverse( fulfillmentsreset, Elements, f, issplit or not f.IsManualReservation() and not f.IsFixedReservation() )
+    {
+      f.UpdateQuantity( 0.0 );
+    }
+    
+    // To be used in the greedy fulfillment.
+    Transaction::Transaction().Propagate( attribute( Demand, QuantityOpen ) );
+    
+    traverse( demands, Elements, demand, demand.IsActive() )
+    { 
+      newFulfillments := demand.CreatePlannedFulfillments( supplies, false, issplit, quantity_keep );
+      createdFulfillments := createdFulfillments.Add( newFulfillments );
+      
+      fulfillments := selectset( demand, PlannedFulfillmentOfDemand, f, 
+                                 not f.IsManualReservation() 
+                                 and not f.HasFeedback() 
+                                 and f.QuantityDecision() = 0 );
+                                 
+      Fulfillment::DeletePlannedFulfillment( fulfillments );
+      
+      // propagate IsActive to avoid double reserve on wip demands which is already reserved by upstream or materialsupply 
+      Transaction::Transaction().Propagate( attribute( Demand, IsActive ) );  
+    }
+    
+    return &createdFulfillments;
+  *]
+}

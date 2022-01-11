@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SynchronizeExportedWorkOrderOperations
+{
+  TextBody:
+  [*
+    allinstances := selectset( this, ExportedInternalWorkOrderOperation, exportedwoo, true );
+    updatedinstances := construct( ExportedInternalWorkOrderOperations );
+    
+    traverse( this, InternalWorkOrder.WorkOrderOperation.astype( InternalWorkOrderOperation ), woo )
+    {
+      workorderid := woo.WorkOrderId();
+      seqnr := woo.SequenceNr();
+      exportedwoo := ExportedInternalWorkOrderOperation::FindExportedInternalWorkOrderOperation( workorderid, seqnr );
+    
+      if( isnull( exportedwoo ) )
+      {
+        exportedwoo := ExportedInternalWorkOrderOperation::Create( this, workorderid, seqnr );
+      }
+    
+      exportedwoo.Update( woo );
+      // synchronize exported work order supply, demand, input and output materials
+      exportedwoo.SynchronizeExportedWorkOrderSupply();
+      exportedwoo.SynchronizeExportedWorkOrderDemand();
+      exportedwoo.SynchronizeExportedWorkOrderInputMaterial();
+      exportedwoo.SynchronizeExportedWorkOrderOutputMaterial();
+      
+      // Synchronize exported operation campaigns
+      exportedwoo.SynchronizeExportedInternalOperationCampaign( woo );
+      
+      updatedinstances.Add( exportedwoo );
+    }
+    
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, old )
+    {
+      old.Delete();
+    }
+  *]
+}

@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedSettingsSequencingMRSPOA (CDIntegration cdintegration, ImportedSettingsSequencing importedsettingssequencing)
+{
+  Description: 'Restore imported settings sequencing MRS POA core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedSettingsSequencingMRSPOA
+    cdimportedSettingsSequencingMRSPOAs := selectset( cdintegration, CDEntity.astype( CDImportedSettingsSequencingMRSPOA ), cdismrspoa, 
+                                                      cdismrspoa.SettingsId() = importedsettingssequencing.Id() 
+                                                    );
+    traverse( cdimportedSettingsSequencingMRSPOAs, Elements, cdismrspoa )
+    {
+      importedSettingsSequencingMRSPOA := importedsettingssequencing.ImportedSettingsSequencingMRSPOA( relnew,
+                                                                                                       SettingsId := cdismrspoa.SettingsId()
+                                                                                                     );
+      CopyCorresponding::CopyFrom( cdismrspoa ).CopyTo( importedSettingsSequencingMRSPOA );   
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

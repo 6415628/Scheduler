@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckQuantitySoft (Boolean isdiscrete, String quantity, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Checks whether the input quantity is allowed to create a work order from this routing, can be overriden.'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // add soft rules here
+    qty := Converter::StringToRealUserConverter( quantity ); // converts it in the server to accomodate different locales
+    
+    value := true;
+    
+    value := this.CheckQuantityLessThanMaxSize( qty, feedback_o ) and value;
+    value := this.CheckQuantityMoreThanMinSize( qty, feedback_o ) and value;
+    value := this.CheckQuantityMultipleOfLotSize( qty, feedback_o ) and value;
+    value := this.CheckQuantityIsDiscrete( isdiscrete, qty, feedback_o ) and value;
+    
+    // Added to allow its usage in feedback object
+    feedbackObject := FeedbackObject::LocalFeedback();
+    feedbackObject.AddSoft( value, feedback_o );
+    
+    return value;
+  *]
+}

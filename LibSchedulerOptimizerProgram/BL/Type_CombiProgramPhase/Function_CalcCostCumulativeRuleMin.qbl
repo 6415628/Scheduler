@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcCostCumulativeRuleMin
+{
+  TextBody:
+  [*
+    // yifei Aug-5-2021 (created)
+    
+    value := 0.0;
+    
+    rules := selectset( this,
+                        ProgramPhaseConfiguration.RuleScopeInProgramPhase.Rule,
+                        rule,
+                        rule.RuleSubType().IsCumulativeValueNeeded()
+                        and rule.RuleSubType().IsMinimumCombinedLength()
+                        and not rule.IsProgramPhaseTransitionRule()
+                        and rule.IsEnabled() );
+    lastincombiphase := maxselect( this, OperationInCombiProgramSet, oicps, true, oicps.SequenceNr() );
+    
+    if( not isnull( lastincombiphase ) )
+    {
+      traverse( rules, Elements, rule )
+      {
+        doruleobj := lastincombiphase.GetRuleDataObjectForConstraintPrecondition( rule.CharacteristicMain(), true, 0.0 ); 
+        isvalid := rule.RuleSubType().Validate( rule, doruleobj );
+        deviation := rule.RuleValue() - doruleobj.CurrentRealValue();
+        if( not isvalid )
+        {
+          value := rule.PenaltyParameterSlope_a() * pow( (deviation + rule.PenaltyParameterOffset_c() ), rule.PenaltyParameterPower_b() );;
+        }
+      }
+    }
+    
+    this.CostCumulativeRuleMin( value );
+  *]
+}

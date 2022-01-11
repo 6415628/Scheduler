@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method FilteredByResources (Resource_SCs resources) declarative remote as Boolean
+{
+  Description: 'Rule filtered by rule scope in resource/shutdown type/program/program phase based on selected resources.'
+  TextBody:
+  [*
+    // Rule filtered by rule scope in resource/shutdown type/program/program phase based on selected resources.
+    value := false;
+    
+    if( this.RuleScopeSelected() = RuleConstant::RuleScope_AllTasksOnResource() )
+    {
+      value := exists( resources, Elements.RuleScopeInResource.Rule, rule,
+                       rule = this );
+    }
+    else if( this.RuleScopeSelected() = RuleConstant::RuleScope_Shutdown() )
+    {  
+      value := exists( resources, Elements.ShutdownTypeInResource.ShutdownType.RuleScopeInShutdownType.Rule, rule,
+                        rule = this );
+    }
+    else if( this.RuleScopeSelected() = RuleConstant::RuleScope_Program() )
+    {
+      value := exists( resources, Elements.ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration.RuleScopeInProgramType.Rule, rule,
+                       rule = this );
+    }
+    else if( this.RuleScopeSelected() = RuleConstant::RuleScope_ProgramPhase() )
+    {
+      value := exists( resources, Elements.ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration.ProgramPhaseConfiguration.RuleScopeInProgramPhase.Rule, rule,
+                       rule = this );
+    }
+    
+    return value;
+  *]
+}

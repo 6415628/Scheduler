@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+TableFunction CalcMaximumWaitingDuration
+{
+  DefaultOutputFunction:
+  [*
+    // tvn1 Jan-4-2017 (created)
+    this.MaximumWaitingDuration( Duration::MaxDuration() );
+  *]
+  OutputFunction:
+  [*
+    // tvn1 Jan-4-2017 (created)
+    this.MaximumWaitingDuration( MaximumWaitingDuration );
+  *]
+  TableDefinition: MaximumWaitingDuration_SC
+  FunctionColumnMatch
+  {
+    ColumnDefinition: FromResource
+    MatchExpression: "guard( this.FromOperation().Task_SC().Resource_SC().ResourceID(), '' )"
+    Operator: '='
+  }
+  FunctionColumnMatch
+  {
+    ColumnDefinition: FromResourceGroup
+    MatchExpression: "guard( this.FromOperation().Task_SC().Resource_SC().ResourceGroupName(), '' )"
+    Operator: '='
+  }
+  FunctionColumnMatch
+  {
+    ColumnDefinition: Product
+    MatchExpression: 'this.PlanUnit_SC().ProductId()'
+    Operator: '='
+  }
+  FunctionColumnMatch
+  {
+    ColumnDefinition: ToResource
+    MatchExpression: "guard( this.ToOperation().Task_SC().Resource_SC().ResourceID(), '' )"
+    Operator: '='
+  }
+  FunctionColumnMatch
+  {
+    ColumnDefinition: ToResourceGroup
+    MatchExpression: "guard( this.ToOperation().Task_SC().Resource_SC().ResourceGroupName(), '' )"
+    Operator: '='
+  }
+  ScoreFunctions:
+  [
+    TableFunctionScore
+    {
+      ScoreExpression: 'MaximumWaitingDuration'
+    }
+  ]
+}

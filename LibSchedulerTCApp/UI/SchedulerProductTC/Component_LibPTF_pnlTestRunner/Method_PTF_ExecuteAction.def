@@ -1,0 +1,87 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_ExecuteAction () id:Method_LibPTF_pnlTestRunner_PTF_ExecuteAction
+{
+  #keys: '[105690.0.203956224]'
+  Body:
+  [*
+    // Determines the status of an executing action and run through the script
+    curraction       := this.PTF_GetCurrentAction();
+    action           := '';
+    mintimerinterval := this.PTF_GetMinTimerInterval();
+    
+    if( curraction = '' )
+    {
+      this.PTF_EndExecution();
+    
+      if( vhAutoClose.Value() = 'true' )
+      {
+        this.PTF_WriteLogForStartEndClient( true );
+        this.Application().Close();
+      }
+    }
+    else
+    {
+      parameters := construct( Strings );
+      action     := this.PTF_GetActionAndParameters( curraction, &parameters );
+    
+      if( not action = LibPTF_StandardAction::Wait() )
+      {
+        gtPTF.Interval( mintimerinterval );
+      }
+    
+      if( action = LibPTF_StandardAction::Wait() )
+      {
+        this.PTF_SetCurrentAction();
+    
+        targetdelayinsecond := 0.0;
+        if( parameters.Size() = 1 )
+        {
+          targetdelayinsecond := [Real]parameters.Element( 0 );
+        }
+        else
+        {
+          targetdelayinsecond := Real::Random( [Real]parameters.Element( 0 ), [Real]parameters.Element( 1 ) );
+        }
+    
+        targetdelayinmillis := [Number]( targetdelayinsecond * 1000 ) ;
+    
+        // Set next action to be executed from the script
+        this.PTF_SetNextAction();
+    
+        this.PTF_DebugInfoAction( action, [String]targetdelayinmillis );
+        if ( targetdelayinmillis <= mintimerinterval )
+        {
+          gtPTF.Interval( mintimerinterval );
+        }
+        else
+        {
+          gtPTF.Interval( targetdelayinmillis );
+        }
+      }
+      else if( not chkLoggedStartMarker.Checked() )
+      {
+        this.PTF_SetCurrentAction();
+    
+        this.vhLogStart().Value( this.PTF_GetCurrentDatetime()
+                                          + '|' + [String]OS::PrecisionCounter()
+                                                   );
+        chkLoggedStartMarker.Checked( true );
+      }
+      else if( not chkActionDone.Checked() )
+      {
+        this.PTF_DoAction( curraction );
+        chkActionDone.Checked( true );
+      }
+      else
+      {
+        this.PTF_WriteLogForAction( curraction );
+    
+        this.PTF_SetNextAction();
+    
+        chkLoggedStartMarker.Checked( false );
+        chkActionDone.Checked( false );
+      }
+    }
+  *]
+}

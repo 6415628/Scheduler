@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetLeafTypes (internal[Type] root, internal[Type] excludetype) as structured[internal[Type]] id:Method_LibOpt_DialogConditionalTypes_GetLeafTypes
+{
+  #keys: '[143908.0.758167613]'
+  Body:
+  [*
+    // Get all leaf types of the 'root' type. 
+    // A type is a leaf type of some root type if the leaf type is non-abstract and if the type is an (indirect) subtype of the root type. 
+    // The 'excludetype' type (and all subclasses of that type) are excluded from the set of leaf types.  
+    
+    leafs := construct( structured[internal[Type]] );
+    
+    // The LibOpt_Breakpoint type and all LibOpt_DatasetCopyConditionalNotSelectable subtypes (e.g. LibOpt_DatasetCopyUnconditional) are excluded because of this if-statement.
+    if( root <> excludetype )
+    {
+      // recursion end: roottype is a leaf.
+      if( root.Specializations( relsize ) = 0 )
+      {
+        leafs.Add( root );
+      }
+      else
+      {
+        // recursive calls: the root's leafs are the union of its childrens' leafs:
+        traverse( root, Specializations, child )
+        {
+          leafs := leafs.Union( this.GetLeafTypes( child, excludetype ) );
+        }
+      }
+    }
+    return & leafs;
+  *]
+  ReturnsOwning: true
+}

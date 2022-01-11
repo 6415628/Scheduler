@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: ListOperationsInPanelOperations
+Response OnClick (structured[Operation_SC] selection) id:Response_ListOperationsInPanelOperations_MenuReserveMaterialsForOperation_OnClick
+{
+  #keys: '[151084.0.260435936]'
+  CanBindMultiple: false
+  DefinitionID => //ListOperations/Responsedef_ListOperations_WebMenu_OnClick
+  GroupServerCalls: true
+  Initiator: 'MenuReserveMaterialsForOperation'
+  Precondition:
+  [*
+    return Operation_SC::CanAutoReserveMaterial( selection, feedback );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Reserve materials automatically for the selected operations
+      existFrozenOperation := exists( selection, Elements, operation, operation.IsFrozenInSchedule() );
+      
+      if( Scheduler.ConstructMessageBoxForSoftPrecondition( existFrozenOperation, Translations::SC_Confirmation_MaterialReservation_Operations() ) )
+      {
+        supplies := selectset( Schedule, Supply, supply, true );
+        demands := selectset( selection, Elements.PlannedDemand, demand, true );
+        fulfillments := selectset( demands, Elements.Fulfillment, fulfill, true );
+        
+        Fulfillment::CreateAutoPlannedFulfillments( demands, supplies, fulfillments, false, 0.0 );
+      }
+    *]
+  }
+}

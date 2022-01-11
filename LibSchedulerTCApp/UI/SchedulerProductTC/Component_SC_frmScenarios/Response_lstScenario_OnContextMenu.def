@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: lstScenario
+Response OnContextMenu () inherited id:Response_lstScenario_OnContextMenu
+{
+  #keys: '[107496.2.1625561298]'
+  BaseType: 'Response_lstScenario_OnContextMenu'
+  Body:
+  [*
+    // popup context menu
+    firstSelectedItem := selection.Element( 0 );
+    importEnabled := LibSM_ModelExtensions::IsImportEnabled();
+    exportEnabled := LibSM_ModelExtensions::IsExportEnabled();
+    
+    // the commented context menus are always not visible in Scheduler
+    
+    if( firstSelectedItem.IsFolder() )
+    {
+      isRecycleBin := firstSelectedItem.astype( LibSM_ScenarioFolder ).IsRecycleBin()
+      deletedFolder := firstSelectedItem.IsDeleted();
+      // menuSeparatorBeforeEmptyAndRestoreRecycleBin.Visible( isRecycleBin or deletedFolder );
+      // MenuEmptyRecycleBin.Visible( isRecycleBin );
+      // MenuRestoreItemAll.Visible( isRecycleBin );
+      // MenuRestoreFolder.Visible( deletedFolder and not isRecycleBin );
+      MenuFolderDelete.Visible( not deletedFolder and not isRecycleBin );
+      MenuFolderImportScenario.Visible( importEnabled );
+      popupListFolder.Popup( this, x, y );
+      
+      // Only show Advanced folder menu for "All scenarios" folder selection 
+      // isAllScenariosFolder := firstSelectedItem.Name() = LibSM_ScenarioManager::GetFolderRoot();
+      // menuSeparatorBeforeAdvancedMenu.Visible( isAllScenariosFolder );
+      // MenuAdvanced.Visible( isAllScenariosFolder );
+    }
+    else
+    {
+      selectDeleted :=  firstSelectedItem.IsDeleted();
+      // MenuRestoreItemAll.Visible( selectDeleted );
+      // MenuEmptyRecycleBin.Visible( false );
+      MenuScenarioDelete.Visible( not selectDeleted );
+      // MenuRestoreScenario.Visible( selectDeleted );
+      // MenuSeparatorBeforeRestoreMenu.Visible( selectDeleted );
+      // Import/Export
+      // menuSeparator6.Visible( importEnabled or exportEnabled );
+      MenuImportDataset.Visible( importEnabled );
+      MenuExportDataset.Visible( exportEnabled );
+      popupListScenario.Popup( this, x, y );
+    }
+  *]
+  DefinitionID: 'Responsedef_lstScenario_OnContextMenu'
+}

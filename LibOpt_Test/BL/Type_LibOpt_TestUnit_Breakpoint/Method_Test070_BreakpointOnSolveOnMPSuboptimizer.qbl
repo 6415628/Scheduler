@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test070_BreakpointOnSolveOnMPSuboptimizer (LibOpt_TestDataset dataset)
+{
+  Description: 'Check whether the breakpoint on solve actually pauses after the solve is done on a MP suboptimizer'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    runcontext := LibOpt_MyRunContextForUTF::Create( run );
+    component := opt.MPSuboptimizer( run, 'MP', runcontext );
+    
+    breakpoint_position := select( component, ComponentPosition, bp, bp.Name() = LibOpt_SuboptimizerAlgorithm::ComponentPosition_Solve() );
+    breakpoint_position.SetBreakpoint();
+    
+    run.SetStartComponent( component );
+    
+    str := run->Start();
+    
+    test := this->WaitForBreakpoint( run, this.Run() )
+    ->|void->( )
+    {
+      init := runcontext.RetrieveNumberWithDefault( LibOpt_TestUnit_Suboptimizer::GetInitializeCounterName(), 0 );
+      handle_result := runcontext.RetrieveNumberWithDefault( LibOpt_TestUnit_Suboptimizer::GetHandleResultCounterName(), 0 );
+      
+      this.Run().AssertEqual( 1, init, 'Initialize' );
+      this.Run().AssertEqual( 0, handle_result, 'Handle Result' );
+      run.Continue();
+    }
+    ->|str->|void->( )
+    {
+      init := runcontext.RetrieveNumberWithDefault( LibOpt_TestUnit_Suboptimizer::GetInitializeCounterName(), 0 );
+      handle_result := runcontext.RetrieveNumberWithDefault( LibOpt_TestUnit_Suboptimizer::GetHandleResultCounterName(), 0 );
+      
+      this.Run().AssertEqual( 1, init, 'Initialize' );
+      this.Run().AssertEqual( 1, handle_result, 'Handle Result' );
+      this.Run().AssertEqual( LibOpt_RunStatus::Finished(), run.Status(), 'Run is finished' );
+    }
+    this.NoException( test );
+    this.NoException( str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,72 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendDataRequestSetChunkedTransmission (LibDEF_Systems targets_i, LibDEF_Set set_i, Boolean isNewSet_i, 
+  NamedValueTree cachedSetNvt_i)
+{
+  Description:
+  [*
+    Send a Data-Request message of that Set which has been updated in DataRepository in chunked transmission mode.
+    This code is to initialize the chunked transmission.
+    The rest of the chunked transmission will be done asynchronously afterward.
+  *]
+  TextBody:
+  [*
+    headerType := ifexpr( isNewSet_i,
+                          LibDEF_DataAccessor::TYPE_DATA_SETCREATEDCHUNKED(),
+                          LibDEF_DataAccessor::TYPE_DATA_SETUPDATEDCHUNKED() );
+    // some local variables
+    dataBroker := this.DataBroker();
+    
+    // Export the Set into NVT.
+    // If the cached Set NVT exists, then just clone it instead to save performance cost of re-exporting the Set.
+    setNvt := ifexpr( not isnull( cachedSetNvt_i ),
+                      cachedSetNvt_i.Clone(),
+                      NamedValueTreeIO::Export( set_i ) );
+    
+    // Create the data transfer object for each target
+    // and send the data transfer to each chunked transmission target for initialization
+    totalContentLength := LibDEF_NamedValueTreeProcessor::GetCumulativeNumberOfChildren( setNvt.Root() );
+    setMeta     := LibDEF_SetMeta::FindSetMeta( dataBroker, dataBroker.SystemLocal().GUID(),
+                                                set_i.ChannelName(), set_i.SetTypeName(), set_i.Name() );
+    dataTransfers := construct( LibDEF_DataTransfers );
+    
+    traverse( targets_i, Elements, target )
+    {
+      event := dataBroker.EventCreate( target, false );
+    
+      // create a DataTransfer
+      transfer := LibDEF_DataTransfer::Create( dataBroker.QueueOutbox(),
+                                               totalContentLength,
+                                               "",
+                                               setMeta,
+                                               target,
+                                               event );
+      dataTransfers.Add( transfer );
+      
+      // create initialization message
+      nvt := LibDEF_DataAccessor::CreateMessageData();
+      
+      // add extra Header
+      LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_TYPE(),    headerType );
+      LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_ISINIT(),  true );
+      LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_SETGUID(), transfer.SetMeta().GUID() );
+      LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_SETLASTUPDATED(), set_i.LastUpdated() );
+      LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_DATATRANSFERGUID(), transfer.GUID() );
+    
+      // export the DataTransfer into NVT
+      LibDEF_DataAccessor::SetDataBody( nvt, NamedValueTreeIO::Export( transfer ) );
+    
+      // send the initialization message
+      event := transfer.IntegrationEvent();
+      channel := set_i.SetType().Channel();
+      LibDEF_Util::EventLog( event, "Sending " + headerType + " (by chunk) request to system '" + target.Name() + "'" );
+      dataBroker.SendData( target, nvt, LibDEF_DataAccessor::KIND_REQUEST(),
+                           event, channel.Name(), channel.MajorVersion(), channel.MinorVersion() );
+    }
+    
+    // Now create the data pieces for all the data transfers above.
+    // The algorithm below is used to save performance by avoiding redundant data chunking.
+    LibDEF_DataTransfer::CreateDataPieces( dataTransfers, setNvt );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

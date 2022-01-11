@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: ListSuboptimizerScopeElement
+Response OnClick (structured[LibOpt_SuboptimizerScopeElement] selection) id:Response_ListSuboptimizerScopeElement_MenuSelectRelatedIterationsAndSnapshots_OnClick
+{
+  #keys: '[142652.0.2010916320]'
+  Body:
+  [*
+    // Select the Iterations in ListIteration and Snapshots in ListSnapshot for the SuboptimizerScopeElements (SSEs) selected here.
+    // - The Snapshots to select are the SnapshotComponents of the Suboptimizers of the SSEs which have the ScopeElements of the SSEs in their input scopes.
+    
+    listiteration := LibOpt_GlobalState.GetActivatedFormIteration().ListIteration();
+    
+    // See comment about WORKAROUND below.
+    formsnapshot := LibOpt_GlobalState.GetActivatedFormSnapshot();
+    listsnapshot := formsnapshot.ListSnapshot();
+     
+    // Select the related Iterations and Snapshots.
+    traverse( selection, Elements, suboptimizerscopeelement )
+    {
+      traverse( suboptimizerscopeelement.GetSnapshotComponents(), Elements, snapshotcomponent )
+      {
+        // Select the Iteration first, as the elements shown in ListSnapshot is based on the selection in ListIteration.
+        traverse( snapshotcomponent, IterationPart.IterationPartNM.Iteration, iteration )
+        {
+          listiteration.ExtendSelectByKey( iteration.Key() );
+        }
+        
+        listsnapshot.ExtendSelectByKey( snapshotcomponent.Key() );
+      }
+    }
+    
+    /*  WORKAROUND:
+        
+        Even though we have called the `ActivateFormSnapshotAndGetListSnapshot` method above, LibOpt_FormSnapshot doesn't
+        get activated accordingly because the method is called right after `ActivateFormIterationAndGetListIteration`,
+        where LibOpt_FormIteration is activated.
+        This is a known software limitation (that is yet to be solved) as documented in:
+        - https://support.quintiq.com/cs:solutions:trouble:form.activate_doesn_t_work_for_second_form
+        
+        As such, we use a workaround where we activate LibOpt_FormSnapshot in the `OnTimer` response of the
+        GUITimerActivateFormSnapshot component, which `Interval` has been set to 500ms.
+        - 500ms was used because lower values don't result in the intended behavior of activating the form.
+    */
+    // Enable the GUITimerActivateFormSnapshot component.
+    // When the timer's Interval is used up, LibOpt_FormSnapshot is activated, and the timer is disabled.
+    formsnapshot.GUITimerActivateFormSnapshot().Enabled( true );
+  *]
+  DefinitionID => /ListSuboptimizerScopeElement/Responsedef_ListSuboptimizerScopeElement_Menu_OnClick
+  Initiator: 'MenuSelectRelatedIterationsAndSnapshots'
+  Precondition:
+  [*
+    return LibOpt_SuboptimizerScopeElement::SelectRelatedIterationsAndSnapshotsPrecondition( selection );
+  *]
+}

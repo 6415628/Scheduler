@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method Run_Test_IsPlanned (Schedule schedule, String method_shortname_inputscope, Boolean unplanfirst) as stream[JSON]
+{
+  Description:
+  [*
+    Takes the operation scope given by the UTF KB for the given test shortname and tries to plan it on its allowed resources using the optimizer's SelectorSpan and suboptimizer. Asserts that all operations are planned.
+    If `unplanfirst` is true, this method will start by unplanning all tasks.
+  *]
+  TextBody:
+  [*
+    debuginfo( schedule.MDSSchedule().Name() );
+    
+    if( unplanfirst )
+    {
+      // start scenario for test is empty schedule
+      schedule.UnplanAll();
+      Transaction::Transaction().Propagate();
+    }
+    
+    // get scope: this depends on the current UTF method name ("TestXXX")
+    operations := this.GetMethodOperationsInScope( method_shortname_inputscope, schedule );
+    resources := Operation_SC::GetAllowedResources( operations );
+    scope := UTF_Optimizer_Regression_Test_OptimizerSequencing::CreateScope( operations, resources );
+    
+    run := UTF_Optimizer_Regression_Test_OptimizerSequencing::CreateSelectorSpanAndSuboptimzierPOARun( UTF_Optimizer_Regression_Test_OptimizerSequencing::Optimizer( schedule ),
+                                                                                                        scope );
+    
+    result := run.Start();
+    assert1 := this->After( result )->Asserts_LastRunTerminatedStatus( schedule );
+    assert2 := this->After( result )->Asserts_Test_IsPlanned( schedule, operations, resources );
+    assert1->Exception()->Merge( assert2->Exception() )->( exception ) {
+      this.Run().RegisterFailure( "post-optimization checks failed:\n" + exception.Message() );
+    };
+    
+    return result;
+  *]
+}

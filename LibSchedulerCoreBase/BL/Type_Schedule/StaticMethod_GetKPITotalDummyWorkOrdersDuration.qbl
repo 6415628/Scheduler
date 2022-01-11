@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetKPITotalDummyWorkOrdersDuration (constcontent Operation_SCs operations) const declarative remote as Real
+{
+  Description: 'Returns the KPI total dummy work orders duration'
+  TextBody:
+  [*
+    // Calculate the total dummy work orders duration
+    // Only the following operations will be calculated
+    // 1. Dummy work order
+    // 2. No feedback
+    // 3. Not finished yet
+    // 4. IsPlanned
+    // 5. IsStartInSchedulingHorizon
+    
+    dummyworkorderoperations := selectset( operations,
+                                           Elements,
+                                           op,
+                                           op.IsDummyWorkOrder()
+                                           and not op.HasFeedback() 
+                                           and not op.Finished() 
+                                           and op.IsPlanned()
+                                           and op.IsStartInSchedulingHorizon() );
+    
+    // Sum up task's dummy work order duration
+    value := sum( dummyworkorderoperations, 
+                  Elements.Task_SC, 
+                  task, 
+                  task.DummyWorkOrderDuration() );
+    
+    return value.HoursAsReal().Round( 2 );
+  *]
+}

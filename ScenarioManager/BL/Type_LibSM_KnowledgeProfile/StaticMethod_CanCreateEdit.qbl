@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CanCreateEdit (LibSM_ScenarioManager owner, LibSM_KnowledgeProfile updated, String knowledgeBranchProfileName) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    if( not feedback.CheckHard( not knowledgeBranchProfileName = "" ) )
+    {
+      feedback.AddHard( Translations::LibSM_KnowledgeProfile_NameEmpty() );
+    }
+    
+    if( not feedback.CheckHard( not exists( owner, KnowledgeProfile, knowledgeProfile,
+                                            updated <> knowledgeProfile,
+                                            knowledgeProfile.Name().ToUpper() = knowledgeBranchProfileName.ToUpper() ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_KnowledgeProfile_NameExists( knowledgeBranchProfileName ) );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

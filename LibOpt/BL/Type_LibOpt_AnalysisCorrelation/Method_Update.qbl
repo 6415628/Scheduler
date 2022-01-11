@@ -1,0 +1,58 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update
+{
+  TextBody:
+  [*
+    x := this.X();
+    y := this.Y();
+    
+    this.AnalysisCorrelationPointOwned( relflush );
+    
+    if( y.Component().Depth() = x.Component().Depth() )
+    {
+      if( y.Component() = x.Component() )
+      {
+        traverse( y, AnalysisSnapshotAttribute, y_nm )
+        {
+          traverse( y_nm, AnalysisSnapshot.AnalysisSnapshotAttribute, x_nm,
+                    x_nm.AnalysisAttribute() = x )
+          {
+            this.AnalysisCorrelationPointOwned( relnew,
+                                                 X := x_nm,
+                                                 Y := y_nm );
+          }
+        }
+      }
+    }
+    else if( y.Component().Depth() < x.Component().Depth() )
+    {
+      traverse( y, AnalysisSnapshotAttribute, y_nm )
+      {
+        traverse( y_nm.AnalysisSnapshot().SnapshotComponent().GetSnapshotsOnComponent( x.Component() ),
+                  Elements.AnalysisSnapshot.AnalysisSnapshotAttribute, x_nm,
+                  x_nm.AnalysisAttribute() = x )
+        {
+          this.AnalysisCorrelationPointOwned( relnew,
+                                               X := x_nm,
+                                               Y := y_nm );
+        }
+      }
+    }
+    else
+    {
+      traverse( x, AnalysisSnapshotAttribute, x_nm )
+      {
+        traverse( x_nm.AnalysisSnapshot().SnapshotComponent().GetSnapshotsOnComponent( y.Component() ),
+                  Elements.AnalysisSnapshot.AnalysisSnapshotAttribute, y_nm,
+                  y_nm.AnalysisAttribute() = y )
+        {
+          this.AnalysisCorrelationPointOwned( relnew,
+                                               X := x_nm,
+                                               Y := y_nm );
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

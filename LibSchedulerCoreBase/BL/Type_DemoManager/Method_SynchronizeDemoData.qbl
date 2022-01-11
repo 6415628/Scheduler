@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeDemoData
+{
+  TextBody:
+  [*
+    syncObject := this.Schedule().SynchronizationObject();
+    
+    // Set synchronize flag to true, to skip FSPL from running, and reset the flag after that
+    this.IsSynchronizingDemoData( true );
+    
+    syncObject.SynchronizeDemoDataOptimizerStrategySetting();
+    syncObject.SynchronizeInternalWorkOrders();
+    syncObject.SynchronizeDemoDataPlanUnits();
+    syncObject.SynchronizeOptimizerSettings();
+    
+    // Disable FSPL and plan related operations to prevent CBL and wrong task sequence.
+    resourcegroupswithfspl := selectset( this, Schedule.ResourceGroup_SC, resourcegroup, resourcegroup.HasFixedSequencePlanLogic() );
+    resourcegroupwithplanrelated := selectset( this, Schedule.ResourceGroup_SC, resourcegroup, resourcegroup.IsPlanRelatedOperations() );
+    this.ToggleResourceGroupFSPLAndPlanRelatedOperations( resourcegroupswithfspl, resourcegroupwithplanrelated );
+    
+    // Propagate to allow ImportedDemoDataOperationBatchContent to reach Operation_SC in SynchronizeDemoDataBatchTaskFromPlanning
+    // This is because some of Operation_SC only exist after the plan units are split and the relation is not set yet
+    Transaction::Transaction().Propagate( relation( ImportedDemoDataOperationBatchContent, Operation_SC ) );
+    syncObject.SynchronizeDemoDataDemandBatch();
+    syncObject.SynchronizeDemoDataBatchTask();
+    syncObject.SynchronizeDemoDataSingleTask();
+    syncObject.SynchronizeImportedDemoDataPlannedFulfillment();
+    syncObject.SynchronizeDemoDataShutdownTask();
+    syncObject.SynchronizeDemoDataProgramChangeTaskAndProgramDetail();
+    
+    // Propagate relation Operation_SC - Task_SC which will be used to determine if feedback adhere to original planning.
+    Transaction::Transaction().Propagate( relation( Operation_SC, Task_SC ) );
+    
+    // Re-enable FSPL and plan related operations
+    this.ToggleResourceGroupFSPLAndPlanRelatedOperations( resourcegroupswithfspl, resourcegroupwithplanrelated );
+    this.Schedule().SynchronizationObject().SynchronizeFSPLResourceGroups();
+    this.IsSynchronizingDemoData( false );
+    
+    // Propagate Subtask duration which will be exported during feedback import.
+    Transaction::Transaction().Propagate( attribute( SubTask, Duration ) );
+    
+    syncObject.SynchronizeDemoDataFeedbackData();
+    
+    this.Schedule().FeedbackManager().CalculatePrevAdherence();
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

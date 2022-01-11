@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method SyncScenarioFolders (LibSM_ScenarioManager scenarioManager, LibSM_Staging_ScenarioFolders stagingFolders)
+{
+  Description: 'Overwrites/appends the staging scenario folders to the specified Scenario Manager dataset.'
+  TextBody:
+  [*
+    /* NOTE: A folder can have a parent node which is not root folder, and could be multiple levels down the hierarchy
+    - The source of data does not guarantee the order of folders
+    So,
+    - Only create for folder with parent node found.
+    - Folders without parent node (where its parent is not Root folder)
+      are gathered and call this method recursively
+    */
+    
+    staginngFoldersWithoutParent := construct( LibSM_Staging_ScenarioFolders );
+    
+    traverse( stagingFolders, Elements, staging, 
+              not staging.Name() = LibSM_ScenarioManager::GetFolderRoot()
+              and not staging.Name() = LibSM_ScenarioManager::GetFolderRecycleBin()
+              and not staging.HasConstraintViolations() )
+    {
+      parentFolder := select( scenarioManager, ScenarioNode.astype( LibSM_ScenarioFolder ), folder,
+                              folder.Name() = staging.ParentName() );
+      
+      if( isnull( parentFolder ) )
+      {
+        staginngFoldersWithoutParent.Add( staging );
+      }
+      else
+      { 
+        current := select( scenarioManager, ScenarioNode.astype( LibSM_ScenarioFolder ), folder,
+                           folder.Name() = staging.Name() )
+                                                   
+        if( isnull( current ) )
+        {
+          current := scenarioManager.CreateFolder( parentFolder, staging.Name(), staging.Comment() );
+        }
+        
+        current.CreatedBy( staging.CreatedBy() );
+        current.CreatedOn( staging.CreatedOn() );
+        current.ChangedBy( staging.ChangedBy() );
+        current.ChangedOn( staging.ChangedOn() );
+      } 
+    }
+    
+    if( staginngFoldersWithoutParent.Size() > 0 )
+    {
+      this.SyncScenarioFolders( scenarioManager, staginngFoldersWithoutParent );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

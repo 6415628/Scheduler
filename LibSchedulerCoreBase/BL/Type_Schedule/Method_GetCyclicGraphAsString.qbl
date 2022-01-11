@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCyclicGraphAsString (GraphProgramCycleDetection graphProgramCycleDetection) as String
+{
+  Description: 'Returns the cyclic graph as a string AFTER graph program circularity detection algorithm is executed.'
+  TextBody:
+  [*
+    // Initialize cyclic graph for printing
+    cyclicGraph := construct( Strings );
+    
+    // It is already a directed cyclic graph
+    // The edges are already 'sorted' thus we can traverse through them to get to the correct 'next node'
+    // We can also assume each node only has one edge, it is not a multibranching node with multiple edges resulting in multiple circularities
+    traverse( graphProgramCycleDetection.Result().ReportCycle(), Edges, edge )
+    {
+      if( cyclicGraph.Size() = 0 )
+      {
+        cyclicGraph.Add( edge.Output().Name() );
+      }
+      
+      cyclicGraph.AddBefore( edge.Input().Name(), 0 );
+    }
+    
+    return cyclicGraph.ToString( ' -> ' );
+  *]
+}

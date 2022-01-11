@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetDateOfNextOccurrence (TimeZone timezone_i, Date date_i, Duration startTimeOfDay_i, 
+  Duration endTimeOfDay_i, Duration duration_i, Date earliestStart_i, 
+  Boolean onMonday_i, Boolean onTuesday_i, Boolean onWednesday_i, 
+  Boolean onThursday_i, Boolean onFriday_i, Boolean onSaturday_i, 
+  Boolean onSunday_i) declarative remote as Date
+{
+  TextBody:
+  [*
+    nextDate        := Date::MinDate();
+    date            := date_i;
+    startOfNextWeek := date.StartOfNextWeek();
+    
+    while( nextDate.IsInfinite() and
+           date < startOfNextWeek )
+    {
+      // Start with the first occurrence that *ends* after earliestStart_i, it can start before it.
+      // When using only the date, i.e. the start of the occurrence, an occurrence is sometimes missing at the beginning.
+      // Calculate endOfOccurrence, taking timezone and DSL into account.
+      endOfOccurrence := LibCal_Util::CalculateEndTime( timezone_i, date, startTimeOfDay_i, duration_i );
+      
+      if( endOfOccurrence > earliestStart_i.DateTime( timezone_i ) )
+      {
+        dayOfWeek := date.DayOfWeek();
+        
+        if( ( dayOfWeek = monday    and onMonday_i    ) or
+            ( dayOfWeek = tuesday   and onTuesday_i   ) or
+            ( dayOfWeek = wednesday and onWednesday_i ) or
+            ( dayOfWeek = thursday  and onThursday_i  ) or
+            ( dayOfWeek = friday    and onFriday_i    ) or
+            ( dayOfWeek = saturday  and onSaturday_i  ) or
+            ( dayOfWeek = sunday    and onSunday_i    ) )
+        {
+          nextDate := date;
+        }
+      }
+            
+      date := date + 1;
+    }
+    
+    return nextDate;
+  *]
+}

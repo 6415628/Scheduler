@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddExpressionSoftRulePenalty_MatrixFilling (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs, Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // zyi1 Jul-22-2021 (created)
+    
+    traverse( combilegs, Elements, combilegforpath )
+    {
+      rules := combilegforpath.GetSequenceRules( combilegforpath );
+      allowedoperations := selectset( operations, Elements, operation, combilegforpath.GetIsOperationAllowedHard( operation ) );
+      traverse( rules, Elements, rule, not ( rule.IsHardConstraintForOptimizer() or rule.IsProgramPhaseTransitionRule() ) )
+      {
+        Operation_SC::SetCurrentCharacteristicIDs( operations, rule );
+        Transaction::Transaction().Propagate( relation( Operation_SC, CurrentMainCharacteristic ) );
+        Transaction::Transaction().Propagate( relation( Operation_SC, CurrentConditionCharacteristic ) );
+        
+        //For some rulesubtypes we can check based on values which is faster than checking every pair of operations.
+        //Calling a method on the subtype to differentiate the value type on which to check if the rule is broken.
+        isforsoftrulepenalty := true;
+        rule.RuleSubType().POA_MatrixFilling( poa, combilegforpath, allowedoperations, rule, isforsoftrulepenalty );
+      }
+    }
+  *]
+}

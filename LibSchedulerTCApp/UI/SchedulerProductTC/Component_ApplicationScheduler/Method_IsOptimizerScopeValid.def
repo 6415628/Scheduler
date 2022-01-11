@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method IsOptimizerScopeValid (output String feedback_o) as Boolean id:Method_ApplicationScheduler_IsOptimizerScopeValid
+{
+  #keys: '[137186.0.151816836]'
+  Body:
+  [*
+    selectedOptimizer := LabelSelectedOptimizerName.Text();
+    selectedOperations := DataHolderOptimizerAllScopedOperations.Data();
+    
+    isvalid := false;
+    
+    // Get allowed resource based on selected operations
+    allowedresouces := Operation_SC::GetAllowedResources( selectedOperations );
+    
+    // Only allow optimizer to start if there is allowed resource ( with/without configurable rule ) based on selected optimizer
+    if( selectedOptimizer = Constants::OptimizerSequencing() )
+    {
+      isvalid := exists( allowedresouces, Elements, res, not res.HasConfigurableRule() );
+    }
+    else if( selectedOptimizer = Constants::OptimizerPrograms() )
+    {
+      isvalid := exists( allowedresouces, Elements, res, res.HasConfigurableRule() );
+    }
+    
+    if( not isvalid )
+    {
+      Utility_SC::Concat( feedback_o, Translations::SC_Optimizer_ScopeNotValid() );
+    }
+    
+    if( isvalid and not isnull( Schedule ) )
+    {
+      isvalid := Schedule.AllowedOptimizeBasedOnOptimizer( selectedOptimizer, selectedOperations, feedback_o );
+    }
+    
+    return isvalid;
+  *]
+}

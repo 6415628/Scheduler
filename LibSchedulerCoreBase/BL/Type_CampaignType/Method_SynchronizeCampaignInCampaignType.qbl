@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeCampaignInCampaignType (ImportedCampaignType_SC importedcampaigntype)
+{
+  Description: 'Synchronizes CampaignInCampaignType with ImportedCampaignInCampaignType'
+  TextBody:
+  [*
+    // zi hao May-19-2017 (created)
+    allinstances := selectset( this, CampaignInCampaignType, cict, true );
+    updatedinstances := construct( CampaignInCampaignTypes );
+    
+    
+    traverse( importedcampaigntype, ImportedCampaignInCampaignType_SC, icict, icict.IsValidDataHard() )
+    {
+      campaignincampaigntype := select( this, CampaignInCampaignType, cict,
+                                        cict.Name() = icict.Campaign() );
+      if( isnull( campaignincampaigntype ) )
+      {
+        campaignincampaigntype := CampaignInCampaignType::Create( this, icict.Campaign() );
+      }
+      campaignincampaigntype.Update( icict );
+      updatedinstances.Add( campaignincampaigntype );
+    }
+    
+    // Delete campaign in campaign types if they do not exists in data broker
+    oldinstances := allinstances.Difference( updatedinstances );
+    traverse( oldinstances, Elements, cict )
+    {
+      cict.Delete();
+    }
+  *]
+}

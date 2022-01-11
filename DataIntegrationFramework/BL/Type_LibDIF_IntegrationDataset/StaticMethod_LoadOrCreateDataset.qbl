@@ -1,0 +1,65 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod LoadOrCreateDataset (String datasetName_i, Boolean loadIfOffline_i, Boolean createIfNotExists_i, 
+  String storageState_i, Key planningDatasetKey_i, Key integrationInstanceKey_i) as Stream
+{
+  Description: 'Make sure that a dataset is available by loading it or creating a new one if necessary.'
+  TextBody:
+  [*
+    fullName     := LibDIF_IntegrationDataset::GetFullName( datasetName_i );
+    returnStream := Stream::Success();
+    
+    // First see if the dataset is already loaded.
+    // Use datasetName_i, method FindDatasetKey() will get the fullname itself.
+    includeOffline := false;
+    datasetKey     := LibDIF_IntegrationDataset::FindDatasetKey( datasetName_i, includeOffline );
+    
+    if( datasetKey = Key::ZeroKey() )
+    {
+      // See if the dataset exists but is offline.
+      includeOffline := true;
+      datasetKey     := LibDIF_IntegrationDataset::FindDatasetKey( datasetName_i, includeOffline );
+    
+      if( datasetKey = Key::ZeroKey() )
+      {
+        // Does not exist. If required, create a new dataset with the applicable storage state.
+        if( createIfNotExists_i )
+        {
+          createOptions := DatasetCreateOptions::Construct( fullName )
+                                                .State( DatasetState::FromString( storageState_i ) )
+                                                .Path( LibDIF_IntegrationDataset::DATASETFOLDER() );
+                                                
+          // Let the returnStream react to the creation of the dataset.
+          returnStream := LibDIF_IntegrationDataset::CreateDataset( createOptions )->( dataset )
+          {
+            // Register information that can be used to retrieve the Integration-instance of the planning-dataset.
+            dataset.PlanningDatasetKey( planningDatasetKey_i );
+            dataset.IntegrationInstanceKey( integrationInstanceKey_i );
+            
+            LibDIF_Util::DebugInfo( storageState_i + "-dataset '" + fullName + "' created in folder '" + LibDIF_IntegrationDataset::DATASETFOLDER() + "'" );
+            
+            return Stream::Success();  // Not required, but lets be explicit.
+          }      
+        }
+      }
+      else
+      {
+        // Does exist but is offline. If required, load it.
+        if( loadIfOffline_i )
+        {
+          // Let the returnStream react to the loading of the dataset.
+          returnStream := DatasetController::Load( datasetKey )->( dataset )
+          {
+            LibDIF_Util::DebugInfo( "Dataset '" + fullName + "' loaded" );
+            
+            return Stream::Success();  // Not required, but lets be explicit.
+          }
+        }
+      }
+    }
+    
+    // Return a stream that can be used as a trigger for the next action.
+    return returnStream;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

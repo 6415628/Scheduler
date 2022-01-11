@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcEarliestStart
+{
+  TextBody:
+  [*
+    value := this.EarliestStart_UTF();
+    
+    if( not this.HasEarliestStartUTF() )
+    {
+      //run back the original code when no UTF manipulation is required on this attribute. 
+      scheduletime  := this.PlanUnit_SC().Schedule().Time();
+    
+      // Take the latest available time from its input operation material(s)
+      value := max( this, FromOperationDependency, iom, iom.AvailableTime().IsFinite(), iom.AvailableTime() );
+      
+      if( this.PlanUnit_SC().IsLotLeadTimeLogicOn() and this.IsPlanned() )
+      {
+        firstrespectroutingsubtask := this.GetTask().FirstRespectRoutingSubTask();
+        
+        if( not isnull( firstrespectroutingsubtask ) and firstrespectroutingsubtask.IsProcess() )
+        {
+          value := this.FirstInputLotEarliestStart();
+        }
+      }
+      // AlexanderNg 16-Jan-2016 QP #5841
+      if( value.IsInfinite() or value < scheduletime )
+      {
+        value := scheduletime;
+      }  
+    }
+    
+    this.EarliestStart( value );
+  *]
+}

@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectKB (structured[LibSM_Scenario] scenarios) id:Method_LibSM_GlobalState_SelectKB_520
+{
+  #keys: '[136398.1.587826946]'
+  Body:
+  [*
+    // For each scenario, selects the configured KB.
+    componentMDS := ComponentMDS::CreateForLoadedMDSsOnly( Application );
+    editor       := CKBEditor::Create();
+    kbids        := editor.GetKBs();
+    
+    traverse( scenarios, Elements, scenario )
+    {
+      mdsInstance := select( componentMDS, ComponentMDSKinds.ComponentMDSInstances, m,
+                             m.MDSID().Equals( scenario.Dataset().DatasetMDSID() ) );
+    
+      if( not isnull( mdsInstance ) )
+      {
+        traverse( scenario, KnowledgeProfile.KnowledgeBaseBranchInProfile, branch )
+        {
+          this.SelectKB( mdsInstance, scenario, kbids,
+                         branch.KBDefinitionName(), branch.KBBranchName(), branch.KBBranchVersion() );
+        }
+      }
+    }
+  *]
+}

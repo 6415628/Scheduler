@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    planUnit := UTFMockObjectFactory::CreateOrderAndPlanUnit( schedule, 'PU_01', 1.0 );
+    operation := UTFMockObjectFactory::CreateOperation( planUnit );
+    
+    resourceGroup := UTFMockObjectFactory::CreateResourceGroup( schedule, 'RG_01' );
+    resource := UTFMockObjectFactory::CreateSingleResource( resourceGroup, 'R_01' );
+    
+    demand := UTFMockObjectFactory::CreateDemand( schedule, DemandType::ProductPlannedDemand(), 'D_01' );
+    supply := UTFMockObjectFactory::CreateSupply( schedule, SupplyType::ProductExternalSupply(), 'S_01' );
+    demand.CreatePlannedFulfillment( supply );
+    demand.Operation_SC( relset, operation );
+    
+    task := resource.PlanLast( operation );
+    
+    currentVariant := this.GetCurrentVariant();
+    if( currentVariant.IsOperationFrozenByUser() )
+    {
+      task.IsFrozenByUser( true );
+    }
+    else if( currentVariant.IsOperationFrozenByFrozenPeriod() )
+    {
+      schedule.PlanningConfiguration().FrozenPeriod( Duration::Hours( 10 ) );
+    }
+    else if( currentVariant.IsOperationLockedByOptimizer() )
+    {
+      operation.IsLockedByOptimizer( true );
+    }
+  *]
+}

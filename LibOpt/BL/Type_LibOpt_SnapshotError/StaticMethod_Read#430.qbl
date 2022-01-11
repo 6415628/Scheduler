@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Read (QuillError err, LibOpt_Task task, output Boolean is_captured) as owning LibOpt_Error
+{
+  Description: 'Read the `QuillError` and if it is a captured one, read the original exception and set the `is_captured` to true.'
+  TextBody:
+  [*
+    result := LibOpt_SnapshotError::Read( err );
+    
+    is_captured := LibOpt_SnapshotError::IsUserError( Translations::LibOpt_Optimization_CapturedException_Regex(), result );
+    
+    if( is_captured )
+    {
+      // Get the real error (not the "Captured Exception")
+      json_string := '';
+      if( LibOpt_Task::TryGetStoredString( task, LibOpt_Task::RollbackStorage_Error(), json_string ) )
+      {
+        result := guard( JSONIO::ImportFromString( json_string, typeof( LibOpt_Error ), "iso8601", "iso8601", "iso8601", 0 ).astype( LibOpt_Error ), & result );
+      }
+    }
+    
+    return & result;
+  *]
+}

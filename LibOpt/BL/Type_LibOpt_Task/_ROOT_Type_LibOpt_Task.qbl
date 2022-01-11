@@ -1,0 +1,58 @@
+Quintiq file version 2.0
+#root
+#parent: #DomainModel
+Type LibOpt_Task
+{
+  #keys: '5[139164.0.16781072][139164.0.16781070][0.0.0][139164.0.16781071][139164.0.16781073]'
+  BaseType: Object
+  Description:
+  [*
+    Every time a `LibOpt_Component` is called, a new `LibOpt_Task` object is created.
+    The `LibOpt_Task` is the message passed to the `LibOpt_Component` telling it what to do.
+    The `LibOpt_Task` contains a relation to the `LibOpt_Scope` the `LibOpt_Component` is supposed to optimize on. 
+    The `LibOpt_Scope` is not owned, since we also want to be able to store the `LibOpt_Scope` in a `LibOpt_Snapshot`, when the `LibOpt_Task` is completed.
+    
+    A `LibOpt_Task` can be aborted by calling the `Abort` method.
+    `LibOpt_Components` that get an aborted `LibOpt_Task` do not start their `LibOpt_Component.Operation` method.
+    If the `LibOpt_Component.Operation` is in progress while the `LibOpt_Task` is aborted, the `LibOpt_Component` can choose to either finish it or revert all changes (if any).
+    The preferred way is to revert all changes, this needs to be implemented per component. If no change has been made, the `CanContinue` method on `LibOpt_Task` can be called to check if the task can continue to execute.
+    This method will check if the `LibOpt_Task` is aborted and if so stop the current transaction.
+    Note that this check is automatically done for the `LibOpt_Component.Operation` method and that this only needs to be done manually for other methods that are called reactively from the `LibOpt_Component.Operation` method.
+    Subtasks of an aborted `LibOpt_Task` will automatically be aborted.
+    
+    Each `LibOpt_Task` can have a `LibOpt_SnapshotComponent` attached. The `LibOpt_Component` can use this `LibOpt_SnapshotComponent` to write information about its execution.
+    
+    Each `LibOpt_Task` can have a `LibOpt_TaskContext`. This is an object in which the `LibOpt_Component` can store information about the current execution, if this is difficult to do otherwise.
+    
+    When deleting a `LibOpt_Task`, the `LibOpt_Component.OnFinalize` method of the component the task is linked to is triggered. This way cleanup can never be forgotten.
+  *]
+  OnCreate:
+  [*
+    if( this.Run().HasSnapshots() )
+    {
+      LibOpt_SnapshotComponent::Create( this );
+    }
+  *]
+  OnDelete:
+  [*
+    traverse( this, Children, child )
+    {
+      child.Delete();
+    }
+    
+    this.Finalize();
+    
+    scopes := this.ScopeCreated( relget );
+    scopes.Add( this.Scope() );
+    
+    this.Scope( relflush );
+    this.ScopeCreated( relflush );
+    
+    traverse( scopes.Unique(), Elements, scope )
+    {
+      LibOpt_Scope::OnUsingRelationDeleted( scope );
+    }
+  *]
+  StructuredName: 'LibOpt_Tasks'
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

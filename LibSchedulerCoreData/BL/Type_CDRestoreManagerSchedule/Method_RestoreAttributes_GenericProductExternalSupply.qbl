@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericProductExternalSupply (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic product external supply core data attributes to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdSchedule, CDEntity.astype( CDGenericProductExternalSupply ), cdGenericProductExternalSupply )
+    {
+      genericProductExternalSupply := GenericProductExternalSupply::Create( schedule, 
+                                                                              cdGenericProductExternalSupply.SupplyType(),
+                                                                              cdGenericProductExternalSupply.SupplyID() );
+                                                                                    
+      CopyCorresponding::CopyFrom( cdGenericProductExternalSupply ).CopyTo( genericProductExternalSupply );
+      
+      // Restore GenericPlannedSupply2ExternalSupply
+      this.RestoreAttributes_GenericPlannedSupply2ExternalSupply( cdSchedule, genericProductExternalSupply );
+    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

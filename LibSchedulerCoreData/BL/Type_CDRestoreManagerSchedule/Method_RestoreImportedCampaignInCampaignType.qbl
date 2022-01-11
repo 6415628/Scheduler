@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedCampaignInCampaignType (CDIntegration cdintegration, ImportedCampaignType_SC importedcampaigntype)
+{
+  Description: 'Restore imported campaign in campaign type core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedCampaignInCampaignType_SC
+    cdImportedCampaignInCampaignTypes := selectset( cdintegration, CDEntity.astype( CDImportedCampaignInCampaignType ), cdcinct, 
+                                                    cdcinct.ResourceGroup() = importedcampaigntype.ResourceGroup(),
+                                                    cdcinct.CampaignType() = importedcampaigntype.Name()
+                                                   );
+    
+    traverse( cdImportedCampaignInCampaignTypes, Elements, cdcinct )
+    {
+      importedCampaignInCampaignType := importedcampaigntype.ImportedCampaignInCampaignType_SC( relnew, 
+                                                                                                Campaign := cdcinct.Campaign(),
+                                                                                                CampaignType := cdcinct.CampaignType(),
+                                                                                                ResourceGroup := cdcinct.ResourceGroup()
+                                                                                               );
+      CopyCorresponding::CopyFrom( cdcinct ).CopyTo( importedCampaignInCampaignType );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

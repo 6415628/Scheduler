@@ -1,0 +1,119 @@
+Quintiq file version 2.0
+#parent: #root
+Method Unplan
+{
+  Description: 'Delete the task.'
+  TextBody:
+  [*
+    if( this.Resource_SC().ResourceGroup_SC().HasFixedSequencePlanLogic() )
+    {
+      previousnode := guard( this.Previous().Last().PrecedenceNode(), null( PrecedenceNode ) ); //updated to use subtask
+      nextnode := guard( this.Next().First().PrecedenceNode(), null( PrecedenceNode ) ); //updated to use subtask
+    
+      //create edge from previous last subtask to next subtask
+      if( not isnull( previousnode ) and not isnull( nextnode ) )
+      {
+        PrecedenceEdge::Create( previousnode, nextnode, Constants::PrecedenceRelation_Precedes(), false )
+      }
+    
+      up_nobufferwait_subtask := select( this, FSPLOperationInTask.FromOperationDependency.FromOperation.AsFSPLOperationInTask.SubTask.astype( NoBufferWaitSubTask ), nobufferwait, true );
+      up_nobufferaction_subtask := select( this, FSPLOperationInTask.FromOperationDependency.FromOperation.AsFSPLOperationInTask.SubTask.astype( NoBufferActionSubTask ), nobufferaction, true );
+    
+      seqnr := 0;
+    
+      //reset FSPL seq nr for all tasks in resource EXCEPT this task
+      traverse( this.Resource_SC(), Task_SC, task, task <> this )
+      {
+        task.FSPLSequenceNr( seqnr );
+        seqnr++;
+      }
+    
+      //checks if there is an upstream nobufferwait
+      if( not isnull( up_nobufferwait_subtask ) )
+      {
+        //traverse all Process subtask of all tasks EXCEPT this task
+        traverse( this.Resource_SC(), Task_SC.SubTask.astype( ProcessSubTask ), process_st, process_st.Task_SC() <> this )
+        {
+          //grabs NoBufferWait's lowest FSPL Seq Nr downstream task in the same resource of the current task
+          earliest_downstream_task_in_same_resource := minselect( up_nobufferwait_subtask.Task_SC(),
+                                                                  FSPLOperationInTask.ToOperationDependency.ToOperation.AsFSPLOperationInTask,
+                                                                  downstream_task_in_same_resource,
+                                                                  downstream_task_in_same_resource.Resource_SC() = this.Resource_SC() and downstream_task_in_same_resource <> this,
+                                                                  downstream_task_in_same_resource.FSPLSequenceNr() );
+    
+          //checks if THIS task is the NoBufferWait's lowest FSPL Seq Nr downstream task in THIS task's resource
+          if( process_st.Task_SC() = earliest_downstream_task_in_same_resource )
+          {
+            //grabs existing edge from downstream task to NoBufferWait
+            existing_edge_from_earliest_downstream_task_in_same_resource := select( up_nobufferwait_subtask.PrecedenceNode(), Inputs, in_edge, in_edge.Type() = Constants::PrecedenceRelation_Met_By()
+                                                                                                                                               and in_edge.Input().SubTask().Task_SC().Resource_SC() = this.Resource_SC() );
+    
+            //checks if there is NO existing edge to upstream NoBufferWait OR if the existing edge's node's subtask is NOT the CURRENT subtask
+            if( isnull( existing_edge_from_earliest_downstream_task_in_same_resource ) or ( existing_edge_from_earliest_downstream_task_in_same_resource.Input().SubTask() <> process_st ) )
+            {
+              //create the edge from the upstream Process subtask to the Process subtask of current task
+              PrecedenceEdge::Create( process_st.PrecedenceNode(), up_nobufferwait_subtask.PrecedenceNode(), Constants::PrecedenceRelation_Met_By(), false );
+    
+              //checks if there is an existing edge to upstream NoBufferWait
+              if( not isnull( existing_edge_from_earliest_downstream_task_in_same_resource ) )
+              {
+                //deletes existing edge
+                PrecedenceEdge::Delete( existing_edge_from_earliest_downstream_task_in_same_resource );
+              }
+            }
+          }
+        }
+      }
+    
+      if( not isnull( up_nobufferaction_subtask ) )
+      {
+        //traverse all Process subtask of all tasks EXCEPT this task
+        traverse( this.Resource_SC(), Task_SC.SubTask.astype( ProcessSubTask ), process_st, process_st.Task_SC() <> this )
+        {
+          //grabs NoBufferWait's highest FSPL Seq Nr downstream task in the same resource of the current task
+          latest_downstream_task_in_same_resource := maxselect( up_nobufferaction_subtask.Task_SC(),
+                                                                FSPLOperationInTask.ToOperationDependency.ToOperation.AsFSPLOperationInTask,
+                                                                downstream_task_in_same_resource,
+                                                                downstream_task_in_same_resource.Resource_SC() = this.Resource_SC() and downstream_task_in_same_resource <> this,
+                                                                downstream_task_in_same_resource.FSPLSequenceNr() );
+    
+          //checks if THIS task is the NoBufferWait's highest FSPL Seq Nr downstream task in THIS task's resource
+          if( process_st.Task_SC() = latest_downstream_task_in_same_resource )
+          {
+            //grabs existing edge from downstream task to NoBufferAction
+            existing_edge_from_latest_downstream_task_in_same_resource := select( up_nobufferaction_subtask.PrecedenceNode(), Inputs, in_edge, in_edge.Type() = Constants::PrecedenceRelation_Met_By() 
+                                                                                                                                               and in_edge.Input().SubTask().Task_SC().Resource_SC() = this.Resource_SC() );
+    
+            //checks if there is NO existing edge to upstream NoBufferActon OR if the existing edge's node's subtask is NOT the CURRENT subtask
+            if( isnull( existing_edge_from_latest_downstream_task_in_same_resource ) or ( existing_edge_from_latest_downstream_task_in_same_resource.Input().SubTask() <> process_st ) )
+            {
+              //create the edge from the upstream Process subtask to the Process subtask of current task
+              PrecedenceEdge::Create( process_st.PrecedenceNode(), up_nobufferaction_subtask.PrecedenceNode(), Constants::PrecedenceRelation_Met_By(), false );
+    
+              //checks if there is an existing edge to upstream NoBufferAction
+              if( not isnull( existing_edge_from_latest_downstream_task_in_same_resource ) )
+              {
+                //deletes existing edgea
+                PrecedenceEdge::Delete( existing_edge_from_latest_downstream_task_in_same_resource );
+              }
+            }
+          }
+        }
+      }
+    
+      traverse( this, SubTask, st )
+      {
+        //Deletes the precedence node instance and all its input edges
+        PrecedenceNode::Delete( st.PrecedenceNode() );
+      }
+    }
+    
+    // If there is succeeding shutdown task, delete the shutdown of succeeding shutdown task
+    if( not isnull( this.LinkedSucceedingStoppageTask() ) )
+    {
+      this.LinkedSucceedingStoppageTask().DeleteShutdown(); 
+    }
+    
+    this.Delete();
+  *]
+}

@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetExecutePythonScriptBatchScript (String resultlogpath, String batchfilepath, String scriptpath) remote as String
+{
+  Description: 'Gets the batch script for execute python script'
+  TextBody:
+  [*
+    mergedResultLogFileName := this.MergedResultLogFileName();                                   // Merged results log file name
+    qServerTransLogFileName := this.QServerTransLogResultFileName();                             // QServer Trans log file name
+    folderPTFResultVar      := 'folderPTFResult';
+    folderPTFScripts        := 'folderPTFScripts';
+    
+    return
+    '@ECHO OFF'
+    + String::NewLine()
+    + 'SETLOCAL ENABLEDELAYEDEXPANSION'
+    + String::NewLine()
+    // Set batch file variable
+    + 'SET "' + folderPTFResultVar + '=' + resultlogpath + '"'
+    + String::NewLine()
+    + 'SET "' + folderPTFScripts + '=' + scriptpath + '"'
+    + String::NewLine()
+    // Execute the python scripts
+    // Actual duration
+    + 'python "!' + folderPTFScripts + '!' + this.PythonScriptActualDurationFileName() + '" '
+    + '"!' + folderPTFResultVar + '!' + mergedResultLogFileName + '" '
+    + '"!' + folderPTFResultVar + '!' + this.PythonResultActualDurationFileName() + '"'
+    + String::NewLine()
+    // Overall duration
+    + 'python "!' + folderPTFScripts + '!' + this.PythonScriptOverallDurationFileName() + '" '
+    + '"!' + folderPTFResultVar + '!' + mergedResultLogFileName + '" '
+    + '"!' + folderPTFResultVar + '!' + this.PythonResultOverallDurationFileName() + '"'
+    + String::NewLine()
+    // QServer trans DB time
+    + 'python "!' + folderPTFScripts + '!' + this.PythonScriptDatabaseDurationFileName() + '" '
+    + '"!' + folderPTFResultVar + '!' + qServerTransLogFileName + '" '
+    + '"!' + folderPTFResultVar + '!' + this.PythonResultDatabaseDurationFileName() + '"'
+    + String::NewLine()
+    // QServer trans transaction time
+    + 'python "!' + folderPTFScripts + '!' + this.PythonScriptTransactionDurationFileName() + '" '
+    + '"!' + folderPTFResultVar + '!' + qServerTransLogFileName + '" '
+    + '"!' + folderPTFResultVar + '!' + this.PythonResultTransactionDurationFileName() + '"'
+    + String::NewLine()
+    // Delete this batch file
+    + 'START CMD /C DEL "' + batchfilepath + '" /S /Q "%_dp0" '
+    + String::NewLine()
+    + 'EXIT';
+  *]
+}

@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method ChangeKeySystemByGUID (String guid_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Update primary key GUID.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-25-2016 (created)
+    // raise error if not unique
+    duplicatedGUID := LibDEF_System::FindSystemByGUID( this.DataBroker(), guid_i, this );
+    
+    if( not isnull( duplicatedGUID ) )
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  "Failed to update System GUID",
+                                  "LibDEF_System::ChangeKeySystemByGUID fails due to duplicated entry of LibDEF_System " +
+                                  duplicatedGUID.GetInstanceKeyGUIDAsString() );
+    }
+    
+    this.GUID( guid_i );
+    
+    // update references
+    traverse( this, ChannelMeta, channel )
+    {
+      channel.ChangeKeyChannelMeta( guid_i,
+                                    channel.Name(), //unchanged keys
+                                    false,
+                                    event_i );
+    }
+    
+    traverse( this, SetTypeMeta, st )
+    {
+      st.ChangeKeySetTypeMeta( guid_i,                       // modified keys
+                               st.ChannelName(), st.Name(),  // unchanged keys
+                               true,
+                               event_i );
+    
+      traverse( st, SetMeta, set )
+      {
+        set.ChangeKeySetMeta( guid_i,                                             // modified keys
+                              set.ChannelName(), set.SetTypeName(), set.Name(),   // unchanged keys
+                              event_i );
+      }
+    }
+  *]
+}

@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcEnd
+{
+  Description: 'Calculate the end of operation based on task endt time or OperationFeedback.ReportedEnd.'
+  TextBody:
+  [*
+    end := DateTime::MaxDateTime();
+    
+    // Whenever there is a task exist, always use Start of task.
+    // this is to cater for case where previous planned task had been executed
+    // but failed and operation is planned again.
+    if( this.IsPlanned() )
+    {
+      lastrespectroutingsubtask := this.Task_SC().LastRespectRoutingSubTask();
+    
+      // alexandern 18-Jun-2015 QP # 5478
+      // If task is planned and there is a last respect routing subtask,
+      // take the value of last respect routing subtask end.
+      if( not isnull( lastrespectroutingsubtask ) )
+      {
+        end := lastrespectroutingsubtask.End();
+      }
+      // AlexanderNg 3-Aug-2015 QP # 5691
+      // otherwise, take the sum of operation start and expected duration
+      else
+      {
+        end := this.Start() + this.ExpectedDuration()
+      }
+    }
+    // Chris 20141202 #4951 : Implement report fail in shop floor,
+    else if( this.Finished() and this.HasReportedEnd() ) 
+    {
+      end := this.ReportedEnd();
+    }
+    else if( this.HasReportedStart() )
+    {
+      end := this.ReportedStart() + this.ExpectedDuration();
+    }
+    this.End( end );
+  *]
+}

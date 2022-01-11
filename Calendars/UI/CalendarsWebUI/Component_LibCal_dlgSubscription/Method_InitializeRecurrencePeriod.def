@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitializeRecurrencePeriod (LibCal_RecurrencePeriod recurrencePeriod_i) id:Method_LibCal_dlgSubscription_InitializeRecurrencePeriod
+{
+  #keys: '[131094.0.2063146379]'
+  Body:
+  [*
+    // Take over the existing period.
+    if( not isnull( recurrencePeriod_i ) )
+    {
+      startDate := recurrencePeriod_i.StartDate();
+      
+      dsStartOfPeriod.Date( startDate );
+      dhStartOfPeriod.Data( startDate );
+    
+      periodType := recurrencePeriod_i.PeriodType();
+      
+      // NoEnd
+      if( periodType = LibCal_RecurrencePeriod::TYPE_WITHOUTEND() )
+      {
+        dsEndOfPeriod.Enabled( false, "" );
+        dsEndOfPeriod.Date( startDate );  // Default the EndDate to the StartDate
+      }
+    
+      // WithEndDate
+      else if( periodType = LibCal_RecurrencePeriod::TYPE_WITHENDDATE() )
+      {
+        period := recurrencePeriod_i.astype( LibCal_RecurrencePeriodWithEndDate );
+    
+        ckbEndOfPeriod.Checked( true );
+        dsEndOfPeriod.Date( period.EndDate() );
+      }
+    }
+    
+    // Don't shown the times, they are only for non-recurring events.
+    durStartTimeOfDay.Visible( false );
+    durEndTimeOfDay  .Visible( false );
+  *]
+}

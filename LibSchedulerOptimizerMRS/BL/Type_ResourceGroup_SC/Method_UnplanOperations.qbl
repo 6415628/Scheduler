@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Method UnplanOperations (LibOpt_Run run)
+{
+  Description: 'Unplans all operations scheduled on the resources of this group, except for operations that are frozen or marked as locked in the given run.'
+  TextBody:
+  [*
+    // stn4 May-10-2016 (created)
+    // mbr23, 2019-09-24, modified to use componentized `frozen` notion instead of legacy OptimzierPlanOperation.
+    traverse( this, Resource_SC.astype( SingleResourceBase ).Task_SC.astype( SingleTaskBase ), task,
+              not task.OperationAsSingleTask().IsFrozenInSchedule()
+              or guard( not task.OperationAsSingleTask().ScopeElementOperation().OnRun( run ).IsLocked(), true ) )
+    {
+      task.Unplan();
+    }
+  *]
+}

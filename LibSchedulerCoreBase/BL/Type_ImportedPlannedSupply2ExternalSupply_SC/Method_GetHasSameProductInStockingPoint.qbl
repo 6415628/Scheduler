@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasSameProductInStockingPoint (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Checks if product in stocking point for work order supply and external supply are the same.'
+  TextBody:
+  [*
+    isvalid := isnull( this.ImportedWorkOrderSupply() ) // We don't want to fire this sanity check if the work order supply can't be found
+               or guard( this.ImportedWorkOrderSupply().ImportedProductInStockingPoint_SC() = this.ImportedExternalSupply_SC().ImportedProductInStockingPoint_SC(), false );
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedPlannedSupply2ExternalSupply_Instance( name ),
+                                                               Translations::SC_ImportedPlannedSupply2ExternalSupply_ViolateHasSameProductInStockingPoint() ) );
+    }
+    
+    return isvalid;
+  *]
+}

@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetLinkToProgramPhase
+{
+  TextBody:
+  [*
+    // zyi1 Jul-13-2021 (created)
+    selectedphasesequencenr := 0;
+    previoustaskinprogramtype := this.GetPreviousOperationInCombiProgramType();
+    previousphasecummulativecharacteristic := guard( previoustaskinprogramtype.PreviousPhaseCumulativeCharacteristic(), BinaryValue::Construct() );
+    previousphasecummulativerealvalue := guard( previoustaskinprogramtype.PreviousPhaseCumulativeRealValues(), BinaryValue::Construct() );
+    
+    // Only calculate the phase sequence number if there is program type
+    if( not isnull( this.CombiProgramType() ) 
+        and not isnull( this.CombiProgramType().ProgramTypeConfiguration() )
+        and this.CombiProgramType().ProgramTypeConfiguration().HasProgramPhase() )
+    {  
+      previoustaskphasesequencenr := guard( previoustaskinprogramtype.SelectedPhaseSequenceNr(), 0 );
+      
+      previoustaskcummulativecharacteristic := guard( previoustaskinprogramtype.CumulativeCharacteristic(), BinaryValue::Construct( ) );
+      previoustaskcummulativerealvalue := guard( previoustaskinprogramtype.CumulativeRealValues(), BinaryValue::Construct( ) );
+      
+      // Calculate the phase sequence number based on phase transition rules
+      selectedphasesequencenr := OperationInCombiProgramSet::CalculateProgramPhaseSequenceNr( this.CombiProgramType().ProgramTypeConfiguration(),
+                                                                                    this,
+                                                                                    this.CumulativeCharacteristic(),
+                                                                                    this.CumulativeRealValues(),
+                                                                                    previoustaskphasesequencenr,
+                                                                                    previoustaskcummulativecharacteristic,
+                                                                                    previoustaskcummulativerealvalue,
+                                                                                    previousphasecummulativecharacteristic,
+                                                                                    previousphasecummulativerealvalue );
+                                                                                  
+    }
+    selectedcombiprogramphase := select( this, CombiProgramType.CombiProgramPhase, cph, cph.ProgramPhaseSequenceNr() = selectedphasesequencenr );
+    if( not isnull( selectedcombiprogramphase ) )
+    {
+      this.CombiProgramPhase( relset, selectedcombiprogramphase );
+    }
+    this.PreviousPhaseCumulativeCharacteristic( previousphasecummulativecharacteristic);
+    this.PreviousPhaseCumulativeRealValues( previousphasecummulativerealvalue);
+    this.SelectedPhaseSequenceNr( selectedphasesequencenr );
+  *]
+}

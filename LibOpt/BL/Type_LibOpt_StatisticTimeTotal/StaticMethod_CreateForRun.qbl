@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateForRun (LibOpt_Run run, Boolean isabsolute) as LibOpt_StatisticTimeTotal
+{
+  Description: 'Create a `LibOpt_StatisticTimeTotal` instance for the given "run" (`LibOpt_Run`), which collects time values on the \'Run\' level.'
+  TextBody:
+  [*
+    statistictime := LibOpt_StatisticTime::Create( run, typeof( LibOpt_StatisticTimeTotal ),
+                                                   'Run ' +  run.RunNr().AsQUILL(),
+                                                   /*
+                                                     - Link the Run-level time statistic with the `StartComponent` of the "run".
+                                                     - This workaround is to facilitate the display of Statistics when we apply
+                                                       filtering based on the selection of a particular Component.
+                                                     - With this relation set, the Statistic will be displayed when the
+                                                       `StartComponent` of the "run" is selected.
+                                                   */
+                                                   run.StartComponent(),          // Component
+                                                   null( LibOpt_StatisticTime ),  // Parent
+                                                   false, // Is component
+                                                   false, // Is type
+                                                   isabsolute
+                                                 ).astype( LibOpt_StatisticTimeTotal );
+    
+    // Set root-specific relation.
+    statistictime.AsStatisticTimeTotalRun( relset, run );
+    
+    return statistictime;
+  *]
+}

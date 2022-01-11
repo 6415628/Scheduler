@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportCalendars
+{
+  Description: 'Imports calendar data using the Calendars library.'
+  TextBody:
+  [*
+    if( this.Schedule().IntegrationConfiguration().UseCommonInformationModel() )
+    {
+      integrationAPI := this.Schedule().IntegrationAPI();
+      integrationAPI -> ImportAndSynchronizeCalendar();
+    }
+    else
+    {
+      // Import calendar data using the Calendars library
+      // Create temporary dataset as we do not need the staging data to be persisted
+      doDelete          := true;
+      keepIfNotImported := true;
+      
+      LibCal_ImportExportDataset::CreateTemporaryDataset( this.Schedule().CalendarImportExport().GetDatasetName() )
+      -> ( importexportdataset )
+      {
+        // Reactively import calendar data, then synchronize it afterwards
+        importexportdataset.Broker_LibCal_ImportCalendars().Execute();
+        return importexportdataset;
+      }
+      -> SynchronizeData( this.Schedule().CalendarImportExport(), doDelete, keepIfNotImported );  
+    }
+  *]
+}

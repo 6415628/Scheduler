@@ -1,0 +1,64 @@
+Quintiq file version 2.0
+#parent: #root
+Method IAttributeRegistry_Update (shadow[LibGUIFiltering_RegisteredComponent] registeredcomponent, String restriction) id:Method_LibGUIFiltering_PanelFilterBoxHelper_IAttributeRegistry_Update_75
+{
+  #keys: '[128900.0.381806075]'
+  Body:
+  [*
+    containercomponent  := this.IComponent_FindByPath( registeredcomponent.ComponentPath() );
+    filtercomponent     := this.IComponent_FindByPath( registeredcomponent.FilterComponentPath() );
+    componentattributes := registeredcomponent.Attributes().Tokenize( ';' );
+    objecttype          := registeredcomponent.ObjectType();
+    
+    if ( restriction <> ''
+     and restriction <> Translations::LibGUIFiltering_All()
+     and objecttype  <> '' )
+    {
+      this.IAttributeRegistry_Add( objecttype, restriction );
+    }
+    else
+    {
+      if ( objecttype <> '' )
+      {
+        traverse( componentattributes, Elements, attr )
+        {
+          this.IAttributeRegistry_Add( objecttype, attr );
+        }
+      }
+      
+      if ( not isnull(containercomponent) )
+      {
+        if ( containercomponent.istype(List) )
+        {
+          this.IAttributeRegistry_GetAttributes( registeredcomponent, 
+                                                 containercomponent.astype(List), 
+                                                 restriction );
+        }
+        else if ( containercomponent.istype(GanttChart) )
+        {
+          if ( filtercomponent.istype(GanttChartRowDefinition) )
+          {
+            this.IAttributeRegistry_GetAttributes( registeredcomponent, 
+                                                   containercomponent.astype(GanttChart), 
+                                                   filtercomponent.astype(GanttChartRowDefinition), 
+                                                   restriction );
+          }
+          else if ( filtercomponent.istype(GanttChartNodesDefinition) )
+          {
+            this.IAttributeRegistry_GetAttributes( registeredcomponent, 
+                                                   containercomponent.astype(GanttChart), 
+                                                   filtercomponent.astype(GanttChartNodesDefinition), 
+                                                   restriction );
+          }
+        }
+        else if ( containercomponent.istype(CustomDrawBaseLayer) )
+        {
+          this.IAttributeRegistry_GetAttributes( registeredcomponent, 
+                                                 containercomponent.astype(CustomDrawBaseLayer), 
+                                                 filtercomponent.astype(GUIDataExtractor), 
+                                                 restriction );
+        }
+      }
+    }
+  *]
+}

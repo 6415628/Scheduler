@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeTools
+{
+  Description: 'Synchronize the Tools with the knowledge table Tools_SC.'
+  TextBody:
+  [*
+    // James Kwapien Oct-3-2016 #7942 Synchronize with data brokers and imported objects as opposed to KTs
+    //Kyle Jan 16,2015
+    //Edited to match new Modeling Style
+    allinstances := selectset( this, Tool, tool, true ); // AlexanderNg 16-Oct-2015 QP #5796: changed to select Tool(s) from this ToolGroup only instead of selecting all the Tools from all ToolGroups
+    updatedinstance := construct( Tools );
+    // toolrows := this.Tools();
+    importedtools := selectset( this.Schedule(), 
+                                ImportedToolGroup_SC.ImportedTool_SC, 
+                                it, 
+                                it.ToolGroupType() = this.Type() );
+    
+    traverse( importedtools, Elements, it )
+    {
+      tool := Tool::FindTool( it.ToolGroupType(), it.ToolID() );
+      
+      if( isnull( tool ) )
+      {
+        tool := Tool::Create( this, it.Name(), it.Index(), it.ToolID(), it.ToolGroupType() );
+      }
+    
+      updatedinstance.Add( tool );
+    }
+    
+    //Remove old tool if it does not exist in data broker excel file
+    oldinstances := allinstances.Difference( updatedinstance );
+    
+    traverse( oldinstances, Elements, tool )
+    {
+      tool.Delete();
+    }
+  *]
+}

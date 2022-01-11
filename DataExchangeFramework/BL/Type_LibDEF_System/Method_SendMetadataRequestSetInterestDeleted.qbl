@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendMetadataRequestSetInterestDeleted (LibDEF_SetInterestOfDataset datasetInterest_i, Boolean isDatasetEvent_i)
+{
+  Description: 'Send a Metadata message for requesting the SetInterest to be deleted.'
+  TextBody:
+  [*
+    nvt := LibDEF_DataAccessor::CreateMessageMetadata();
+    
+    // define Type and required Header
+    LibDEF_DataAccessor::SetMetadataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_TYPE(),           LibDEF_DataAccessor::TYPE_METADATA_SETINTERESTDELETED() );
+    LibDEF_DataAccessor::SetMetadataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_SETTYPEGUID(),    datasetInterest_i.SetMeta().SetTypeMeta().GUID()        );
+    LibDEF_DataAccessor::SetMetadataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_SETGUID(),        datasetInterest_i.SetMeta().GUID()                      );
+    LibDEF_DataAccessor::SetMetadataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_DATASETMDSID(),   datasetInterest_i.DatasetMDSID()                        );
+    LibDEF_DataAccessor::SetMetadataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_DATASETDTD(),     datasetInterest_i.DataTransformationDefinition()        );
+    LibDEF_DataAccessor::SetMetadataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_ISDATASETEVENT(), isDatasetEvent_i                                        );
+    
+    dataBroker := this.DataBroker();
+    event      := dataBroker.EventCreate( this, false );
+    
+    LibDEF_Util::EventLog( event, "Sending SetInterest deleted metadata request" );
+    
+    dataBroker.SendMessage( this, nvt, LibDEF_DataAccessor::KIND_REQUEST(), event );
+  *]
+}

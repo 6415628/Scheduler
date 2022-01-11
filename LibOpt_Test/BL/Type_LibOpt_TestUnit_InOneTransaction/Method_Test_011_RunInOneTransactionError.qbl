@@ -1,0 +1,63 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_011_RunInOneTransactionError (LibOpt_TestDataset dataset)
+{
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    opt.DebugScope( true );
+    
+    se := dataset.ScopeElementMock( relnew );
+    se2 := dataset.ScopeElementMock2( relnew );
+    component_name := 'err';
+    init := void->()
+    {
+      ses := construct( LibOpt_ScopeElements );
+      ses.Add( se );
+      ses.Add( se2 );
+      ses.Add( dataset.ScopeElementMock( relnew ) );
+      ses.Add( dataset.ScopeElementMock2( relnew ) );
+      run := opt.CreateRun( ses );
+      
+      // Script of the rollback KPI
+      kpi_script := opt.RollbackKPIScripted( 1 );
+      for( i := 0; i <= 2; i++ )
+      {
+        kpi_script.Enqueue( 10.0 + i );
+      }
+      
+      opt.ComponentError( run, component_name, LibOpt_ComponentErrorPosition::Operation() );
+      
+      opt.ConfigureForOneTransaction( run );
+      run.Start()
+    }
+    runs := opt.Run( relsize );
+    this.NoException( init->IgnoreException()->|void->( )
+    {
+      this.Run().AssertEqual( runs, opt.Run( relsize ), 'Number of runs' );
+    
+      run := opt.RecoverLastFailedRun();
+      
+      subopt := run.FindComponent( component_name );
+      
+      this.Run().AssertEqual( 1, subopt.SnapshotComponent( relsize ), 'Number of snapshots' );
+      
+      traverse( subopt, SnapshotComponent, snap )
+      {
+        this.Run().AssertEqual( 1, snap.Children( relsize ), 'Number of child snapshots' );
+      }
+      
+      this.Run().AssertEqual( 1, run.Scope( relsize ), 'Number of scopes' );
+      seoss := selectset( run, Scope.astype( LibOpt_ScopeFat ).ScopeElementOnScope, seos, true );
+      this.Run().AssertEqual( 4, seoss.Size(), 'Number of scope elements on scope' );
+      
+      this.Run().AssertEqual( 1, counter( seoss, Elements.ScopeElement.astype( LibOpt_ScopeElementMock ), s, true ), 'Number of mock scope elements on scope' );
+      this.Run().AssertEqual( 1, counter( seoss, Elements.ScopeElement.astype( LibOpt_ScopeElementMock2 ), s, true ), 'Number of mock2 scope elements on scope' );
+      this.Run().AssertTrue( select( seoss, Elements.ScopeElement.astype( LibOpt_ScopeElementMock ), s, true ) = se, 'Mock scope element on scope is not correctly linked' );
+      this.Run().AssertTrue( select( seoss, Elements.ScopeElement.astype( LibOpt_ScopeElementMock2 ), s, true ) = se2, 'Mock2 scope element on scope is not correctly linked' );
+      this.Run().AssertEqual( 2, counter( seoss, Elements.ScopeElement.astype( LibOpt_ScopeElementDeleted ), s, true ), 'Number of deleted scope elements on scope' );
+      this.Run().AssertEqual( 0, counter( seoss, Elements, seos, isnull( seos.ScopeElement() ) ), 'Number of null scope elements on scope' );
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

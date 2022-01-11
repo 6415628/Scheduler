@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveMetadataSuccessGetSetsForSetType (NamedValueTree nvt_i, NamedValue body_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive a Metadata message for reply of Set-list of requested SetTypes.'
+  TextBody:
+  [*
+    LibDEF_Util::EventLog( event_i, "Receiving requested list of Sets for Set Type metadata" );
+    
+    setTypeGUID := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SETTYPEGUID() );
+    
+    setTypeMeta := select( this, SetTypeMeta, stm, stm.GUID() = setTypeGUID );
+    
+    if( not isnull( setTypeMeta ) )
+    {
+      // 1. Initialization: mark SoftDeleted
+      traverse( setTypeMeta, SetMeta, s )
+      {
+        s.IsSoftDeleted( true );
+      }
+    
+      // 2. Synchronization
+      this.SyncSetMeta( nvt_i, body_i, event_i );
+    
+      // 3. Finalization: clean-up leftovers
+      traverse( setTypeMeta, SetMeta, s, s.IsSoftDeleted() )
+      {
+        s.Delete();
+      }
+    }
+    
+    // End of receive metadata success get sets for set type
+    LibDEF_IntegrationEvent::EventComplete( event_i );
+  *]
+}

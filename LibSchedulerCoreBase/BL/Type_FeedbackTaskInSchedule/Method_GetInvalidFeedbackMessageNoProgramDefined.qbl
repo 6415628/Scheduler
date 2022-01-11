@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetInvalidFeedbackMessageNoProgramDefined () declarative remote as String
+{
+  Description: "Get invalid feedback message if the feedback task does not have program defined for resource's program sets"
+  TextBody:
+  [*
+    // Get invalid feedback message if the feedback task does not have program defined for resource's program sets
+    feedbackprogramsets := selectset( this, FeedbackTaskInFeedbackProgramType.FeedbackProgramType.ProgramTypeConfiguration.ProgramSetConfiguration, set,
+                                     true );
+    resourceprogramsets := selectset( this, ResponsibleResource.ProgramSet.ProgramSetConfiguration, set, true );
+    
+    missingprogramsets := resourceprogramsets.Difference( feedbackprogramsets );
+    
+    feedback := '';
+    
+    if( missingprogramsets.Size() > 0 )
+    {
+      missingprograms := selectvalues( missingprogramsets, Elements, set, true, set.Name() );
+      feedback := Translations::SC_FeedbackTaskInSchedule_NoProgramDefined( this.OperationID(), 
+                                                                            missingprograms.ToString( Constants::CommaString() ) );                                                               
+    }
+    
+    return feedback;
+  *]
+}

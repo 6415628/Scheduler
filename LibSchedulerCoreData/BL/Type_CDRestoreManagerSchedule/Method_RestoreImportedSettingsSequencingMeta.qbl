@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedSettingsSequencingMeta (CDIntegration cdintegration, ImportedSettingsSequencing importedsettingssequencing)
+{
+  Description: 'Restore imported settings sequencing meta core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedSettingsSequencingMeta
+    cdimportedSettingsSequencingMetas := selectset( cdintegration, CDEntity.astype( CDImportedSettingsSequencingMeta ), cdism, 
+                                                    cdism.SettingsId() = importedsettingssequencing.Id() 
+                                                  );
+    traverse( cdimportedSettingsSequencingMetas, Elements, cdism )
+    {
+      importedSettingsSequencingMeta := importedsettingssequencing.ImportedSettingsSequencingMeta( relnew,
+                                                                                                   SettingsId := cdism.SettingsId()
+                                                                                                 );
+      CopyCorresponding::CopyFrom( cdism ).CopyTo( importedSettingsSequencingMeta );   
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

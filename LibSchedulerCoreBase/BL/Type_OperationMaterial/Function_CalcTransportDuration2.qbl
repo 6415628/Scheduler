@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcTransportDuration
+{
+  TextBody:
+  [*
+    // mbr23, 2020-01-30: similar logic in CalcOptimistic... (LibSchedulerOptimizerSequencing). Changes to the logic should happen in both places.
+    rows := this.GetTransportDurationRows();
+    
+    // Find rows that matches the previous/next resource group and resource
+    matchrow := maxselect( rows, Elements, row,
+    
+    // If previous operation is planned, match the planned resource group, else match any of the allowed resource groups
+                           ( row.ResourceGroupIsWildcard()
+                             or ifexpr( guard( this.FromOperation().IsPlanned(), false ),
+                                        this.FromOperation().Task_SC().Resource_SC().ResourceGroupName() = row.ResourceGroup(),
+                                        exists( this, FromOperation.OperationOnResourceGroup.ResourceGroup_SC, rg,
+                                                rg.Name() = row.ResourceGroup() ) ) )
+    // If next operation is planned, match the planned resource group, else match any of the allowed resource groups
+                           and ( row.NextResourceGroupIsWildcard()
+                                 or ifexpr( guard( this.ToOperation().IsPlanned(), false ),
+                                            this.ToOperation().Task_SC().Resource_SC().ResourceGroupName() = row.NextResourceGroup(),
+                                            exists( this, ToOperation.OperationOnResourceGroup.ResourceGroup_SC, rg,
+                                                    rg.Name() = row.NextResourceGroup() ) ) )
+    // Match the planned previous operation resource
+                           and ( row.ResourceIDIsWildcard()
+                                 or guard( this.FromOperation().Task_SC().Resource_SC().ResourceID() = row.ResourceID(), false ) )
+    // Match the planned next operation resource
+                           and ( row.NextResourceIDIsWildcard()
+                                 or guard( this.ToOperation().Task_SC().Resource_SC().ResourceID() = row.NextResourceID(), false ) ),
+    // Get the matching row with the least wildcards
+                           - [ Number ]row.ResourceGroupIsWildcard()
+                           - [ Number ]row.NextResourceGroupIsWildcard()
+                           - [ Number ]row.ResourceIDIsWildcard()
+                           - [ Number ]row.NextResourceIDIsWildcard(),
+    // If there are still multiple rows, get the row with the largest transport duration
+                           row.TransportDuration() );
+    
+    value := guard( matchrow.TransportDuration(), Duration::Zero() );
+    
+    this.TransportDuration( value );
+  *]
+}

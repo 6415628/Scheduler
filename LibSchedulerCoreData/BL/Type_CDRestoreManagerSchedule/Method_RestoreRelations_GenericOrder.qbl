@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericOrder (CDSchedule cdschedule)
+{
+  Description: 'Restore relations for order core data to planning object'
+  TextBody:
+  [*
+    // Restore order
+    traverse( cdschedule, CDEntity.astype( CDGenericOrder ), cdorder )
+    {
+      order := Order_SC::FindOrder_SC( cdorder.OrderNr() );
+      
+      if( not isnull( order ) )
+      {
+        // WorkOrder, 1-1
+        workorder := WorkOrder::FindWorkOrder( cdorder.WorkOrderID() );
+        order.WorkOrder( relset, workorder );
+        
+        // Product, M-1
+        product := Product_SC::FindProductId( cdorder.ProductId() );
+        order.Product_SC( relset, product );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

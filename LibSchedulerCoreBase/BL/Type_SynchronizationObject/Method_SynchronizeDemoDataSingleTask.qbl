@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeDemoDataSingleTask
+{
+  TextBody:
+  [*
+    // wkn1 Oct-3-2017 (created)
+    // Plan feedback received operation first
+    feedbackrows:= selectsortedset( this, Schedule.ImportedFeedbackTask, row, true, row.Start(), row.Resource() );
+    
+    traverse( feedbackrows, Elements, row )
+    {
+      resource := row.Resource_SC();
+      operations := construct( Operation_SCs );
+      operation := select( this, Schedule.PlanUnit_SC.Operation_SC, op,
+                           op.PlanUnitId() = row.PlanUnitId() and op.WorkOrderSequenceNr() = row.WorkOrderOperationSequenceNr() );
+      operations.Add( operation );
+    
+      if( operations.Size() > 0 and not isnull( resource ) )
+      {
+        resource.PlanLast( operations );
+      }
+    }
+    
+    // Plan scheduled by no feedback operation
+    rows:= selectsortedset( this, Schedule.ImportedDemoDataSingleTask, row, true, row.Resource(), row.SequenceNr() );
+    
+    traverse( rows, Elements, row )
+    {
+      resource := Resource_SC::FindResource_SC( row.Resource() );
+      operations := construct( Operation_SCs );
+      operation := select( this, Schedule.PlanUnit_SC.Operation_SC, op, op.OperationID() = row.OperationID() );
+      operations.Add( operation );
+      
+      if( operations.Size() > 0 and not isnull( resource ) )
+      {
+        resource.PlanLast( operations );
+        if( operation.SingleTaskBase().istype( ContinuousTask ) )
+        {
+          operation.SingleTaskBase().astype( ContinuousTask ).IsParallelWithFeedback( row.IsParallelWithFeedback() );
+          operation.SingleTaskBase().astype( ContinuousTask ).IsFirstAfterDownTime( row.IsFirstAfterDownTime() );
+        }
+        
+        //update comment attributes
+        operation.Comment( row.Comment() );
+        operation.CommentLastUpdatedTimeStamp( row.CommentLastUpdatedTimeStamp() );
+        operation.CommentLastUpdatedUserName( row.CommentLastUpdatedUserName() );
+        
+        //update task IsFrozenByUser
+        operation.SingleTaskBase().IsFrozenByUser( row.IsFrozenByUser() );
+      }
+    }
+  *]
+}

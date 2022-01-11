@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+POAAlgorithm TestPOA
+{
+  #keys: '2[139164.0.28993105][139164.0.28993104]'
+  ApiVersion: 1
+  CurrentStrategy: TestStrategy
+  IsDefinedWithWizard: false
+  NodeInitializationText:
+  [*
+    runcontext := this.RunContextForUTF();
+    
+    if( runcontext.ErrorAtInitialize() )
+    {
+      error( 'UTF_Error during POA initialization' );
+    }
+    
+    if( runcontext.ErrorAtStrategy() )
+    {
+      poa.StoreReal( 'error', 1.0 );
+    }
+  *]
+  ResultText:
+  [*
+    if( this.RunContextForUTF().ErrorAtHandleResult() )
+    {
+      error( 'Error during POA handle result' );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+  POAStrategy.Strategies TestStrategy
+  {
+    TextBody:
+    [*
+      if( poa.IsRealStored( 'error' ) )
+      {
+        error( 'Error during POA strategy' );
+      }
+    *]
+  }
+}

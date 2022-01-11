@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateAndPlanOperations (Schedule schedule, Real width1, Real width2)
+{
+  Description: 'Create and plan operations'
+  TextBody:
+  [*
+    // Create first operation and plan it
+    order1 := UTFMockObjectFactory::CreateOrder( schedule, 'Order1' );
+    planUnit1 := UTFMockObjectFactory::CreatePlanUnit( order1, 'Plan Unit 1', 1.0 );
+    operation1 := UTFMockObjectFactory::CreateOperation( planUnit1 );
+    operation1.OperationID( 'Operation1' );
+    
+    // Create second operation and plan it
+    order2 := UTFMockObjectFactory::CreateOrder( schedule, 'Order2' );
+    planUnit2 := UTFMockObjectFactory::CreatePlanUnit( order2, 'Plan Unit 2', 1.0 );
+    operation2 := UTFMockObjectFactory::CreateOperation( planUnit2 );
+    operation2.OperationID( 'Operation2' );
+    
+    // Assign operation width
+    operation1.Width( width1 );
+    operation2.Width( width2 );
+    
+    // Schedule operation1 and operation2
+    Transaction::Transaction().Propagate( relation( Operation_SC, AllowedOperationOnResource ) );
+    operation1.Plan();
+    operation2.Plan();
+  *]
+}

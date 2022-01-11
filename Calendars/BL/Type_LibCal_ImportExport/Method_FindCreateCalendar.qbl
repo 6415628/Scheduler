@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method FindCreateCalendar (LibCal_StagingCalendar stagingCalendar_i) as LibCal_Calendar
+{
+  Description: 'Find or create a calendar, depending on the calendar type of the staging object.'
+  TextBody:
+  [*
+    calendar := this.CalendarRegistry().FindCalendar( stagingCalendar_i.CalendarType(),
+                                                      stagingCalendar_i.StagingCalendarID() );
+    if( isnull( calendar ) )
+    {
+      // The calendar is not found, try to create a new one. 
+      // First see if it concerns a specific resource calendar.
+      calendar := this.CreateResourceCalendar( stagingCalendar_i );
+      
+      if( isnull( calendar ) )
+      {
+        // If not, then it should be the CommonCalendar.
+        calendar := this.FindCreateCommonCalendar( stagingCalendar_i );
+      }
+      
+      if( isnull( calendar ) )
+      {
+        // If not, then something is wrong.
+        LibCal_Util::Warning( this.DefinitionName() + ".FindCreateCalendar() : unexpected CalendarType '" + stagingCalendar_i.CalendarType() + "' encountered in imported data." ); 
+      }
+    }
+    
+    return calendar;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

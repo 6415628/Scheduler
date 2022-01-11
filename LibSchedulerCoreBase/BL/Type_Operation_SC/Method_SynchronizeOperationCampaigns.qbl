@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeOperationCampaigns
+{
+  Description: "Synchronizes operation campaigns by checking its routing, if it exists, and seeing if the resulting operation campaign exists. If it doesn't, create it."
+  TextBody:
+  [*
+    objectFactory := this.PlanUnit_SC().Schedule().ObjectFactory();
+    woo := guard( this.WorkOrderOperation().astype( InternalWorkOrderOperation ),
+                  null( InternalWorkOrderOperation ) );
+    
+    if( not isnull( woo ) and not isnull( objectFactory ) )
+    {
+      routingstep := woo.RoutingStep();
+      
+      if( not isnull( routingstep ) and routingstep.RoutingStepCampaign( relsize) > 0 )
+      {
+        traverse( routingstep, RoutingStepCampaign, rsc )
+        {
+          opcampaign := OperationCampaign::FindOperationCampaign( woo.WorkOrderId(), this.OperationID(), rsc.SequenceNr(), rsc.ResourceGroupName(), rsc.CampaignTypeName() );
+    
+          if( isnull( opcampaign ) )
+          {
+            opcampaign := objectFactory.CreateOperationCampaign( this, woo.WorkOrderId(), rsc.SequenceNr(), rsc.ResourceGroupName(), rsc.CampaignTypeName() );
+          }
+          
+          opcampaign.Update( rsc );
+        }
+      }
+    }
+  *]
+}

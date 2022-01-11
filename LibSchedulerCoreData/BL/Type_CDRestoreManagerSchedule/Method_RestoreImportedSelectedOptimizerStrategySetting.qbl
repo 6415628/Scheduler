@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedSelectedOptimizerStrategySetting (CDIntegration cdintegration)
+{
+  Description: 'Restore imported selected optimizer strategy setting core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedSelectedOptimizerStrategySetting
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedSelectedOptimizerStrategySetting ), cdsoss )
+    {
+      importedSelectedOptimizerStrategySetting := schedule.ImportedSelectedOptimizerStrategySetting( relnew, 
+                                                                                                     SelectedOptimizerSettingGroupID := cdsoss.SelectedOptimizerSettingGroupID(),
+                                                                                                     SelectedOptimizerStrategyID := cdsoss.SelectedOptimizerStrategyID()
+                                                                                                   );
+      CopyCorresponding::CopyFrom( cdsoss ).CopyTo( importedSelectedOptimizerStrategySetting );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

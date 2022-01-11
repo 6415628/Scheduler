@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckResourceConnection (output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Checks whether the operation is planned on an allowed resource based on its upstream operation, configured in ResourceConnectionsAllowed KT.'
+  TextBody:
+  [*
+    // WOI1 May-19-2016 (created)
+    value := true;
+    
+    if( guard( this.Resource_SC().Schedule().TechnicalConfiguration().IsResourceConnectionEnabled(), false )
+        and not this.HasExternalAllowedResourceRule() )
+    {
+      resource := this.Resource_SC(); // current resource
+      operation := this.Operation_SC();
+      operationid := operation.OperationID();
+      down_resource := null( Resource_SC );
+      up_resource := null( Resource_SC );
+      
+      value := resource.IsPlanRelatedOperations() and resource.HasAllowedResourceConnection();
+      
+      if( not value )
+      {
+        // CHECKS DOWNSTREAM PLANNING
+        allowed_downstream_resource_connection := this.CheckDownstreamResourceConnection( down_resource );
+        
+        if( not allowed_downstream_resource_connection )
+        {
+          feedback_o := feedback_o
+                        + String::NewLine()
+                        + Translations::SC_Operation_Downstream_NotAllowedOnResource( operationid, resource, down_resource );
+        }
+        
+        // CHECKS UPSTREAM PLANNING
+        allowed_upstream_resource_connection := this.CheckUpstreamResourceConnection( up_resource );
+        
+        if( not allowed_upstream_resource_connection )
+        {
+          feedback_o := feedback_o
+                      + String::NewLine()
+                      + Translations::SC_Operation_Upstream_NotAllowedOnResource( operationid, resource, up_resource );
+        }
+      
+        value := allowed_downstream_resource_connection and allowed_upstream_resource_connection;
+      }
+    }
+    
+    return value;
+  *]
+}

@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (LibDEF_DataBroker owner_i, String guid_i, String hostName_i, 
+  Number portNumber_i) as LibDEF_System
+{
+  Description:
+  [*
+    Create and assign primary-key attributes.
+    Also check for primary keys like TypeIndex.
+  *]
+  TextBody:
+  [*
+    // Jacky CHAN Apr-19-2016 (created)
+    // SystemByGUID
+    duplicatedGUID := LibDEF_System::FindSystemByGUID( owner_i, guid_i );
+    if( not isnull( duplicatedGUID ) )
+    {
+      LibDEF_Util::LogErrorInstanceUniqueness( typeof( LibDEF_System ), duplicatedGUID.GetInstanceKeyGUIDAsString() );
+    }
+    
+    // SystemByCoordinate
+    duplicatedCoordinate := LibDEF_System::FindSystemByCoordinate( owner_i, hostName_i, portNumber_i );
+    if( not isnull( duplicatedCoordinate ) )
+    {
+      LibDEF_Util::LogErrorInstanceUniqueness( typeof( LibDEF_System ), duplicatedCoordinate.GetInstanceKeyCoordinateAsString() );
+    }
+    
+    return owner_i.System( relnew,
+                           GUID       := guid_i,
+                           HostName   := LibDEF_Util::ConvertLocalhost( hostName_i ),
+                           PortNumber := portNumber_i,
+                           // always treat a System is available on creation
+                           IsAvailable := true );
+  *]
+}

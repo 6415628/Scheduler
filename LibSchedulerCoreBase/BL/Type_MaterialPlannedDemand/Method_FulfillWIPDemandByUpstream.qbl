@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method FulfillWIPDemandByUpstream
+{
+  Description: 'Fulfill WIP demand by upstream operation material'
+  TextBody:
+  [*
+    // jiex Feb-9-2017 (created)
+    // Find material supply from upstream and fulfill this WIP demand.
+    // User case: 1. post-processing after synchronization, the wip demand is by default fulfilled by upstream
+    // User case: 2. Un-reserve the manual reservation(MaterialSupply) 
+    if( this.IsWIPDemand() and not this.IsFullyFulfilledByUpstream() )
+    {   
+      // Find supply
+      supply := select( this, Operation_SC.FromOperationDependency.FromOperation.PlannedSupply.astype( MaterialPlannedSupply ), s, true );
+     
+      // Reserve material only when supply has enough quantity
+      if( not isnull( supply ) and supply.Quantity() >= this.Quantity()  )      
+      {
+        this.CreatePlannedFulfillment( supply, false, supply.Quantity() );
+      }
+      else
+      {
+        this.Operation_SC().DeleteUpStreamFulfillment();
+      }  
+    }
+  *]
+}

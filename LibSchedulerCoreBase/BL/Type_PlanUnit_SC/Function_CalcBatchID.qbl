@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcBatchID
+{
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // FOR DEMO
+    // QS must implement own logic in overloaded object. Example below is for hotmill demo.
+    value := '';
+    
+    batchop := select( this, Operation_SC, op, op.PlannedInBatch() );
+    
+    if( not isnull( batchop ) )
+    {
+      if( batchop.IsPlanned() )
+      {
+        value := guard( batchop.BatchSequenceElement().Batch().BatchID(), '' );
+      }
+      else
+      {
+        value := guard( batchop.ActiveOperationFeedback().astype( OperationBatchFeedback ).Last().BatchID(), '' );
+      }
+    }
+    
+    this.BatchID( value );
+  *]
+}

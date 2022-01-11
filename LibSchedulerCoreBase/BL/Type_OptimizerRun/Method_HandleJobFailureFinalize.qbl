@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleJobFailureFinalize
+{
+  Description: 'Handle the failure of a finalize run job.'
+  TextBody:
+  [*
+    this.JobFinalizeFailed( true );
+    this.IsActive( false );
+    
+    warningmessage := Translations::SC_OptimizerRun_JobFinalizeFailed();
+    OptimizerRun::ProcessWarning( warningmessage, this );
+    
+    parent := this.Parent();
+    if( not isnull( parent ) )
+    {
+      parent.HandleChildJobFailureExecuteStrategy( this );
+    }
+    else
+    {
+      // we would like to finalize run
+      // but that failed, so use reset instead
+      this.ResetOptimizer();
+    }
+  *]
+}

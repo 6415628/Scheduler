@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method SyncSystemsFromRoutingTable (NamedValueTree nvt_i, NamedValue body_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Synchronize Systems from routing table, create or update System records, except the local system and BootNode.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-22-2016 (created)
+    // 1. Initialization: mark SoftDeleted
+    otherPeers := this.GetOtherPeers( false );
+    traverse( otherPeers, Elements, peer )
+    {
+      peer.IsSoftDeleted( true );
+    }
+    
+    // 2. Synchronization
+    traverse( body_i.Children(), Elements, system,
+              system.Name() = typeof( LibDEF_System ).Name() )
+    {
+      syncSystem := NamedValueTreeIO::ImportObject( nvt_i, system, typeof( LibDEF_System ) ).astype( LibDEF_System );
+    
+      matchedSystem := LibDEF_System::FindSystemByGUID( this, syncSystem.GUID() );
+      // create if not found
+      if( isnull( matchedSystem ) )
+      {
+        matchedSystem := LibDEF_System::Create( this, syncSystem.GUID(), syncSystem.HostName(), syncSystem.PortNumber() );
+      }
+      else
+      {
+        // mark as joined if it's local
+        if( matchedSystem = this.SystemLocal() )
+        {
+          this.SetInDomain( true );
+        }
+    
+        // update coordinate if found
+        matchedSystem.ChangeKeySystemByCoordinate( syncSystem.HostName(), syncSystem.PortNumber(), event_i );
+        matchedSystem.IsSoftDeleted( false );
+      }
+    
+      // DO NOT update for local system
+      if( matchedSystem <> this.SystemLocal() )
+      {
+        // update non-primary-key and non-local synchronization
+        matchedSystem.Update( syncSystem.Name(), syncSystem.MajorVersion(), syncSystem.MinorVersion() );
+      }
+    }
+    
+    // 3. Finalization: clean-up leftovers
+    traverse( this, System, system,
+              system.IsSoftDeleted() )
+    {
+      system.Delete();
+    }
+  *]
+}

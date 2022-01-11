@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: pnlActionBar_432/btnDeleteSystemFromDomain
+Response OnClick (LibDEF_System selection) id:Response_pnlActionBar_432_btnDeleteSystemFromDomain_OnClick
+{
+  #keys: '[143398.0.685640265]'
+  CanBindMultiple: false
+  DefinitionID => /pnlActionBar_432/Responsedef_pnlActionBar_432_btnDeleteSystemFromDomain_WebButton_OnClick
+  GroupServerCalls: true
+  Initiator: 'btnDeleteSystemFromDomain'
+  Precondition:
+  [*
+    if( GlobalStateDataExchangeFramework.IsDEFDatasetsLoadedChecked() )
+    {
+      LibDEF_DataBroker.IsInADomainChecked( true );
+      LibDEF_DataBroker.IsBootNodeChecked( true );
+      selection.IsAvailableChecked( false );
+      selection.IsBootNodeChecked( false );
+    }
+    return FeedbackObject::IsAllowed();
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Delete System from Domain
+      prompt := "Are you sure you want to manually delete the System from the Domain?";
+      if ( WebMessageBox::Question( this, prompt, Translations::LibDEF_YesNo() ) = 0 )
+      {
+        LibDEF_DataBroker.DeleteSystemFromDomain( selection );
+      }
+    *]
+  }
+}

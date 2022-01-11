@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: tbrImportMasterData/btnUpload
+Response OnClick () id:Response_tbrImportMasterData_btnUpload_OnClick
+{
+  #keys: '[136402.0.441544853]'
+  Body:
+  [*
+    // Import XLS
+    filename := Application.GetOpenFileName();
+    
+    if( filename <> '' )
+    {
+      exceldata   := Application.ReadBinaryFile( filename );
+      datasetname := LibSM_StagingSet::EnsureDatasetForImport();
+      Form.SelectImportDataset( datasetname );
+      // send the Excel data as binary values to the server to process.         
+      LibSM_StagingSet.ImportDataFromXLS( filename, exceldata.AsBinaryValue() );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIButtonBase_OnClick'
+  Precondition:
+  [*
+    Form.HasScenarioManager();
+  *]
+}

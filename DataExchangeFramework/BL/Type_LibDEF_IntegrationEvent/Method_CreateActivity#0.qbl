@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateActivity (String title_i, Real startCounter_i, String info_i, 
+  Boolean isSucceeded_i, String errorMsg_i)
+{
+  Description:
+  [*
+    Log a new activity to the end of the event-activity sequence
+    (1) Use this for requests and notifications, where we might want to view information
+  *]
+  TextBody:
+  [*
+    // Update last activity
+    // New activity startCounter is previous activity endCounter
+    this.UpdateLastActivity( startCounter_i );
+    
+    // Create new activity
+    LibDEF_IntegrationEventActivity::Create( this,
+                                             [String]this.GetNextActivityNumber() + '. ' + title_i,
+                                             guard( this.LastActivity().End(), DateTime::ActualTime() ),
+                                             startCounter_i,
+                                             isSucceeded_i,
+                                             errorMsg_i );
+    
+    // Terminate if error occured
+    this.TerminateWithError( startCounter_i );
+  *]
+}

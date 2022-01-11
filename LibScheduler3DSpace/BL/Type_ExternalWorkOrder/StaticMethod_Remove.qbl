@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Remove (ExternalWorkOrders externalWorkOrders)
+{
+  Description: '3DSpace specific removal logic. Removes this work order and its operations regardless of whether it has been planned.'
+  TextBody:
+  [*
+    traverse( externalWorkOrders, Elements, externalWorkOrder )
+    {
+      // Delete all operations and their tasks
+      workOrderOperations := selectset( externalWorkOrder, WorkOrderOperation.astype( ExternalWorkOrderOperation ), externalWorkOrderOperation, true );
+      ExternalWorkOrderOperation::Remove( workOrderOperations );
+      
+      // Delete order and their plan units
+      order := externalWorkOrder.Order_SC();
+      
+      if( not isnull( order ) )
+      {
+        order.DeletePlanUnits();
+        order.Remove();
+      }
+      
+      externalWorkOrder.Delete();
+    }
+  *]
+}

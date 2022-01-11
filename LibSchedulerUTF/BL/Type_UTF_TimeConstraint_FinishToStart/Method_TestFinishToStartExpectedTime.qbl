@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestFinishToStartExpectedTime (Schedule schedule)
+{
+  Description: 'Test finish to start data-driven time constraint expected time.'
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    hasMinDelay := false;
+    availableTime := DateTime::MinDateTime();
+    expectedTime := DateTime::MinDateTime();
+    exceedMaximumWaitingDuration := false;
+    
+    this.GetTestVariant( hasMinDelay, availableTime, expectedTime, exceedMaximumWaitingDuration );
+    
+    // Propagate TimeConstraint.ExpectedTime and ExpectedTimeWithOffset to verify it's value
+    Transaction::Transaction().Propagate( attribute( TimeConstraint, ExpectedTime ) );
+    Transaction::Transaction().Propagate( attribute( TimeConstraint, ExpectedTimeWithOffset ) );
+    
+    // Select the time constraint
+    timeConstraint := select( schedule, PlanUnit_SC.Operation_SC.ToTimeConstraint, timeConstraint, true );
+    
+    // Assert the result
+    this.Run().AssertTrue( expectedTime = timeConstraint.ExpectedTime()
+                           and expectedTime + timeConstraint.TotalOffsetDuration() = timeConstraint.ExpectedTimeWithOffset(), 
+                           UTFUtility::GenerateFailedMessage( 'TestFinishToStartExpectedTime', variant ) );
+  *]
+}

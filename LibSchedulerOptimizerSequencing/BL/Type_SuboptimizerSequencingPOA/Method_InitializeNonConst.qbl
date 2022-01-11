@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitializeNonConst (LibOpt_Task task) as owning POAAlgorithm
+{
+  TextBody:
+  [*
+    // prepare and calculate the data that is needed for this suboptimizer task:
+    transientdata := TransientDataSuboptimizerSequencing::Create( this, task, this.Settings() );
+    transientdata.PropagateDeclarativeData();
+    // save it in a snapshot_transientdata:
+    snapshot_transientdata := SnapshotTransientData::Create( task.Run(), transientdata );
+    task.SnapshotComponent().Children( relinsert, snapshot_transientdata );
+    
+    poa := SuboptimizerSequencingPOA::CreateSequencingPOA();
+    
+    // Set the offsetdatetime of POAAnalysis at the start of the run instead of doing this manually (and forgetting it)
+    if( guard( POAAnalysis::Analysis().Active(), false ) )
+    {
+      POAAnalysis::Analysis().OffsetDateTime( this.POAEpoch() );
+    }
+    
+    this.InitPOANodes( poa, transientdata );
+    
+    this.InitPOAPaths( poa, transientdata );
+    
+    this.InitPOAExpressions( poa, transientdata );
+    
+    this.InitPOACalendar( poa, transientdata );
+    
+    this.InitPOAConstraints( poa, transientdata );
+    
+    this.InitPOAGoals( poa, transientdata );
+    
+    this.InitPOAInitialSolution( poa, transientdata );
+    
+    return & poa;
+  *]
+}

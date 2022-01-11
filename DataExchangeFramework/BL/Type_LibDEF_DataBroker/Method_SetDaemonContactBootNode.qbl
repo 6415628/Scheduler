@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetDaemonContactBootNode
+{
+  Description: 'Enable/Disable the Daemon based on the availability of the BootNode.'
+  TextBody:
+  [*
+    // Jacky CHAN May-3-2016 (created)
+    // only enable if already part of a Domain, and BootNode is unavailable
+    value := this.InDomain() and
+             not this.IsBootNodeAvailable();
+    
+    frequency := Duration::Seconds( LibDEF_Util::GetSettingValueFrequencyContactBootNode() );
+    // use StartOfWeek for Mondays
+    startTime := DateTime::Now().StartOfWeek( TimeZone::DeductedDatasetTimezone() );
+    
+    this.EditDaemonProperties( LibDEF_DataBroker::DAEMONNAME_ContactBootNode(),
+                               value, frequency, startTime );
+  *]
+}

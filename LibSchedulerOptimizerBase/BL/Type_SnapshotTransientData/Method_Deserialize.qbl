@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Deserialize (JSON json)
+{
+  TextBody:
+  [*
+    super.Deserialize( json );
+    // the transient data is not owned by this snapshot, so we need to deserialize its key if it's in there.
+    
+    if( json.Has( SnapshotTransientData::JSON_TransientDataTaskKey() ) )
+    {
+      transientdata_taskkey := json.Get( SnapshotTransientData::JSON_TransientDataTaskKey() );
+      if( transientdata_taskkey.IsString() )
+      {
+        transientdata := select( this.GetComponent(), TransientData, td, td.KeyTask().AsQUILL() = transientdata_taskkey.AsString() );
+        if( not isnull( transientdata ) )
+        {
+          this.TransientData( relset, transientdata );
+        }
+      }
+    }
+  *]
+}

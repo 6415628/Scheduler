@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcOptimisticDueTime
+{
+  TextBody:
+  [*
+    // mbr23 Jan-24-2020 (created)
+    
+    value := Duration::Zero();
+    
+    if( this.FirstEdge().istype( OperationMaterialInSuboptimizerSequencing ) )
+    {
+      value := this.FirstEdge().astype( OperationMaterialInSuboptimizerSequencing ).OptimisticTransferDuration();
+    
+      if( not isnull( this.Tail() ) )
+      {
+        value := value 
+                 + this.FirstEdge().AsInputDependency().OptimisticProcessDuration() // the tail doesn't include its start operations
+                 + this.Tail().OptimisticDueTime();
+      }
+    }
+    else if( this.FirstEdge().istype( TimeConstraintInSuboptimizerSequencing ) )
+    {
+      timeconstraint := this.FirstEdge().astype( TimeConstraintInSuboptimizerSequencing );
+      if( timeconstraint.istype( TimeConstraintFinishToStartInSuboptimizerSequencing ) and not isnull( timeconstraint.OperationDependency() ) )
+      {
+        value := timeconstraint.OperationDependency().astype( TimeConstraint ).TotalOffsetDuration();
+      
+        if( not isnull( this.Tail() ) )
+        {
+          value := value
+                   + timeconstraint.AsInputDependency().OptimisticProcessDuration()
+                   + this.Tail().OptimisticDueTime();
+        }
+      }
+    }
+    
+    this.OptimisticDueTime( value );
+  *]
+}

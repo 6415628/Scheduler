@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitializeDuration () id:Method_LibCal_dlgEventParticipation_InitializeDuration
+{
+  #keys: '[131094.0.2033101498]'
+  Body:
+  [*
+    sEvent         := dhEvent.Data();
+    sParticipation := dhLeadingParticipation.Data();
+    timezone       := TimeZone::UTCTimeZone();  // Use the UTC-timezone here, don't correct for a specific timezone.
+    
+    // Don't use AddAsPeriod here, the 'nett' duration should be calculated here.
+    start    := sParticipation.StartDate().Add( timezone, sEvent.StartTimeOfDay() );
+    end      := sParticipation.EndDate()  .Add( timezone, sEvent.EndTimeOfDay()   );
+    duration := Duration::Zero();
+      
+    // Keep zero in case of negative duration (should not happen).
+    if( end > start )
+    {
+      duration := end - start;
+    }
+    
+    // Update the DataHolder, which will update the labels that show the duration.
+    dhDuration.Data( duration );
+  *]
+}

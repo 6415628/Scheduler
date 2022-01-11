@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestEnableRuleConditionForShutdownRule (Schedule schedule)
+{
+  Description: 'Test rule with enabled rule condition for shutdown rule'
+  TextBody:
+  [*
+    // Get variant attributes
+    isvariantfound := false;
+    isconditionenable := false;
+    conditionScope := '';
+    conditionValue := false;
+    operationAttributeValue := false;
+    hasNoViolateConstraint := false;
+    
+    this.GetShutdownTestVariant( isvariantfound,
+                                 isconditionenable,
+                                 conditionScope,
+                                 conditionValue,
+                                 operationAttributeValue,
+                                 hasNoViolateConstraint );
+    
+    isvalid := true;
+    if( isvariantfound )
+    {
+      // Get the operation 5 & 10 width with different value as transition/violated operation
+      currenttask := select( schedule, PlanUnit_SC.Operation_SC.Task_SC, task, task.GetOperation().OperationID() = 'operation2' );
+      isvalid := ( currenttask.IsAllHighPriorityRulesOK() and currenttask.IsAllLowPriorityRulesOK() ) = hasNoViolateConstraint;
+    }
+    
+    this.Run().AssertTrue( isvalid, UTFUtility::GenerateFailedMessage( 'Rule condition checking for shutdown rule.', this.Variant() ) );
+  *]
+}

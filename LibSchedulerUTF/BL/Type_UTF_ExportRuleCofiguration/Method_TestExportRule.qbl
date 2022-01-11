@@ -1,0 +1,62 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestExportRule (Schedule schedule)
+{
+  Description: 'Test export rule'
+  TextBody:
+  [*
+    rule := select( schedule, Rule, rule, true );
+    ruleRange := select( rule, RuleRange, ruleRange, true );
+    ruleScopeInResource := select( rule, RuleScopeInResource, ruleScopeInResource, true );
+    ruleScopeInShutdownType := select( rule, RuleScopeInShutdownType, ruleScopeInShutdownType, true );
+    
+    exportedRule := select( schedule, ExportedRule, exportedRule, true );
+    exportedRuleRange := select( exportedRule, ExportedRuleRange, exportedRuleRange, true );
+    exportedRuleScope := exportedRule.ExportedRuleScope();
+    exportedRuleScopeInResource := select( exportedRule, ExportedRuleScopeInResource, exportedRuleScopeInResource, true );
+    exportedRuleScopeInShutdownType := select( exportedRule, ExportedRuleScopeInShutdownType, exportedRuleScopeInShutdownType, true );
+    
+    isExportedRuleExist := not isnull( exportedRule )
+                           and rule.ConditionValue() = exportedRule.ConditionValue()
+                           and rule.IsConditionEnabled() = exportedRule.IsConditionEnabled()
+                           and rule.IsHardConstraintForOptimizer() = exportedRule.IsHardConstraintForOptimizer()
+                           and rule.IsMultipleRangesEnabled() = exportedRule.IsMultipleRangesEnabled()
+                           and rule.Name() = exportedRule.Name()
+                           and rule.NeedManualPreconditionCheck() = exportedRule.NeedManualPreconditionCheck()
+                           and rule.RuleValue() = exportedRule.RuleValue()
+                           and rule.RuleID() = exportedRule.RuleID()
+                           and rule.CharacteristicCondition().ID() = exportedRule.CharacteristicConditionID()
+                           and rule.CharacteristicMain().ID() = exportedRule.CharacteristicMainID()
+                           and rule.RuleType().Name() = exportedRule.RuleTypeName()
+                           and rule.RuleSubType().Name() = exportedRule.RuleSubTypeName()
+                           and rule.IsProgramPhaseTransitionRule() = exportedRule.IsProgramPhaseTransitionRule()
+                           and rule.ConditionScope() = exportedRule.ConditionScope()
+                           and rule.PenaltyParameterSlope_a() = exportedRule.PenaltyParameterSlope_a()
+                           and rule.PenaltyParameterPower_b() = exportedRule.PenaltyParameterPower_b()
+                           and rule.PenaltyParameterOffset_c() = exportedRule.PenaltyParameterOffset_c()
+                           and rule.StrategyMultipleRange() = exportedRule.StrategyMultipleRange();
+    
+    isExportedRuleRangeExist := not isnull( exportedRuleRange )
+                                and ruleRange.From() = exportedRuleRange.From()
+                                and ruleRange.To() = exportedRuleRange.To()
+                                and ruleRange.RuleRangeValue() = exportedRuleRange.RuleRangeValue();
+    
+    isExportedRuleScopeExist := not isnull( exportedRuleScope )
+                                and rule.CharacteristicScope().ID() = exportedRuleScope.CharacteristicScopeID()
+                                and rule.IsBeforeShutdown() = exportedRuleScope.IsBeforeShutdown()
+                                and rule.RuleScopeSelected() = exportedRuleScope.RuleScopeSelected()
+                                and rule.RuleScopeShutdownAggregateThreshold() = exportedRuleScope.RuleScopeShutdownAggregateThreshold();
+    
+    isExportedRuleScopeInResourceExist := not isnull( exportedRuleScopeInResource )
+                                          and ruleScopeInResource.Resource_SC().ResourceID() = exportedRuleScopeInResource.ResourceID();
+     
+    isExportedRuleScopeInShutdownTypeExist := not isnull( exportedRuleScopeInShutdownType )
+                                          and ruleScopeInShutdownType.ShutdownType().ShutdownTypeID() = exportedRuleScopeInShutdownType.ShutdownTypeID();
+    
+    this.Run().AssertTrue( isExportedRuleExist
+                           and isExportedRuleRangeExist
+                           and isExportedRuleScopeExist
+                           and isExportedRuleScopeInResourceExist
+                           and isExportedRuleScopeInShutdownTypeExist );
+  *]
+}

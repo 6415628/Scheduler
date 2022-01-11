@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (TransientDataSuboptimizerSequencing owner, LibOpt_ScopeElementOnRun operation) as OperationInSuboptimizerSequencing
+{
+  Description:
+  [*
+    also creates the owned OperationOnResource shadow objects for all shadow resources owned by the given transient data, and sets the SetupAddress relation.
+    Precondition: there are already all resource shadow objects created in the given transient data. The owning suboptimzier's RunContextSetupAddress must already contain all its dimensions and coordinates.
+  *]
+  TextBody:
+  [*
+    // mbr23 Jan-21-2020 (created)
+    op_sc := operation.ScopeElement().astype( ScopeElementOperation ).Operation_SC();
+    
+    // find or create the correct setup address:
+    setupaddress := owner.Component().astype( SuboptimizerSequencingPOA ).RunContextSetupAddress().FindOrCreateAddress( op_sc );
+    
+    object := owner.OperationInSuboptimizerSequencing( relnew,
+                                                       OperationScopeElement := operation,
+                                                       KeyOperationScopeElement := operation.Key(),
+                                                       KeyTransientData := owner.Key(),
+                                                       Operation := op_sc,
+                                                       IsFirstInScopeOnResource := OperationInSuboptimizerSequencing::SetIsFirstOnResource( owner.Task().Scope(), op_sc ),
+                                                       IsFirstOfGroupOfOperationsInScopeOnResource := OperationInSuboptimizerSequencing::IsFirstOfGroupOfOperationsInScopeOnResource( owner.Task().Scope(), op_sc ),
+                                                       IsPreviousTaskNotInSpan := OperationInSuboptimizerSequencing::IsPreviousTaskNotInSpan( owner.Task().Scope(), op_sc ),
+                                                       IsFrozenInSchedule := op_sc.IsFrozenInSchedule() or op_sc.HasFeedback() or operation.IsLocked(),
+                                                       IsInSpan := operation.IsInSpan(),
+                                                       SetupAddress := setupaddress,
+                                                       SetupAddressId := setupaddress.Id(),
+                                                       IsFiller := op_sc.OptimizerSequencing_IsFiller() );
+    
+    // create the OperationOnResource shadow objects owned by this operation, one per in-scope-resource:
+    traverse( owner, ResourceGroup.Resource, resource )
+    {
+      oor := select( op_sc, OperationOnResource, op_on_r, op_on_r.Resource_SC() = resource.Resource() );
+      if( not isnull( oor ) ) // there are no OOR objects in the manual model if the resource group doesn't fit the operation type. => not allowed anyway.
+      {
+        OperationOnResourceInSuboptimizerSequencing::Create( object, resource, oor );
+      }
+    }
+    
+    return object;
+  *]
+}

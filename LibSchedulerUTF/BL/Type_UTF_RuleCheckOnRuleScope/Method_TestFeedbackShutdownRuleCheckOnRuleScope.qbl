@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestFeedbackShutdownRuleCheckOnRuleScope (Schedule schedule)
+{
+  Description: 'Test feedback shutdown rule scope in rule'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    measure := ''
+    threshold := 0.0;
+    isfeedbackstarted := false;
+    isTask2Valid := false;
+    
+    this.GetTestVariantForFeedbackShutdown( isvariantfound,
+                                            measure,
+                                            threshold,
+                                            isfeedbackstarted,
+                                            isTask2Valid );
+    
+    value := true;
+    
+    // Only do checking when variant found
+    if( isvariantfound )
+    {
+      // Gantt chart
+      // | Feedback Shutdown Task | Task0 | Task1 | Task2 |
+      
+      // Propogate declarative attribute
+      Transaction::Transaction().Propagate( attribute( Task_SC, TaskID ) );
+      task2 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'operation2' );
+    
+      value := isTask2Valid = ( task2.IsAllHighPriorityRulesOK() and task2.IsAllLowPriorityRulesOK() );
+    }      
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Test feedback shutdown rule scope failed.', 
+                           this.Variant() ) );
+  *]
+}

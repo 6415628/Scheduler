@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateShutdownSchedulingData (Schedule schedule)
+{
+  Description: 'Create shutdown scheduling test data'
+  TextBody:
+  [*
+    // Create shutdown type
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, res, true );
+    shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, 'Shutdown Type' );
+    UTFMockObjectFactory::CreateShutdownTypeInResource( shutdownType, resource );
+    
+    // Insert shutdown
+    Transaction::Transaction().Propagate( attribute( Task_SC, TaskID ) );
+    task := select( resource, Task_SC, t, t.TaskID() = 'Operation_2' );
+    resource.InsertShutdown( task, 
+                             shutdownType, 
+                             Duration::Hours( 1 ), 
+                             true,
+                             false,
+                             DateTime::MinDateTime(),
+                             Duration::Zero() );
+    // Gantt chart
+    //                   |------     HEAD------------------|-TAIL--|                   |---------HEAD----- -----  |
+    // ProgramChangeTask | Task0 | Task1 | Task2 | Shutdown| Task3 | ProgramChangeTask | Task4 (Violated) | Task5 |
+  *]
+}

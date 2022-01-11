@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride TransformDataFromSetObject (const LibDEF_SetObject setObject_i)
+{
+  TextBody:
+  [*
+    schedule := this.DataTransformationDefinition().astype( DataTransformationDefinition ).Schedule();
+    
+    // 1) Cast the object as the type of data to be transformed
+    dataInstance := setObject_i.astype( LibDEC_MP_Plan );
+    
+    mpsPlanID := dataInstance.MP_PlanID();
+    mpsPlan := ImportedMPSPlan::FindImportedMPSPlan( mpsPlanID );
+    
+    if( isnull( mpsPlan ) )
+    {
+      mpsPlan := ImportedMPSPlan::Create( schedule, mpsPlanID );
+    }
+    
+    mpsPlan.Update( dataInstance );
+    
+    traverse( dataInstance, MP_PlannedOrder, plannedOrder )
+    {
+      orderMPSPlanID := plannedOrder.MP_PlanID();
+      routingID := plannedOrder.RoutingID();
+      dueDate := plannedOrder.DueDate();
+      
+      mpsPlannedOrder := ImportedMPSPlannedOrder::FindImportedMPSPlannedOrder( orderMPSPlanID, routingID, dueDate );
+       
+      if( isnull( mpsPlannedOrder ) )
+      {
+        mpsPlannedOrder := ImportedMPSPlannedOrder::Create( schedule, orderMPSPlanID, routingID, dueDate );
+      }
+      
+      mpsPlannedOrder.Update( plannedOrder );
+    }
+  *]
+}

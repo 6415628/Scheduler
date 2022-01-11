@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedScheduling (Resource_SC resource, structured[CampaignTask] campaigntasks, Boolean skipsoftcheck, 
+  Boolean ctrlshiftkey, CampaignTask beforecampaigntask, CampaignTask aftercampaigntask, 
+  String identifier, output String feedback_o, output Boolean isallowedhard_o) as Boolean id:Method_ApplicationScheduler_AllowedScheduling_432
+{
+  #keys: '[139424.2.555823364]'
+  Body:
+  [*
+    // Precondition for dragging and dropping CampaignTasks onto CampaignTask
+    value := CampaignTask::CanReplan( campaigntasks, feedback_o );
+    
+    if( value )
+    {
+      campaignTasksToReplan := selectset( campaigntasks, Elements, campaigntask, campaigntask.CanReplan() );
+      tasks := selectset( campaignTasksToReplan, Elements.OperationCampaign.Task_SC, t, true );
+      
+      value := ApplicationScheduler.AllowedScheduling( resource,
+                                                       tasks,
+                                                       skipsoftcheck,
+                                                       ctrlshiftkey,
+                                                       beforecampaigntask,
+                                                       aftercampaigntask,
+                                                       identifier,
+                                                       feedback_o,
+                                                       isallowedhard_o );
+    }
+    
+    return value;
+  *]
+}

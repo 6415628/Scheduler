@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ExtendSpanUpstream (output owning LibOpt_ScopeElementOnRuns span, LibOpt_Scope scope) as Boolean
+{
+  Description:
+  [*
+    Extends the given span by the following rule:
+    If operation o is in scope and o_up is one of its latest planned upstream operations and o_up is not in scope, then o_up is in the span (“spanning upstream”).
+    Returns whether the span has been extended.
+    This rule is span-agnostic: given a scope, it always adds the same elements to the span.
+  *]
+  TextBody:
+  [*
+    // mbr23 Jan-10-2020 (created)
+    scope_operations := scope.OperationsExSpan();
+    has_changed := false;
+    traverse( scope_operations, Elements, o )
+    {
+      new_upstream := o.GetLatestPlannedUpstreamOperations().Difference( scope_operations );
+      traverse( new_upstream, Elements, new_op )
+      {
+        scopeelement := new_op.GetOrCreateScopeElement();
+        seor := scopeelement.OnRunOrCreate( scope.Run() );
+        if( span.Find( seor ) < 0 )
+        {
+          // not yet in the span. add it:
+          span.Add( seor );
+          has_changed := true;
+        }
+      }
+    }
+    
+    return has_changed;
+  *]
+}

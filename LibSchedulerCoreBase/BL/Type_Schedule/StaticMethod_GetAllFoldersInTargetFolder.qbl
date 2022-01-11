@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetAllFoldersInTargetFolder (String targetfolder) const as String
+{
+  TextBody:
+  [*
+    // Get all folders that does not end with _DELETED
+    folderitems := OS::ScanDirectory( targetfolder, ".*(?<!_DELETED)$" );
+    datasetlist := construct( Strings );
+    
+    // Check if directory is valid and if it is empty
+    traverse( folderitems, Elements, s, OS::IsDirectory( s ) )
+    {
+      //get folder name only
+      strings := s.Tokenize( '/' ); //split by slash
+      foldername := strings.Element( strings.Size() - 1 ); //last item would be the folder name
+      datasetlist.Add( foldername );
+    }
+    
+    datasets := datasetlist.Concatenate( ';' );
+    
+    return datasets;
+  *]
+}

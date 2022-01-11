@@ -1,0 +1,75 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride PopulateGraphWithEdges (NeighborhoodCreatorDistanceMetric_GraphProgramNeighborhoodCreatorDistanceMetricGraph graph, GraphProgramEdgeValueSet edgeweights)
+{
+  TextBody:
+  [*
+    // symmetric edges from one time interval to the next: (weight: this.Weight() * this.WeightPerHour() * delta_t)
+    traverse( graph.ResourceTimeIntervalNodes(), Elements, tinode1 )
+    {
+      task1 := tinode1.RepresentativeTask( this );
+      task2 := task1.Next();
+      if( not isnull( task2 ) )
+      {
+        tinode2 := graph.ResourceTimeIntervalNodes().Find( task2 );
+        if( not isnull( tinode2 ) )
+        {
+          delta_time := ( ( task2.Start() - task1.Start() ) + ( task2.End() - task1.End() ) ) / 2; // arithmetic mean between start and end differences
+          delta_hours := delta_time.HoursAsReal();
+          weight := this.Weight() * this.WeightPerHour() * delta_hours;
+          MetricGraphOwnedByCompound::CreateOrUpdateEdgeSymmetric( graph, edgeweights, tinode1, tinode2, weight );
+        }
+      }
+    }
+    
+    // 0-weight edges from time intervals to the operations planned on that resource:
+    traverse( graph.ResourceTimeIntervalNodes(), Elements, tinode )
+    {
+      task := tinode.RepresentativeTask( this );
+      traverse( task, OperationInTask.ScopeElementOperation, operation )
+      {
+        opnode := graph.OperationNodes().Find( operation );
+        if( not isnull( opnode ) )
+        {
+          weight := 0.0;
+          MetricGraphOwnedByCompound::CreateOrUpdateEdgeIgnoreDirection( graph, edgeweights, tinode, opnode, weight );
+        }
+      }
+    }
+    
+    // edges from planned operations to the time intervals of their allowed resources that overlap with the planned operation (weight: this.Weight() ):
+    // If there is no such overlapping time interval, creates an edge to the time interval closest to the operation.
+    traverse( graph.OperationNodes(), Elements, opnode1, opnode1.Operation( this ).Operation_SC().IsPlanned() )
+    {
+      operation := opnode1.Operation( this ).Operation_SC();
+      task := operation.Task_SC();
+      traverse( operation,
+                AllowedOperationOnResourceHard.Resource_SC,
+                alternative_resource,
+                alternative_resource <> task.Resource_SC() ) // don't link it to its own resource.
+      {
+        // find the tasks on the alternative resource that overlap in time with operation's task:
+        // (attention: possibly quadratic runtime!)
+        overlapping_tasks := selectset( alternative_resource,
+                                        Task_SC,
+                                        other_task,
+                                        other_task.Start() < task.End() and task.Start() < other_task.End() );
+        if( overlapping_tasks.Size() = 0 )
+        {
+          // there is no overlapping task on the alternative resource. Pick the closest task instead:
+          closest_task := minselect( alternative_resource, Task_SC, other_task, true, other_task.GetTimeBetween( task ) );
+          overlapping_tasks.Add( closest_task );
+        }
+        traverse( overlapping_tasks, Elements, other_task )
+        {
+          tinode := graph.ResourceTimeIntervalNodes().Find( other_task );
+          if( not isnull( tinode ) )
+          {
+            this.CreateOrUpdateEdgeIgnoreDirection( graph, edgeweights, opnode1, tinode );
+          }
+        }
+        
+      }
+    }
+  *]
+}

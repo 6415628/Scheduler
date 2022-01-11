@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method RemoveAndCleanupFolder
+{
+  Description: 'Remove demo scenario folder and cleanup respective folder.'
+  TextBody:
+  [*
+    deletedDemoScenarioFolderName := Constants::DemoScenarioFolderPath( this.DemoCategory().Name(), this.Name() + Constants::DemoDeletedPrefix() );
+    demoScenarioFolder := Constants::DemoScenarioFolderPath( this.DemoCategory().Name(), this.Name() );
+    
+    // Check if the directory exist
+    files := OS::SimpleScanDirectory( demoScenarioFolder, '*' );
+    traverse( files, Elements, file )
+    {
+      OS::RemoveFile( file );
+    }
+    
+    OS::RenameFile( demoScenarioFolder, deletedDemoScenarioFolderName );
+    
+    // Reset the selected demo category and scenario. Called when a demo category or a demo scenario is deleted.
+    this.DemoCategory().DemoManager().ResetSelectedDemoCategoryAndScenario();
+    
+    this.Remove();
+  *]
+}

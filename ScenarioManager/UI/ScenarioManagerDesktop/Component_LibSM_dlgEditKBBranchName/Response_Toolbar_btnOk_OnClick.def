@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: Toolbar/btnOk
+Response OnClick () id:Response_Toolbar_btnOk_OnClick
+{
+  #keys: '[104128.0.168168636]'
+  Body:
+  [*
+    /* This dialog has been used for two purpose, which are Edit branch name and Create new branch.
+       vhIsCheckBranchNameNeeded is used to indicate whether checking for branch name existence are required or not.
+       It will only shown as TRUE when this dialog are used to create New Branch.
+    */
+    if( vhIsCheckBranchNameNeeded.Enabled() )
+    {
+      feedback_o := Dialog.ValidateKnowledgeBaseBranch();
+    
+      if( feedback_o <> '' )
+      {
+        message := feedback_o;
+        MessageBox::Error( this, message, '&OK' );
+      }
+      else
+      {
+        Dialog.ApplyChanges();
+        Dialog.EndModal( 1 );
+      }
+    }
+    else
+    {
+      Dialog.ApplyChanges();
+      Dialog.EndModal( 1 );
+    }
+  *]
+  DefinitionID: 'Responsedef_GUIButtonBase_OnClick'
+  Precondition:
+  [*
+    // Precondition to check the editor for branch name is empty or not
+    return Dialog.CreateAllowed( feedback );
+  *]
+}

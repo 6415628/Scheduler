@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedIntegrationConfiguration (CDIntegration cdintegration)
+{
+  Description: 'Restore imported integration configuration core data to staging object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    // Restore ImportedIntegrationConfiguration
+    traverse( cdintegration, CDEntity.astype( CDImportedIntegrationConfiguration ), cdic )
+    {
+      importedIntegrationConfiguration := schedule.ImportedIntegrationConfiguration( relnew, ID := cdic.ID() );
+      CopyCorresponding::CopyFrom( cdic ).CopyTo( importedIntegrationConfiguration );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanAfter (Task_SC aftertask, Operation_SCs scope_operations) as Task_SC
+{
+  TextBody:
+  [*
+    // zyi1 Jul-26-2021 (created)
+    op := this.FirstOperation();
+    res := this.GetResource(); 
+    while( not isnull( res ) 
+           and not isnull( op ) )
+    {
+      // Only replan operations that are in scope
+      if( exists( scope_operations, Elements, scope_op, scope_op = op.Operation_SC() ) )
+      {
+        res.PlanAfter( op.Operation_SC(), aftertask );
+        aftertask := op.Operation_SC().SingleTaskBase();
+      }
+      op := op.NextOperation();
+    }
+    
+    //late need to add tasks of operations into leg
+    Transaction::Transaction().Propagate( relation( Operation_SC, Task_SC ) );
+    
+    this.SynchronizeActiveLegPhaseProgram();
+    
+    return aftertask;  //return the task of the last operation in leg
+  *]
+}

@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method EditProgramChange (internal[GUIComponent] parent, ProgramChange selection) id:Method_DialogCreateEditProgramChange_EditProgramChange
+{
+  #keys: '[143388.0.1767237212]'
+  Body:
+  [*
+    // Edit Program Change
+    data := shadow( selection );         
+    
+    Dialog.Data( data );
+    
+    // Set resource and aftertask data holder
+    owner := selection.Resource_SC();
+    aftertask := guard( selection.ProgramChangeTask().Previous(), null( Task_SC ) );
+    DataHolderResource.Data( selection.ProgramChangeTask().Resource_SC() );
+    DataHolderAfterTask.Data( aftertask );
+    
+    // Update program definition data holder to generate shadow data ProgramTypeChangeConfiguration
+    Dialog.UpdateDataHolderProgramDefinitionShadow( owner, aftertask );
+    
+    // Update selected program configuration data holder
+    selectedprogramtypechange := selectset( selection, ProgramChangeInType.ToProgramTypeConfiguration, pt, true );
+    DataHolderSelectedProgramTypeConfigurations.Data( &selectedprogramtypechange );
+    
+    // Update dialog title
+    Dialog.Title( Translations::ProgramChange_Edit() );
+    
+    // Show dialog
+    if( Dialog.DoModal( parent ) > 0 )
+    {
+      selection.Update( DataHolderSelectedProgramTypeConfigurations.Data(),
+                        CheckBoxHasProgramChangeDurationUser.Checked(),
+                        GUIDurationSelectorProgramChangeDuration.Duration() );
+    }
+  *]
+}

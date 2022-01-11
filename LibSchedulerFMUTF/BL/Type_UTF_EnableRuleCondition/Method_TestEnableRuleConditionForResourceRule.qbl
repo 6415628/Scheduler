@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestEnableRuleConditionForResourceRule (Schedule schedule)
+{
+  Description: 'Test rule with enabled rule condition'
+  TextBody:
+  [*
+    // Get variant attribute
+    conditionType := '';
+    conditionValue := false;
+    operationAttributeValue := false;
+    hasNoViolateConstraintsOnTask := false;
+    isVariantFound := false;
+    
+    this.GetResourceTestVariant( isVariantFound,
+                                conditionType,
+                                conditionValue,
+                                operationAttributeValue,
+                                hasNoViolateConstraintsOnTask );
+    
+    isValid := true;
+    
+    if( isVariantFound )
+    {
+      task := select( schedule, Operation_SC.Task_SC, task, true );
+      
+      // Propoagete constraint isAllLowPriorityRulesOK and isAllHighPriorityRulesOK
+      Transaction::Transaction().Propagate( constraint( Task_SC, IsAllLowPriorityRulesOK ) );
+      Transaction::Transaction().Propagate( constraint( Task_SC, IsAllHighPriorityRulesOK ) );
+      
+      value := task.IsAllLowPriorityRulesOK() and task.IsAllHighPriorityRulesOK();
+               
+      isValid := hasNoViolateConstraintsOnTask = value; 
+    }
+    
+    this.Run().AssertTrue( isValid );
+  *]
+}

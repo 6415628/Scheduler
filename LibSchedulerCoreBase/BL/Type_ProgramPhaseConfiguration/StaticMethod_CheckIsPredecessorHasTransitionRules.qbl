@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsPredecessorHasTransitionRules (ProgramPhaseConfigurations toberemovedphases) declarative remote as Boolean
+{
+  Description: 'Check whether the predecessor of the selected program phases has transition rules'
+  TextBody:
+  [*
+    // Check whether the predecessor of the selected program phases has transition rules or not
+    existingphases := selectset( toberemovedphases, Elements.ProgramTypeConfiguration.ProgramPhaseConfiguration, phase,
+                                 true );
+    remainingphases := existingphases.Difference( toberemovedphases );
+    
+    value := false;
+    
+    traverse( remainingphases, Elements.ProgramTypeConfiguration, type, not value )
+    {
+      // Get the last phase of program type ( excluded those to be removed phases )
+      lastphase := maxselect( remainingphases, Elements, phase, 
+                              phase.ProgramTypeConfiguration() = type, 
+                              phase.SequenceNr() );
+                              
+      // Checks whether last phase has transition rule or not
+      value := exists( lastphase, RuleScopeInProgramPhase.Rule, rule,
+                       rule.IsProgramPhaseTransitionRule() ); 
+    }
+                     
+    return value;
+  *]
+}

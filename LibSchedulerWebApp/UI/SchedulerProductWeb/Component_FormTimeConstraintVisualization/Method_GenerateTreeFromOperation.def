@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenerateTreeFromOperation () id:Method_FormTimeConstraintVisualization_GenerateTreeFromOperation
+{
+  #keys: '[132894.0.847789972]'
+  Body:
+  [*
+    // Create custom draw nodes from selected operation
+    // Selected operation can be from multiple different forms
+    // This is the entry point of nodes generation and drawing
+    selectedOperation := DataHolderDisplayOperation.Data();
+    
+    if( not isnull( selectedOperation ) )
+    {
+      // First insert CustomDrawConfiguration into the dataholder
+      DataHolderCustomDrawConfiguration.Data( shadow( Schedule.CustomDrawConfiguration() ) );
+      config := DataHolderCustomDrawConfiguration.Data();
+      
+      if( not isnull( config ) )
+      {
+        // rootNode represents the current operation we are selecting
+        rootNode := this.GetCustomDrawNode( selectedOperation, false, 0 );
+        rootNode.IsRoot( true );
+        
+        // Start generating UPSTREAM nodes
+        rootNode.IsDepthLimitMet( false );
+        this.GenerateNodes( rootNode, config.UpstreamDepthLimit(), true );
+        
+        // Start generating DOWNSTREAM nodes, RESET depth limit
+        rootNode.IsDepthLimitMet( false );
+        this.GenerateNodes( rootNode, config.DownstreamDepthLimit(), false );
+        
+        // Determine the X position of the root node
+        rootNode.X( config.BorderOffsetX() + config.UpstreamDepth() * config.OffsetX() );
+        this.PopulateXPosition( rootNode );
+        this.PopulateDisplaySequence( true, rootNode ); // upstream
+        config.DisplaySequence( 0 );
+        this.PopulateDisplaySequence( false, rootNode ); // downstream
+        this.PopulateYPosition( true ); // upstream
+        this.PopulateYPosition( false ); // downstream
+        this.AdjustTrees();
+        this.PopulateEdgePositions();
+        
+        config.Width( max( config, CustomDrawNode, node, node.X() ) + config.BorderOffsetX() );
+        config.Height( max( config, CustomDrawNode, node, node.Y() ) + config.BorderOffsetY() );
+      }
+    }
+  *]
+}

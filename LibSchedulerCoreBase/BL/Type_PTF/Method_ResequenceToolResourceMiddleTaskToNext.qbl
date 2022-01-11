@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method ResequenceToolResourceMiddleTaskToNext (Number nrofloop)
+{
+  Description: 'Resequence task at the middle of schedule'
+  TextBody:
+  [*
+    // soon hwee Jan-16-2015 (created)
+    
+    // Get the first resource of tool required resource group
+    firsttoolresource := this.GetFirstToolRequiredResource();
+    
+    if( not isnull( firsttoolresource ) )
+    {
+      // Get middle task position
+      fromtaskseq := ceil( firsttoolresource.Task_SC( relsize ) / 2 ) - 1;
+    
+      selectedtask := select( firsttoolresource, Task_SC, task,
+                              true,
+                              task.SequenceNr() = fromtaskseq );
+    
+      if( not isnull( selectedtask ) )
+      {
+        selectedtasks := construct( Task_SCs );
+        selectedtasks.Add( selectedtask );
+    
+        // The to sequence number to be plan after will be calculated based on the passed in number of loop.
+        totaskseq := fromtaskseq + nrofloop;
+    
+        aftertask := select( firsttoolresource, Task_SC, task,
+                             true,
+                             task.SequenceNr() = totaskseq );
+    
+        firsttoolresource.PlanAfter( selectedtasks, aftertask );
+      }
+    }
+  *]
+}

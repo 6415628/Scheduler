@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: ListLibOpt_SnapshotReplannable
+Response OnClick (LibOpt_SnapshotReplannableCopyDataset selection) id:Response_ListLibOpt_SnapshotReplannable_MenuLoadDatasetNewClient_OnClick
+{
+  #keys: '[141860.2.521906086]'
+  Body:
+  [*
+    // Load the dataset that is attached to the replannable snapshot in a new client!
+    infos := ExternalMDSEditor::Editor().ObjectInfos();
+    datasetinfo := infos.Find( selection.DatasetName() );
+    if( not isnull( datasetinfo ) )
+    {
+      // This method is only intended to be used for development
+      LibOpt_GlobalState.OpenNewClientWithDatasetLoaded( datasetinfo );
+      selection.IsDatasetLoaded( true );
+    }
+    else
+    {
+      // The dataset that is attached to the replannable snapshot is already deleted. 
+      // The below method will update all LibOpt_SnapshotReplannableCopyDataset snapshots to prevent further mismatches and show a warning to explain this to the AE. 
+      LibOpt_GlobalState.LoadDatasetSnapshotReplannableAlreadyDeleted( selection );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => /ListLibOpt_SnapshotReplannable/Responsedef_ListLibOpt_SnapshotReplannable_Menu_OnClick
+  Initiator: 'MenuLoadDatasetNewClient'
+  Precondition:
+  [*
+    return LibOpt_GlobalState.LoadDatasetSnapshotReplannableAllowed( selection, true );
+  *]
+}

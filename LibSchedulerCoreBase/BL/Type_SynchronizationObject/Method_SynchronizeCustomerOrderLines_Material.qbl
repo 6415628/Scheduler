@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeCustomerOrderLines_Material
+{
+  Description: 'Synchronizes characteristic based customer order lines that come from external sources.'
+  TextBody:
+  [*
+    // WOI1 Aug-29-2016 (created)
+    allinstances := selectset( this.Schedule(), Demand.astype( MaterialCustomerOrderLine ), mcol, true );
+    updatedinstances := construct( MaterialCustomerOrderLines );
+    
+    // traverses imported customer order lines that have no product ids
+    traverse( this.Schedule(), ImportedCustomerOrderLine_SC, row, row.IsValidDataHard() and not row.IsProduct() )
+    {
+      demandid := MaterialCustomerOrderLine::GetDemandID( row.OrderNr(), row.OrderLineNr() );
+      mcol := MaterialCustomerOrderLine::FindMaterialCustomerOrderLine( DemandType::MaterialCustomerOrderLine(), demandid );
+      
+      if( isnull( mcol ) )
+      {
+        mcol := this.Schedule().CreateDemand( DemandType::MaterialCustomerOrderLine(), demandid ).astype( MaterialCustomerOrderLine );
+      }
+      
+      mcol.Update( row );
+      updatedinstances.Add( mcol );
+    }
+    
+    //Delete material customer order lines if they do not exist in KT
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, oldmcol, oldmcol.CheckCanBeDeleted() )
+    {
+      oldmcol.Remove();
+    }
+  *]
+}

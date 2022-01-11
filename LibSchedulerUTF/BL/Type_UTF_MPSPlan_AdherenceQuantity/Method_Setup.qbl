@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    super.Setup( schedule );
+    
+    Transaction::Transaction().Propagate( relation( MPSPlannedOrder, Routing ) ); // Need this relation propagated to create firm planned orders
+    Transaction::Transaction().Propagate( attribute( MPSPlannedOrder, QuantityOpen ) ); // Need updated open quantity to create firm planned orders
+    
+    // Only create firm planned order for the earliest MPS planned order
+    earliestMPSPlannedOrder := minselect( schedule, MPSPlan.MPSPlannedOrder, mpsPlannedOrder, true, mpsPlannedOrder.DueDate() );
+    earliestMPSPlannedOrder.CreateFirmPlannedOrder();
+    
+    // Partial propagate this declarative relation to determine that firm planned orders were indeed created for this MPS planned order
+    Transaction::Transaction().Propagate( relation( MPSPlannedOrder, WorkOrder ) );
+    
+    testInstance := this.GetTestInstance( this.Variant() );
+    
+    if( testInstance.IsPlanned() )
+    {
+      this.CreateAndPlanAnOperation( schedule );
+      
+      // Simulate later planning by moving schedule time
+      if( testInstance.IsPlannedLater() )
+      {
+        schedule.SynchronizeTime( schedule.Time() + Duration::Days( 1 ) );
+      }
+    }
+  *]
+}

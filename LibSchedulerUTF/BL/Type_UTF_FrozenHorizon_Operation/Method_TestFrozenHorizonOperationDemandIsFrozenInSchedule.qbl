@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestFrozenHorizonOperationDemandIsFrozenInSchedule (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    
+    testinstance := this.GetTestInstanceMain( variant );
+    
+    // Checks if all demands are frozen when their operations are frozen
+    isAllDemandsFrozen := forall( schedule, PlanUnit_SC.Operation_SC.PlannedDemand, demand, 
+                                  guard( demand.Operation_SC().PlanUnitId() = testinstance.TestInstanceID(), false ),
+                                  guard( demand.IsFrozenInSchedule() = demand.Operation_SC().IsFrozenInSchedule(), false ) );
+    
+    // Assert the result
+    this.Run().AssertTrue( isAllDemandsFrozen, UTFUtility::GenerateFailedMessage( 'FrozenHorizon_OperationDemand_IsFrozenInSchedule', variant ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

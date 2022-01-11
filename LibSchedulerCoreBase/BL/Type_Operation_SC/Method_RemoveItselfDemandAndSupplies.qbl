@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method RemoveItselfDemandAndSupplies
+{
+  TextBody:
+  [*
+    // WOI1 Aug-11-2016 (created)
+    traverse( this, PlannedDemand, planneddemand )
+    {
+      planneddemand.Remove();
+    }
+    
+    traverse( this, PlannedSupply, plannedsupply )
+    {
+      plannedsupply.Remove();
+    }
+    
+    // Delete output operation material if it is the final operation material
+    traverse( this, ToOperationDependency, outputom, isnull( outputom.ToOperation() ) )
+    {
+      outputom.Delete();
+    }
+    
+    // Delete input operation material if it is the first operation material
+    traverse( this, FromOperationDependency, inputom, isnull( inputom.FromOperation() ) )
+    {
+      inputom.Delete();
+    }
+    
+    this.Delete();
+  *]
+}

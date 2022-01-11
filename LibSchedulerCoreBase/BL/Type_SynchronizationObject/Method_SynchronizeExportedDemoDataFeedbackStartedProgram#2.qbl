@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExportedDemoDataFeedbackStartedProgram
+{
+  Description: 'Synchronize exported demo data for feedback started program'
+  TextBody:
+  [*
+    allInstances := selectset( this, Schedule.FeedbackManager.ExportedSchedule.ExportedDemoDataFeedbackStartedProgram, 
+                               exporteddemodatafeedbackstartedprogram, true );
+    updatedInstances := construct( ExportedDemoDataFeedbackStartedPrograms );
+    
+    // Create demo data feedback task based on FeedbackProgramType
+    traverse( this, Schedule.ProgramChange.FeedbackProgramType, feedbackprogramtype )
+    {
+      externalstoppagetaskid := feedbackprogramtype.ProgramChange().ProgramChangeID();
+      exporteddemodatafeedbackstartedprogram := ExportedDemoDataFeedbackStartedProgram::FindExportedDemoDataFeedbackStartedProgramTypeIndex( externalstoppagetaskid,
+                                                                                                                                             feedbackprogramtype.ExternalProgramID() );
+      if( isnull( exporteddemodatafeedbackstartedprogram ) )
+      {
+        exporteddemodatafeedbackstartedprogram := ExportedDemoDataFeedbackStartedProgram::Create( this.Schedule().FeedbackManager().ExportedSchedule(),
+                                                                                                  externalstoppagetaskid,
+                                                                                                  feedbackprogramtype.ExternalProgramID() );
+      }
+      
+      updatedInstances.Add( exporteddemodatafeedbackstartedprogram );
+    }
+    
+    oldInstances := allInstances.Difference( updatedInstances );
+    
+    traverse( oldInstances, Elements, old )
+    {
+      old.Remove();
+    }
+  *]
+}

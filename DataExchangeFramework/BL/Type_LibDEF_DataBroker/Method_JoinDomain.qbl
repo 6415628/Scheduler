@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method JoinDomain
+{
+  Description: 'Join a new Domain.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-28-2016 (created)
+    // Refresh values from model settings
+    SettingsEngine::SettingsEngine().ProcessUpdates();
+    
+    bootNodeHost := LibDEF_Util::GetSettingValueBootNodeHostName();
+    bootNodePort := LibDEF_Util::GetSettingValueBootNodePortNumber();
+    
+    event := this.EventCreate( bootNodeHost, bootNodePort, false );
+    LibDEF_Util::EventLog( event, "Joining Domain" );
+    
+    // must have Domain-GUID
+    if( LibDEF_Util::GetSettingValueDomainGUID() <> "" )
+    {
+      this.UpdateFromModelSettings( true, event );
+    }
+    else
+    {
+      LibDEF_Util::EventLogError( event,
+                                  "Failed to join Domain",
+                                  "Cannot join Domain, the Domain-GUID value is empty. Check the model settings." );
+    }
+  *]
+}

@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride DeleteCondition (LibOpt_Task task) as Boolean
+{
+  Description:
+  [*
+    If the difference between the pre handle result Rollback KPI and the post handle result Rollback KPI of this component (or the next component that uses SnapshotKPIs) is within the `[lowerbound, upperbound]` range, then the dataset copy that belongs to `this` is deleted.
+    The difference is calculated as: `rollbackKPIdiff := KPIposthandleresult - KPIprehandleresult`. The `rollbackKPIdiff` is negative if the Rollback KPI decreased this iteration. Note that a negative value corresponds to an improvement if we are minimizing the Rollback KPI.
+    Note: by default, this method will also return `true` when a KPI snapshot cannot be found on this component or on any descendant component of this component.
+    Example: 
+    An AE is developing an optimizer that is minimizing the Rollback KPI. The AE wants to analyze a dataset when the Rollback KPI increases by 25 points or more. He therefore uses the following setup:
+    `lowerbound := Real::MinReal()`; `upperbound := 25`.
+    In some iteration, the AE finds the following: `KPIprehandleresult := 150`; `KPIposthandleresult = 200`.
+    Therefore, `rollbackKPIdiff := 50`, which means that the Rollback KPI got worse by 50 points. `rollbackKPIdiff` is not within the [lowerbound, upperbound] range, so the dataset copy is not deleted.
+  *]
+  TextBody:
+  [*
+    // This method is extendable!
+    
+    KPIindex := 0; // The index of the rollback KPI that you are interested in.
+    // If the change in the rollback KPI is between lowerbound and upperbound, then this method will return true and the dataset will be be deleted. 
+    lowerbound := Real::MinReal();
+    upperbound := Real::MaxReal();
+    // Decide on what to do if no post handle result RollbackKPI snapshot exists on this component or on any downstream components (this can happen when an error occurs). By default, the dataset is not deleted. 
+    hastodeletedataset := false; 
+    
+    // The GetRollbackKPIDiff will return a null Realvector when a KPI snapshot cannot be found on this component or on any downstream component of this component.
+    rollbackKPIdiff := LibOpt_DatasetCopyOnChangeRollbackKPI::GetRollbackKPIDiff( task, this );
+    if( not isnull( rollbackKPIdiff ) )
+    {
+      hastodeletedataset := rollbackKPIdiff.Get( KPIindex ) >= lowerbound 
+                            and rollbackKPIdiff.Get( KPIindex ) <= upperbound;
+    }
+    
+    return hastodeletedataset;
+  *]
+}

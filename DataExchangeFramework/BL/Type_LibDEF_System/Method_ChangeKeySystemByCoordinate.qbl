@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method ChangeKeySystemByCoordinate (String hostName_i, Number portNumber_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Update primary key combination host name and port number.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-25-2016 (created)
+    // parse host-name first
+    correctedHostName := LibDEF_Util::ConvertLocalhost( hostName_i );
+    
+    // raise error if not unique
+    duplicatedCoordinate := LibDEF_System::FindSystemByCoordinate( this.DataBroker(), correctedHostName, portNumber_i, this );
+    
+    if( not isnull( duplicatedCoordinate ) )
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  "Failed to update System's coordinate",
+                                  "LibDEF_System::ChangeKeySystemByCoordinate fails due to duplicated entry of LibDEF_System " +
+                                  duplicatedCoordinate.GetInstanceKeyCoordinateAsString() );
+    }
+    
+    this.HostName  ( correctedHostName );
+    this.PortNumber( portNumber_i );
+  *]
+}

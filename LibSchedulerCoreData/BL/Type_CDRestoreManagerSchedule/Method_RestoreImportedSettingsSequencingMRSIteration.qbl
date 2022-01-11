@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedSettingsSequencingMRSIteration (CDIntegration cdintegration, ImportedSettingsSequencing importedsettingssequencing)
+{
+  Description: 'Restore imported settings sequencing MRS iteration core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedSettingsSequencingMRSIteration
+    cdimportedSettingsSequencingMRSIterations := selectset( cdintegration, CDEntity.astype( CDImportedSettingsSequencingMRSIteration ), cdismrsi, 
+                                                            cdismrsi.SettingsId() = importedsettingssequencing.Id() 
+                                                          );
+    traverse( cdimportedSettingsSequencingMRSIterations, Elements, cdismrsi )
+    {
+      importedSettingsSequencingMRSIteration := importedsettingssequencing.ImportedSettingsSequencingMRSIteration( relnew,
+                                                                                                                   SettingsId := cdismrsi.SettingsId()
+                                                                                                                 );
+      CopyCorresponding::CopyFrom( cdismrsi ).CopyTo( importedSettingsSequencingMRSIteration );   
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

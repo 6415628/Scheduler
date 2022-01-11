@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test002_CopyFile
+{
+  Description: 'Copy dataset file from drive to DSS folder.'
+  TextBody:
+  [*
+    row := this.GetTestUnitRow( this.Variant() );
+    
+    // Construct folder path
+    datafolder := FileSystems::QFSPathToHardwarePath( DomainModel::GetDataDirectory().Path() );
+    foldername := row.FolderPath();
+    folderpath := datafolder.Concat( "/" ).Concat( foldername );
+    
+    // Restore all datasets in this folder
+    MDSStorageEditor::Editor().RestoreDBExportFile( folderpath, Constants::QDB() );
+    
+    // Unlock and load the dataset
+    datasetkind := typeof( Schedule ).Name();
+    datasetname := row.DatasetName();
+    dataset := MDSEditor::Editor().ObjectInfo( datasetkind, // mdskind
+                                               "/root", // path
+                                               datasetname ); // dataset name
+    
+    if( not isnull( dataset ) )
+    {
+      MDSEditor::Editor().UnlockMDSOfFailoverPartners();
+      MDSEditor::Editor().LoadMDS( dataset.MDSID() );
+    }
+    else
+    {
+      message := "The dataset is not found for Variant '" + this.Variant() + "' with expected dataset '" + datasetname + "'.";
+      this.Run().RegisterFailure( message );
+    }
+  *]
+}

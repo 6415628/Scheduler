@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanAfter (BatchTasks batchtasks, BatchTask element)
+{
+  Description: 'Move all selected batchtasks after the batchtask'
+  TextBody:
+  [*
+    operations := selectset( batchtasks, Elements.Batch.BatchSequenceElement.Operation_SC, op, true );
+    Operation_SC::SetIsPlanning( operations, true );
+    task := element;
+    
+    batchtasks.Sort( attribute( BatchTask, Start ), true );
+    
+    traverse( batchtasks, Elements, batchtask )
+    {
+      if( this.IsPlanRelatedOperations() )
+      {
+        ops := selectset( batchtask, Batch.BatchSequenceElement.Operation_SC, op, true );
+        traverse( ops, Elements, op )
+        {
+          Schedule::PlanRelatedOperationsAfter( op, this, element, false, false );
+        }
+      }
+      task := this.PlanAfter( batchtask.Batch(), task );
+    }
+    
+    this.Schedule().AutomaticProductBasedMaterialReservationBySorting();
+    Operation_SC::SetIsPlanning( operations, false );
+  *]
+}

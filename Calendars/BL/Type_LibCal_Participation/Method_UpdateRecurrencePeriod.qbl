@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateRecurrencePeriod (Boolean isRecurring_i, String periodType_i, Date startOfPeriod_i, 
+  Date endOfPeriod_i)
+{
+  TextBody:
+  [*
+    if( not isRecurring_i )
+    {
+      // Remove the RecurrencePeriod
+      this.RemoveRecurrencePeriod();
+    }
+    else
+    {
+      // First validate the recurrence period.
+      // If something is wrong the validation results in an error so that the actual update below will not be executed.
+      hasSpecificPeriod := guard( not this.astype( LibCal_Subscription ).UseLeadingPeriod(), true );
+      feedback := LibCal_Validate::Participation_RecurrencePeriod( this.ParticipationID(), isRecurring_i, this.IsLeading(), hasSpecificPeriod,
+                                                                   this.StartDate(), periodType_i, startOfPeriod_i, endOfPeriod_i, this.Event().GetEventInfo().Erase( 0, 8 ) );
+      // Process the feedback that has been registered by the validation (if any).
+      LibCal_Util::ProcessFeedbackObject( feedback );
+      
+      // The below is only executed when no validation errors were encountered.
+      // Set a RecurrencePeriod of the applicable type.
+      // WithoutEnd  
+      if( periodType_i = LibCal_RecurrencePeriod::TYPE_WITHOUTEND() )
+      {
+        this.SetPeriodWithoutEnd( startOfPeriod_i );
+      }
+      
+      // WithEndDate
+      else if( periodType_i = LibCal_RecurrencePeriod::TYPE_WITHENDDATE() )
+      {
+        this.SetPeriodWithEndDate( startOfPeriod_i, endOfPeriod_i );
+      }
+    }
+    
+    // Directly calculate IsRecurring.
+    // This is important when the current Participation is a LeadingParticipation
+    // to which a Subscription might be created in the same transaction.
+    // this.CalcIsRecurring(); is not good enough here, explicit propagation is required.
+    Transaction::Transaction().Propagate( attribute( LibCal_Participation, IsRecurring ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

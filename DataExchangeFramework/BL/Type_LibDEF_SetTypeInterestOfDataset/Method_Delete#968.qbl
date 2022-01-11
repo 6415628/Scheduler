@@ -1,0 +1,61 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Delete (Boolean isDatasetEvent_i)
+{
+  TextBody:
+  [*
+    setTypeMeta   := this.SetTypeMeta();
+    interestOwner := this.GetSystem();
+    
+    // SetType belongs to current System, there is no need to send a message to local System
+    if( interestOwner.IsLocalSystem() )
+    {
+      // if this is the only dataset interest for this SetType, then can also remove the system level interest
+      if( not setTypeMeta.HasOtherOnlineDatasetInterest( this.DatasetMDSID() ) )
+      {    
+        // Get current System's System-level SetTypeInterest    
+        setTypeInterestFromSystem := select( setTypeMeta, SetTypeInterestFromSystem, setTypeInterestFromSystem,
+                                             setTypeInterestFromSystem.SystemInterestedIn() = interestOwner );
+    
+        if( not isnull( setTypeInterestFromSystem ) )
+        { 
+          // Delete the SetInterest from System immediately  (as the 'approval' can be done locally) if there isn't dataset interest created manually in set level
+          // Because SetInterest created manually in Set level will not be deleted when we delete interest at SetType level
+          traverse( setTypeInterestFromSystem, SetInterestFromSystem, setInterestFromSystem, setInterestFromSystem.IsAllSetInterestOfDatasetCreatedFromSetTypeInterest() )
+          {
+            setInterestFromSystem.Delete(); 
+          }
+          
+          setTypeInterestFromSystem.Delete();
+        }    
+        else
+        {
+          LibDEF_Util::LogWarning( "SetTypeInterestFromSystem for System '" + interestOwner.GUID() + "' is not found." );
+        }
+      }
+    }
+    
+    else  // Set belongs to another System, we need to send a message to the other System.
+    { 
+      if( not setTypeMeta.HasOtherOnlineDatasetInterest( this.DatasetMDSID() ) )
+      { 
+        /// Send a 'SetTypeInterest-Deleted' message to the Set owner.
+        this.SetTypeMeta().System().SendMetadataRequestSetTypeInterestDeleted( this, isDatasetEvent_i );
+      }
+    }
+    
+    // Delete the SetTypeInterest, if applicable.
+    // When dataset is being unloaded, do not delete the dataset-level interest.
+    if( not isDatasetEvent_i )
+    {
+      // Delete the SetInterests of the dataset that weren't created manually from Set-level (as the 'approval' can be done locally).
+      traverse( this, SetInterestOfDataset, setInterestOfDataset, setInterestOfDataset.IsCreatedFromSetTypeInterest() )
+      {
+        setInterestOfDataset.Delete();        
+      }
+      
+      // Delete dataset-level SetTypeInterest.
+      this.Delete();    
+    }
+  *]
+}

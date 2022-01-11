@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: SCListCampaigns
+Response OnDrop (structured[CampaignTask] information, CampaignTask target, SingleResourceBase resource) id:Response_SCListCampaigns_OnDrop_3
+{
+  #keys: '[109706.1.2114919200]'
+  Body:
+  [*
+    // OnDrop structured[CampaignTask] --> CampaignTask on SingleResourceBase
+    target.Resource_SC().PlanBefore( information, target.OwningTask() );
+  *]
+  DefinitionID => /SCListCampaigns/Responsedef_SCListCampaigns_OnDrop
+  Precondition:
+  [*
+    isallowedhard := true;
+    beforecampaigntask := guard( target.PreviousCampaignTaskOfTypeOnResource(), null( CampaignTask ) );
+    ctrlkey       := dropaction.IsControl();
+    ctrlshiftkey     := dropaction.IsControlShift();
+    identifier := CampaignTask::GetSelectedObjects( information );
+    
+    return ApplicationScheduler.AllowedScheduling( resource,
+                                                   information,
+                                                   ctrlkey,
+                                                   ctrlshiftkey,
+                                                   beforecampaigntask,
+                                                   target,
+                                                   identifier,
+                                                   feedback,
+                                                   isallowedhard );
+  *]
+  UserRequiresReadWrite: true
+}

@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendMessage (String targetSystemGUID_i, String targetHostName_i, Number targetPortNumber_i, 
+  NamedValueTree nvt_i, String messageKind_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Send the message to the destination, add all the mandatory headers.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-25-2016 (created)
+    hasTargetSystemGUID := targetSystemGUID_i.Length() > 0;
+    
+    // restrict non-Configuration message requires a valid System entry
+    if( not hasTargetSystemGUID and
+        ( LibDEF_DataAccessor::HasChildNamed( nvt_i, nvt_i.Root(), LibDEF_DataAccessor::HANDLE_METADATA() ) or
+          LibDEF_DataAccessor::HasChildNamed( nvt_i, nvt_i.Root(), LibDEF_DataAccessor::HANDLE_DATA() ) ) )
+    {
+      // Fail-safe check when this method is triggered for the wrong kind of messages.
+      LibDEF_Util::EventLogError( event_i,
+                                  "Failed to send data",
+                                  "The GUID of the target-System is unknown. (Meta)data messages can only be sent when the GUID is known." );
+    }
+    
+    // add mandatory headers
+    LibDEF_DataAccessor::SetHeaderProperty( nvt_i, LibDEF_DataAccessor::HEADER_DOMAINGUID(),   this.DomainGUID() );
+    LibDEF_DataAccessor::SetHeaderProperty( nvt_i, LibDEF_DataAccessor::HEADER_MAJORVERSION(), LibDEF_DataAccessor::MAJORVERSION_VALUE() );
+    LibDEF_DataAccessor::SetHeaderProperty( nvt_i, LibDEF_DataAccessor::HEADER_MINORVERSION(), LibDEF_DataAccessor::MINORVERSION_VALUE() );
+    LibDEF_DataAccessor::SetHeaderProperty( nvt_i, LibDEF_DataAccessor::HEADER_MESSAGEID(),    LibDEF_Util::GenerateGUID() );
+    LibDEF_DataAccessor::SetHeaderProperty( nvt_i, LibDEF_DataAccessor::HEADER_KIND(),         messageKind_i );
+    
+    // add identification information
+    LibDEF_DataAccessor::SetHeaderProperty( nvt_i, LibDEF_DataAccessor::HEADER_SYSTEMGUID_FROM(), this.SystemGUID() );
+    
+    if( hasTargetSystemGUID )
+    {
+      LibDEF_DataAccessor::SetHeaderProperty( nvt_i, LibDEF_DataAccessor::HEADER_SYSTEMGUID_TO(), targetSystemGUID_i );
+    }
+    
+    if( not isnull( event_i ) )
+    {
+      eventActivityTitle := "Sending data to "
+                            + ifexpr( hasTargetSystemGUID, "'" + targetSystemGUID_i + "' at ", "" )
+                            + LibDEF_Util::FormatCoordinateToString( targetHostName_i, targetPortNumber_i );
+    
+      LibDEF_Util::EventLog( event_i, eventActivityTitle );
+    }
+    
+    this.SendMessageViaSOAP( targetSystemGUID_i, targetHostName_i, targetPortNumber_i,
+                             nvt_i, event_i );
+  *]
+}

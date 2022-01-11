@@ -1,0 +1,70 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportFromXML (String xmlstring, output String feedback_o) as Boolean
+{
+  Description: 'Import XML for resource views'
+  TextBody:
+  [*
+    // Import supply chain view from XML
+    result := true;
+    
+    if( xmlstring.Length() > 0 )
+    {
+      xmlview := null( ResourceView );
+      
+      try
+      {
+        xmlview := ResourceView::XMLImportResourceViewXML( xmlstring );
+      }
+      onerror
+      {
+        result := false;      
+      }
+      
+      if( not isnull( xmlview ) )
+      {
+        this.Update( xmlview.FontName(),
+                     xmlview.FontSize(),
+                     xmlview.GridHeight(),
+                     xmlview.GridPointDistance(),
+                     xmlview.GridWidth(),
+                     xmlview.IsGridVisible(),
+                     this.Name(),
+                     xmlview.OffsetX(),
+                     xmlview.OffsetY(),
+                     xmlview.RelativeResourceSize() )
+    
+        traverse( xmlview, ResourceNode, xmlnode )
+        {
+          resource := Resource_SC::FindResource_SC( xmlnode.ResourceID() );
+          node := select( this, ResourceNode, n, n.Name() = xmlnode.Name() );
+          
+          if( not isnull( resource ) )
+          {
+            if( isnull( node ) )
+            {
+              node := ResourceNode::Create( this, resource );
+            }
+    
+            node.Update( xmlnode.GridX(), xmlnode.GridY(), xmlnode.IsUserVisible(), xmlnode.NameDisplayBehavior(), xmlnode.TextColor() );
+                       
+            node.Resource_SC().Image( xmlnode.Image() );  
+          }
+        }
+        
+        xmlview.Delete();
+      }
+      else
+      {
+        result := false;
+      }
+    
+      if( not result )
+      {
+        feedback_o := Translations::SC_ResourceView_ImportFromXML_InvalidFile();
+      }
+    }
+    
+    return result;
+  *]
+}

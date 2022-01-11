@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcCumulativeLoadWidth
+{
+  Description: 'calculate cumulative load width'
+  TextBody:
+  [*
+    // jiex Nov-4-2016 (created)
+    
+    value := this.GetTaskWidth();
+    
+    if( not isnull( this.LastFeedbackTask() ) )
+    {
+      value := this.LastFeedbackTask().ExportedCumulativeLoadWidth();
+    }                                                                                            
+    else
+    {
+      if( not isnull( this.Previous() ) )
+      {
+        if( this.IsParallelWithPrevious() )
+        {
+         value := value + this.Previous().astype( ContinuousTask ).CumulativeLoadWidth() + this.Resource_SC().MinimumParallelLoadGap();
+        }    
+      }          
+      else if( this.IsParallelWithFeedback() )
+      {
+        lastfeedbacktask := this.Resource_SC().LastFeedbackTaskInSchedule();
+        
+        if( not isnull( lastfeedbacktask ) )
+        {
+          value := value + lastfeedbacktask.ExportedCumulativeLoadWidth() + this.Resource_SC().MinimumParallelLoadGap();
+        }
+      }
+    }
+    this.CumulativeLoadWidth( value );
+  *]
+}

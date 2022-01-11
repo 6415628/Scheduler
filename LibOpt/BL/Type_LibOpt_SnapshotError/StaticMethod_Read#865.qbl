@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Read (QuillError err) as owning LibOpt_Error
+{
+  Description: 'Convert  the`QuillError` into  a `LibOpt_Error`.'
+  TextBody:
+  [*
+    // Substring the message to find the correct messages.
+    result := construct( LibOpt_Error );
+    if( isnull( err ) )
+    {
+      result.Code( Transaction::RollbackErrorNr() );
+      result.GeneralInformation( Translations::LibOpt_Optimization_CapturedException() );
+    }
+    else
+    {
+      result.Code( err.ErrorNr() );
+      result.GeneralInformation( err.GeneralInformation() );
+      result.DetailedInformation( err.DetailedInformation() );
+      result.DeveloperInformation( err.DeveloperInformation() );
+    }
+    
+    return & result;
+  *]
+}

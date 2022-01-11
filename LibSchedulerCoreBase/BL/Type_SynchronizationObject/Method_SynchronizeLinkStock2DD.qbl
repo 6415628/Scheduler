@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeLinkStock2DD (output Fulfillments updatedinstances)
+{
+  Description: 'Synchronizing characteristic based external fulfillments between stock material and dependent demand.'
+  TextBody:
+  [*
+    traverse( this, Schedule.ImportedFixedMaterialStock2DD, row, row.IsValidDataHard() )
+    {
+      externalsupply  := MaterialExternalSupply::FindMaterialExternalSupply( SupplyType::MaterialExternalSupply(), row.StockMaterialId() );
+      dependentdemand := MaterialDependentDemand::FindMaterialDependentDemand( DemandType::MaterialDependentDemand(), row.DependentDemandId() );
+      
+      supplies := construct( MaterialSupplys );
+      demands := construct( MaterialDemands );
+      if( not isnull(  externalsupply ) )
+      {
+        supplies.Add( externalsupply );
+      }
+      if( not isnull( dependentdemand ) )
+      {
+        demands.Add( dependentdemand );
+      }
+      
+      this.SynchronizeExternalFulfillments( demands, supplies, row, updatedinstances );
+    }
+  *]
+}

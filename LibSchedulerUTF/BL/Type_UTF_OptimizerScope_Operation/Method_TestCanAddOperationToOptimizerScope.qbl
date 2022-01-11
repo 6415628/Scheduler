@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCanAddOperationToOptimizerScope (Schedule schedule)
+{
+  Description: 'Unit test to test whether the operation can be added to optimizer scope.'
+  TextBody:
+  [*
+    testInstance := this.GetTestInstance( this.Variant() );
+    
+    // Propagate attributes that are checked against in precondition
+    Transaction::Transaction().Propagate( attribute( Operation_SC, IsFrozenInSchedule ) );
+    Transaction::Transaction().Propagate( attribute( Operation_SC, HasFSPLFrozenOnPlanUnit ) );
+    Transaction::Transaction().Propagate( attribute( Operation_SC, HasAllowedResources ) );
+    
+    // Create structured set to reuse precondition
+    operations := construct( Operation_SCs );
+    operation := select( schedule, Operation_SC, op, true );
+    operations.Add( operation );
+    emptyFeedback := '';
+    
+    this.Run().AssertTrue( testInstance.CanAddToOptimizerScope() = Operation_SC::CheckCanAddToOptimizerScope( operations, emptyFeedback ),
+                           UTFUtility::GenerateFailedMessage( 'Precondition check of adding operation to optimizer scope failed', '' ) );
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

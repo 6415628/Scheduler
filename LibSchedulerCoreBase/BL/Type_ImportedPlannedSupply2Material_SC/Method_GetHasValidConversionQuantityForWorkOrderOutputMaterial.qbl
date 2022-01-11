@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidConversionQuantityForWorkOrderOutputMaterial (output Strings feedback_o) declarative as Boolean
+{
+  Description: "Checks if the conversion quantity is lesser than the work order output material quantity, because you can't convert beyond the available quantity."
+  TextBody:
+  [*
+    // No need to fire this sanity check violation because it will fire GetHasValidImportedWorkOrderOutputMaterial_SC instead
+    value := guard( this.Quantity() <= this.ImportedWorkOrderOutputMaterial().Quantity(), true ); 
+    
+    if( not isnull( feedback_o ) and not value )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedPlannedSupply2Material_Instance( name ),
+                                                               Translations::SC_ImportedPlannedSupply2Material_ViolateHasValidConversionQuantityForWorkOrderOutputMaterial() ) );
+    }
+    
+    return value;
+  *]
+}

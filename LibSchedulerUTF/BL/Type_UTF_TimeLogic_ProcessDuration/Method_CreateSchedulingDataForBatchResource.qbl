@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateSchedulingDataForBatchResource (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Create resources
+    resource := UTFMockObjectFactory::CreateBatchResource( schedule, 'resource' );
+    
+    // Create batch
+    batch := UTFMockObjectFactory::CreateBatch( schedule );
+    
+    // Propagate declarative attribute to be used to assign operation type
+    Transaction::Transaction().Propagate( attribute( Resource_SC, Type ) );
+    
+    // Create work order
+    workOrder := GenericBatchWorkOrder::Create( schedule, 'WorkOrder' );
+    
+    // Create 3 operations
+    for( i := 1; i <= 3; i++ ) 
+    {
+      // Create operation
+      order := UTFMockObjectFactory::CreateOrder( schedule, 'Order_' + [String]i  );
+      planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'PlanUnit_' + [String]i, 1.0 );
+      operation := GenericOperation::Create( planUnit, resource.Type() );
+      operation.OperationID( 'Operation_' + [String]i );
+      
+      // Add operation into batch
+      batch.AddOperation( operation );
+      
+      // Create work order operation
+      workOrderOperation := workOrder.CreateWorkOrderOperation( i );
+      operation.WorkOrderOperation( relset, workOrderOperation );
+      
+      // Create work order operation resource for each operation
+      workOrderOperationResource := WorkOrderOperationResource::Create( workOrderOperation, resource.ResourceID() );
+      workOrderOperationResource.FixedProcessDuration( Duration::Construct( 0, i, 0, 0 ) );
+      workOrderOperationResource.ProcessDurationPerQuantity( Duration::Construct( 0, i, 0, 0 ) );
+    }
+  *]
+}

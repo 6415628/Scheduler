@@ -1,0 +1,16 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcAllowedOperationsHash
+{
+  TextBody:
+  [*
+    // mbr23 Jan-27-2020 (created)
+    
+    operations := selectsortedset( this.GetAllowedReplannableOperations(), Elements, o, true, o.Operation().OperationID() ); // Assumption: "OperationID" is a unique string
+    sorted_ids := sum( operations, Elements, o, true, o.Operation().OperationID() );
+    
+    value := CryptographicHashFunction::ComputeMD5Hash( sorted_ids, "UTF-8" );
+    
+    this.AllowedReplannableOperationsHash( value.AsBinaryValue() );
+  *]
+}

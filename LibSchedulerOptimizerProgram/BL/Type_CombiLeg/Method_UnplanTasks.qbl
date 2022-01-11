@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method UnplanTasks (Operation_SCs scope_operations)
+{
+  Description: 'Unplan the non frozen in scope tasks on this combileg'
+  TextBody:
+  [*
+    // Select the operation in combileg that should be unplanned
+    // These must be: In scope, currently planned, not frozen in schedule and not related toa program change or shutdown task
+    oics := selectset( this, OperationInCombiLeg, oic,
+                       exists( scope_operations, Elements, operation,
+                               operation = oic.Operation_SC()
+                               and not isnull( operation.Task_SC() )
+                               and not operation.IsFrozenInSchedule()
+                               and not operation.Task_SC().IsProgramChangeTask()
+                               and not operation.Task_SC().IsShutdownTask() ) );
+    
+    tasks := selectset( oics, Elements.Operation_SC.Task_SC, task, true );
+    this.LeadingCombiProgramPhase().CombiProgramType().CombiProgramSet().Resource_SC().Schedule().UnplanTasksDuringOptimization( tasks );
+  *]
+}

@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method Create (internal[GUIComponent] parent, MaterialSupply materialsupply, MaterialDemand materialdemand) id:Method_DialogEditMaterialFulfillment_Create
+{
+  #keys: '[137710.0.334952481]'
+  Body:
+  [*
+    // Create planned fulfillment
+    this.SetDialogData( materialdemand, materialsupply, false );
+    
+    data := materialdemand.MaterialFulfillment( relshadow,
+                                                GenericMaterialPlannedFulfillment,
+                                                MaterialSupply := materialsupply,
+                                                SupplyId := materialsupply.SupplyID(),
+                                                MaterialDemand := materialdemand,
+                                                DemandId := materialdemand.DemandID(),
+                                                Quantity := materialdemand.GetSuggestedQuantity( materialdemand.QuantityOpen(), materialsupply, materialsupply.QuantityOpen() ) );
+    
+    Dialog.Data( data );
+    
+    if( this.DoModal( parent ) > 0 )
+    {
+      materialdemand.CreatePlannedFulfillment( materialsupply, true, ApplicationScheduler.GetEditorRealValue( EditorReservedQuantity ) );
+    }
+  *]
+}

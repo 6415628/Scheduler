@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeTools
+{
+  TextBody:
+  [*
+    // James Kwapien Oct-3-2016 (created) #7942 Synchronize tools
+    allinstances := selectset( this.Schedule(), ToolGroup, tg, true );
+    updatedinstances := construct( ToolGroups );
+    
+    // Create new tool groups and synchronize the tools for existing ones
+    importedtgs := selectset( this.Schedule(), ImportedToolGroup_SC, itg, true );
+    toolusage := select( this.Schedule(), ToolUsage, tu, true );
+    
+    if( isnull( toolusage ))
+    {
+      toolusage := ToolUsage::Create( this.Schedule() );
+    }
+    
+    // Build set of updatedinstances based off of imported tool groups
+    traverse( importedtgs, Elements, itg )
+    {
+      tgtype := itg.Type();
+    
+      toolgroup := select( this.Schedule(),
+                           ToolGroup,
+                           tg,
+                           tg.Type() = tgtype );
+    
+      if( isnull( toolgroup ))
+      {
+        toolgroup := ToolGroup::Create( this.Schedule(), tgtype );
+      }
+      
+      toolgroup.Update( itg );
+      updatedinstances.Add( toolgroup );
+      toolgroup.SynchronizeTools();
+    }
+    
+    // Remove old tool groups if they do not exist in imported tool groups
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, tg, tg.CanBeDeleted() )
+    {
+      tg.Delete();
+    }
+  *]
+}

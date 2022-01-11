@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcTransferLatestStart
+{
+  Description: 'Calculates the latest time the actual transferring of operation material should start.'
+  TextBody:
+  [*
+    // khang chuen Aug-18-2015 (created)
+    scheduletime        := this.PlanUnit_SC().Schedule().Time();
+    transferlateststart := scheduletime;
+    receivelateststart  := scheduletime;
+    
+    query := Calendar::Query();
+    
+    transfersubtask := this.TransferSubTask();
+    receivesubtask := this.ReceiveSubTask();
+    
+    if( not isnull( transfersubtask ) )
+    {
+      // If there is a transfer subtask, get the transfer subtask's latest start and add the transfer
+      // resource to the calendar query.
+      transferlateststart :=  transfersubtask.LatestStart();
+    
+      // Add the resouce calendar where the transfer task is planned to the calendar query
+      query.AddCalendar( transfersubtask.Resource_SC().ResourceCalendar() );
+    }
+    
+    if( not isnull( receivesubtask ) )
+    {
+      // If there is a receive subtask, get the receive subtask's latest start and add the receive
+      // resource to the calendar query.
+      receivelateststart := receivesubtask.LatestStart();
+    
+      // Add the resouce calendar where the receive task is planned to the calendar query
+      query.AddCalendar( receivesubtask.Resource_SC().ResourceCalendar() );
+    }
+    
+    // take the later time of either transferstart or receivestart,
+    // and use calendar query to find the time where the transfer and receive operation
+    // will not overlap with any resource downtime
+    lateststart := maxvalue( transferlateststart, receivelateststart );
+    transferlateststart := query.NextFit( lateststart, this.TransferDuration() );
+    
+    this.TransferLatestStart( transferlateststart );
+  *]
+}

@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_RuleFramework (CDSchedule cdschedule)
+{
+  Description: 'Restore rule framework core data relations to planning object'
+  TextBody:
+  [*
+    // Restore Rule relations
+    traverse( cdschedule, CDEntity.astype( CDRule ), cdrule )
+    {
+      rule := Rule::FindRule( cdrule.RuleID() );
+      if( not isnull( rule ) )
+      {
+        ruletype := RuleType::FindRuleType( cdrule.RuleTypeName() );
+        rulesubtype := select( ruletype, RuleSubType, rst, rst.Name() = cdrule.RuleSubTypeName() );
+        charmain := Characteristic::FindCharacteristic( cdrule.CharacteristicMainID() );
+        charcondition := Characteristic::FindCharacteristic( cdrule.CharacteristicConditionID() );
+        charscope := Characteristic::FindCharacteristic( cdrule.CharacteristicScopeID() );
+        importedrule := ImportedRule::FindImportedRule( cdrule.RuleID() );
+        
+        rule.RuleType( relset, ruletype );
+        rule.RuleSubType( relset, rulesubtype );
+        rule.CharacteristicMain( relset, charmain );
+        rule.CharacteristicCondition( relset, charcondition );
+        rule.CharacteristicScope( relset, charscope );
+        rule.ImportedRule( relset, importedrule );
+        
+        this.RestoreRelations_RuleScope( cdschedule, rule );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

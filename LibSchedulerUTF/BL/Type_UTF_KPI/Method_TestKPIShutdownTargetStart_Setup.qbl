@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestKPIShutdownTargetStart_Setup (Schedule schedule)
+{
+  Description: 'Test KPI ShutdownTargetStart - setup'
+  TextBody:
+  [*
+    isvariantfound := false;
+    targetdeviation := Duration::Zero();
+    planneddeviation := Duration::Zero();
+    kpivalue := 0.0;
+    
+    this.GetTestVariantForKPIShutdownTargetStart( isvariantfound,
+                                                  targetdeviation,
+                                                  planneddeviation,
+                                                  kpivalue);
+    
+    if( isvariantfound )
+    {  
+      // Set scheduling window to 1 day
+      schedule.PlanningConfiguration().SchedulingWindow( Duration::Days( 1 ) );
+      
+      // Create resource
+      resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource' );
+      resource.ResourceGroup_SC().IsBottleneck( true );
+      
+      // Create operations and plan operations
+      startdatetime := schedule.Time().StartOfNextDay();
+      this.CreateOperations( schedule, resource, true, startdatetime );
+      
+      // Insert shutdown
+      targetshutdownstart := startdatetime + Duration::Hours( 5 );
+      plannedshutdownstart := targetshutdownstart + planneddeviation;
+      task := select( resource, Task_SC, t, t.GetOperation().SequenceNr() = 5 );
+      shutdowntask := this.InsertShutdown( schedule, resource, task );
+      
+      // Set target shutdown start
+      shutdown := shutdowntask.Shutdown();
+      shutdown.IsTargetStartEnabled( true );
+      shutdown.TargetStart( targetshutdownstart );
+      shutdown.MaxTargetStartDeviation( targetdeviation );
+      
+      // Set planned shutdown start
+      utfshutdowntask := shutdowntask.astype( UTFShutdownTask );
+      utfshutdowntask.HasStartUTF( true );
+      utfshutdowntask.Start_UTF( plannedshutdownstart );
+      utfshutdowntask.HasEndUTF( true );
+      utfshutdowntask.End_UTF( plannedshutdownstart + Duration::Hours( 1 ) );
+    }
+  *]
+}

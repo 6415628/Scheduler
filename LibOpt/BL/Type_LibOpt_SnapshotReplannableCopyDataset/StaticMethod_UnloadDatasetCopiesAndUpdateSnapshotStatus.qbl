@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod UnloadDatasetCopiesAndUpdateSnapshotStatus (LibOpt_SnapshotReplannableCopyDatasets snapshots) as Boolean
+{
+  Description:
+  [*
+    Unload the datasets that are attached to the `LibOpt_SnapshotReplannableCopyDataset` snapshots.
+    This method is called from the context menu of a `LibOpt_SnapshotReplannableCopyDataset` snapshot. `LibOpt_SnapshotReplannableCopyDataset` snapshots can be found in the 'Snapshots' and 'Replannable snapshots' forms.
+    If a dataset could not be found in the dataset store, then all snapshots will be updated by calling `optimization.UpdateReplannableSnapshots()`.
+    We are aware that it is against style guide to execute two separate actions in the same method. However, we have to combine these two actions to ensure that only 1 server transaction is started when this method is called from the UI.
+  *]
+  TextBody:
+  [*
+    // evr3 Apr-29-2020 (created)
+    
+    isanydatasetinfonull := false;
+    objectinfos := MDSEditor::Editor().ObjectInfos();
+    traverse( snapshots, Elements, snapshot, not snapshot.IsDatasetDeleted() and snapshot.HasCreatedDataset() )
+    {
+      isdatasetinfonull := snapshot.UnloadDatasetCopyManually( objectinfos );
+      isanydatasetinfonull := isanydatasetinfonull or isdatasetinfonull;
+    }
+    
+    if( isanydatasetinfonull )
+    {
+      // If 'isanydatasetinfonull' is true, then (for at least one snapshot) snapshot.IsDatasetDeleted() was false (so the snapshot thought that its dataset still exists), 
+      // while the dataset of that snapshot was actually already deleted.
+      // Therefore, we will update the status of all replannable snapshots to ensure that further mismatches won't occur. 
+      optimization := select( snapshots, Elements.Run, run, true ).Optimization();
+      optimization.UpdateReplannableSnapshots();
+    }
+    
+    return isanydatasetinfonull;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

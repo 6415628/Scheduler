@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method SupplyConsumed (Operation_SC operation, String resource_id, Supply supply, 
+  Demand demand, Real quantity, DateTime time, 
+  Boolean is_accumulated, String remark)
+{
+  Description: 'Feedback API: Handle material feedback with type supply consumed'
+  TextBody:
+  [*
+    // jiex Oct-18-2016 (created)
+    supply.UpdateReportedAttributes( quantity, is_accumulated );
+    
+    //Set fulfillment HasFeedback to turn it into a fixed reservation
+    fulfillment := select( demand, Fulfillment, f, f.Supply() = supply );
+    if( not isnull( fulfillment ) )
+    {
+      fulfillment.HasFeedback( true );
+    }
+    
+    if( not isnull( operation.ActiveOperationFeedback() ) )
+    {
+      operation.ActiveOperationFeedback().HandleSupplyConsumedException( supply, demand, fulfillment, quantity );
+    }
+    
+    /*
+    // supply assignment
+    if( isnull( supply.Operation_SC() ) or supply.Operation_SC() <> operation )
+    {
+       supply.Operation_SC( relset, operation );
+    }
+  *]
+}

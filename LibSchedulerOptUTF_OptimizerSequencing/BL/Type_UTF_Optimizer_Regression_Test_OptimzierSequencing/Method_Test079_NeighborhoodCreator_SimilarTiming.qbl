@@ -1,0 +1,67 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test079_NeighborhoodCreator_SimilarTiming (Schedule schedule)
+{
+  Description: "Tests the NeighborhoodCreatorDistanceMetric's 'SimilarTiming' dimension"
+  TextBody:
+  [*
+    // mbr23, 2020-04-24 (created)
+    
+    anchor := minselect( schedule, Operation_SC, op, true, Real::Random() ); // select any anchor
+    neighborhood_size_operations := 15;
+    distancemetric := construct( SettingsSequencingDistanceMetricForSequencing ); 
+    // Set all values to 0
+    distancemetric.UTF_SetAllToZero();
+    distancemetric.ClosenessBySimilarTiming( 1.0 ); // only enable the "SimilarTiming" dimension
+    distancemetric.WeightPerHourForSimilarTiming( 1.0 ); // one hour of timing difference is an additional unit of distance
+    
+    selector := this.Run_Test07x_NeighborhoodCreator( schedule, anchor, neighborhood_size_operations, distancemetric );
+    
+    // start situation: autoplan all operations
+    for( i := 0; exists( schedule, Operation_SC, op, not op.IsPlanned() ) and i < 10; i := i + 1 )
+    {
+      // plan operations that have all previous operations planned:
+      // sort them by earliest start:
+      operations := selectsortedset( schedule,
+                                     Operation_SC,
+                                     op,
+                                     not op.IsPlanned() and op.IsAllPreviousPlanned(),
+                                     op.EarliestStart() );
+      // plan them on earliest available resource, in the order of the struct (EarliestStart first):
+      schedule.PlanOperations( operations );
+      
+      Transaction::Transaction().Propagate( attribute( Operation_SC, IsPlanned ) );
+      Transaction::Transaction().Propagate( attribute( Operation_SC, IsAllPreviousPlanned ) );
+      Transaction::Transaction().Propagate( attribute( Operation_SC, EarliestStart ) );
+    }
+    Transaction::Transaction().Propagate();
+    this.Run().AssertFalse( exists( schedule, Operation_SC, op, not op.IsPlanned() ), "Start situation not established: there are unplanned operations." );
+    // start situation established.
+    
+    // expected output: just test that:
+    // (a) the output scope size is correct
+    // (b) all output operations are planned
+    // (c) for each pair of output operations that are planned on the same resource, also all in-between planned operations are in the output.
+    
+    // assert that output scope has expected size:
+    selector.Run().Start() ->| this->( o ) {
+      // test (a):
+      UTF_Optimizer_Regression_Test_OptimizerSequencing::AssertOutputScopeCounts( neighborhood_size_operations, typeof( ScopeElementOperation ), this.Run(), selector );
+      // test (b):
+      snapshot := select( selector, SnapshotComponent, snap, true );
+      out_scope := snapshot.OutputScope();
+      out_operations := out_scope.Operations();
+      this.Run().AssertTrue( forall( out_operations, Elements, op, op.IsPlanned() ), 'The selector selected unplanned operations.' );
+      // test (c):
+      traverse( out_operations, Elements.Task_SC.Resource_SC, resource )
+      {
+        out_onresource := selectset( out_operations, Elements.Task_SC, task, task.Resource_SC() = resource );
+        seqnr_min := min( out_onresource, Elements, task, true, task.SequenceNr() );
+        seqnr_max := max( out_onresource, Elements, task, true, task.SequenceNr() );
+        this.Run().AssertEqual( seqnr_max - seqnr_min + 1, out_onresource.Size(), "The selector output does not contain intermediary tasks on resource " + resource.ResourceID() );
+      }
+    }->Exception()->(exception) {
+      this.Run().RegisterFailure( "post-optimization assert failed:\n" + exception.Message() );
+    };
+  *]
+}

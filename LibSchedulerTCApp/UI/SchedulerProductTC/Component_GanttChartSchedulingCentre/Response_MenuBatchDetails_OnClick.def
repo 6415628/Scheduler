@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[Object] selection, BatchResource row) id:Response_GanttChartSchedulingCentre_MenuBatchDetails_OnClick
+{
+  #keys: '[118950.5.395522856]'
+  Body:
+  [*
+    isbatchtask := forall( selection, Elements, obj, obj.istype( BatchTask ) );
+    if( isbatchtask )
+    {
+      // Open Batch Details Dialog for selected structured[BatchTask]
+      GUIMethods.OpenUpdateBatchDetailDialog( selection.Element( 0 ).astype( BatchTask).Batch(), row )
+    }
+    else
+    {
+      GUIMethods.OpenFeedbackBatchDetailDialog( selection.Element( 0 ).astype( FeedbackBatchInSchedule ) )
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => /Responsedef_GanttChartSchedulingCentre_Menu_OnClick
+  Initiator: 'MenuBatchDetails'
+  Precondition:
+  [*
+    return selection.Size() > 0 and 
+           ( forall( selection, Elements, obj, obj.istype( BatchTask ) )
+             or forall( selection, Elements, obj, obj.istype( FeedbackBatchInSchedule ) ) );
+  *]
+}

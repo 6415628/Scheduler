@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPracticeCreate (Schedule schedule)
+{
+  Description: 'Test the synchronization of practice objects.'
+  TextBody:
+  [*
+    uniquePracticesFromOperation := selectuniquevalues( schedule, ImportedWorkOrder.ImportedWorkOrderOperation, importedWorkOrderOperation, 
+                                                        importedWorkOrderOperation.WorkOrderId() = this.Variant(), 
+                                                        importedWorkOrderOperation.Practice() );
+    
+    uniquePracticesFromRoutingStep := selectuniquevalues( schedule, ImportedRouting_SC.ImportedRoutingStep_SC, importedRoutingStep, 
+                                                          importedRoutingStep.RoutingId() = this.Variant(), 
+                                                          importedRoutingStep.Practice() );
+    
+    allUniquePractices := uniquePracticesFromOperation.Union( uniquePracticesFromRoutingStep );
+    
+    hasCreatedAllUniquePractices := forallexists( allUniquePractices,
+                                                  Elements,
+                                                  practice,
+                                                  true,
+                                                  exists( schedule, Practice, createdPractice, createdPractice.UsedPractice() = practice ) );
+    
+    this.Run().AssertTrue( hasCreatedAllUniquePractices, UTFUtility::GenerateFailedMessage( 'Practice_Create', '' ) );
+  *]
+}

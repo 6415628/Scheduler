@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateWorkOrdersAndWorkOrderOperations (Schedule schedule)
+{
+  Description: 'Create work order and work order operations.'
+  TextBody:
+  [*
+    workOrderRows := this.GetWorkOrdersTestInstances();
+    
+    traverse( workOrderRows, Elements, workOrderRow )
+    {
+      workOrder := UTFMockObjectFactory::CreateGenericExternalWorkOrder( schedule, workOrderRow.WorkOrderID(), workOrderRow.RoutingID() );
+      workOrderOperationRows := this.GetWorkOrderOperationTestInstances( workOrderRow.WorkOrderID() );
+      
+      traverse( workOrderOperationRows, Elements, workOrderOperationRow )
+      {
+        routingStep := select( schedule, Routing.RoutingStep, routingStep, 
+                               routingStep.RoutingId() = workOrderRow.RoutingID() and routingStep.SequenceNr() = workOrderOperationRow.SequenceNr() );
+        workOrderOperation := UTFMockObjectFactory::CreateGenericExternalWorkOrderOperation( workOrder, workOrderOperationRow.SequenceNr() );
+        workOrderOperation.RoutingStep( relset, routingStep );
+      }
+    }
+    
+    schedule.SynchronizationObject().SynchronizeOrders();
+    schedule.SynchronizationObject().SynchronizePlanUnits();
+    
+    // Plan all operations
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'testResource' );
+    operations := selectset( schedule, PlanUnit_SC.Operation_SC, operation, true );
+    
+    traverse( operations, Elements, operation )
+    {
+      resource.GenericPlanLastUTF( operation );
+    }
+    
+    // Propagate Operation_SC.IsPlanned value which will be used in precon check.
+    Transaction::Transaction().Propagate( attribute( Operation_SC, IsPlanned ) );
+  *]
+}

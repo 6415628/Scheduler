@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestResequenceTaskWithShutdownLinkToPrecedingTask_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Create resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Single Resource' );
+    
+    // Create shutdown type
+    shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, 'Shutdown Type' );
+    UTFMockObjectFactory::CreateShutdownTypeInResource( shutdownType, resource );
+    
+    // Assign isLinkToPrecedingTask
+    shutdownType.IsLinkToPrecedingTask( true );
+    
+    // Create task1
+    order1 := UTFMockObjectFactory::CreateOrder( schedule, 'Order 1' );
+    planUnit1 := UTFMockObjectFactory::CreatePlanUnit( order1, 'Plan Unit 1', 1.0 );
+    operation1 := UTFMockObjectFactory::CreateOperation( planUnit1 );
+    Transaction::Transaction().Propagate( relation( Operation_SC, AllowedOperationOnResource ) );
+    task1 := resource.PlanLast( operation1 );
+    
+    // Create task2
+    order2 := UTFMockObjectFactory::CreateOrder( schedule, 'Order 2' );
+    planUnit2 := UTFMockObjectFactory::CreatePlanUnit( order2, 'Plan Unit 2', 1.0 );
+    operation2 := UTFMockObjectFactory::CreateOperation( planUnit2 );
+    Transaction::Transaction().Propagate( relation( Operation_SC, AllowedOperationOnResource ) );
+    resource.PlanLast( operation2 );
+    
+    // Create and schedule shutdown and shutdown task
+    resource.InsertShutdown( task1, shutdownType, Duration::Hours( 1 ), false, false, DateTime::MinDateTime(), Duration::Zero() );
+  *]
+}

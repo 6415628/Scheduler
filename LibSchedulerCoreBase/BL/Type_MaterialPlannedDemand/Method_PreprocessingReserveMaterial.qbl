@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride PreprocessingReserveMaterial
+{
+  Description: 'Delete upstream fulfillments'
+  TextBody:
+  [*
+    fulfillments := construct( Fulfillments );
+    
+    if( this.IsWIPDemand() )
+    {
+      upstreams := this.Operation_SC().GetUpstreamOperations();
+      
+      fulfillments := selectset( upstreams, Elements.PlannedDemand.Fulfillment, f, true );
+    }
+    else
+    { 
+      fulfillments := selectset( this, Operation_SC.DownstreamOperations.PlannedDemand.Fulfillment, f, f.Demand().IsWIPDemand() );
+    }
+    
+    if( fulfillments.Size() > 0 )
+    {
+      Fulfillment::DeletePlannedFulfillment( fulfillments);   
+      // Propagate used to re-calculate the quantity attributes 
+      Transaction::Transaction().Propagate();
+    }
+  *]
+}

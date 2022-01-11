@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckUniqueFromToEntry () as Boolean id:Method_DialogRuleChangeOver_CheckUniqueFromToEntry
+{
+  #keys: '[145930.4.1740449976]'
+  Body:
+  [*
+    // Check unique "From" and "To" entry.
+    
+    isBoolean := guard( SelectionCharacteristicMain.Data().ValueType() = RuleConstant::ValueType_Boolean(), false );
+    
+    from := ifexpr( isBoolean,
+                    RadioButtonGroupBooleanFrom.BoundValue(),
+                    EditorFrom.Text() ) ;
+                    
+    to := ifexpr( isBoolean,
+                  RadioButtonGroupBooleanTo.BoundValue(),
+                  EditorTo.Text() ) ;
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    // Check the "From" and "To" must be unique for each entry.
+    value := not exists( DataHolderRule.Data(), RuleChangeOver, ruleChangeover,
+                         ruleChangeover <> Dialog.Data(),
+                         ruleChangeover.From() = from
+                         and ruleChangeover.To() = to );
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      feedbackobject.AddHard( Translations::Rule_FromToMustBeUnique( from, to ) );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test010_StopsAtBreakpointNoBreakpoint (LibOpt_TestDataset dataset)
+{
+  Description: 'Check if we stop executing as we hit a breakpoint. No breakpoint.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    component1 := opt.ComponentCounter( run, 'Component1' );
+    component2 := opt.ComponentCounter( run, 'Component2' );
+    component1.To( component2 );
+    
+    run.SetStartComponent( component1 );
+    str := run->Start()->Until( Duration::Seconds( 2 ) );
+    str->|this->( this )
+    {
+      this.Run().AssertEqual( 1, component1.NrOfTimesCalled(), 'Component 1: Number of calls has an unexpected value' );
+      this.Run().AssertEqual( 1, component2.NrOfTimesCalled(), 'Component 2: Number of calls has an unexpected value' );
+    }
+    str->Exception()->LibOpt_TestUnit_TestDataset::CheckNoException( this );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

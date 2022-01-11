@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestKPITotalDummyWorkOrderTime (Schedule schedule)
+{
+  Description: 'Test KPI TotalDummyWorkOrderTime'
+  TextBody:
+  [*
+    isvariantfound := false;
+    isdummyworkorder := false;
+    ischeckkpitotal := false;
+    kpiweight := 0.0;
+    kpivalue := 0.0;
+    kpitotalvalue := 0.0;
+    
+    this.GetTestVariantForKPITotalDummyWorkOrderTime( isvariantfound,
+                                                      isdummyworkorder,
+                                                      ischeckkpitotal,
+                                                      kpiweight,
+                                                      kpivalue,
+                                                      kpitotalvalue );
+    kpi := 0.0;
+    actualkpivalue := 0.0;
+    
+    if( isvariantfound )
+    {
+      if( ischeckkpitotal )
+      {
+        kpi := kpitotalvalue;
+        actualkpivalue := schedule.KPITotal();      
+      }
+      else
+      {
+        kpi := kpivalue;
+        actualkpivalue := schedule.KPITotalDummyWorkOrderTime();  
+      }
+    }
+    
+    this.Run().AssertEqual( kpi, actualkpivalue,
+                            UTFUtility::GenerateFailedMessage( ifexpr( ischeckkpitotal,
+                                                                       'Test KPI checking KPITotal with KPIWeightTotalDummyWorkOrderTime failed',
+                                                                       'Test KPI checking KPITotalDummyWorkOrderTime failed' ), 
+                                                               this.Variant() ) );
+  *]
+}

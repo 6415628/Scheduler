@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetSnapshotsOnComponent (LibOpt_Component component) remote as owning LibOpt_SnapshotComponents
+{
+  Description:
+  [*
+    Return the `LibOpt_SnapshotComponents` that are created by the given component that are in an iteration with the current snapshot (the `this`).
+    In other words: find the `LibOpt_SnapshotComponents` that are created by the given component that have a path containing the current snapshot.
+    
+    This is one of the ancestor snapshots, a set of children snapshots or neither.
+  *]
+  TextBody:
+  [*
+    result := construct( LibOpt_SnapshotComponents );
+    if( this.Component().Depth() >= component.Depth() )
+    {
+      // Walk up until we find the correct snapshot
+      parent := [LibOpt_Snapshot] this;
+      while( not isnull( parent ) and 
+             guard( parent.astype( LibOpt_SnapshotComponent ).Component().Depth() > component.Depth(), true ) )
+      {
+        parent := parent.Parent();
+      }
+      
+      if( guard( parent.astype( LibOpt_SnapshotComponent ).Component() = component, false ) )
+      {
+        result.Add( parent.astype( LibOpt_SnapshotComponent ) );
+      }
+    }
+    else
+    {
+      // Walk down to find the correct set of snapshots
+      children := construct( LibOpt_Snapshots );
+      children.Add( this );
+      
+      while( children.Size() > 0 )
+      {
+        children := selectset( children, Elements.Children, child,
+                               guard( child.astype( LibOpt_SnapshotComponent ).Component().Depth() <= component.Depth(), true ) );
+        component_children := selectset( children, Elements.astype( LibOpt_SnapshotComponent ), snap, snap.Component() = component );
+        if( component_children.Size() > 0 )
+        {
+          result.AddInPlace( component_children );
+        }
+      }
+    }
+    
+    return & result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectOtherBranch (GUIComponent parent, LibSM_KnowledgeBaseBranchInProfile knowledgeBranch) id:Method_LibSM_dlgSelectKnowledgeBranch_SelectOtherBranch
+{
+  #keys: '[107496.2.1676200463]'
+  Body:
+  [*
+    // Select a different KnowledgeBase
+    
+    canEdit := true;
+    
+    knowledgeProfile := knowledgeBranch.KnowledgeProfile();
+    
+    if( knowledgeProfile.IsUsed() )
+    {
+      scenarioNames := knowledgeProfile.GetAffectedScenariosName();
+    
+      message := Translations::LibSM_KnowledgeProfile_Confirmation_SelectBranch( knowledgeProfile.Name(), scenarioNames );
+      canEdit := MessageBox::Warning( parent, message, Translations::LibSM_Question_YesNo(), 0, 'Select other branch' ) = 0;
+    }
+    
+    if( canEdit )
+    {
+      editor := CKBEditor::Create();
+      kbids := editor.GetKBs();
+    
+      kbid := select( kbids, Elements, kbid, kbid.Name() = knowledgeBranch.KBDefinitionName() );
+    
+      kbinfos := editor.GetKBStructure( kbid );
+      kbfullid := maxselect( kbinfos, Elements.KBFullID, k, k.Branch().ToUpper() = knowledgeBranch.KBBranchName().ToUpper(), k.ChangeNr() );
+    
+      dlg := construct( LibSM_dlgSelectKnowledgeBranch );
+    
+      selectedKB := shadow( knowledgeBranch );
+      dlg.Data( kbfullid );
+      dlg.dhSelectedKBBranch().Data( selectedKB );
+      dlg.dhKBID().Data( kbid );
+    
+      if( dlg.DoModal( parent ) > 0 )
+      {
+        shadowNewSelectedKBBranch := dlg.dhSelectedKBBranch().Data();
+        newSelectedKBBranch       := shadowNewSelectedKBBranch.WrappedInstance()
+    
+        knowledgeBranch.Update( shadowNewSelectedKBBranch.KBBranchName(), shadowNewSelectedKBBranch.KBBranchVersion() );
+        LibSM_GlobalState.ValidateKBBranchExistence_SingleProfile( knowledgeBranch.KnowledgeProfile() );
+    
+        LibSM_GlobalState.SelectKB( knowledgeProfile,
+                                             newSelectedKBBranch.KBDefinitionName(),
+                                             newSelectedKBBranch.KBBranchName(),
+                                             newSelectedKBBranch.KBBranchVersion() );
+      }
+    }
+  *]
+}

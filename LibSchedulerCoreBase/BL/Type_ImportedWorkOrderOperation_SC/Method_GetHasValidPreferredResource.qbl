@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidPreferredResource (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if imported object has preferred resource link'
+  TextBody:
+  [*
+    // chin wai Jul-20-2016 (created) #7284
+    ispreferredresEmpty := this.PreferredResource().TrimBoth() = '';
+    isvalid := ispreferredresEmpty or not isnull( this.PreferredResource_SC() );
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedWorkOrderOperation_Instance( name ),
+                                                               Translations::SC_ImportedWorkOrderOperation_ViolateHasPreferredResource() ) );
+    }
+    
+    return isvalid;
+  *]
+}

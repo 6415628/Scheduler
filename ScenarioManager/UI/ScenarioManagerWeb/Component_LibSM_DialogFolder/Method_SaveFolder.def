@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method SaveFolder () id:Method_LibSM_DialogFolder_SaveFolder
+{
+  #keys: '[136398.0.2025583524]'
+  Body:
+  [*
+    existingFolder := DataHolderDialogData.Data();
+    parentFolder   := DataHolderParentFolder.Data();
+    newName        := this.EditFieldFolderName().Text();
+    newComment     := this.EditFieldComment().Text();
+    currentUser    := QuintiqUser::CurrentUser().Name();
+    
+    if ( isnull( existingFolder ) )
+    {
+      // Create Folder
+      folder := LibSM_ScenarioFolder::Create( LibSM_ScenarioManager, parentFolder, newName, newComment, currentUser, DateTime::Now() );
+      LibSM_GlobalState.QueueForHighlight( folder );
+    }
+    else
+    {
+      // Edit Folder
+      existingFolder.Update( newName, newComment );
+    }
+  *]
+}

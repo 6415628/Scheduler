@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Operation (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    //ZYI1 07-09-2021,
+    res := select( task.Scope().Resources(), Elements, res, true );
+    pt1 := minselect( res, ProgramSet.ProgramType, pt, pt.ProgramSet().ProgramSetConfiguration().IsLeading(), Number::Random() );
+    pt2 := minselect( res, ProgramSet.ProgramType, pt, pt.ProgramSet().ProgramSetConfiguration().IsLeading() and pt <> pt1, Number::Random() );
+    
+    pt1.ActiveCombiProgramType().ResetLegFlags();
+    
+    if( not isnull( pt2 ) )
+    {
+      pt2.ActiveCombiProgramType().ResetLegFlags();
+    }
+    
+    scope := LibOpt_Scope::Create( task.Run() );
+    traverse( task.Scope().ScopeElements(), 
+              Elements, 
+              ele, 
+              not ele.istype( ScopeElementCombiProgramType ) 
+              and not ele.istype( ScopeElementOperation ) )
+    {
+      scope.Add( ele );
+    }
+    
+    scope.Add( pt1.ActiveCombiProgramType().GetOrCreateScopeElement() );
+    if( not isnull( pt2 ) )
+    {
+      scope.Add( pt2.ActiveCombiProgramType().GetOrCreateScopeElement() );
+    }
+    //put not planned ops as candidate for combi generation
+    traverse( res.ProgramOptimizerGetNotPlannedScopeOperations( task.Scope().Operations() ), Elements, op )
+    {
+      scope.Add( op.GetOrCreateScopeElement() );
+    }
+    
+    traverse( scope.CombiProgramTypes(), Elements.CombiProgramPhase.CombiLegAsLeading.Leg, leg )
+    {
+      leg.NrTimesSelected( 0 );
+      scope.Add( leg.GetOrCreateScopeElement() );
+      traverse( leg, Task_SC.OperationInTask, op )
+      {
+        scope.Add( op.GetOrCreateScopeElement() );
+      }
+    }
+    
+    return this.Continue( task, scope );
+  *]
+}

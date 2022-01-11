@@ -1,0 +1,104 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveDataByChunk (NamedValueTree nvt_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive a Data (by chunk) message with the chunked payload of a Set.'
+  TextBody:
+  [*
+    // Jacky CHAN Aug-3-2016 (created)
+    dataTransfer := null( LibDEF_DataTransfer );
+    event        := event_i;
+    
+    // check if initialization
+    isInit := LibDEF_DataAccessor::GetDataHeaderPropertyAsBoolean( nvt_i, LibDEF_DataAccessor::HEADER_ISINIT() );
+    
+    if( isInit )
+    {
+      // extract DataTransfer
+      nvBody    := LibDEF_DataAccessor::GetDataBody( nvt_i );
+      handleDT  := nvt_i.GetHandle( typeof( LibDEF_DataTransfer ).Name() );
+      nodeDT    := nvBody.Child( handleDT );
+      dt        := NamedValueTreeIO::ImportObject( nvt_i, nodeDT, typeof( LibDEF_DataTransfer ) ).astype( LibDEF_DataTransfer );
+    
+      dataTransfer := this.DataBroker().QueueInbox().DataTransfer( relinsert, &dt );
+      dataTransfer.ExternalSystem  ( relset, this );
+      dataTransfer.IntegrationEvent( relset, event );
+    
+      // link SetMeta
+      setGUID := LibDEF_DataAccessor::GetDataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SETGUID() );
+      setMeta := select( this, DataBroker.System.SetTypeMeta.SetMeta, sm, sm.GUID() = setGUID );
+    
+      if( not isnull( setMeta ) )
+      {
+        dataTransfer.SetMeta( relset, setMeta );
+        LibDEF_Util::EventLog( event, "Created data transfer [GUID: " + dataTransfer.GUID() + "]." );
+      }
+      else
+      {
+        // log error
+        LibDEF_Util::EventLogError( event, "Creating DataTransfer",
+                                           "Failed due to SetMeta [GUID: " + setGUID + "] does not exist." );
+      }
+    }
+    else
+    {
+      // store chunked payload
+      transferGUID := LibDEF_DataAccessor::GetDataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_DATATRANSFERGUID() );
+      dataTransfer := select( this, DataTransfer, dt, dt.GUID() = transferGUID );
+    
+      if( not isnull( dataTransfer ) )
+      {
+        // delete the newly created event for subsequent messages
+        event_i.Delete();
+        event := dataTransfer.IntegrationEvent();
+      
+        sequenceNr := LibDEF_DataAccessor::GetDataHeaderPropertyAsNumber( nvt_i, LibDEF_DataAccessor::HEADER_SEQUENCENR() );
+        chunkChecksum := LibDEF_DataAccessor::GetDataHeaderPropertyAsBinaryValue( nvt_i, LibDEF_DataAccessor::HEADER_CHUNK_CHECKSUM() );
+        dataPiece  := select( dataTransfer, DataPiece, piece, piece.SequenceNr() = sequenceNr );
+        chunkedPayload := LibDEF_DataAccessor::GetDataBodyPropertyAsBinaryValue( nvt_i, LibDEF_DataAccessor::HEADER_CHUNKDATA() );
+        
+        if( isnull( dataPiece ) )
+        {
+          dataPiece := LibDEF_DataPiece::Create( dataTransfer, sequenceNr, chunkedPayload, chunkChecksum );
+        }
+    
+        if( not isnull( dataPiece ) )
+        {
+          if( dataPiece.CheckChecksum() ) // check integrity before marking as completed
+          {
+            dataPiece.IsCompleted( true );
+            LibDEF_Util::EventLog( event, "Buffered data piece sequence-nr #" + [String]sequenceNr + " of data transfer [GUID: " + transferGUID + "]." );
+          }
+          else
+          {
+            LibDEF_Util::EventLogError( event, "Buffering DataPiece",
+                                        "Failed due to DataPiece of SequenceNr #"
+                                        + [String]dataPiece.SequenceNr()
+                                        + " of data transfer [GUID: "
+                                        + dataPiece.DataTransfer().GUID()
+                                        + "] being corrupted (mismatched checksum)." );
+          }
+        }
+        else
+        {
+          // log error
+          LibDEF_Util::EventLogError( event, "Buffering DataPiece",
+                                             "Failed due to DataPiece of SequenceNr #" + [String]sequenceNr + " does not exist." );
+        }
+      }
+      else
+      {
+        // log error
+        LibDEF_Util::EventLogError( event, "Processing DataTransfer",
+                                           "Failed due to DataTransfer [GUID: " + transferGUID + "] does not exist." );
+      }
+    
+      // check if DataTransfer is completed, then process it normally
+      if( dataTransfer.HasCompleted() )
+      {
+        dsDataset := LibDEF_DataBroker::GetDataset();        
+        dsDataset->ProcessCompletedChunkedData( dataTransfer, nvt_i, event );
+      }
+    }
+  *]
+}

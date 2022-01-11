@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcTotalSeqSetupDuration
+{
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // FOR DEMO
+    // For KPI calculation
+    // This attribute allows configuration chart column to shows time ratio for resource time usage
+    // carmen Jun-15-2012 (created)
+    
+    value := guard( this.Previous().TotalSeqSetupDuration(), Duration::Zero() )
+    
+    if( this.IsStartInSchedulingHorizon() and not this.IsDummyWorkOrder() )
+    {
+      value := value + this.ActualSetupDuration();
+      
+      // Include program change duration as total setup duration
+      if( this.IsProgramChangeTask() )
+      {
+        value := value + this.StoppageDuration(); 
+      }
+    }
+    
+    this.TotalSeqSetupDuration( value );
+  *]
+}

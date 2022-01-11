@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetCombiProgramTypeToBeTobeExtendedFlag
+{
+  TextBody:
+  [*
+    // yifei Aug-16-2021 (created)
+    //look for the CombiProgramType, whose last combileg is linked to this leg
+    traverse( this, 
+              CombiLeg.LeadingCombiProgramPhase.CombiProgramType,
+              cpt )
+    {
+      cpt.NrTimeExtended( 0 );
+      cpt.IsTobeExtendedCombi( false );
+    }
+    cpts := this.GetCandidateCombiProgramTypesTobeExtended();
+    
+    cpts := selectsortedset( cpts, Elements, cpt, true, cpt.CostTotal() );
+    
+    firstNcpts := cpts.SelectFirst( OptimizerProgram::NumBestCombiToKeepPerLeg() ); 
+    
+    traverse( firstNcpts, Elements, cpt )
+    {
+      cpt.IsTobeExtendedCombi( true );
+    }
+  *]
+}

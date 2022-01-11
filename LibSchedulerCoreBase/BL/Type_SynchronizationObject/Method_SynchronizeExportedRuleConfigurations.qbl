@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExportedRuleConfigurations
+{
+  Description: 'Synchronize exported rule configuration data'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    allinstances := selectset( schedule, ExportedRule, exportedrule, true );
+    updatedinstances := construct( ExportedRules );
+    
+    traverse( this, Schedule.Rule, rule )
+    {
+      exportedRule := ExportedRule::FindExportedRule( rule.RuleID() );
+      
+      if( isnull( exportedRule ) )
+      {
+        exportedRule := ExportedRule::Create( schedule, rule.RuleID() );
+      }
+      exportedRule.Update( rule );
+      exportedRule.CreateAndUpdateExportedRuleChangeOver( rule );
+      exportedRule.CreateAndUpdateExportedRuleRange( rule );
+      exportedRule.CreateAndUpdateExportedRuleScopeInResource( rule );
+      exportedRule.CreateAndUpdateExportedRuleValueString( rule );
+      exportedRule.CreateAndUpdateExportedRuleScope( rule );
+      exportedRule.CreateAndUpdateExportedRuleScopeInShutdownType( rule );
+      exportedRule.CreateAndUpdateExportedRuleScopeInProgramType( rule );
+      exportedRule.CreateAndUpdateExportedRuleScopeInProgramPhase( rule );
+      
+      updatedinstances.Add( exportedRule );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, exportedRule )
+    {
+      exportedRule.Delete();
+    }
+  *]
+}

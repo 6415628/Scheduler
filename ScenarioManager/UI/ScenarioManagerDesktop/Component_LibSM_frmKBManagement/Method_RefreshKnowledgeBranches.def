@@ -1,0 +1,70 @@
+Quintiq file version 2.0
+#parent: #root
+Method RefreshKnowledgeBranches () id:Method_LibSM_frmKBManagement_RefreshKnowledgeBranches
+{
+  #keys: '[110852.0.487044475]'
+  Body:
+  [*
+    // Create knowledge branch as object
+    scenarioManager := LibSM_GlobalState.GetScenarioManagerDataset();
+    editor          := CKBEditor::Create();
+    kbids           := editor.GetKBs();
+    
+    kbBranchStrings               := construct( Strings );
+    kbBranchUsedByScenariosString := construct(  Strings );
+    contentDelimiter              := LibSM_KnowledgeBranch::KBBranchStringDelimiter();
+    
+    
+    traverse( kbids, Elements, kbid )  // traverse kb definition
+    {
+      kbfullIDs       := editor.GetKBStructure( kbid );
+      sortedKBFullIDs := selectsortedset( kbfullIDs, Elements.KBFullID, kbFullD, true, kbFullD.Branch(), kbFullD.Version(), kbFullD.ChangeNr() );
+    
+      for( i := 0; i < sortedKBFullIDs.Size(); i++ )
+      {
+        currentBranch := sortedKBFullIDs.Element( i );
+        nextBranch    := guard( sortedKBFullIDs.Element( i + 1 ), currentBranch );
+    
+        isHighestChangeNr := currentBranch = nextBranch
+                             or
+                             ( currentBranch.Branch() <> nextBranch.Branch()
+                               or currentBranch.Version() <> nextBranch.Version() );
+    
+        kbBranchStrings.Add( currentBranch.Name()    + contentDelimiter +
+                             currentBranch.Branch()  + contentDelimiter +
+                             currentBranch.Version() + contentDelimiter +
+                             [String]currentBranch.ChangeNr() + contentDelimiter +
+                             [String]isHighestChangeNr );
+      }
+    }
+    
+    componentMDS     := ComponentMDS::CreateForLoadedMDSsOnly( Application );
+    componentMDSKind := select( componentMDS, ComponentMDSKinds, kind, kind.Kind() = LibSM_ModelExtensions::GetPlanningDatasetKind() );
+    
+    // check if scenario use same knowledge branch as that indicated in knowledge profile
+    traverse( scenarioManager, ScenarioNode.astype( LibSM_Scenario ), scenario, 
+              scenario.IsOnline() and scenario.HasDataset() )
+    {
+      datasetMDSID := guard( scenario.Dataset().DatasetMDSID(), Key::ZeroKey() );
+      mdsInstance := select( componentMDSKind, ComponentMDSInstances, m,                         
+                             m.MDSID().Equals( datasetMDSID ) );
+    
+      if( not isnull( mdsInstance ) )
+      {
+        mdsHandle := mdsInstance.GetMDSHandle();
+    
+        if( not isnull( mdsHandle ) )
+        {
+          infos := editor.GetMDSKBs( mdsHandle );
+    
+          traverse( infos, Elements.KBFullID, kbFullID )
+          {
+            kbBranchUsedByScenariosString.Add( kbFullID.Name() + contentDelimiter + kbFullID.Branch() + contentDelimiter + kbFullID.Version() + contentDelimiter + [String]kbFullID.ChangeNr() );
+          }
+        }
+      }
+    }
+    
+    scenarioManager.CreateKnowledgeBranch( kbBranchStrings, kbBranchUsedByScenariosString );
+  *]
+}

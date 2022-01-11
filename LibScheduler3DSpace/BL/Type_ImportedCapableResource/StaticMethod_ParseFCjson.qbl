@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ParseFCjson (Schedule owner, JSON capableResource, ImportedRoutingStep_SC importedRoutingStep) as ImportedCapableResource
+{
+  Description: 'Parse the JSON data from 3DSpace to create capable resources.'
+  TextBody:
+  [*
+    assetID := ImportedCapableResource::GetAssetID( capableResource );
+    
+    importedCapableResource := select( importedRoutingStep, ImportedCapableResource, res, true, res.AssetID() = assetID );
+    
+    if( isnull( importedCapableResource ) )
+    {
+      importedCapableResource := ImportedCapableResource::Create( owner, assetID ); 
+    }
+      
+    importedCapableResource.Update( capableResource, importedRoutingStep );
+    
+    return importedCapableResource;
+  *]
+}

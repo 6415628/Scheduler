@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CheckCanBeDeleted () declarative as Boolean
+{
+  TextBody:
+  [*
+    /* Exportedtask can be cleaned up when operation is finished or ( unplanned and not started ).
+    Task:
+    This logic will covers the scenarios where:
+    a)  exported task that is finished will be deleted
+    b)  exported task that is not finished, not started and not planned will be deleted.
+    c)  exported task that is not finished, not started, isplanned but not in scheduling horizon will be deleted 
+    
+    StoppageTask:
+    a) exported task where it is unplanned*/
+    
+    value := false;
+    
+    if( this.TaskType() = Constants::TaskType_Task() )
+    {
+      operation := this.Operation_SC();
+      
+      value := ( isnull( operation )                // no operation
+                 or ( operation.HasEnded() // operation has reported end
+                      or ( not operation.Started()  // operation not started
+                           and ( not operation.IsPlanned() or not operation.IsStartInSchedulingHorizon() ) ) ) ); //operation not planned or ( isplanned but not in scheduling horizon )
+    }
+    else if( this.TaskType() = Constants::TaskType_ProgramChange() 
+             or this.TaskType() = Constants::TaskType_ShutDown() )
+    {
+      value := isnull( this.StoppageTask() );
+    }
+    
+    return value;
+  *]
+}

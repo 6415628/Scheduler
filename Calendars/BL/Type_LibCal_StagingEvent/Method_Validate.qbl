@@ -1,0 +1,88 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Validate
+{
+  TextBody:
+  [*
+    // First reset.
+    this.ResetValidation();
+    
+    // Execute the validations.
+    // Use a FeedbackObject to collect the validation feedback.
+    feedback := LibCal_Validate::FeedbackObject();
+    
+    // Type
+    type := this.Type().TrimBoth();
+    
+    LibCal_Validate::RegisterError( LibCal_Validate::Event_Type( type ) );
+    
+    // Type 'Partial' is only allowed when using partial capacity is enabled.
+    LibCal_Validate::RegisterWarning( LibCal_Validate::Event_UsePartialCapacity( type, this.PartialCapacity() ) );
+    
+    // PartialCapacity
+    // Only validate when the value will be used.
+    if( feedback.IsAllowed() and
+        type = LibCal_Event::TYPE_PARTIAL() )
+    {
+      LibCal_Validate::RegisterError( LibCal_Validate::Event_PartialCapacity( this.PartialCapacity() ) );
+    }
+    
+    // StartTimeOfDay
+    LibCal_Validate::RegisterError( LibCal_Validate::Event_StartTimeOfDay( this.StartTimeOfDay() ) );
+    
+    // Duration
+    LibCal_Validate::RegisterError( LibCal_Validate::Event_Duration( this.Duration() ) );
+    
+    // The rest of the fields specify the RecurrencePattern of the event.
+    // They are only applicable when IsRecurring = TRUE.
+    if( this.IsRecurring() )
+    {
+      patternType := this.PatternType().TrimBoth();
+      
+      // PatternType
+      LibCal_Validate::RegisterError( LibCal_Validate::Event_Pattern_Type( patternType ) );
+      
+      // RecurrenceInterval
+      LibCal_Validate::RegisterError( LibCal_Validate::Event_Pattern_RecurrenceInterval( this.RecurrenceInterval() ) );
+      
+      // Validate the Recurrence Patterns.
+      if( patternType = LibCal_RecurrencePattern::TYPE_WEEKLY() )
+      {
+        prefix    := "PatternWeekly_";
+        eventInfo := "";
+        LibCal_Validate::Event_Pattern_Weekly( prefix, this.PatternWeekly_Weekdays(), eventInfo );
+      }  
+      else if( patternType = LibCal_RecurrencePattern::TYPE_MONTHLY() )
+      {
+        prefix    := "PatternMonthly_";
+        eventInfo := "";
+        LibCal_Validate::Event_Pattern_Monthly( prefix,
+                                                this.PatternMonthly_IsDay(),
+                                                this.PatternMonthly_Day(),
+                                                this.PatternMonthly_WeekOfMonth(),
+                                                this.PatternMonthly_DayOfWeek(),
+                                                eventInfo );
+      }
+      else if( patternType = LibCal_RecurrencePattern::TYPE_YEARLY() )
+      {
+        prefix    := "PatternYearly_";
+        eventInfo := "";
+        LibCal_Validate::Event_Pattern_Yearly( prefix,
+                                               this.PatternYearly_Month(),
+                                               this.PatternYearly_IsDay(),
+                                               this.PatternYearly_Day(),
+                                               this.PatternYearly_WeekOfMonth(),
+                                               this.PatternYearly_DayOfWeek(),
+                                               eventInfo );
+      }
+    }
+    
+    /*** WARNINGS ***/
+    
+    // Category
+    LibCal_Validate::RegisterWarning( LibCal_Validate::Event_Category( this.Category() ) );
+    
+    // Process the feedback that has been registered by the validation (if any).
+    this.ProcessFeedbackObject( feedback );
+  *]
+}

@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectAll () id:Method_TabPageRuleScope_SelectAll
+{
+  #keys: '[136602.1.884971]'
+  Body:
+  [*
+    if( RadioButtonGroupRuleScope.BoundValue() = RuleConstant::RuleScope_AllTasksOnResource() )
+    {
+      // Select all resources which can apply the rule characteristic main
+      resources := selectset( Schedule, ResourceGroup_SC.Resource_SC, resource, resource.CheckCanApplyCharacteristic( DataHolderCharacteristicMainInScopeTabPage.Data() ) );
+      DataHolderSelectedResourcesInRuleScope.Data( &resources );
+    }
+    else if( RadioButtonGroupRuleScope.BoundValue() = RuleConstant::RuleScope_Shutdown() )
+    {
+      // Select all shutdown types 
+      shutdowntypes := selectset( Schedule, ShutdownType, st, true );
+      DataHolderSelectedShutdownTypesInRuleScope.Data( &shutdowntypes );
+    }
+    else if( RadioButtonGroupRuleScope.BoundValue() = RuleConstant::RuleScope_Program() )
+    {
+      // Select all program types 
+      programtypes := selectset( Schedule, ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration, pt, true );
+      DataHolderSelectedProgramTypesInRuleScope.Data( &programtypes );
+    }
+    else if( RadioButtonGroupRuleScope.BoundValue() = RuleConstant::RuleScope_ProgramPhase() )
+    {
+      // Select all program phases
+      programphases := selectset( Schedule, ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration.ProgramPhaseConfiguration, pp, 
+                                  pp.CheckCanApplyPhaseTransitionRule( CheckBoxIsProgramPhaseTransitionRule.Checked(), 
+                                                                       DataHolderCurrentRule.Data().WrappedInstance() ) );
+      DataHolderSelectedProgramPhasesInRuleScope.Data( &programphases );
+    }
+  *]
+}

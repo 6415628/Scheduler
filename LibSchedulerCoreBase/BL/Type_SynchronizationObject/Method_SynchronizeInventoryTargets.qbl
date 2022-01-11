@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeInventoryTargets
+{
+  Description: 'Synchronizes inventory targets from imported data.'
+  TextBody:
+  [*
+    allinstances := selectset( this, Schedule.Product_SC.ProductInStockingPoint.InventoryTarget, it, true );
+    updatedinstances := construct( InventoryTargets );
+    
+    traverse( this, Schedule.ImportedInventoryTarget, row, row.IsValidDataHard() )
+    {
+      productInStockingPoint := ProductInStockingPoint::FindProductInStockingPoint( row.StockingPointID(), row.ProductID() );
+      inventoryTarget := InventoryTarget::FindInventoryTarget( row.ProductID(), row.StockingPointID(), row.TargetDate() );
+      
+      if( not isnull( productInStockingPoint ) and isnull( inventoryTarget ) )
+      {
+        inventoryTarget := InventoryTarget::Create( productInStockingPoint, row.ProductID(), row.StockingPointID(), row.TargetDate() );
+      }
+      
+      inventoryTarget.Update( row );
+      inventoryTarget.SynchronizeStockElement();
+      
+      updatedinstances.Add( inventoryTarget );
+    }
+    
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, old )
+    {
+      old.Delete();
+    }
+  *]
+}

@@ -1,0 +1,78 @@
+Quintiq file version 2.0
+#parent: #root
+Method FindCreateTemplateDB (String fileName_i, Object rootObject_i, Boolean overwrite_i) as owning DataUpgradeIO
+{
+  Description: "Locates and connects to a database file, creates one with a template if it doesn't exist"
+  TextBody:
+  [*
+    // tgn3 Apr-8-2021 (created)
+    
+    /* DevNote:
+    This method can be called for Templates, Export, and File open (rootObject_i = null)
+    - Both 'Template' and 'Export' may need to use 'AddTemplate', but 'Export'
+      shouldn't augment columns
+    - File open should never add a template.
+    */
+    
+    // If overwrite is true, need to try and delete existing file
+    if( overwrite_i )
+    {
+      DMF_DBInterface::CheckDeleteFile( fileName_i );
+    }
+    
+    DMF_DBInterface::PrepareFolderStructure( fileName_i );
+    
+    // Check if 'fileName_i' is in export path
+    // isTemplate and isFileOpen should be mutually exclusive (they cannot both be true at the same time)
+    isFileOpen := isnull( rootObject_i );
+    isTemplate := fileName_i.StartsWith( this.ConvertorDataset().Settings().DataUpgradeTemplatesDirectory() );
+    
+    // Debug - do not delete
+    //logfile( ">>> findCreateTemplateDB", fileName_i, isFileOpen, isTemplate );
+    
+    // Initialize duio
+    // DevNote: the DataUpgradeIO API handles the creation process if the file doesn't exist
+    duio := null( DataUpgradeIO, owning );
+    
+    if( isFileOpen )
+    {
+      // Open file
+      duio := DataUpgradeIO::Create( DMF_DBInterface::GetSQLDataTypeForExport(), fileName_i );
+    }
+    else if( isTemplate )
+    {
+      // For templates, always directly create, then add template with column augment
+      duio := DataUpgradeIO::Create( DMF_DBInterface::GetSQLDataTypeForExport(), fileName_i );
+      
+      this.AddTemplate( duio, fileName_i, rootObject_i, true );
+    }
+    else
+    {
+      // Export
+      templateFile := this.GetTemplateFile( fileName_i, rootObject_i );
+      hasTemplate  := OS::IsFile( templateFile );
+      
+      // Debug - do not delete
+      //logfile( ">>> Export.HasTemplate", hasTemplate );
+          
+      // If a template is found specify one here
+      // Otherwise, a template should be added without any column augmentation
+      // DevNote: If a template is added with 'AddTemplate', it seems to not include augmented columns on 'Export'
+      if( hasTemplate )
+      {
+        duio := DataUpgradeIO::Create( DMF_DBInterface::GetSQLDataTypeForExport(), fileName_i, templateFile );
+      }
+      else
+      {    
+        duio := DataUpgradeIO::Create( DMF_DBInterface::GetSQLDataTypeForExport(), fileName_i );
+        
+        // DevNote: Passing true might be bugged - Pending further info from R&D dev/QE
+        // Answer: It's intended. To load extra columns, you must export data with a templateFile specified into DUIO::Create()
+        this.AddTemplate( duio, fileName_i, rootObject_i, false );
+      }
+    }
+    
+    return &duio;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method CanReplan (Boolean skipsoftcheck, output String feedback_o, output Boolean isallowedhard_o) declarative remote as Boolean
+{
+  Description: 'Checks operation status if it is allowed to be replanned'
+  TextBody:
+  [*
+    // Operation cannot be replanned if:
+    // 1. Operation is started
+    // 2. Operation is finished
+    // 3. Operation is completed (downstream started or finished).
+    // 4. Operation is used in optimization
+    // 5. Operation is locked by optimizer
+    // 6. Operation is frozen (soft constraint and can be overridden)
+    
+    // Hard rules
+    value := this.CheckIsStarted( feedback_o )
+             and this.CheckIsFinished( feedback_o )
+             and this.CheckIsCompleted( feedback_o )
+             and not this.CheckIsOptimizing( feedback_o )
+             and this.CheckIsLocked( feedback_o );
+    
+    isallowedhard_o := isallowedhard_o and value;
+    
+    // Soft rules
+    if( value and not skipsoftcheck )
+    {
+      value := this.CheckIsFrozen( feedback_o ) and value;
+      value := this.CheckIsFrozenByUser( feedback_o ) and value;
+    }
+    
+    return value;
+  *]
+}

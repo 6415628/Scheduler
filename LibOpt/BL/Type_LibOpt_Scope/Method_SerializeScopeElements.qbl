@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method SerializeScopeElements () as owning JSONBuilder
+{
+  TextBody:
+  [*
+    
+    array := JSON::Array();
+    
+    key_comment := LibOpt_Scope::JSON_Comment();
+    key_id := attribute( LibOpt_ScopeElement, InternalIdentifier ).Name();
+    
+    scope_elements := selectsortedset( this.ScopeElementsConst(), Elements, se, true, se.Key() );
+    traverse( scope_elements, Elements, se )
+    {
+      se_json := JSON::Object();
+      se_json.Add( key_comment, this.GetComment( se ) );
+      se_json.Add( key_id, [String] se.InternalIdentifier() );
+      se_json.Add( attribute( LibOpt_ScopeElement, Identifier ).Name(), se.Identifier() );
+      se_json.Add( attribute( LibOpt_ScopeElement, Details ).Name(), se.Details() );
+      array.Add( se_json );
+    }
+    
+    return & array;
+  *]
+}

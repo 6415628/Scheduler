@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericBatchTask (const GenericBatchResource genericBatchResource)
+{
+  Description: 'Backup generic batch task core data'
+  TextBody:
+  [*
+    traverse( genericBatchResource, BatchTask.astype( GenericBatchTask ), genericBatchTask )
+    {
+      cdGenericBatchTask := this.CDEntity( relnew, CDGenericBatchTask );
+      CopyCorresponding::CopyFrom( genericBatchTask ).CopyTo( cdGenericBatchTask );
+      
+      // Additonal attribute in core data to persist the resoure that this batch task belongs
+      cdGenericBatchTask.ResourceID( genericBatchResource.ResourceID() ); 
+     
+      // Additonal attribute in core data to persist the batch that this batch task relates to
+      cdGenericBatchTask.BatchID( guard( genericBatchTask.Batch().BatchID(), '' ) );
+      
+      // Additional attribute in core data to be used to find the corresponding task during restore
+      cdGenericBatchTask.BackupTaskID( genericBatchTask.TaskID() );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

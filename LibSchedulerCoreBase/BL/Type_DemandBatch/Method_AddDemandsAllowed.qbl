@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddDemandsAllowed (Demands demands, DemandBatchType demandbatchtype, Boolean skipbatchquantitycheck, 
+  Boolean skipsoftcheck) declarative remote as Boolean
+{
+  Description: 'Checks if demands can be added to the batch by checking both hard rules and soft rules.'
+  TextBody:
+  [*
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    value := this.AddDemandsAllowedHard( demands, demandbatchtype, skipbatchquantitycheck );
+    
+    if( value and not skipsoftcheck )
+    {
+      value := this.AddDemandsAllowedSoft( demands );
+    }
+    
+    return feedbackobject.IsAllowedWithOverride( skipsoftcheck );
+  *]
+}

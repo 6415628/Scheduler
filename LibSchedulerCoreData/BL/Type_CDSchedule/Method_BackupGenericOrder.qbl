@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericOrder (const Schedule schedule)
+{
+  Description: 'Backup generic order core data'
+  TextBody:
+  [*
+    traverse( schedule, Order_SC.astype( GenericOrder ), genericOrder )
+    {
+      cdGenericOrder := this.CDEntity( relnew, CDGenericOrder );
+      CopyCorresponding::CopyFrom( genericOrder ).CopyTo( cdGenericOrder );
+      
+      // Additonal attribute in core data to persist the work order related to this order
+      cdGenericOrder.WorkOrderID( guard ( genericOrder.WorkOrder().Id(), '' ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

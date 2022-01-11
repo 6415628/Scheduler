@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: vhAsyncActionStatus
+Response OnValueChanged () id:Response_LibPTF_pnlTestRunner_vhAsyncActionStatus_OnValueChanged
+{
+  #keys: '[112938.0.754320553]'
+  Body:
+  [*
+    // PTF MODELING HANDLE - Asynchronous action status indicator
+    // Set the DataBinding property to a callback value to have the PTF resume its execution
+    runner := LibPTF_pnlTestRunner;
+    status := vhPTFExecutionStatus.Value();
+    
+    // Assuming that the ValueHolder is bound to an attribute like 'IsBusy', that indicates that an asynchronous action
+    // has been triggered and the PTF has to wait. Waiting state is entered by using PTF_GUITimerPause().
+    // When the asynchrone action is finished 'IsBusy' must be to false (in the model) which will trigger this response.
+    if( not( status = LibPTF::ExecStatusStopped()
+             or status = LibPTF::ExecStatusInactive()
+           )
+        and this.Value() = "false"
+      )
+    {
+      // Resume GUI Timer
+      runner.PTF_GUITimerResume();
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_ValueHolder_OnValueChanged'
+}

@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestEnableRuleConditionForShutdownRule_Setup (Schedule schedule)
+{
+  Description: 'Test rule with enabled rule condition for shutdown rule - setup'
+  TextBody:
+  [*
+    // Get variant attributes
+    isvariantfound := false;
+    isconditionenable := false;
+    conditionScope := '';
+    conditionValue := false;
+    operationAttributeValue := false;
+    hasNoViolateConstraint := false;
+    
+    this.GetShutdownTestVariant( isvariantfound,
+                                 isconditionenable,
+                                 conditionScope,
+                                 conditionValue,
+                                 operationAttributeValue,
+                                 hasNoViolateConstraint );
+    
+    if( isvariantfound )
+    {
+      // Initialize rule framework and characteristic
+      schedule.InitializeRuleFramework();
+      schedule.InitializeCharacteristic();
+      
+      // Create shutdown scheduling data
+      this.CreateShutdownSchedulingData( schedule );
+      
+      // Create shutdown rule
+      rule := this.CreateShutdownRule( schedule );
+      
+      // Set the rule condition value based on variant
+      characteristiccondition := select( schedule, Characteristic, char, char.ID() = RuleConstant::Characteristic_OperationNeedsEdgeTrimming() );
+      rule.IsConditionEnabled( isconditionenable );
+      if( isconditionenable )
+      {
+        rule.ConditionScope( conditionScope );
+        rule.ConditionValue( conditionValue ); 
+        rule.CharacteristicCondition( relset, characteristiccondition );
+      }
+    
+      // Set the operation 5 & 10 width with different value as transition/violated operation
+      currentoperation := select( schedule, PlanUnit_SC.Operation_SC, op, op.OperationID() = 'operation2' );
+      currentoperation.NeedsEdgeTrimming( operationAttributeValue );
+    }
+  *]
+}

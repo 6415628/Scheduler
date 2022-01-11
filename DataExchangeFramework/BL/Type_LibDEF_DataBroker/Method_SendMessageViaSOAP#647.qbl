@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendMessageViaSOAP (String targetSystemGUID_i, String targetHostName_i, Number targetPortNumber_i, 
+  NamedValueTree nvt_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Send the message to the destination using the async-SOAP client.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-21-2016 (created)
+    // Check that the target is not self
+    if( targetSystemGUID_i = this.SystemGUID() or
+        ( targetHostName_i = OS::ComputerName() and targetPortNumber_i = LibDEF_Util::GetSettingValueWebServerPortNumber() ) )
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  "Failed to send data via SOAP",
+                                  "Sending SOAP message failed. Sending to 'self' is not possible." );
+    }
+    
+    // If the recipient's hostname is the same with the current machine's hostname, change it to 'localhost' instead.
+    // A temporary workaround as SOAP is unable to send to the same machine using absolute hostname.
+    hostName := targetHostName_i;
+    if( hostName = OS::ComputerName() )
+    {
+      hostName := 'localhost';
+    }
+    
+    // Send messages to System via SOAP
+    soapInterface := LibDEF_SOAPClient::CreateInterface();
+    
+    // Set the SOAP settings
+    LibDEF_Util::SetSOAPClientInterfaceConfiguration( soapInterface,
+                                                      hostName,
+                                                      targetPortNumber_i,
+                                                      "LibDEF_SOAPServer",
+                                                      LibDEF_DataBroker::SOAPMETHOD_EXCHANGEDATA(),
+                                                      LibDEF_DataBroker::DATASET_KIND(),
+                                                      LibDEF_DataBroker::DATASET_NAME() );
+    
+    // Turn the NVT into a message (i.e. the payload of the SOAP-call).
+    // But before that, we prepare the message for transmission (do last processing before transmission).
+    nvtToBeSent := LibDEF_DataAccessor::ProcessMessageForTransmission( nvt_i );
+    serializedNvt := LibDEF_DataAccessor::NVTSerialize( nvtToBeSent );
+    
+    // Do the call asynchronous.
+    soapInterface.ASync_ExchangeData( serializedNvt, this, event_i,
+                                      targetSystemGUID_i, targetHostName_i, targetPortNumber_i,
+                                      nvt_i );
+    
+    // To handle Sending transaction
+    this.EventCompleteTransaction();
+  *]
+}

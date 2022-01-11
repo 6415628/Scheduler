@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method Setup (Schedule schedule)
+{
+  Description: 'UTF setup logic.'
+  TextBody:
+  [*
+    // Create routing and imported external work order
+    this.CreateImportedRoutings( schedule );
+    this.CreateImportedRoutingsSteps( schedule );
+    this.CreateImportedExternalWorkOrder( schedule );
+    this.CreateImportedExternalWorkOrderOperation( schedule );
+    this.CreateImportedProduct( schedule );
+    this.CreateImportedStockingPoint( schedule );
+    this.CreateImportedProductInStockingPoint( schedule );
+    
+    // Propagate attribute IsValidDataHard for synchronization
+    Transaction::Transaction().Propagate( attribute( ImportedRouting_SC, IsValidDataHard ) );
+    Transaction::Transaction().Propagate( attribute( ImportedRoutingStep_SC, IsValidDataHard ) );
+    Transaction::Transaction().Propagate( attribute( ImportedProduct_SC, IsValidDataHard ) );
+    Transaction::Transaction().Propagate( attribute( ImportedStockingPoint_SC, IsValidDataHard ) );
+    Transaction::Transaction().Propagate( attribute( ImportedProductInStockingPoint_SC, IsValidDataHard ) );
+    
+    schedule.SynchronizationObject().SynchronizeRoutings();
+    schedule.SynchronizationObject().SynchronizeStockingPoints();
+    schedule.SynchronizationObject().SynchronizeProducts();
+    
+    this.CreateInternalWorkOrder( schedule );
+    
+    Transaction::Transaction().Propagate( attribute( ImportedExternalWorkOrder, IsValidDataSoft ) );
+  *]
+}

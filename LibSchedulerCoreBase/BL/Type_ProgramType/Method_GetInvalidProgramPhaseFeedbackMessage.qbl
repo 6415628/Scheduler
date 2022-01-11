@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetInvalidProgramPhaseFeedbackMessage () declarative remote as String
+{
+  Description: 'Get invalid program phase feedback message'
+  TextBody:
+  [*
+    // Get invalid program phase feedback message
+    
+    // Get current program phases which has task
+    currentphases := construct( Strings );
+    programphasehastasks := selectsortedset( this, ProgramPhase, phase, phase.HasTasks(), phase.SequenceNr() );
+    traverse( programphasehastasks, Elements, phase )
+    {
+      currentphases.Add( phase.ProgramPhaseConfiguration().Name() );  
+    }
+    
+    // Get phase configuration which sequence number is <= current program last phase number
+    configphases :=  construct( Strings );
+    phaseconfiguration := selectsortedset( this, ProgramTypeConfiguration.ProgramPhaseConfiguration, phase,
+                                           guard( phase.SequenceNr() <= this.LastTaskInProgramSet().ProgramPhase().SequenceNr(), false ),
+                                           phase.SequenceNr() );
+    traverse( phaseconfiguration, Elements, phase )
+    {
+      configphases.Add( phase.Name() );  
+    }
+    
+    return Translations::Program_InvalidProgramPhases( currentphases.ToString( Constants::SemiColon() ),
+                                                       configphases.ToString( Constants::SemiColon() ) );
+  *]
+}

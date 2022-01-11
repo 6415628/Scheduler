@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method Import (NamedValueTree nvt) as LibOpt_Settings
+{
+  TextBody:
+  [*
+    root := nvt.Root().AddChild( nvt.GetHandle( this.DefinitionName() ) );
+    root.SetValue( this.Key() );
+    
+    traverse( nvt.Root().Children(), Elements, child, child <> root )
+    {
+      child.Move( root, true );
+    }
+    
+    this.RemoveMetadata( nvt, root );
+    this.RenameAfterType( typeofexpression( this ), nvt, root );
+    
+    new_owned := NamedValueTreeIO::ImportObject( nvt, root, typeofexpression( this ) ).astype( LibOpt_Settings );
+    
+    new := this.Optimizer().Settings( relinsert, & new_owned );
+    this.Optimizer().ActiveSettings( relset, new );
+    
+    return new;
+  *]
+}

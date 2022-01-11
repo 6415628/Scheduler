@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetMPSPlannedOrder () declarative remote as MPSPlannedOrder
+{
+  Description: 'Retrieves the associated MPS planned order.'
+  TextBody:
+  [*
+    order := this.Order_SC();
+    
+    return select( this, 
+                   Schedule.MPSPlan.MPSPlannedOrder, 
+                   mpsPlannedOrder, 
+                   // First check routing
+                   mpsPlannedOrder.RoutingID() = this.RoutingID()
+                   // Then check whether order was completed within the MPS Period 
+                   // Unless it is not fully scheduled, then take matching due dates
+                   and ifexpr( guard( order.IsPlanned(), false ),
+                               mpsPlannedOrder.MPSPeriodStart() <= order.CompletionTime() and mpsPlannedOrder.MPSPeriodEnd() > order.CompletionTime(),
+                               mpsPlannedOrder.DueDate() = this.DueDate() ) );
+  *]
+}

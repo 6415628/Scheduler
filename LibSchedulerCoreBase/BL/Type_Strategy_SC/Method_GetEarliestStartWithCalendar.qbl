@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetEarliestStartWithCalendar (DateTime earlieststart) declarative as DateTime
+{
+  Description: 'Determine the EarliestStart of the Strategy based on their calendar strategy.'
+  TextBody:
+  [*
+    // alexandern Sep-25-2015 (created) QP #5498
+    task := this.Task_SC();
+    resource := task.Resource_SC();
+    
+    if( resource.UseFitCalendarStrategy() )
+    {
+      earlieststart  := resource.ResourceCalendar().NextFit( earlieststart, task.NetDuration() );
+    }
+    else
+    {
+      //Gooi: added on 13feb2009
+      /*desc:
+      When there are some time left over, we can utilize it for setup, but the actual process will only start after the calender (fit)
+      This means that the earliest start is calculated based on nextfit - setup duration.
+      Because there might be some case that the machine is not available at that time, therefore we need to take the maxvalue of machine earliest
+        available time and task's earliest start time
+      */
+      earlieststart  :=  resource.ResourceCalendar().NextAvailable( earlieststart );
+      // AlexanderNg 23-Sep-2015 QP #5792
+      if( resource.UseFitProcessCalendarStrategy() )
+      {
+        preprocessearliestend := resource.ResourceCalendar().Add( earlieststart, task.DurationBeforeProcess() );
+        processearlieststart := resource.ResourceCalendar().NextFit( preprocessearliestend, task.ProcessDuration() );
+        earlieststart := resource.ResourceCalendar().Subtract( processearlieststart, task.DurationBeforeProcess() );
+      }
+    }
+    
+    return earlieststart;
+  *]
+}

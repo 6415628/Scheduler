@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateImportedMPSPlans (Schedule schedule) as owning ImportedMPSPlans
+{
+  TextBody:
+  [*
+    importedMPSPlans := construct( ImportedMPSPlans );
+    
+    variant := this.Variant();
+    timeStamp := schedule.Time();
+    testInstance := this.GetTestInstance( variant );
+    
+    // Decide whether to create 1 or 2 MPS Plans based on test variant
+    nrOfMPSPlan := ifexpr( testInstance.HasMultipleMPSPlan(), 2, 1 );
+    
+    for( i := 0; i < nrOfMPSPlan; i++ )
+    {
+      mpsPlanID := ifexpr( testInstance.HasMultipleMPSPlan(), variant.Concat( [String] i ), variant );
+      
+      importedMPSPlan := ImportedMPSPlan::FindImportedMPSPlan( mpsPlanID );
+      
+      if( isnull( importedMPSPlan ) )
+      {
+        importedMPSPlan := ImportedMPSPlan::Create( schedule, mpsPlanID );
+      }
+      
+      importedMPSPlan.Update( timeStamp );
+      importedMPSPlans.Add( importedMPSPlan );
+      
+      // Differ time stamp for next created MPSPlan
+      timeStamp := timeStamp + Duration::Days( i );
+    }
+    
+    return &importedMPSPlans;
+  *]
+}

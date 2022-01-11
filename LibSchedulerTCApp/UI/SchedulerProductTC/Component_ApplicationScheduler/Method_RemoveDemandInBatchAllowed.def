@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method RemoveDemandInBatchAllowed (structured[DemandInBatch] demandinbatches, output String feedback) as Boolean id:Method_ApplicationScheduler_RemoveDemandInBatchAllowed
+{
+  #keys: '[141086.0.114559196]'
+  Body:
+  [*
+    // Remove from batch
+    value := true;
+    
+    if( demandinbatches.Size() = 0 )
+    {
+      value := false;
+      feedback := Translations::SC_Demand_NotPlannedInBatch();
+    }
+    
+    if( value )
+    {
+      value := DemandInBatch::RemoveAllowed( demandinbatches );
+    
+      // Workaround to show feedback in the old way until all responses are converted to use FeedbackObject.
+      // Do not show 'Hold Ctrl to override' for menu item
+      feedback := ApplicationScheduler.ShowOldStyleFeedbackWithoutOverrideOption( FeedbackObject::CurrentFeedback().Feedback() );
+    }
+    return value;
+  *]
+}

@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_Optimizer (CDSchedule cdschedule)
+{
+  Description: 'Restore optimizer core data attribtues into planning objects'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    optimizer := schedule.Optimizer();  
+    if( isnull( optimizer ) )
+    {
+      // Create the optimizer if it does not exist
+      Optimizer::Create( schedule );
+    }
+    
+    cdoptimizer := select( cdschedule, CDEntity.astype( CDOptimizer ), cdopt, true );
+    if( not isnull( cdoptimizer ) )
+    {
+      CopyCorresponding::CopyFrom( cdoptimizer ).CopyTo( optimizer );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

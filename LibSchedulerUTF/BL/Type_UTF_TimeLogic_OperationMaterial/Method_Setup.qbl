@@ -1,0 +1,93 @@
+Quintiq file version 2.0
+#parent: #root
+Method Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    testinstance := this.GetTestInstanceMain( variant );
+    
+    // Set company time
+    schedule.Time( UTFUtility::GetCompanyTime() );
+    
+    // Create Order
+    order := UTFMockObjectFactory::CreateOrder( schedule, testinstance.TestInstanceID() );
+    order.DueDate( testinstance.DueDate() );
+    
+    // Create PlanUnit
+    planunit := UTFMockObjectFactory::CreatePlanUnit( order, testinstance.TestInstanceID(), 1.0 );
+    planunit.Update( testinstance );
+    
+    // Create OperationMaterial
+    om := GenericOperationMaterial::Create( planunit, testinstance.TestInstanceID() );
+    
+    // Create InputOperation
+    if( testinstance.HasInputOperation() )
+    {
+      // Create UTF resource group and resource
+      resource := UTFMockObjectFactory::CreateSingleResource( schedule, testinstance.TestInstanceID() + 'Upstream' );
+      LeadTimeStrategy_SC::Create( resource, Duration::Zero(), testinstance.ResourceStrategy() );
+    
+      prev_op := UTFMockObjectFactory::CreateOperation( planunit );
+      prev_op.Update( testinstance, true );
+    
+      om.FromOperation( relset, prev_op );
+      
+      UTFMockObjectFactory::CreateSingleTask( resource, prev_op );
+      
+      // Propagate relation operationonresource required for processduration setting later                     
+      Transaction::Transaction().Propagate( relation( Operation_SC, OperationOnResource ) );
+      
+      // Create subtasktypeonresourcegroup and set the duration
+      resourcegroup := resource.ResourceGroup_SC().astype( UTFResourceGroup );
+      resourcegroup.CreateSubTaskTypeOnResourceGroup( testinstance.UTF_TL_SubTasks_ID_Upstream(), resource );
+    }
+    
+    // Create OutputOperation
+    if( testinstance.HasOutputOperation() )
+    {
+      // Create UTF resource group and resource
+      resource := UTFMockObjectFactory::CreateSingleResource( schedule, testinstance.TestInstanceID() + 'Downstream' );
+      LeadTimeStrategy_SC::Create( resource, Duration::Zero(), testinstance.ResourceStrategy() );
+      
+      operation := UTFMockObjectFactory::CreateOperation( planunit );
+      operation.Update( testinstance, false );
+    
+      om.ToOperation( relset, operation ); // Linking OM to downstream operation
+      
+      // Plan operation to create task
+      UTFMockObjectFactory::CreateSingleTask( resource, operation );
+      
+      // Propagate relation operationonresource required for processduration setting later                     
+      Transaction::Transaction().Propagate( relation( Operation_SC, OperationOnResource ) );
+      
+      // Create subtasktypeonresourcegroup and set the duration
+      resourcegroup := resource.ResourceGroup_SC().astype( UTFResourceGroup );
+      resourcegroup.CreateSubTaskTypeOnResourceGroup( testinstance.UTF_TL_SubTasks_ID_Downstream(), resource );
+    }
+    
+    // Create demand, supply and fulfillment if HasFulfillment is enabled
+    if( testinstance.HasFulfillment() )
+    {
+      demand := GenericProductDependentDemand::Create( schedule, UTFUtility::UTF(), UTFUtility::UTF() );
+      supply := GenericProductPlannedSupply::Create( schedule, UTFUtility::UTF(), UTFUtility::UTF() );
+      supply.Quantity( testinstance.FulfillmentQty() );
+      // Create previous operation
+      prev_operation := UTFOperation::Create( planunit, UTFUtility::UTF() );
+      prev_operation.Type( UTFUtility::UTF() );
+      prev_operation.HasEarliestEndUTF( true );
+      prev_operation.EarliestEnd_UTF( testinstance.MaterialAvailableTime() );
+      // Link supply to operation
+      supply.Operation_SC( relset, prev_operation );
+      // Create fulfillment
+      fulfillment := GenericProductPlannedFulfillment::Create( demand, supply );
+      fulfillment.QuantityDecision( testinstance.FulfillmentQty() );
+      fulfillment.OperationMaterial( relset, om );
+    }
+    
+    // Propagate all declarative attributes/relations prior to assertion in the actual test method.                                       
+    Transaction::Transaction().Propagate();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

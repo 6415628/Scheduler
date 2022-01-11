@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateProducts (Schedule schedule) as owning Product_SCs
+{
+  Description: 'Create products based on test instance.'
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    
+    testInstanceSupplies := this.GetTestInstanceSupplies( variant );
+    testInstanceDemands := this.GetTestInstanceDemands( variant );
+    
+    supplyProductIDs := selectuniquevalues( testInstanceSupplies, Elements, row, true, row.ProductID() );
+    demandProductIDs := selectuniquevalues( testInstanceDemands, Elements, row, true, row.ProductID() );
+    
+    isDiscrete := testInstanceSupplies.Element( 0 ).IsDiscrete();
+    uom := testInstanceSupplies.Element( 0 ).UoM();
+    type := '';
+    pieceWeight := 1.0;
+    
+    productIDs := supplyProductIDs.Union( demandProductIDs );
+    
+    products := construct( Product_SCs );
+    
+    traverse( productIDs, Elements, productid, productid.Length() > 0 )
+    {
+      product := Product_SC::FindProductId( productid );
+      
+      if( isnull( product ) )
+      {
+        product := GenericProduct::Create( schedule, productid );
+      }
+      
+      product.IsDiscrete( isDiscrete );
+      product.Name( productid );
+      product.PieceWeight( pieceWeight );
+      product.Type( type );
+      product.UoM( uom );
+      products.Add( product );
+    }
+    
+    return &products;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

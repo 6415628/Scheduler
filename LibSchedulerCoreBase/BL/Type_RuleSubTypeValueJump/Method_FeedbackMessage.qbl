@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride FeedbackMessage (const Rule rule, DORule_DataObjectSequencingRule do_rule) const declarative remote as String
+{
+  TextBody:
+  [*
+    // Construct feedback message for allowed/not allowed value jump
+    feedback := '';
+    
+    if( this.IsAllowed() )
+    {
+      feedback := Translations::RuleFeedback_NotInAllowedValueJump( rule.Name(),
+                                                                    guard( rule.CharacteristicMain().Name(), "" ),
+                                                                    do_rule.PreviousStringValue(),
+                                                                    do_rule.CurrentStringValue()
+                                                                   );
+    }
+    else
+    {
+      feedback := Translations::RuleFeedback_InNotAllowedValueJump( rule.Name(),
+                                                                    guard( rule.CharacteristicMain().Name(), "" ),
+                                                                    do_rule.PreviousStringValue(),
+                                                                    do_rule.CurrentStringValue()
+                                                                   );  
+    }
+    
+    // Append program set name
+    feedback := this.AppendProgramSetName( feedback, do_rule );
+    
+    return feedback;
+  *]
+}

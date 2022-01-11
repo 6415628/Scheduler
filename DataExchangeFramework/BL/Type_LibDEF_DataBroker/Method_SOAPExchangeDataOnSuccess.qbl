@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method SOAPExchangeDataOnSuccess (LibDEF_IntegrationEvent event_i, String systemGUID_i, String systemHostName_i, 
+  Number systemPortNumber_i, NamedValueTree nvt_i)
+{
+  Description: 'SOAP Client success handler for method ExchangeData.'
+  TextBody:
+  [*
+    // Log the send success status
+    if( not isnull( event_i ) )
+    {
+      LibDEF_Util::EventLog( event_i, "Data sent to " + LibDEF_Util::FormatCoordinateToString( systemHostName_i, systemPortNumber_i ) + " via SOAP." );
+    }
+    
+    // mark the system as available (only for known Systems)
+    if( systemGUID_i.Length() > 0 )
+    {
+      LibDEF_System::MarkAvailability( this, systemGUID_i, true, event_i );
+    }
+    
+    LibDEF_IntegrationEvent::EventComplete( event_i );
+    
+    // handle chunked data transmission case
+    if( LibDEF_DataAccessor::CheckIsChunkedDataTransmission( nvt_i ) )
+    {
+      this.OnSuccessExchangeDataByChunk( nvt_i );
+    }
+  *]
+}

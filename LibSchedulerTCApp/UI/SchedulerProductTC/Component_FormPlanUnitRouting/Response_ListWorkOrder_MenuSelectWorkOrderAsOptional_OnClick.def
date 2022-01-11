@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: ListWorkOrder
+Response OnClick (structured[WorkOrder] selection) id:Response_ListWorkOrder_MenuSelectWorkOrderAsOptional_OnClick
+{
+  #keys: '[137186.0.740758384]'
+  Body:
+  [*
+    // Add operations in selected work orders to OPTIONAL scope
+    mandatoryOperations := DataHolderOptimizerMandatoryOperations.Data();
+    optionalOperations := DataHolderOptimizerOptionalOperations.Data();
+    
+    operations := selectset( selection, Elements.WorkOrderOperation.Operation_SC, op, op.AllowedOperationOnResource( relsize ) > 0 );
+    
+    DataHolderOptimizerMandatoryOperations.Data( mandatoryOperations.Difference( operations ) );
+    DataHolderOptimizerOptionalOperations.Data( optionalOperations.Union( operations ) );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /ListWorkOrder/Responsedef_ListWorkOrder_Menu_OnClick
+  Initiator: 'MenuSelectWorkOrderAsOptional'
+  Precondition:
+  [*
+    operations := selectset( selection, Elements.WorkOrderOperation.Operation_SC, op, op.AllowedOperationOnResource( relsize ) > 0 );
+    return Operation_SC::CheckCanAddToOptimizerScope( operations, feedback );
+  *]
+}

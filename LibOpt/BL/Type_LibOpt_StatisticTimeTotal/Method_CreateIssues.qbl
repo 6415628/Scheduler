@@ -1,0 +1,116 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateIssues
+{
+  Description: 'Create `LibOpt_Issues` to highlight potential issues about values collected by this `LibOpt_StatisticTimeTotal`.'
+  TextBody:
+  [*
+    valuesvector := RealVector::Construct( this.ValuesAsRealVector() );
+    
+    // Check for lower threshold violations.
+    booleanvector_lowerthresholdviolation := valuesvector.SmallerThan( this.LowerThreshold() );
+    indexvector_lowerthresholdviolation := booleanvector_lowerthresholdviolation.AsIndexVector();
+    haslowerthresholdviolations := indexvector_lowerthresholdviolation.Size() > 0;
+    
+    // Check for upper threshold violations.
+    booleanvector_upperthresholdviolation := valuesvector.GreaterThan( this.UpperThreshold() );
+    indexvector_upperthresholdviolation := booleanvector_upperthresholdviolation.AsIndexVector();
+    hasupperthresholdviolations := indexvector_upperthresholdviolation.Size() > 0;
+    
+    // Create Issues if there are violations.
+    if( haslowerthresholdviolations or hasupperthresholdviolations )
+    {
+      //>> Variables needed for Issues creation.
+      issuetype := this.GetIssueType();
+      
+      iterations := construct( LibOpt_Iterations );
+      if( this.IsType() or this.IsRoot() )
+      {
+        iterations := selectsortedset( this, Run.Iteration, iteration,
+                                       // FILTER
+                                       true,
+                                       // VALUE
+                                       iteration.IterationNr()
+                                     );
+      }
+      
+      snapshotcomponents := construct( LibOpt_SnapshotComponents );
+      if( this.IsComponent() )
+      {
+        snapshotcomponents := selectsortedset( this, Component.SnapshotComponent, snapshotcomponent,
+                                               // FILTER
+                                               true,
+                                               // VALUE
+                                               snapshotcomponent.SequenceNr()
+                                             );
+      }
+      //<<
+      
+      if( haslowerthresholdviolations )
+      {
+        severityscaleentries_lowerthresholdviolation := LibOpt_Statistic::GetSeverityScaleEntriesSortedByThreshold( this.GetSeverityScaleForLowerThresholdViolation() );
+        
+        traverse( indexvector_lowerthresholdviolation.AsValues(), Elements, index )
+        {
+          value := valuesvector.Get( index );
+          
+          iteration := null( LibOpt_Iteration );
+          snapshot := null( LibOpt_Snapshot );
+          
+          if( this.IsComponent() )
+          {
+            snapshot := snapshotcomponents.Element( index );
+            iteration := snapshot.GetIteration();
+          }
+          else
+          {
+            iteration := iterations.Element( index );
+            snapshot := iteration.SnapshotOwning();
+          }
+          
+          // Create an Issue and link it to the relevant Snapshot.
+          LibOpt_Issue::Create( this,
+                                snapshot,
+                                issuetype,
+                                this.Focus() + ', ' + Translations::LibOpt_IterationNr( iteration.IterationNr(), this.Run().TotalNrOfIterations() ),
+                                this.GetSeverity( value, false /*is upper threshold violation*/, severityscaleentries_lowerthresholdviolation ),
+                                this.GetIssueDetails( value )
+                              );
+        }
+      }
+      
+      if( hasupperthresholdviolations )
+      {
+        severityscaleentries_upperthresholdviolation := LibOpt_Statistic::GetSeverityScaleEntriesSortedByThreshold( this.GetSeverityScaleForUpperThresholdViolation() );
+        
+        traverse( indexvector_upperthresholdviolation.AsValues(), Elements, index )
+        {
+          value := valuesvector.Get( index );
+          
+          iteration := null( LibOpt_Iteration );
+          snapshot := null( LibOpt_Snapshot );
+          
+          if( this.IsComponent() )
+          {
+            snapshot := snapshotcomponents.Element( index );
+            iteration := snapshot.GetIteration();
+          }
+          else
+          {
+            iteration := iterations.Element( index );
+            snapshot := iteration.SnapshotOwning();
+          }
+          
+          // Create an Issue and link it to the relevant Snapshot.
+          LibOpt_Issue::Create( this,
+                                snapshot,
+                                issuetype,
+                                this.Focus() + ', ' + Translations::LibOpt_IterationNr( iteration.IterationNr(), this.Run().TotalNrOfIterations() ),
+                                this.GetSeverity( value, true /*is upper threshold violation*/, severityscaleentries_upperthresholdviolation ),
+                                this.GetIssueDetails( value )
+                              );
+        }
+      }
+    }
+  *]
+}

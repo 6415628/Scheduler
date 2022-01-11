@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_040_RecoverLastTransaction_NextRunScope (LibOpt_TestDataset dataset)
+{
+  Description: 'This test tests whether starting a new run works correctly after a RecoverLastFailedRun has been executed.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    
+    se := dataset.ScopeElementMock( relnew );
+    ses := construct( LibOpt_ScopeElements );
+    ses.Add( se );
+    
+    component_name := 'err';
+    setup := void->()
+    {
+      run := opt.CreateRun( ses );
+     
+      opt.ComponentError( run, component_name, LibOpt_ComponentErrorPosition::Operation() );
+      
+      opt.ConfigureForOneTransaction( run );
+      run.Start()
+    }
+    this.NoException( setup->IgnoreException()->|void->( )
+    {
+      recovered_run := opt.RecoverLastFailedRun();
+      
+      run1 := opt.CreateRun( ses );
+      run2 := opt.CreateRun( ses );
+      
+      this.Run().AssertEqual( 1, counter( opt, Run, r, r.RunNr() = run1.RunNr() ), 'RunNr of new run #1 is not unique' );
+      this.Run().AssertEqual( 1, counter( opt, Run, r, r.RunNr() = run2.RunNr() ), 'RunNr of new run #2 is not unique' );
+      this.Run().AssertEqual( 1, counter( opt, Run, r, r.RunNr() = recovered_run.RunNr() ), 'RunNr of recovered run is not unique' );
+      
+      this.Run().AssertEqual( 1, run1.StartScope().ScopeElements().Size(), 'Amount of scope elements in new run #1 is different than expected.' );
+      this.Run().AssertEqual( 1, run2.StartScope().ScopeElements().Size(), 'Amount of scope elements in new run #2 is different than expected.' );
+      this.Run().AssertEqual( 1, recovered_run.StartScope().ScopeElements().Size(), 'Amount of scope elements in recovered run is different than expected.' );
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

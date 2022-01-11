@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method ToggleSelectedResources (structured[Resource_SC] resources) id:Method_DialogCreateEditProgramDefinitionConfiguration_ToggleSelectedResources
+{
+  #keys: '[143388.0.1940417464]'
+  Body:
+  [*
+    traverse( resources, Elements, resource )
+    {
+      res := select( DataHolderSelectedResourcesInProgramDefinition.Data(), Elements, e, e = resource );
+      if( not isnull( res ) )
+      {
+        // Only remove the resource from program definition if no program change in resource schedule
+        if( res.CheckNoProgramChange() )
+        {
+          DataHolderSelectedResourcesInProgramDefinition.Data().Remove( res );
+        }
+      }
+      else if( resource.CheckCanApplyProgramScheduling() )
+      {
+        DataHolderSelectedResourcesInProgramDefinition.Data().Add( resource );
+      }
+    }
+  *]
+}

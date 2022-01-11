@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValuesDatesOK () as Boolean id:Method_LibCal_dlgEditTimeInterval_ValuesDatesOK
+{
+  #keys: '[131094.0.1401998184]'
+  Body:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    timezone := Dialog.GetCalendarTimeZone();
+    
+    if( datStartDate.Date().IsInfinite() )
+    {
+      feedback.AddHard( Translations::Event_InvalidStartDate() );
+    }
+    
+    if( datEndDate.Date().IsInfinite() )
+    {
+      feedback.AddHard( Translations::Event_InvalidEndDate() );
+    }
+    
+    if( feedback.IsAllowed() )
+    {
+      start := datStartDate.Date().DateTime( timezone ).AddAsPeriod( timezone, durStartTimeOfDay.Duration() );
+      end   := datEndDate  .Date().DateTime( timezone ).AddAsPeriod( timezone, durEndTimeOfDay  .Duration() );
+      
+      if( end <= start )
+      {
+        feedback.AddHard( Translations::Event_EndMustBeGreaterThanStart() );
+      }
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

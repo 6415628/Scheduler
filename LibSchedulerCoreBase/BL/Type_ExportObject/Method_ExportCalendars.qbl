@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExportCalendars (String targetfolder, Boolean copytodatafolder)
+{
+  Description: 'Exports calendar data using the Calendars library.'
+  TextBody:
+  [*
+    // Exports calendar data as excel data, outputs it directly to the target folder
+    
+    // Create temporary dataset as we do not need the staging data to be persisted
+    tempDataset := LibCal_ImportExportDataset::CreateTemporaryDataset( this.Schedule().CalendarImportExport().GetDatasetName() );
+    
+    tempDataset -> Export( this.Schedule().CalendarRegistry().GetAllCalendars(), true )
+    -> ( exportedBinary )
+    {
+      // Check if the target folder exist, create it if not
+      if( not OS::IsDirectory( targetfolder ) )
+      {
+        OS::CreateDirectory( targetfolder );
+      }
+      
+      // The name of the excel file mapped in the EDI broker
+      filename := Schedule::GetEDIBrokerExcelFileName( typeof( Broker_LibCal_ExportCalendars ).Name() );
+      // Create the full file path
+      filepath := targetfolder + filename;
+      // Start writing the file
+      osfile := OSFile::Construct();
+      osfile.Open( filepath, 'write', false );
+      osfile.WriteBinary( exportedBinary );
+      osfile.Close();
+      
+      // Copy exported excel file from target folder to Data folder
+      if( copytodatafolder )
+      {
+        datadir := DomainModel::GetDataDirectory();
+        destinationfilepath := FileSystems::QFSPathToHardwarePath( datadir.Path() ) + '/' + filename;   
+        OS::CopyFile( filepath, destinationfilepath ) // Data\Schedule\DataSetName\XXXX.xlsx moved to Data\
+      }
+    }
+  *]
+}

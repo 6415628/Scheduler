@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetRunsForCleanup (Number expected_new_runs) remote as owning LibOpt_Runs
+{
+  Description: 'Get all the runs that are eligible for cleanup.'
+  TextBody:
+  [*
+    // Select all runs eligible for deletion
+    // We have chosen not to exclude the runs with `AutoCleanupEnabled` = false.
+    // The reason for this is that if we have many runs and the youngest run is not protected,
+    // it is still removed by "the maximum number of runs" rule, while it may not if we would
+    // have taken `AutoCleanupEnabled` = false into account here.
+    // At the bottom of this method we will still filter on `AutoCleanupEnabled`.
+    // If you do not agree with this implementation, update `LibOpt_Run.CanAutoCleanUp` to
+    // also return false if `AutoCleanupEnabled` = false.
+    runs := selectset( this, Run, run, run.CanAutoCleanUp() );
+    
+    to_delete := construct( LibOpt_Runs );
+    
+    // Clean up according to the runs age
+    if( this.IsAutoCleanupRunsOnRunAge() )
+    {
+      time := DateTime::Now();
+      to_delete := to_delete.Union( selectset( runs, Elements, run, time - run.FinishedOn() > this.MaxRunAge() ) );
+    }
+    
+    // Clean up according to the amount of runs
+    if( this.IsAutoCleanupRunsOnNrOfRuns() )
+    {
+      // Calculate the amount of runs we expect to have after the new runs are created and the current ones up for deletion are deleted.
+      run_size := runs.Size() - to_delete.Size() + expected_new_runs;
+      
+      runs_to_take := maxvalue( 0, run_size - this.MaxNrOfRuns() );
+      to_delete := to_delete.Union( selectsortedset( runs.Difference( to_delete ), Elements, run, true,
+                                                     run.FinishedOn(),
+                                                     run.RunNr() ).SelectFirst( runs_to_take ) );
+    }
+    
+    // Filter on the runs that are allowed to be automatically cleaned up
+    return selectset( to_delete, Elements, run, run.AutoCleanupEnabled() );
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

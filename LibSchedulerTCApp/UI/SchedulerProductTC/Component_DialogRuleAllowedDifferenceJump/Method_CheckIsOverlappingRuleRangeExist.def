@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsOverlappingRuleRangeExist () as Boolean id:Method_DialogRuleAllowedDifferenceJump_CheckIsOverlappingRuleRangeExist
+{
+  #keys: '[145930.4.1746640361]'
+  Body:
+  [*
+    // Check if there is overlapping rule range in the list.
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    // Sort the rule range based on "From" and "To".
+    sortedRuleRange := selectsortedset( DialogRuleAllowedDifferenceJump.Data(), RuleRange, ruleRange,
+                                        true,
+                                        ruleRange.From(),
+                                        ruleRange.To() );
+    
+    previous := null( shadow[RuleRange] );
+    current := null( shadow[RuleRange] );
+    
+    hasOverlappingRuleRange := false;
+    
+    traverse( sortedRuleRange, Elements, ruleRange, not hasOverlappingRuleRange )
+    {
+      hasOverlappingRuleRange := not isnull( previous ) 
+                                 and ruleRange.From() < previous.To()
+                                 and ruleRange.To() > previous.From(); 
+      
+      if( hasOverlappingRuleRange )
+      {
+        current := ruleRange;
+      }                     
+      else
+      {
+        previous := ruleRange;
+      }
+    }
+    
+    value := not hasOverlappingRuleRange;
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      feedbackobject.AddHard( Translations::RuleRange_HasOverlappingRuleRange( previous.From(), previous.To(), current.From(), current.To() ) );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

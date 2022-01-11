@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetLatestEndForUpstreamNoBufferWait () const declarative remote as DateTime
+{
+  Description:
+  [*
+    If the downstream operation is in scope or in span
+    and the upstream operation is not in scope or span
+    then the downstream operation needs a latest end to ensure the upstream operation's no buffer end will not be pushed out by the optimizer
+  *]
+  TextBody:
+  [*
+    // Select all in scope input operation materials related to an operation with a NoBufferWait subtask
+    upstream_in_total_scope_om := selectset( this, InputDependency.OperationDependency.astype( OperationMaterial ), om,
+                                             om.FromOperation().GetHasNoBufferWaitSubtask() );
+    // Select all out of scope input operation materials related to an operation with a NoBufferWait subtask
+    // by selecting all of those operation materials and taking the difference with the in scope ones
+    upstream_out_of_total_scope_om := selectset( this.Operation(), FromOperationDependency.astype( OperationMaterial ), om,
+                                                 om.FromOperation().GetHasNoBufferWaitSubtask() ).Difference( upstream_in_total_scope_om );
+    
+    latestendnobuffer := DateTime::MaxDateTime();                                             
+    if( upstream_out_of_total_scope_om.Size() > 0 )
+    {
+      latestendnobuffer := min( upstream_out_of_total_scope_om, Elements, iom, true, iom.OptimizerSequencing_PushoutLatestAvailableTime() );
+    }
+    
+    return latestendnobuffer;
+  *]
+}

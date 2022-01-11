@@ -1,0 +1,73 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveMetadataRequest (owning NamedValueTree nvt_i, NamedValue body_i, LibDEF_System sender_i, 
+  LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive Metadata-Request message, to be handled by the System of the sender, or the System representing local.'
+  TextBody:
+  [*
+    // Jacky CHAN May-18-2016 (created)
+    LibDEF_Util::EventLog( event_i, "Processing Metadata-Request message" );
+    
+    // some Metadata messages should be handled by the local System
+    systemLocal := this.SystemLocal();
+    
+    // retrieve type
+    type := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_TYPE() );
+    
+    if( type = LibDEF_DataAccessor::TYPE_METADATA_SETTYPECREATED() )
+    {
+      sender_i.ReceiveMetadataRequestSetTypeCreated( nvt_i, body_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_METADATA_SETTYPEDELETED() )
+    {
+      sender_i.ReceiveMetadataRequestSetTypeDeleted( nvt_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_METADATA_SETDELETED() )
+    {
+      sender_i.ReceiveMetadataRequestSetDeleted( nvt_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_METADATA_SETCREATED() )
+    {
+      sender_i.ReceiveMetadataRequestSetCreated( nvt_i, body_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_METADATA_SETUPDATED() )
+    {
+      sender_i.ReceiveMetadataRequestSetUpdated( nvt_i, body_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_METADATA_GETCHANNELSMETADATA() )
+    {
+      systemLocal.ReceiveMetadataRequestGetChannelsMetadata( nvt_i, body_i, sender_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_METADATA_GETSETLIST() )
+    {
+      systemLocal.ReceiveMetadataRequestGetSetsForSetType( nvt_i, sender_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_METADATA_SETINTERESTCREATED() )
+    {
+      systemLocal.ReceiveMetadataRequestSetInterestCreated( &nvt_i, sender_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_METADATA_SETINTERESTDELETED() )
+    {
+      systemLocal.ReceiveMetadataRequestSetInterestDeleted( &nvt_i, sender_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_METADATA_SETTYPEINTERESTCREATED() )
+    {
+      systemLocal.ReceiveMetadataRequestSetTypeInterestCreated( &nvt_i, sender_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_METADATA_SETTYPEINTERESTDELETED() )
+    {
+      systemLocal.ReceiveMetadataRequestSetTypeInterestDeleted( &nvt_i, sender_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_METADATA_HALTDATATRANSFER() )
+    {
+      sender_i.ReceiveMetadataRequestHaltDataTransfer( nvt_i, event_i );
+    }
+    else
+    {
+      LibDEF_Util::EventLogError( event_i, 
+                                  "Failed to process Metadata-Request message",
+                                  "Failed to process Metadata-Request message, no handler defined for the Type '" + type + "'." );
+    }
+  *]
+}

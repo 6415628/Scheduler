@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetCharacteristicBinaryValueOpt (Characteristics cumulativecharacteristics, OperationInCombiLeg operationincombileg, BinaryValue previouscumulativecharacteristic, 
+  BinaryValue previouscumulativerealvalue, output BinaryValue characteristicindexbinvalue, output BinaryValue characteristicrealbinvalue)
+{
+  Description: 'get characteristic binary value for optimizer combi'
+  TextBody:
+  [*
+    // Get cumulative characteristic binary value for characteristic index and real value based on input cumulative characteristics
+    // Construct vector for previous characteristic values
+    characteristicvector := NumberVector::Construct();
+    realvaluevector := RealVector::Construct( );
+    
+    sortedchars := selectsortedset( cumulativecharacteristics, Elements, char, true, char.Index() );
+    traverse( sortedchars, Elements, characteristic )
+    {
+      value := 0.0;
+      previouscumulativevalue := Characteristic::GetCumulativeValueForCharacteristic( characteristic, 
+                                                                                        previouscumulativecharacteristic, 
+                                                                                        previouscumulativerealvalue );
+      value := previouscumulativevalue + operationincombileg.GetCharacteristicRealValue( characteristic );
+      
+      characteristicvector.Append( characteristic.Index() );
+      realvaluevector.Append( value  ) ;
+    }
+    
+    // Set output argument binary values
+    characteristicindexbinvalue := characteristicvector.AsBinaryValue();
+    characteristicrealbinvalue := realvaluevector.AsBinaryValue();
+  *]
+}

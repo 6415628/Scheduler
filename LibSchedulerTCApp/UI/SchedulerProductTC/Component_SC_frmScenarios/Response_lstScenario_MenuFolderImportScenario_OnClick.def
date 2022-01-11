@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: lstScenario
+Response OnClick () inherited id:Response_lstScenario_MenuFolderImportScenario_OnClick
+{
+  #keys: '[107496.2.1625539727]'
+  BaseType: 'Response_lstScenario_MenuFolderImportScenario_OnClick'
+  Body:
+  [*
+    // Import dataset xml
+    dlg := construct( SC_dlgCreateEditScenario );
+    scenario := dlg.NewScenario( this, selection, false  );
+    
+    if( not isnull( scenario ) )
+    {
+      LibSM_GlobalState.AutoExpandSelection( this, selection );    
+      Form.SelectScenario( scenario );
+    
+      // Import data from XML file
+      tcFile := Application.GetOpenFileName();
+       
+      if( tcFile.TrimBoth() <> "" )
+      {  
+        // Stream the contents of the file to a temporary file on the QAE-machine.
+        serverFile := Application.StreamFromClient( tcFile );  
+        
+        // Trigger the import of the temporary file.
+        mdsid := LibSM_GlobalState.GetSelectedPlanningDatasetKey();
+        LibSM_ModelExtensions::ImportDataXML( mdsid, serverFile );
+      }
+      else
+      {
+        // Import dataset from xml is cancelled by user, so delete scenario (and its dataset) 
+        scenario.Delete();
+      }                   
+      
+      Application.RemoveHistory();
+    }
+  *]
+  DefinitionID: 'Responsedef_lstScenario_Menu_OnClick'
+  Initiator: 'MenuFolderImportScenario'
+}

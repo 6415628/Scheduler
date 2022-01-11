@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method ApplySettingsBatchesAndContinuousResources () id:Method_DialogResourceGroup_SC_ApplySettingsBatchesAndContinuousResources
+{
+  #keys: '[127864.0.499917312]'
+  Body:
+  [*
+    // Enable or disable functionality for batches and continuous resources
+    isenabled_batches := guard( Schedule.Functionality().IsEnableOperationBatches(), true );
+    isenabled_continuous := guard( Schedule.Functionality().IsEnableContinuousResources(), true );
+    
+    CheckBoxHasPractice.Visible( isenabled_batches );
+    StringSelectionResourceType.Strings( this.GetResourceGroupTypes() ); // set whats available for selection during create/edit
+    
+    resourcetype := Dialog.Data().ResourceType();
+    disabledbatch_butisbatch := not isenabled_batches and resourcetype = Constants::Resource_BatchResource();
+    disabledcontinuous_butiscontinuous := not isenabled_continuous and resourcetype = Constants::Resource_ContinuousResource();
+    
+    // if there is only one selection or if batches or continuous functionality is disabled and the edited resource group is a batch or continuous resource, we disable the resource type selection and show its original resource group type
+    if( disabledbatch_butisbatch or disabledcontinuous_butiscontinuous or StringSelectionResourceType.Strings().Tokenize( Constants::SemiColon() ).Size() < 2 )
+    {
+      StringSelectionResourceType.Enabled( false ); // set default value, but not allow user to change it
+      StringSelectionResourceType.Strings( Constants::ResourceGroup_GetResourceTypes() ); // reset Strings value, if without Strings value, the original resource group type cannot be displayed
+    }
+  *]
+}

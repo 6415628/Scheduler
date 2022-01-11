@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateEditAllowed (LibSM_ScenarioManager scenarioManager, LibSM_ScenarioFolder oldScenarioFolder, String folderName) declarative remote as Boolean
+{
+  Description: 'Validate scenario folder before allowing to create / update'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    // Name can't be empty
+    if( not feedback.CheckHard( not folderName = "" ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_ValidateInput_NameEmpty() );
+    }
+    
+    // Name must be unique
+    if( not feedback.CheckHard( not exists( scenarioManager, ScenarioNode.astype( LibSM_ScenarioFolder ), scenarioFolder,
+                                            scenarioFolder <> oldScenarioFolder,
+                                            scenarioFolder.Name() = folderName ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_ValidateInput_NameExists( folderName ) );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

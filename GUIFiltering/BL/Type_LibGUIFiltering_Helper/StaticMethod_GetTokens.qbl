@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetTokens (String searchterms) remote as owning Strings
+{
+  TextBody:
+  [*
+    // per Oct-4-2016 (created)
+    alltokens := construct( Strings );
+    pos       := 0;
+    while ( pos < searchterms.Length() )
+    {
+      isquoted := false;
+      token    := LibGUIFiltering_Helper::GetToken( searchterms, pos, isquoted );
+      
+      if ( isquoted )
+      {
+        token := LibGUIFiltering_Helper::AddQuotes( token );
+      }
+    
+      newtoken := token;
+      modifier := '';
+      date     := Date::MinDate();
+      if ( LibGUIFiltering_Helper::CheckIsDate( newtoken, modifier, date )
+       and date.IsFinite() )
+      {
+        newpos    := pos;
+        nexttoken := LibGUIFiltering_Helper::GetToken( searchterms, newpos, isquoted );
+        newtoken  := token + ' ' + nexttoken;
+        
+        if ( not isquoted
+         and LibGUIFiltering_Helper::CheckIsDateTime( newtoken ) )
+        {
+          pos   := newpos;
+          token := token + ' ' + nexttoken;
+        }
+      }
+      
+      alltokens.Add( token );
+    }
+    
+    return &alltokens;
+  *]
+  InterfaceProperties { Visibility: 'BusinessModel' }
+}

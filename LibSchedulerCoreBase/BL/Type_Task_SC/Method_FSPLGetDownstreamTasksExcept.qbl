@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method FSPLGetDownstreamTasksExcept (Task_SC task) as owning Task_SCs
+{
+  Description: 'To get all downstream tasks, including those across plan units. Currently used in cycle fixing.'
+  TextBody:
+  [*
+    // WOI1 May-9-2016 (created)
+    tasks := construct( Task_SCs );
+    
+    traverse( this, FSPLOperationInTask.ToOperationDependency.ToOperation.AsFSPLOperationInTask, down_task, down_task <> task )
+    {
+      downtask := down_task.FSPLGetAllRelatedTasksExcept( this );
+      downtask.Remove( this );
+      tasks := tasks.Union( downtask );
+    }
+    
+    tasks.Add( this );
+    
+    return &tasks
+  *]
+}

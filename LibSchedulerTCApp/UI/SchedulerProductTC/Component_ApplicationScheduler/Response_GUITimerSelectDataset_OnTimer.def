@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: GUITimerSelectDataset
+Response OnTimer () id:Response_ApplicationScheduler_GUITimerSelectDataset_OnTimer
+{
+  #keys: '[128956.0.534071136]'
+  Body:
+  [*
+    // GUITimer is need to re-select the dataset after import demo data
+    // somehow directly select after import does not work if imported file has same name as current dataset file
+    
+    datasetName := Constants::ScheduleDataset();
+    datasetPath := Constants::DatasetFolder();
+    datasetKind := Constants::ScheduleDataset();
+        
+    ApplicationScheduler.SelectDataset( datasetName, datasetPath, datasetKind );
+    
+    
+    if( not isnull( Schedule ) )
+    {
+      Schedule.DemoManager().DemoDataSelected( ValueHolderSelectedDemo.Value() );
+      Schedule.DemoManager().DemoCategorySelected( ValueHolderSelectedCategory.Value() );
+    
+      // #9235 to create scenario node from dataset
+      if( not isnull( LibSM_ScenarioManager ) )
+      {
+        scenariofolder := select( LibSM_ScenarioManager, ScenarioNode.astype( LibSM_ScenarioFolder ), folder,
+                                  folder.Name() = LibSM_ScenarioManager::GetFolderRoot() );
+        
+        knowledgeprofilename := Schedule.KnowledgeProfileName();                        
+        knowledgeprofile := select( LibSM_ScenarioManager, KnowledgeProfile, profile, profile.Name() = knowledgeprofilename );
+                         
+        LibSM_ScenarioManager.RefreshDatasets();
+                         
+        // create scenario
+        dataset := select( LibSM_ScenarioManager.GetDatasetsWithoutScenario(), Elements, dataset, dataset.Name() = datasetName );
+        
+        if( not isnull( dataset ) )
+        {
+          scenario := LibSM_ScenarioManager.CreateScenarioFromDataset( dataset, 
+                                                                       scenariofolder,
+                                                                       dataset.Name(),
+                                                                       '',
+                                                                       false,
+                                                                       '',
+                                                                       knowledgeprofile,
+                                                                       construct( LibSM_MetaDatas ) );
+          if( not isnull( scenario ) )
+          {
+            scenario.CreatedBy( LibSM_Util::GetSystemUsername() );
+            scenario.astype( Scenario ).PromoteScenario();
+          }                                                       
+        }                                                      
+      }
+    }
+    
+    this.Enabled( false );
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUITimer_OnTimer'
+}

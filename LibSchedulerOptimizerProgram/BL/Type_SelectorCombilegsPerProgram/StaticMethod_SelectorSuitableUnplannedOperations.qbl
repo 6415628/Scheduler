@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod SelectorSuitableUnplannedOperations (LibOpt_Task task, CombiLegs selectedcombilegs, LibOpt_Selector selector) as owning Operation_SCs
+{
+  TextBody:
+  [*
+    // Select all operations that are not yet planned and that are allowed on one of these combilegs
+    // These operation are not planned
+    // and there must be a combileg selected
+    // on which the operation is allowed on all the phases that are linked to this combilegs (so on all program sets on the resource)
+    unplannedoperations := selectsortedset( task.Scope().Operations(), Elements, operation,
+                                            not operation.IsPlanned()
+                                            and exists( selectedcombilegs, Elements, cl,
+                                                        forall( cl, CombiLegOnCombiPhase.CombiProgramPhase.ProgramPhaseConfiguration, ppc,
+                                                                exists(  operation, OperationOnPPCOnResource, ooppcor, 
+                                                                         ooppcor.IsAllowed()
+                                                                         and ppc = ooppcor.PPCOnResource().ProgramPhaseConfiguration() ) ) ),
+                                            Real::Random() );
+    
+    targetunplanned := guard( selector.SettingsSelector().TargetNrUnplannedOperations(), 10 );
+    nrunplannedoperations := minvalue( targetunplanned, unplannedoperations.Size() );
+    selectedunplannedoperations := unplannedoperations.SelectFirst( nrunplannedoperations );
+    
+    return &selectedunplannedoperations;
+  *]
+}

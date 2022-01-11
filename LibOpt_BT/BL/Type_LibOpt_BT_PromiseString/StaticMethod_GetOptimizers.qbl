@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetOptimizers (LibOpt_BT_BenchmarkTrackingDataset owner, String dataset_kind, String dataset_name, 
+  String separator) as LibOpt_BT_PromiseString
+{
+  Description: 'This promise reactively gets the names of the `LibOpt_Optimizers` in a given dataset and stores it in a string.'
+  TextBody:
+  [*
+    // Create a promise; an object that does not contain any information, but will after the reactive call is done.
+    // We're using this technique as reactive is not supported by the client.
+    promise := LibOpt_BT_PromiseString::Create( owner, Translations::LibOpt_BT_PromiseString_GetOptimizers( dataset_kind, dataset_name ) );
+    
+    // Check if the dataset is loaded or not.
+    editor := MDSEditor::Editor();
+    ois := editor.ObjectInfos( dataset_kind );
+    oi := select( ois, Elements, oi, oi.Name() = dataset_name );
+    
+    find_options := DatasetFindOptions::Construct( dataset_name )
+                                       .Kind( dataset_kind )
+    
+    dataset_owning := null( stream[Object], owning );
+    dataset := null( stream[Object] );
+    if( oi.IsLoaded() )
+    {
+      // Get dataset object from loaded dataset
+      dataset_owning := DatasetController::Root( oi.MDSID().MDSKey() );
+      dataset := dataset_owning;
+    }
+    else
+    {
+      // Get dataset object from temporary copy, as the dataset was not loaded.
+      find_options := find_options.IncludeOffline( true );
+      mdsid := DatasetController::FindUnique( find_options );
+      
+      datasetState := DatasetState::Temporary();
+      
+      options := DatasetCreateOptions::Construct( dataset_name )
+                      .AsCopy( mdsid )
+                      .State( datasetState );
+    
+      dataset := DatasetController::Create( dataset_kind, options );
+    }
+    
+    // Get the Optimizers from the dataset
+    promise.ListenResult( dataset->LibOpt_BT_DatasetGeneric::GetOptimizationFromDataset()->( optimization )
+    {
+      return selectvalues( optimization, Optimizer, optimizer, true, optimizer.Name() ).Sort().ToString( ';' );
+    } );
+    
+    return promise;
+  *]
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: ListOptimizerUserSettingInScenarioManager
+Response OnClick (structured[OptimizerUserSettingGroupInScenarioManager] selection) id:Response_ListOptimizerUserSettingInScenarioManager_MenuDeleteOptimizerUserSettingInScenarioManager_OnClick
+{
+  #keys: '[133088.1.91248493]'
+  Body:
+  [*
+    // Delete optimizer user settings
+    isSelected :=  exists( selection, Elements, e, Schedule.CheckIsSettingGroupUsed( e.ID() ) );
+    
+    dialogText := Translations::SM_ConfirmDeleteSelectedOptimizerUserSetting() 
+                  + String::NewLine()
+                  + ifexpr( isSelected,
+                            Translations::SM_ConfirmDeleteSelectedOptimizerUserSetting_SelectedWarning(),
+                            '' );
+    
+    if ( MessageBox::Question( this, dialogText, '&Yes|&No' ) = 0 )
+    {
+      OptimizerUserSettingGroupInScenarioManager::Delete( selection, Schedule );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => /ListOptimizerUserSettingInScenarioManager/Responsedef_ListOptimizerUserSettingInScenarioManager_Menu_OnClick
+  Initiator: 'MenuDeleteOptimizerUserSettingInScenarioManager'
+  Precondition:
+  [*
+    OptimizerUserSettingGroupInScenarioManager::CanDelete( selection, feedback );
+  *]
+}

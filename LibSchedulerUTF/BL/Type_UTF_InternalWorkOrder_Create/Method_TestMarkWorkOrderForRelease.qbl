@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestMarkWorkOrderForRelease (Schedule schedule)
+{
+  Description: 'Test mark ready for release precondition and logic.'
+  TextBody:
+  [*
+    markForReleaseInstance := this.GetMarkForReleaseInstance( this.Variant() );
+    workOrders := selectset( schedule, WorkOrder, workOrder, true );
+    
+    // Do precon check
+    WorkOrder::CheckCanMarkForRelease( workOrders );
+    preconCheckValue := FeedbackObject::CurrentFeedback().IsAllowed();
+    
+    this.Run().AssertTrue( preconCheckValue = markForReleaseInstance.CanMarkForRelease(),
+                           UTFUtility::GenerateFailedMessage( 'Precondition check for mark work order for release manually failed', '' ) );
+    
+    if( preconCheckValue )
+    {
+      internalWorkOrder := select( workOrders, Elements.astype( InternalWorkOrder ), internalWorkOrder, true );
+      // Check if work order is IsMarkedForRelease when it is planned in frozen period
+      if( markForReleaseInstance.IsWorkOrderFrozen() )
+      {
+        this.Run().AssertTrue( internalWorkOrder.IsMarkedForRelease(),
+                               UTFUtility::GenerateFailedMessage( 'Mark work order for release failed', '' ) );
+      }
+      
+      WorkOrder::MarkForRelease( workOrders );
+      
+      // Propagate InternalWorkOrder.IsMarkedForRelease for checking
+      Transaction::Transaction().Propagate( attribute( InternalWorkOrder, IsMarkedForRelease ) );
+      
+      this.Run().AssertTrue( internalWorkOrder.IsMarkedForRelease(),
+                             UTFUtility::GenerateFailedMessage( 'Mark work order for release failed', '' ) );
+    }
+  *]
+}

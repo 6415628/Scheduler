@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod RefreshDatasetInformation (Key mdsid_i, Boolean isExport_i, Strings excludeTypes_i) as stream[Void]
+{
+  Description:
+  [*
+    Refreshes the dataset information for export or upgrade upon execution
+    This will always act on all available dataset types
+    Note: this is utulized by the UI. The overloaded versions of this method should be used for automation
+  *]
+  TextBody:
+  [*
+    // tgn3 May-10-2021 (created)
+    
+    // DevNote: this method is intentionally private. It should not be directly invoked by the end user.
+    // The MDSID argument is required  to facilitate testing
+    ret_s := DMF_ConvertorDataset::GetDMFDataset( mdsid_i )->( dmf )
+    {
+      // Debug - do not delete
+      //logfile( ">>> RefreshDatasetInformation" );  
+    
+      // CreateDatasetInformationExtensible will be executed before refresh dataset information in case 
+      // the core data definition dataset required to be created based on planning data during runtime
+      return dmf->CreateDatasetInformationExtensible()->|
+             dmf->RefreshDatasetInformation( isExport_i, excludeTypes_i )->( isComplete_i )
+      {
+        //for debug purpose do disabled it after used
+        //debuginfo( 'Refresh dataset information completed ', isComplete_i );
+      }
+    }
+    
+    ret_s->Exception()->( ex )
+    {
+      // If exception occurs, will be throw upward exception stack
+      msg := "DMF_API::RefreshDatasetInformation failed. Reason: ";
+      
+      DMF_Utility::LogException( msg, ex );
+    }
+    
+    return ret_s;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

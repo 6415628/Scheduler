@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_GetActionAndParameters (String actionString, output owning structured[String] parameters_o) as String id:Method_LibPTF_pnlTestRunner_PTF_GetActionAndParameters
+{
+  #keys: '[103546.0.64884843]'
+  Body:
+  [*
+    // Retrieve the action and parameters from a statement
+    // Get the action
+    words  := actionString.Tokenize( ' ' );
+    action := words.Element( 0 );
+    
+    // Get the parameters from the statement
+    parameterString := actionString.RestString( action.Length() ).TrimBoth();
+    
+    // Separate the parameters
+    separator  := this.PTF_GetParameterSeparator();
+    parameters := parameterString.Tokenize( separator );
+    
+    // Trimming each of the parameters for the actual value
+    parameters_o := construct( Strings );
+    
+    traverse( parameters, Elements, param )
+    {
+      parameters_o.Add( param.TrimBoth() );
+    }
+    
+    return action;
+  *]
+}

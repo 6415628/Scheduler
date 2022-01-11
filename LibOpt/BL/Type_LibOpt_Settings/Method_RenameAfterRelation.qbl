@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method RenameAfterRelation (const Type type, NamedValueTree nvt, NamedValue nv)
+{
+  Description:
+  [*
+    Make sure the branches in the named value tree that represent an owning relation are called after the relation name.
+    Default is the type name of the owned object.
+  *]
+  TextBody:
+  [*
+    traverse( nv.Children(), Elements, child )
+    {
+      if( child.GetValue().istype( Key ) )
+      {
+        rel := select( LibOpt_Utility::GetTypeAncestors( type ), Elements.MdlRelSideElements.astype( MdlModeledRelSideElement ), rel,
+                       rel.OtherSide().Type().Name() = child.Name()
+                       and guard( rel.RelationSide().OwningSideBool(), false ) );
+        if( not isnull( rel ) )
+        {
+          if( rel.Name() <> child.Name() )
+          {
+            new_child := nv.AddChild( nvt.GetHandle( rel.Name() ) );
+            new_child.SetValue( child.GetValue() );
+            child.Move( new_child, true );
+            child.Delete( false );
+            child := new_child;
+          }
+          this.RenameAfterRelation( rel.OtherSide().Type(), nvt, child );
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

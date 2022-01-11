@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method ProcessCompletedChunkedData (LibDEF_DataTransfer dataTransfer_i, NamedValueTree nvt_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Reassemble the data pieces in the given data transfer and insert it into the body of the given NVT, then process the NVT as a full message.'
+  TextBody:
+  [*
+    LibDEF_Util::EventLog( event_i, "Processing the Data transfer [GUID: " + dataTransfer_i.GUID() + "]." );
+    
+    // Get system from the GUID in given NVT
+    systemGUID := LibDEF_DataAccessor::GetHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SYSTEMGUID_FROM() );
+    system := LibDEF_System::FindSystemByGUID( this, systemGUID );
+    
+    // Assemble the Body node and replace the current NVT body with the assembled body.
+    assembledBodyNvt := dataTransfer_i.AssembleDataPiecesNvt();
+    LibDEF_DataAccessor::SetDataBody( nvt_i, assembledBodyNvt );
+    
+    // Process the full NVT now.
+    type := LibDEF_DataAccessor::GetDataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_TYPE() );
+    if( type = LibDEF_DataAccessor::TYPE_DATA_GETSETCHUNKED() )
+    {
+      system.ReceiveDataSuccessGetSet( nvt_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_DATA_SETUPDATEDCHUNKED() )
+    {
+      system.ReceiveDataRequestSetUpdated( nvt_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_DATA_SETCREATEDCHUNKED() )
+    {
+      system.ReceiveDataRequestSetCreated( nvt_i, event_i );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllTestVariants (output Booleans hasonholdstatuss, output DateTimes resourceonholdperiodends, output DateTimes plannedstarts, 
+  output Booleans isValids) as owning Strings
+{
+  Description: 'Return all test variants, variant output arguments (columns) will be used in data creation logic.'
+  TextBody:
+  [*
+    variants := construct( Strings );
+    
+    onholdperiodend := DateTime::Construct( 2020, 01 ,01 );
+    
+    // Scenario 1: Test with no on hold status and planned start < resource on hold period end ( VALID )
+    variants.Add( 'Test with no on hold status and planned start < resource on hold period end ( VALID )' );
+    hasonholdstatuss.Add( false );
+    resourceonholdperiodends.Add( onholdperiodend );
+    plannedstarts.Add( onholdperiodend - Duration::Hours( 1 ) );
+    isValids.Add( true );
+    
+    // Scenario 2: Test with has on hold status and planned start > resource on hold period end ( VALID )
+    variants.Add( 'Test with has on hold status and planned start > resource on hold period end ( VALID )' );
+    hasonholdstatuss.Add( true );
+    resourceonholdperiodends.Add( onholdperiodend );
+    plannedstarts.Add( onholdperiodend + Duration::Hours( 1 ) );
+    isValids.Add( true );
+    
+    // Scenario 3: Test with has on hold status and planned start < resource on hold period end ( INVALID )
+    variants.Add( 'Test with has on hold status and planned start < resource on hold period end ( INVALID )' );
+    hasonholdstatuss.Add( true );
+    resourceonholdperiodends.Add( onholdperiodend );
+    plannedstarts.Add( onholdperiodend - Duration::Hours( 1 ) );
+    isValids.Add( false );
+    
+    // Scenario 4: Test with has on hold status and planned start = resource on hold period end ( VALID )
+    variants.Add( 'Test with has on hold status and planned start = resource on hold period end ( VALID )' );
+    hasonholdstatuss.Add( true );
+    resourceonholdperiodends.Add( onholdperiodend );
+    plannedstarts.Add( onholdperiodend );
+    isValids.Add( true );
+    
+    return &variants;
+  *]
+}

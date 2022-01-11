@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod IsIncludedAttribute (NamedValue nv, TypeView tv) as Boolean
+{
+  TextBody:
+  [*
+    // afn3 Oct-14-2019 (created)
+    excluded_attributes := construct( Strings );
+    
+    excluded_attributes.Add( attribute( LibOpt_SnapshotKPI, PrecisionTimeStamp ).Name() );
+    excluded_attributes.Add( attribute( LibOpt_SnapshotKPI, SequenceNr ).Name() );
+    excluded_attributes.Add( attribute( LibOpt_SnapshotKPI, IsRolledBack ).Name() );
+    
+    return not exists( excluded_attributes, Elements, e, e = nv.Name() )
+           and exists( tv, Attributes, att,
+                       att.Name() = nv.Name() and
+                       not att.IsSystem() and
+                       att.ModelElement().astype( MdlModeledAttrElement ).ModeledAttribute().DefinitionInterfaceProperties().Accessibility() = 'Public' )
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

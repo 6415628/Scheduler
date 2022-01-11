@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: ListRun
+Response OnClick (LibOpt_Run selection) id:Response_ListRun_MenuSelectDataset_OnClick_931
+{
+  #keys: '[141860.2.129562967]'
+  Body:
+  [*
+    // Load the dataset that started the selected run.
+    datasetinfo := ExternalMDSEditor::Editor().ObjectInfo( selection.MDSIDRun() );
+    if( not isnull( datasetinfo ) )
+    {
+      LibOpt_GlobalState.LoadDataset( datasetinfo );
+    }
+    else
+    {
+      // The dataset that was used to execute this run is already deleted.
+      // In the below method, we set the IsDatasetThatExecutedRunDeleted variable to true for this run and all other runs that were executed from the same dataset. 
+      // This will ensure that a precondition is shown on the relevant context menu items. 
+      LibOpt_GlobalState.LoadDatasetSnapshotReplannableAlreadyDeletedRun( selection );                       
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => /ListRun/Responsedef_ListRun_Menu_OnClick
+  Initiator: 'MenuSelectDataset'
+  Precondition:
+  [*
+    // Feedback: Check if the current dataset is the original dataset
+    // And check if the current dataset still exists.
+    return LibOpt_GlobalState.LoadDatasetAllowedRunForm( selection );
+  *]
+}

@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    super.Setup( schedule );
+    
+    Transaction::Transaction().Propagate( relation( MPSPlannedOrder, Routing ) ); // Need this relation propagated to create firm planned orders
+    Transaction::Transaction().Propagate( attribute( MPSPlannedOrder, QuantityOpen ) ); // Need updated open quantity to create firm planned orders
+    
+    traverse( schedule, MPSPlan.MPSPlannedOrder, mpsPlannedOrder )
+    {
+      mpsPlannedOrder.CreateFirmPlannedOrder();
+    }
+    
+    // Partial propagate this declarative relation to determine that firm planned orders were indeed created for this MPS planned order
+    Transaction::Transaction().Propagate( relation( MPSPlannedOrder, WorkOrder ) );
+    
+    joinPlannedOrderInstance := this.GetTestInstance( this.Variant() );
+    
+    if( joinPlannedOrderInstance.PlanAllOperation() )
+    {
+      this.CreateAndPlanAnOperation( schedule );
+    }
+    else if( joinPlannedOrderInstance.CreateFulfillmentForPlannedOrderDemand() )
+    {
+      this.CreateFulfillmentForPlannedOrderDemand( schedule );
+    }
+    else if( joinPlannedOrderInstance.CreateFulfillmentForPlannedOrderSupply() )
+    {
+      this.CreateFulfillmentForPlannedOrderSupply( schedule );
+    }
+    else if( joinPlannedOrderInstance.CreateOperationPlannedSupply() )
+    {
+      this.CreatePlannedSupplyForPlannedOrderLastOperation( schedule );
+    }
+    else if( joinPlannedOrderInstance.IsMarkedForRelease() )
+    {
+      workOrders := selectset( schedule, WorkOrder, workOrder, true );
+      WorkOrder::MarkForRelease( workOrders );
+    }
+    else if( joinPlannedOrderInstance.IsMarkedForReleaseByFrozenOperation() )
+    {
+      workOrders := selectset( schedule, WorkOrder, workOrder, true );
+      this.CreateAndSetOperationToFrozen( workOrders ); 
+    }
+      
+    //check if planned order has same product
+    // if statement is not needed because the product ID will be set in the method below based on HasDiffProduct flag
+    this.CreatePlannedSupplyAndSetProductIDForProduct( schedule, joinPlannedOrderInstance.HasDiffProduct() );
+    
+    
+    // Propagate InternalWorkOrder.IsMarkedForRelease which will be used in precon check
+    Transaction::Transaction().Propagate( attribute( InternalWorkOrder, IsMarkedForRelease ) );
+  *]
+}

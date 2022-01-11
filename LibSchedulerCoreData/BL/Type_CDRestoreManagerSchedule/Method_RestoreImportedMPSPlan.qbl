@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedMPSPlan (CDIntegration cdintegration)
+{
+  Description: 'Restore imported MPS plan core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedMPSPlan
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedMPSPlan ), cdmpsplan )
+    {
+      importedMPSPlan := ImportedMPSPlan::Create( schedule, cdmpsplan.MPSPlanID() );
+      CopyCorresponding::CopyFrom( cdmpsplan ).CopyTo( importedMPSPlan );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

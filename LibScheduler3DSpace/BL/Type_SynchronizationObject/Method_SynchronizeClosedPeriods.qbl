@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeClosedPeriods
+{
+  Description: '3DSpace specific synchronization. Synchronizes the closed periods into common calendar closed events.'
+  TextBody:
+  [*
+    commonCalendar := this.Schedule().CalendarRegistry().CommonCalendar();
+    
+    // Assumption here is that the only common calendar closed events come from 3DSpace closed periods
+    allInstances := selectset( commonCalendar, Event, event, event.Type() = LibCal_Event::TYPE_UNAVAILABLE() );
+    updatedInstances := construct( LibCal_Events );
+    
+    traverse( this, Schedule.ImportedClosedPeriod, importedClosedPeriod )
+    {
+      eventSubject := importedClosedPeriod.GetEventSubject();
+      
+      event := commonCalendar.GetEvent( eventSubject );
+      
+      if( isnull( event ) )
+      {
+        event := LibCal_Event::Create( commonCalendar, eventSubject );
+      }
+    
+      event.Update( importedClosedPeriod );
+      updatedInstances.Add( event );
+    }
+    
+    oldInstances := allInstances.Difference( updatedInstances );
+    LibCal_Event::Delete( oldInstances );
+  *]
+}

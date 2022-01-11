@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidCampaignType (output Strings feedback_o) declarative as Boolean
+{
+  Description: "Check if imported operation campaign's campaign type is valid"
+  TextBody:
+  [*
+    // James Kwapien Jan-5-2017 (created)
+    // We need to check that an operation campaign has a valid campaign type which belongs to the same resource group as the operation campaign
+    isvalid := false;
+    ctname := this.CampaignType();
+    
+    // Find imported resource group from related resource group
+    importedrg := guard( this.ImportedWorkOrderOperation().ImportedResourceGroup_SC(), null( ImportedResourceGroup_SC ) );
+    
+    // Check imported resource group for the relevant imported campaign type
+    if( not isnull( importedrg ) )
+    {
+      isvalid := exists( importedrg, ImportedCampaignType_SC, ict, ict.Name() = ctname );
+    }
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedOperationCampaign_Instance( this.WorkOrderId(), 
+                                                                                                                    this.SeqNr(), 
+                                                                                                                    this.CampaignType(), 
+                                                                                                                    this.Campaign() ),
+                                                               Translations::SC_ImportedOperationCampaign_ViolateHasValidCampaignType() ));
+    }
+    
+    return isvalid;
+  *]
+}

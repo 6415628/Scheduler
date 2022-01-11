@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllTestVariantsForConstraintChecking (output Booleans isenableshutdowntargetstarts, output Durations targetstarts, output Durations targetmaxdeviations, 
+  output Durations shutdownstarts, output Booleans isvalidforconstraintcheckings) as owning Strings
+{
+  Description: 'Return all test variants, variant output arguments (columns) will be used in data creation logic for constraint checking.'
+  TextBody:
+  [*
+    variants := construct( Strings );
+    
+    // Scenario 1.1: Test constraint IsShutdownTargetStartOK with not enable target start ( VALID )
+    variants.Add( 'Test constraint IsShutdownTargetStartOK with not enable target start ( VALID )' );
+    isenableshutdowntargetstarts.Add( false );
+    targetstarts.Add( Duration::Hours( 1 ) );
+    targetmaxdeviations.Add( Duration::Hours( 1 ) );
+    shutdownstarts.Add( Duration::Hours( 1 ) );
+    isvalidforconstraintcheckings.Add( true );
+    
+    // Scenario 1.2: Test constraint IsShutdownTargetStartOK with ( TargetStart = ShutdownStart - 1 hour ) and maximum deviation 1 hour ( VALID )
+    variants.Add( 'Test constraint IsShutdownTargetStartOK with ( TargetStart = ShutdownStart - 1 hour ) and maximum deviation 1 hour ( VALID )' );
+    isenableshutdowntargetstarts.Add( true );
+    targetstarts.Add( Duration::Hours( 1 ) );
+    targetmaxdeviations.Add( Duration::Hours( 1 ) );
+    shutdownstarts.Add( Duration::Hours( 2 ) );
+    isvalidforconstraintcheckings.Add( true );
+    
+    // Scenario 1.3: Test constraint IsShutdownTargetStartOK with ( TargetStart = ShutdownStart - 1 hour ) and maximum deviation 0.5 hour ( INVALID )
+    variants.Add( 'Test constraint IsShutdownTargetStartOK with ( TargetStart = ShutdownStart - 1 hour ) and maximum deviation 0.5 hour ( INVALID )' );
+    isenableshutdowntargetstarts.Add( true );
+    targetstarts.Add( Duration::Hours( 1 ) );
+    targetmaxdeviations.Add( Duration::Hours( 0.5 ) );
+    shutdownstarts.Add( Duration::Hours( 2 ) );
+    isvalidforconstraintcheckings.Add( false );
+    
+    // Scenario 1.4: Test constraint IsShutdownTargetStartOK with TargetStart = ShutdownStart and maximum deviation = 0 hour ( VALID )
+    variants.Add( 'Test constraint IsShutdownTargetStartOK with TargetStart = ShutdownStart and maximum deviation = 0 hour ( VALID )' );
+    isenableshutdowntargetstarts.Add( true );
+    targetstarts.Add( Duration::Hours( 1 ) );
+    targetmaxdeviations.Add( Duration::Hours( 0 ) );
+    shutdownstarts.Add( Duration::Hours( 1 ) );
+    isvalidforconstraintcheckings.Add( true );
+    
+    // Scenario 1.5: Test constraint IsShutdownTargetStartOK with TargetStart <> ShutdownStart and maximum deviation = 0 hour ( INVALID )
+    variants.Add( 'Test constraint IsShutdownTargetStartOK with TargetStart <> ShutdownStart and maximum deviation = 0 hour ( INVALID )' );
+    isenableshutdowntargetstarts.Add( true );
+    targetstarts.Add( Duration::Hours( 1 ) );
+    targetmaxdeviations.Add( Duration::Hours( 0 ) );
+    shutdownstarts.Add( Duration::Hours( 1.5 ) );
+    isvalidforconstraintcheckings.Add( false );
+    
+    return &variants;
+  *]
+}

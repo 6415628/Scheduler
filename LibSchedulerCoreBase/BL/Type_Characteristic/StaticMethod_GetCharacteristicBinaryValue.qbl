@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetCharacteristicBinaryValue (Characteristics cumulativecharacteristics, Operation_SC operation, BinaryValue previouscumulativecharacteristic, 
+  BinaryValue previouscumulativerealvalue, DateTime start, DateTime end, 
+  output BinaryValue characteristicindexbinvalue, output BinaryValue characteristicrealbinvalue) declarative remote
+{
+  Description: 'Get cumulative characteristic binary value for characteristic index and real value based on input cumulative characteristics'
+  TextBody:
+  [*
+    // Get cumulative characteristic binary value for characteristic index and real value based on input cumulative characteristics
+    // Construct vector for previous characteristic values
+    characteristicvector := NumberVector::Construct();
+    realvaluevector := RealVector::Construct( );
+    
+    sortedchars := selectsortedset( cumulativecharacteristics, Elements, char, true, char.Index() );
+    traverse( sortedchars, Elements, characteristic )
+    {
+      value := 0.0;
+      if( characteristic.ID() = RuleConstant::Characteristic_DurationInHours() )
+      {
+        value := ifexpr( end.IsFinite() and start.IsFinite(),
+                         ( end - start ).HoursAsReal(),
+                         0 );
+      }
+      else
+      {
+        currentvalue := guard( operation.GetCharacteristicRealValueForCumulativeCheckings( characteristic ), 0.0 );
+        previouscumulativevalue := Characteristic::GetCumulativeValueForCharacteristic( characteristic, 
+                                                                                        previouscumulativecharacteristic, 
+                                                                                        previouscumulativerealvalue );
+        value := previouscumulativevalue + currentvalue;
+      }
+    
+      characteristicvector.Append( characteristic.Index() );
+      realvaluevector.Append( value  ) ;
+    }
+    
+    // Set output argument binary values
+    characteristicindexbinvalue := characteristicvector.AsBinaryValue();
+    characteristicrealbinvalue := realvaluevector.AsBinaryValue();
+  *]
+}

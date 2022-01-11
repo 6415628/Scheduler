@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcLastRespectRoutingSubTask
+{
+  Description: 'Get the last subtask with routing dependency as set by the user; however, if there is a transfer subtask in the sequence then it will be the subtask right before the transfer subtask.'
+  TextBody:
+  [*
+    // khang chuen Jul-31-2015 (created)
+    //James Kwapien Sep-14-2016 #7718 Dialogs set last respect routing sub task, must account for priority of all inputs
+    value := '';
+    uservalue := this.LastRespectRoutingSubTaskUser();
+    rgvalue := this.ResourceGroup_SC().LastRespectRoutingSubTaskType();
+    
+     // AlexanderNg 19-Aug-2015 QP #5715, JamesK Sep-14-2016
+    // Overrides user defined, imported and dialog defined last subtask with routing dependency if there is a transfer subtask defined
+    if( this.ResourceGroup_SC().HasTransfer() )
+    {
+      value := this.ResourceGroup_SC().SubTaskBeforeTransfer();
+    }
+    // If not HasReceive then resource group value if it exists 
+    else if( rgvalue <> '' )
+    {
+      value := rgvalue;
+    }
+    // If resource group value does not exist then user value if it exists
+    else if( uservalue <> '' )
+    {
+      value := uservalue;
+    }
+    // If no otherwise defined value exists then use last sub task of sub task sequence
+    else
+    {
+      value := this.ResourceGroup_SC().LastSubTask();
+    }
+    
+    this.LastRespectRoutingSubTask( value );
+  *]
+}

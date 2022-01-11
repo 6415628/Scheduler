@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeFlows
+{
+  Description: 'Synchronize flows or operation materials between operations and between work orders.'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    allinstances := selectset( schedule, PlanUnit_SC.OperationMaterial, om, true );
+    updatedinstances := construct( OperationMaterials );
+    
+    // Synchronize flows for work order operations
+    this.SynchronizeWorkOrderOperationFlows( updatedinstances );
+    
+    // Synchronize flows for work orders - MUST be done after sync work order operation flows to ensure operation dependency within work order are available
+    // Otherwise we won't know which are the "first" and "last" operations of a work order
+    // SynchronizeWorkOrderFlows creates operation material between last operations of 'previous' work order to first operations of 'next' work order
+    this.SynchronizeWorkOrderFlows( updatedinstances );
+    
+    //Delete operation materials if they do not exist in the import
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, operationMaterial )
+    {
+      operationMaterial.Delete();
+    }
+    
+    // Flows have been synchronized between operations, need to add operation materials to the first and last operations
+    this.SynchronizeTerminalOperationMaterials();
+  *]
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetRemoveFromBatchConfirmation (output String feedback_o, Operation_SCs operations) const declarative remote as Boolean
+{
+  TextBody:
+  [*
+    feedback_o := '';
+    allowed    := true;
+    
+    if( exists( operations, Elements, op, op.IsFrozenInSchedule() ) )
+    {
+      allowed    := false;
+      feedback_o := Translations::SC_RemoveFrozenOperationFromBatchConfirmation();
+    }
+    else if( exists( operations, Elements, op, op.HasFeedback() ) )
+    {
+      allowed    := false;
+      feedback_o := Translations::SC_RemoveFeedbackOperationFromBatchConfirmation();
+    }
+    
+    if( exists( operations, Elements, op, op.IsLocked() ) )
+    {
+      allowed    := false;
+      Utility_SC::Concat( feedback_o, Translations::Batch_RemoveLockedOperationConfirmation() )
+    }
+    
+    return allowed;
+  *]
+}

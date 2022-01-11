@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitAssignAllOperationsConstraints (const LibOpt_Task task, SuboptimizerMPPTAssignment_PTAssignmentMP program, TransientDataSuboptimizerPTAssignment transientData) as SuboptimizerMPPTAssignment_PTAssignmentMP
+{
+  TextBody:
+  [*
+    // jkr8 Jul-16-2021 (created)
+    
+    /////////////////////////////////////////////////////////////////////////////////////
+    // sum_b(NrOpsAssigned_(o,b) ) = nrOperationInGroup_o, Forall o in OperationGroups //
+    /////////////////////////////////////////////////////////////////////////////////////
+    // All operations must be assigned to a bucket. The total number operations in an operation group must be equal 
+    // to the number of operations assigned to a bucket summed over all buckets.
+    
+    
+    traverse( transientData, OperationGroup, operationGroup ) 
+    {
+       constr := program.AssignAllOperationsConstraints().New( operationGroup );
+       
+       traverse( transientData, Bucket, bucket )
+       {
+         constr.NewTerm( 1.0, program.NrOpsAssignedVariables().Get( operationGroup, bucket ) );
+       }
+       
+       constr.RHSValue( operationGroup.NrOperationsInGroup() );
+    }
+    
+    return program;
+  *]
+}

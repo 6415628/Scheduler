@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReplaceWorkOrderOperation (WorkOrderOperation oldwoo)
+{
+  Description: 'Replaces the work order operations created in schedule with the one imported from ERP/MES, because it has been accepted.'
+  TextBody:
+  [*
+    // WOI1 Nov-10-2016 (created)
+    
+    // takes the operations of the old work order operation
+    operations := selectset( oldwoo, Operation_SC, op, true );
+    
+    // resets their relation to the new work order operation
+    traverse( operations, Elements, op )
+    {
+      op.WorkOrderOperation( relset, this );
+    }
+    
+    // replaces their work order supplies and demands
+    this.ReplaceWorkOrderDemands( oldwoo );
+    this.ReplaceWorkOrderSupplies( oldwoo );
+  *]
+}

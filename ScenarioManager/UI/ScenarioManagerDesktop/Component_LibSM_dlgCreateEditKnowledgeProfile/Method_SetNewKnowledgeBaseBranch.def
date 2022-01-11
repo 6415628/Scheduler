@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetNewKnowledgeBaseBranch (shadow[LibSM_KnowledgeBaseBranchInProfile] newBranch) id:Method_LibSM_dlgCreateEditKnowledgeProfile_SetNewKnowledgeBaseBranch
+{
+  #keys: '[123216.0.272775200]'
+  Body:
+  [*
+    // Add the new kbbranch to dataholder
+    
+    existingNewBranch := select( dhNewKBBranch.Data(), Elements, existingBranch,
+                                 existingBranch.KBDefinitionName() = newBranch.KBDefinitionName() );
+    
+    // Remove previously added new branch name (if any), to just keep the latest new branch name
+    if( not isnull( existingNewBranch ) )
+    {
+      dhNewKBBranch.Data().Remove( existingNewBranch );
+    }                             
+    
+    dhNewKBBranch.Data().Add( newBranch );
+      
+    traverse( Dialog.Data(), KnowledgeBaseBranchInProfile, kbBranch )
+    {
+      if( kbBranch.KBDefinitionName() = newBranch.KBDefinitionName()
+          and kbBranch.KBBranchName() = newBranch.KBBranchName() )
+      {
+        kbBranch.KBBranchVersion( "1.0.0.0" );
+      }
+    }
+  *]
+}

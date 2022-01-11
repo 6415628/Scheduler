@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCapacityFactor (LibOpt_Task task, Rule rule) as Real
+{
+  Description: 'Gets the capacity factor based on the rule of the programtype.'
+  TextBody:
+  [*
+    // jkr8 Jul-22-2021 (created)
+    
+    averageValue := 0.0;
+    
+    if( not isnull( rule ) and this.OperationInOptimizerProgram( relsize ) > 0 )
+    {
+     characteristic := rule.CharacteristicMain();
+     
+     //Assumption, only 1 resource in scope.
+     resource := select( task.Scope().ScopeElements(), Elements.astype( ScopeElementResource ).Resource_SC, res, true );
+    
+     averageValue := sum( this, OperationInOptimizerProgram.Operation_SC, operation, operation.GetCharacteristicAdditionalRealValue( characteristic, resource ) ) / this.NrOperationsInGroup();
+    
+    }
+    
+    return averageValue;
+  *]
+}

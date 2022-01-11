@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestKPITotalSetupDuration_Setup (Schedule schedule)
+{
+  Description: 'Test KPI TotalSetupDuration - setup'
+  TextBody:
+  [*
+    isvariantfound := false;
+    isdummyworkorder := false;
+    isprogramchangetask := false;
+    kpivalue := 0.0;
+    
+    this.GetTestVariantForKPITotalSetupDuration( isvariantfound,
+                                                 isdummyworkorder,
+                                                 isprogramchangetask,
+                                                 kpivalue );
+    
+    if( isvariantfound )
+    {  
+      // Create resource
+      resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource' );
+      resource.ResourceGroup_SC().IsBottleneck( true );
+      
+      // Create operations and plan operations
+      this.CreateOperations( schedule, resource, true, schedule.Time() );
+      
+      // Update 1st operation
+      operation := select( schedule, PlanUnit_SC.Operation_SC, op, op.SequenceNr() = 1 );
+      operation.PlanUnit_SC().Order_SC().IsDummyWorkOrder( isdummyworkorder );
+      
+      // Insert program change
+      if( isprogramchangetask )
+      {
+        // Create program definition data
+        programdefinition := UTFMockObjectFactory::CreateProgramDefinitionData( schedule, 'Program definition id', false );
+        programtype := selectset( programdefinition, ProgramSetConfiguration.ProgramTypeConfiguration, pt, true );
+        
+        // Assign program definition to resource
+        resource.AssignProgramDefinitionConfiguration( programdefinition );
+        
+        // Insert program change
+        resource.InsertProgramChange( null( Task_SC ), programtype, true, Duration::Hours( 1 ) );
+      }
+    }
+  *]
+}

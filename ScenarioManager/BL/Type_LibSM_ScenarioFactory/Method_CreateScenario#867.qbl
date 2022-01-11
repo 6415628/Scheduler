@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateScenario (LibSM_ScenarioFolder scenarioFolder, String scenarioName, String comment, 
+  Boolean isLive, String storageState, String scenarioDescription, 
+  LibSM_KnowledgeProfile knowledgeProfile, LibSM_MetaDatas metadata, String timezoneID) as LibSM_Scenario
+{
+  Description: 'Create a scenario (For timezone supported)'
+  TextBody:
+  [*
+    // Create a new dataset for the scenario.
+    dataset := this.CreateDataset( scenarioName, storageState, timezoneID );
+    
+    // Get the user that creates this scenario.
+    currentUserName := LibSM_Util::GetCurrentUserName();
+    
+    // Create a new scenario
+    // Pass in folder in case Model needs to create different scenario subtype per folder subtype, for example in Service Planner.
+    // Model can Override CreateScenario( folder ) method to create scenario based on folder type
+    scenario := this.CreateScenario( scenarioFolder );  
+    
+    scenario.Dataset( relset, dataset );
+    scenario.CreatedBy( currentUserName );
+    scenario.CreatedOn( DateTime::Now() );
+    scenario.IsScenario( true );
+    
+    // Add the scenario to the scenario manager.
+    scenario := this.ScenarioManager().AddLeaf( scenarioFolder, &scenario ).astype( LibSM_Scenario );
+    
+    // Set the scenario attributes/relations.
+    scenario.Update( scenarioName, 
+                     comment, 
+                     isLive, 
+                     storageState, 
+                     knowledgeProfile, 
+                     metadata,
+                     timezoneID );
+    
+    // Call a post-processing method on the created scenario, and specify that a new dataset was created.
+    scenario.CreationPostProcessCustom( true );
+    
+    return scenario;
+  *]
+}

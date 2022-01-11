@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod SetDatasetCopyAllowed (LibOpt_BreakpointPositions componentpositions) remote as Boolean
+{
+  Description: "Check if it is possible to add a dataset copy flag on the specified component positions. Used for various preconditions in the 'Components', 'Component positions' and 'Component graph' forms."
+  TextBody:
+  [*
+    // evr3 May-12-2020 (created)
+    feedbackobj := FeedbackObject::LocalFeedback();
+    
+    // Check if the component position already contains a dataset copy. If so, throw a precondition
+    traverse( componentpositions, Elements, componentposition )
+    {
+      componentposition.SetDatasetCopyAllowed();  
+    }
+    
+    // Check if any of the componentpositions is the 'Continue' component position of an iterator. If so, throw a precondition.
+    traverse( componentpositions, Elements, componentposition )
+    {
+      componentposition.SetDatasetCopyContinueAllowed(); 
+    }
+    
+    return feedbackobj.IsAllowed();
+  *]
+}

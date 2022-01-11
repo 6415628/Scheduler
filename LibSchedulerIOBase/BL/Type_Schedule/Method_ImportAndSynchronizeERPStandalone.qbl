@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportAndSynchronizeERPStandalone
+{
+  Description: 'Import all data from EDI and perform data synchronization including demo data'
+  TextBody:
+  [*
+    // Import all configurations
+    this.ImportObject().ImportConfigurations();
+    // We need to propagate and synchronize this configuration because it is used by later synchronizations
+    Transaction::Transaction().PropagateAll( typeof( ImportedIntegrationConfiguration ) );
+    this.SynchronizationObject().SynchronizeIntegrationConfiguration();
+    
+    // Import all data from EDI
+    this.ImportObject().ImportERP();
+    // Reset cycle sanity check for work order operation precedences
+    this.ResetCycleSanityCheckForPrecedence();
+    // Propagate work order operation precedences before doing cycle detection;
+    Transaction::Transaction().PropagateAll( typeof( ImportedWorkOrderOperationPrecedence ) );
+    this.DetectCycleForPrecedenceSanityCheck();
+    // Synchronize all data
+    this.SynchronizationObject().SynchronizeAll();
+    
+    // Restart automatic material scheduling
+    this.AutomaticProductBasedMaterialReservationBySorting();
+  *]
+}

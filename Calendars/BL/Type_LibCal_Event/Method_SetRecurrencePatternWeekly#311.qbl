@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetRecurrencePatternWeekly (String weekDays_i) as LibCal_Event
+{
+  Description:
+  [*
+    Set a recurrence pattern that recurs every week.
+    weekdays_i is a concatenation of the first 3 letters of the applicable weekdays, separated by a ';'.
+  *]
+  TextBody:
+  [*
+    // Use a FeedbackObject the collect the validation feedback.
+    feedback := LibCal_Validate::Event_Pattern_Weekly( weekDays_i, this.GetEventInfo() );
+    
+    // Process the feedback that has been registered by the validation (if any).
+    LibCal_Util::ProcessFeedbackObject( feedback );
+    
+    // The below is only executed when no validation errors were encountered.
+    weekdays  := weekDays_i.Tokenize( ';' );
+    daysShort := Translations::Pattern_DaysShort().Tokenize( ';' );
+    
+    onMonday    := weekdays.Find( daysShort.Element( 0 ) ) >= 0;
+    onTuesday   := weekdays.Find( daysShort.Element( 1 ) ) >= 0;
+    onWednesday := weekdays.Find( daysShort.Element( 2 ) ) >= 0;
+    onThursday  := weekdays.Find( daysShort.Element( 3 ) ) >= 0;
+    onFriday    := weekdays.Find( daysShort.Element( 4 ) ) >= 0;
+    onSaturday  := weekdays.Find( daysShort.Element( 5 ) ) >= 0;
+    onSunday    := weekdays.Find( daysShort.Element( 6 ) ) >= 0;
+    
+    // Make the API fluent.
+    return this.SetRecurrencePatternWeekly( onMonday, onTuesday, onWednesday, onThursday, onFriday, onSaturday, onSunday );
+  *]
+}

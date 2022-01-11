@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddExpressionTimeProcessDurations (SuboptimizerMRSPOA_POAOneResourceGroup poa, POAExpression timeexpression, LibOpt_Task task)
+{
+  Description: 'Add the expression duration to POA'
+  TextBody:
+  [*
+    ///////////////////////////////////////////////////////////////////////////
+    // DurationParticipation : Process Duration
+    ///////////////////////////////////////////////////////////////////////////
+    timeparticipation := POAParticipation::PN( poa, 'ProcessDuration', 0.0 );
+    timeexpression.Participation( timeparticipation )
+    
+    traverse( task.Scope().ResourceGroups(), Elements.Resource_SC.astype( SingleResourceBase ), resource )
+    {
+      pathtype := poa.PathType( SuboptimizerMRSPOA::POANamePathResource( resource ), resource );
+    
+      traverseelement := this.GetAllowedElement( resource, task.Scope() );
+    
+      traverse( traverseelement, Elements, operation1 )
+      {
+         node := poa.Node( SuboptimizerMRSPOA::POANameNodeOperation( operation1 ), operation1 );
+       //  debuginfo( "duration", mrsaelement1.POAIdentifier(),mrsaelement1.GetDurationOn( resource ).HoursAsReal() );
+         timeparticipation.Set( pathtype, node, operation1.OptimizerMRS_GetDurationOn( resource ).HoursAsReal() );
+      }
+    }
+  *]
+}

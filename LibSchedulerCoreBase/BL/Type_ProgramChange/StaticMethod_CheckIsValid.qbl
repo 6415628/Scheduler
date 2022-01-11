@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsValid (ProgramTypeConfigurations programtypeconfigurations, ProgramChange programchange, Boolean skipsoftcheck) declarative remote as Boolean
+{
+  Description: 'Perform checking when creating and editing a program change instance'
+  TextBody:
+  [*
+    // Perform checking when creating and editing a program change instance
+    
+    /*
+    1. Check there is at least one program type is selected
+    2. Soft checking - Program change planned outside frozen period
+    */
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    ProgramChange::CheckIsProgramTypeSelected( programtypeconfigurations );
+    
+    // Soft checkings
+    if( not skipsoftcheck and not isnull( programchange ) )
+    {
+      programchange.CheckIsPlannedOutsideFrozenPeriod();
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

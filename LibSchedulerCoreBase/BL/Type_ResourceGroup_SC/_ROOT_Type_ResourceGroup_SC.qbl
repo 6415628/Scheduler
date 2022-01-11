@@ -1,0 +1,63 @@
+Quintiq file version 2.0
+#root
+#parent: #DomainModel
+Type ResourceGroup_SC
+{
+  #keys: '5[100134.0.39848336][100134.0.39848339][0.0.0][100134.0.39848335][100134.0.39848340]'
+  BaseType: Object
+  Description: 'SC'
+  OnCommit:
+  [*
+    // James Kwapien 20160831 #7644 Synchronization updated for dialogs instead of KTs 
+    // James Kwapien 20160825 #7617 HasBatches is set based on ResourceType
+    synchronizationobject := this.Schedule().SynchronizationObject();
+    
+    // Check if this has fixed sequence plan logic and synch if so
+    if( this.HasFixedSequencePlanLogic() )
+    {
+      synchronizationobject.SynchronizeFSPLResourceGroups();
+    }
+    
+    // has_batches must be set
+    has_batches := this.ResourceType() = Constants::Resource_BatchResource();
+    this.HasBatches( has_batches );
+    
+    // iscontinuous must be set
+    iscontinuous := this.ResourceType() = Constants::Resource_ContinuousResource();
+    this.IsContinuous( iscontinuous );
+    
+    // Synchronize resource types
+    this.SynchronizeResourceTypes();
+    
+    // Synchronize capacity resource groups
+    synchronizationobject.SynchronizeCapacityResourceGroups();
+    
+    // Synchronize resource connections
+    synchronizationobject.SynchronizeResourceConnections();
+    
+    // Update subtasks
+    this.UpdateSubTaskSequence();
+    
+    // James Kwapien Sep-16-2016 #7705 Update tasks when committing changes to a resource group
+    tasks := selectset( this,
+                        Resource_SC.Task_SC,
+                        task,
+                        true );
+    
+    traverse( tasks, Elements, task )
+    {
+      task.UpdateSubTasks();
+    }
+    
+    // We should always synchronize FSPL even if we have disabled it to flush any relations    
+    synchronizationobject.SynchronizeFSPLResourceGroups();
+    
+    if( this.Image() = "" )
+    {
+      // When there is no image defined by user, assign a default image
+      this.Image( ResourceNode::Const_DefaultImage() );
+    }
+  *]
+  StructuredName: 'ResourceGroup_SCs'
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateForSnapshot (LibOpt_Snapshot snapshot, String path, shadow[LibOpt_UIOwner] owner) id:Method_LibOpt_FormSnapshotColumns_CreateForSnapshot
+{
+  #keys: '[139164.4.767485964]'
+  Body:
+  [*
+    type_name := typeofexpression( snapshot ).Name()
+    
+    nvt := NamedValueTreeIO::Export( snapshot );
+    root := nvt.Root().Child( nvt.GetHandle( type_name ) );
+    
+    tv := typeofexpression( snapshot ).TypeView();
+    traverse( ApplicationScope.TypeInterface( typeofexpression( snapshot ) ), Attributes, att,
+              not att.IsSystem() )
+    {
+      child := guard( root.Child( nvt.GetHandle( att.Name() ) ), null( NamedValue ) );
+      value := '';
+      type := '';
+      if( att.IsImage() )
+      {
+        type := 'Image';
+        value := Char::Construct( 128247 );
+      }     
+      else
+      {
+        Form.ExtractAttribute( child, type, value );  
+      }
+    
+      owner.UISnapshotAttribute( relnew,
+                                 Path := path,
+                                 AttributeName := att.Name(),
+                                 Value := value,
+                                 Description := guard( select( tv, Attributes, tv_att, tv_att.Name() = att.Name() ).Description(), '' ),
+                                 Type := type,
+                                 Snapshot := snapshot );
+    }
+    
+    traverse( snapshot, Children, subsnapshot, not subsnapshot.istype( LibOpt_SnapshotComponent ) )
+    {
+      this.CreateForSnapshot( subsnapshot, path + '.' + subsnapshot.Type(), owner );
+    }
+  *]
+}

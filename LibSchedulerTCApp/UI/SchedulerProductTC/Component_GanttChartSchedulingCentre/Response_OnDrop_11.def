@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDrop (structured[Task_SC] source, CampaignTypeOnResource droprow, CampaignTask beforedroptarget, 
+  CampaignTask afterdroptarget) id:Response_GanttChartSchedulingCentre_OnDrop_11
+{
+  #keys: '[12910.0.1217182416]'
+  Body:
+  [*
+    // OnDrop structured[Task] --> CampaignTask
+    // Campaign task for single resource
+    droprow.Resource_SC().PlanAfter( source , guard( beforedroptarget.LastOperationCampaign().Task_SC(), null( Task_SC ) ) );
+  *]
+  DefinitionID: 'Responsedef_GanttChart_OnDrop'
+  Precondition:
+  [*
+    isallowedhard     := true;
+    aftercampaigntask := guard( droprow.FirstCampaignTaskOfTypeOnResource(), null( CampaignTask ) );
+    ctrlkey           := dropaction.IsControl();
+    ctrlshift         := dropaction.IsControlShift();
+    identifier        := Task_SC::GetSelectedObjects( source );
+    
+    if( not isnull( beforedroptarget ) )
+    {
+      aftercampaigntask := guard( beforedroptarget.NextCampaignTaskOfTypeOnResource(), null( CampaignTask ) );
+    }
+    
+    return ApplicationScheduler.AllowedScheduling( droprow.Resource_SC(),
+                                                   source,
+                                                   ctrlkey,
+                                                   ctrlshift,
+                                                   beforedroptarget,
+                                                   aftercampaigntask,
+                                                   identifier,
+                                                   feedback,
+                                                   isallowedhard );
+  *]
+  UserRequiresReadWrite: true
+}

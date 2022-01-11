@@ -1,0 +1,63 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestData_Store (UTF_DataIntegrity unittest)
+{
+  TextBody:
+  [*
+    // Store the kpi values before upgrade
+    unittest.KPIAverageDemandBatchDueDateSpread( this.KPIAverageDemandBatchDueDateSpread() );
+    unittest.KPIBatchEfficiency( this.KPIBatchEfficiency() );
+    unittest.KPIDeliveryPerformance( this.KPIDeliveryPerformance() );
+    unittest.KPIDemandsReserved( this.KPIDemandsReserved() );
+    unittest.KPIMPSAdherenceEarly( this.KPIMPSAdherenceEarly() );
+    unittest.KPIMPSAdherenceLate( this.KPIMPSAdherenceLate() );
+    unittest.KPINrOperationsOnNonAllowedResource( this.KPINrOperationsOnNonAllowedResource() );
+    unittest.KPINrUnplannedOperation( this.KPINrUnplannedOperation() );
+    unittest.KPIOperationLateness( this.KPIOperationLateness() );
+    unittest.KPIOperationsDueNotPlanned( this.KPIOperationsDueNotPlanned() );
+    unittest.KPIOperationsOnTime( this.KPIOperationsOnTime() );
+    unittest.KPIOperationsScheduledEarly( this.KPIOperationsScheduledEarly() );
+    unittest.KPIPreferenceRuleViolation( this.KPIPreferenceRuleViolation() );
+    unittest.KPIProductionResourceAdherence( this.KPIProductionResourceAdherence() );
+    unittest.KPIProductionSequenceAdherence( this.KPIProductionSequenceAdherence() );
+    unittest.KPIProductivity( this.KPIProductivity() );
+    unittest.KPIProductsCurrentStockLevelHigh( this.KPIProductsCurrentStockLevelHigh() );
+    unittest.KPIProductsCurrentStockLevelLow( this.KPIProductsCurrentStockLevelLow() );
+    unittest.KPIProductsCurrentStockLevelOK( this.KPIProductsCurrentStockLevelOK() );
+    unittest.KPIProductsScheduledStockLevelHigh( this.KPIProductsScheduledStockLevelHigh() );
+    unittest.KPIProductsScheduledStockLevelLow( this.KPIProductsScheduledStockLevelLow() );
+    unittest.KPIProductsScheduledStockLevelOK( this.KPIProductsScheduledStockLevelOK() );
+    unittest.KPIQuantityDueNotScheduled( this.KPIQuantityDueNotScheduled() );
+    unittest.KPITotalAvailableTime( this.KPITotalAvailableTime() );
+    unittest.KPITotalDummyWorkOrderTime( this.KPITotalDummyWorkOrderTime()  );
+    unittest.KPITotalProductionTime( this.KPITotalProductionTime() );
+    unittest.KPITotalSetupTime( this.KPITotalSetupTime() );
+    unittest.KPITotalShutdownTime( this.KPITotalShutdownTime() );
+    unittest.KPITotalWaitingTime( this.KPITotalWaitingTime() );
+    
+    resources := selectsortedset( this, ResourceGroup_SC.Resource_SC, resource, 
+                                  true, 
+                                  resource.ResourceID()
+                                );
+    // Store the task size on resource before upgrade
+    tasksizevector := NumberVector::Construct( resources.Size() );
+    index := 0;
+    traverse( resources, Elements, resource )
+    {
+      tasksizevector.Set( index, resource.Task_SC( relsize ) );
+      index++;
+    }
+    unittest.TaskSizeOnResource( tasksizevector.AsBinaryValue() ); 
+    
+    // Store the End of the last task on resource before upgrade
+    tasklastenddtvector := DateTimeVector::Construct( resources.Size() );
+    index := 0;
+    traverse( resources, Elements, resource )
+    {
+      tasklastenddtvector.Set( index, guard( resource.Last().End(), DateTime::MinDateTime() ) );
+      index++;
+    }
+    unittest.TaskLastEndDTOnResource( tasklastenddtvector.AsBinaryValue() );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

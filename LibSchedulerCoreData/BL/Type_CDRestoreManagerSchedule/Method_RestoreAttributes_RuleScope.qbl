@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_RuleScope (CDSchedule cdschedule, CDRule cdrule, Rule rule)
+{
+  Description: 'Restore rule scope core data attributes to planning object'
+  TextBody:
+  [*
+    // Restore RuleScopeInProgramPhase
+    cdrulescopeinprogramphases := selectset( cdschedule, CDEntity.astype( CDRuleScopeInProgramPhase ), cdrulescopeinprogramphase, 
+                                             cdrulescopeinprogramphase.RuleID() = cdrule.RuleID() );
+    traverse( cdrulescopeinprogramphases, Elements, cdrulescope )
+    {
+      rulescope := RuleScopeInProgramPhase::Create( rule );
+      CopyCorresponding::CopyFrom( cdrulescope ).CopyTo( rulescope );         
+    } 
+    
+    // Restore RuleScopeInProgramType
+    cdrulescopeinprogramtypes := selectset( cdschedule, CDEntity.astype( CDRuleScopeInProgramType ), cdrulescopeinprogramtype, 
+                                             cdrulescopeinprogramtype.RuleID() = cdrule.RuleID() );
+    traverse( cdrulescopeinprogramtypes, Elements, cdrulescope )
+    {
+      rulescope := RuleScopeInProgramType::Create( rule );
+      CopyCorresponding::CopyFrom( cdrulescope ).CopyTo( rulescope );        
+    } 
+    
+    // Restore RuleScopeInShutdownType
+    cdrulescopeinshutdowntypes := selectset( cdschedule, CDEntity.astype( CDRuleScopeInShutdownType ), cdrulescopeinshutdowntype, 
+                                             cdrulescopeinshutdowntype.RuleID() = cdrule.RuleID() );
+    traverse( cdrulescopeinshutdowntypes, Elements, cdrulescope )
+    {
+      rulescope := RuleScopeInShutdownType::Create( rule );
+      CopyCorresponding::CopyFrom( cdrulescope ).CopyTo( rulescope );   
+    } 
+    
+    // Restore RuleScopeInResource
+    cdrulescopeinresources := selectset( cdschedule, CDEntity.astype( CDRuleScopeInResource ), cdrulescopeinresource, 
+                                         cdrulescopeinresource.RuleID() = cdrule.RuleID() );
+    traverse( cdrulescopeinresources, Elements, cdrulescope )
+    {
+      rulescope := RuleScopeInResource::Create( rule );
+      CopyCorresponding::CopyFrom( cdrulescope ).CopyTo( rulescope );   
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

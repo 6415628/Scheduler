@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeToolBlocks
+{
+  TextBody:
+  [*
+    // James Kwapien Oct-3-2016 (created) #7942 Synchronize tool blocks
+    allinstances := selectset( this.Schedule(), ToolBlock, tb, true );
+    updatedinstances := construct( ToolBlocks );
+    
+    // Create new tool blocks and synchronize for existing ones
+    importedtbs := selectset( this.Schedule(), ImportedToolBlock_SC, itb, true );
+    
+    traverse( importedtbs, Elements, itb )
+    {
+      blockid := itb.BlockID();
+    
+      toolblock := select( this.Schedule(),
+                           ToolBlock,
+                           tb,
+                           tb.BlockID() = blockid );
+    
+      if( isnull( toolblock ))
+      {
+        toolblock := ToolBlock::Create( this.Schedule(), blockid );
+      }
+    
+      updatedinstances.Add( toolblock );
+    }
+    
+    // Remove old tool blocks if they do not exist in imported tool blocks
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, tb )
+    {
+      tb.Delete();
+    }
+  *]
+}

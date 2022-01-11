@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test050_ResourceConnections_Setup (Schedule schedule)
+{
+  Description: 'Disables certain resource connections, but keeps all plan units plannable.'
+  TextBody:
+  [*
+    // for each resource in and resource group, only keep 1-2 outgoing connections:
+    traverse( schedule, ResourceGroup_SC.Resource_SC, from_resource, from_resource.AsFromResource( relsize ) > 2 )
+    {
+      keep1 := maxselect( from_resource, AsFromResource, connection, true, Real::Random() );
+      keep2 := null( ResourceConnection );
+      if( Real::Random() < 0.5 )
+      {
+        keep2 := maxselect( from_resource, AsFromResource, connection, connection <> keep1, Real::Random() );
+      }
+      traverse( from_resource, AsFromResource, connection, connection <> keep1 and connection <> keep2 )
+      {
+        connection.Delete();
+      }
+    }
+    
+    Transaction::Transaction().Propagate();
+  *]
+}

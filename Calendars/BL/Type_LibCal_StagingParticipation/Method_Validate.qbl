@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Validate
+{
+  TextBody:
+  [*
+    // First reset.
+    this.ResetValidation();
+    
+    // Execute the validations.
+    // Use a FeedbackObject to collect the validation feedback.
+    feedback := LibCal_Validate::FeedbackObject();
+    
+    // Event
+    LibCal_Validate::RegisterError( LibCal_Validate::Participation_Event( this.EventID(), this.StagingEvent() ) );
+    
+    // StartDate
+    LibCal_Validate::RegisterError( LibCal_Validate::Participation_StartDate( this.IsLeading(), this.StartDate() ) );
+    
+    if( not isnull( this.StagingEvent() ) )
+    {
+      // Validate fields that are related to the RecurrencePeriod.
+      LibCal_Validate::Participation_RecurrencePeriod( this.StagingParticipationID(), this.StagingEvent().IsRecurring(), this.IsLeading(), this.HasSpecificPeriod(),
+                                                       this.StartDate(), this.PeriodType(), this.PeriodStartDate(), this.PeriodEndDate(), "" );
+    }
+    
+    // Validate the informational fields.
+    this.ValidateInformation();
+    
+    // Process the feedback that has been registered by the validation (if any).
+    this.ProcessFeedbackObject( feedback );
+  *]
+}

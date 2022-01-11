@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateOrderSchedulesNVT (NamedValueTree nvt, NamedValue node)
+{
+  Description: 'Create the NVT structure for OrdeSchedules for this exported task instance.'
+  TextBody:
+  [*
+    // woi1 Feb-14-2017 (created)
+    // Generates Operation tag - representing plan units in Schedule
+    operation_handle := nvt.GetHandle( Constants::Apriso_ExportXMLOperationTag() );
+    
+    // add the Order handle to the AprisoQuintiq_Orders node
+    operation_node := node.AddChild( operation_handle );
+    
+    // add exported task attributes as handles along with their value
+    // OprSequenceNo
+    operation_oprsequenceno_handle := nvt.GetHandle( Constants::Apriso_NVT_OprSequenceNo() );
+    operation_node.AddChild( operation_oprsequenceno_handle, this.WorkOrderOperationSequenceNr() );
+    // WorkCenter
+    operation_workcenter_handle := nvt.GetHandle( Constants::Apriso_NVT_WorkCenter() );
+    operation_node.AddChild( operation_workcenter_handle, this.Resource() );
+    // ScheduledStartDate
+    operation_scheduledstartdate_handle := nvt.GetHandle( Constants::Apriso_NVT_ScheduledStartDate() );
+    operation_node.AddChild( operation_scheduledstartdate_handle, this.ExportedStart() );
+    // ScheduledCompletionDate
+    operation_scheduledcompletiondate_handle := nvt.GetHandle( Constants::Apriso_NVT_ScheduledCompletionDate() );
+    operation_node.AddChild( operation_scheduledcompletiondate_handle, this.ExportedEnd() );
+    // SetupDuration
+    operation_setupduration_handle := nvt.GetHandle( Constants::Apriso_NVT_SetupDuration() );
+    operation_node.AddChild( operation_setupduration_handle, this.ExportedSetupDurationHoursAsReal() );
+    // RunTimeDuration
+    operation_runtimeduration_handle := nvt.GetHandle( Constants::Apriso_NVT_RunTimeDuration() );
+    operation_node.AddChild( operation_runtimeduration_handle, this.ExportedProcessDurationHoursAsReal() );
+    // MachineNo
+    operation_machineno_handle := nvt.GetHandle( Constants::Apriso_NVT_MachineNo() );
+    operation_node.AddChild( operation_machineno_handle, this.Resource() );
+  *]
+}

@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitCurrentSolution (LibOpt_Task task, SuboptimizerMPPTAssignment_PTAssignmentMP program, TransientDataSuboptimizerPTAssignment transientData)
+{
+  Description: 'For already scheduled operations and buckets, set the upper and lower bounds'
+  TextBody:
+  [*
+    // jkr8 Jul-22-2021 (created)
+    
+    //Buckets that are already planned have a program type assigned. the upper and lowerbounds reflect this in the MIP
+    traverse( transientData, Bucket, bucket, bucket.IsFixed() )
+    {
+      traverse( bucket, ProgramTypeInBucket.ProgramType.ProgramTypeConfiguration, programType )
+      {
+        var := program.IsProgramAssignedVariables().Get( programType, bucket );
+        var.LowerBound( 1.0 );
+        var.UpperBound( 1.0 );
+      }
+    }
+  *]
+}

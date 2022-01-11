@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestFeedbackShutdown_Setup (Schedule schedule)
+{
+  Description: 'Test feedback shutdown - setup'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    isplannedshutdown := false;
+    
+    this.GetTestVariantForFeedbackShutdown( isvariantfound,
+                                            isplannedshutdown );
+    
+    // Only setup when variant found
+    if( isvariantfound )
+    {  
+      // Create shutdown type and assign to resource
+      shutdowntypeid := 'shutdown type';
+      resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource' );
+      shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, shutdowntypeid );
+      UTFMockObjectFactory::CreateShutdownTypeInResource( shutdownType, resource );
+      
+      externalstoppageid := 'ExternalStoppageId';
+      scheduledstoppageid := '';
+      if( isplannedshutdown )
+      {  
+        // Assign a shutdown at operation2
+        shutdown := resource.InsertShutdown( null( Task_SC ), 
+                                             shutdownType, 
+                                             Duration::Hours( 1 ), 
+                                             true,
+                                             false,
+                                             DateTime::MinDateTime(),
+                                             Duration::Zero() );
+        scheduledstoppageid := shutdown.Shutdown().ShutdownID();
+      }
+      
+      // Create imported feedback
+      taskduration := Duration::Hours( 1 );
+      shutdownstart := schedule.Time() - taskduration;
+      feedbackshutdowntask := UTFMockObjectFactory::CreateImportedFeedbackTask( schedule, '', '', 0, externalstoppageid );
+      feedbackshutdowntask.SchedulerStoppageTaskID( scheduledstoppageid );
+      feedbackshutdowntask.ReportStart( shutdownstart, resource, '', '' );
+      feedbackshutdowntask.ReportEnd( shutdownstart + taskduration, resource, '', '' );
+      feedbackshutdowntask.TaskType( Constants::TaskType_ShutDown() );
+      feedbackshutdowntask.ShutdownTypeID( shutdowntypeid );
+      
+      // Interpret feedback data
+      this.InterpretFeedbackData( schedule );
+    }
+  *]
+}

@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Delete (Schedule schedule, ResourceGroup_SCs resource_groups_i)
+{
+  Description: 'Deletes an instance of ResourceGroup_SC.'
+  TextBody:
+  [*
+    // James Kwapien 20160825 #7627 Delete a ResourceGroup from Resources form context menu if possible
+    traverse( resource_groups_i, Elements, resource_group, resource_group.CanBeDeleted() )
+    {
+       resource_group.Delete();
+    }
+    
+    // synchronizes resource connection instances, not done in OnDelete because instances are not yet deleted
+    schedule.SynchronizationObject().SynchronizeResourceConnections();
+  *]
+}

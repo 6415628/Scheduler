@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportFromDBAndSynchronize (String brokerID_i, String dataTransformationID_i, Boolean pingFirst_i) as stream[LibDIF_IntegrationAPI]
+{
+  Description:
+  [*
+    Trigger the import of data from a database to integration objects, using the EDI-broker with the provided ID,
+    followed by triggering the synchronization of the integration objects to model objects in the planning-dataset, using the DataTransformation with the provided ID.
+  *]
+  TextBody:
+  [*
+    dataTransformation := this.GetDataTransformation( dataTransformationID_i );
+    
+    // Get the Integration-dataset and trigger its ImportFromDB,
+    // followed by triggering synchronization of the data.
+    api := this.GetIntegrationDataset() ->  ImportFromDB( brokerID_i, dataTransformation, pingFirst_i )
+                                        ->| this -> SynchronizeData( dataTransformationID_i ) -> ( api ) { return api; }
+    
+    // Return a stream that can be reacted on.
+    return api;
+  *]
+}

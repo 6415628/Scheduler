@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestResourceGroupUpdate (Schedule schedule)
+{
+  Description: 'Test whether resource group is updated correctly.'
+  TextBody:
+  [*
+    newDuration := Duration::Days( 2 );
+    newNumber := 2000;
+    newBoolean := true;
+    
+    importedResourceGroup := select( schedule, ImportedResourceGroup_SC, importedResourceGroup, true );
+    // Set attributes as per default values to avoid sanity check violation
+    importedResourceGroup.ConfiguredFeedbackHistory( newDuration );
+    importedResourceGroup.ConfiguredFrozenPeriod( newDuration );
+    importedResourceGroup.ConfiguredOnHoldPeriod( newDuration );
+    importedResourceGroup.ConfiguredKPIAdherenceHorizon( newDuration );
+    importedResourceGroup.ConfiguredSchedulingWindow( newDuration );
+    importedResourceGroup.HasBatches( newBoolean );
+    importedResourceGroup.HasFixedSequencePlanLogic( newBoolean );
+    importedResourceGroup.HasPractice( newBoolean );
+    importedResourceGroup.Index( newNumber );
+    importedResourceGroup.IsBottleneck( newBoolean );
+    importedResourceGroup.IsContinuous( newBoolean );
+    importedResourceGroup.IsPlanRelatedOperations( newBoolean );
+    importedResourceGroup.UseConfiguredFeedbackHistory( newBoolean );
+    importedResourceGroup.UseConfiguredFrozenPeriod( newBoolean );
+    importedResourceGroup.UseConfiguredOnHoldPeriod( newBoolean );
+    importedResourceGroup.UseConfiguredKPIAdherenceHorizon( newBoolean );
+    importedResourceGroup.UseConfiguredSchedulingWindow( newBoolean );
+    
+    this.SynchronizeImportedData( schedule );
+    
+    isUpdatedResourceGroup := exists( schedule, ResourceGroup_SC, resourceGroup, resourceGroup.ConfiguredFeedbackHistory() = newDuration
+                                                                                 and resourceGroup.ConfiguredFrozenPeriod() = newDuration
+                                                                                 and resourceGroup.ConfiguredOnHoldPeriod() = newDuration
+                                                                                 and resourceGroup.ConfiguredKPIAdherenceHorizon() = newDuration
+                                                                                 and resourceGroup.ConfiguredSchedulingWindow() = newDuration
+                                                                                 and resourceGroup.HasBatches() = newBoolean
+                                                                                 and resourceGroup.HasFixedSequencePlanLogic() = newBoolean
+                                                                                 and resourceGroup.HasPractice() = newBoolean
+                                                                                 and resourceGroup.ImportedIndex() = newNumber
+                                                                                 and resourceGroup.IsBottleneck() = newBoolean
+                                                                                 and resourceGroup.IsContinuous() = newBoolean
+                                                                                 and resourceGroup.IsPlanRelatedOperations() = newBoolean
+                                                                                 and resourceGroup.UseConfiguredFeedbackHistory() = newBoolean 
+                                                                                 and resourceGroup.UseConfiguredFrozenPeriod() = newBoolean
+                                                                                 and resourceGroup.UseConfiguredOnHoldPeriod() = newBoolean
+                                                                                 and resourceGroup.UseConfiguredKPIAdherenceHorizon() = newBoolean
+                                                                                 and resourceGroup.UseConfiguredSchedulingWindow() = newBoolean );
+                                         
+    this.Run().AssertTrue( isUpdatedResourceGroup, UTFUtility::GenerateFailedMessage( 'ResourceGroup_Update', '' ) );
+  *]
+}

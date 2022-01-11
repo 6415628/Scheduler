@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcMachineEarliestStart
+{
+  Description: 'Calculate the earliest possible start of the first subtask in the task according to the resource availability, including the duration that are allowed to overlap with previous task. (Default is last feedback moment for resource).'
+  TextBody:
+  [*
+    mes := this.Schedule().Time();
+    resource := this.Resource_SC();
+    
+    if( not isnull( this.Previous() ) )
+    {
+      //Kyle June 03, 2015 #5407
+      mes := resource.ResourceCalendar().Subtract( this.Previous().EarliestEnd(),
+                                                   minvalue( this.Previous().DurationAfterMachineEnd(), this.DurationBeforeMachineStart() ) );
+    }
+    else if( this.Resource_SC().HasFeedback() )
+    {
+    // make sure the MES is always after the last feedback moment
+      mes := resource.FeedbackHorizon();
+    }
+    
+    // the calendar should allow the machine to produce
+    value := resource.ResourceCalendar().NextAvailable( mes );
+    
+    this.MachineEarliestStart( value );
+  *]
+}

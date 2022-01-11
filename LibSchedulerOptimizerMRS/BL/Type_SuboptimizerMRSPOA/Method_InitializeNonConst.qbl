@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitializeNonConst (LibOpt_Task task) as owning POAAlgorithm
+{
+  TextBody:
+  [*
+    poa := SuboptimizerMRSPOA::CreatePOAOneResourceGroup();
+    
+    this.POAAddNodes( poa, task );
+    
+    schedule := this.GetSchedule();
+    scheduletime := schedule.Time();
+    
+    // Set the offsetdatetime of POAAnalysis at the start of the run instead of doing this manually (and forgetting it)
+    if( guard( POAAnalysis::Analysis().Active(), false ) )
+    {
+      POAAnalysis::Analysis().OffsetDateTime( scheduletime );
+    }
+    
+    this.POAAddPaths( poa, task );
+    
+    this.POAAddExpressions( poa, task );
+    
+    this.POAAddConstraints( poa, task );
+    
+    this.POAAddGoals( poa, task );
+    
+    this.POAAddInitial( poa, task );
+    
+    return & poa;
+  *]
+}

@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: ListTasks
+Response OnDrop (structured[Operation_SC] source, SingleTaskBase target, SingleResourceBase resource) id:Response_ListTasks_OnDrop_529
+{
+  #keys: '[142956.1.1509578523]'
+  CanBindMultiple: false
+  DefinitionID => /ListTasks/Responsedef_ListTasks_OnDrop
+  GroupServerCalls: true
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey  := actionmodifier.IsControl();
+    ctrlshiftkey := actionmodifier.IsControl() and actionmodifier.IsShift();
+    
+    return Scheduler.AllowedScheduling( resource,
+                                        source,
+                                        ctrlkey,
+                                        ctrlshiftkey,
+                                        target.Previous(),
+                                        target,
+                                        Operation_SC::GetSelectedObjects( source ),
+                                        feedback,
+                                        isallowedhard );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // OnDrop structured[Operation] --> SingleTaskBase On SingleResourceBase
+      resource.PlanBefore( source, target );
+    *]
+  }
+}

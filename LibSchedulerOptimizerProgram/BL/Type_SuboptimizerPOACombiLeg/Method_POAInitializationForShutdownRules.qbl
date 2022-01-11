@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAInitializationForShutdownRules (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs, Operation_SCs operations)
+{
+  Description: 'add expressions and constraints for program configurable rules'
+  TextBody:
+  [*
+    // We define both min and max rules for the shutdowns since their combined length is a bit of a combination (we need at least 10 hours of X and after 10 hours the next leg starts)
+    traverse( combilegs, Elements.Leg.RuleInLeg.Rule, rule )
+    {
+      // Select the leading program set, since we do not want to duplicate this rule for all the program sets
+      programsetconfig := select( combilegs, Elements.LeadingCombiProgramPhase.CombiProgramType.CombiProgramSet.ProgramSetConfiguration, psc, true );
+      
+      isminrule := false;
+      characteristic := rule.CharacteristicScope()
+      isphaserule := false;
+      isshutdownrule := true;
+      // If we have not yet defined the expression and rules for this scope, then do so
+      // This is is necessary since we may have multiple rules that are applied to the same characteristic, etc 
+      // and we want to track them on a single expression
+      if( characteristic.ID() <> RuleConstant::Characteristic_DurationInHours() 
+          and guard( isnull( poa.Expression( SuboptimizerPOACombiLeg::NamePOAExpression( characteristic, isminrule, programsetconfig, isphaserule, isshutdownrule ) ) ), true ) )
+      {
+        this.POAAddExpressionCharacteristic( poa, combilegs, operations, characteristic, isminrule, programsetconfig, isphaserule, isshutdownrule );
+      }
+        
+      this.POAAddConstraintEndPathRule( poa, combilegs, programsetconfig, rule, false );
+      this.POAAddConstraintEndRule( poa, combilegs, operations, programsetconfig, rule, false );
+      
+      //if next leg still has this rule, then we don't need to add minimal constraint here
+      if(  not exists( combilegs, Elements.Leg.NextLegInProgramType.RuleInLeg.Rule, rule1, rule1 = rule ) )
+      {
+        isminrule := true;
+        if( guard( isnull( poa.Expression( SuboptimizerPOACombiLeg::NamePOAExpression( characteristic, isminrule, programsetconfig, isphaserule, isshutdownrule ) ) ), true ) )
+        {
+          this.POAAddExpressionCharacteristic( poa, combilegs, operations, characteristic, isminrule, programsetconfig, isphaserule, isshutdownrule );
+        }
+        this.POAAddConstraintEndPathRule( poa, combilegs, programsetconfig, rule, true );
+        this.POAAddConstraintEndRule( poa, combilegs, operations, programsetconfig, rule, true );
+      }
+    }
+  *]
+}

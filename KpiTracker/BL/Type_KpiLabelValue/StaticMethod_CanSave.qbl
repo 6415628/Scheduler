@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CanSave (KpiLabel owner, KpiLabelValue existing, String value) as Boolean
+{
+  Description: 'Checks to see if a KpiLabelValue can be saved like this. Used in preconditions. Sets the FeedbackObject.'
+  TextBody:
+  [*
+    val      := value.TrimBoth();
+    feedback := FeedbackObject::LocalFeedback();
+    isUnique := not exists( owner, Value, v, ( isnull( existing ) or existing <> v )
+                                          and  v.Value() = val );
+    
+    if ( not feedback.CheckHard( isUnique ) )
+    {
+      feedback.AddHard( Translations::Kpi_LabelValue_NameMustBeUnique( val ) );  
+    }
+    
+    if ( not feedback.CheckHard( val <> '' ) )
+    {
+      feedback.AddHard( Translations::Kpi_LabelValue_NameCantBeEmpty() );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

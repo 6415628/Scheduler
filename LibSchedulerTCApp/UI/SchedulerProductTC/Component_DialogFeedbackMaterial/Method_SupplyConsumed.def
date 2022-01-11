@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method SupplyConsumed (ImportedFeedbackTask task, internal[GUIComponent] parent) id:Method_DialogFeedbackMaterial_SupplyConsumed
+{
+  #keys: '[118288.0.250648990]'
+  Body:
+  [*
+    // generate imported material base exported task.
+    exportedtask := task.ExportedSingleTask();
+    
+    id := ImportedFeedbackMaterial_SC::GetIdentifierInSF( task.Resource(), exportedtask.Operation_SC() );
+    
+    supply := select( exportedtask, ExportedSupply, s, true );                                                                                                     
+                                                                                                     
+    timestamp := this.GetFeedbackTime( task );
+    
+    DataHolderSelectedFeedbackOperation.Data( exportedtask.Operation_SC() ); 
+    
+    data := Schedule.ImportedFeedbackMaterial_SC( relshadow,
+                                                  ID := id,
+                                                  SupplyMaterialID := guard( supply.ID(), '' ),
+                                                  OperationId := task.OperationID(),
+                                                  ResourceId := task.Resource(),
+                                                  Quantity := guard( supply.Quantity(), 0.0 ),
+                                                  Operation_SC := exportedtask.Operation_SC(),                                              
+                                                  Status := Constants::MaterialStatus_SupplyConsumed(),
+                                                  TimeStamp := timestamp
+                                                  );
+    Dialog.Data( data );
+    
+    this.InitDialog( true, data.SupplyMaterialID() );
+    
+    if( this.DoModal( parent ) > 0 )
+    {  
+      data.SupplyMaterialID( SelectionSupplyId.Text() );
+      data.SupplyMaterialID_Type( SelectionSupplyId.Data().SupplyType() );
+      data.DemandMaterialID( SelectionDemandId.Text() );
+      data.Commit();
+    }
+  *]
+}

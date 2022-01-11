@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeRuleScopeInProgramType (ImportedRule importedRule)
+{
+  Description: 'Synchronize rule scope in program type'
+  TextBody:
+  [*
+    // Get all current instances
+    allInstances := selectset( this, RuleScopeInProgramType, ele, true );
+    updatedInstances := construct( RuleScopeInProgramTypes );
+    
+    // Rule scope in program type
+    traverse( importedRule, ImportedRuleScopeInProgramType, ele )
+    {
+      programTypeConfiguration :=  ProgramTypeConfiguration::FindProgramTypeConfiguration(  ele.ProgramDefinitionConfigurationID(),
+                                                                                            ele.ProgramSetConfigurationID(),
+                                                                                            ele.ProgramTypeConfigurationID() );
+      rsipt := select( this,
+                       RuleScopeInProgramType, 
+                       rulescope, 
+                       rulescope.ProgramTypeConfiguration().ProgramDefinitionConfigurationID() = ele.ProgramDefinitionConfigurationID()
+                       and rulescope.ProgramTypeConfiguration().ProgramSetConfigurationID() = ele.ProgramSetConfigurationID()
+                       and rulescope.ProgramTypeConfiguration().ProgramTypeConfigurationID() = ele.ProgramTypeConfigurationID() );
+                                      
+      if( not isnull( programTypeConfiguration ) and isnull( rsipt ) )
+      {
+        rsipt := RuleScopeInProgramType::Create( this, programTypeConfiguration );
+      }
+      
+      if( not isnull( rsipt ) )
+      {
+        updatedInstances.Add( rsipt ); 
+      }
+    }
+    
+    // Delete old instances
+    oldInstances := allInstances.Difference( updatedInstances );
+    traverse( oldInstances, Elements, e )
+    {
+      e.Remove(); 
+    }
+  *]
+}

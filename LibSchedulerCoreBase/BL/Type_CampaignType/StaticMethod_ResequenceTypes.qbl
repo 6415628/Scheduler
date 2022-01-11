@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ResequenceTypes (CampaignType information, CampaignType target, ResourceGroup_SC owner)
+{
+  Description: 'Resequences campaign types based on user input.'
+  TextBody:
+  [*
+    // ele3 Dec-30-2016 (created)
+    infoindex := information.DisplayIndex();
+    targetindex := target.DisplayIndex();
+    
+    if( infoindex > targetindex )
+    {
+      // The target is of lower index number than the information.
+      types := selectsortedset( owner, CampaignType, ct, ct.DisplayIndex() >= targetindex and ct.DisplayIndex() < infoindex, ct.DisplayIndex() )
+      newindex := targetindex + 1;
+      traverse( types, Elements, ct )
+      {
+        ct.DisplayIndex( newindex );
+        newindex++;
+      }
+      information.DisplayIndex( targetindex );
+    }
+    else if( infoindex < targetindex )
+    {
+      // The target is of higher index number than the information.
+      types := selectsortedset( owner, CampaignType, ct, ct.DisplayIndex() > infoindex and ct.DisplayIndex() <= targetindex, ct.DisplayIndex() )
+      newindex := infoindex;
+      traverse( types, Elements, ct )
+      {
+        ct.DisplayIndex( newindex );
+        newindex++;
+      }
+      information.DisplayIndex( targetindex );
+    }
+  *]
+}

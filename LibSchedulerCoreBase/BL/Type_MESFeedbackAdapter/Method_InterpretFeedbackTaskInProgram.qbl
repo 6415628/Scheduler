@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method InterpretFeedbackTaskInProgram
+{
+  Description: 'Convert feedback task in program into relevant feedback program in task'
+  TextBody:
+  [*
+    importedfeedbacktaskinprograms := selectset( this.Schedule(),
+                                                 ImportedFeedbackTaskInProgram,
+                                                 iftip,
+                                                 iftip.IsValidData() 
+                                                 and iftip.ImportedFeedbackTask().IsValidDataHard() );
+    
+    feedbackmanager := this.FeedbackManager();
+    
+    if( not isnull( feedbackmanager ) )
+    {                      
+      traverse( importedfeedbacktaskinprograms, Elements, iftip )
+      {
+        ftis := FeedbackTaskInSchedule::FindFeedbackTaskInSchedule( iftip.WorkOrderID(),
+                                                                    iftip.PlanUnitID(),
+                                                                    iftip.WorkOrderOperationSequenceNr() );
+    
+        // If feedback task has user reported program, we do not overwrite the changes                                                                                                                                  
+        if( not isnull( ftis ) and not ftis.HasUserReportedProgram() )
+        {
+          importedprogramdetail := iftip.ImportedFeedbackProgramDetail();
+          feedbackprogramtype := FeedbackProgramType::FindFeedbackProgramType( importedprogramdetail.ProgramDefinitionID(),
+                                                                               importedprogramdetail.ProgramSetID(),
+                                                                               importedprogramdetail.ProgramTypeID(),
+                                                                               importedprogramdetail.ExternalProgramID() );  
+    
+          if( not isnull( feedbackprogramtype ) )
+          {        
+            // Create feedback task in feedback program type if it does not exists
+            FeedbackTaskInFeedbackProgramType::CreateUpdate( ftis, feedbackprogramtype, false ); 
+          }                                                                                                                                                                                                                                 
+        }                                                                
+      }
+    }
+  *]
+}

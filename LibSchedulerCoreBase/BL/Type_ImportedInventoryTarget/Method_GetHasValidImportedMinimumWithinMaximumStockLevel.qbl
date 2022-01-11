@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidImportedMinimumWithinMaximumStockLevel (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Minimum stock level must not exceed maximum stock leve.'
+  TextBody:
+  [*
+    isvalid := this.MaximumStockLevel() >= this.MinimumStockLevel()
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedInventoryTarget_Instance( name ),
+                                                               Translations::SC_ImportedInventoryTarget_MinimumExceedMaximumStockLevel( name, 
+                                                                                                                                        this.MaximumStockLevel(), 
+                                                                                                                                        this.MinimumStockLevel() ) ) );
+    }
+    
+    return isvalid;
+  *]
+}

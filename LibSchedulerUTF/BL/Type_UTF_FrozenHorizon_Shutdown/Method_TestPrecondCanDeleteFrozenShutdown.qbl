@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPrecondCanDeleteFrozenShutdown (Schedule schedule)
+{
+  Description: 'Test delete frozen shutdown precondition checking'
+  TextBody:
+  [*
+    // Do not allow delete frozen shutdown but allow delete not frozen shutdown
+    shutdown1 := minselect( schedule, Shutdown.Task_SC.astype( ShutdownTask ), st, st.SequenceNr() );
+    shutdown2 := maxselect( schedule, Shutdown.Task_SC.astype( ShutdownTask ), st, st.SequenceNr() );
+    
+    feedback := '';
+    shutdown1task := construct( ShutdownTasks );
+    shutdown1task.Add( shutdown1 );
+    shutdown2task := construct( ShutdownTasks );
+    shutdown2task.Add( shutdown2 );
+    value := not Task_SC::CanUnplanSoft( shutdown1task, feedback ) // Do not allow delete frozen shutdown 1
+             and Task_SC::CanUnplanSoft( shutdown2task, feedback ); // Allow delete not frozen shutdown 2   
+      
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Test precondition delete frozen shutdown failed.', 
+                           this.Variant() ) );
+    
+    // Gantt chart
+    // | Task1(Frozen) | ShutdownTask1(Frozen) | Task 2(Frozen) | ShutdownTask2 | Task 3 |
+  *]
+}

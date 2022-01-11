@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test010_EachComponentCreatesSnapshot (LibOpt_TestDataset dataset)
+{
+  Description: 'Check whether each component creates a snapshot'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    
+    runs := opt.CreateAllComponents();
+    
+    se := dataset.ScopeElementMock( relnew );
+    
+    strs := construct( structured[stream[JSON]] );
+    traverse( runs, Elements, run )
+    {
+      scope := LibOpt_ScopeFat::Create( run );
+      scope.Add( se );
+      run.SetStartScope( scope );
+      strs.Add( run.Start() );
+    }
+    
+    expected_nr_snapshots := strs.Size();
+    
+    merge := stream[JSON]::Merge( strs );
+    this.NoException( merge->|void->()
+    {
+      this.Run().AssertEqual( expected_nr_snapshots, counter( runs, Elements.Snapshot.astype( LibOpt_SnapshotComponent ), sn, true ), 'Not enough snapshots are created' );
+      traverse( runs, Elements.Component, component )
+      {
+        this.Run().AssertEqual( 1, component.SnapshotComponent( relsize ), 'Not enough snapshots are created for component "' + component.Name() + '"' );
+      }
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

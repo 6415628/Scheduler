@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestMESExport_Setup (Schedule schedule)
+{
+  Description: 'Unit test for checking the attribute of normal task before and after value upon exporting MES - setup'
+  TextBody:
+  [*
+    // Get variant value
+    isVariantFound := false;
+    scheduleID := '';
+    comment := '';
+    commentLastUpdatedTimeStamp := DateTime::MinDateTime();
+    commentLastUpdatedUserName := '';
+    
+    this.GetNormalTaskTestVariant( isVariantFound,
+                                   scheduleID,
+                                   comment,
+                                   commentLastUpdatedTimeStamp,
+                                   commentLastUpdatedUserName );
+    
+    if( isVariantFound )
+    {
+      // Create feedback adapter 
+      this.SetShopFloorAdapterActive( schedule );
+      
+      // Create task based on variant
+      if( this.Variant() = 'Test with exporting single task' )
+      {
+        // Create single task
+        singleTask := UTFMockObjectFactory::CreateSingleResourceWithPlannedTask( schedule );
+        singleTask.UpdateComment( comment );
+    
+        // Propagate the relation because it set declaratively
+        Transaction::Transaction().Propagate( relation( Schedule, ExportedSingleTask ) );
+    
+      }
+      else if( this.Variant() = 'Test with exporting planned batch' )
+      {
+        // Create batch task  
+        batchTask := UTFMockObjectFactory::CreateBatchResourceWithPlannedBatchTask( schedule, 1 );
+        batchTask.UpdateComment( comment );
+        
+        // Propagate the relation because it set declaratively
+        Transaction::Transaction().Propagate( relation( Schedule, ExportedOperationBatchContent ) );
+      }
+      
+      // Export MES
+      Transaction::Transaction().Propagate( method( ExportObject , ExportMES ) );
+      schedule.ExportObject().ExportMES();
+    }
+  *]
+}

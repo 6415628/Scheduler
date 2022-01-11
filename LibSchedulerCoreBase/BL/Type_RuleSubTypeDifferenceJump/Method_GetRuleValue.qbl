@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetRuleValue (const Rule rule, DORule_DataObjectSequencingRule dorule) const declarative remote as Real
+{
+  Description: 'Get rule value from data object and rule'
+  TextBody:
+  [*
+    // Get the threshold value
+    value := rule.RuleValue();
+    
+    // Get rule range value from rule range if multiple ranges is enabled
+    if( rule.IsMultipleRangesEnabled() )
+    {
+      // Based on strategy to decide which operation value to be used to get the range's threshold value
+      operationvalue := dorule.PreviousRealValue();
+      if( rule.StrategyMultipleRange() = RuleConstant::StrategyMultipleRange_SecondTask() )
+      {
+        operationvalue := dorule.CurrentRealValue(); 
+      }
+      else if( rule.StrategyMultipleRange() = RuleConstant::StrategyMultipleRange_Smallest() )
+      {
+        operationvalue := minvalue( dorule.PreviousRealValue(), dorule.CurrentRealValue() ); 
+      }
+      else if( rule.StrategyMultipleRange() = RuleConstant::StrategyMultipleRange_Greatest() )
+      {
+        operationvalue := maxvalue( dorule.PreviousRealValue(), dorule.CurrentRealValue() ); 
+      }
+      
+      range := minselect( rule, RuleRange, rr, rr.From() <= operationvalue and rr.To() > operationvalue, rr.From() );
+      value := guard( range.RuleRangeValue(), Real::MaxReal() );
+    }
+    
+    return value;
+  *]
+}

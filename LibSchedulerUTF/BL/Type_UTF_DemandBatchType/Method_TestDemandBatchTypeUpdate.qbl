@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestDemandBatchTypeUpdate (Schedule schedule)
+{
+  Description: 'Test the update logic of demand batch type.'
+  TextBody:
+  [*
+    newMaxBatchSize := 6;
+    // Update max batch size
+    importedDemandBatchType := select( schedule, ImportedDemandBatchType, importedDemandBatchType, true );
+    importedDemandBatchType.MaxBatchSize( newMaxBatchSize );
+    // Update synchronize DemandBatchType
+    Transaction::Transaction().Propagate( attribute( ImportedData_SC, IsValidDataHard ) );
+    schedule.SynchronizationObject().SynchronizeDemandBatchTypes();
+    
+    demandBatchType := select( schedule, DemandBatchType, demandBatchType, true );
+    hasNewMaxBatchSize := demandBatchType.MaxBatchSize() = newMaxBatchSize;
+    
+    this.Run().AssertTrue( hasNewMaxBatchSize, UTFUtility::GenerateFailedMessage( 'DemandBatchType_Update', '' ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

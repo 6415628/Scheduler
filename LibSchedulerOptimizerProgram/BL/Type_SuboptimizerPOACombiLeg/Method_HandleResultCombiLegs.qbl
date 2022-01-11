@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleResultCombiLegs (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs)
+{
+  TextBody:
+  [*
+    // zyi1 Jul-16-2021 (created)
+    solution := poa.Solution();
+    
+    traverse( combilegs, Elements, combileg )
+    {
+      combiprogramsets := selectset( combileg, FirstOperation.OperationInCombiProgramSet.CombiProgramSet, cps, true );
+      afterelements := selectset( combileg, FirstOperation.OperationInCombiProgramSet.PreviousOperation, po, true );
+      
+      combileg.RemoveAllOperations();
+      
+      pathtype := poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathCombiLeg( combileg ), combileg );
+      
+      solutionpath := solution.PathType( pathtype );
+      
+      traverse( solutionpath, Paths.Nodes, node )
+      {
+        op := poa.AsOperation_SC( node, this );
+        if( not isnull( op ) )
+        {
+          debuginfo( ' operation: ', op.OperationID() );
+          combileg.AddCandidateAtEnd( op, true );
+        }
+      }
+      
+      traverse( combiprogramsets, Elements, combiprogramset )
+      {
+        afterelement := select( afterelements, Elements,  oicps, oicps.CombiProgramSet() = combiprogramset );
+        combiprogramset.MoveCombiLegAfter( combileg, afterelement );
+        
+        Transaction::Transaction().Propagate( relation( OperationInCombiLeg, OperationOnResource ) );
+        combiprogramset.SynchronizeElements();
+      }
+      
+      if( this.IsCombiGeneration() and not combileg.InDebugMode() )
+      {
+        combileg.DeleteCombiLegsAfterThis();
+      }
+    }
+    
+    //the relation will be used in the realignment method
+    Transaction::Transaction().Propagate( relation(  OperationInCombiLeg, LeadingOperationInCombiProgramSet ) );
+    traverse( combilegs, Elements.LeadingCombiProgramPhase.CombiProgramType, cpt )
+    {
+      cpt.ReAlignCombiLegsBoundary();
+    }
+  *]
+}

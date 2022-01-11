@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitConstraints (SuboptimizerApproximatorEndTime_MIPBalanceLoadSingle program, LibOpt_Task task, ResourceGroup_SC resourcegroup)
+{
+  TextBody:
+  [*
+    // mbr23 Sep-16-2019 (created)
+    
+    operations := task.Scope().OperationsUnlocked();
+    
+    //Assign each operation to exactly one resource
+    traverse( operations, Elements, element )
+    {
+      const := program.AssignOnceConstraints().New( element ); // default: = 1.0
+    
+      traverse( resourcegroup, Resource_SC, res, SuboptimizerMRSPOA::IsAllowedOnResource( element, res ) )
+      {
+        const.NewTerm( 1.0, program.AssignVariables().Get( res, element ) );
+      }
+    }
+    
+    //Compute the total duration on each resource
+    traverse( resourcegroup, Resource_SC.astype( SingleResourceBase ), resource )
+    {
+      const := program.CalcTotalDurationConstraints().New( resource ); // default: = 0.0
+      // RHS needs to be `startonresource` (based on last frozen operation)
+      lastfrozenelement := task.Scope().GetLastLockedSingleOperation( resource );
+      startonresource := guard( ( resource.Schedule().Time() - lastfrozenelement.End() ).HoursAsReal() , 0.0 );
+      const.RHSValue( startonresource );
+    
+      const.NewTerm( -1.0, program.TotalDurationVariables().Get( resource ) );
+    
+      traverse( operations, Elements, element, SuboptimizerMRSPOA::IsAllowedOnResource( element, resource ) )
+      {
+        const.NewTerm( element.OptimizerMRS_GetDurationOn( resource ).HoursAsReal(),
+                       program.AssignVariables().Get( resource, element ) );
+      }
+    }
+    
+    //Compute the maximum duration over all the resources
+    traverse( resourcegroup, Resource_SC.astype( SingleResourceBase ), res )
+    {
+      const := program.EnsureMaxDurationConstraints().New( res ); // default: <= 0.0
+      const.NewTerm( -1.0, program.MaxDurationVariables().Get() );
+      const.NewTerm( 1.0, program.TotalDurationVariables().Get( res ) );
+    }
+  *]
+}

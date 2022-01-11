@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GenerateForErrorHelperSuboptimizers (LibOpt_Component component) as owning LibOpt_Runs
+{
+  Description: 'Permutate the suboptimizers to add `InOneTransaction`'
+  TextBody:
+  [*
+    links := component.GetOutgoingLinks();
+    
+    result := null( LibOpt_Runs, owning );
+    if( links.Size() = 0 )
+    {
+      result := construct( LibOpt_Runs );
+      result.Add( component.Run() );
+    }
+    else if( links.Size() = 1 )
+    {
+      link := links.First();
+      result := LibOpt_OptimizerTest::GenerateForErrorHelperSuboptimizers( link.Destination() );
+    }
+    else
+    {
+      error( 'Currently not working for branches' );
+    }
+    
+    if( guard( not component.astype( LibOpt_Suboptimizer ).InOneTransaction(), false ) )
+    {
+      size := result.Size();
+      for( i := 0; i < size; i++ )
+      {
+        template := result.Element( i );
+        copy := template.Copy();
+        copy.Comment( ifexpr( template.Comment() = '', '', template.Comment() + ' - ' ) + 'one-transaction[' + component.Name() + ']' );
+        copy_suboptimizer := select( copy, Component.astype( LibOpt_Suboptimizer ), c, c.Name() = component.Name() );
+        copy_suboptimizer.InOneTransaction( true );
+        result.Add( copy );
+      }
+    }
+    
+    return & result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

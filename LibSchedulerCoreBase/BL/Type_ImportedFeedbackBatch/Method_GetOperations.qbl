@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetOperations () as owning Operation_SCs
+{
+  TextBody:
+  [*
+    // wkn1 Oct-20-2017 (created)
+    operations := construct( Operation_SCs );
+    
+    traverse( this, ImportedFeedbackBatchContent, ifbc )
+    {
+      operation := select( this, Schedule.PlanUnit_SC.Operation_SC, op,
+                           op.Match( ifbc.WorkOrderId(),
+                                     ifbc.PlanUnitId(),
+                                     ifbc.WorkOrderOperationSequenceNr() ) );
+      
+      operations.Add( operation );
+    }
+    
+    operations := selectsortedset( operations,
+                                   Elements,
+                                   operation,
+                                   true,
+                                   guard( operation.BatchSequenceElement().SequenceNr(), Number::MinNumber() ) );
+    
+    return &operations;
+  *]
+}

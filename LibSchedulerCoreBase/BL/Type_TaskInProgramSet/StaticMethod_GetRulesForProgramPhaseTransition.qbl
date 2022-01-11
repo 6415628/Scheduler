@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetRulesForProgramPhaseTransition (ProgramTypeConfiguration programtypeconfiguration, ProgramPhaseConfiguration programphaseconfiguration, Operation_SC operation) declarative remote as owning Rules
+{
+  Description: 'Get all program phase ( not last program phase ) transistion rules related based on input program type configuration and operation'
+  TextBody:
+  [*
+    // Get all program phase ( not last program phase ) transistion rules related based on input program type configuration and operation
+    notlastprogramphases := selectset( programtypeconfiguration, ProgramPhaseConfiguration, phase,
+                                       isnull( programphaseconfiguration ) or phase = programphaseconfiguration,
+                                       not phase.IsLastProgramPhase() );
+    
+    currentprogramtype := select( operation, Task_SC.TaskInProgramSet.ProgramType, pt, 
+                                  pt.ProgramTypeConfiguration() = programtypeconfiguration );
+    
+    // Get the previous operation which in same program
+    previousoperation := guard( operation.GetPreviousOperationForSequencingRuleCheck(), null( Operation_SC ) );
+    previousoperationsameprogram := null( Operation_SC );
+    if( exists( previousoperation, Task_SC.TaskInProgramSet.ProgramType, pt, 
+                pt = currentprogramtype )
+        or exists( previousoperation, OperationTaskFeedback.FeedbackTaskInSchedule.FeedbackTaskInFeedbackProgramType.FeedbackProgramType.ProgramType, pt, 
+                   pt = currentprogramtype ) )
+    {
+      previousoperationsameprogram := previousoperation;  
+    }
+    
+    rules := selectset( notlastprogramphases, Elements.RuleScopeInProgramPhase.Rule, rule,
+                        rule.IsProgramPhaseTransitionRule()
+                        and rule.IsEnabled()
+                        and ( not rule.RuleSubType().IsCheckOnPreviousOperation() 
+                              or not isnull( previousoperationsameprogram ) ) // In case the rule need to check previous operation
+                        and ( isnull( operation ) // In case program change task does not have operation
+                              or operation.CheckIsRuleApplicable( rule, 
+                                                                  previousoperationsameprogram, 
+                                                                  null( Characteristic ) ) ) ) ;
+    
+    return &rules;
+  *]
+}

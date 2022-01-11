@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride FSPLUpdateGraph (BatchSequenceElement oldbatchsequenceelement)
+{
+  Description: 'Updates PrecedenceGraph for Receive subtasks.'
+  TextBody:
+  [*
+    up_transfer_subtask := this.OperationMaterial().TransferSubTask();
+    
+    //check if there is already an edge from the current Receive subtask to the upstream Transfer subtask
+    edge_to_transfer := guard( select( up_transfer_subtask.PrecedenceNode(), Inputs, in_edge, in_edge.Input() = this.PrecedenceNode() ), null( PrecedenceEdge ) ); //returns edge if edge's output matches current node
+    
+    if( isnull( edge_to_transfer ) )
+    {
+      //create the edge from the upstream Process subtask to the Process subtask of current task
+      if( not isnull( this.PrecedenceNode() ) and not isnull( up_transfer_subtask ) )
+      {
+        PrecedenceEdge::Create( this.PrecedenceNode(), up_transfer_subtask.PrecedenceNode(), Constants::PrecedenceRelation_Equals(), false );
+      }
+    }
+    
+    //check if there is already an edge from the upstream Transfer Process subtask to the current Receive subtask
+    edge_from_transfer := guard( select( this.PrecedenceNode(), Inputs, in_edge, in_edge.Input() = up_transfer_subtask.PrecedenceNode() ), null( PrecedenceEdge ) );
+    
+    if( isnull( edge_from_transfer ) )
+    {
+      //create the edge from the upstream Process subtask to the Process subtask of current task
+      if( not isnull( this.PrecedenceNode() ) and not isnull( up_transfer_subtask ) )
+      {
+         PrecedenceEdge::Create( up_transfer_subtask.PrecedenceNode(), this.PrecedenceNode(), Constants::PrecedenceRelation_Equals(), false );
+      }
+    }
+  *]
+}

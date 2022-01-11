@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsDemandScheduledInDemandBatch (Demands demands, DemandBatch demandbatch) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    demandfullybatched := selectset( demands, Elements, d, d.IsFullyFulfilled() );
+    value := not exists( demandfullybatched, Elements.DemandInBatch.DemandBatch, db, demandbatch <> db, db.IsPlanned() or db.IsPartiallyPlanned() );
+    
+    if( not feedbackobject.CheckSoft( value ))
+    {
+      feedbackobject.AddSoft( Translations::SC_Demand_DemandInBatchScheduled());
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

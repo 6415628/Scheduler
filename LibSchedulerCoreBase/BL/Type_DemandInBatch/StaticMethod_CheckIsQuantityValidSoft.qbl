@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsQuantityValidSoft (Demand demand, DemandInBatch demandinbatch, String newquantity) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    if( not isnull( demandinbatch ) )
+    {
+      quantity := guard( StringToReal::UserConverter().Convert( newquantity ), -1 ); // converts it in the server to accomodate different locales
+      demandinbatch.CheckIsQuantityNotOverfulfilled( quantity );
+      demandinbatch.CheckIsQuantityExceedMaxBatchSize( quantity );
+      demandinbatch.DemandBatch().CheckIsNotInFrozenPeriod();
+    }
+    if( not isnull( demand ) )
+    {
+      demand.CheckIsNotInFrozenPeriod();
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestTimeLogicBatchTaskRoutingEarliestStart_Setup (Schedule schedule)
+{
+  Description: 'Setup by creating the required mock and dependent objects.'
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    testinstance := this.GetTestInstanceMain( variant );
+    testinstanceoperations := this.GetTestInstanceOperations( variant );
+    
+    // Set company time
+    schedule.Time( UTFUtility::GetCompanyTime() );
+    
+    // Create UTF resource
+    resource := UTFMockObjectFactory::CreateBatchResource( schedule, testinstance.TestInstanceID() );
+    LeadTimeStrategy_SC::Create( resource, Duration::Zero(), testinstance.ResourceStrategy() )
+    
+    // Create an empty batch
+    batch := Batch::Create( schedule, UTFUtility::UTF() );
+    // Create Orders, PlanUnits, operations and assign operations to batch
+    traverse( testinstanceoperations, Elements, op )
+    {
+      // Create operations
+      id := UTFUtility::ConcatWithHyphen( op.TestInstanceID(), op.ID() );
+      operation := UTFMockObjectFactory::CreateOperation( schedule, id, 1.0 );
+      operation.Update( op );
+    
+      // Create input om
+      UTFMockObjectFactory::CreateInputOperationMaterial( operation, id );
+    
+      batch.AddOperation( operation );
+    }
+    // Plan the batch
+    resource.GenericPlanLastUTF( batch );   
+    
+    // Propagate all declarative attributes/relations operationonresource                                      
+    Transaction::Transaction().Propagate();
+    
+    // Create subtasktypeonresourcegroup and set the duration
+    UTFMockObjectFactory::CreateSubTaskTypeOnResourceGroup( testinstance.TestInstanceID(), resource );
+    
+    // Propagate all declarative attributes/relations prior to assertion in the actual test method.                                       
+    Transaction::Transaction().Propagate();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

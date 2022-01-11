@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method IsActive (Key selectedPlanningDatasetMDSID, LibSM_Scenario scenario) declarative remote as Boolean
+{
+  Description: 'Check if scenario is active'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    if( not feedback.CheckHard( not isnull( this.Dataset() ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_IsActive_Default() );
+    }
+    else if ( not feedback.CheckHard( this.Dataset().IsSelectedDataset( selectedPlanningDatasetMDSID ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_IsActive_NoMatchingMDSID() );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

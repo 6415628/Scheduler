@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcHasUnifiedSequencePenalties
+{
+  TextBody:
+  [*
+    // mbr23 Jan-28-2020 (created)
+    
+    value := true;
+    
+    has_sequence_penalty := exists( this, Resource.Resource.astype( SingleResourceBase ), r, r.HasSequencePenalty() );
+    // if none of the resources have a sequence penalty, we can skip these expensive nested loops.
+    
+    if( has_sequence_penalty and this.Resource( relsize ) > 0 )
+    {
+      // check each pair of allowed operations on all of the resources:
+      anyresource := select( this, Resource, r, true );
+      traverse( this, Resource.AllowedOperationOnResource, from_oor, value )
+      {
+        traverse( this, Resource.AllowedOperationOnResource, to_oor, value and from_oor <> to_oor )
+        {
+          anypenalty := anyresource.Resource().astype( SingleResourceBase ).GetSequencePenalty( from_oor.Operation().Operation(), to_oor.Operation().Operation() );
+          traverse( this, Resource, resource, value )
+          {
+            penalty := resource.Resource().astype( SingleResourceBase ).GetSequencePenalty( from_oor.Operation().Operation(), to_oor.Operation().Operation() );
+            if( penalty <> anypenalty )
+            {
+              value := false;
+            }
+          }
+        }
+      }
+    }
+    
+    this.HasUnifiedSequencePenalties( value );
+  *]
+}

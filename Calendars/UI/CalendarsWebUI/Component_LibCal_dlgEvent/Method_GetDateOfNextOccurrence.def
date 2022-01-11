@@ -1,0 +1,70 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetDateOfNextOccurrence (output Date dateOfRecurrence_o, Date date_i) as Date id:Method_LibCal_dlgEventParticipation_GetDateOfNextOccurrence
+{
+  #keys: '[131092.1.1290601]'
+  Body:
+  [*
+    date     := date_i;
+    timezone := this.GetCalendarTimeZone();
+    
+    if( btnWeekly.IsPressed() )
+    {
+      earliestStart := date_i;
+      
+      date := LibCal_RecurrencePatternWeekly::GetDateOfNextOccurrence( timezone, dateOfRecurrence_o, date_i, 
+                                                                       durStartTimeOfDay.Duration(), durEndTimeOfDay.Duration(), dhDuration.Data(), earliestStart,
+                                                                       [Number]edtEveryNrOfWeeks.Text(),
+                                                                       btnMonday   .IsPressed(),
+                                                                       btnTuesday  .IsPressed(),
+                                                                       btnWednesday.IsPressed(),
+                                                                       btnThursday .IsPressed(),
+                                                                       btnFriday   .IsPressed(),
+                                                                       btnSaturday .IsPressed(),
+                                                                       btnSunday   .IsPressed() );  
+    }
+    
+    else if( btnMonthly.IsPressed() )
+    {
+      // Make sure that the entered day of the month is valid.
+      day := guard( [Number]edtMonthlyDay.Text(), 0 );
+      
+      if( day > 0 )
+      {
+        everyNrOfMonths := ifexpr( ckbMonthlyDay.Checked(), edtMonthlyDayEveryNrOfMonths.Text(),
+                                                            edtMonthlyPatternEveryNrOfMonths.Text() );
+    
+        /* BUG: referencing the DropDownStringLists results in an error in the TCE !!!
+        // As a WORKAROUND, the values are also set in a hidden label, which càn be used here.
+        weekOfMonth := ssMonthlyPatternWeekOfMonth.Text();
+        dayOfWeek   := ssMonthlyPatternDayOfWeek.Text();
+        */
+    
+        weekOfMonth := lblMonthlyPatternWeekOfMonth.Text();
+        dayOfWeek   := lblMonthlyPatternDayOfWeek.Text();
+    
+        date := LibCal_RecurrencePatternMonthly::GetDateOfNextOccurrence( dateOfRecurrence_o, date_i, [Number]everyNrOfMonths,
+                                                                          ckbMonthlyDay.Checked(), day, weekOfMonth, dayOfWeek );
+      }                                                                    
+    }
+    
+    else if( btnYearly.IsPressed() )
+    {
+      /* BUG: referencing the DropDownStringLists results in an error in the TCE !!!
+      // As a WORKAROUND, the values are also set in a hidden label, which càn be used here.
+      dayOfMonth  := ssYearlyDayOfMonth.Text();
+      weekOfMonth := ssYearlyPatternWeekOfMonth.Text();
+      dayOfWeek   := ssYearlyPatternDayOfWeek.Text();
+      */
+    
+      dayOfMonth  := [Number]lblYearlyDayOfMonth.Text();
+      weekOfMonth := lblYearlyPatternWeekOfMonth.Text();
+      dayOfWeek   := lblYearlyPatternDayOfWeek.Text();
+    
+      date := LibCal_RecurrencePatternYearly::GetDateOfNextOccurrence( dateOfRecurrence_o, date_i, [Number]edtEveryNrOfYears.Text(),
+                                                                       ckbYearlyDay.Checked(), dayOfMonth, weekOfMonth, dayOfWeek );
+    }
+    
+    return date;
+  *]
+}

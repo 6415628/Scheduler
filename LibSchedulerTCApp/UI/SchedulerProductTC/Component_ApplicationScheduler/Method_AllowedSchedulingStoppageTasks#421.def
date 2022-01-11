@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedSchedulingStoppageTasks (Resource_SC resource, structured[Task_SC] tasks, Boolean skipsoftcheck, 
+  Boolean ctrlshiftkey, Task_SC beforetask, Task_SC aftertask, 
+  String identifier, output String feedback_o, output Boolean isallowedhard_o) as Boolean id:Method_ApplicationScheduler_AllowedSchedulingStoppageTasks_421
+{
+  #keys: '[143388.0.1774419652]'
+  Body:
+  [*
+    /*
+    This precondition covers the use cases of scheduling/rescheduling stoppage tasks in Single Resources
+    1. OnDrop structured[StoppageTasks] --> Resources ( GanttChart )
+    1. OnDrop structured[LinkedSucceedingStopageTasks] --> Resources ( GanttChart )
+    */
+    
+    isallowed := true;
+    // Get selected stopage tasks from the selected tasks
+    stoppagetasks := selectset( tasks, Elements.astype( StoppageTask ), st, true );
+    // Get linked succeeding stoppage tasks of the selected tasks
+    linkedstoppagetasks := selectset( tasks, Elements.LinkedSucceedingStoppageTask, st, true );
+    stoppagetasks := stoppagetasks.Union( linkedstoppagetasks );
+    
+    // Only perform checkings if there is stoppage task
+    if( stoppagetasks.Size() > 0 )
+    {
+      isallowed := resource.AllowedScheduling( stoppagetasks,
+                                               beforetask,
+                                               aftertask,
+                                               skipsoftcheck,
+                                               ctrlshiftkey,
+                                               feedback_o,
+                                               isallowedhard_o );
+    }
+    
+    if( not isallowed and feedback_o.Length() > 0 )
+    {
+      feedback_o := ApplicationScheduler.PrefixFeedbackWithGeneralActionMessage( Translations::SC_CannotBePlannedOn( identifier, Resource_SC::GetIdentifier( resource ) ), feedback_o );
+                  
+      
+      feedback_o := ApplicationScheduler.ShowOldStyleFeedbackWithoutOverrideOption( feedback_o );
+      if( isallowedhard_o )
+      {
+        controloverridemessage := String::NewLine() + String::NewLine() + Translations::SC_HoldCtrlToOverride();
+        // Remove existing control override message if operation level checking had appended this control override message
+        // Because need to make sure control override message will always shows at the end of the feedback message
+        if( feedback_o.FindString( controloverridemessage, 0 ) >= 0 )
+        {
+          feedback_o := feedback_o.ReplaceAll( controloverridemessage, '' );
+        }
+        
+        // Always add the control override message at the end of the feedback message
+        feedback_o := feedback_o + controloverridemessage;
+      }
+    }
+    
+    feedback_o := Schedule::TrimFeedback( feedback_o );
+    
+    return isallowed;
+  *]
+}

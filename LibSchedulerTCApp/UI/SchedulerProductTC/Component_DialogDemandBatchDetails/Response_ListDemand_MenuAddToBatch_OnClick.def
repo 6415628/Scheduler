@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: ListDemand
+Response OnClick (structured[Demand] selection) id:Response_ListDemand_MenuAddToBatch_OnClick
+{
+  #keys: '[134372.0.77840428]'
+  Body:
+  [*
+    // Add to Batch
+    demandbatch := DialogDemandBatchDetails.Data();
+    demandbatch.AddDemandsAfter( selection, demandbatch.Last() );
+  *]
+  CanBindMultiple: false
+  DefinitionID => //SplitterWndBatchableDemandAndReservation/ListDemand/Responsedef_ListDemand_Menu_OnClick
+  Initiator: 'MenuAddToBatch'
+  Precondition:
+  [*
+    value := not isnull( DialogDemandBatchDetails.Data() );
+    
+    if( value )
+    {
+      skipsoftcheck := false;
+      skipbatchquantitycheck := false;
+      
+      ApplicationScheduler.CanBatchDemands( selection,
+                                            DialogDemandBatchDetails.Data(),
+                                            DialogDemandBatchDetails.Data().DemandBatchType(),
+                                            skipsoftcheck,
+                                            skipbatchquantitycheck );           
+                                            
+      // Workaround to show feedback in the old way until all responses are converted to use FeedbackObject.
+      // Do not show 'Hold Ctrl to override' for menu item                                      
+      feedback := ApplicationScheduler.ShowOldStyleFeedbackWithoutOverrideOption( FeedbackObject::CurrentFeedback().Feedback() );
+      value := FeedbackObject::IsAllowed();                                    
+    }                                        
+    
+    return value;
+  *]
+}

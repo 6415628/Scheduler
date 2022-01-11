@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeCustomerOrderLines_Product
+{
+  Description: 'Synchronizes product based customer order lines that come from external sources.'
+  TextBody:
+  [*
+    // WOI1 Aug-29-2016 (created)
+    allinstances := selectset( this.Schedule(), Demand.astype( ProductCustomerOrderLine ), pcol, true );
+    updatedinstances := construct( ProductCustomerOrderLines );
+    
+    // traverses imported customer order lines that have product ids
+    traverse( this.Schedule(), ImportedCustomerOrderLine_SC, row, row.IsValidDataHard() and row.IsProduct() )
+    {
+      demandid := ProductCustomerOrderLine::GetDemandID( row.OrderNr(), row.OrderLineNr() );
+      pcol := ProductCustomerOrderLine::FindProductCustomerOrderLine( DemandType::ProductCustomerOrderLine(), demandid );
+      
+      if( isnull( pcol ) )
+      {
+        pcol := this.Schedule().CreateDemand( DemandType::ProductCustomerOrderLine(), demandid ).astype( ProductCustomerOrderLine );
+      }
+      
+      pcol.Update( row );
+      updatedinstances.Add( pcol );
+    }
+    
+    //Delete product customer order lines if they do not exist in KT
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, oldpcol, oldpcol.CheckCanBeDeleted() )
+    {
+      oldpcol.Remove();
+    }
+  *]
+}

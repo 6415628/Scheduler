@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetDMFDataset (Key mdsid_i) as stream[DMF_ConvertorDataset]
+{
+  TextBody:
+  [*
+    // Assume DMF stream with no emissions
+    // This will result in the chain terminating in the event no dataset is found
+    datasetKind               := typeof( DMF_ConvertorDataset ).Name();
+    datasetFindOptionsOnline  := DatasetFindOptions::Construct().Kind( datasetKind );
+    datasetFindOptionsOffline := DatasetFindOptions::Construct().Kind( datasetKind ).IncludeOffline( true );
+    ds_onlinekey              := DatasetController::Find( datasetFindOptionsOnline );
+    dsoffline_key             := DatasetController::Find( datasetFindOptionsOffline );
+    dmf_s                     := stream[DMF_ConvertorDataset]::Success();
+    
+    // Resolve dataset stream if key is valid
+    if( mdsid_i <> Key::ZeroKey() and ( ds_onlinekey.Find( mdsid_i ) >= 0 or dsoffline_key.Find( mdsid_i ) >= 0 ) )
+    { 
+      if( ds_onlinekey.Find( mdsid_i ) >= 0 )
+      {
+        dmf_s := MDSDMF_ConvertorDataset::Root( mdsid_i );
+      } 
+      else
+      {
+        dmf_s := MDSDMF_ConvertorDataset::Load( mdsid_i );
+      }  
+    }
+    else
+    { 
+      hasException := true;
+      //cater for temporary dataset
+      if( mdsid_i <> Key::ZeroKey() )
+      {
+        try
+        {
+          dmf_s := MDSDMF_ConvertorDataset::Root( mdsid_i );
+          hasException := false;
+        }
+        onerror
+        {
+          //do nothing the handling will be outside the if block
+        }
+      }
+      if( hasException )
+      {
+        dmf_s := DMF_ConvertorDataset::GetDMFDataset();
+      }
+    }
+    
+    return dmf_s;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

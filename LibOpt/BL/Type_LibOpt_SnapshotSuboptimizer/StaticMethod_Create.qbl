@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (LibOpt_Run owner, RealVector kpi_pre, RealVector kpi_post, 
+  LibOpt_RollbackKPI rollback_kpi, Boolean is_rollback) as LibOpt_SnapshotSuboptimizer
+{
+  Description: 'Create a new snapshot of type `LibOpt_SnapshotSuboptimizer`.'
+  TextBody:
+  [*
+    change := kpi_post.Minus( kpi_pre );
+    
+    // Calculate the real vector to set for `Improvement`.
+    improvement := LibOpt_SnapshotSuboptimizer::GetImprovements( rollback_kpi, change );
+    
+    // Calculate the value to set for `IsImprovement`.
+    diff_index := LibOpt_RollbackKPI::GetDiffIndex( kpi_post, kpi_pre );
+    is_improvement := diff_index >= 0 and diff_index < improvement.Size() and improvement.Get( diff_index ) > 0.0;
+    
+    return owner.Snapshot( relnew, LibOpt_SnapshotSuboptimizer,
+                           Improvement := improvement.AsBinaryValue(),
+                           IsImprovement := is_improvement,
+                           IsRollback := is_rollback,
+                           NrKPILevels := improvement.Size()
+                         );
+  *]
+}

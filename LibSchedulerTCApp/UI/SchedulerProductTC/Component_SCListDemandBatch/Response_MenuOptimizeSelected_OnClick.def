@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[DemandBatch] selection) id:Response_SCListDemandBatch_MenuOptimizeSelected_OnClick
+{
+  #keys: '[133896.0.983703746]'
+  Body:
+  [*
+    // Optimize selected operations
+    
+    // Clear scoped operations - which also clears DataHolderOptimizerAllScopedOperations because it has data extractors grabbing from Mandatory and Optional dataholders
+    DataHolderOptimizerMandatoryOperations.Data().Flush();
+    DataHolderOptimizerOptionalOperations.Data().Flush();
+    
+    // Scope selection
+    plannedoperations := Schedule.GetAllPlannedOperations();
+    operations := selectset( selection, Elements.BatchWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, operation, true );
+    DataHolderOptimizerMandatoryOperations.Data( plannedoperations.Union( operations ) );
+    
+    // Get all allowed resources
+    resources := Operation_SC::GetAllowedResources( DataHolderOptimizerMandatoryOperations.Data() );
+    
+    // Optimize - we call AllScopedOperations here because it has data extractors that grab from Mandatory and Optional dataholders
+    Schedule.Optimization().OptimizerSequencing().OptimizeWithDefaultSettings( DataHolderOptimizerMandatoryOperations.Data(), resources );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /Responsedef_SCListDemandBatch_Menu_OnClick
+  Initiator: 'MenuOptimizeSelected'
+  Precondition:
+  [*
+    // Check if system contains batch and is optimizer enabled.
+    allowed := Schedule.AllowedOptimize( feedback );
+    
+    if( allowed )
+    {
+      //check if there are more than one operation selected.
+      operations := selectset( selection, Elements.BatchWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, operation, true );
+      allowed := operations.Size() > 1;
+      feedback := Translations::SC_InvalidOperationSelectionSize();
+    }
+    
+    return allowed;
+  *]
+}

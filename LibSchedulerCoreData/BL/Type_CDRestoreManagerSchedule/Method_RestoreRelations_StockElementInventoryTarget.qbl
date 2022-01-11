@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_StockElementInventoryTarget (CDSchedule cdSchedule, ProductInStockingPointStock productInStockingPointStock)
+{
+  Description: 'Restore relations for stock element inventory target core data attributes to planning object'
+  TextBody:
+  [*
+    cdStockElementInventoryTargets := selectset( cdSchedule, CDEntity.astype( CDStockElementInventoryTarget ), cdStockElementInventoryTarget, 
+                                                 cdStockElementInventoryTarget.ProductID() = productInStockingPointStock.ProductID(),
+                                                 cdStockElementInventoryTarget.StockingPointID() = productInStockingPointStock.StockingPointID()
+                                               );
+    
+    traverse( cdStockElementInventoryTargets, Elements, cdStockElementInventoryTarget )
+    {
+      stockElementInventoryTarget := select( productInStockingPointStock, ScheduleStockElement.astype( StockElementInventoryTarget ), stockElementInventoryTarget,
+                                             stockElementInventoryTarget.InventoryTargetProductID() = cdStockElementInventoryTarget.InventoryTargetProductID()
+                                             and stockElementInventoryTarget.InventoryTargetStockingPointID() = cdStockElementInventoryTarget.InventoryTargetStockingPointID()
+                                             and stockElementInventoryTarget.InventoryTargetTargetDate() = cdStockElementInventoryTarget.InventoryTargetTargetDate()
+                                           );
+      if( not isnull( stockElementInventoryTarget ) )
+      {
+        // InventoryTarget, 1-1
+        inventoryTarget := InventoryTarget::FindInventoryTarget( cdStockElementInventoryTarget.InventoryTargetProductID(),
+                                                                 cdStockElementInventoryTarget.InventoryTargetStockingPointID(),
+                                                                 cdStockElementInventoryTarget.InventoryTargetTargetDate()
+                                                               );
+        stockElementInventoryTarget.InventoryTarget( relset, inventoryTarget );
+      }     
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

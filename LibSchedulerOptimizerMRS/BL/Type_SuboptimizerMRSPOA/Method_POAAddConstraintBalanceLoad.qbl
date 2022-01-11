@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintBalanceLoad (SuboptimizerMRSPOA_POAOneResourceGroup poa, LibOpt_Task task)
+{
+  Description: 'Add the expression duration to POA'
+  TextBody:
+  [*
+    // stn4 Mar-18-2016 (created)
+    schedule := this.GetSchedule();
+    scheduletime := schedule.Time();
+    
+    traverse( task.Scope().ResourceGroups(), Elements, resourcegroup )
+    {
+      approximated_endtime := this.RunContextEndTimeApproximation().Get( resourcegroup ).ApproximatedEndPath();
+      pathendtime := ifexpr( approximated_endtime.IsFinite(),
+                             approximated_endtime.HoursAsReal( scheduletime ),
+                             0.0 );
+      
+      maxpathend := POAValueSet::P( poa, 'MaxPathEnd', 0.0 );
+      const := poa.NewEndPathConstraint( SuboptimizerMRSPOA::NamePOABalanceLoadConstraint() );
+      const.Expression( poa.Expression( SuboptimizerMRSPOA::NamePOATimeExpression() ) );
+      const.ValueSet( maxpathend );
+      const.Hard( false );
+      
+      const.ViolationOffset( guard( this.Strategy().MRS_KPIOffsetConstraintBalanceLoad(), 0.0 ) );
+      const.Factor(  guard( this.Strategy().MRS_KPIWeightConstraintBalanceLoad(), 1.0 ) );
+      const.Power( SuboptimizerMRSPOA::GetPOAPower( guard( this.Strategy().MRS_KPIPowerConstraintBalanceLoad(), SuboptimizerMRSPOA::POADefaultPower() ) ) );
+      
+      traverse( resourcegroup, Resource_SC, resource )
+      {
+        pathtype := poa.PathType( SuboptimizerMRSPOA::POANamePathResource( resource ), resource );
+        maxpathend.Set( pathtype, pathendtime );
+      }
+    }
+  *]
+}

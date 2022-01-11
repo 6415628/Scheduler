@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckSplitQuantityIsValid (InternalWorkOrder plannedOrder, Real splitQuantity, Boolean skipSoftCheck) const declarative remote
+{
+  Description: 'Check if split quantity is valid.'
+  TextBody:
+  [*
+    InternalWorkOrder::CheckSplitQuantityGreaterThanZero( splitQuantity );
+    
+    // A workaround to prevent null error being thrown, a RFC is raised.
+    if( not isnull( plannedOrder ) )
+    {
+      plannedOrder.CheckSplitQuantitySmallerThanOriginal( splitQuantity );
+      
+      if( not skipSoftCheck )
+      {
+        feedback := '';
+        plannedOrder.Routing().CheckQuantitySoft( guard( plannedOrder.ProductInStockingPoint().Product_SC().IsDiscrete(), false ),
+                                                  [String] splitQuantity,
+                                                  feedback );
+      }
+    }
+  *]
+}

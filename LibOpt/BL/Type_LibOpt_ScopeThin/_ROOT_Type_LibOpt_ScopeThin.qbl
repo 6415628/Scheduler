@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#root
+#parent: #DomainModel
+TypeSpecialization LibOpt_ScopeThin
+{
+  #keys: '2[139164.5.1292326183][139164.5.1292326182]'
+  Description:
+  [*
+    A `LibOpt_Scope` that is optimized for performance. Use this in production.
+    The performance of the `LibOpt_ScopeThin` is linked to the amount of `LibOpt_ScopeThin` that live in the dataset.
+    Make sure this is as low as possible.
+  *]
+  OnDelete:
+  [*
+    traverse( this, ScopeSharedOnScope.ScopeShared, shared )
+    {
+      if( shared.ScopeSharedOnScope( relsize ) > 1 )
+      {
+        if( shared.ScopeElement( relsize ) > 0 )
+        {
+          to_shared := shared.FindSharedWithout( this );
+          if( isnull( to_shared ) )
+          {
+            scopes := selectset( shared, ScopeSharedOnScope.ScopeThin, scope, scope <> this );
+            to_shared := LibOpt_ScopeShared::Create( scopes, shared.Group() );
+          }
+          traverse( shared, ScopeElement, se )
+          {
+            se.ScopeShared( relset, to_shared );
+          }
+        }
+      }
+      else if( this.Run().Optimization().AutoDeleteScopeElements() )
+      {
+        traverse( shared, ScopeElement, se, se.ScopeElementOnScope( relsize ) = 0 )
+        {
+          se.Delete();
+        }
+      }
+      shared.Delete();
+    }
+    this.Run().Optimization().DeleteScopeThin( this );
+  *]
+  Parent: LibOpt_Scope
+  StructuredName: 'LibOpt_ScopeThins'
+}

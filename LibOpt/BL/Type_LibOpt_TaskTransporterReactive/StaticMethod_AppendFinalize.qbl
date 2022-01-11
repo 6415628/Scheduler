@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod AppendFinalize (LibOpt_Task task, stream[JSON] str) as stream[JSON]
+{
+  Description:
+  [*
+    Add the `LibOpt_Component.OnFinalize` step to the given stream.
+    This will create a new stream that deletes the task after the given stream is finished.
+  *]
+  TextBody:
+  [*
+    component := task.Component();
+    
+    do_finalize := str->|component->DoFinalize( task );
+    
+    // Handle exception has a higher priority to make sure the run can be set as failed.
+    // When the run is set as failed, no other calls to `OnFinalize` are made.
+    // When a task is finalized, all its children tasks are also finalized.
+    // This means that if the child task throws an error when finalizing, the parent task will too.
+    // By calling the error handling with elevated priority, we force the error handling before any other calls to `DoFinalize`.
+    // This allows us to set the run to be failed, allowing us to stop finalizing tasks and thus stop throwing more errors.
+    handle_error := task->Annotate( ReactiveAnnotation::Priority( 1 ) )->HandleExceptionFinalize( do_finalize->Exception() );
+    
+    // Note that the below Merge method is also emitting str. 
+    // By using the Merge method, 'str' can be emitted before handle_error and do_finalize are completed. 
+    // This leads to a speedup in the optimizer.
+    return str->Merge( handle_error->|stream[JSON]::Success(),
+                       do_finalize->IgnoreException() );
+  *]
+}

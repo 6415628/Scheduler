@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcDamage
+{
+  TextBody:
+  [*
+    value := 0.0;
+    
+    task := this.Operation_SC().Task_SC();
+    
+    if( not isnull( task ) and not isnull( task.Previous() ) and not isnull( task.Next() ) )
+    {
+      // X -> Y -> Z ( Planned ), if current operation is Y
+      // X -> Z
+      operation := task.Previous().astype( SingleTaskBase ).OperationAsSingleTask();
+      penaltypoint := operation.GetTotalPenaltyPoints( task.Next().astype( SingleTaskBase ).OperationAsSingleTask(), false, false );
+    
+      //Dameage = (X->Z) - (X->Y)[Penalty on Y] - (Y->Z)[Penalty on Z]
+      value := penaltypoint - task.astype( SingleTaskBase ).OperationAsSingleTask().PenaltyPoint() - task.Next().astype( SingleTaskBase ).OperationAsSingleTask().PenaltyPoint();
+    }
+    
+    this.Damage( value );
+  *]
+}

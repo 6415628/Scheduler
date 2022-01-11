@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedRoutingStepInput (CDIntegration cdintegration)
+{
+  Description: 'Restore imported routing step input core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedRoutingStepInput_SC
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedRoutingStepInput ), cdirsi )
+    {
+      importedroutingstepinput := schedule.ImportedRoutingStepInput_SC( relnew, 
+                                                                        ProductId := cdirsi.ProductId(),
+                                                                        RoutingId := cdirsi.RoutingId(),
+                                                                        RoutingStepSequenceNr := cdirsi.RoutingStepSequenceNr(),
+                                                                        StockingPointId := cdirsi.StockingPointId()
+                                                                      );
+      CopyCorresponding::CopyFrom( cdirsi ).CopyTo( importedroutingstepinput );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

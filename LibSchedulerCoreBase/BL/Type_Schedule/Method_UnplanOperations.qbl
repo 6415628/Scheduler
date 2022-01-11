@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method UnplanOperations (Operation_SCs operations)
+{
+  Description: 'Unplan all selected operations'
+  TextBody:
+  [*
+    // unplans related operations, we put it on this level instead of op.Unplan because it will hit stack overflow, each op.UnPlan calls UnplanRelatedOperations which calls op.Unplan and so on
+    traverse( operations, Elements, operation, operation.CanUnplan() )
+    {
+      if( guard( operation.Task_SC().Resource_SC().IsPlanRelatedOperations(), false ) )
+      {
+        operation.UnplanRelatedOperations();
+      }
+      
+      operation.Unplan();
+    }
+    
+    this.AutomaticProductBasedMaterialReservationBySorting();
+  *]
+}

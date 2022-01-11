@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckCanJoin (PlanUnit_SCs planunits, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Checks whether the selected plan units can be joined together.'
+  TextBody:
+  [*
+    // WOI1 Nov-9-2016 (created)
+    // Plan units can be joined when:
+    // 1. there is more than one plan unit being selected
+    // 2. all the plan units are of the same order
+    // 3. all the plan units do not have any operations that have feedback
+    // 4. all the plan units do not have any operations that are frozen
+    
+    feedback_o := Translations::SC_PlanUnitCannotBeJoined();
+    
+    value := PlanUnit_SC::CheckHasMultiplePlanUnit( planunits, feedback_o )
+             and PlanUnit_SC::CheckSameWorkOrder( planunits, feedback_o )
+             and PlanUnit_SC::CheckSameHierarchy( planunits, feedback_o )
+             and PlanUnit_SC::CheckSameParent( planunits, feedback_o )
+             and PlanUnit_SC::CheckHasNoFeedbackOperation( planunits, feedback_o )
+             and PlanUnit_SC::CheckHasNoOperationInFrozenHorizon( planunits, feedback_o )
+             and PlanUnit_SC::CheckHasNoPlannedSupplyConvertedToInventory( planunits, feedback_o );
+             
+    feedback_o := feedback_o.TrimBoth();
+    
+    return value;
+  *]
+}

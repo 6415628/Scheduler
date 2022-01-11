@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_SubTaskTypeOnResourceGroup (CDSchedule cdschedule)
+{
+  Description: 'Restore relations for subtask type on resource group core data to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdschedule, CDEntity.astype( CDSubTaskTypeOnResourceGroup ), cdsttorg )
+    {
+      resourcegroup := select( schedule, ResourceGroup_SC, rg, rg.Name() = cdsttorg.ResourceGroup() );
+    
+      subTaskTypeOnRG := select( resourcegroup, SubTaskTypeOnResourceGroup, sttrg, 
+                                 sttrg.SubTaskID() = cdsttorg.SubTaskID()
+                               );
+      
+      if( not isnull( subTaskTypeOnRG ) )
+      {
+        // Restore relation
+        subtasktype := select( schedule, SubTaskType, stt, 
+                               stt.SubTaskID() = cdsttorg.SubTaskID()
+                             );
+        subTaskTypeOnRG.SubTaskType( relset, subtasktype );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

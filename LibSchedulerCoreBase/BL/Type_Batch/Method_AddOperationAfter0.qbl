@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddOperationAfter (Operation_SC operation, BatchSequenceElement element) as BatchSequenceElement
+{
+  Description: 'Add operation after a batch sequence element.'
+  TextBody:
+  [*
+    bse := this.GenericAddOperationAfter( operation, element );
+    
+    if( not isnull( bse )
+        and not isnull( bse.Batch().BatchTask() )
+        and bse.Batch().BatchTask().Resource_SC().ResourceGroup_SC().HasFixedSequencePlanLogic() )
+    {
+      task := bse.Batch().BatchTask();
+      task.Resource_SC().FSPLRunFixCircularityMethod( task )
+    }
+    
+    operation.AutomaticMaterialReservation();
+    
+    return bse;
+  *]
+}

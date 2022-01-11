@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcCostMPSAdherenceEarly
+{
+  TextBody:
+  [*
+    // yifei Aug-4-2021 (created)
+    value := 0.0;
+    op := this.Operation_SC();
+    optimizerstrategy := this.CombiLeg().OptimizerStrategyInSchedule();
+    if( not isnull( optimizerstrategy )
+        and op.IsEligibleForKPICalculation()
+        and op.IsPlanned()
+        and op.IsDueInSchedulingHorizon()
+        and op.MPS_WindowStart().IsFinite() )
+    {
+      a := optimizerstrategy.PenaltyParameterMPSAdherenceEarlySlope_a();
+      b := optimizerstrategy.PenaltyParameterMPSAdherenceEarlyPower_b();
+      c := optimizerstrategy.PenaltyParameterMPSAdherenceEarlyOffset_c();
+      deviation := maxvalue( (op.MPS_WindowStart() - this.StartTime() ).HoursAsReal(), 0.0 );
+      
+      if( deviation > 0.0 )
+      {
+        value := a * pow( deviation + c, b );
+      }
+    }
+    
+    this.CostMPSAdherenceEarly( value );
+  *]
+}

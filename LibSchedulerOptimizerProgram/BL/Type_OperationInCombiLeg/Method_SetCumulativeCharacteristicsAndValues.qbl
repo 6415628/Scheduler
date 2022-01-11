@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetCumulativeCharacteristicsAndValues
+{
+  TextBody:
+  [*
+    // yifei Aug-12-2021 (created)
+    // Construct vectors 
+    cumulativecharacteristic := BinaryValue::Construct();
+    cumulativerealvalue := BinaryValue::Construct();
+    
+    previoustaskcummulativecharacteristic := guard( this.PreviousOperation().CumulativeCharacteristic(), BinaryValue::Construct( ) );
+    previoustaskcummulativerealvalue := guard( this.PreviousOperation().CumulativeRealValues(), BinaryValue::Construct( ) );
+    
+    rulesneedcumulative := selectset( this, CombiLeg.CombiLegOnCombiPhase.CombiProgramPhase.PPCOnResource.RuleOnPPCOnResource.Rule, rule, rule.RuleSubType().IsCumulativeValueNeeded() );
+    cumulativecharacteristics := selectset( rulesneedcumulative, Elements.CharacteristicMain, char, true );
+      
+    // Calculate cumulative characteristic binary value
+    Characteristic::GetCharacteristicBinaryValueOpt( cumulativecharacteristics, 
+                                              this, 
+                                              previoustaskcummulativecharacteristic,
+                                              previoustaskcummulativerealvalue,
+                                              cumulativecharacteristic,
+                                              cumulativerealvalue );
+                                                                
+    this.CumulativeCharacteristic( cumulativecharacteristic );
+    this.CumulativeRealValues( cumulativerealvalue );
+  *]
+}

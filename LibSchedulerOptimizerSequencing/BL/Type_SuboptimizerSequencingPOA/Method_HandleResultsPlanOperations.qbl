@@ -1,0 +1,132 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleResultsPlanOperations (SuboptimizerSequencingPOA_SequencingPOA poa, LibOpt_Task task)
+{
+  Description: 'Plan the solution of poa back to the model'
+  TextBody:
+  [*
+    // Disable FSPL while planning. It is set back at the end of the method.
+    
+    schedule := this.GetSchedule();
+    legacyoptimizer := schedule.Optimizer();
+    requirefspl := legacyoptimizer.IsOptimizerRequireNoFSPL();
+    legacyoptimizer.IsOptimizerRequireNoFSPL( true );
+    settings := this.Settings();
+    transientdata := TransientDataSuboptimizerSequencing::Find( this, task );
+    
+    timeexpr := poa.Expression( SuboptimizerSequencingPOA::NamePOAExpressionTime() );
+    
+    // we can start by unplanning all in-scope operations, because the span will tell us where to plan in the results.
+    // we don't need to replan the resources in span, because POA wasn't allowed to change their planning.
+    // unplan all the operations in scope on the scope resources (relation PlannedReplannableOperation is only set for these operations):
+    traverse( transientdata, ResourceGroup.Resource.PlannedReplannableOperation.Operation.Task_SC, task_sc )
+    {
+      if( settings.IsLogPlanInformation() )
+      {
+        task.Log( "Unplanning old task " + task_sc.TaskID() );
+      }
+      task_sc.Unplan();
+    }
+    
+    // now we can plan in the POA result into the holes we just created:
+    solution := poa.Solution();
+    traverse( transientdata.GetPOAPathTypeResources(), Elements, representative_resource )
+    {
+      pathtype  := poa.PathType( this.GetPathTypeName( representative_resource ) );
+      
+      resources_in_pathtype := null( ResourceInSuboptimizerSequencings );
+      if( representative_resource.ResourceGroup().IsExchangable() )
+      {
+        // this path type represents multiple resources:
+        resources_in_pathtype := selectsortedset( representative_resource.ResourceGroup(),
+                                                  Resource,
+                                                  r,
+                                                  true,
+                                                  not r.HadPlannedUnreplannableOperations() ); // sorted to have those resources first that need 1:1 matching to the POA paths
+      }
+      else
+      {
+        // this path type represents a single resource:
+        resources_in_pathtype := construct( ResourceInSuboptimizerSequencings );
+        resources_in_pathtype.Add( representative_resource );
+      }
+      
+      solutionpathtype := solution.PathType( pathtype );
+      
+      assert( solutionpathtype.Paths( relsize ) = resources_in_pathtype.Size(),
+              "ResourceGroup", representative_resource.ResourceGroup().ResourceGroup().Name(), "has fewer or more POA solution paths than resources!" );
+    
+      traverse( resources_in_pathtype, Elements, resource, not resource.IsInSpan() ) // starts with those resources that need 1:1 matching to the POA paths
+      {
+        identifyingperation := select( resource, PlannedUnreplannableOperations, op, true ); // any of the unreplannable operations that was planned on that resource
+        resourcepath := null( POARunPath );
+        if( not isnull( identifyingperation ) )
+        {
+          spannode := solution.RunNode( poa.Node( identifyingperation ) );
+          resourcepath := spannode.Path(); // the POA path that represents the resource
+        }
+        else
+        {
+          // Select any POA run path that was not already selected in a previous loop iteration. (this implies that it only has replannable nodes, due to the sorting of the loop set)
+          // We identify the already-selected paths by looking at their nodes: the operations must all be unplanned in the manual model.
+          Transaction::Transaction().Propagate( attribute( Operation_SC, IsPlanned ) ); // used in next line. Can be dirty in this transaction because we plan in operations below in this loop.
+          runnode_unplanned := select( solutionpathtype, Paths.Nodes, node,
+                                       guard( not poa.AsOperationInSuboptimizerSequencing( node, this ).Operation().IsPlanned(), false ) ); // guarded for POA's dummy nodes
+          // `runnode_unplanned` may be null if there's an in-scope resource which POA planned nothing on
+          if( not isnull( runnode_unplanned ) )
+          {
+            resourcepath := runnode_unplanned.Path();
+          }
+        }
+        
+        if( not isnull( resourcepath ) )
+        {
+          if( settings.IsLogPlanInformation() )
+          {
+            task.Log( "Planning in operations on resource " + resource.Resource().Name() );
+          }
+          // PLAN:
+          ptime := resourcepath.Expression( timeexpr );
+          startpoint := null( Task_SC ); // points to the task after which the next node will be planned
+          traverse( ptime, Nodes, ntime )
+          {
+            operation := poa.AsOperationInSuboptimizerSequencing( ntime.Node(), this );
+            if( // Do not try to plan the first/last dummy node of the path
+                not isnull( operation )
+                // Do not replan the operation based on the dummy end node that follows the process duration node.
+                and not operation.Operation() = guard( startpoint.GetOperation(), null( Operation_SC ) ) ) 
+            {
+              if( operation.IsAllowedToReplan() )
+              {
+                if( settings.IsLogPlanInformation() )
+                {
+                  task.Log( "Planning operation " + operation.Operation().OperationID() + ifexpr( not isnull( startpoint ), " after task " + startpoint.GetOperation().OperationID(), " at beginning" ) );
+                }
+                //Plan the operation at the right point on the resource:
+                startpoint := resource.Resource().astype( SingleResourceBase ).PlanAfter( operation.Operation(), startpoint );
+              }
+              else
+              {
+                startpoint := operation.Operation().Task_SC().astype( SingleTaskBase );
+                if( settings.IsLogPlanInformation() )
+                {
+                  task.Log( "Skipping operation " + operation.Operation().OperationID() + " / task " + startpoint.TaskID() );
+                }
+              }
+            }
+          }
+        }
+        else
+        {
+          if( settings.IsLogPlanInformation() )
+          {
+            task.Log( "Resource " + resource.Resource().Name() + " stays empty" );
+          }
+        }
+      }
+    }
+    
+    // Set back FSPL flag after planning. FSPL is disabled at the start of the method.
+    legacyoptimizer.IsOptimizerRequireNoFSPL( requirefspl );
+  *]
+}

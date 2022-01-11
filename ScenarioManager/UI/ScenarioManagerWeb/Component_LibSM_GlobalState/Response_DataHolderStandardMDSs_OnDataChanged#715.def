@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: DataHolderStandardMDSs_593
+Response OnDataChanged () id:Response_LibSM_GlobalState_DataHolderStandardMDSs_OnDataChanged_715
+{
+  #keys: '[136398.1.592463953]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebComponent_OnDataChanged'
+  GroupServerCalls: true
+  QuillAction
+  {
+    Body:
+    [*
+      selectedScenario := DataHolderSelectedScenario.Data();
+      selectedDataset  := LibSM_GlobalState.GetSelectedPlanningDatasetKey();
+      
+      if ( isnull( selectedScenario ) or guard( selectedScenario.Dataset().DatasetMDSID(), Key::ZeroKey() ) <> selectedDataset )
+      {
+        selectedScenario := guard( select( LibSM_ScenarioManager, ScenarioNode.astype( LibSM_Scenario ).Dataset, ds, ds.DatasetMDSID() = selectedDataset ).Scenario(), null( LibSM_Scenario ) );
+        DataHolderSelectedScenario.Data( selectedScenario );
+      }
+    *]
+  }
+}

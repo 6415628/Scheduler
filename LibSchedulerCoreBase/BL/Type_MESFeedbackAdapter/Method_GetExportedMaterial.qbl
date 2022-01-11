@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetExportedMaterial (ExportedSchedule exportedschedule, String id, String id_type) as ExportedMaterial
+{
+  Description: 'Get exported material based on the given id. If not found, create one.'
+  TextBody:
+  [*
+    // jiex Oct-17-2016 (created)
+    // Get exported material
+    exmaterial := ExportedMaterial::FindExportedMaterial( id, id_type ); // Id_Type only applicable for supply, as unique ID needs to be generated for ExternalSupply and Material, because they share the same parent/table and primary keys
+    
+    if( isnull( exmaterial ) )
+    {
+      // Create one if not exist or is deleted due to different FeedbackID
+      exmaterial := ExportedMaterial::Create( exportedschedule, id, id_type );
+    }
+    
+    return exmaterial;
+  *]
+}

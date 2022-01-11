@@ -1,0 +1,75 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllTestVariants (output Booleans hasexternalalloweddatas, output Booleans useexternalalloweds, output Booleans isexternalalloweds, 
+  output Booleans isproductalloweds, output Booleans isoperationcompleteds, output Booleans isValids) as owning Strings
+{
+  Description: 'Return all test variants, variant output arguments (columns) will be used in data creation logic.'
+  TextBody:
+  [*
+    variants := construct( Strings );
+    
+    useexternalallowedsdata := construct( Booleans );
+    useexternalallowedsdata.Add( true );
+    useexternalallowedsdata.Add( false );
+    
+    isexternalallowedsdata := construct( Booleans );
+    isexternalallowedsdata.Add( true );
+    isexternalallowedsdata.Add( false );
+    
+    isproductallowedsdata := construct( Booleans );
+    isproductallowedsdata.Add( true );
+    isproductallowedsdata.Add( false );
+    
+    isoperationcompletedsdata := construct( Booleans );
+    isoperationcompletedsdata.Add( true );
+    isoperationcompletedsdata.Add( false );
+    
+    // Test with internal checkings 
+    traverse( isproductallowedsdata, Elements, isproductallowed )
+    {
+      traverse( isoperationcompletedsdata, Elements, isoperationcompleted )
+      {
+        isvalid := isproductallowed and not isoperationcompleted;
+        variants.Add( 'Test with Internal-( IsAllowedProduct = ' + [String]isproductallowed 
+                      + ', IsCompleted = ' + [String]isoperationcompleted 
+                      + ' )  ( ' + ifexpr( isvalid, 'VALID', 'INVALID' ) + ' )' );
+        hasexternalalloweddatas.Add( false );
+        useexternalalloweds.Add( false );
+        isexternalalloweds.Add( false );
+        isproductalloweds.Add( isproductallowed );
+        isoperationcompleteds.Add( isoperationcompleted );
+        isValids.Add( isvalid );
+      }
+    }
+    
+    // Test with external and internal checkings
+    traverse( useexternalallowedsdata, Elements, useexternalallowed )
+    {
+      traverse( isexternalallowedsdata, Elements, isexternalallowed )
+      { 
+        traverse( isproductallowedsdata, Elements, isproductallowed )
+        {
+          traverse( isoperationcompletedsdata, Elements, isoperationcompleted )
+          {
+            isvalid := ifexpr( useexternalallowed,
+                               isexternalallowed and not isoperationcompleted,
+                               isproductallowed and not isoperationcompleted );
+            variants.Add( 'Test with External-( UseIsAllowed = ' + [String]useexternalallowed 
+                          + ', IsAllowed = ' + [String]isexternalallowed 
+                          + ' ) Internal-( IsAllowedProduct = ' + [String]isproductallowed 
+                          + ', IsCompleted = ' + [String]isoperationcompleted 
+                          + ' )  ( ' + ifexpr( isvalid, 'VALID', 'INVALID' ) + ' )' );
+            hasexternalalloweddatas.Add( true );
+            useexternalalloweds.Add( useexternalallowed );
+            isexternalalloweds.Add( isexternalallowed );
+            isproductalloweds.Add( isproductallowed );
+            isoperationcompleteds.Add( isoperationcompleted );
+            isValids.Add( isvalid );
+          }
+        }
+      }
+    }
+    
+    return &variants;
+  *]
+}

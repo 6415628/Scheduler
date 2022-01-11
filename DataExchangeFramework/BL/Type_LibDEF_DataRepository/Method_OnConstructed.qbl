@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnConstructed
+{
+  Description: 'Dataset OnConstructed'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-19-2016 (created)
+    
+    // set dataset time zone based on model settings
+    timeZone := LibDEF_Util::GetSettingsValueTimeZone();
+    if ( timeZone <> '' )
+    {
+      tz := TimeZone::Construct( timeZone ).ID();
+      this.MDSLibDEF_DataRepository().TimezoneID( tz );
+    }
+    
+    this.CreateChannels();
+    
+    // Updating is done secondary, as channel creation is done with reflections.
+    this.UpdateChannels();
+    
+    // set default set queue batch size
+    this.SetDefaultBatchSizeSetQueue();
+    
+    // Make sure that all SetQueues are created, also for the SetTypes that were previously stored without one.
+    this.InitializeCreateSetQueue();
+    
+    LibDEF_DataRepository::SyncToDataBroker( true );
+  *]
+}

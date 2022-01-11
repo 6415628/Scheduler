@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetTaskWidth () declarative as Real
+{
+  Description: 'Get task width from OperationOnResource or Operation, if resource is tranverse, take length instead.'
+  TextBody:
+  [*
+    // jiex Nov-4-2016 (created)
+    value := 0.0
+    
+    usedoor := select( this.GetOperation(), OperationOnResource, oor, oor.Resource_SC() = this.Resource_SC() );
+    
+    if( not isnull( usedoor ) )
+    {
+      value := ifexpr( this.Resource_SC().IsTransverse(), usedoor.LengthInResource(), usedoor.WidthInResource() );
+    }
+    else if( not isnull( this.GetOperation() ) )
+    {
+      value := ifexpr( this.Resource_SC().IsTransverse(), this.GetOperation().Length(), this.GetOperation().Width() );
+    }
+    
+    return value;
+  *]
+}

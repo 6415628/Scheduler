@@ -1,0 +1,88 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test121_OnAnyDownstreamCopyDataset_DeleteDataset (LibOpt_TestDataset dataset)
+{
+  Description:
+  [*
+    Check if a dataset copy that is created with the `LibOpt_DatasetCopyOnAnyDownstreamCopy` type is deleted if there exists no downstream dataset copy.
+    We first create a normal dataset copy on the initialize `LibOpt_BreakpointPosition` of the startcomponent.
+    Then we create a `LibOpt_DatasetCopyOnAnyDownstreamCopy` dataset copy on the 'continue' and 'onfinalize' component positions of the startcomponent. 
+    We expect that these dataset copies will be deleted, because the 'continue' and 'onfinalize' component positions are 'downstream' of the 'initialize' component position.
+    Finally, we also create a `LibOpt_DatasetCopyOnAnyDownstreamCopy` dataset copy on a component that is downstream of the startcomponent. We also expect that this dataset copy is deleted.
+  *]
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( true );
+    
+    // For each component in 'CreateAllComponents', a run is created that only contains that component.
+    runs := opt.CreateAllComponents();
+    se := dataset.ScopeElementMock( relnew );
+    
+    strs := construct( structured[stream[JSON]] );
+    traverse( runs, Elements, run )
+    {
+      scope := LibOpt_ScopeFat::Create( run );
+      scope.Add( se );
+      run.SetStartScope( scope );
+    
+      // Attach a 'LibOpt_DatasetCopyUnconditional' object to the initialize component position.
+      // There is no direct need to create a unconditional dataset copy here.
+      // However, by including a dataset copy that is not deleted during the run, we might be able to spot a bug in the `LibOpt_DatasetCopyOnAnyDownstreamCopy` type more easily. 
+      originalcomponent := run.StartComponent();
+      componentposition_initialize := select( originalcomponent, ComponentPosition, cp, cp.Name() = LibOpt_Component::ComponentPosition_Initialize() );
+      componentposition_initialize.SetDatasetCopy();
+      
+      // Attach a 'LibOpt_DatasetCopyOnAnyDownstreamCopy' object to the continue and the finalize component positions. This creates two datasets.
+      // For these dataset copies, there are no downstream dataset copies that are not deleted. We therefore expect that these dataset copies will be deleted.
+      componentposition_finalize := select( originalcomponent, ComponentPosition, cp, cp.Name() = LibOpt_Component::ComponentPosition_Finalize() );
+      componentposition_finalize.SetDatasetCopy( typeof( LibOpt_DatasetCopyOnAnyDownstreamCopy ).Name() );  
+      // The LibOpt_Iterator component does not support dataset copies on the 'continue' component position. 
+      if( not originalcomponent.istype( LibOpt_Iterator ) )
+      {    
+        componentposition_continue := select( originalcomponent, ComponentPosition, cp, cp.Name() = LibOpt_Component::ComponentPosition_Continue() );
+        componentposition_continue.SetDatasetCopy( typeof( LibOpt_DatasetCopyOnAnyDownstreamCopy ).Name() );  
+      }
+        
+      if( originalcomponent.istype( LibOpt_ComponentParent )
+          and not originalcomponent.istype( LibOpt_Iterator ) )
+      {
+        // Only LibOpt_ComponentParents support the component.To() method. So we only add a Flow component to the component tree for the LibOpt_ComponentParents.
+        // LibOpt_Iterators are also subclassed from LibOpt_ComponentParents. However, we don't want to add a Flow component to iterators, 
+        // because this would create a new dataset copy during each iteration of the Flow component.       
+        component := originalcomponent.astype( LibOpt_ComponentParent );
+        // Create a flow component and set it as the startcomponent. 
+        flowcomponent := opt.ComponentFlow( run, "Flow" + [String] run.RunNr(), false );
+        component.To( flowcomponent );
+        
+        // Attach a 'LibOpt_DatasetCopyOnAnyDownstreamCopy' object to the initialize component position of the 'flow' component. This creates a dataset.
+        // For this dataset copy, there are no downstream dataset copies that are not deleted. We therefore expect that this dataset copy is also deleted.
+        componentposition_initialize := select( flowcomponent, ComponentPosition, cp, cp.Name() = LibOpt_Component::ComponentPosition_Initialize() );
+        componentposition_initialize.SetDatasetCopy( typeof( LibOpt_DatasetCopyOnAnyDownstreamCopy ).Name() );
+      } 
+         
+      strs.Add( run.Start() );  
+    }
+    
+    str := stream[JSON]::Merge( strs )
+    ->|stream[Void]::Wait( this.MDSEditorUpdateTime() ) // Wait some time to ensure that the dataset copies have been created and that MDSEditor::Editor().ObjectInfos() is updated. 
+    ->|void->() // Start a reactive call to handle the created dataset copies.
+    {
+      traverse( runs,
+                Elements.Component.ComponentPosition,
+                componentposition,
+                not isnull( componentposition.DatasetCopyConditional() ) 
+                // This unit test also creates a 'LibOpt_DatasetCopyUnconditional' dataset copy, which won't be deleted during the run.
+                and componentposition.DatasetCopyConditional().istype( LibOpt_DatasetCopyOnAnyDownstreamCopy )
+                )
+      {
+        LibOpt_TestUnit_DatasetCopy::AssertsForComponentPositionDeletedDataset( this, componentposition );
+      }
+    }   
+    
+    this.NoException( str );
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

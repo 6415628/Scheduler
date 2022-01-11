@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddNodesShutdown (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs)
+{
+  Description: 'Add a node for each shutdown, we add the node after the last leg before the shutdown'
+  TextBody:
+  [*
+    // mvr1 Oct-11-2021 (created)
+    traverse( combilegs, Elements, combileg, guard( combileg.Leg().GetIsLastLegBeforeShutdown(), false ) )
+    {
+      shutdownnode := poa.AddNode( SuboptimizerPOACombiLeg::NamePOANodeShutdown( combileg ), combileg );
+      if( this.Run().DebugScope() )
+      {
+        shutdownnode.CacheId( shutdownnode.Role() );
+      }
+    }
+  *]
+}

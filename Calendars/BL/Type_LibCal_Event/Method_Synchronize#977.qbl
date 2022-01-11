@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method Synchronize (String category_i, String subject_i, String description_i, 
+  String type_i, Real partialCapacity_i, Boolean isDefault_i, 
+  Boolean isRecurring_i, Boolean isAllDay_i, Duration startTimeOfDay_i, 
+  Duration duration_i, String patternType_i, Number recurrenceInterval_i, 
+  String weekly_Weekdays_i, Boolean monthly_IsDay_i, Number monthly_Day_i, 
+  String monthly_WeekOfMonth_i, String monthly_DayOfWeek_i, Boolean yearly_IsDay_i, 
+  Number yearly_Month_i, Number yearly_Day_i, String yearly_WeekOfMonth_i, 
+  String yearly_DayOfWeek_i)
+{
+  TextBody:
+  [*
+    // Calculate EndTimeOfDay. It is not imported because this is error prone
+    // (Duration and EndTimeOfDay can easily get out of sync by manual editing).
+    endTimeOfDay := ( startTimeOfDay_i + duration_i ) mod Duration::Hours( 24 );
+    isFromUI     := false;
+    
+    this.Update( subject_i, description_i, type_i, partialCapacity_i, isDefault_i,
+                 startTimeOfDay_i, endTimeOfDay, duration_i, isAllDay_i, isFromUI );
+    
+    // When the category is not found, the event is assigned to the general category.
+    this.SetCategory( category_i );
+    
+    // Also synchronize the RecurrencePattern.
+    this.SynchronizeRecurrencePattern( isRecurring_i, patternType_i, recurrenceInterval_i,
+                                       weekly_Weekdays_i,
+                                       monthly_IsDay_i, monthly_Day_i, monthly_WeekOfMonth_i, monthly_DayOfWeek_i,
+                                       yearly_IsDay_i,  yearly_Month_i, yearly_Day_i, yearly_WeekOfMonth_i, yearly_DayOfWeek_i );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

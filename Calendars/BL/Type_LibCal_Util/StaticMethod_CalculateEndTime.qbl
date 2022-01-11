@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CalculateEndTime (TimeZone timezone_i, Date startDate_i, Duration startTimeOfDay_i, 
+  Duration duration_i) declarative remote as DateTime
+{
+  Description:
+  [*
+    Calculate the EndTime based on the provided Timezone, StartDate, StartTimeOfDay and Duration.
+    Daylight Saving Time (DST) is taken into account when applicable.
+  *]
+  TextBody:
+  [*
+    // Calculate the number of days between start and end, and the EndTimeOfDay.
+    nrOfDays     := ( startTimeOfDay_i + duration_i ) div Duration::Hours( 24 );
+    endTimeOfDay := ( startTimeOfDay_i + duration_i ) mod Duration::Hours( 24 );
+    
+    // Use AddAsPeriod() to take Daylight Saving Time into account.
+    endTime := ( startDate_i + nrOfDays ).DateTime( timezone_i ).AddAsPeriod( timezone_i, endTimeOfDay );
+    
+    return endTime;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

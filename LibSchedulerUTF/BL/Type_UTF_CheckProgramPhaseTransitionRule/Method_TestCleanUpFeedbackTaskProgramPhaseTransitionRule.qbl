@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCleanUpFeedbackTaskProgramPhaseTransitionRule (Schedule schedule)
+{
+  Description: 'Test clean up feedback task program phase transition rule'
+  TextBody:
+  [*
+    // Default phase transition rule is 5 tasks for each phase
+    // First phase has 0 tasks because the all tasks in first phase have feedbacks
+    // Gantt chart
+    // |                           | Feedback HEAD                                                  |   BODY      |    TAIL      |
+    // | FeedbackProgramChangeTask | Feedback Task1-Task4 ( CleanUp ) | Feedback Task 5 ( Remains ) | Task 6 - 10 | Task 11 - 15 |
+    
+    // Only valid with following conditions
+    // - Operation 1-4 feedback task are cleaned up
+    // - Operation 5 feedback task still remains because last feedback task is needed for rule framework checking
+    // - Phase transition rule still working correctly
+    istaskcleanedup := schedule.FeedbackManager().FeedbackTaskInSchedule( relsize ) = 1;
+    isfeedbacktaskexists := exists( schedule, FeedbackManager.FeedbackTaskInSchedule, feedbacktask,
+                                    feedbacktask.OperationID() = 'Operation_5' );
+    
+    isvalid := istaskcleanedup
+               and isfeedbacktaskexists
+               and forall( schedule, ResourceGroup_SC.Resource_SC.ProgramSet.ProgramType.ProgramPhase, phase,
+                           ifexpr( phase.ProgramPhaseConfiguration().IsFirstProgramPhase(),
+                                   phase.TaskInProgramSet( relsize ) = 0,
+                                   phase.TaskInProgramSet( relsize ) = 5 ) );
+                             
+    this.Run().AssertTrue( isvalid,
+                           UTFUtility::GenerateFailedMessage( 'Test clean up feedback task program phase transition rule failed.', 
+                                                              this.Variant() ) );
+  *]
+}

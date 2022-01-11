@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test033_DeserializeRunNewScopeElement (LibOpt_TestDataset dataset)
+{
+  Description: 'Test if a run with a scope that has a new scope element (one that is created in the same transaction that caused an error) can correctly be deserialized.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    
+    id := 'ABC'
+    details := 'DESC'
+    comment := 'C'
+    
+    this.NoException( void->()
+    {
+      run := opt.CreateRun();
+      
+      opt.ComponentError( run, 'E', LibOpt_ComponentErrorPosition::Operation() );
+      run.ConfigureForOneTransaction();
+      
+      se := dataset.ScopeElementMock( relnew,
+                                      ValueDetails := details,
+                                      ValueIdentifier := id );
+    
+      run.DebugScope( true );
+      scope := LibOpt_Scope::Create( run );
+      scope.Add( se, comment );
+      run.SetStartScope( scope );
+      
+      run.Start();
+    }->IgnoreException()->|void->()
+    {
+      run := opt.RecoverLastFailedRun();
+      this.Run().AssertEqual( 1, run.Scope( relsize ), 'run.Scope( relsize )' );
+      this.Run().AssertEqual( 2, run.Snapshot( relsize ), 'run.Snapshot( relsize )' );
+      
+      scope := select( run, Scope, s, true );
+      if( not isnull( scope ) )
+      {
+        this.Run().AssertEqual( 1, scope.ScopeElements().Size(), 'scope.ScopeElements().Size()' );
+        
+        se := guard( scope.ScopeElements().First().astype( LibOpt_ScopeElementDeleted ), null( LibOpt_ScopeElementDeleted ) );
+        this.Run().AssertFalse( isnull( se ), 'is type LibOpt_ScopeElementDeleted' )
+        if( not isnull( se ) )
+        {
+          if( not this.Run().AssertEqual( 1, se.ScopeElementOnScope( relsize ), 'se.ScopeElementOnScope( relsize )' ) )
+          {
+            this.Run().AssertEqual( comment, se.ScopeElementOnScope( relget ).First().Comment(), 'se.ScopeElementOnScope( relsize )' );
+          }
+        }
+      }
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

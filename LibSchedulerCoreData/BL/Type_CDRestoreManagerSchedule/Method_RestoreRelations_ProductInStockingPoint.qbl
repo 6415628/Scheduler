@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_ProductInStockingPoint (CDSchedule cdSchedule, GenericProduct genericProduct)
+{
+  Description: 'Restore product in stocking point core data relations to planning object'
+  TextBody:
+  [*
+    cdProductInStockingPoints := selectset( cdSchedule, CDEntity.astype( CDProductInStockingPoint ), cdProductInStockingPoint,
+                                            cdProductInStockingPoint.ProductId() = genericProduct.Id() );
+    
+    traverse( cdProductInStockingPoints, Elements, cdProductInStockingPoint )
+    {
+      productInStockingPoint := ProductInStockingPoint::FindProductInStockingPoint( cdProductInStockingPoint.StockingPointId(),
+                                                                                    cdProductInStockingPoint.ProductId());
+      
+      if( not isnull( productInStockingPoint ) )
+      {
+        // ImportedProductInStockingPoint, 1-1
+        importedProductInStockingPoint_SC := ImportedProductInStockingPoint_SC::FindImportedProductInStockingPoint_SC( cdProductInStockingPoint.StockingPointId(),
+                                                                                                                       cdProductInStockingPoint.ProductId() )
+        productInStockingPoint.ImportedProductInStockingPoint_SC( relset, importedProductInStockingPoint_SC );
+        
+        // Restore inventory target
+        this.RestoreRelations_InventoryTarget( cdSchedule, productInStockingPoint );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

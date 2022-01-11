@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method InsertFeedbackBatchContent (ExportedOperationBatchContents exportedbatchcontents)
+{
+  Description: 'Insert elements into feedback batch'
+  TextBody:
+  [*
+    // Get the corresponding ImportedFeedbackTask
+    // Set the ReportedBatchID attribute of ImportedFeedbackTask
+    // The ImportedFeedbackTask>-ImportedFeedbackBatch relationship will be set declaratively
+    // Add batch element is not allowed if the batch has started.
+    traverse( exportedbatchcontents, Elements, exportedbatchcontent )
+    {
+      importedbatchcontent := this.Schedule().FeedbackManager().GetImportedFeedbackBatchContent( this, exportedbatchcontent );
+      
+      importedbatchcontent.Update( exportedbatchcontent );
+    }                                                     
+    
+    if( exportedbatchcontents.Size() > 0 )
+    {
+      this.Update( exportedbatchcontents.Element( 0 ).ExportedOperationBatch() );
+    }
+  *]
+}

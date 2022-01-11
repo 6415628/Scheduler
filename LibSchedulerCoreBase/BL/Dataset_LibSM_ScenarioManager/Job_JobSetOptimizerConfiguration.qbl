@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Job JobSetOptimizerConfiguration
+{
+  Description: 'Sets the optimizer strategy and user setting based on demo data from Schedule dataset.'
+  Priority: 'Default'
+  Text:
+  [*
+    optimizerStrategyInScenarioManager := this.GetOptimizerStrategy( optimizerStrategyID );
+    optimizerUserSettingGroupInScenarioManager := this.GetOptimizerSetting( optimizerUserSettingGroupID );
+    
+    scheduleMDSInfo := MDSEditor::Editor().LoadedObjectInfo( Constants::GetDatasetSchedule(),
+                                                             Constants::DatasetFolder(),
+                                                             scheduleMDSName );
+    
+    if( not isnull( scheduleMDSInfo )
+        and not isnull( optimizerStrategyInScenarioManager ) 
+        and not isnull( optimizerUserSettingGroupInScenarioManager ) )
+    {
+      Schedule::JobSetOptimizerConfiguration( scheduleMDSInfo.MDSID(), 
+                                              optimizerStrategyInScenarioManager, 
+                                              optimizerUserSettingGroupInScenarioManager );
+    }
+  *]
+  Arguments:
+  [
+    Argument scheduleMDSName { Type: String }
+    Argument optimizerStrategyID { Type: String }
+    Argument optimizerUserSettingGroupID { Type: String }
+  ]
+}

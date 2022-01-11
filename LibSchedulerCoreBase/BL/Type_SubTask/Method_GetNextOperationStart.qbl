@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetNextOperationStart (Operation_SC nextoperation, DateTime inputtedend) declarative as DateTime
+{
+  Description: 'Get the Start of the next operation based on the calendar strategy used.'
+  TextBody:
+  [*
+    // alexandern Sep-29-2015 (created)
+    // Get next operation process start as end / earliestend of NoBufferWait / NoBufferAction
+    end := inputtedend;
+    
+    if( not isnull( nextoperation ) and not isnull( nextoperation.Task_SC() ) )
+    {
+      nexttask          := nextoperation.Task_SC();
+      nextearlieststart := maxvalue( nexttask.Resource_SC().ResourceCalendar().Subtract( inputtedend, nexttask.DurationBeforeRoutingStart() ), // Include inputtedend subtracted duration before routing start to make sure we account for when downstream task can start before it can receive material
+                                     nexttask.MachineEarliestStart() );
+      nextstart         := nextearlieststart;
+    
+      if( nexttask.Resource_SC().UseFitCalendarStrategy() )
+      {
+        nextstart := nexttask.Resource_SC().ResourceCalendar().NextFit( nextearlieststart, nexttask.NetDuration() );
+      }
+      else if( nexttask.Resource_SC().UseFitProcessCalendarStrategy() )
+      {
+        nextprocessearlieststart := nexttask.Resource_SC().ResourceCalendar().Add( nextearlieststart, nexttask.DurationBeforeProcess() );
+        nextprocessstart         := nexttask.Resource_SC().ResourceCalendar().NextFit( nextprocessearlieststart, nexttask.ProcessDuration() );
+        nextstart                := nexttask.Resource_SC().ResourceCalendar().Subtract( nextprocessstart, nexttask.DurationBeforeProcess() );
+      }
+      else
+      {
+        nextstart := nexttask.Resource_SC().ResourceCalendar().NextAvailable( nextearlieststart );
+      }
+      
+      end := nexttask.Resource_SC().ResourceCalendar().Add( nextstart, nexttask.DurationBeforeRoutingStart() );
+      // To account for scenario when there is a downtime directly AFTER the subtask (before first respect routing) ENDS
+      end := nexttask.Resource_SC().ResourceCalendar().NextAvailable( end );
+    }
+    
+    return end;
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

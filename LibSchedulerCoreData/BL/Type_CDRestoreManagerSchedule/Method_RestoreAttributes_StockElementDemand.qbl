@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_StockElementDemand (CDSchedule cdSchedule, ProductInStockingPointStock productinstockingpointstock)
+{
+  Description: 'Restore attributes for stock element demand core data attributes to planning object'
+  TextBody:
+  [*
+    // Restore stock element demand
+    cdStockElementDemands := selectset( cdSchedule, CDEntity.astype( CDStockElementDemand ), cdStockElementDemand, 
+                                        cdStockElementDemand.ProductID() = productinstockingpointstock.ProductID(),
+                                        cdStockElementDemand.StockingPointID() = productinstockingpointstock.StockingPointID()
+                                      );
+    
+    traverse( cdStockElementDemands, Elements, cdStockElementDemand )
+    {
+      stockElementDemand := StockElementDemand::Create( productinstockingpointstock, cdStockElementDemand.LotSeqNr() );
+      CopyCorresponding::CopyFrom( cdStockElementDemand ).CopyTo( stockElementDemand );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

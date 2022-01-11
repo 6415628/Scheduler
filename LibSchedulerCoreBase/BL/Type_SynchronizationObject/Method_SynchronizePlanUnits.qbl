@@ -1,0 +1,70 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizePlanUnits
+{
+  Description: 'This method is used for the Hotmill Demo only'
+  TextBody:
+  [*
+    // saravanen Mar-7-2014 (created)
+    
+    // MODELING HANDLE SC
+    // FOR DEMO
+    // For Hotmill, each slab is planned as a unit.
+    // Hence a plan unit is created for each quantity unit
+    // for this demo integrated with CP, we are importing plan unit from CP in KT.
+    // as routing has been created in CP
+    
+    // we won't update plan units created in Scheduler or plan units with feedback or in frozen horizon
+    allinstances := selectset( this.Schedule(), ParentPlanUnit, pu, not pu.IsCreatedInScheduler() );  
+    updatedinstances := construct( PlanUnit_SCs );
+    
+    traverse( this.Schedule(), Order_SC, order, not order.IsCreatedInScheduler() ) // will not affect work orders created in Scheduler
+    { 
+      planunits := selectset( order, ParentPlanUnit, planunit, true );  // We only support parent plan unit synchronization here
+      nrofplanunits := planunits.Size();
+      current_quantity := sum( planunits, Elements, pu, pu.Quantity() );
+      order_quantity := order.Quantity();
+      difference_quantity := order_quantity - current_quantity;
+      
+      if( nrofplanunits > 1 ) // if there is more than one plan unit
+      { 
+        if( difference_quantity > 0 ) // if there is an increase in quantity on order, we will create a new plan unit instead
+        {
+          planunit := order.CreatePlanUnit( order.GetLastPlanUnitNr(), difference_quantity, order.GetNrOfLots( difference_quantity ) ); // the first created plan unit id will always be 000.
+          planunits.Add( planunit );
+        }
+        // 9979: need to update operations anyway
+        traverse( planunits, Elements, planunit,
+                  planunit.CheckHasNoFeedbackOperation() and planunit.CheckHasNoOperationInFrozenHorizon() )
+        {
+          planunit.SynchronizeOperationsMaterialsWIPDemands();
+        }
+        
+        updatedinstances := updatedinstances.Add( planunits );  // add the new and existing plan units to this structured set, so that they won't be deleted
+      }
+      else // if there is none or only one plan unit
+      { 
+        planunit := select( order, ParentPlanUnit, pu, true );
+        
+        if( isnull( planunit ) ) // if there is no plan unit, create one
+        {
+          planunit := order.CreatePlanUnit( order.GetLastPlanUnitNr(), difference_quantity, order.GetNrOfLots( difference_quantity ) );
+        }
+        else if( planunit.CheckHasNoFeedbackOperation() and planunit.CheckHasNoOperationInFrozenHorizon() ) // we will not bother with plan units with feedback or in frozen horizon
+        {
+          planunit.Update( order, order_quantity, order.GetNrOfLots( order_quantity ) ); 
+        }
+        
+        updatedinstances.Add( planunit ); 
+      }
+    }
+    
+    // Delete plan units of orders that do not exist anymore
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, pu, pu.CanBeDeleted() )
+    {
+      pu.Remove();
+    }
+  *]
+}

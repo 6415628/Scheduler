@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method RefreshListBatchOperation () id:Method_FormOperationsAndBatches_RefreshListBatchOperation
+{
+  #keys: '[145930.3.2112778265]'
+  Body:
+  [*
+    // Refresh list batch opearation
+    
+    finalFilter := '';
+    
+    filters := construct( Strings );
+    
+    // Original filter
+    filters.Add( this.GetOriginalListBatchOperationFixedFIlter() );
+    
+    // Filter compatible operation
+    filters.Add( this.FilterCompatibleOperationsBasedOnSelectedBatchesAndOperationsInBatch() );
+    
+    // Filter not in batch
+    filters.Add( this.FilterNotInBatch() );
+    
+    // Delete filters element that contain empty string
+    for( i := filters.Size() - 1; i >= 0; i-- )
+    {
+      if( filters.Element( i ) = '' )
+      {
+        filters.Delete( i );  
+      }
+    }
+    
+    finalFilter := filters.ToString( ' and ' );
+    
+    DataExtractorOperations.FixedFilter( finalFilter );
+  *]
+}

@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test004_CheckBenchmarkTotalKPI (Schedule schedule)
+{
+  Description:
+  [*
+    Check if the Total KPIs in the loaded dataset matches the Total KPI stored in the KT. If this is not the case, then either logic, data or the dataset has changed and requires attention.
+    This only works if the dataset contains the benchmark end situation. If this is not the case, you can overload the method to either 1) don't execute this check or 2) convert the dataset to the benchmark situation and then do the check.
+  *]
+  TextBody:
+  [*
+    row := this.GetTestUnitRow( this.Variant() );
+    
+    benchmarktotalkpi := row.BenchmarkKPITotal();
+    starttotalkpi     := this.GetTotalKPI( schedule );
+    
+    tolerancedecimals := 2;
+    tolerance         := pow( 10, - tolerancedecimals );
+    
+    upperlimit := benchmarktotalkpi + tolerance;
+    lowerlimit := benchmarktotalkpi - tolerance;
+    
+    if( starttotalkpi > upperlimit or
+        starttotalkpi < lowerlimit )
+    {
+      message := "Total KPI of start situation (" + [String] starttotalkpi +
+                 ") doesn't match benchmark Total KPI (" + [String] benchmarktotalkpi + "). Acceptable range: from " +
+                 [String] lowerlimit + " to " + [String] upperlimit + ".";
+    
+      this.Run().RegisterFailure( message );
+    }
+  *]
+}

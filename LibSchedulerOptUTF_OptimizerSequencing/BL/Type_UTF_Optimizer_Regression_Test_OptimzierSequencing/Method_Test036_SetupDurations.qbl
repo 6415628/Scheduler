@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test036_SetupDurations (Schedule schedule)
+{
+  Description: 'Tests that setup durations are respected by the optimzier by running the SelectorSpan->Suboptimizer components of the optimizer in sequence on a scope where there would be a different optimal plan if there were no setup durations.'
+  TextBody:
+  [*
+    // start scenario for test is empty schedule
+    schedule.UnplanAll();
+    Transaction::Transaction().Propagate();
+    
+    operations_1010 := selectset( schedule, Operation_SC, op, op.OperationID() = "PU_9_000-10" or op.OperationID() = "PU_202_000-10" ); // no setup between these 2. process durations: 6:40 (long) and 1:40 (short)
+    operations_1009 := selectset( schedule, Operation_SC, op, op.OperationID() = "PU_69_000-10" ); // 8h setup if next to a 1010 operation. process duration: 3:20 (medium)
+    // "1010" and "1009" refer to the operations' product types.
+    operations := operations_1010.Union( operations_1009 );
+    // only include two printing resources in scope
+    resources := selectset( schedule, ResourceGroup_SC.Resource_SC, r, r.ResourceID() = "1101" or r.ResourceID() = "1102" );
+    scope := UTF_Optimizer_Regression_Test_OptimizerSequencing::CreateScope( operations, resources );
+    
+    // ignoring setups, the best makespan would be 6:40, with the short and medium operations palnned on the same resource.
+    // but with the huge setup, it's better to plan the 1010 operations on the same resource and the medium operation extra.
+    
+    run := UTF_Optimizer_Regression_Test_OptimizerSequencing::CreateSelectorSpanAndSuboptimzierPOARun( UTF_Optimizer_Regression_Test_OptimizerSequencing::Optimizer( schedule ),
+                                                                                                        scope );
+    
+    result := run.Start();
+    assert1 := this->After( result )->Asserts_LastRunTerminatedStatus( schedule );
+    assert2 := this->After( result )->Asserts_Test_IsPlanned( schedule, operations, resources );
+    // check no setup:
+    assert3 := this->After( result )->Asserts_Test_NoSetup( resources );
+    assert1->Exception()->Merge( assert2->Exception(), assert3->Exception() )->( exception ) {
+      this.Run().RegisterFailure( "post-optimization checks failed:\n" + exception.Message() );
+    };
+  *]
+}

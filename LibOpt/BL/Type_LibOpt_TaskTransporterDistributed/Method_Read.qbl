@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method Read (LibOpt_Task task, JSON json) as stream[JSON]
+{
+  TextBody:
+  [*
+    result := emit( json );
+    
+    identifier := [String] this.InternalIdentifier();
+    type := '';
+    if( LibOpt_Message::TryGetType( json, type )
+        and type.StartsWith( identifier ) )
+    {
+      message_type := type.SubString( identifier.Length(), type.Length() - identifier.Length() );
+      message := select( this, DistributedMessage, dm, dm.Identifier() = message_type );
+      if( not isnull( message ) )
+      {
+        unpacked := LibOpt_Message::Unpack( json, type );
+        message.Read( task, unpacked );
+        result := stream[JSON]::Success();
+      }
+    }
+    
+    return result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

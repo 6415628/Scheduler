@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method DemandFulfilled (ImportedFeedbackBatchContent batchcontent, internal[GUIComponent] parent) id:Method_DialogFeedbackMaterial_DemandFulfilled_478
+{
+  #keys: '[118288.0.252233406]'
+  Body:
+  [*
+    // generate imported material base exported batch content.
+    exportedbatchcontent := batchcontent.ExportedOperationBatchContent();
+    
+    id := ImportedFeedbackMaterial_SC::GetIdentifierInSF( batchcontent.ImportedFeedbackBatch().Resource(), exportedbatchcontent.Operation_SC() );
+    
+    demand := select( exportedbatchcontent, ExportedDemand, s, true );
+    
+    timestamp := this.GetFeedbackTime( batchcontent );
+    
+    DataHolderSelectedFeedbackOperation.Data( guard( batchcontent.ExportedOperationBatchContent().Operation_SC(), null( Operation_SC ) ) ); 
+    
+    data := Schedule.ImportedFeedbackMaterial_SC( relshadow,
+                                                  ID := id,
+                                                  DemandMaterialID := guard( demand.ID(), '' ),
+                                                  OperationId := batchcontent.OperationID(),
+                                                  ResourceId := batchcontent.ImportedFeedbackBatch().Resource(),
+                                                  Quantity := guard( demand.Quantity(), 0.0 ),
+                                                  Operation_SC := exportedbatchcontent.Operation_SC(),
+                                                  Status := Constants::MaterialStatus_DemandFulfilled(),
+                                                  TimeStamp := timestamp
+                                                  );
+    Dialog.Data( data );
+    
+    this.InitDialog( false, data.DemandMaterialID() );
+    
+    if( this.DoModal( parent ) > 0 )
+    {
+      data.DemandMaterialID( SelectionDemandId.Text() );
+      data.SupplyMaterialID( SelectionSupplyId.Text() );
+      data.SupplyMaterialID_Type( SelectionSupplyId.Data().SupplyType() );
+      data.Commit();
+    }
+  *]
+}

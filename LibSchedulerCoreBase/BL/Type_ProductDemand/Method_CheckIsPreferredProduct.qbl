@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsPreferredProduct (ProductSupply productsupply, Boolean ishard) declarative remote as Boolean
+{
+  Description: 'Checks if the supply of an alternative product can be used to fulfill the demand.'
+  TextBody:
+  [*
+    // WOI1 Jul-29-2016 (created)   
+    
+    value := this.ProductId() = productsupply.ProductId()
+             or exists( this, 
+                         ProductInStockingPoint.Product_SC.ProductCompatibleDemand,
+                         alternative,
+                         alternative.AsProductCompatibleSupply().Id() = productsupply.ProductId(), 
+                         ishard or alternative.IsPreferred() );
+    
+    return value;
+  *]
+}

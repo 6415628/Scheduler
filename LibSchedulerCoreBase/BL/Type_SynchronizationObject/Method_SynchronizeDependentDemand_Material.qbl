@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeDependentDemand_Material
+{
+  Description: 'Synchronizes characteristic based dependent demands that come from external sources.'
+  TextBody:
+  [*
+    // WOI1 Jul-12-2016 (created)
+    allinstances := selectset( this.Schedule(), Demand.astype( MaterialDependentDemand ), mdd, true );
+    updatedinstances := construct( MaterialDependentDemands );
+    
+    // traverses imported dependent demands that have no product ids
+    traverse( this.Schedule(), ImportedDependentDemand_SC, row, row.IsValidDataHard() and not row.IsProduct() )
+    { 
+      mdd := MaterialDependentDemand::FindMaterialDependentDemand( DemandType::MaterialDependentDemand(), row.Id() );
+      
+      if( isnull( mdd ) )
+      {
+        mdd := this.Schedule().CreateDemand( DemandType::MaterialDependentDemand(), row.Id() ).astype( MaterialDependentDemand );
+      }
+    
+      mdd.Update( row );
+      updatedinstances.Add( mdd );
+    }
+    
+    //Delete material dependent demands if they do not exist in KT
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, oldmdd, oldmdd.CheckCanBeDeleted() )
+    {
+      oldmdd.Remove();
+    }
+  *]
+}

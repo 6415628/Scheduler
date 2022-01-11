@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveMetadataRequestSetTypeCreated (NamedValueTree nvt_i, NamedValue body_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive a Metadata message for channel-event when a SetType has been created.'
+  TextBody:
+  [*
+    // Jacky CHAN May-9-2016 (created)
+    LibDEF_Util::EventLog( event_i, "Receiving Set Type created request channel event" );
+    
+    channelName := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_CHANNELNAME() );
+    channel     := LibDEF_ChannelMeta::FindChannelMeta( this.DataBroker(), this.GUID(), channelName );
+    
+    this.SyncSetTypeMeta( nvt_i, body_i, channel, event_i );
+    
+    LibDEF_IntegrationEvent::EventComplete( event_i );
+  *]
+}

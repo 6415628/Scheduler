@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCandidateCombiProgramTypesTobeExtended () as owning CombiProgramTypes
+{
+  TextBody:
+  [*
+    // yifei Aug-16-2021 (created)
+    //get which combiprogramTypes we can extend
+    // if current leg is the first leg, then we will extend from the master CombiProgramTyp,  but when extending, we will not keep any existing combileg on it
+    //   basically it's start from an empty CombiProgramType and add one CombiLeg to it,  though we don't copy any combileg of the master CombiProgramType, but we need to keep the
+    // how many times we extended on that master CombiProgramType
+    
+    cpts := construct( CombiProgramTypes );
+    //if we are now creating combi for leg 1,  then select leg's active CombiProgramType
+    prevleg := this.GetPrevLegInLeadingProgramType(); 
+    
+    if( isnull( prevleg ) )
+    { 
+      cpts.Add( this.ActiveCombiLeg().LeadingCombiProgramPhase().CombiProgramType() );
+    }
+    else
+    {
+      //  if we are currently the second leg,  then we select the combitype which has one combileg, but do not have the second combileg as candidate to extend
+      //  the extension action itself will make a copy,  the copy will copy the first combleg too, then add one more combileg,  which is added for this leg
+      combilegs := selectset( prevleg, CombiLeg, combileg, isnull( combileg.GetNextCombiLegInCPTConst() ) );
+      traverse( combilegs, Elements, combileg )
+      {
+        cpts.Add( combileg.LeadingCombiProgramPhase().CombiProgramType() );
+      }
+    }
+    
+    return &cpts;
+  *]
+}

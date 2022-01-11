@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method BeforeMethodCall_TryBlock (LibOpt_Task task) as Boolean
+{
+  Description:
+  [*
+    This method should only be used within a `try{...}` block. To be more precise, it should be the first method that is called in this `try{...}` block.
+    The `LibOpt_Task` is registered to the `LibOpt_CurrentTransaction`. By registering the `LibOpt_Task`, we ensure that any errors in this `LibOpt_Task` will show up as a child of the `LibOpt_Task.SnapshotComponent` snapshot.
+    Since we just entered a `try{...}` block, the current transaction is safe, so `this.StartSafeTransaction();` is called. This will ensure that `LibOpt_CurrentTransaction.IsSafe` returns `true`.
+  *]
+  TextBody:
+  [*
+    // There is no need to call 'LibOpt_CurrentTransaction::PropagateToFindPropagationErrors( task.Component() )'  here.
+    // No user code that is not guarded against errors should have been executed since the start of the transaction. 
+    // (If user code was executed then we should already be in a try{...} block, which means that 'this.IsSafe()' is true, so we wouldn't reach this try{...} block). 
+    // Therefore, no propagation error can occur here.
+    
+    // If the current task hasn't been registered yet by the current transaction, then we should do so. 
+    istaskregistered := this.RegisterTask( task );
+    
+    // The 'BeforeMethodCall_TryBlock' method is called when a try block is entered. This means that the current transaction is a safe transaction.
+    // The 'StartSafeTransaction' method ensures that 'transaction.IsSafe' will return true.
+    this.StartSafeTransaction();
+    
+    return istaskregistered;
+  *]
+}

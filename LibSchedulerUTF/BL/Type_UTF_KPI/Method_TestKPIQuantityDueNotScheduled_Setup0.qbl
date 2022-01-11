@@ -1,0 +1,62 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestKPIQuantityDueNotScheduled_Setup (Schedule schedule)
+{
+  Description: 'Test KPI QuantityDueNotScheduled - setup'
+  TextBody:
+  [*
+    isvariantfound := false;
+    isdummy := false;
+    hasfeedback := false;
+    hasfinished := false;
+    isdue := false;
+    isplanned := false;
+    kpiquantityduenotscheduled := 0.0;
+    
+    this.GetTestVariantForKPIQuantityDueNotScheduled( isvariantfound,
+                                                      isdummy,
+                                                      hasfeedback,
+                                                      hasfinished,
+                                                      isdue,
+                                                      isplanned,
+                                                      kpiquantityduenotscheduled );
+    // create 1 operation based on variant
+    if( isvariantfound )
+    {
+      duedate := DateTime::MinDateTime();
+      // Create 5 operations, 4 operation not based on variant
+      for( i := 1; i<=4; i++ )
+      {
+        // Create operation
+        order := UTFMockObjectFactory::CreateOrder( schedule, 'Order ' + [String]i );
+        planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'Plan Unit ' + [String]i , 100.0 );
+        operation := UTFMockObjectFactory::CreateOperation( planUnit );
+    
+        // update UTF operation attributes
+        this.SetUTFOperationAttributesForKPI( operation, null( UTFSingleResource ), duedate,
+                                              false,   //isdummy
+                                              false,   //hasfeedback
+                                              false,   //hasfinished
+                                              false ); //isplanned
+        this.SetUTFOperationAttributesForKPI_QuantityDueNotScheduled( operation,
+                                                                      true ); //isdue
+      }
+      
+      // Create resource
+      resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Resource' );
+      
+      // Create operation5
+      order5 := UTFMockObjectFactory::CreateOrder( schedule, 'Order 5' );
+      planUnit5 := UTFMockObjectFactory::CreatePlanUnit( order5, 'Plan Unit 5', 100.0 );
+      operation5 := UTFMockObjectFactory::CreateOperation( planUnit5 );
+      
+      // update UTF operation attributes
+      this.SetUTFOperationAttributesForKPI( operation5, resource, duedate,
+                                            isdummy,
+                                            hasfeedback,
+                                            hasfinished,
+                                            isplanned );
+      this.SetUTFOperationAttributesForKPI_QuantityDueNotScheduled( operation5, isdue );
+    }
+  *]
+}

@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method Edit () id:Method_LibSM_DialogGlobalParameters_Edit
+{
+  #keys: '[136402.0.1091095269]'
+  Body:
+  [*
+    // Prepare and show the GlobalSettings dialog with the actual data.
+    
+    globalParameter := LibSM_ScenarioManager.GlobalParameter();
+    if ( isnull ( globalParameter ) )
+    {
+      // Explicit check for just in case LibSM_GlobalParameter hasn't been created.
+      globalParameter := LibSM_GlobalParameter::Create( LibSM_ScenarioManager );
+    }
+    
+    
+    // Prefill controls.
+    
+    // General settings.
+    this.CheckboxApplyAuthorizationOnScenariosAndFolders().Checked( globalParameter.IsAuthorizationApplied() );
+    this.CheckboxAutoSelectQuickCopiedScenario().Checked( globalParameter.IsAutoSelectQuickCopiedScenario() );
+    this.CheckboxCopiedScenarioIsChildOfSource().Checked( globalParameter.IsCopiesAreChildrenOfSource() );
+    this.CheckboxReloadScenariosOnStartup().Checked( globalParameter.IsReloadScenariosOnServerStartup() );
+    
+    // Defaults
+    this.DropDownListDefaultKnowledgeProfile().Data( globalParameter.DefaultKnowledgeProfile() );
+    this.DropDownStringListDefaultStorageState().Text( globalParameter.DefaultStorageState() );
+    
+    // Usage limitations
+    applyUsageLimiations := globalParameter.MaxNrOfLoadedScenarios() > -1
+    this.CheckboxApplyUsageLimitationLoaded().Checked( applyUsageLimiations );
+    
+    applyUsageLimiations := globalParameter.MaxNrOfScenarios() > -1
+    this.CheckboxApplyUsageLimitationTotal().Checked( applyUsageLimiations );
+    
+    
+    // Refresh Daemon
+    this.DateTimeSelectorRefreshStartTime().DateTime( globalParameter.DaemonRefreshScenariosStatusStartTime() );
+    this.DurationSelectorRefreshFrequency().Duration( globalParameter.DaemonRefreshScenariosStatusFrequency() );
+    
+    // Cleanup Daemon
+    this.DateTimeSelectorRecycleBinStartTime().DateTime( globalParameter.DaemonDeleteScenarioStartTime() );
+    this.DurationSelectorRecycleBinFrequency().Duration( globalParameter.DaemonDeleteScenarioFrequency() );
+    
+    
+    this.Show( "popup" );
+  *]
+}

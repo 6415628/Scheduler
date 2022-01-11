@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericProductPlannedFulfillment (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic product planned fulfillment core data attributes to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdSchedule, CDEntity.astype( CDGenericProductPlannedFulfillment ), cdGenericProductPlannedFulfillment )
+    {
+      productdemand := select( schedule, Demand.astype( ProductDemand ), demand, 
+                               demand.DemandType() = cdGenericProductPlannedFulfillment.DemandType()
+                               and demand.DemandID() = cdGenericProductPlannedFulfillment.DemandId() );
+                                                                       
+      if( not isnull( productdemand ) )
+      {
+        genericProductPlannedFulfillment := GenericProductPlannedFulfillment::Create( productdemand,
+                                                                                      cdGenericProductPlannedFulfillment.DemandId(),
+                                                                                      cdGenericProductPlannedFulfillment.SupplyId() );
+    
+        CopyCorresponding::CopyFrom( cdGenericProductPlannedFulfillment ).CopyTo( genericProductPlannedFulfillment ); 
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

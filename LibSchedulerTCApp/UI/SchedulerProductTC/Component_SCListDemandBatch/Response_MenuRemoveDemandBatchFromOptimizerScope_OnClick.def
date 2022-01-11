@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[DemandBatch] selection) id:Response_SCListDemandBatch_MenuRemoveDemandBatchFromOptimizerScope_OnClick
+{
+  #keys: '[137186.0.1670493367]'
+  Body:
+  [*
+    // Remove selected demand batches, demands & operations from optimizer scope
+    
+    // Remove selected demand batches
+    mandatorydemandbatches := DataHolderOptimizerMandatoryDemandBatches.Data();
+    optionaldemandbatches := DataHolderOptimizerOptionalDemandBatches.Data();
+    
+    DataHolderOptimizerMandatoryDemandBatches.Data( mandatorydemandbatches.Difference( selection ) );
+    DataHolderOptimizerOptionalDemandBatches.Data( optionaldemandbatches.Difference( selection ) );
+    
+    // Remove selected demands
+    mandatorydemands := DataHolderOptimizerMandatoryDemands.Data();
+    optionaldemands := DataHolderOptimizerOptionalDemands.Data();
+    
+    demands := selectset( selection, Elements.DemandInBatch.Demand, demand, true );
+    
+    DataHolderOptimizerMandatoryDemands.Data( mandatorydemands.Difference( demands ) );
+    DataHolderOptimizerOptionalDemands.Data( optionaldemands.Difference( demands ) );
+    
+    // Remove selected operations
+    mandatoryoperations := DataHolderOptimizerMandatoryOperations.Data();
+    optionaloperations := DataHolderOptimizerOptionalOperations.Data();
+    
+    operations := selectset( selection, Elements.BatchWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, operation, true );
+    
+    DataHolderOptimizerMandatoryOperations.Data( mandatoryoperations.Difference( operations ) );
+    DataHolderOptimizerOptionalOperations.Data( optionaloperations.Difference( operations ) );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /Responsedef_SCListDemandBatch_Menu_OnClick
+  Initiator: 'MenuRemoveDemandBatchFromOptimizerScope'
+}

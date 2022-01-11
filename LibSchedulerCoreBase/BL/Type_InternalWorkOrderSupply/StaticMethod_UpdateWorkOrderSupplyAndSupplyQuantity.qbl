@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod UpdateWorkOrderSupplyAndSupplyQuantity (InternalWorkOrderSupplys internalWorkOrderSupplies)
+{
+  Description: 'Update work order supply and supply quantity'
+  TextBody:
+  [*
+    traverse( internalWorkOrderSupplies, Elements, internalWorkOrderSupply )
+    {
+      workOrderQuantity := internalWorkOrderSupply.WorkOrderOperation().WorkOrder().Quantity();
+      internalWorkOrderSupply.Quantity( internalWorkOrderSupply.RoutingStepOutput().GetOutputQuantity( workOrderQuantity ) );
+      
+      traverse( internalWorkOrderSupply, ProductPlannedSupply, productPlannedSupply )
+      {
+        productPlannedSupply.Quantity( internalWorkOrderSupply.Quantity() );
+      }
+    }
+  *]
+}

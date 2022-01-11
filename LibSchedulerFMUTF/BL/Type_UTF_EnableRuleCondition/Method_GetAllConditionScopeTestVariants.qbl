@@ -1,0 +1,73 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllConditionScopeTestVariants (output Strings ruleSubtypes, output Strings conditionTypes, output Booleans conditionValues, 
+  output Strings conditionScopes, output Booleans operation1AttributeValues, output Booleans operation2AttributeValues, 
+  output Booleans hasNoViolateConstaintsOnTask1s, output Booleans hasNoViolateConstaintsOnTask2s) as owning Strings
+{
+  Description: 'Return resource specific variants.'
+  TextBody:
+  [*
+    variants := construct( Strings );
+    
+    allRuleSubtypes := construct( Strings );
+    allRuleSubtypes.Add( RuleConstant::RuleSubType_MinAbsoluteDifferenceUpwards() );
+    allRuleSubtypes.Add( RuleConstant::RuleSubType_NotAllowedJumpValue() );
+    allRuleSubtypes.Add( RuleConstant::RuleType_OverlappingRange() );
+    
+    allConditionTypes := construct( Strings );
+    allConditionTypes.Add( RuleConstant::Characteristic_OperationNeedsOil() );
+    allConditionTypes.Add( RuleConstant::Characteristic_OperationNeedsEdgeTrimming() );
+    
+    traverse( allRuleSubtypes, Elements, rb )
+    {
+      traverse( allConditionTypes, Elements, ct )
+      {
+        // Scenerio 1: Test condition scope First Task Only
+        variants.Add( 'Test condition scope "First Task Only" with "' + ct + '" using rule subtype " ' + rb + '"' );
+        ruleSubtypes.Add( rb );
+        conditionTypes.Add( ct );
+        conditionValues.Add( true );
+        conditionScopes.Add( RuleConstant::ConditionScope_FirstTaskOnly() );
+        operation1AttributeValues.Add( true );
+        operation2AttributeValues.Add( false );
+        hasNoViolateConstaintsOnTask1s.Add( true );
+        hasNoViolateConstaintsOnTask2s.Add( false );
+        
+        // Scenerio 2: Test condition scope Second Task Only
+        variants.Add( 'Test condition scope "Second Task Only" with "' + ct + '" using rule subtype " ' + rb + '"' );
+        ruleSubtypes.Add( rb );
+        conditionTypes.Add( ct );
+        conditionValues.Add( true );
+        conditionScopes.Add( RuleConstant::ConditionScope_SecondTaskOnly() );
+        operation1AttributeValues.Add( true );
+        operation2AttributeValues.Add( false );
+        hasNoViolateConstaintsOnTask1s.Add( true );
+        hasNoViolateConstaintsOnTask2s.Add( true );
+    
+        // Scenerio 3: Test condition scope Both Tasks
+        variants.Add( 'Test condition scope "Both Tasks" with "' + ct + '" using rule subtype " ' + rb + '"' );
+        ruleSubtypes.Add( rb );
+        conditionTypes.Add( ct );
+        conditionValues.Add( true );
+        conditionScopes.Add( RuleConstant::ConditionScope_BothTasks() );
+        operation1AttributeValues.Add( true );
+        operation2AttributeValues.Add( false );
+        hasNoViolateConstaintsOnTask1s.Add( true );
+        hasNoViolateConstaintsOnTask2s.Add( true );
+                
+        // Scenerio 4: Test condition scope Either Tasks
+        variants.Add( 'Test condition scope "Either Tasks" with "' + ct + '" using rule subtype " ' + rb + '"' );
+        ruleSubtypes.Add( rb );
+        conditionTypes.Add( ct );
+        conditionValues.Add( true );
+        conditionScopes.Add( RuleConstant::ConditionScope_EitherTask() );
+        operation1AttributeValues.Add( true );
+        operation2AttributeValues.Add( false );
+        hasNoViolateConstaintsOnTask1s.Add( true );
+        hasNoViolateConstaintsOnTask2s.Add( false );
+      }
+    }
+    
+    return &variants;
+  *]
+}

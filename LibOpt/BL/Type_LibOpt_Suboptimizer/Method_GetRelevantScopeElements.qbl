@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetRelevantScopeElements (LibOpt_ScopeElements scopeelements_all) as owning LibOpt_ScopeElements
+{
+  Description: 'Return the set of `LibOpt_ScopeElements` which are relevant for the `LibOpt_Suboptimizer`.'
+  TextBody:
+  [*
+    // Get `LibOpt_ScopeElements` that have been used in *input* `LibOpt_ScopeFat` for this `LibOpt_Suboptimizer`.
+    scopeelements_actual_suboptimizer := selectset( this, SnapshotComponent.InputScope.astype( LibOpt_ScopeFat ).ScopeElementOnScope.ScopeElement, se, true );
+    
+    // Get the *types* of `LibOpt_ScopeElements` that have been used in *input* `LibOpt_ScopeFat` for this `LibOpt_Suboptimizer`.
+    scopeelementtypes_suboptimizer := selectuniquevalues( scopeelements_actual_suboptimizer, Elements, se, true, se.DefinitionName() );
+    
+    // Get the set of `LibOpt_ScopeElements` *relevant* for this `LibOpt_Suboptimizer` by checking if the *type* of  a `LibOpt_ScopeElement` has appeared in the
+    // *input* `LibOpt_ScopeFat` of this `LibOpt_Suboptimizer` before.
+    return selectset( scopeelements_all, Elements, se, scopeelementtypes_suboptimizer.Find( se.DefinitionName() ) >= 0 );
+  *]
+}

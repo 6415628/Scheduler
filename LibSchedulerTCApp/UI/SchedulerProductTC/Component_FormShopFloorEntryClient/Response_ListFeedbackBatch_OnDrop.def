@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: ListFeedbackBatch
+Response OnDrop (structured[ExportedOperationBatchContent] information, ImportedFeedbackBatch target) id:Response_ListFeedbackBatch_OnDrop
+{
+  #keys: '[12910.0.608538296]'
+  Body:
+  [*
+    // Creates a new feedbackbatch or inserts elements into target feedbackbatch.
+    if( dropaction.IsControlShift() )
+    {
+      ImportedFeedbackBatch::Feedback( information );
+    }
+    else
+    {
+      target.InsertFeedbackBatchContent( information );
+    }
+  *]
+  DefinitionID: 'Responsedef_GUIComponent_OnDrop'
+  Precondition:
+  [*
+    value := dropaction.IsControlShift()
+             or target.CheckCanAddElement( feedback );
+    
+    if( not value )
+    {
+      feedback := feedback
+                  + String::NewLine()
+                  + Translations::SC_CreateNewFeedbackBatch();
+    }
+    return value;
+  *]
+}

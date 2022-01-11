@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddExpressionsAndEarliestStartForCumulativeValues (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs, Operation_SCs operations)
+{
+  TextBody:
+  [*
+    traverse( combilegs, Elements.CombiLegOnCombiPhase.PPCOnResource, ppconresource )
+    {
+      programsetconfig := ppconresource.ProgramPhaseConfiguration().ProgramTypeConfiguration().ProgramSetConfiguration();
+      traverse( ppconresource, RuleOnPPCOnResource.Rule, rule,
+                rule.RuleSubType().IsCumulativeValueNeeded() )
+      {
+        isminrule := rule.RuleSubType().IsMinimumCombinedLength();
+        characteristic := rule.CharacteristicMain();
+        isphaserule := rule.RuleScopeSelected() = RuleConstant::RuleScope_ProgramPhase();
+        isshutdownrule := rule.RuleScopeSelected() = RuleConstant::RuleScope_Shutdown();
+        // If we have not yet defined the expression and rules for this scope, then do so
+        // This is is necessary since we may have multiple rules that are applied to the same characteristic, etc 
+        // and we want to track them on a single expression
+        if( guard( isnull( poa.Expression( SuboptimizerPOACombiLeg::NamePOAExpression( characteristic, isminrule, programsetconfig, isphaserule, isshutdownrule ) ) ), true ) )
+        {
+          this.POAAddExpressionCharacteristic( poa, combilegs, operations, characteristic, isminrule, programsetconfig, isphaserule, isshutdownrule );
+          this.POAAddConstraintEarliestStartForConfigurableRules( poa, combilegs, operations, characteristic, isminrule, programsetconfig, isphaserule, isshutdownrule );
+          this.POAAddConstraintReset( poa, combilegs, operations, programsetconfig, rule);
+          this.POAAddConstraintEndPathRule( poa, combilegs, programsetconfig, rule, false );
+          this.POAAddConstraintEndRule( poa, combilegs, operations, programsetconfig, rule, false );
+        }
+      } 
+      
+      //for phase transition cumulative rule, we need to treat it as minimum rule too
+      traverse( ppconresource, RuleOnPPCOnResource.Rule, rule,
+                rule.RuleSubType().IsCumulativeValueNeeded() 
+                and rule.IsProgramPhaseTransitionRule()
+                and not rule.RuleSubType().IsMinimumCombinedLength() )
+      {
+        isminrule := true
+        characteristic := rule.CharacteristicMain();
+        isphaserule := rule.RuleScopeSelected() = RuleConstant::RuleScope_ProgramPhase();
+        isshutdownrule := rule.RuleScopeSelected() = RuleConstant::RuleScope_Shutdown();
+        // If we have not yet defined the expression and rules for this scope, then do so
+        // This is is necessary since we may have multiple rules that are applied to the same characteristic, etc 
+        // and we want to track them on a single expression
+        if( guard( isnull( poa.Expression( SuboptimizerPOACombiLeg::NamePOAExpression( characteristic, isminrule, programsetconfig, isphaserule, isshutdownrule ) ) ), true ) )
+        {
+          
+          this.POAAddExpressionCharacteristic( poa, combilegs, operations, characteristic, isminrule, programsetconfig, isphaserule, isshutdownrule );
+          this.POAAddConstraintEarliestStartForConfigurableRules( poa, combilegs, operations, characteristic, isminrule, programsetconfig, isphaserule, isshutdownrule );
+          this.POAAddConstraintEndPathRule( poa, combilegs, programsetconfig, rule,  true);
+        }
+      } 
+             
+    }
+  *]
+}

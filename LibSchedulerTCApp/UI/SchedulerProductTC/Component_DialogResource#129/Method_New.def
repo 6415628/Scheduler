@@ -1,0 +1,70 @@
+Quintiq file version 2.0
+#parent: #root
+Method New (internal[GUIComponent] parent_i, ResourceGroup_SC owner_i) as Resource_SC id:Method_DialogResource_New
+{
+  #keys: '[129856.0.25140137]'
+  Body:
+  [*
+    // James Kwapien 20160826 #7628 New Resource dialog, must determine single or batch resource
+    // We do this by taking ownership of shadow(Resource_SC) and creating a subclass relshadow binding
+    this.Title( Translations::SC_DialogResource_NewTitle() );
+    
+    resource := null( Resource_SC );
+    
+    // James Kwapien 20160830 #7644 Default value of CapacityResourceUtilization
+    EditorCapacityResourceUtilization.Text( [String]owner_i.Schedule().CapacityDefault() );
+    
+    this.InitializeNonBatchEdit();
+    
+    // Check which subclass we need to shadow
+    if( owner_i.HasBatches() )
+    {
+      data := owner_i.Resource_SC( relshadow, GenericBatchResource, ResourceID := EditorResourceID.Text() );
+      Dialog.Data( &data );
+    }
+    else
+    {   
+      if( owner_i.IsContinuous() )
+      {
+        data2 := owner_i.Resource_SC( relshadow, GenericContinuousResource, ResourceID := EditorResourceID.Text() );
+        Dialog.Data( &data2 );    
+      } 
+      else
+      {                 
+        data2 := owner_i.Resource_SC( relshadow, GenericSingleResource, ResourceID := EditorResourceID.Text() );
+    
+        Dialog.Data( &data2 );
+      }
+      // Disable MaximumBatchSize editor if SingleResourceBase
+      EditorMaxBatchSize.Enabled( false );
+      DialogResource.SetMaxBatchSizeTooltip();
+    }
+    
+    // Show owner in ResourceGroup 
+    SelectionResourceGroup.Data( owner_i );
+    SelectionResourceGroup.Enabled( false );
+    
+    TabPageContinuous.Enabled( owner_i.IsContinuous() );
+    
+    if( Dialog.DoModal( parent_i ) > 0 )
+    {
+      // Create lead time strategy
+      Dialog.Data().LeadTimeStrategy_SC( relnew,
+                                         ResourceID := EditorResourceID.Text(),
+                                         MinDistance := Duration::Zero(),
+                                         StrategyName := StringSelectionStrategy.Text() );
+      
+      // Update second lead time strategy (if strategy tool simulation is selected)
+      if( CheckBoxIsToolSimulationHasHorizon.Checked() )
+      {
+        DataHolderStrategyAfterToolSimulation.Data().ResourceID( EditorResourceID.Text() );
+      }
+                                          
+      Dialog.Data().Image( LabelImageString.Text() );
+      Dialog.Data().Commit();
+      resource := Dialog.Data().WrappedInstance();
+    }
+    
+    return resource;
+  *]
+}

@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsAllInternalWorkOrders (WorkOrders workOrders, String feedback) declarative remote as Boolean
+{
+  Description: 'Check if all selected work orders are internal work orders'
+  TextBody:
+  [*
+    feedbackObject := FeedbackObject::CurrentFeedback();
+    
+    value := forallexists( workOrders, Elements, workOrder, workOrder.istype( InternalWorkOrder ) );
+    
+    notInternalWorkOrderid := selectvalues( workOrders, Elements.astype( ExternalWorkOrder ), externalworkorder, true, externalworkorder.Id() );
+    
+    if( not feedbackObject.CheckHard( value ) )
+    {
+      feedbackObject.AddHard( Translations::WorkOrder_NotAllIsInternalWorkOrder( feedback, notInternalWorkOrderid.ToString( String::NewLine() ) ) );
+    }
+                                                                              
+    return value;
+  *]
+}

@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddDemands (Demands demands) as owning DemandInBatches
+{
+  Description: 'Adds demands to the batch.'
+  TextBody:
+  [*
+    demandinbatches := construct( DemandInBatches );
+    
+    traverse( demands, Elements, demand )
+    {
+      // Propagate to ensure GetSuggestedQuantity() returns the right quantity
+      Transaction::Transaction().Propagate( method( DemandBatch, GetSuggestedQuantity, Demand ))
+      quantity := this.GetSuggestedQuantity( demand );
+      if( quantity > 0.0 )
+      {
+        demandinbatch := this.GenericAddDemand( demand, quantity );
+        demandinbatches.Add( demandinbatch );
+      }    
+    }
+    
+    this.Synchronize();
+    
+    return &demandinbatches;
+  *]
+}

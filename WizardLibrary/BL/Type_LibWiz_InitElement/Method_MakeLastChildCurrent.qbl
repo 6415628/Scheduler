@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method MakeLastChildCurrent () as LibWiz_InitElement
+{
+  TextBody:
+  [*
+    lastEnabledChild := this.Last();
+    while( not isnull( lastEnabledChild ) and not lastEnabledChild.IsEnabled() )
+    {
+      lastEnabledChild := guard( lastEnabledChild.Previous(), null( LibWiz_InitElement ) );
+    }
+    
+    lastChild := null( LibWiz_InitElement );
+    if( not isnull( lastEnabledChild ) )
+    {
+      lastChild := lastEnabledChild.MakeLastChildCurrent();
+    }
+    else
+    {
+      if( not isnull( this.Previous() ) )
+      {
+        lastChild := this.Previous().MakeLastChildCurrent();
+      }
+      else
+      {
+        this.Owner().Current( relflush );
+      }
+    }
+    
+    return lastChild;
+  *]
+}

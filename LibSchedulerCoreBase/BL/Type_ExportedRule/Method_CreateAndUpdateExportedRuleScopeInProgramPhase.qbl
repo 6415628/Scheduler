@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateAndUpdateExportedRuleScopeInProgramPhase (Rule rule)
+{
+  Description: 'Create and update exported rule scope in program phase.'
+  TextBody:
+  [*
+    allinstances := selectset( this, ExportedRuleScopeInProgramPhase, exportedrsipp, true );
+    updatedinstances := construct( ExportedRuleScopeInProgramPhases );
+    
+    traverse( rule, RuleScopeInProgramPhase, ruleScopeInProgramPhase )
+    {
+      programPhaseConfig := ruleScopeInProgramPhase.ProgramPhaseConfiguration();
+      
+      exportedRuleScopeInProgramPhase := select( this, ExportedRuleScopeInProgramPhase, ersipp,
+                                                ersipp.RuleID() = rule.RuleID()
+                                                and ersipp.ProgramDefinitionConfigurationID() = programPhaseConfig.ProgramDefinitionConfigurationID()
+                                                and ersipp.ProgramSetConfigurationID() = programPhaseConfig.ProgramSetConfigurationID()
+                                                and ersipp.ProgramTypeConfigurationID() = programPhaseConfig.ProgramTypeConfigurationID()
+                                                and ersipp.ProgramPhaseConfigurationID() = programPhaseConfig.ProgramPhaseConfigurationID() );
+                        
+      if( isnull( exportedRuleScopeInProgramPhase ) )
+      {
+        exportedRuleScopeInProgramPhase := ExportedRuleScopeInProgramPhase::Create( this, ruleScopeInProgramPhase );
+      }
+      
+      updatedinstances.Add( exportedRuleScopeInProgramPhase );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, exportedRuleScopeInProgramPhase )
+    {
+      exportedRuleScopeInProgramPhase.Remove();
+    }
+  *]
+}

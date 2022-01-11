@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddDemandsAllowedHard (Demands demands, DemandBatchType demandbatchtype, Boolean skipbatchquantitycheck) declarative remote as Boolean
+{
+  Description: 'Checks if demands can be added to the batch by checking hard rules.'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    if( not skipbatchquantitycheck )
+    {
+      this.CheckCanFitDemands( demands );
+    }
+    
+    DemandBatch::CheckHasUnfulfilledDemand( demands );
+    DemandBatch::CheckDemandsBatchingCompatibility( demands );
+    this.CheckIsDemandBatchTypeValid( demandbatchtype );
+    this.CheckDemandHasSameStockingPointWithDemandBatch( demands );
+    this.CheckIsDemandAllowedInDemandBatchType( demands, demandbatchtype );
+    this.CheckIsNotStarted();
+    
+    return feedback.IsAllowed();
+  *]
+}

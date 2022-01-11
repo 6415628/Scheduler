@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintPrecedenceOperationMaterial (SuboptimizerMRSPOA_POAOneResourceGroup poa, LibOpt_Task task)
+{
+  Description: 'Add the constraint which allow an operation on a resource or not. Only hard violation are considered, this is the case for instance with the input/output storage tank.'
+  TextBody:
+  [*
+    dependency := poa.NewDependency( SuboptimizerMRSPOA::NamePOADepedencyMaterial() );
+    
+    // For all operations that are in scope
+    traverse( task.Scope().Operations(), Elements, operation )
+    {
+      node := poa.Node( SuboptimizerMRSPOA::POANameNodeOperation( operation ), operation );
+      
+      // Keep track of which operations are visited to 
+      visitedoperations := construct( Operation_SCs );
+      visitedoperations.Add( operation );
+      
+      // if the operation has an output operation material
+      if( operation.ToOperationDependency( relsize ) > 0 )
+      {
+        // Set the precedence relation to all operations that use this output as an input
+        // and that are in scope of the current run
+        this.POAAddPrecedenceOMTerms( poa, task, dependency, node, operation, visitedoperations );
+      }
+    }
+    
+    dependencyconstr := poa.NewDependencyConstraint( SuboptimizerMRSPOA::NamePOADepedencyMaterialConstraint() );
+    dependencyconstr.Dependency( dependency );
+    dependencyconstr.Expression( poa.Expression( SuboptimizerMRSPOA::NamePOATimeExpression() ) );
+    // node 1 has to end before node 2 can start with its transition
+    dependencyconstr.MatchKind( 'ET' );
+  *]
+}

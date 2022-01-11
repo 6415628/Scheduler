@@ -1,0 +1,14 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckCanChangeQuantitySoft (InternalWorkOrder existingWorkOrder, Routing routing, Product_SC product, 
+  Real quantity, output String feedback_o) const declarative remote as Boolean
+{
+  Description: 'Checks if the input internal work order can change its input quantity.'
+  TextBody:
+  [*
+    checkQuantitySoft := guard( routing.CheckQuantitySoft( product.IsDiscrete(), [String]quantity, false, feedback_o ), false );
+    
+    return guard( ( existingWorkOrder.CheckSameQuantity( quantity ) or existingWorkOrder.CheckUsedInSchedule( feedback_o ) ) and checkQuantitySoft,
+                  checkQuantitySoft );
+  *]
+}

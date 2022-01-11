@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_015_ErrorOperationInOneTransaction (LibOpt_TestDataset dataset)
+{
+  Description: 'Test Snapshot created by single Error component. Error is thrown in the Operation method'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    start := opt.ComponentError( run, 'Error', LibOpt_ComponentErrorPosition::Operation() );
+    
+    run.SetStartComponent( start );
+    
+    run.ConfigureForOneTransaction();
+    
+    execute := run->Start();
+    
+    // We expect an error to be thrown. Check that the right error is thrown.
+    this.NoException( execute->Exception()->GroupAll()->( es )
+    {
+      if( this.Run().AssertEqual( 1, es.Size(), 'Nr of exceptions' ) )
+      {
+        this.Run().AssertEqual( Translations::LibOpt_Optimization_OneTransactionException(), es.First().Message(), 'Incorrect error' )
+        this.Run().AssertEqual( Transaction::RollbackErrorNr(), es.First().ErrorNumber(), 'Incorrect error code' )
+      }
+    } );
+    this.NoException( execute->IgnoreException()->|void->()
+    {
+      // Get the run back
+      run := opt.RecoverLastFailedRun();
+      Transaction::Transaction().Propagate();
+      
+      this.Run().AssertEqual( LibOpt_RunStatus::Failed(), run.Status(), 'Failed status' );
+      this.Run().AssertEqual( 2, run.Snapshot( relsize ) );
+      snapshot := select( run, Snapshot.astype( LibOpt_SnapshotComponent ), c, true );
+      this.Run().AssertFalse( isnull( snapshot ), 'No snapshot is found' );
+      if( not isnull( snapshot ) )
+      {
+        this.Run().AssertEqual( 1, snapshot.Children( relsize ), 'Not enough children' );
+        child := select( snapshot, Children, child, true );
+        this.Run().AssertTrue( child.istype( LibOpt_SnapshotError ), 'Child snapshot is not of type SnapshotError' );
+      }
+      
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

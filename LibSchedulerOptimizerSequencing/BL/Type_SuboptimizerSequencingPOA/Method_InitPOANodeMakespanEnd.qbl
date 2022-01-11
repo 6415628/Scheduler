@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOANodeMakespanEnd (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata)
+{
+  Description:
+  [*
+    Adds the dummy node to the POA that represents the end of the makespan.
+    Also adds dummy nodes per resource that represent the end of a resource.
+  *]
+  TextBody:
+  [*
+    node := poa.AddNode( this, null( SetupAddress ) ); // we don't need a setup address with this special node
+    if( this.Run().DebugScope() )
+    {
+      node.CacheId( "makespan end" );
+    }
+    schedule := this.GetSchedule();
+    unplannedcost := schedule.OptimizerStrategyInSchedule().MRS_KPIWeightUnplanned();
+    node.UnplannedCost( unplannedcost );
+    node.IsFrozen( true ); // it will be planned on its own special dummy path
+    
+    traverse( transientdata.GetPOAPathTypeResources(), Elements, resource, true )
+    {
+      resources_in_pathtype := null( ResourceInSuboptimizerSequencings );
+      if( resource.ResourceGroup().IsExchangable() )
+      {
+        // this path type represents multiple resources:
+        resources_in_pathtype := selectset( resource.ResourceGroup(), Resource, r, true );
+      }
+      else
+      {
+        // this path type represents a single resource:
+        resources_in_pathtype := construct( ResourceInSuboptimizerSequencings );
+        resources_in_pathtype.Add( resource );
+      }
+      
+      traverse( resources_in_pathtype, Elements, res, true )
+      {
+        node := poa.AddNode( res, null( SetupAddress ) );
+        if( this.Run().DebugScope() )
+        {
+          node.CacheId( res.Resource().Name() + " makespan end" );
+        }
+        node.UnplannedCost( unplannedcost );
+        
+        // Fix the node since it is not allowed to be moved to a different path
+        node.IsFixed( true );
+      }
+    }
+  *]
+}

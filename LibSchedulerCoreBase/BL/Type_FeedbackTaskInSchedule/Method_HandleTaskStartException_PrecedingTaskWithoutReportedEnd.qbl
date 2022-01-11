@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleTaskStartException_PrecedingTaskWithoutReportedEnd (DateTime start, Resource_SC resource, String remark, 
+  String scheduledprevopid)
+{
+  Description: 'check the exception with TaskStart feedback received on task t while a preceding task has started but not yet ended.'
+  TextBody:
+  [*
+    // jiex Sep-1-2016 (created)
+    // Check exception for TaskStart feedback received on task t while a preceding task has started but not yet ended
+    
+    if( not isnull( resource ) and not resource.IsContinuous() )
+    {  
+      preceding_task := minselect( resource, FeedbackTaskInSchedule, ft, 
+                                   ft.ReportedStart().IsFinite() 
+                                   and ft.ReportedEnd().IsInfinite() 
+                                   and ft <> this 
+                                   and ft.ReportedStart() <= start,
+                                   ft.ReportedStart() );
+                                       
+      
+      if( not isnull( preceding_task ) )
+      {
+        preceding_task.Exception_IsMissingTaskEndFeedback( true );
+        preceding_task.Exception_SuccessorTaskID( this.OperationID() );
+        preceding_task.ReportedEnd( start );
+            
+        this.UpdateFeedbackStart( start, resource.ResourceID(), Constants::StatusStart(), remark, '', '', scheduledprevopid );    
+      }
+    }
+  *]
+}

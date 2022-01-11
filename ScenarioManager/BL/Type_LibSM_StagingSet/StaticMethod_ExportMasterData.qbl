@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ExportMasterData (LibSM_ScenarioManager scenarioManager) as stream[BinaryValue]
+{
+  TextBody:
+  [*
+    // Create temp dataset
+    options := DatasetCreateOptions::Construct( 'LibSM_StagingSet' )
+                                                .State( DatasetState::Temporary() );
+     
+    ds := MDSLibSM_StagingSet::Create( options );
+    
+    // Export scenario manager master data to staging data 
+    // and create an Excel file (as binary value) out of it.
+    output := ds->ExportAll( scenarioManager )
+                ->ExportDataToXLS();
+    
+    scenarioManager->SetExportedMasterDataValue( output );
+    
+    // Return stuff.
+    return output;
+  *]
+}

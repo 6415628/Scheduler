@@ -1,0 +1,69 @@
+Quintiq file version 2.0
+#parent: #root
+Method TaskEnd (Operation_SC operation, String resource_id, DateTime start, 
+  DateTime processStart, DateTime end, String remark)
+{
+  Description: 'Feedback API: handle feedbacktask with feedback type end'
+  TextBody:
+  [*
+    // Get the existing feedback task in schedule 
+    fbtaskinschedule := FeedbackTaskInSchedule::FindFeedbackTaskInSchedule( operation.WorkOrderId(),
+                                                                            operation.PlanUnitId(),
+                                                                            operation.WorkOrderSequenceNr() );
+    
+    isfirstfeedback := false;
+    isfirstreportedendfeedback := false;
+    
+    // Workaround to not have constraints fired about having an earlier reported start that's different from the current, it shouldn't be affected by ABORT feedback
+    if( guard( fbtaskinschedule.HasReportedAborted(), false ) )
+    {
+      fbtaskinschedule.Delete();
+    }
+    
+    // FeedbackTask for operation does not yet exists or it does not have reported end time. 
+    if( isnull( fbtaskinschedule ) or fbtaskinschedule.ReportedEnd().IsInfinite() )
+    {    
+      isfirstreportedendfeedback := true;
+      
+      // FeedbackTask for operation does not yet exist. So create one
+      if( isnull( fbtaskinschedule ) )
+      {
+        fbtaskinschedule := FeedbackTaskInSchedule::Create( this, operation );
+      
+        // Update based on task attributes
+        fbtaskinschedule.UpdateFeedbackTaskExportedAttributes( operation.Task_SC(), operation, resource_id );
+        
+        isfirstfeedback := true;
+      }    
+    }      
+    
+    // Update reported start time
+    fbtaskinschedule.UpdateFeedbackReportedStart( start );
+    
+    // Update reported process start time
+    fbtaskinschedule.UpdateFeedbackReportedProcessStart( processStart );
+    
+    // Handle exceptions
+    FeedbackTaskInSchedule::HandleTaskEndExceptions( operation,
+                                                     fbtaskinschedule, 
+                                                     isfirstfeedback,
+                                                     isfirstreportedendfeedback,
+                                                     resource_id, 
+                                                     end, 
+                                                     remark, 
+                                                     guard( operation.ExportedSingleTask().ScheduledPrevOperationID(), '' ));
+    
+    // Propagate as resource is now declarative and is required to fix sequence planning
+    Transaction::Transaction().Propagate( relation( FeedbackTaskInSchedule, ResponsibleResource ) );
+    
+    this.HandleFeedbackTaskInSchedule( operation, fbtaskinschedule );
+    
+    // Update reported end time
+    fbtaskinschedule.UpdateFeedbackEnd( end, resource_id, Constants::StatusEnd(), remark, '', '', guard( operation.ExportedSingleTask().ScheduledPrevOperationID(), '' ) );
+    
+    // Reset and update statuses with remarks, we call it AFTER Exception handling logic because the logic might change the reported status
+    operation.UpdateFeedbackStatus( fbtaskinschedule.Status(), '', '' );
+    
+    this.CleanUpFeedbackedTask( operation );
+  *]
+}

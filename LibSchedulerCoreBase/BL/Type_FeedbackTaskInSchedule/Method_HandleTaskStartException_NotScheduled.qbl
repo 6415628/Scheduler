@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleTaskStartException_NotScheduled (Operation_SC operation, DateTime start, Resource_SC resource, 
+  String remark, String scheduledprevopid)
+{
+  Description: 'Exception check for TaskStart feedback reported for task that was not scheduled'
+  TextBody:
+  [*
+    // jiex Sep-1-2016 (created)
+    
+    if( not isnull( resource ) and isnull( operation.Task_SC() ) and not operation.HasFeedback() )
+    {
+      this.Exception_TaskNotScheduled( true );
+    
+      this.UpdateFeedbackStart( start, resource.ResourceID(), Constants::StatusStart(), remark, '', '', scheduledprevopid ); 
+      
+      selected_oor := select( operation, OperationOnResource, oor, oor.Resource_SC() = resource );
+      this.ExportedProcessDuration( selected_oor.ProcessDuration() );
+      this.EstimatedEndImported( DateTime::MinDateTime() );
+    }
+  *]
+}

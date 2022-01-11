@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenerateDatasets (Boolean isExport_i) as stream[Boolean]
+{
+  Description: 'Helper method to traverse through dataset types and generate dataset instances for them'
+  TextBody:
+  [*
+    // tgn3 Apr-12-2021 (created)
+    trackStream := stream[Void]::Success();
+    // Helper method to generate datasets based on selected flow
+    if( isExport_i )
+    {
+      // Export case - generate from existing datasets
+      traverse( this, DatasetType, datasetType )
+      {
+        trackStream := trackStream->After( trackStream )->After( datasetType.GenerateDatasets() );
+      }
+    }
+    else
+    {  
+      // Upgrade case - generate from sqlite files
+      traverse( this, DatasetType, datasetType )
+      {
+        datasetType.GenerateDatasetsFromUpgradePath();
+      }
+      
+      // Initialize version path instances
+      this->InitializeVersionPath()
+      ->|this->PopulateVersionPath();
+      
+      // Converter versions for upgrade should be generated at the "Prepare" flow
+      // In case of context switches between Export/Upgrade
+    }
+    
+    // Wait for all datasets to have their "VersionInfo" calculated
+    // DevNote: The operation is relatively quick, so only a short wait is required
+    // There are use cases where up to 100 datasets can exist, so not too short
+    datasetCount := counter( this, DatasetType.Dataset, dataset, true );
+    timeout      := Duration::Millis( 10 * datasetCount ); 
+    isComplete   := this.WaitForDatasetVersionInfo( timeout, 5 );
+    
+    return isComplete->After( trackStream->GroupAll() );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

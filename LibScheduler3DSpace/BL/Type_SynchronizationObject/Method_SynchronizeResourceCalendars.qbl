@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeResourceCalendars
+{
+  Description: 'Synchronize resource calendars based on 3DSpace data.'
+  TextBody:
+  [*
+    // Resource calendars are created when resources are created
+    // Which must be called before this logic
+    traverse( this, Schedule.ResourceGroup_SC.Resource_SC.ResourceCalendar, resouceCalendar )
+    {
+      resouceCalendar.SubscribeToDefaultEvents();
+      resouceCalendar.SynchronizeShiftPatternAssignments();
+      
+      // Subscribe to always available event if calendar has no shift pattern assignment
+      // In the case where we went from no shift pattern assignment to having shift pattern assignment
+      // The subscription to always available event will be removed in SynchronizeShiftPatternAssignments because it isn't a default event
+      importedResource := ImportedResource_SC::FindImportedResourceTypeIndex( resouceCalendar.Resource_SC().ResourceID() );
+      
+      if( guard( importedResource.ImportedShiftPatternAssignment( relsize ) = 0, true ) )
+      {
+        resouceCalendar.SubscribeToAlwaysAvailableEvent();
+      }
+    }
+  *]
+}

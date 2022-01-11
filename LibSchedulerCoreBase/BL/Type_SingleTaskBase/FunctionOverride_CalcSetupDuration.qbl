@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcSetupDuration
+{
+  Description: 'Calculates setup duration based on previous task operation and current task operation.'
+  TextBody:
+  [*
+    // setup is calculated on resource. This is required for optimization.
+    previousoperation := null( Operation_SC );
+    setupduration := Duration::Zero();
+    
+    // Saravanen 20130613 FSPL for keep task upon feedback
+    
+    if( not this.HasReportedStart() )
+    {
+      if( not isnull( this.Previous() ) )
+      {
+        previousoperation := this.Previous().GetOperation();
+      }
+      // She Ven 20130121 #4717 get last feedback task
+      else
+      {
+        lastfeedbacktask := guard( this.Resource_SC().LastFeedbackTaskInResource().astype( FeedbackTaskInSchedule ),
+                                   null( FeedbackTaskInSchedule ) );
+    
+        if( not isnull( lastfeedbacktask ) )
+        {
+          previousoperation := guard( lastfeedbacktask.OperationTaskFeedback().Operation_SC(), null( Operation_SC ) );
+        }
+      }
+    
+      setupduration := this.SingleResourceBase().GetSetupDuration( previousoperation, this.GetOperation() );  
+    }
+    
+    this.SetupDuration( setupduration )
+  *]
+}

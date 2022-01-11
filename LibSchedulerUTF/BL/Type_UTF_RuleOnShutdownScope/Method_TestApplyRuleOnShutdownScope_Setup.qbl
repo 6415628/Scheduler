@@ -1,0 +1,121 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestApplyRuleOnShutdownScope_Setup (Schedule schedule)
+{
+  Description: 'Test apply rule on shutdown scope - setup'
+  TextBody:
+  [*
+    // Get variant attribute
+    isPlanOnShutdownScope := false;
+    hasConstraintViolation := false;
+    
+    this.GetTestVariant( isPlanOnShutdownScope,
+                         hasConstraintViolation );
+    
+    // Create rule
+    rule := Rule::Create( schedule, 1 );
+    
+    // Create rule type
+    ruleType := UTFMockObjectFactory::CreateRuleType( schedule,
+                                                      RuleConstant::RuleType_AllowedValueStringsCheck() );
+    rule.RuleType( relset, ruleType );
+    
+    // Create rule subtype - Allowed values string check
+    ruleSubtype := UTFMockObjectFactory::CreateRuleSubtypeAllowedValueStrings( ruleType, 
+                                                                               RuleConstant::RuleSubType_AllowedValue(),
+                                                                               true );
+    
+    
+    rule.RuleSubType( relset, ruleSubtype );
+    
+    // Create characteristic main - Product Type
+    characteristicMain := UTFMockObjectFactory::CreateCharacteristic( schedule,
+                                                                      RuleConstant::Characteristic_ProductType(),
+                                                                      false, 
+                                                                      true, 
+                                                                      false, 
+                                                                      RuleConstant::ValueType_String(), 
+                                                                      true, 
+                                                                      false );
+    
+    rule.CharacteristicMain( relset, characteristicMain );
+    
+    // Create characteristic scope - Number of task
+    characteristicScope := UTFMockObjectFactory::CreateCharacteristic( schedule,
+                                                                       RuleConstant::Characteristic_NumberOfTasks(),
+                                                                       true, 
+                                                                       false, 
+                                                                       false, 
+                                                                       RuleConstant::ValueType_Number(), 
+                                                                       true, 
+                                                                       false );
+    
+    characteristicScope.IsAggregate( true );
+    rule.CharacteristicScope( relset, characteristicScope );
+    
+    // Set normal attribute in rule
+    rule.IsEnabled( true );
+    rule.IsMultipleRangesEnabled( false );
+    rule.RuleValue( 0.0 )
+    rule.RuleScopeSelected( RuleConstant::RuleScope_Shutdown() );
+    rule.IsBeforeShutdown( true );
+    rule.RuleScopeShutdownAggregateThreshold( 2 );
+    rule.NeedManualPreconditionCheck( true );
+    
+    // Create rule value strings
+    rule.RuleValueStrings( relnew, Value := 'ProductType' );
+    
+    // Create resource and apply rule scope to rule.
+    resourceWithRule := UTFMockObjectFactory::CreateSingleResource( schedule,
+                                                                    'ResourceWithRule' );
+    
+    // Create shutdown type
+    shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, 'ShutdownTypeID' );
+    shutdownType.DefaultDuration( Duration::Hours( 1 ) );
+    // shutdownType.IsSequenceRulesEnabled( true );
+    rsist := rule.RuleScopeInShutdownType( relnew );
+    rsist.ShutdownType( relset, shutdownType );
+    
+    UTFMockObjectFactory::CreateShutdownTypeInResource( shutdownType, resourceWithRule );
+    
+    // Create operation 1
+    order1 := UTFMockObjectFactory::CreateOrder( schedule, 'Order1' );
+    planUnit1 := UTFMockObjectFactory::CreatePlanUnit( order1, 'PlanUnit1', 1.0 );
+    operation1 := UTFMockObjectFactory::CreateOperation( planUnit1 );
+    operation1.OperationID( 'Operation1' );
+    product1 := schedule.Product_SC( relnew, GenericProduct, Id := 'Product1', Type := 'ProductType' );
+    order1.Product_SC( relset, product1 );
+    
+    // Create operation 2
+    order2 := UTFMockObjectFactory::CreateOrder( schedule, 'Order2' );
+    planUnit2 := UTFMockObjectFactory::CreatePlanUnit( order2, 'PlanUnit2', 1.0 );
+    operation2 := UTFMockObjectFactory::CreateOperation( planUnit2 );
+    operation2.OperationID( 'Operation2' );
+    product2 := schedule.Product_SC( relnew, GenericProduct, Id := 'Product2', Type := 'ProductType' );
+    order2.Product_SC( relset, product2 );
+    
+    // Create operation 3 - with different product type
+    order3 := UTFMockObjectFactory::CreateOrder( schedule, 'Order3' );
+    planUnit3 := UTFMockObjectFactory::CreatePlanUnit( order3, 'PlanUnit3', 1.0 );
+    operation3 := UTFMockObjectFactory::CreateOperation( planUnit3 );
+    operation3.OperationID( 'Operation3' );
+    product3 := schedule.Product_SC( relnew, GenericProduct, Id := 'Product3', Type := 'DifferentProductType' );
+    order3.Product_SC( relset, product3 );
+    
+    // Plan both operation
+    task1 := resourceWithRule.PlanLast( operation1 );
+    resourceWithRule.PlanLast( operation2 );
+    
+    // Create shutdown
+    resourceWithRule.InsertShutdown( task1, shutdownType, Duration::Zero(), false, false, DateTime::MinDateTime(), Duration::Zero() );
+    
+    if( isPlanOnShutdownScope )
+    {
+      resourceWithRule.PlanAfter( operation3, task1 );
+    }
+    else
+    {
+      resourceWithRule.PlanLast( operation3 );
+    }
+  *]
+}

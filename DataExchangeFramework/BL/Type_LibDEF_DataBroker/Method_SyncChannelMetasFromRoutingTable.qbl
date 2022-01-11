@@ -1,0 +1,63 @@
+Quintiq file version 2.0
+#parent: #root
+Method SyncChannelMetasFromRoutingTable (NamedValueTree nvt_i, NamedValue body_i, LibDEF_Systems syncSystems_i, 
+  String newSystemGUID_i, LibDEF_IntegrationEvent event_i)
+{
+  Description:
+  [*
+    Synchronize ChannelMetas from routing table, create or update ChannelMeta records, for the relevant Systems.
+    If there is a new-SystemGUID input, the look-up will refer to it.
+  *]
+  TextBody:
+  [*
+    // Jacky CHAN Apr-22-2016 (created)
+    // 1. Initialization: mark SoftDeleted
+    traverse( syncSystems_i, Elements.ChannelMeta, channelMeta )
+    {
+      channelMeta.IsSoftDeleted( true );
+    }
+    
+    // 2. Synchronization
+    traverse( body_i.Children(), Elements, channelMeta,
+              channelMeta.Name() = typeof( LibDEF_ChannelMeta ).Name() )
+    {
+      syncChannel := NamedValueTreeIO::ImportObject( nvt_i, channelMeta, typeof( LibDEF_ChannelMeta ) ).astype( LibDEF_ChannelMeta );
+      systemGUID  := ifexpr( newSystemGUID_i.Length() > 0, newSystemGUID_i, syncChannel.SystemGUID() );
+      channelName := syncChannel.Name();
+    
+      matchedChannel := LibDEF_ChannelMeta::FindChannelMeta( this, systemGUID, channelName );
+      // create if not found
+      if( isnull( matchedChannel ) )
+      {
+        ownerSystem := LibDEF_System::FindSystemByGUID( this, systemGUID );
+        if( not isnull( ownerSystem ) )
+        {
+          matchedChannel := LibDEF_ChannelMeta::Create( ownerSystem, channelName );
+        }
+        else
+        {
+          LibDEF_Util::EventLogError( event_i,
+                                      "Failed to synchronize ChannelMetas from Routing Table",
+                                      "ChannelMeta of [SystemGUID: " + systemGUID + ", ChannelName: " + channelName + "] cannot by synchronized, due to missing owner System." );
+        }
+      }
+      else
+      {
+        matchedChannel.IsSoftDeleted( false );
+      }
+    
+      // DO NOT update for local system
+      if( matchedChannel.SystemGUID() <> this.SystemLocal().GUID() )
+      {
+        matchedChannel.UpdateVersion( syncChannel.MajorVersion(), syncChannel.MinorVersion() );
+      }
+    }
+    
+    // 3. Finalization: clean-up leftovers
+    traverse( syncSystems_i, Elements.ChannelMeta, channelMeta,
+              channelMeta.IsSoftDeleted() )
+    {
+      channelMeta.Delete();
+    }
+  *]
+}

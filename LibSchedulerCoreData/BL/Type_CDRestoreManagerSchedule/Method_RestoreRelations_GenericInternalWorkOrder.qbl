@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericInternalWorkOrder (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic internal work order core data relations to planning object'
+  TextBody:
+  [*
+    // Restore internal work order core data relations
+    traverse( cdSchedule, CDEntity.astype( CDGenericInternalWorkOrder ), cdGenericInternalWorkOrder )
+    {
+      genericInternalWorkOrder := InternalWorkOrder::FindInternalWorkOrder( cdGenericInternalWorkOrder.Id() );
+      
+      if( not isnull( genericInternalWorkOrder ) )
+      {  
+        // ImportedInternalWorkorder, 1-1 and ImportedWorkOrder, 1-1
+        importedInternalWorkOrder := ImportedInternalWorkOrder::FindImportedInternalWorkOrder( cdGenericInternalWorkOrder.Id() );  
+        genericInternalWorkOrder.ImportedWorkOrder( relset, importedInternalWorkOrder );  
+        genericInternalWorkOrder.ImportedInternalWorkOrder( relset, importedInternalWorkOrder );
+        
+        // Order, 1-1
+        genericInternalWorkOrder.Order_SC( relset, Order_SC::FindOrder_SC( cdGenericInternalWorkOrder.Id() ) );
+        
+        // Routing, M-1
+        routing := Routing::FindRouting( cdGenericInternalWorkOrder.RoutingID() );
+        genericInternalWorkOrder.Routing( relset, routing );
+        
+        // Restore internal work order operations that belongs to this internal work order
+        this.RestoreRelations_GenericInternalWorkOrderOperation( cdSchedule, genericInternalWorkOrder );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

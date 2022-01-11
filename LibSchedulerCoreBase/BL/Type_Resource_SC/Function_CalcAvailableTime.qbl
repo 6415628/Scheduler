@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcAvailableTime
+{
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // FOR DEMO
+    // Value for KPI calculation. To redefine project specific KPI. this implementation has risk of performance issue.
+    // She Ven 20120919 #4327 Calculate within scheduling horizon
+    // She Ven Copy from Paper Bag model
+    
+    value := Duration::Zero();
+    
+    // Christ 20141121 # : Quantus KPI - Resources capacity utilization
+    //start := min( this, Task_SC, task, task.IsStartInSchedulingHorizon(), task.Start() );
+    start := this.ResourceGroup_SC().Schedule().Time();
+    end := max( this, Task_SC, task, task.IsStartInSchedulingHorizon(), task.End() );
+    
+    if( start.IsFinite() and end.IsFinite() )
+    {
+      value := end - start;
+    }
+    
+    // Available time exclude shutdown duration
+    value := maxvalue( value - this.TotalShutdownDuration(), Duration::Zero() );
+    
+    this.AvailableTime( value );
+  *]
+}

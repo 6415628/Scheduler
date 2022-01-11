@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcCostCumulativeRuleViolation
+{
+  TextBody:
+  [*
+    // yifei Aug-3-2021 (created)
+    value := 0.0;
+    //Yifei TODO, add phase cumulative max rules
+    traverse( this, OperationInCombiProgramSet, oicps, not isnull( oicps.CombiProgramType() ) )
+    {
+      previousoperation := guard( oicps.GetPreviousOperationInCombiProgramType().Operation_SC(), null( Operation_SC ) )
+      programtyperules := oicps.GetCumulativeRulesForProgramType( oicps.CombiProgramType().ProgramTypeConfiguration(), previousoperation  );
+      traverse( programtyperules, Elements, rule, not rule.IsHardConstraintForOptimizer() )
+      { 
+        doruleprogram := oicps.GetRuleDataObjectForConstraintPrecondition( rule.CharacteristicMain(), false, 0.0 );
+        value := value
+                 + rule.RuleSubType().GetPenaltyForPreferenceRuleViolation( rule, 
+                                                                            previousoperation, 
+                                                                            this.Operation_SC(), 
+                                                                            doruleprogram );
+      }                                                                      
+    }
+    
+    this.CostCumulativeRuleViolation( value );
+  *]
+}

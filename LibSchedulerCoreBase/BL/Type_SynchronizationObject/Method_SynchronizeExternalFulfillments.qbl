@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExternalFulfillments (Demands demands, Supplys supplies, ImportedFixedFulfillment reservation, 
+  output Fulfillments updatedfulfillments)
+{
+  Description: 'Synchronize characteristic and product based external reservation from different input methods.'
+  TextBody:
+  [*
+    importedQty := reservation.Quantity();
+    
+    traverse( demands, Elements, demand, importedQty > 0 )
+    {
+      demandqty := demand.GetQuantityOpenForFixedFulfillment(); // This quantity open ignores planned fulfillment quantities
+    
+      traverse( supplies, Elements, supply, demandqty > 0 and importedQty > 0 and supply.GetQuantityOpenForFixedFulfillment() > 0 ) // This quantity open ignores planned fulfillment quantities
+      {
+        fulfillment := select( demand, Fulfillment, fulfillment, fulfillment.IsFixedReservation(), fulfillment.Supply() = supply );
+        
+        if( isnull( fulfillment ) )
+        {
+          fulfillment := demand.CreateExternalFulfillment( supply );
+        }
+        
+        demandqty := demandqty + fulfillment.QuantityDecision();
+        supplyqty := supply.GetQuantityOpenForFixedFulfillment() + fulfillment.QuantityDecision();
+        
+        qty := minvalue( importedQty, demandqty, supplyqty );
+    
+        fulfillment.UpdateQuantity( qty );
+        fulfillment.ImportedFixedFulfillment( relset, reservation );
+    
+        updatedfulfillments.Add( fulfillment );
+        
+        // handle post fixed reservation synchronization to adjust user planed reservation quantity between the same demand and supply
+        demand.HandlePostSynchronizationPlannedFulfillments( supply, qty );
+        
+        importedQty := importedQty - qty; // Update importedQty for next traverse so we do not overfulfill
+        demandqty := demandqty - qty; // Update demandqty for next traverse so we don't accidentally create unnecessary fulfillments
+      }
+    }
+  *]
+}

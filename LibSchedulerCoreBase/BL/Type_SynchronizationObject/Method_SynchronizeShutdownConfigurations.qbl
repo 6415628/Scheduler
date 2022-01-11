@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeShutdownConfigurations
+{
+  Description: 'Synchronize shutdown configurations.'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    allShutdownTypes := selectset( schedule, ShutdownType, st, true );
+    updatedShutdownTypes := construct( ShutdownTypes );
+    
+    // Propagate declarative attribute because it is used in traverse
+    Transaction::Transaction().Propagate( attribute(  ImportedShutdownType, IsValidDataHard ) );
+    
+    traverse( schedule, ImportedShutdownType, importedShutdownType, importedShutdownType.IsValidDataHard() )
+    {
+      shutdownType := ShutdownType::FindShutdownType( importedShutdownType.ShutdownTypeID() );
+      
+      if( isnull( shutdownType ) )
+      {
+        shutdownType := ShutdownType::Create( schedule, importedShutdownType.ShutdownTypeID() );
+      }
+      
+      shutdownType.Update( importedShutdownType );
+      shutdownType.SynchronizeShutdownTypeInResource( importedShutdownType );
+      
+      updatedShutdownTypes.Add( shutdownType );
+    }
+    
+    // Remove old instances of shutdown type
+    oldShutdownTypes := allShutdownTypes.Difference( updatedShutdownTypes );
+    
+    traverse( oldShutdownTypes, Elements, oldShutdownType )
+    {
+      oldShutdownType.Remove();
+    }
+    
+    // Update stoppage subtask type in resource groups
+    ResourceGroup_SC::UpdateStoppageSubTaskTypeInResourceGroup( schedule );
+  *]
+}

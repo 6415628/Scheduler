@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: lstScenario
+Response OnClick (structured[LibSM_ScenarioNode] selection) id:Response_lstScenario_MenuScenarioDelete_OnClick
+{
+  #keys: '[107496.2.1625550751]'
+  Body:
+  [*
+    // Delete selected scenario nodes
+    
+    key              := LibSM_GlobalState.GetSelectedPlanningDatasetKey();
+    scenarioManager  := LibSM_GlobalState.GetScenarioManagerDataset();
+    recycleBinFolder := scenarioManager.RecycleBinFolder();
+    
+    if( not isnull( recycleBinFolder ) )
+    {
+      if( exists( selection, Elements, e, e.IsDeleted() ) )
+      {
+        message := Form.DetermineConfirmationMessageForPermanentDelete( selection );
+          
+        if( MessageBox::Question( this, message, Translations::LibSM_Question_YesNo() ) = 0 )
+        {
+          LibSM_ScenarioNode::Delete( selection, scenarioManager.RecycleBinFolder() );      
+          Application.RemoveHistory();
+        }
+      }
+      else
+      {
+        LibSM_ScenarioNode::Delete( selection, scenarioManager.RecycleBinFolder() )
+        LibSM_GlobalState.AutoExpandSelection( this, selection );
+        if ( exists( selection, Elements.astype( LibSM_Scenario ).Dataset, ds, ds.DatasetMDSID() = key ) )
+        {
+          // One of the selected scenarios (for deletion) is actually the active scenario, hence
+          // we should unselect the active scenario.
+          LibSM_GlobalState.DeselectScenario( Form, key );
+        }
+    
+        Application.RemoveHistory();
+      }
+    }
+  *]
+  DefinitionID => /lstScenario/Responsedef_lstScenario_Menu_OnClick
+  Initiator: 'MenuScenarioDelete'
+  Precondition:
+  [*
+    return LibSM_GlobalState.CanDelete( selection );
+  *]
+}

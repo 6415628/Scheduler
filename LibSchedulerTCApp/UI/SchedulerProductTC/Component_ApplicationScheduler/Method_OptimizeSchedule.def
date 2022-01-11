@@ -1,0 +1,68 @@
+Quintiq file version 2.0
+#parent: #root
+Method OptimizeSchedule (structured[Operation_SC] operations) id:Method_ApplicationScheduler_OptimizeSchedule
+{
+  #keys: '[155630.0.941754151]'
+  Body:
+  [*
+    // Clear scoped operations - which also clears DataHolderOptimizerAllScopedOperations because it has data extractors grabbing from Mandatory and Optional dataholders
+    DataHolderOptimizerMandatoryOperations.Data().Flush();
+    DataHolderOptimizerOptionalOperations.Data().Flush();
+    
+    // Get all planned operations
+    allplannedoperations := Schedule.GetAllPlannedOperations();
+    
+    // Get resources based on selected operations
+    selectedresources := Operation_SC::GetAllowedResources( operations );
+    
+    // If the selected resources have configurable rule and program optimizer is enabled, use programs optimizer
+    if( Schedule.TechnicalConfiguration().IsProgramOptimizerEnabled()
+        and exists( selectedresources, Elements, res, res.HasConfigurableRule() ) )
+    {    
+      // Only resources with configurable rules
+      selectedresources := selectset( selectedresources, Elements, res, res.HasConfigurableRule() );
+      
+      // If only one resource, select the resource without pop up dialog
+      selectedresource := selectedresources.Element( 0 );
+      if( selectedresources.Size() > 1 )
+      {    
+        dlg := construct( DialogSelectResourceForProgramOptimizer );
+        selectedresource := dlg.SelectResource( this, selectedresources.Copy() );
+      }
+      
+      if( not isnull( selectedresource ) )
+      {
+        // Scope selection - select planned operations which planned on selected resource
+        plannedoperations := selectset( allplannedoperations, Elements, plannedoperation,
+                                        guard( plannedoperation.PlannedResource() = selectedresource, false ) );
+        // Scope selection - selected operations which allowed on selected resource
+        selectedoperations := selectset( operations, Elements, op, op.AllowedOnResource( selectedresource ) );
+        
+        // Get the planned operation and selected operations
+        operations := plannedoperations.Union( selectedoperations );
+        DataHolderOptimizerMandatoryOperations.Data( &operations );
+        
+        // Get structured set resources
+        selectedresources.Flush();
+        selectedresources.Add( selectedresource );
+        Schedule.Optimization().OptimizerProgram().Optimize( selectedresources, DataHolderOptimizerMandatoryOperations.Data() );
+      }
+    }
+    // If the selected resources have no configurable rule and sequencing optimizer is enabled, use sequencing optimizer
+    else if( Schedule.TechnicalConfiguration().IsSequencingOptimizerEnabled()
+             and exists( selectedresources, Elements.ResourceGroup_SC, resgroup, not resgroup.HasConfigurableRule() ) )
+    {
+      // Scope selection - select planned operations which planned resource has no configurable rule
+      plannedoperations := selectset( allplannedoperations, Elements, plannedoperation, 
+                                      guard( not plannedoperation.PlannedResource().ResourceGroup_SC().HasConfigurableRule(), false ) );
+      DataHolderOptimizerMandatoryOperations.Data( plannedoperations.Union( operations ) );
+      
+      // Get all allowed resources which resource group does not have configurable rules
+      resources := Operation_SC::GetAllowedResources( DataHolderOptimizerMandatoryOperations.Data() );
+      resources := selectset( resources, Elements, res, not res.ResourceGroup_SC().HasConfigurableRule() );
+    
+      // Optimize - we call AllScopedOperations here because it has data extractors that grab from Mandatory and Optional dataholders
+      Schedule.Optimization().OptimizerSequencing().OptimizeWithDefaultSettings( DataHolderOptimizerMandatoryOperations.Data(), resources );
+    }
+  *]
+}

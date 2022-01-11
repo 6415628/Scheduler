@@ -1,0 +1,101 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenerateTreeFromWorkOrder () id:Method_FormTimeConstraintVisualization_GenerateTreeFromWorkOrder
+{
+  #keys: '[142956.3.552757317]'
+  Body:
+  [*
+    // Create custom draw nodes from selected work order
+    // This is the entry point of nodes generation and drawing
+    selectedWorkOrder := DataHolderDisplayWorkOrder.Data();
+    
+    if( not isnull( selectedWorkOrder ) )
+    {
+      // First insert CustomDrawConfiguration into the dataholder
+      DataHolderCustomDrawConfiguration.Data( shadow( Schedule.CustomDrawConfiguration() ) );
+      config := DataHolderCustomDrawConfiguration.Data();
+      
+      if( not isnull( config ) )
+      {
+        // Create all nodes for operation in work order and their edges
+        // Start with nodes that have no upstream to operations in same work order
+        startingOperations := selectsortedset( selectedWorkOrder, WorkOrderOperation.Operation_SC, op,
+                                           not exists( op, FromOperationDependency.FromOperation, fromOp, fromOp.WorkOrderOperation().WorkOrder() = selectedWorkOrder ),
+                                           op.WorkOrderSequenceNr(),
+                                           op.SequenceNr() );
+    
+        // Create nodes for all reachable operations from root operation
+        traverse( startingOperations, Elements, startOp )
+        {                 
+          rootNode := this.GetCustomDrawNode( startOp, false, 0 );
+          rootNode.IsRoot( true );
+          
+          // Create direct upstream /  downstream nodes and their edges
+          this.GenerateNodesForWorkOrder( rootNode, true );
+          this.GenerateNodesForWorkOrder( rootNode, false );
+        }
+    
+        // The depth set for the root node
+        rootDepth := min( config, CustomDrawNode, node, node.Depth() );
+        
+        // Create nodes for all upstream operations directly linked to the work order's operations
+        // This is to catch nodes that were unreachable during the first node generation
+        traverse( selectedWorkOrder, WorkOrderOperation.Operation_SC, op )
+        {
+          opNode := this.GetCustomDrawNode( op, false, 0 );
+          upstreamOps := this.GetInputOutputs( op, true );
+          
+          traverse( upstreamOps, Elements, upstreamOp )
+          {
+            depth := opNode.Depth() - 1;
+            isUpstream := depth < rootDepth; // This is with reference to the root node
+            node := this.GetCustomDrawNode( upstreamOp, isUpstream, depth );
+            this.CreateCustomDrawEdgesForWorkOrder( node, opNode, isUpstream );
+            
+            // Set OwnerNodeKey for unreachable node that has no prior upstream node to a node of the previous depth as a 'fake' owner
+            // This is to ensure this node is arranged together with other nodes of the same depth despite not really having the same owner
+            if( node.OwnerNodeKey().Length() = 0 )
+            {
+              prevNode := maxselect( config, CustomDrawNode, prevNode, prevNode.Depth() = depth - 1, prevNode.SortSequence() );
+              
+              if( not isnull( prevNode ) )
+              {
+                node.OwnerNodeKey( prevNode.Key().AsQUILL() );
+              }
+            }
+          }
+        }
+    
+        // Set X position of all nodes from root node
+        // To be done AFTER all node and edges are created
+        traverse( startingOperations, Elements, startOp )
+        {
+          rootNode := this.GetCustomDrawNode( startOp, false, 0 );
+          
+          // Determine the X position of the root node first
+          rootNode.X( config.BorderOffsetX() + config.UpstreamDepth() * config.OffsetX() );
+          this.PopulateXPosition( rootNode );
+          this.PopulateDisplaySequence( true, rootNode ); // upstream
+          config.DisplaySequence( 0 );
+          this.PopulateDisplaySequence( false, rootNode ); // downstream
+        }
+        
+        this.PopulateYPosition( true ); // upstream
+        this.PopulateYPosition( false ); // downstream
+        this.AdjustTrees();
+        this.ReadjustNodeY(); // Patch logic to ensure ALL nodes are in grids without overlapping
+        this.PopulateEdgePositionsForWorkOrder();
+    
+        config.Width( max( config, CustomDrawNode, node, node.X() ) + config.BorderOffsetX() );
+        config.Height( max( config, CustomDrawNode, node, node.Y() ) + config.BorderOffsetY() );
+      }
+      
+      // Patch to ensure all nodes are either drawn as root nodes or normal nodes
+      // Also to avoid changing generic drawing logic
+      traverse( config, CustomDrawNode, node )
+      {
+        node.IsDepthLimitMet( false );
+      }
+    }
+  *]
+}

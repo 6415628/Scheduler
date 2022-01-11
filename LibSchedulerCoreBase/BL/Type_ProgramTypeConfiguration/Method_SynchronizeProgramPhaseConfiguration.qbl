@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeProgramPhaseConfiguration (ImportedProgramTypeConfiguration importedprogramtypeconfiguration)
+{
+  Description: 'Synchronize program phase configuration from imported data'
+  TextBody:
+  [*
+    // Synchronize program phase configuration from imported data
+    allinstances := selectset( this, ProgramPhaseConfiguration, set, true );
+    updatedinstances := construct( ProgramPhaseConfigurations );
+    
+    sortedprogramphases := selectsortedset( importedprogramtypeconfiguration, ImportedProgramPhaseConfiguration, importedphase, true, importedphase.SequenceNr() );
+    traverse( sortedprogramphases, Elements, importedphase )
+    {
+      programphase := ProgramPhaseConfiguration::FindProgramPhaseConfiguration( importedphase.ProgramDefinitionConfigurationID(),
+                                                                                importedphase.ProgramSetConfigurationID(),
+                                                                                importedphase.ProgramTypeConfigurationID(),
+                                                                                importedphase.ProgramPhaseConfigurationID() );
+      
+      if( isnull( programphase ) )
+      {
+        programphase := ProgramPhaseConfiguration::Create( this, importedphase.ProgramPhaseConfigurationID() );
+      }
+      programphase.Update( importedphase );
+      // Move to last position because the set is sorted ascendingly
+      programphase.MoveLast();
+    
+      updatedinstances.Add( programphase );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    traverse( oldinstances, Elements, e )
+    {
+      e.Remove();
+    }
+  *]
+}

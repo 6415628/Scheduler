@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (LibCal_Calendar owner_i, String subject_i, Date startDate_i, 
+  Duration startTimeOfDay_i, Duration duration_i) as LibCal_Event
+{
+  TextBody:
+  [*
+    // By default assign the event to the general EventCategory.
+    // The category can be changed after creation using SetCategory().
+    category := owner_i.CalendarRegistry().GetGeneralEventCategory();
+    
+    event := owner_i.Event( relnew,
+                            EventID        := [String]Key::NextPersistentKey(),
+                            Subject        := subject_i,
+                            StartTimeOfDay := startTimeOfDay_i,
+                            IsChanged      := true,
+                            EventCategory  := category );
+    
+    // Create the accompanying LeadingParticipation.
+    timezone := owner_i.GetTimeZone();
+    endDate  := startDate_i.Add( timezone, startTimeOfDay_i + duration_i ).Date( timezone );
+    LibCal_LeadingParticipation::Create( owner_i, event, startDate_i, endDate );
+    
+    // Use SetDuration() to also have EndTimeOfDay set.
+    event.SetDuration( duration_i );
+    
+    return event;
+  *]
+}

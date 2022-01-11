@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsUsedInRuleConditionChecking () declarative as Boolean
+{
+  Description: 'Check whether current characteristic is used in rule conditon checking'
+  TextBody:
+  [*
+    // Check whether current characteristic is used in rule conditon checking for different scope of rules
+    // 1. Resource scope
+    // 2. Program scope
+    // 3. Program phase scope
+    // 4. Shutdown scope
+    
+    return this.Characteristic().CheckCanBeUsedInCondition()
+           and ( exists( this, Operation_SC.OperationOnResource.Resource_SC.RuleScopeInResource.Rule, rule,
+                         rule.IsEnabled()
+                         and rule.CharacteristicCondition() = this.Characteristic() )
+                 or exists( this, Operation_SC.PlannedResource.ProgramChange.ProgramType.ProgramTypeConfiguration.RuleScopeInProgramType.Rule, rule,
+                            rule.IsEnabled()
+                            and not rule.RuleSubType().IsCumulativeValueNeeded()
+                            and rule.CharacteristicCondition() = this.Characteristic() )
+                 or exists( this, Operation_SC.PlannedResource.ProgramChange.ProgramType.ProgramTypeConfiguration.ProgramPhaseConfiguration.RuleScopeInProgramPhase.Rule, rule,
+                            rule.IsEnabled()
+                            and not rule.RuleSubType().IsCumulativeValueNeeded()
+                            and rule.CharacteristicCondition() = this.Characteristic() )
+                 or exists( this, Operation_SC.PlannedResource.Shutdown.ResponsibleShutdownType.RuleScopeInShutdownType.Rule, rule,
+                            rule.IsEnabled()
+                            and rule.CharacteristicCondition() = this.Characteristic() ) );
+  *]
+}

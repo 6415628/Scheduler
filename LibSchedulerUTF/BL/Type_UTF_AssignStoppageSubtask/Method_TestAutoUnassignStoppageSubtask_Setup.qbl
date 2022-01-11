@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestAutoUnassignStoppageSubtask_Setup (Schedule schedule)
+{
+  Description: 'Test auto unassign stoppage subtask - setup'
+  TextBody:
+  [*
+    // Get variant attribute
+    hasShutdownTypeInResource := false;
+    hasProgramDefinitionInResource := false;
+    hasStoppageSubtask := false;
+    
+    this.GetTestVariant( hasShutdownTypeInResource,
+                         hasProgramDefinitionInResource,
+                         hasStoppageSubtask);
+    
+    // Create resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource' );
+    
+    // Create stoppage subtask beforehand
+    shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, 'shutdown type' );
+    UTFMockObjectFactory::CreateShutdownTypeInResource( shutdownType, resource );  
+    programDefinition := ProgramDefinitionConfiguration::Create( schedule, 'program definition' );
+    resource.AssignProgramDefinitionConfiguration( programDefinition );
+    ResourceGroup_SC::UpdateStoppageSubTaskTypeInResourceGroup( schedule );
+    
+    // Delete shutdown type in resource based on variant
+    if( not hasShutdownTypeInResource )
+    {
+      shutdownType.ShutdownTypeInResource( relflush ); 
+    }
+    
+    // Delete program definition in resource based on variant
+    if( not hasProgramDefinitionInResource )
+    {
+      programDefinition.Resource_SC( relflush ); 
+    }
+    
+    // Auto unassign stoppage subtask
+    ResourceGroup_SC::UpdateStoppageSubTaskTypeInResourceGroup( schedule );
+  *]
+}

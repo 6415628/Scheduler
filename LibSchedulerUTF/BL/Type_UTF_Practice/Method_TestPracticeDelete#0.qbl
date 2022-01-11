@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPracticeDelete (Schedule schedule)
+{
+  Description: 'Test the delete of practice objects.'
+  TextBody:
+  [*
+    traverse( schedule, ImportedWorkOrderOperation, importedWorkOrderOperation )
+    {
+      importedWorkOrderOperation.Delete();
+    }
+    traverse( schedule, ImportedRoutingStep_SC, importedRoutingStep )
+    {
+      importedRoutingStep.Delete();
+    }
+    
+    synchronizationObject := schedule.SynchronizationObject();
+    synchronizationObject.SynchronizeWorkOrders();
+    synchronizationObject.SynchronizeRoutings();
+    synchronizationObject.SynchronizePractices();
+    
+    noPractices := not exists( schedule, Practice, practice, true );
+    
+    this.Run().AssertTrue( noPractices, UTFUtility::GenerateFailedMessage( 'Practice_Delete', '' ) );
+  *]
+}

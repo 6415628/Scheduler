@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method SequencerComponentsBlock (LibOpt_Run run, SettingsProgram settings, OptimizerStrategy strategy, 
+  String prefix, Boolean isconstructionphase) as LibOpt_IteratorForEachLink
+{
+  Description: 'create and link the components below a sequencer,  including the sequencer'
+  TextBody:
+  [*
+    // zyi1 Jul-6-2021 (created)
+    sequencer_children := construct( LibOpt_Components );
+    legiterator := this.IteratorUntil( run, prefix + ' iterator leg', construct( StopCriterionLegsHandled ) );
+    legselector := this.SelectorLeg( run, prefix + ' selector leg' );
+    
+    combilegiterator := this.IteratorUntil( run, prefix + ' CombiLeg iterator', construct( StopCriterionMaxBestCombiLegHandled ) );
+    combilegselector := run.Component( relnew,
+                                       SelectorCombiLeg,
+                                       Name := prefix + 'CombiLeg selector' );
+    
+    combilegextendingiterator := this.IteratorUntil( run, prefix + ' Extending Iterator' );
+    combilegextendingiterator.SetMaxIterations( OptimizerProgram::BeamWidth() );
+    
+    sequencer_children.Add( legiterator );
+    setcovering_opt := this.SuboptimizerSetCovering( run, 
+                                                     SettingsProgramSetCoveringForSetCovering::ConstructFrom( settings.SetCovering() ),
+                                                     prefix + ' SetCovering' );
+    setcovering_opt.RollbackKPI( relset, construct( RollbackKPISchedule ) );
+    sequencer_children.Add( setcovering_opt );
+    sequencer_prefix := prefix + " sequencer";
+    sequencer := this.Sequencer( sequencer_children, sequencer_prefix );
+    
+    
+    subopt_poa := this.SuboptimizerPOA( run,
+                                        SettingsProgramPOACombiLegForPOA::ConstructFrom( settings.POACombiLeg() ),
+                                        StrategyForSuboptimizerProgramPOACombiLeg::ConstructFrom( strategy ),
+                                        prefix + ' CombiLeg poa',
+                                        true, // POA as part of combi generation
+                                        isconstructionphase,
+                                        false ); // Do not use the two node improvement strategy
+    
+    legiterator.To( legselector );
+    legselector.To( combilegiterator );
+    combilegiterator.To( combilegselector );
+    combilegselector.To( combilegextendingiterator );
+    combilegextendingiterator.To( subopt_poa );
+    
+                                       
+    
+    return sequencer;
+  *]
+}

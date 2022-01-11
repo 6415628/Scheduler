@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method IFilter_Set (String filtertext) id:Method_LibGUIFiltering_PanelFilterBoxHelper_IFilter_Set
+{
+  #keys: '[128900.0.373900309]'
+  Body:
+  [*
+    registry    := this.IComponentRegistry_Get();
+    restriction := this.IPanelFilterBox_Get().StringSelectionFilterBoxAttributes().BoundValue();
+    warnings    := '';
+    
+    if ( restriction = Translations::LibGUIFiltering_All() )
+    {
+      restriction := '';
+    }
+    
+    usedterms         := construct( Keys );
+    attributeregistry := this.IAttributeRegistry_Get();
+    
+    this.IComponentRegistry_Update();
+    this.IAttributeRegistry_Update( restriction );
+    this.IFilterTerms_Update( restriction, filtertext );
+    
+    traverse( registry, LibGUIFiltering_RegisteredComponent, registeredcomponent )
+    {
+      this.IComponent_SetFilter( registeredcomponent );
+    }
+    
+    warnings     := '';
+    unusedterms  := selectset( this.IFilterTerms_Get(), 
+                               LibGUIFiltering_TermGroup.LibGUIFiltering_Term, 
+                               term, 
+                               not term.IsUsed() );
+    
+    if ( selectvalues( unusedterms, Elements, e, true, e.AttributeModifier() ).ToString( '' ) <> '' )
+    {
+      warnings := warnings + Translations::LibGUIFiltering_UnusedAttributes( selectvalues( unusedterms, Elements, e, true, e.AttributeModifier() ).ToString( ', ' ) ) + String::NewLine();
+    }
+    
+    unusedattrs  := selectset( unusedterms,
+                               Elements,
+                               term,
+                               term.AttributeModifier() = '' );
+                               
+    if ( unusedattrs.Size() > 0 )
+    {
+      warnings := warnings + Translations::LibGUIFiltering_UnusedTerms( selectvalues( unusedattrs, Elements, e, true, e.Token() ).ToString( ', ' ) ) + String::NewLine();
+    }
+    
+    this.IWarnings_Set( warnings.TrimBoth() );
+  *]
+}

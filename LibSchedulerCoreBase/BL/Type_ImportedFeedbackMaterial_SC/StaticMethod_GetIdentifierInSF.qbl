@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetIdentifierInSF (String resource, Operation_SC operation) const declarative remote as String
+{
+  Description: 'get the identifier for material feedback in SF'
+  TextBody:
+  [*
+    // jiex Oct-18-2016 (created)
+    idstrings := construct( Strings );
+    
+    idstrings.Add( resource );
+    idstrings.Add( operation.OperationID() );
+    idstrings.Add( '0' );
+    id := idstrings.ToString( Constants::Delimiter() );
+    
+    num := 1;
+    while( not isnull( select( operation, ImportedFeedbackMaterial_SC, material, material.ID() = id )) )
+    {
+      idstrings.Delete( 2 );
+      idstrings.Add( [String]num );
+      id := idstrings.ToString( Constants::Delimiter() );
+      num++;
+    }
+    return id;
+  *]
+}

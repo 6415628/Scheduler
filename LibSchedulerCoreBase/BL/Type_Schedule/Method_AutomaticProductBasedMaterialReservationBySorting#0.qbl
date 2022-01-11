@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method AutomaticProductBasedMaterialReservationBySorting
+{
+  Description: 'This method reserves product based material based on sorting only.'
+  TextBody:
+  [*
+    productInStockingPoints := selectset( this, Product_SC.ProductInStockingPoint, pisp, pisp.IsAutoReservation() );
+    if( productInStockingPoints.Size() > 0 )
+    {
+      // Sets all fulfillments to zero quantity, less expensive compared to deleting all and recreating all during material reservation
+      this.ZeroAllFulfillments();
+      Transaction::Transaction().Propagate(); // to update all the open quantities of supplies and demands
+      
+      // Get Demands and Supplies for ProductInStockingPoints with AutoReservation is true only
+      // For Demands, only grab those with operations planned
+      // Sorts the Demands and Supplies
+      demands := selectsortedset( productInStockingPoints,
+                                  Elements.ProductDemand.astype( ProductPlannedDemand ), 
+                                  demand,
+                                  guard( demand.Operation_SC().IsPlanned(), false ),
+                                  demand.OperationStart(), 
+                                  demand.Quantity(), 
+                                  demand.DemandID() );
+      
+      supplies := selectsortedset( productInStockingPoints, 
+                                   Elements.ProductSupply, 
+                                   supply, 
+                                   true, 
+                                   supply.AvailableFrom(), 
+                                   supply.Quantity(), 
+                                   supply.SupplyID() );  
+      
+      // Perform automatic material reservation
+      traverse( demands, Elements, demand )
+      {
+        qty := demand.QuantityOpen(); // not used here, only used after split plan unit, but added here to make sure the quantity is overriden for each demand, and used for that demand only
+        demand.CreatePlannedFulfillments( supplies, false, false, qty );
+      }
+      
+      // Remove fulfillments that have no quantities assigned
+      this.DeleteZeroFulfillments();
+    }
+  *]
+}

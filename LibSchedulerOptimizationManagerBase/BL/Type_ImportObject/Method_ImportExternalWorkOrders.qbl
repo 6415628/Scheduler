@@ -1,0 +1,72 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportExternalWorkOrders (String jsonString) #extension
+{
+  TextBody:
+  [*
+    jsonTree := JSON::Parse( jsonString );
+    schedule := this.Schedule();
+    
+    // Work Orders
+    workordersL1Json := guard( jsonTree.Get( Constants::JSON_WorkOrders() ), null( JSON, owning ) );
+    
+    if( not isnull( workordersL1Json ) )
+    {
+      // Create Work Orders
+      workordersL2Json := guard( workordersL1Json.Get( Constants::JSON_WorkOrders() ), null( JSON, owning ) ); 
+      
+      if( not isnull( workordersL2Json ) )
+      {
+        for( i := 0; i < workordersL2Json.Size(); i++ )
+        {
+          workorderJson := workordersL2Json.Get( i );
+          importedExternalWorkOrder := ImportedExternalWorkOrder::ParseFCjson( schedule, workorderJson );
+          
+          // Synchronize Work Order Operations based on Routing Step
+          importedExternalWorkOrder.SynchronizeImportedExternalWorkOrderOperationsFromRouting();
+          
+          // Update created Work Order Operations based on JSON data
+          operationsJson := guard( workorderJson.Get( Constants::JSON_WorkOrder_Operations() ), null( JSON, owning ) );
+          
+          if( not isnull( operationsJson ) )
+          {
+            workOrderID := guard( workorderJson.Get( Constants::JSON_WorkOrder_ID() ).GetString(), Constants::EmptyString() );
+            
+            for( j := 0; j < operationsJson.Size(); j++ )
+            {
+              // Index starts from 0
+              operationJson := operationsJson.Get( j );
+              ImportedExternalWorkOrderOperation::ParseFCjson( schedule, operationJson, workOrderID );
+            }
+          }
+        }
+      }
+      
+      // Work Order Operation Flows
+      flowsJson := guard( workordersL1Json.Get( Constants::JSON_Flows() ), null( JSON, owning ) );
+      
+      if( not isnull( flowsJson ) )
+      {
+        for( i := 0; i < flowsJson.Size(); i++ )
+        {
+          ImportedFlow::ParseFCjson( schedule, flowsJson.Get( i ) );
+        }
+      }
+      
+      // Work Order Flows
+      workOrderFlows := guard( workordersL1Json.Get( Constants::JSON_WorkOrderFlows() ), null( JSON, owning ) );
+      
+      if( not isnull( workOrderFlows ) )
+      {
+        for( i := 0; i < workOrderFlows.Size(); i++ )
+        {
+          ImportedWorkOrderFlow::ParseFCjson( schedule, workOrderFlows.Get( i ) );
+        }
+      }
+    }
+    else 
+    {
+      logfile( Translations::Lib3DSpace_NoWorkOrder() ); 
+    }
+  *]
+}

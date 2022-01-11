@@ -1,0 +1,58 @@
+Quintiq file version 2.0
+#parent: #root
+Method ShowAllDay () id:Method_LibCal_dlgEventParticipation_ShowAllDay
+{
+  #keys: '[131092.0.2119818754]'
+  Body:
+  [*
+    // Show the controls according to the state of ckbAllDay.
+    if( ckbIsAllDay.Checked() )
+    {
+      // Update the EndDate before updating the StartTime, otherwise setting the StartTime can already have influenced the EndDate.
+      if( durEndTimeOfDay.Duration() <> Duration::Zero() )
+      {
+        durEndTimeOfDay.Duration( Duration::Zero() );
+    
+        dsEndDate.Date( dsEndDate.Date() + 1 );
+      }
+    
+      // Set to whole day if this is not yet the case.
+      if( durStartTimeOfDay.Duration() <> Duration::Zero() )
+      {
+        durStartTimeOfDay.Duration( Duration::Zero() );
+      }
+      
+      // Disable the controls.
+      durStartTimeOfDay.Enabled( false, "All day selected" );
+      durEndTimeOfDay  .Enabled( false, "All day selected" );
+    }
+    else
+    {
+      if( durStartTimeOfDay.Duration() <> dhStartTimeOfDay.Data() )
+      {
+        durStartTimeOfDay.Duration( dhStartTimeOfDay.Data() );
+      }
+      
+      if( durEndTimeOfDay.Duration() <> dhEndTimeOfDay.Data() )
+      {
+        durEndTimeOfDay.Duration( dhEndTimeOfDay.Data() );
+    
+        // During initialization, just take over the value from the DataHolder.
+        endDate := dsEndDate.Date();
+        if( endDate.IsInfinite() )
+        {
+          endDate := dhEndDate.Data();
+        }
+        // See if the EndDate must be corrected.
+        else if( dhEndTimeOfDay.Data() <> Duration::Zero() )
+        {
+          endDate := endDate - 1;
+        }
+        dsEndDate.Date( endDate );
+      }
+    
+      durStartTimeOfDay.Enabled( true, "" );
+      durEndTimeOfDay  .Enabled( true, "" );
+    }
+  *]
+}

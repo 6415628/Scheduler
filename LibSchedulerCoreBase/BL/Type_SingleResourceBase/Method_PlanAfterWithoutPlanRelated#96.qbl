@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanAfterWithoutPlanRelated (SingleTaskBases tasks, Task_SC element)
+{
+  Description: 'Move all tasks to a spot after the task, without executing plan related operations logic.'
+  TextBody:
+  [*
+    // WOI1 Mar-10-2017 (created)
+    operations := selectset( tasks, Elements.OperationAsSingleTask, op, true );
+    Operation_SC::SetIsPlanning( operations, true );
+    
+    task := element;
+    traverse( tasks, Elements, t )
+    {
+      //yl issue 228060
+      task := this.PlanAfter( t.OperationAsSingleTask(), task );
+    }
+    
+    this.Schedule().AutomaticProductBasedMaterialReservationBySorting();
+    Operation_SC::SetIsPlanning( operations, false );
+  *]
+}

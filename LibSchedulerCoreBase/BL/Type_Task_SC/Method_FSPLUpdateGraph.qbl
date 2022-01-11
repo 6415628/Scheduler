@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method FSPLUpdateGraph (Task_SC oldprevious, Task_SC oldnext, BatchSequenceElement oldbatchsequenceelement)
+{
+  Description: 'Convert subtasks to PrecedenceGraph.'
+  TextBody:
+  [*
+    // alexandern Nov-21-2015 (created)
+    // update the newseqnrs
+    seqnr := 0;
+    
+    traverse( this.Resource_SC(), Task_SC, task )
+    {
+      task.FSPLSequenceNr( seqnr );
+      seqnr++;
+    }
+    
+    
+    //Update edges of old sequence, remove edges between oldprevious and current, betwee oldnext and current, create edge between oldprevious and oldnext.
+    this.FSPLUpdateEdgesForOldSequence( oldprevious, oldnext );
+    
+    //Needed when a NEW OPERATION is planned
+    //Creates nodes and edges within the newly planned task
+    this.FSPLUpdateEdgesForNewTask();
+    
+    //Needed when task is planned, resequenced, feedbacked, synchronizeKT
+    //Creating new edges or deleting new edges related to current previous task and current next task.
+    this.FSPLUpdateEdgesForNewSequence();
+    
+    //Needed when task planned, resequenced, feedbacked, synchronizeKT
+    //SINGLE and BATCH
+    //traverses all subtasks
+    traverse( this, SubTask, st )
+    {
+      st.FSPLUpdateGraph( oldbatchsequenceelement );
+    }
+  *]
+}

@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetAnchorTypeSelectionBounds
+{
+  Description:
+  [*
+    Sets the range of Reals from a random draw from [0, 1] that will indicate an anchor type wil be chosen to be the next anchor.
+    Assumes anchor type probabilities are already set.
+    Works even if probabilities do not sum to 1.0.
+    Negative probabilities are ignored (considered 0.0)
+  *]
+  TextBody:
+  [*
+    // svt1 Aug-2-2017 (created)
+    
+    // initially make all anchor types impossible to pick
+    traverse( this, AnchorType, at )
+    {
+      at.MinSelectionBoundInclusive( -1.0 );
+      at.MaxSelectionBoundExclusive( -1.0 );
+    }
+    
+    // only anchor types with strictly positive probability will get a reachable range
+    allowedanchortypes := selectset( this, AnchorType, at, at.Probability() > 0.0 );
+    
+    // for scaling in case probabilities do not add up to 1.0
+    probabilitydivisor := sum( allowedanchortypes, Elements, at, at.Probability() );
+    
+    rangelowerbound := 0.0;
+    
+    // there are only probably anchor types if any of them have strictly positive probability
+    if( probabilitydivisor > 0.0 )
+    {
+      traverse( allowedanchortypes, Elements, at )
+      {
+        // true probability for this anchor type
+        rangesize := at.Probability() / probabilitydivisor; 
+        
+        at.MinSelectionBoundInclusive( rangelowerbound );
+        at.MaxSelectionBoundExclusive( at.MinSelectionBoundInclusive() + rangesize );
+        
+        // range lower bound for the next anchor type
+        rangelowerbound := at.MaxSelectionBoundExclusive();
+      }
+    }
+  *]
+}

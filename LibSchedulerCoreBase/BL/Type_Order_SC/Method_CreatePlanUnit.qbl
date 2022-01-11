@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreatePlanUnit (String planUnitID, Real quantity, Number nroflots) as PlanUnit_SC
+{
+  Description: "Creates plan unit under this order based on this order's existing routings."
+  TextBody:
+  [*
+    planunit := PlanUnit_SC::FindPlanUnit( planUnitID );
+    
+    if( isnull( planunit ) ) 
+    {
+      planunit := this.Schedule().CreatePlanUnit( planUnitID, this );
+    }
+    
+    planunit.Update( this, quantity, nroflots ); // update attributes and create/update operations for this plan unit
+    
+    return planunit;
+  *]
+}

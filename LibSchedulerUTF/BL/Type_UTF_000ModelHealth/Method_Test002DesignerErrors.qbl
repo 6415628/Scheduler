@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test002DesignerErrors
+{
+  Description: 'To test if there is any designer errors in both Thin Client Fat Designer and Web Client Designer'
+  TextBody:
+  [*
+    // TCE port number 8082.
+    hostname := 'localhost';
+    port := 8082;
+    path := '/QIM/v1/ErrorLog/Entries';
+    
+    // first get the number of errors
+    reply := this.ExecuteQIM( hostname, port, path );
+    json := JSON::Parse( reply );
+    jsonValue := this.GetQIMValue( json );
+    loopcount := jsonValue.Size();
+    
+    // loop through each error
+    violations := construct( Strings );
+    for( i := 0; i < loopcount; i++ )
+    {
+      reply := this.ExecuteQIM( hostname, port, path + '/' + [String]i );
+      json := JSON::Parse( reply );
+      jsonValue := this.GetQIMValue( json );
+      errorcode := jsonValue.Get( 'error' ).AsString();
+      logkind := jsonValue.Get( 'logkind' ).AsString()
+      description := jsonValue.Get( 'description' ).AsString();
+      
+      message := '[' + logkind + '] ErrorCode: ' + errorcode + '. ' + description;
+      
+      // if not ignored, register as failure
+      if( not this.IsExcludedQIMError( logkind, errorcode, description )
+          and not exists( violations, Elements, violation, violation = message ) )
+      {
+        violations.Add( message );
+      }
+    }
+    errorswithnumbers := this.SetNumberInStrings( violations );
+    this.Run().AssertEqual( 0, violations.Size(), "Errors detected in designers TC/Web in TCE logs via QIM" + String::NewLine() + errorswithnumbers.ToString( String::NewLine() ) );
+  *]
+}

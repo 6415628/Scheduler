@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ExtendSpanSequenceNeighbors (output owning LibOpt_ScopeElementOnRuns span, LibOpt_Scope scope) as Boolean
+{
+  Description:
+  [*
+    Extends the given span by the following rule:
+    If resource r is in scope and operation o is in scope and planned on r, and operation o' is planned on r directly before (resp. after) o and not in scope, then o' is in the span (“spanning sequence neighbors”).
+    Returns whether the span has been extended.
+    This rule is span-agnostic: given a scope, it always adds the same elements to the span.
+  *]
+  TextBody:
+  [*
+    // mbr23 Jan-10-2020 (created)
+    scope_operations := scope.OperationsExSpan();
+    scope_resources := scope.ResourcesExSpan();
+    
+    has_changed := false;
+    traverse( scope_resources, Elements, r )
+    {
+      scope_tasks_on_r := selectset( scope_operations,
+                                     Elements.Task_SC,
+                                     t,
+                                     guard( t.Resource_SC() = r, false ) );
+      neighbors := selectset( scope_tasks_on_r, Elements.Next, next, true ); // after-neighbors
+      neighbors := neighbors.Union( selectset( scope_tasks_on_r, Elements.Previous, next, true ) ); // before-neighbors
+      traverse( neighbors, Elements.OperationInTask, op, scope_operations.Find( op ) < 0 )
+      {
+        scopeelement := op.GetOrCreateScopeElement();
+        seor := scopeelement.OnRunOrCreate( scope.Run() );
+        if( span.Find( seor ) < 0 )
+        {
+          // not yet in the span. add it:
+          span.Add( seor );
+          has_changed := true;
+        }
+      }
+    }
+    
+    return has_changed;
+  *]
+}

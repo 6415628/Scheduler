@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckRoutingStepUniqueSeqNr (DemandBatchRoutingStep demandBatchRoutingStep, Number seqnr) const declarative remote as Boolean
+{
+  Description: 'Checks if the input routing step sequence number is unique.'
+  TextBody:
+  [*
+    feedbackobject := FeedbackObject::LocalFeedback();
+    value := not exists( this, 
+                         DemandBatchRoutingStep, 
+                         existingDemandBatchRoutingStep, 
+                         existingDemandBatchRoutingStep <> demandBatchRoutingStep, // Avoid checking same demand batch routing step
+                         existingDemandBatchRoutingStep.SequenceNr() = seqnr );
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      feedbackobject.AddHard( Translations::SC_DemandBatchRoutingStep_NotUniqueSequenceNr() );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

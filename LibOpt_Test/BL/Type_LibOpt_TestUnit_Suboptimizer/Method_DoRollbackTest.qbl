@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoRollbackTest (LibOpt_Task task, LibOpt_Suboptimizer suboptimizer, String start_value_str, 
+  String end_value_str)
+{
+  TextBody:
+  [*
+    provider := suboptimizer.RollbackKPI().astype( LibOpt_RollbackKPIStatic );
+    
+    start_value := RealVector::Construct( start_value_str );
+    end_value := RealVector::Construct( end_value_str );
+    
+    for( level := 0; level < start_value.Size(); level++ )
+    {
+      provider.SetKPI( level, start_value.Get( level ) );
+    }
+    
+    // Start handle result
+    kpi_snapshot_pre := null( LibOpt_SnapshotKPI );
+    kpi := suboptimizer.PreHandleResult( task, kpi_snapshot_pre );
+    
+    for( level := 0; level < end_value.Size(); level++ )
+    {
+      provider.SetKPI( level, end_value.Get( level ) );
+    }
+    
+    suboptimizer.PostHandleResult( task, kpi );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

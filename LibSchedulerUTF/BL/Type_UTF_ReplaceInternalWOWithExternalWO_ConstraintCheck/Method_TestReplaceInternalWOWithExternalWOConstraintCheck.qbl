@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestReplaceInternalWOWithExternalWOConstraintCheck (Schedule schedule)
+{
+  Description: 'Test replace internal work order with external work order constraint check.'
+  TextBody:
+  [*
+    replaceInternalWOWithExternalWOInstance := this.GetReplaceInternalWOWithExternalWOTestInstances( this.Variant() );
+    
+    externalWorkOrder := select( schedule, WorkOrder.astype( ExternalWorkOrder ), externalWorkOrder, true );
+    internalWorkOrder := select( schedule, WorkOrder.astype( InternalWorkOrder ), internalWorkOrder, true );
+    value := true;
+    
+    if( replaceInternalWOWithExternalWOInstance.HasDifferentProduct() )
+    {
+      value := externalWorkOrder.HasSamePISPAsWorkOrderToReplace() and internalWorkOrder.HasSamePISPAsWorkOrderToReplace();
+    }
+    else if( replaceInternalWOWithExternalWOInstance.HasDifferentStockingPoint() )
+    {
+      value := externalWorkOrder.HasSamePISPAsWorkOrderToReplace() and internalWorkOrder.HasSamePISPAsWorkOrderToReplace();
+    }
+    else if( replaceInternalWOWithExternalWOInstance.HasDifferentRouting() )
+    {
+      value := externalWorkOrder.HasSameRoutingAsWorkOrderToReplace() and internalWorkOrder.HasSameRoutingAsWorkOrderToReplace();
+    }
+    else if( replaceInternalWOWithExternalWOInstance.HasInvalidSchedulerWOID() )
+    {
+      value := externalWorkOrder.HasValidSchedulerWorkOrderID() and guard( internalWorkOrder.HasValidSchedulerWorkOrderID(), true );
+    }
+    else if( replaceInternalWOWithExternalWOInstance.HasDifferentOperationTypeSequence() )
+    {
+      value := externalWorkOrder.HasSameOperationTypeSequenceAsWorkOrderToReplace() and internalWorkOrder.HasSameOperationTypeSequenceAsWorkOrderToReplace();
+    }
+    
+    // Check for constraint
+    this.Run().AssertTrue( replaceInternalWOWithExternalWOInstance.HasSoftSanityCheckViolation() <> value and isnull( internalWorkOrder ) = value,
+                           UTFUtility::GenerateFailedMessage( 'Constraint check for replace internal work order with external work order failed', '' ) );
+    
+    if( value )
+    {
+      // Check update quantity and due date after replace
+      this.Run().AssertTrue( replaceInternalWOWithExternalWOInstance.QuantityAfterReplace() = externalWorkOrder.Quantity()
+                             and replaceInternalWOWithExternalWOInstance.DueDateAfterReplace() = externalWorkOrder.DueDate(),
+                             UTFUtility::GenerateFailedMessage( 'New work order with wrong quantity and due date', '' ) );
+    }
+  *]
+}

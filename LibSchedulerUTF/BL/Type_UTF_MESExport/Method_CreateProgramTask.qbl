@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateProgramTask (Schedule schedule) as ProgramDefinitionConfiguration
+{
+  Description: 'Create program scheduling test data'
+  TextBody:
+  [*
+    // Create task
+    task := UTFMockObjectFactory::CreateSingleResourceWithPlannedTask( schedule );
+    
+    // Select resource
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, r, true );
+    
+    // Assign ASAP lead time strategy
+    LeadTimeStrategy_SC::Create( resource, Duration::Zero(), Constants::StrategyASAP() );
+    Transaction::Transaction().Propagate( attribute( Resource_SC, StrategyName ) );
+    
+    // Create program definition
+    programdefinition := this.CreateProgramDefinitionData( schedule );
+    
+    // Assign program definition to resource
+    resource.AssignProgramDefinitionConfiguration( programdefinition );
+    
+    // Create task in program
+    programtype := selectset( programdefinition, ProgramSetConfiguration.ProgramTypeConfiguration, pt, true );
+    resource.InsertProgramChange( task, programtype, false, Duration::Zero() );
+    
+    return programdefinition;
+  *]
+}

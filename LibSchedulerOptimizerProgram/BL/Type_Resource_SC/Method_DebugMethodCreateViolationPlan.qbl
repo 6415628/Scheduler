@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method DebugMethodCreateViolationPlan () as CombiProgramType
+{
+  Description: 'repeatedly create plan until hard constraint violation come up'
+  TextBody:
+  [*
+    // zyi1 Jul-27-2021 (created)
+    //this.OptDebugCreateComponents();
+    //this.CreateEmptyCombiProgramSetsAfter( null( Task_SC ), this.ProgramDefinitionConfiguration() );
+    
+    notviolated := true;
+    maxcount := 50;
+    iter := 0;
+    operations := selectset( this, OperationOnResource.Operation_SC, op, true );
+    
+    cpt := null( CombiProgramType );
+    while( notviolated and iter < maxcount )
+    {
+      ress := construct( Resource_SCs );
+      ress.Add( this );
+      this.Schedule().Optimization().OptimizerProgram().RemoveCurrentPlan( ress, operations );
+      Transaction::Transaction().Propagate();
+      iter ++;
+      cpt := this.CreateFullCombiProgramSetsAfter_ThenPlanTheOperations( null( Task_SC), this.ProgramDefinitionConfiguration(), operations );
+      
+      Transaction::Transaction().Propagate();
+      violated := counter( this, Task_SC, task,  not task.IsAllHighPriorityRulesOK() ) >= 1;
+      notviolated := not violated;
+    }
+    
+    return cpt;
+    /*
+    opt := select( this, ResourceGroup_SC.Schedule.Optimization.Optimizer.astype( OptimizerProgram ), opt, true );
+    //opt.DefaultScope();
+    
+    ress := construct( Resource_SCs )
+    ress.Add( this );
+    opt.RemoveCurrentPlan( ress );
+  *]
+}

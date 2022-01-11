@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SynchronizeRecurrencePeriod (LibCal_StagingParticipation stagingParticipation_i)
+{
+  TextBody:
+  [*
+    // A LeadingParticipation should always have HasSpecificPeriod = TRUE.
+    // Log a warning when FALSE is encountered in the imported data, and ignore it.
+    if( not stagingParticipation_i.HasSpecificPeriod() )
+    {
+      LibCal_Util::Warning( stagingParticipation_i.CalendarType() + "." + stagingParticipation_i.CalendarID() + " : " +
+                            "ignoring HasSpecificPeriod = FALSE for LeadingParticipation " + stagingParticipation_i.StagingParticipationID() );
+    }
+    
+    this.UpdateRecurrencePeriod( stagingParticipation_i.StagingEvent().IsRecurring(),  // Use IsRecurring of the Event, don't 'trust' EventIsRecurring.
+                                 stagingParticipation_i.PeriodType(),
+                                 stagingParticipation_i.PeriodStartDate(),
+                                 stagingParticipation_i.PeriodEndDate() );
+  *]
+}

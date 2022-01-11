@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcProcessStart
+{
+  TextBody:
+  [*
+    //
+    // ProcessStart is the concluded time of EstimatedProcessStart and ProcessStartReadIn.
+    // Case 1: The default value will be estimated process start time calculated from start time.
+    // Case 2: When there is value reading in procedurally, this will be the value used as ProcessStart.
+    // Case 3: When no procedurally read in value from feedback( User/External System ),
+    //         Note: For now it looks like ProcessStart of FeedbackTaskInSF will always have value.
+    //         If otherwise, Case 4 with ProcessStartEstimated calculated from Start + SetupDuration can be added.
+    //
+    
+    // Case 1: When no procedural ProcessStart
+    value := this.EstimatedProcessStart();
+    
+    // Case 2: Has Procedurally set ProcessStart, in this case ProcessStart from FeedbackTaskInSF
+    if( this.HasReportedProcessStart() )
+    {
+      value := this.ProcessStartReadIn();
+    }
+    
+    this.ProcessStart( value );
+  *]
+}

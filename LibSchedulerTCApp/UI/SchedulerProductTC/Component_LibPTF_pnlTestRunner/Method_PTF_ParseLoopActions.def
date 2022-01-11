@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_ParseLoopActions (String body) as String id:Method_LibPTF_pnlTestRunner_PTF_ParseLoopActions
+{
+  #keys: '[104342.0.866219053]'
+  Body:
+  [*
+    // Specifically for Loops - Perform the prerequisites for treating statements in Loops
+    resultbody     := body;
+    regnumber      := 0;
+    loopindex      := 0;
+    largestregnum  := 0;
+    keywordloop    := LibPTF_StandardAction::Loop();
+    keywordendloop := LibPTF_StandardAction::EndLoop();
+    
+    // Create identifier of each Loop
+    while( resultbody.NrOccurrences( keywordloop + " ", 0, true ) > 0 )
+    {
+      regnumber++;
+      loopindex  := resultbody.FindString( keywordloop + " ", loopindex );
+      resultbody := resultbody.Insert( loopindex + keywordloop.Length(), [String]regnumber );
+    }
+    
+    largestregnum := regnumber;
+    
+    // Create identifier of its corresponding EndLoop
+    while( regnumber > 0 )
+    {
+      loopindex    := resultbody.FindString( keywordloop + [String]regnumber, 0 );
+      endloopindex := resultbody.FindString( keywordendloop + ";", loopindex );
+    
+      resultbody := resultbody.Insert( endloopindex + keywordendloop.Length(), [String]regnumber );
+      regnumber--;
+    }
+    
+    // Flatten the nested loop and return the script with the actual execution of actions
+    while( largestregnum > 0 )
+    {
+      resultbody := this.PTF_FlattenNestedLoop( largestregnum, resultbody );
+      largestregnum--;
+    }
+    
+    
+    return resultbody;
+  *]
+}

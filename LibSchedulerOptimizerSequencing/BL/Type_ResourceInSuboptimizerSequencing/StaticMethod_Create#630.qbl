@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (ResourceGroupInSuboptimizerSequencing owner, LibOpt_ScopeElementOnRun resource) as ResourceInSuboptimizerSequencing
+{
+  Description:
+  [*
+    Also creates the linked ResourceConnection shadow objects for any linked resource that is already shadowed by the given transient data.
+    Precondition: the given ScopeElementOnRun must represent a resource.
+  *]
+  TextBody:
+  [*
+    // mbr23 Jan-27-2020 (created)
+    assert( resource.ScopeElement().istype( ScopeElementResource ) );
+    resource_sc := resource.ScopeElement().astype( ScopeElementResource ).Resource_SC();
+    assert( resource_sc.ResourceGroup_SC() = owner.ResourceGroup() );
+    object := owner.Resource( relnew,
+                              ResourceScopeElement := resource,
+                              Resource := resource_sc,
+                              KeyTransientData := owner.KeyTransientData(),
+                              KeyResourceScopeElement := resource.Key(),
+                              IsInSpan := resource.IsInSpan() );
+    // set both up- and downstream resource connections, as only the second resource of a pair will set the respective relation:
+    object.CreateUpstreamResourceConnections();
+    object.CreateDownstreamResourceConnections();
+    
+    return object;
+  *]
+}

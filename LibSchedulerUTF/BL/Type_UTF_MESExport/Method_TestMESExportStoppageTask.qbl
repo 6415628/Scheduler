@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestMESExportStoppageTask (Schedule schedule)
+{
+  Description: 'Unit test for checking the attribute before and after value upon exporting MES'
+  TextBody:
+  [*
+    // Get variant value
+    isVariantFound := false;
+    taskType := '';
+    
+    this.GetStoppageTaskTestVariant( isVariantFound,
+                                     taskType );
+    
+    value := true;
+    
+    if( isVariantFound )
+    {
+      if( this.Variant() = 'Test with exporting program task' )
+      {
+        value := this.ValidateExportedProgramTask( schedule, taskType );
+      }
+      else if( this.Variant() = 'Test with exporting shutdown task' )
+      {
+        value := this.ValidateExportedShutdownTask( schedule, taskType );
+      }
+    }
+    
+    this.Run().AssertTrue( value, this.Variant() + ' failed' );
+  *]
+}

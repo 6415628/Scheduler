@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedFeedbackBatchContent (CDIntegration cdintegration, ImportedFeedbackBatch importedfeedbackbatch)
+{
+  Description: 'Restore imported feedback batch content core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedFeedbackBatchContent
+    cdImportedFeedbackBatchContents := selectset( cdintegration, CDEntity.astype( CDImportedFeedbackBatchContent ), cdfbc, 
+                                                  cdfbc.BatchID() = importedfeedbackbatch.BatchID()
+                                                );
+    
+    traverse( cdImportedFeedbackBatchContents, Elements, cdfbc )
+    {
+      importedFeedbackBatchContent := importedfeedbackbatch.ImportedFeedbackBatchContent( relnew, 
+                                                                                          BatchID := cdfbc.BatchID(),
+                                                                                          PlanUnitId := cdfbc.PlanUnitId(),
+                                                                                          WorkOrderId := cdfbc.WorkOrderId(),
+                                                                                          WorkOrderOperationSequenceNr := cdfbc.WorkOrderOperationSequenceNr()
+                                                                                        );
+      CopyCorresponding::CopyFrom( cdfbc ).CopyTo( importedFeedbackBatchContent );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

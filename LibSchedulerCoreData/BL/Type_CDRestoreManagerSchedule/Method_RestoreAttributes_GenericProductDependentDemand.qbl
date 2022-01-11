@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericProductDependentDemand (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic product dependent demand core data attributes to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdSchedule, CDEntity.astype( CDGenericProductDependentDemand ), cdGenericProductDependentDemand )
+    {
+      genericProductDependentDemand := GenericProductDependentDemand::Create( schedule, 
+                                                                              cdGenericProductDependentDemand.DemandType(), 
+                                                                              cdGenericProductDependentDemand.DemandID() );
+                                                                                    
+      CopyCorresponding::CopyFrom( cdGenericProductDependentDemand ).CopyTo( genericProductDependentDemand );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

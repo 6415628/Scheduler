@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnFinished (Number status, DMF_ConvertorVersion version, DMF_RunStep runStep_i)
+{
+  Description: 'Post finish run step'
+  TextBody:
+  [*
+    // When a dataset finished conversion
+    // we will update the status etc
+    if( status = DMF_Utility::ID_Finished() )
+    {
+      this.UpdateConvertedVersion( version );
+    }
+    this.UpdateStatus( status );
+    this.UpdateEnd( DateTime::Now() );
+    
+    if( isnull( runStep_i.NextRunStepInSequence() ) )
+    {    
+      runStep_i.Topic().ExecuteRunPoints();
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

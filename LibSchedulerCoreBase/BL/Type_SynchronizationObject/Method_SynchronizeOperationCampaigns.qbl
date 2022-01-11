@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeOperationCampaigns
+{
+  Description: "Synchronizes OperationCampaigns with their WorkOrderOperation's Operations."
+  TextBody:
+  [*
+    importedopcampaigns := selectset( this.Schedule(), ImportedWorkOrderOperation.ImportedOperationCampaign, ioc, ioc.IsValidDataHard() );
+    objectFactory := this.Schedule().ObjectFactory();
+    allinstances := selectset( this.Schedule(), PlanUnit_SC.Operation_SC.OperationCampaign, oc, true );
+    updatedinstances := construct( OperationCampaigns );
+    
+    traverse( importedopcampaigns, Elements, ioc )
+    {
+      woo := WorkOrderOperation::FindWorkOrderOperation( ioc.WorkOrderId(), ioc.SeqNr() ) ;
+    
+      // If WorkOrderOperation exists, then synchronize the ioc with the WOO's Operations
+      if( not isnull( woo ) )
+      {
+        traverse( woo, Operation_SC, operation )
+        {
+          // Find OperationCampaign if it exists
+          oc := OperationCampaign::FindOperationCampaign( ioc.WorkOrderId(), operation.OperationID(), ioc.SeqNr(), ioc.ResourceGroup(), ioc.CampaignType() );
+      
+          if( isnull( oc ) )
+          {
+            oc := objectFactory.CreateOperationCampaign( operation, ioc.WorkOrderId(), ioc.SeqNr(), ioc.ResourceGroup(), ioc.CampaignType() );
+          }
+          
+          oc.Update( ioc );
+          updatedinstances.Add( oc );
+        }
+      }
+    }
+    
+    // Delete operation campaigns if they do not exist in data brokers
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, operationcampaign )
+    {
+      operationcampaign.Delete();
+    }
+  *]
+}

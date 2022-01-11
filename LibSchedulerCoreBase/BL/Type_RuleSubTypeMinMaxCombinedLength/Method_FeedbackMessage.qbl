@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride FeedbackMessage (const Rule rule, DORule_DataObjectSequencingRule do_rule) const declarative remote as String
+{
+  TextBody:
+  [*
+    // Construct feedback message for min/max combined length
+    feedback := Translations::RuleFeedback_MinMaxCombinedLength( rule.Name(),
+                                                                 rule.CharacteristicMain().Name(),                                                             
+                                                                 ifexpr( do_rule.IsProgramPhase(), Translations::ProgramPhase_Name(), Translations::Program_Name() ),
+                                                                 do_rule.CurrentRealValue(),
+                                                                 ifexpr( this.IsMinimum(), Translations::RuleFeedback_LessThan(), Translations::RuleFeedback_MoreThan() ),
+                                                                 rule.RuleSubType().Name().ToLower(),
+                                                                 rule.RuleValue() );
+    // Append program set name
+    feedback := this.AppendProgramSetName( feedback, do_rule );
+    
+    return feedback;
+  *]
+}

@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestDeleteProgramChange_Setup (Schedule schedule)
+{
+  Description: 'Test delete program change - setup'
+  TextBody:
+  [*
+    // Create resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Single Resource' );
+    
+    // Create program definition data
+    programdefinition := UTFMockObjectFactory::CreateProgramDefinitionData( schedule, 'Program definition id', false );
+    programtype := selectset( programdefinition, ProgramSetConfiguration.ProgramTypeConfiguration, pt, true );
+    
+    // Assign program definition to resource
+    resource.AssignProgramDefinitionConfiguration( programdefinition );
+    
+    // Insert program change
+    programchangetask := resource.InsertProgramChange( null( Task_SC ), programtype, false, Duration::Zero() );
+    
+    // Delete the program change
+    deleteTask := construct( Task_SCs );
+    deleteTask.Add( programchangetask );
+    Task_SC::DeleteProgramChange( deleteTask );
+  *]
+}

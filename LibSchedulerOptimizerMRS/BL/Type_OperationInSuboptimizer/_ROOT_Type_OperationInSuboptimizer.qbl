@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#root
+#parent: #DomainModel
+Type OperationInSuboptimizer
+{
+  #keys: '5[143908.0.165072039][143908.0.165072037][0.0.0][143908.0.165072038][143908.0.165072040]'
+  BaseType: Object
+  Description: 'helper M:N object s.t. the MRS POA suboptimizer can store operation-specific data.'
+  OnCreate:
+  [*
+    // also create transfer materials if they don't exist yet. They are linked to this OperationInSuboptimizer declaratively.
+    
+    traverse( this.Operation_SC(), FromOperationDependency.astype( OperationMaterial ), material )
+    {
+      TransferMaterialInSuboptimizer::FindOrCreate( this.SuboptimizerMRSPOA(), material );
+    }
+    traverse( this.Operation_SC(), ToOperationDependency.astype( OperationMaterial ), material )
+    {
+      TransferMaterialInSuboptimizer::FindOrCreate( this.SuboptimizerMRSPOA(), material );
+    }
+  *]
+  StructuredName: 'OperationInSuboptimizers'
+}

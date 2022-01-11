@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitializeDialog (String dialogTitle, Demand demand, Supply supply, 
+  Fulfillment fulfillment) id:Method_DialogCreateEditFulfillment_InitializeDialog
+{
+  #keys: '[143768.1.43019280]'
+  Body:
+  [*
+    this.Title( dialogTitle );
+    
+    DataHolderDemand.Data( demand );
+    DataHolderSupply.Data( supply );
+    DataHolderFulfillment.Data( fulfillment );
+    
+    PanelDemand.Title( 'Demand: ' + demand.DemandID() );
+    PanelSupply.Title( 'Supply: ' + supply.SupplyID() );
+    
+    // Set default quantity to reserve
+    defaultQuantityToReserve := minvalue( supply.QuantityOpen(), demand.QuantityOpen() );
+    if( not isnull( fulfillment ) )
+    {
+      defaultQuantityToReserve := fulfillment.Quantity();
+    }
+    NumberPickerQuantityToReserve.Number( defaultQuantityToReserve );
+    
+    DialogCreateEditFulfillment.DoPreconditionCheckOnInputQuantity( defaultQuantityToReserve );
+    
+    // Set demand and supply quantity and quantity open
+    EditFieldDemandQuantity.Text( [String]demand.Quantity() );
+    EditFieldDemandQuantityOpen.Text( [String]( demand.QuantityOpen() - defaultQuantityToReserve + guard( fulfillment.Quantity(), 0 ) ) );
+    
+    EditFieldSupplyQuantity.Text( [String]supply.Quantity() );
+    EditFieldSupplyQuantityOpen.Text( [String]( supply.QuantityOpen() - defaultQuantityToReserve + guard( fulfillment.Quantity(), 0 ) ) );
+  *]
+}

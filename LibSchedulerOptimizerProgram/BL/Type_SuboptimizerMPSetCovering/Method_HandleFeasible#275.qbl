@@ -1,0 +1,14 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride HandleFeasible (MathematicalProgram program, LibOpt_Task task) as LibOpt_Scope
+{
+  TextBody:
+  [*
+    cpts := selectset( task.Scope().CombiProgramTypes(), Elements, cpt, true );
+    combilegs := selectset( cpts, Elements.WorkerCombiProgramType.CombiProgramPhase.CombiLegAsLeading, cl, not isnull( cl.Leg() ) and cl.OperationInCombiLeg( relsize ) > 0 )
+    
+    this.HandleFeasible( program.astype( SuboptimizerMPSetCovering_SelectCombis ), combilegs );
+    this.HandleFeasiblePlanSelectedCombiLegs( combilegs );
+    return task.Scope();
+  *]
+}

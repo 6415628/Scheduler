@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method Copy (internal[GUIComponent] parent, Rule selection) id:Method_DialogRuleAllowedValueStrings_Copy
+{
+  #keys: '[136602.1.58915494]'
+  Body:
+  [*
+    data := shadow( selection );
+    data.MarkAsCopy();
+    
+    Dialog.PreInitialize( data.RuleType() );
+    Dialog.Data( data );
+    Dialog.Initialize();
+    
+    //Update dialog title
+    Dialog.Title( ApplicationScheduler.GetRuleDialogTitle( data.RuleType(), false, true ) );
+    
+    if ( Dialog.DoModal( parent ) > 0 )
+    {
+      Dialog.UpdateRuleScopeData();
+      data.ResetWrapped();
+      data.RuleID( Schedule.LastRunningRuleID() + 1 );
+      data.Commit();
+    }
+  *]
+}

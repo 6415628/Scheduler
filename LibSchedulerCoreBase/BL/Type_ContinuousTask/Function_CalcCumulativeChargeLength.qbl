@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcCumulativeChargeLength
+{
+  TextBody:
+  [*
+    // jiex Nov-4-2016 (created)
+    // 1. If has setup duration, reset cumulative charge length
+    // 2. If IsParallel, equals to Previous.Cumulative charge length; 
+    value := 0.0;
+    previouslength := 0.0;
+    chargelength := 0.0;
+    
+    if( not isnull( this.LastFeedbackTask() ) )
+    {
+      value := this.LastFeedbackTask().ExportedCumulativeChargeLength();
+    }                                                                                            
+    else
+    {
+      if( not this.HasSetupDuration() and not this.IsFirstAfterDownTime() )
+      {
+        chargelength := ifexpr( this.IsParallelWithPrevious(), 0.0, this.ChargeLength() );
+        if( not isnull( this.Previous() ) )
+        {
+          previouslength := this.Previous().astype( ContinuousTask ).CumulativeChargeLength();   
+        }
+        else 
+        {
+          lastfeedbacktask := this.Resource_SC().LastFeedbackTaskInSchedule();
+      
+          if( not isnull( lastfeedbacktask ) )
+          {
+            previouslength := lastfeedbacktask.ExportedCumulativeChargeLength();       
+          }
+        }
+      }
+      else 
+      {
+        chargelength := this.ChargeLength();
+      }
+      
+      value := previouslength + chargelength;
+    }
+    this.CumulativeChargeLength( value );
+  *]
+}

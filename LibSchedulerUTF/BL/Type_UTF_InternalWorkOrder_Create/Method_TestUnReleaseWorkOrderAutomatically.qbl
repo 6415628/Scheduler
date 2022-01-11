@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestUnReleaseWorkOrderAutomatically (Schedule schedule)
+{
+  Description: 'To test if work order is unreleased automatically when its unfrozen.'
+  TextBody:
+  [*
+    markForReleaseInstance := this.GetMarkForReleaseInstance( this.Variant() );
+    workOrders             := selectset( schedule, WorkOrder, workOrder, true );
+    internalWorkOrders     := selectset( schedule, WorkOrder.astype( InternalWorkOrder ), iwo, true );
+    
+    if( markForReleaseInstance.IsMarkedToUnFreeze() )
+    {
+      // Check if work order is frozen
+      InternalWorkOrder::CheckIsNotMarkedForRelease( internalWorkOrders, false );
+      preconCheckValue := FeedbackObject::CurrentFeedback().IsAllowed();
+      
+      this.Run().AssertTrue( not preconCheckValue,
+                             UTFUtility::GenerateFailedMessage( 'Planning work order in frozen horizon failed', this.Variant() ) );
+      
+      // Unfreeze operations
+      this.CreateAndUnFreezeOperation( workOrders );
+      Transaction::Transaction().Propagate();
+      
+      // Check if work order is unreleased automatically
+      this.Run().AssertTrue( not this.CheckIsUnMarkedForReleaseAutomatically( workOrders ),
+                             UTFUtility::GenerateFailedMessage( "Work order unmarked for release automatically failed", this.Variant() ) );
+    }
+  *]
+}

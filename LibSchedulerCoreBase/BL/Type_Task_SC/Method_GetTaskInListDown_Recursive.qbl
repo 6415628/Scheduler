@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetTaskInListDown_Recursive (Task_SCs tasks, Task_SCs selectedTasks, Task_SC nextTask) remote as Task_SC
+{
+  Description: 'Get before target task in list down'
+  TextBody:
+  [*
+    task := nextTask;
+    
+    t := select( selectedTasks, Elements, e, e = nextTask );
+    
+    if( not isnull( t ) )
+    {
+      if( not isnull( task.Next() ) )
+      {
+        this.GetTaskInListDown_Recursive( tasks, selectedTasks, task.Next() );
+      }
+      else
+      {
+        task := this.Resource_SC().Last();
+      }
+    }
+    
+    return task;
+  *]
+}

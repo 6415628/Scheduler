@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericProductCustomerOrderLine (const Schedule schedule)
+{
+  Description: 'Backup genric product customer order line core data'
+  TextBody:
+  [*
+    traverse( schedule, Demand.astype( GenericProductCustomerOrderLine ), genericProductCustomerOrderLine )
+    {
+      cdGenericProductCustomerOrderLine := this.CDEntity( relnew, CDGenericProductCustomerOrderLine );
+      CopyCorresponding::CopyFrom( genericProductCustomerOrderLine ).CopyTo( cdGenericProductCustomerOrderLine );
+      
+      cdGenericProductCustomerOrderLine.OperationID( guard( genericProductCustomerOrderLine.Operation_SC().OperationID(), '' ) );
+      cdGenericProductCustomerOrderLine.PlanUnitID( guard( genericProductCustomerOrderLine.PlanUnit_SC().PlanUnitID(), '' ) );
+      
+      // Backup fullfillment
+      this.BackupGenericProductPlannedFulfillment( genericProductCustomerOrderLine );
+      this.BackupGenericProductExternalFulfillment( genericProductCustomerOrderLine );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

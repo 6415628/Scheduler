@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestMoveShutdownBottom_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Create resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource' );
+    
+    // Create task1
+    order1 := UTFMockObjectFactory::CreateOrder( schedule, 'Order 1' );
+    planUnit1 := UTFMockObjectFactory::CreatePlanUnit( order1, 'Plan Unit 1', 1.0 );
+    operation1 := UTFMockObjectFactory::CreateOperation( planUnit1 );
+    Transaction::Transaction().Propagate( relation( Operation_SC, AllowedOperationOnResource ) );
+    task1 := resource.PlanLast( operation1 );
+    
+    // Create task2
+    order2 := UTFMockObjectFactory::CreateOrder( schedule, 'Order 2' );
+    planUnit2 := UTFMockObjectFactory::CreatePlanUnit( order2, 'Plan Unit 2', 1.0 );
+    operation2 := UTFMockObjectFactory::CreateOperation( planUnit2 );
+    Transaction::Transaction().Propagate( relation( Operation_SC, AllowedOperationOnResource ) );
+    resource.PlanLast( operation2 );
+    
+    // Create shutdown type
+    shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, 'Shutdown Type' );
+    UTFMockObjectFactory::CreateShutdownTypeInResource( shutdownType, resource );
+    
+    // Insert shutdown between task 1 and task2 
+    shutdownTask := this.InsertShutdown( resource, task1, shutdownType );
+    
+    // Move shutdown task bottom
+    tasks := construct( Task_SCs );
+    tasks.Add( shutdownTask );
+    Task_SC::MoveTasksToBottom( schedule, tasks );
+  *]
+}

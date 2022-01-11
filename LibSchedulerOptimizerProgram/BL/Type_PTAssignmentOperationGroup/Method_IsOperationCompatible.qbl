@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method IsOperationCompatible (OperationInOptimizerProgram operation, SettingsProgramPTAssignment settings, LibOpt_ScopeElements programTypes) as Boolean
+{
+  Description: 'Checks whether the input operation is compatible with the operationGroup.'
+  TextBody:
+  [*
+    // jkr8 Jul-21-2021 (created)
+    value := true;
+    
+    maxDueDateDistance := settings.OperationGroupMaxDuedateDistance();
+    maxEarliestStartDistance := settings.OperationGroupMaxEarliestStartDistance();
+    
+    newAggregatedDuedate := ( operation.Operation_SC().DueDate() - this.AggregatedDuedate() ) / (this.NrOperationsInGroup() + 1 ) + this.AggregatedDuedate();
+    
+    newAggregatedEarliestStart := ( operation.Operation_SC().EarliestStart() - this.AggregatedEarliestStart() ) / ( this.NrOperationsInGroup() + 1 ) + this.AggregatedEarliestStart() 
+    
+    // If the new aggregated due date causes other operations that are already part of the group to be further away from the maximum distance, 
+    // this operation is not allowed to be added.
+    value := not exists( this, OperationInOptimizerProgram, op, true, abs( op.Operation_SC().DueDate() - newAggregatedDuedate )  > maxDueDateDistance );
+    value := not exists( this, OperationInOptimizerProgram, op, true, abs( op.Operation_SC().EarliestStart() - newAggregatedEarliestStart )  > maxEarliestStartDistance );
+    
+    // If the operation has a due date or earliest start that is further away than the max distance from the new aggregated due date or earliest start, the operation is not compatible.
+    value := value and abs( operation.Operation_SC().DueDate() - newAggregatedDuedate ) < maxDueDateDistance;
+    value := value and abs( operation.Operation_SC().EarliestStart()- newAggregatedEarliestStart ) < maxEarliestStartDistance;
+    
+    operationInGroup := select(this, OperationInOptimizerProgram, op, true, true );
+    traverse( programTypes, Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, programType )
+    {
+      // This new operation must be allowed and disallowed on the same programtypes.
+      value := value and ( operationInGroup.IsAllowedOnProgramType( programType ) = operation.IsAllowedOnProgramType( programType ) );
+    }
+    return value;
+  *]
+}

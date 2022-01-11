@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportAllKnowledgeFromExcelForQoD (String scenarioCategory, String scenarioName) id:Method_ApplicationScheduler_ImportAllKnowledgeFromExcelForQoD
+{
+  #keys: '[144246.0.837893245]'
+  Body:
+  [*
+    // Import all knowledge bases from excel that have been converted to Hex string format
+    
+    componentmds := ComponentMDS::Create( Application );
+    componentMDSKind := select( componentmds, ComponentMDSKinds, kind, kind.Kind() = typeof( Schedule ).Name() );
+    mdsinstance := select( componentMDSKind, ComponentMDSInstances, m,
+                             m.IsLoaded(),
+                             m.MDSID().Equals( Schedule.MDSSchedule().MDSID() ) );
+    
+    editor := CKBEditor::Create();
+    mdshandle := mdsinstance.GetMDSHandle();
+    kbinfos     := editor.GetMDSKBs( mdshandle );
+    
+    traverse( kbinfos, Elements, kbInfo )
+    {
+      fileName := kbInfo.KBFullID().KBID().Name();
+    
+      if( Schedule.CheckFileExistsInDataFolder( fileName.Concat( Constants::Excel_XLSX() )))
+      {
+        data := Schedule.GetExcelDataAsHexString( fileName );
+        binarydata := BinaryData::FromHexString( data );
+    
+        ckbhandle := editor.LoadMDSKB( mdsinstance.GetMDSHandle(), kbInfo.KBFullID().KBID() );
+    
+        templateckb := CKBEditor::Create().GetTemplateFromKB( ckbhandle.CKB() );
+        predefinedtablegroup := templateckb.CKB().GetTables();
+    
+        tablegrouphandle := XLS::LoadTableGroupFromBinaryData( &binarydata, predefinedtablegroup, true, true );
+    
+        ckbhandle.CKB().OverwriteTables( tablegrouphandle );
+        ckbhandle.CKB().SetTables( &tablegrouphandle, true );
+        ckbhandle.CKB().SetDirty();
+        ckbhandle.CKB().ValidateAll();
+    
+        editor.LockApplySaveUnlock( mdshandle, ckbhandle, Translations::SC_ImportKTFromExcel( scenarioCategory, scenarioName ), false);
+        ckbhandle.CKB().ResetDirty();
+    
+      }
+    }
+  *]
+}

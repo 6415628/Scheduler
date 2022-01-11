@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveConfigurationSuccessCopyRoutingTable (NamedValueTree nvt_i, NamedValue body_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive a successful message with the routing table, sync locally.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-25-2016 (created)
+    LibDEF_Util::EventLog( event_i, "Receiving routing table" );
+    
+    this.SyncFromRoutingTable( nvt_i, body_i, event_i );
+    
+    // End of receive configuration success copy routing table event
+    LibDEF_IntegrationEvent::EventComplete( event_i );
+    
+    // also reply with GetChannelsMetadata
+    // since the sender is always the BootNode...
+    bootNode         := this.BootNode();
+    bootNodeChannels := selectvalues( bootNode, ChannelMeta, channelMeta, true, channelMeta.Name() );
+    
+    // The IntegrationEvent from argument event_i is for receive configuration success copy routing table event
+    // Since we are sending another message, a new Event should be created (which is handled inside the method itself)
+    this.SystemLocal().SendMetadataSuccessGetChannelsMetadata( bootNodeChannels, bootNode, null( LibDEF_IntegrationEvent ) );
+  *]
+}

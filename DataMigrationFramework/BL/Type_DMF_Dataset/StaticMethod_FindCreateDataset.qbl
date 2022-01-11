@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod FindCreateDataset (DMF_DatasetType owner_i, Key mdsid_i, String name_i, 
+  String folder_i) as DMF_Dataset
+{
+  Description: "Find and create dataset if it doesn't exist"
+  TextBody:
+  [*
+    dataset := select( owner_i, Dataset, dataset, 
+                       dataset.Name()        = name_i and
+                       dataset.Folder()      = folder_i and
+                       dataset.DatasetKind() = owner_i.Name() );
+    
+    if( isnull( dataset ) )
+    {
+      dataset := owner_i.Dataset( relnew,
+                                  DatasetMDSID  := mdsid_i,
+                                  Name          := name_i,
+                                  Folder        := folder_i,
+                                  DatasetKind   := owner_i.Name() );
+    }
+    
+    return dataset;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

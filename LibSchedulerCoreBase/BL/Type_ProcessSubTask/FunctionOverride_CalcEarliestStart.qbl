@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcEarliestStart
+{
+  Description: 'Calculate the earliest possible start of the subtask based on task strategy earliest start or previous task earliest end taking UseFitProcessCalendarStrategy into consideration.'
+  TextBody:
+  [*
+    task          := this.Task_SC();
+    resource      := task.Resource_SC();
+    earlieststart := task.Schedule().Time();
+    prevsubtask := this.Previous()
+    
+    if( not isnull( prevsubtask ) )
+    {
+      // In Default and UseFitCalendarStrategy, process subtask start after setup subtask.
+      // in default case where calendar downtime starts right on setup subtask end, process subtask will start after downtime end.
+      earlieststart := resource.ResourceCalendar().NextAvailable( prevsubtask.EarliestEnd() );  // alexandern 28-May-2015 QP # 5420
+    
+      // Kyle 26-Aug-2015 #QP 5737
+      // No extra handling needed for UseFitCalendarStrategy because it is already handled in Strategy.EarliestStart
+      // as the entire task duration will not overlap with calendar downtime.
+      if( resource.UseFitProcessCalendarStrategy() )
+      {
+        earlieststart := resource.ResourceCalendar().NextFit( prevsubtask.EarliestEnd(), this.NetDuration() );
+      }
+    }
+    else if( not isnull( task.Strategy_SC() ) )
+    {
+      earlieststart := task.Strategy_SC().EarliestStart();
+    }
+    
+    earlieststart := maxvalue( earlieststart, this.SimulatedEarliestStart() );
+    this.EarliestStart( earlieststart )
+  *]
+}

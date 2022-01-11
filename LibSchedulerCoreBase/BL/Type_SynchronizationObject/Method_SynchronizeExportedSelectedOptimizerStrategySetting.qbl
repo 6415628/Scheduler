@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExportedSelectedOptimizerStrategySetting
+{
+  Description: 'Exports the identifiers of the selected optimizer strategy and user setting group.'
+  TextBody:
+  [*
+    optimizerStrategy := this.Schedule().OptimizerStrategyInSchedule();
+    optimizerUserSetting := select( this, Schedule.Optimizer.OptimizerType.OptimizerUserSetting, userSetting, true );
+    exportedSchedule := this.Schedule().FeedbackManager().GetSchedule();
+    
+    if( not isnull( optimizerStrategy ) and not isnull( optimizerUserSetting ) )
+    {
+      optimizerStrategyID := optimizerStrategy.ID();
+      optimizerUserSettingGroupID := optimizerUserSetting.ID();
+      exportedStrategySetting := ExportedSelectedOptimizerStrategySetting::FindExportedSelectedOptimizerStrategySetting( optimizerStrategyID,
+                                                                                                                         optimizerUserSettingGroupID );
+                                                                                                                         
+      if( isnull( exportedStrategySetting ) )
+      {
+        exportedSchedule := this.Schedule().FeedbackManager().GetSchedule();
+        exportedStrategySetting := ExportedSelectedOptimizerStrategySetting::Create( exportedSchedule, optimizerStrategyID, optimizerUserSettingGroupID );
+      }
+    }
+    else if( not isnull( exportedSchedule.ExportedSelectedOptimizerStrategySetting() ) )
+    {
+      exportedSchedule.ExportedSelectedOptimizerStrategySetting().Remove();
+    }
+  *]
+}

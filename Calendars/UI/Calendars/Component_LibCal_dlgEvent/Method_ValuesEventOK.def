@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValuesEventOK () as Boolean id:Method_LibCal_dlgEvent_ValuesEventOK
+{
+  #keys: '[131094.1.419446221]'
+  Body:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    if( edtName.Text().TrimBoth() = "" )
+    {
+      feedback.AddHard( Translations::Event_NoSubject() );
+    }
+    
+    if( rbgEventType.BoundValue() = LibCal_Event::TYPE_PARTIAL() )
+    {
+      capacity := this.StringToReal( edtCapacity.Text() );
+      
+      if( capacity <> Real::MinReal() )
+      {
+        // Check the value of the Real.
+        if( capacity < 0.0 or  // cannot happen, because '-' is not accepted
+            capacity > 1.0 )
+        {                                                           // Format according to the applicable locale.
+          feedback.AddHard( Translations::Event_CapacityMustBeBetween0and1( ( 0.0 ).Format( "N(Dec(1))" ), 
+                                                                            ( 1.0 ).Format( "N(Dec(1))" ) ) );
+        }
+      }
+      else
+      {
+        feedback.AddHard( Translations::Event_InvalidCapacity() );
+      }
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

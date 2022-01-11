@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestConditionScope (Schedule schedule)
+{
+  Description: 'Test rule with enabled rule condition for resource rule'
+  TextBody:
+  [*
+    // Get variant attribute
+    ruleSubtype := '';
+    conditionType := '';
+    conditionValue := false;
+    conditionScope := '';
+    operation1AttributeValue := false;
+    operation2AttributeValue := false;
+    hasNoViolateConstraintsOnTask1 := false;
+    hasNoViolateConstraintsOnTask2 := false;
+    isVariantFound := false;
+    
+    this.GetConditionScopeTestVariant( ruleSubtype,
+                                 conditionType,
+                                 conditionValue,
+                                 conditionScope,
+                                 operation1AttributeValue,
+                                 operation2AttributeValue,
+                                 hasNoViolateConstraintsOnTask1,
+                                 hasNoViolateConstraintsOnTask2,
+                                 isVariantFound );
+    
+    value := true;
+    
+    if( isVariantFound )
+    {
+      task_1 := select( schedule, Operation_SC.Task_SC, t, t.GetOperation().OperationID() = 'Operation_1' );
+      task_2 := select( schedule, Operation_SC.Task_SC, t, t.GetOperation().OperationID() = 'Operation_2' );
+      
+      // Propoagete constraint isAllLowPriorityRulesOK and isAllHighPriorityRulesOK
+      Transaction::Transaction().Propagate( constraint( Task_SC, IsAllLowPriorityRulesOK ) );
+      Transaction::Transaction().Propagate( constraint( Task_SC, IsAllHighPriorityRulesOK ) );
+      
+      value := ( task_1.IsAllHighPriorityRulesOK() and task_1.IsAllLowPriorityRulesOK() ) = hasNoViolateConstraintsOnTask1
+               and ( task_2.IsAllHighPriorityRulesOK() and task_2.IsAllLowPriorityRulesOK() ) = hasNoViolateConstraintsOnTask2;
+    }
+    
+    this.Run().AssertTrue( value );
+  *]
+}

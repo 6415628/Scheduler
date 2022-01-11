@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: ListDemandBatchRoutingStep
+Response OnClick (structured[DemandBatchRoutingStep] selection) id:Response_ListDemandBatchRoutingStep_MenuDeleteDemandBatchRoutingStep_OnClick
+{
+  #keys: '[139424.1.675309180]'
+  Body:
+  [*
+    // Delete DemandBatchRoutingSteps
+    deletableDemandBatchRoutingSteps := selectset( selection, Elements, demandBatchRoutingStep, demandBatchRoutingStep.CanBeDeleted() );
+    DemandBatchRoutingStep::Remove( deletableDemandBatchRoutingSteps );
+  *]
+  DefinitionID => /ListDemandBatchRoutingStep/Responsedef_ListDemandBatchRoutingStep_Menu_OnClick
+  Initiator: 'MenuDeleteDemandBatchRoutingStep'
+  Precondition:
+  [*
+    DemandBatchRoutingStep::CanRemove( selection )
+    // Workaround to show feedback in the old way until all responses are converted to use FeedbackObject. 
+    feedback := ApplicationScheduler.ShowOldStyleFeedback( FeedbackObject::CurrentFeedback().Feedback() );
+    
+    return FeedbackObject::IsAllowed();
+  *]
+}

@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedScheduling (SingleResourceBase resource, structured[Task_SC] tasks, Boolean skipsoftcheck, 
+  Boolean ctrlshiftkey, Task_SC beforetask, Task_SC aftertask, 
+  String identifier, output String feedback_o, Boolean isallowedhard_o) as Boolean id:Method_Scheduler_AllowedScheduling
+{
+  #keys: '[143030.0.223779850]'
+  Body:
+  [*
+    /*
+    This precondition covers the use cases of rescheduling campaign task of single resources
+    1. OnDrop structured[Task]/[CampaignTask] --> SingleResourceBase ( GanttChart )
+    2. OnDrop structured[Task]/[CampaignTask] --> SingleResourceBase ( Resource List )
+    3. OnDrop structured[Task]/[CampaignTask] --> SingleResourceBase ( Task List )
+    4. OnDrop structured[Task]/[CampaignTask] --> SingleResourceBase ( Campaign List )
+    This precondition checks whether the selection are allowed to be replanned
+    and are allowed to be planned between the before and after task
+    */
+    isallowed := true;
+    
+    if( not this.IsPlanSiblingOperations( tasks, resource ) )
+    {
+      operations := selectset( tasks, Elements.OperationInTask, op, true );
+      
+      isallowed := Operation_SC::CanReplan( operations, skipsoftcheck, feedback_o, isallowedhard_o );
+      
+      //After task checking is separated from AllowedScheduling checking to avoid multiple same feedback precondition text. Eg. When drag campaign task to before a campaign task in frozen period
+      isallowed := ( isnull( aftertask ) or tasks.Find( aftertask ) > -1 or aftertask.GetOperation().CanReplan( skipsoftcheck, feedback_o, isallowedhard_o ) ) and isallowed;
+      
+      isallowed := resource.AllowedScheduling( tasks,
+                                               beforetask,
+                                               aftertask,
+                                               skipsoftcheck,
+                                               ctrlshiftkey,
+                                               feedback_o,
+                                               isallowedhard_o )
+                   and isallowed;
+      
+      
+      if( not isallowed and feedback_o.Length() > 0 )
+      {
+        feedback_o := Translations::SC_NotAllowedOn( identifier, resource ) + String::NewLine() + feedback_o;
+      
+        if( isallowedhard_o )
+        {
+          feedback_o := feedback_o + String::NewLine() + Translations::SC_HoldCtrlToOverride();
+        }
+      }
+      
+      feedback_o := Schedule::TrimFeedback( feedback_o );
+    }
+    
+    return isallowed;
+  *]
+}

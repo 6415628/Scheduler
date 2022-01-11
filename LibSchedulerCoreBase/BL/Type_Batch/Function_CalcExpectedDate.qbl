@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcExpectedDate
+{
+  Description:
+  [*
+    Calculate the expected date of a batch based on end time of batch (finished / Inplanned) or
+    the latest date that any of the batch contents can be produced on.
+  *]
+  TextBody:
+  [*
+    // TG4AvK080508
+    // The expected date of a batch is the latest date that any of the batch contents can be produced on.
+    value := max( this, BatchSequenceElement.Operation_SC, op, true,
+                  // TG changed from iom.asOOM.expectedDate to IOM only:
+                  op.MaterialExpectedTime() + op.LeadTime() );
+                       
+    // TG
+    // If the batch is planned, take the End time
+    // Using the new attributes
+    if( this.Finished() or this.IsPlanned() )
+    {
+      value := this.End()
+    }
+    
+    this.ExpectedDate( value );
+  *]
+}

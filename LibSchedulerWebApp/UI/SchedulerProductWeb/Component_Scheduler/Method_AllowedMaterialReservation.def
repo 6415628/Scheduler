@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedMaterialReservation (structured[Demand] demands, structured[Supply] supplies, Boolean skipsoftcheck, 
+  Boolean isPartialFulfillment, output String feedback_o) as Boolean id:Method_Scheduler_AllowedMaterialReservation
+{
+  #keys: '[143768.1.47760053]'
+  Body:
+  [*
+    // this precondition checks whether this structured set of supplies are of compatible product types as demand
+    isallowedhard_o := true;
+    
+    value := Fulfillment::CanCreate( supplies, demands, skipsoftcheck, feedback_o, isallowedhard_o );
+    
+    // checks if there are more than one demand/supply if user is trying to perform partial fulfillment
+    is_notsingle_demandsupply_ctrlshift := ( supplies.Size() > 1 or demands.Size() > 1 ) and isPartialFulfillment;
+    
+    if( is_notsingle_demandsupply_ctrlshift )
+    {
+      value := not is_notsingle_demandsupply_ctrlshift; // doesn't need to evaluated together with earlier 'value' because it is a hard rule
+      feedback_o := feedback_o + String::NewLine() + Translations::SC_Fulfillment_CtrlShiftForSingleDemandSupplyOnly();
+    }
+    else if( not value and feedback_o.Length() > 0 and isallowedhard_o )
+    {
+      feedback_o := feedback_o + String::NewLine() +  Translations::SC_HoldCtrlToOverride();
+    }
+    
+    feedback_o := Schedule::TrimFeedback( feedback_o );
+    
+    return value;
+  *]
+}

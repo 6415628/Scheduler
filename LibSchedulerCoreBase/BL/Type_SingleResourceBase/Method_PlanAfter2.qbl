@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanAfter (BatchTask batchtask, Task_SC aftertask) as Task_SC
+{
+  TextBody:
+  [*
+    // wooi zhi Oct-8-2012 (created)
+    // MODELING HANDLE SC
+    // this is added such that dropping batch task to plan all single task of this resource type of the plan units in the batch is possible
+    // Issue 4671 Nicholas added 19/10/2012 sort the pu so that the Task would be planned in a nicer order
+    bses := selectsortedset( batchtask, Batch.BatchSequenceElement, bse, true, bse.SequenceNr() );
+    
+    traverse( bses, Elements.Operation_SC, bop )
+    {
+      // needs 2 traverse as traversing to plan unit from batch Operation is N:1 relation, which results in resorting of the plannunits.
+      // we need to plan the tasks in sequence of batch sequence elements for fixed sequence logic
+      traverse( bop, PlanUnit_SC.Operation_SC, op, op.Type() = this.Type() )
+      {
+        feedback := '';
+        isallowedhard := true;
+    
+        allowed := op.CanReplan( false, feedback, isallowedhard )
+                   and this.AllowedScheduling( op, aftertask, guard( aftertask.Next(), null( SingleTaskBase ) ), false, feedback, isallowedhard );
+    
+        if( allowed )
+        {
+          if( this.IsPlanRelatedOperations() )
+          {
+            Schedule::PlanRelatedOperationsAfter( op, this, aftertask, false, false );
+          }
+          
+          aftertask := this.PlanAfter( op, aftertask );
+        }
+      }
+    }
+    
+    return aftertask;
+  *]
+}

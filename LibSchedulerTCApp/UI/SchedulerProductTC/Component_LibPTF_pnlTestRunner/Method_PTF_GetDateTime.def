@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_GetDateTime (String value_i, output String feedback_o) as DateTime id:Method_LibPTF_pnlTestRunner_PTF_GetDateTime
+{
+  #keys: '[108090.0.815217668]'
+  Body:
+  [*
+    datetime       := DateTime::MinDateTime();
+    datetimelength := value_i.Length();
+    
+    // Expected format: YYYY-MM-DD or
+    //                  YYYY-MM-DD hh:mm:ss
+    formatOK := ( datetimelength = 10              and
+                  value_i.SubString(  4, 1 ) = "-" and
+                  value_i.SubString(  7, 1 ) = "-"
+                ) or
+                ( datetimelength = 19              and
+                  value_i.SubString(  4, 1 ) = "-" and
+                  value_i.SubString(  7, 1 ) = "-" and
+                  value_i.SubString( 10, 1 ) = " " and
+                  value_i.SubString( 13, 1 ) = ":" and
+                  value_i.SubString( 16, 1 ) = ":"
+                );
+    
+    if( formatOK )
+    {
+      formatString := 'yyyy-MM-dd';
+    
+      // DateTime
+      if( datetimelength = 19 )
+      {
+        formatString := formatString + ' HH:mm:ss';
+      }
+    
+      stdconverter := StringToDateTime::StandardConverter();
+      stdconverter.CustomFormatString( formatString );
+    
+      if( stdconverter.CanConvert( value_i ) )
+      {
+        datetime := stdconverter.Convert( value_i );
+      }
+      else
+      {
+        feedback_o := "Invalid datetime: " + value_i;
+      }
+    }
+    else
+    {
+      feedback_o := "Wrong datetime format: " + value_i + ". Expected format: YYYY-MM-DD or YYYY-MM-DD hh:mm:ss";
+    }
+    
+    return datetime;
+  *]
+}

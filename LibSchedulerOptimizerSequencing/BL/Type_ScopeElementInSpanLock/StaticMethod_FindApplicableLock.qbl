@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod FindApplicableLock (LibOpt_Task task, LibOpt_ScopeElementOnRun lockee) as ScopeElementInSpanLock
+{
+  Description:
+  [*
+    Traverses the given task's ancestry and returns the latestmost in-scope lock of the given ScopeElementOnRun. (Note that this may be owned by the given task itself.)
+    Returns null if no such lock exists or if the given task is null.
+  *]
+  TextBody:
+  [*
+    // mbr23 Jan-16-2020 (created)
+    // find most direct task parent that also holds an inspan-lock on the same lockee:
+    ancestor_locker := task;
+    ancestor_lock := null( ScopeElementInSpanLock );
+    while( isnull( ancestor_lock ) and not isnull( ancestor_locker ) )
+    {
+      ancestor_lock := select( lockee, AsInSpanLocked, candidate, candidate.Task() = ancestor_locker );
+      ancestor_locker := ancestor_locker.Parent();
+    }
+    return ancestor_lock;
+  *]
+}

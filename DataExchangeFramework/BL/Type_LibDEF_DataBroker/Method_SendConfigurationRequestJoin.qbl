@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendConfigurationRequestJoin () as owning NamedValueTree
+{
+  Description: 'Generic message constructor used in sending a request for joining a domain.'
+  TextBody:
+  [*
+    nvt := LibDEF_DataAccessor::CreateMessageConfiguration();
+    
+    LibDEF_DataAccessor::SetConfigurationHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_TYPE(), LibDEF_DataAccessor::TYPE_CONFIGURATION_JOIN() );
+    
+    currentHostName   := OS::ComputerName();
+    currentPortNumber := LibDEF_Util::GetSettingValueWebServerPortNumber();
+    LibDEF_DataAccessor::SetConfigurationBodyProperty( nvt, LibDEF_DataAccessor::HEADER_HOSTNAME(),   currentHostName );
+    LibDEF_DataAccessor::SetConfigurationBodyProperty( nvt, LibDEF_DataAccessor::HEADER_PORTNUMBER(), currentPortNumber );
+    LibDEF_DataAccessor::SetConfigurationBodyProperty( nvt, LibDEF_DataAccessor::HEADER_SYSTEMNAME(), this.SystemLocal().Name() );
+    
+    // attach spoken channels
+    nvBody := LibDEF_DataAccessor::GetConfigurationBody( nvt );
+    traverse( this, SystemLocal.ChannelMeta, channelMeta )
+    {
+      NamedValueTreeIO::Export( channelMeta, nvt, nvBody, false );
+    }
+    
+    return &nvt;
+  *]
+}

@@ -1,0 +1,65 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateAndLoadScheduleDataset (String datasetkind, String datasetfolder, String datasetname)
+{
+  Description: 'To create dataset at during server start up'
+  TextBody:
+  [*
+    // Carmen May-23-2012 (created)
+    // She Ven 20121109 #4971 Create/load dataset based on parameter in config utility
+    objinfo := MDSEditor::Editor().ObjectInfos( datasetkind, datasetfolder, datasetname );
+    
+    // Following codes would create a memory only Schedule dataset if Schedule dataset is not found offline, else it will load the offline Schedule dataset.
+    o := select( objinfo, Elements, o, not o.IsLoaded() );
+    if(  isnull( o ) )
+    {
+      MDSSchedule::CreateMemoryOnlyMDS( datasetname );
+    }
+    else
+    {
+        MDSSchedule::LoadMDS( o.MDSID() );
+    }
+    
+    /* With DemoStartup implementation, if we have an offline demo dataset in StandAloneStorageState, and no Custom is provided, tends to create memory only Schedule Dataset is not possible
+    if( GlobalParameters_SC::IsFullStorageState() )
+    {
+      o := select( objinfo, Elements, o, not o.IsLoaded() );
+      if( isnull( o ) )
+      {
+        MDSSchedule::CreateFullStorageMDS( datasetname );
+      }
+      else
+      {
+        MDSSchedule::LoadFullStorageMDS( o.MDSID() );
+      }
+    }
+    else if( GlobalParameters_SC::IsPartialStorageState() )
+    {
+      o := select( objinfo, Elements, o, not o.IsLoaded() );
+      if( isnull( o ) )
+      {
+        MDSSchedule::CreatePartialStorageMDS( datasetname );
+      }
+      else
+      {
+        MDSSchedule::LoadPartialStorageMDS( o.MDSID() );
+      }
+    }
+    else if ( GlobalParameters_SC::IsStandAloneStorageState() )
+    {
+      o := select( objinfo, Elements, o, not o.IsLoaded() );
+      if( isnull( o ) )
+      {
+        MDSSchedule::CreateMDS( datasetname, GlobalParameters_SC::GetStandAloneStorageStateString(), datasetfolder );
+      }
+      else
+      {
+        MDSSchedule::LoadMDS( datasetname, datasetfolder );
+      }
+    }
+    else
+    {
+      MDSSchedule::CreateMemoryOnlyMDS( datasetname );
+    }
+  *]
+}

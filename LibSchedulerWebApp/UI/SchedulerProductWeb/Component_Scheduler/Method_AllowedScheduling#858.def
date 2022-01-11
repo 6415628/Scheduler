@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedScheduling (Resource_SC resource, structured[Operation_SC] operations, Boolean skipSoftCheck, 
+  Boolean ctrlShiftKey, CampaignTask beforeCampaignTask, CampaignTask afterCampaignTask, 
+  String identifier, output String feedback_o, output Boolean isAllowedHard_o) as Boolean id:Method_Scheduler_AllowedScheduling_858
+{
+  #keys: '[143768.0.364097359]'
+  Body:
+  [*
+    // Precondition to check whether operations can be dropped on CampaignTask
+    beforetask := guard( beforeCampaignTask.LastOperationCampaign().Task_SC(), null( Task_SC ) );
+    aftertask  := guard( afterCampaignTask.OwningTask(), null( Task_SC ) );
+    
+    value := guard( afterCampaignTask.CanReplan( feedback_o ), true );
+    
+    if( value )
+    {
+      if( not isnull( beforeCampaignTask ) )
+      {
+        aftertask  := guard( beforeCampaignTask.NextCampaignTask().OwningTask(), null( Task_SC ) );
+      }
+      
+      if( resource.istype( SingleResourceBase ) )
+      {
+        value := Scheduler.AllowedScheduling( resource.astype( SingleResourceBase ),
+                                                               operations,
+                                                               skipSoftCheck,
+                                                               ctrlShiftKey,
+                                                               beforetask,
+                                                               aftertask,
+                                                               identifier,
+                                                               feedback_o,
+                                                               isAllowedHard_o );
+      }
+      else
+      {
+        value := Scheduler.AllowedScheduling( resource.astype( BatchResource ),
+                                              operations,
+                                              skipSoftCheck,
+                                              ctrlShiftKey,
+                                              beforetask,
+                                              aftertask,
+                                              identifier,
+                                              feedback_o,
+                                              isAllowedHard_o );
+      }
+    }
+    
+    return value;
+  *]
+}

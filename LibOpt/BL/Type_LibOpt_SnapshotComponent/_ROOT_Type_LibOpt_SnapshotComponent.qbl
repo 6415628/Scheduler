@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#root
+#parent: #DomainModel
+TypeSpecialization LibOpt_SnapshotComponent
+{
+  #keys: '2[139164.0.269058623][139164.0.269058622]'
+  Description:
+  [*
+    Each time a `LibOpt_Component` is executed, a new `LibOpt_SnapshotComponent` is created.
+    A `LibOpt_SnapshotComponent` contains valuable debug information:
+    
+    - The name, type and relation to the component executed.
+    - The time the component was called and the time the component finished.
+    - The input and output scope (if the `LibOpt_Run.DebugScope` attribute is `true`)
+    
+    If the input `LibOpt_Scope` is stored (when the `LibOpt_Run.DebugScope` attribute is `true`), a new `LibOpt_Run` can be started using the `LibOpt_Component` and `LibOpt_Scope` associated with this `LibOpt_SnapshotComponent`.
+  *]
+  OnDelete:
+  [*
+    input := this.InputScope();
+    this.InputScope( relflush );
+    LibOpt_Scope::OnUsingRelationDeleted( input );
+    
+    output := this.OutputScope();
+    this.OutputScope( relflush );
+    LibOpt_Scope::OnUsingRelationDeleted( output );
+  *]
+  Parent: LibOpt_Snapshot
+  StructuredName: 'LibOpt_SnapshotComponents'
+}

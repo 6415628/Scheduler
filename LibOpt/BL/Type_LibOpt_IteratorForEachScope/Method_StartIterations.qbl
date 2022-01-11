@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride StartIterations (LibOpt_Task task, LibOpt_TaskContextIterator context) as stream[JSON]
+{
+  Description:
+  [*
+    Loop through the scopes provided by the `LibOpt_IteratorScopeProvider`.
+    Stop the loop when a null scope is returned.
+  *]
+  TextBody:
+  [*
+    result := stream[JSON]::Success();
+    
+    can_continue := true;
+    while( can_continue
+           and this.CanStartIteration( context ) )
+    {
+      scope := this.GetNextScope( task );
+      
+      if( not isnull( scope ) )
+      {
+        result := result->Merge( this.StartIteration( task, context, scope ) );
+      }
+      
+      // Make the while loop stop when a null scope is given.
+      can_continue := not isnull( scope );
+    }
+    
+    return result;
+  *]
+}

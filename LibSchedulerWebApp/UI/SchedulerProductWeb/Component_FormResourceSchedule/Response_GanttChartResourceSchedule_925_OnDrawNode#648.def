@@ -1,0 +1,85 @@
+Quintiq file version 2.0
+#parent: GanttChartResourceSchedule_925
+Response OnDrawNode (FeedbackTaskInSchedule element, Resource_SC row) id:Response_GanttChartResourceSchedule_925_OnDrawNode_648
+{
+  #keys: '[142956.0.658683033]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebGanttChart_OnDrawNode'
+  GroupServerCalls: true
+  QuillAction
+  {
+    Body:
+    [*
+      // OnDrawNode SchedulingFeedbackTask
+      firstSubtask := true;
+      idleDuration := maxvalue( Schedule.Time() - element.End(), Duration::Zero() );
+      subtasks := selectsortedset( element, Task_SC.SubTask, subtask, subtask.DurationWithFeedback() <> Duration::Zero() 
+                                   and not element.HasReportedEnd(), subtask.SequenceNr() );
+      
+      traverse( subtasks, Elements, subtask )
+      {
+        color := ColorScheme.SCFeedbackProcess();
+        duration := ifexpr( firstSubtask, 
+                            subtask.DurationWithFeedback() + idleDuration, // For cases where the feedback is BEFORE the schedule time, add it to FIRST subtask
+                            subtask.DurationWithFeedback() );
+        
+        // Color all subtasks before process as feedback process color when receive start feedback and include process when receive process start feedback.
+        if( subtask <> subtasks.First() and ( subtask.IsAfterProcess() or ( not element.HasReportedProcessStart() and subtask.IsProcess() ) ) )
+        {
+          if( subtask.istype( ProcessSubTask ) )
+          {
+            color := ColorScheme.Scheduled();
+            
+            if( guard( element.Task_SC().IsFrozenInSchedule(), false ) )
+            {
+              color := ColorScheme.IsFrozenInSchedule();
+            } 
+          }
+          else if( subtask.istype( SetupSubTask ) )
+          {
+            color := ColorScheme.Setup();
+          }
+          else if( subtask.istype( TransferSubTask ) )
+          {
+            color := ColorScheme.Transfer();
+          }
+          else if( subtask.istype( ReceiveSubTask ) )
+          {
+            color := ColorScheme.Receive();
+          }
+          else if( not element.HasConstraintViolations() )
+          {
+            if( subtask.istype ( NoBufferWaitSubTask ) )
+            {
+              color := ColorScheme.NoBufferWait();
+            }
+            else if( subtask.istype ( NoBufferActionSubTask ) )
+            {
+              color := ColorScheme.NoBufferAction();
+            }
+            else if( subtask.istype ( NoBufferOutflowSubTask ) )
+            {
+              color := ColorScheme.NoBufferOutflow();
+            }
+            else if( subtask.istype ( CleanUpSubTask ) )
+            {
+              color := ColorScheme.CleanUp();
+            }
+            else if( subtask.istype ( NoBufferActionInputSubTask ) )
+            {
+              color := ColorScheme.NoBufferActionInput();
+            }
+          }
+        }
+        
+        firstSubtask := false;
+        drawinfo.AddCompartment( color, duration );
+      }
+      
+      if( subtasks.Size() = 0 )
+      {
+        drawinfo.AddCompartment( ColorScheme.SCFeedbackProcess(), element.Duration() );
+      }
+    *]
+  }
+}

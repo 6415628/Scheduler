@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ExtendSpanResourceAppendix (output owning LibOpt_ScopeElementOnRuns span, LibOpt_Scope scope) as Boolean
+{
+  Description:
+  [*
+    Extends the given span by the following rule:
+    If resource r is in scope and at least one in-scope operation is allowed to be planned on it, the last operation on r is in the span ("allow resource appendix")
+    Returns whether the span has been extended.
+    This rule is span-agnostic: given a scope, it always adds the same elements to the span.
+  *]
+  TextBody:
+  [*
+    // mbr23 Jan-10-2020 (created)
+    scope_operations := scope.OperationsExSpan();
+    scope_resources := scope.ResourcesExSpan();
+    
+    has_changed := false;
+    traverse( scope_resources, Elements, r ) // If resource r is in scope
+    {
+      is_allowed_scopeoperation := exists( scope_operations,
+                                           Elements.OperationOnResource,
+                                           oor,
+                                           oor.Resource_SC() = r and oor.IsAllowedHard() );
+      if( is_allowed_scopeoperation ) // and at least one in-scope operation is allowed to be planned on it
+      {
+        // the last operation on r is in the span: (or operationS to be batch-ready:)
+        traverse( r, Last.OperationInTask, op, scope_operations.Find( op ) < 0 )
+        {
+          scopeelement := op.GetOrCreateScopeElement();
+          seor := scopeelement.OnRunOrCreate( scope.Run() );
+          if( span.Find( seor ) < 0 )
+          {
+            // not yet in the span. add it:
+            span.Add( seor );
+            has_changed := true;
+          }
+        }
+      }
+    }
+    
+    return has_changed;
+  *]
+}

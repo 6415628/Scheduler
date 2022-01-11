@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test003_CreateMemoryOnlyCopy
+{
+  Description: 'Create a memory only copy of the dataset.'
+  TextBody:
+  [*
+    editor := MDSEditor::Editor();
+    
+    // To allow copying offline scenario and for code efficiency
+    // So only get loaded object infos if scenario is loaded, else get all object infos
+    isdatasetloaded      := true; // we assume the dataset is loaded
+    allinfos             := ifexpr( isdatasetloaded, editor.LoadedObjectInfos(), editor.ObjectInfos() );
+    row                  := this.GetTestUnitRow( this.Variant() );
+    dataset              := row.DatasetName();
+    mdsInfo              := select( allinfos, Elements, oinfo, oinfo.Name() = dataset );
+    
+    if( not isnull( mdsInfo ) )
+    {
+      // by running optimizer as memory only we reduce the machine dependency on the optimizer results 
+      // (standalone storage depends on hard disk write rate)
+      isCopyAsMemoryOnly   := true
+      originalStorageState := mdsInfo.State();
+      
+      // no dataset is created if there already exists a dataset with the same name
+      suffix               := '_' + Schedule::DatasetNamePartSkipOnDatasetConstructedDefaultOptimizerJobs() +'_' + this.Variant() + '_' + DateTime::ActualTime().Format( 'YM2D2_H2ms' );
+      datasetName          := mdsInfo.Name() + suffix;
+      
+      storageStateToBeUsed := ifexpr( isCopyAsMemoryOnly,
+                                      DatasetState::MemoryOnly(),
+                                      DatasetState::FromString( originalStorageState ) );
+      
+      options := DatasetCreateOptions::Construct( datasetName )
+                                       .AsCopy( mdsInfo.MDSID().MDSKey() )
+                                       .State( storageStateToBeUsed );
+      
+    //  planningdatasetkind := typeof( Schedule ).Name(); // this.LibSM_ScenarioManager().GetPlanningDatasetKind();
+    //  newDataSetStream := MDSSchedule::Create( options );
+      create_stream := DatasetController::Create( this.GetPlanningDatasetKind(), options );
+      create_stream->( dataset ){
+        // mbr23, 2020-06-17, DQS-1921: workaround: UTF waits for jobs and reactive calls to complete before going on to the next test method, but not for dataset OnConstructed logic.
+        // the dataset name included `Schedule::DatasetNamePartSkipOnDatasetConstructedDefaultOptimizerJobs()`, so the optimzier settings and strategy were not set on dataset construction.
+        // Set them here (where UTF waits for the jobs):
+        if( dataset.istype( Schedule ) )
+        {
+          schedule := dataset.astype( Schedule );
+          schedule.SetDefaultOptimizerSetting();
+          schedule.SetDefaultOptimizerStrategy();
+        }
+      }
+      
+      this.WorkerDataset( datasetName );
+    }
+    else
+    {
+      message := 'Dataset not found:' + dataset;
+      this.Run().RegisterFailure( message );
+    }
+  *]
+}

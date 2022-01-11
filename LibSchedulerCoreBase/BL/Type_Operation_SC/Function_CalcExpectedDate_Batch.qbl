@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcExpectedDate_Batch
+{
+  Description: 'The expected batch date of a non batch operation is the expected batch date of the previous operation plus the leadtime'
+  TextBody:
+  [*
+    // TG4AvK080508
+    
+    // TG
+    // First use the method to get the general value
+    value := this.CalculateExpectedDate_Batch_General()
+    
+    // Then take into account the present batch
+    if( this.PlannedInBatch() )
+    {
+      value := maxvalue( value,
+                         this.BatchSequenceElement().Batch().ExpectedDate()
+                       );
+    }
+    
+    
+    this.ExpectedDate_Batch( value );
+  *]
+}

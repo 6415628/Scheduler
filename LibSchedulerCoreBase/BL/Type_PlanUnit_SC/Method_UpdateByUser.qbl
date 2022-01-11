@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateByUser (Real quantity, Number nroflots)
+{
+  Description: "Updates this plan unit based on user input via edit plan unit dialog, also updates all its operation's planned supply/demand input/output materials, updates the plan unit's order_sc and the work order."
+  TextBody:
+  [*
+    order := this.Order_SC();
+    
+    this.Update( order, quantity, nroflots ); // need to update its quantity
+    
+    // if this plan unit is created in Scheduler, update its order with the sum of its plan unit quantities.
+    if( this.IsCreatedInScheduler() )
+    {
+      totalquantity := sum( order, PlanUnit_SC, pu, pu.Quantity() );
+      this.UpdateOrder( totalquantity );
+    }
+  *]
+}

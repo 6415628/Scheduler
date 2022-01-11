@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateExportedScheduler
+{
+  Description: 'Update the information on exported scheduler before execute broker'
+  TextBody:
+  [*
+    // jiex Jan-6-2017 (created)                                                          
+    exported_scheduler := this.FeedbackManager().GetSchedule();
+    // update exported schedule after propagate and rearrange
+    taskstart := min( exported_scheduler, ExportedSingleTask, t, true, t.Start() );
+    taskend := max( exported_scheduler, ExportedSingleTask, t, true, t.End() );
+    batchstart := min( exported_scheduler, ExportedOperationBatch, b, true, b.Start() );
+    batchend := max( exported_scheduler, ExportedOperationBatch, b, true, b.End() );
+    
+    start := minvalue( taskstart, batchstart );
+    end := maxvalue( taskend, batchend );
+    timestamp := DateTime::Now();
+    
+    exported_scheduler.Update( start, end, timestamp );
+  *]
+}

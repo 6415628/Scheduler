@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[Operation_SC] selection) id:Response_SCListOperations_MenuPlanOnSelectedResource1_OnClick
+{
+  #keys: '[11532.0.128361021]'
+  Body:
+  [*
+    // Schedule Ops on Selected Resource
+    res := DataHolderSelectedResource.Data()
+    
+    Schedule.PlanOperations( selection, res );
+  *]
+  DefinitionID => //FilteredList/Responsedef_FilteredList_Menu_OnClick
+  Initiator: 'MenuPlanOnSelectedResource1'
+  Precondition:
+  [*
+    isallowedhard := true;
+    resource      := DataHolderSelectedResource.Data();
+    
+    value := not isnull( resource );
+    
+    if( value )
+    {
+      if( resource.istype( SingleResourceBase ) )
+      {
+        singleResource := resource.astype( SingleResourceBase );
+        value := ApplicationScheduler.AllowedScheduling( singleResource,
+                                                         selection,
+                                                         false,
+                                                         false,
+                                                         resource.Last(),
+                                                         null( Task_SC ),
+                                                         Operation_SC::GetSelectedObjects( selection ),
+                                                         feedback,
+                                                         isallowedhard );
+      }
+      else
+      {
+        batchResource := resource.astype( BatchResource );
+        value := ApplicationScheduler.AllowedScheduling( batchResource,    //batchresource
+                                                         selection,        //structured operations
+                                                         false,            //skip soft check
+                                                         false,            //ctrl shift key
+                                                         resource.Last(),  //before task
+                                                         null( Task_SC ),  //afterbatch
+                                                         Operation_SC::GetSelectedObjects( selection ),
+                                                         feedback,
+                                                         isallowedhard )
+      }
+    }
+    else
+    {
+      feedback := Translations::SC_NoResourceSelected();
+    }
+    
+    return value;
+  *]
+  UserRequiresReadWrite: true
+}

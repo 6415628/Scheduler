@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestResequenceTaskWithShutdownLinkToPrecedingTask (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Now the Gantt chart should look like this
+    // | Task 1 | Shutdown Task | Task 2 |
+    
+    task1 := select( schedule, Operation_SC.Task_SC, t, t.GetOperation().PlanUnitId() = 'Plan Unit 1' );
+    task2 := select( schedule, Operation_SC.Task_SC, t, t.GetOperation().PlanUnitId() = 'Plan Unit 2' );
+    shutdownTask := select( schedule, Shutdown.Task_SC, t, true );
+    resource := select( schedule, ResourceGroup_SC.Resource_SC.astype( SingleResourceBase ), r, true );
+    
+    // Plan task1 to behind task2
+    resource.PlanLast( task1.GetOperation() );
+    
+    // Expected shutdown will also be replaned together with task1
+    // Expected Gantt chart
+    // | Task 2 | Task 1 | Shutdown Task |
+    value := resource.First() = task2
+             and resource.First().Next() = task1
+             and resource.First().Next().Next() = shutdownTask;
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Resequence task with shutdown type setting "IsLinkToPrecedingTask" failed.', this.Variant() ) );
+  *]
+}

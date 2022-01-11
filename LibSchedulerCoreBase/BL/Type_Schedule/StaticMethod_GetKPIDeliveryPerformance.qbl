@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetKPIDeliveryPerformance (constcontent Order_SCs orders) const declarative remote as Real
+{
+  Description: 'Returns schedule delivery performance.'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // FOR DEMO
+    // this KPI is demo specific. Please change this for project specific KPI.
+    // By default, value is 0.0
+    value := 0.0;
+    
+    // Calculate the number of order whose due date are in scheduling horizon and scheduled on time
+    nrontime := counter( orders,
+                         Elements,
+                         order,
+                         order.IsEligibleForKPICalculation()
+                         and order.IsPlanned()
+                         and order.ExpectedDate() <= order.DueDate() );
+    
+    // Calculate the number of order whose due date are in scheduling horizon
+    nrinhorizon := counter( orders,
+                            Elements,
+                            order,
+                            order.IsEligibleForKPICalculation() );
+    
+    // If there is no order whose due date are in scheduling horizon, calculation of delivery performance will be skipped
+    if( nrinhorizon > 0 )
+    {
+      // Calculate delivery performance of order whose due date are in scheduling horizon
+      value := ( nrontime / nrinhorizon ) * 100;
+    }
+    
+    return value.Round( 2 );
+  *]
+}

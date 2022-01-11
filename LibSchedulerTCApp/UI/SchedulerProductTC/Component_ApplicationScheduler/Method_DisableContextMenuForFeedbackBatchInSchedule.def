@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method DisableContextMenuForFeedbackBatchInSchedule (structured[FeedbackBatchInSchedule] feedbackbatchinschedules) as Boolean id:Method_ApplicationScheduler_DisableContextMenuForFeedbackBatchInSchedule
+{
+  #keys: '[143388.0.1823835653]'
+  Body:
+  [*
+    // Disable context menu for feedback batch in schedule
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    value := false;
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      traverse( feedbackbatchinschedules, Elements, fbtask )
+      {
+        // Disable context menu with feedback text
+        feedbackobject.AddHard( Translations::SC_CannotUnplan_TaskHasFeedbackTask( guard( fbtask.BatchTask().Batch().BatchID(), '' ) ) );
+      }
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

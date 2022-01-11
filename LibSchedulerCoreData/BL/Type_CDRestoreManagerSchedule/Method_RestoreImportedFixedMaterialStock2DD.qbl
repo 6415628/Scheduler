@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedFixedMaterialStock2DD (CDIntegration cdintegration)
+{
+  Description: 'Restore imported fixed material stock 2DD core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedFixedMaterialStock2DD
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedFixedMaterialStock2DD ), cdfms )
+    {
+      importedFixedMaterialStock2DD := schedule.ImportedFixedMaterialStock2DD( relnew, 
+                                                                               DependentDemandId := cdfms.DependentDemandId(),
+                                                                               StockMaterialId := cdfms.StockMaterialId()
+                                                                              );
+      CopyCorresponding::CopyFrom( cdfms ).CopyTo( importedFixedMaterialStock2DD );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

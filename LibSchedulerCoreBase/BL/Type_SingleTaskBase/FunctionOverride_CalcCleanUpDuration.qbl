@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcCleanUpDuration
+{
+  Description: 'Computes the clean up duration base on the previous operation.'
+  TextBody:
+  [*
+    cleanupduration := Duration::Zero();
+    nexttask := this.Next();
+    
+    if( not this.HasReportedEnd() and not isnull( nexttask ) )
+    {
+      // Clean up duration is computed on Resource
+      cleanupduration := this.SingleResourceBase().GetCleanUpDuration( this.GetOperation(), nexttask.GetOperation() );
+    }
+    
+    this.CleanUpDuration( cleanupduration )
+  *]
+}

@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride ValidationLogic (const Rule rule, DORule_DataObjectSequencingRule do_rule) const declarative remote as Boolean
+{
+  TextBody:
+  [*
+    value := true;
+    
+    // Only perform checkings if has previous operation
+    if( do_rule.HasPreviousOperation() )
+    {
+      // Getting threshold and difference jump from data object
+      ruleValue := this.GetRuleValue( rule, do_rule );
+      differencejump := this.GetDifferenceJumpValue( rule, do_rule );
+      
+      // Only perform checkings based on comparator type if threshold is finite and difference jump greater than 0
+      if( ruleValue.IsFinite() and differencejump > 0 )
+      {
+        if( this.Limit() = RuleConstant::Limit_Min() )
+        {
+          value := differencejump >= ruleValue;
+        }
+        else if( this.Limit() = RuleConstant::Limit_Max() )
+        {
+          value := differencejump <= ruleValue; 
+        }
+        else if( this.Limit() = RuleConstant::Limit_Allowed() )
+        {
+          value := differencejump = ruleValue;
+        }
+        else if( this.Limit() = RuleConstant::Limit_NotAllowed() )
+        {
+          value := differencejump <> ruleValue; 
+        }
+      }
+    }
+    
+    return value;
+  *]
+}

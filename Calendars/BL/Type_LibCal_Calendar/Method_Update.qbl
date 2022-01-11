@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update (DateTime base_i, Duration updateInterval_i, Number windowNrOfDays_i, 
+  Number historyNrOfDays_i) as LibCal_Calendar
+{
+  TextBody:
+  [*
+    // First validate the settings.
+    // If something is wrong the validation results in an error so that the actual update below will not be executed.
+    this.Validate( base_i, updateInterval_i, windowNrOfDays_i, historyNrOfDays_i );
+    
+    this.Base(           base_i            );
+    this.UpdateInterval( updateInterval_i  );
+    this.Window(         windowNrOfDays_i  );
+    this.History(        historyNrOfDays_i );  // History is part of the Window.
+    
+    // Recalcultate the EndDate and the StartDate of the calendar (also recalculates End and Start).
+    Transaction::Transaction().Propagate( attribute( LibCal_Calendar, EndDate   ) );
+    Transaction::Transaction().Propagate( attribute( LibCal_Calendar, StartDate ) );
+    
+    // Re-generated the occurrences of all the events; this only needs to be done when the calendar window has been changed.
+    // Doing this here explicitly lets the changes be part of the current transaction, instead of only of the next transaction, 
+    // triggered by Notification StartOrEndChanged. The Notification will still fire when the Start or End of the calendar was changed, 
+    // but it will not re-generate the occurrences anymore because that is already done here.
+    this.GenerateOccurrencesWhenWindowChanged();
+    
+    return this;
+  *]
+}

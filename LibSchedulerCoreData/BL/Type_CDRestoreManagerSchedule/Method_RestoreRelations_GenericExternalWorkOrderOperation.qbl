@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericExternalWorkOrderOperation (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic external work order operation core data relations to planning object'
+  TextBody:
+  [*
+    traverse( cdSchedule, CDEntity.astype( CDGenericExternalWorkOrderOperation ), cdGenericExternalWorkOrderOperation )
+    {
+      externalWorkOrderOperation := ExternalWorkOrderOperation::FindExternalWorkOrderOperation( cdGenericExternalWorkOrderOperation.WorkOrderId(),
+                                                                                                cdGenericExternalWorkOrderOperation.SequenceNr() );
+     
+      
+      if( not isnull( externalWorkOrderOperation ) )
+      {
+        importedExternalWorkOrderOperation := ImportedExternalWorkOrderOperation::FindImportedExternalWorkOrderOperation( cdGenericExternalWorkOrderOperation.WorkOrderId(),
+                                                                                                                          cdGenericExternalWorkOrderOperation.SequenceNr() );
+        // ImportedWorkOrderOperation, 1-1                                                                                                                    
+        externalWorkOrderOperation.ImportedWorkOrderOperation( relset, importedExternalWorkOrderOperation );                           
+        // ImportedExternalWorkOrderOperation, 1-1
+        externalWorkOrderOperation.ImportedExternalWorkOrderOperation( relset, importedExternalWorkOrderOperation );
+        // RoutingStep, M-1
+        externalWorkOrderOperation.RoutingStep( relset, RoutingStep::FindRoutingStep( cdGenericExternalWorkOrderOperation.RoutingId(),
+                                                                                      cdGenericExternalWorkOrderOperation.RoutingStepSequenceNr() ) );
+      }    
+    }
+    
+    /* 
+    Restore the following objects
+    1. ExternalWorkOrderOutputMaterial
+    2. ExternalWorkOrderInputMaterial
+    3. ExternalWorkOrderSupply
+    4. ExternalWorkOrderDemand
+    */
+         
+    this.RestoreRelations_GenericExternalWorkOrderInputMaterial( cdSchedule );
+    this.RestoreRelations_GenericExternalWorkOrderOutputMaterial( cdSchedule );
+    this.RestoreRelations_GenericExternalWorkOrderSupply( cdSchedule );
+    this.RestoreRelations_GenericExternalWorkOrderDemand( cdSchedule );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

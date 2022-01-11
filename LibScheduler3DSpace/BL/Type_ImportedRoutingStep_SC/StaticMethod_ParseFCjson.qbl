@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ParseFCjson (Schedule owner, String routingID, Number seqNr, 
+  JSON operation) as ImportedRoutingStep_SC
+{
+  Description: 'Parse the JSON data from 3DSpace to instantiate imported routing steps.'
+  TextBody:
+  [*
+    operationID := ImportedRoutingStep_SC::GetProcessOperationID( operation );
+    
+    importedRoutingStep := select( owner, 
+                                   ImportedRoutingStep_SC, 
+                                   importedRoutingStep, 
+                                   importedRoutingStep.RoutingId() = routingID // We still need to consider routingID and seqNr for SC internal primary key
+                                   and importedRoutingStep.SequenceNr() = seqNr
+                                   and importedRoutingStep.ID() = operationID ); // ID is the real primary key in 3DSpace
+    
+    if( isnull( importedRoutingStep ) )
+    {
+      importedRoutingStep := ImportedRoutingStep_SC::Create( owner, routingID, seqNr );
+    }
+    
+    importedRoutingStep.Update( operation );
+    
+    return importedRoutingStep;
+  *]
+}

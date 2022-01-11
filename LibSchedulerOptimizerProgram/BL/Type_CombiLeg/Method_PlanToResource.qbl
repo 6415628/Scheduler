@@ -1,0 +1,58 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanToResource (Operation_SCs scope_operations) as Boolean
+{
+  Description: 'Plans this combileg on its resource'
+  TextBody:
+  [*
+    // if the combileg belongs to a (master) combi program type which works as active combi ( means it's already planned ),
+    // then unplan the non frozen in scope tasks in the program first, only keep the frozen tasks and the program change task
+    // (This assumes that a combileg will be entirely in scope or it will be entirely in scope starting from task N, we do not handle other partial scopes)
+    //  then plan operation in this combi after the last remainig task (either a frozen task, the program change task or the last task of the previous leg)
+    //  otherwise, we will plan this combi as a new programtype at the end of the resource
+    
+    aftertask := null( Task_SC);
+    isresyncactive := false;
+    
+    cpt := this.LeadingCombiProgramPhase().CombiProgramType();
+    // If this CPT is linked to a master combi program type (which has is the active combi), then select that master CPT
+    if( guard( not isnull(cpt.MasterCombiProgramType().ProgramTypeAsActiveCombi() ), false ) )
+    {
+      cpt := cpt.MasterCombiProgramType();
+    }
+    if( not isnull( cpt.ProgramTypeAsActiveCombi() ) )
+    {
+      this.UnplanTasks( scope_operations );
+      
+      // If there is any task remaining on the leg, plan after the latest of these tasks
+      aftertask := this.Leg().LastTaskOnLeg();
+    
+      // If there was no task remaining on this leg
+      if( isnull( aftertask ) )
+      {
+        // And there is a previous leg that belongs to the same leading program type
+        if( guard( not isnull ( this.Previous().Leg() ), false ) )
+        {
+          // then the last task of the previous leg is the after task
+          aftertask := this.Previous().Leg().LastTaskOnLeg();
+        }
+        // Otherwise, select the program change task of this program type as the after task
+        else
+        {
+          aftertask := cpt.ProgramTypeAsActiveCombi().ProgramChange().ProgramChangeTask();
+        }
+      }
+      isresyncactive := true;
+    }
+    // Otherwise plan at the end of the resource
+    else
+    {
+      aftertask := this.LeadingCombiProgramPhase().CombiProgramType().CombiProgramSet().Resource_SC().Last();
+    }
+    
+    // Plan the scope_operations after the aftertask
+    this.PlanAfter( aftertask, scope_operations );
+    
+    return isresyncactive
+  *]
+}

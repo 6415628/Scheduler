@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendMetadataRequestSetTypeInterestCreated (LibDEF_SetTypeInterestOfDataset datasetInterest_i, LibDEF_SetTypeMeta interestedSetTypeMeta_i)
+{
+  Description: 'Send a Metadata message for requesting the SetTypeInterest to be created.'
+  TextBody:
+  [*
+    nvt := LibDEF_DataAccessor::CreateMessageMetadata();
+    
+    // define Type and required Header
+    LibDEF_DataAccessor::SetMetadataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_TYPE(),        LibDEF_DataAccessor::TYPE_METADATA_SETTYPEINTERESTCREATED() );
+    LibDEF_DataAccessor::SetMetadataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_SETTYPEGUID(), interestedSetTypeMeta_i.GUID()                              );
+    
+    // export DatasetInterest
+    nvBody := LibDEF_DataAccessor::GetMetadataBody( nvt );
+    NamedValueTreeIO::Export( datasetInterest_i, nvt, nvBody, false );
+    
+    dataBroker := this.DataBroker();
+    event      := dataBroker.EventCreate( this, false );
+    
+    LibDEF_Util::EventLog( event, "Sending SetTypeInterest created metadata request" );
+    
+    dataBroker.SendMessage( this, nvt, LibDEF_DataAccessor::KIND_REQUEST(), event );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

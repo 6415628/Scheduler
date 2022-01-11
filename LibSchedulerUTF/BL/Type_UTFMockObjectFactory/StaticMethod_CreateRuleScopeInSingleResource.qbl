@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateRuleScopeInSingleResource (Schedule schedule, Rule rule, String resourceID) as SingleResource
+{
+  Description: 'Create rule scope in single resource.'
+  TextBody:
+  [*
+    // Create rule scope in single resource
+    
+    // Create resource
+    singleResource := select( schedule, ResourceGroup_SC.Resource_SC.astype( SingleResource ), resource,
+                              resource.ResourceID() = resourceID );
+    
+    if( isnull( singleResource ) )
+    {
+      singleResource := UTFMockObjectFactory::CreateSingleResource( schedule, resourceID );  
+    }
+    
+    // Create rule scope in single resource 
+    ruleScopeInResource := rule.RuleScopeInResource( relnew );
+    ruleScopeInResource.Resource_SC( relset, singleResource );
+    
+    return singleResource;
+  *]
+}

@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckSnapshotType (LibOpt_Suboptimizer suboptimizer, Strings snapshots_types) as stream[Void]
+{
+  TextBody:
+  [*
+    run := suboptimizer.Run();
+    
+    identifier := '[Name = ' + suboptimizer.Name() + ']';
+    
+    run.SetStartComponent( suboptimizer );
+    run.Snapshot( relflush );
+    start_scope := run.StartScope();
+    test1 := run->Start();
+    return test1->|this->( t )
+    {
+      this.Run().AssertEqual( snapshots_types.Size(), run.Snapshot( relsize ), 'Incorrect number of Snapshots' + identifier );
+      this.Run().AssertEqual( 1, suboptimizer.SnapshotComponent( relsize ), 'Incorrect number of Snapshots in the Suboptimizer' + identifier );
+      
+      snapshot := select( suboptimizer, SnapshotComponent, snapshot, true );
+      if( not isnull( snapshot ) )
+      {
+        snapshots := snapshot.Descendants();
+        snapshots.Add( snapshot );
+        
+        traverse( snapshots_types.Unique(), Elements, snapshot_type )
+        {
+          expected_count := counter( snapshots_types, Elements, st, st = snapshot_type );
+          type := select( DomainModel::Domain().Types(), Types, type, type.Name() = snapshot_type );
+          
+          actual_count := counter( snapshots, Elements, s, typeofexpression( s ).IsDerivedFrom( type ) );
+          this.Run().AssertEqual( expected_count, actual_count, 'Unexpected number of ' + type.Name() + ' snapshots.' + identifier );
+        }
+        
+        this.Run().AssertTrue( not isnull( snapshot.InputScope() ), 'Not isnull input scope.' + identifier );
+        nr_error_snapshots := counter( run, Snapshot.astype( LibOpt_SnapshotError ), err_snap, true );
+        if( nr_error_snapshots = 0 )
+        {
+          this.Run().AssertTrue( not isnull( snapshot.OutputScope() ), 'Not isnull output scope.' + identifier );
+        }
+        else
+        {
+          this.Run().AssertTrue( isnull( snapshot.OutputScope() ), 'Isnull output scope.' + identifier );
+        }
+        this.Run().AssertTrue( snapshot.OutputScope() <> start_scope, 'Output scope and start scope are not the same.' + identifier );
+      }
+    }->Exception()->( e )
+    {
+      this.Run().RegisterFailure( 'Exception caught: ' + e.Message() + identifier );
+    }->AsVoid();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

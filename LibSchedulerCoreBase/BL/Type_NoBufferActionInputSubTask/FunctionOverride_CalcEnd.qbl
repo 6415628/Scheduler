@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcEnd
+{
+  Description: "Compute the NoBufferActionInputSubTask's End base on latest upstream operation's End."
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // Project to implement where No buffer action should end.
+    batchtask := guard( this.Task_SC().astype( BatchTask ), null( BatchTask ) );
+    end := this.Start();
+    
+    if( not isnull( batchtask ) )
+    {
+      end := max( batchtask.Batch().GetOperations(), Elements.FromOperationDependency.FromOperation, o, true, 
+                  guard( o.Task_SC().LastRespectRoutingSubTask().End(), end ) );
+    }
+    
+    end := maxvalue( end, this.Start() );
+    this.End( end );
+  *]
+}

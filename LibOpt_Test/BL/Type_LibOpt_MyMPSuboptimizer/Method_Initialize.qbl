@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Initialize (const LibOpt_Task task) const as owning MathematicalProgram
+{
+  TextBody:
+  [*
+    LibOpt_TestUnit_Suboptimizer::Initialize( this, this.RunContextForUTF(), task );
+    
+    program := LibOpt_MyMPSuboptimizer_TestMP::Create();
+    
+    var1 := program.NewVariable( 'Var1' );
+    var1.UpperBound( 1.0 );
+    var2 := program.NewVariable( 'Var2' );
+    var2.UpperBound( 1.0 );
+    
+    if( this.HasHierarchicalGoal() )
+    {
+      goal := program.NewGoal( 'Level 1' );
+      goal.Priority( 1 );
+      goal.NewTerm( 1.0, var1 );
+      
+      goal := program.NewGoal( 'Level 2' );
+      goal.Priority( 2 );
+      goal.NewTerm( 1.0, var2 );
+    }
+    else
+    {
+      goal := program.Goal();
+      goal.NewTerm( 1.0, var1 );
+      goal.NewTerm( 1.0, var2 );
+    }
+    
+    
+    return & program;
+  *]
+}

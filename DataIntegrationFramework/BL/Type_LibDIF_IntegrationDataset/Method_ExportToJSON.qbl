@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExportToJSON (String integratorID_i, LibDIF_DataTransformation dataTransformation_i) as String
+{
+  TextBody:
+  [*
+    // Create a NamedValueTree with a Header and a Body as message for the QIntegrator.
+    requestNVT := LibInt_MessageAccessor::CreateEmptyMessage();
+    
+    // Add a node for the 'owning' type, i.e. the Integration-dataset, to the Body.
+    bodyNode := requestNVT.Root().Child( requestNVT.GetHandle( "Body" ) );
+    NamedValueTreeIO::Export( this, requestNVT, bodyNode, false );
+    
+    // Delete the attributes, only the type itself is relevant in this case.
+    owningNode := bodyNode.Child( requestNVT.GetHandle( this.DefinitionName() ) );
+    owningNode.DeleteChildren();
+    
+    // Add the IntegrationObjects based on the provided DataTransformation.
+    integrationObjects := this.GetIntegrationObjects( dataTransformation_i );
+    traverse( integrationObjects, Elements, integrationObject )
+    {
+      writeReferences := false; 
+      NamedValueTreeIO::Export( integrationObject, requestNVT, owningNode, writeReferences );
+    }
+    
+    //info( ">>> RequestNVT" );
+    //info( requestNVT.ToString() )
+    
+    // Trigger the action in the QIntegrator and wait for its reply.
+    json        := "";
+    errMsg      := "";
+    responseNVT := LibInt_IntegratorProxy::SyncNvtRequest( integratorID_i, "", requestNVT, errMsg );
+    
+    if( errMsg <> "" )
+    {
+      // A 'real' error will be thrown later.
+      LibDIF_Util::Info( "ERROR received from QIntegrator" );
+      info( errMsg );
+    }
+    else
+    {
+      // Retrieve the JSON from the Body of the replied NVT.
+      bodyNode := responseNVT.Root().Child( responseNVT.GetHandle( "Body" ) );
+      json     := bodyNode.GetValueAsString();
+    
+      //info( ">>> JSON" );
+      //info( json );
+    }
+    
+    return json;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

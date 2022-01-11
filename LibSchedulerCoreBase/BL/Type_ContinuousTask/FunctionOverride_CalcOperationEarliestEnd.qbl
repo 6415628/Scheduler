@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcOperationEarliestEnd
+{
+  TextBody:
+  [*
+    value := DateTime::MaxDateTime();
+    operation := this.GetOperation();
+    
+    if( not isnull( operation ) )
+    {
+      value := operation.EarliestStart() + operation.ExpectedDuration();
+      
+      // When there is a last respect routing subtask,
+      // the operation's earliest end is the last respect routing subtask's earliest end.
+      value := guard( this.LastRespectRoutingSubTask().EarliestEnd(),
+                      value );
+    
+      previous_end := this.Schedule().Time();
+      lastfeedbacktask := this.Resource_SC().LastFeedbackTaskInSchedule();
+    
+      if( not isnull( this.Previous() ) )
+      {
+        previous_end := this.Previous().EarliestEnd();
+      }                              
+      else if( not isnull( lastfeedbacktask ) )
+      {
+        previous_end := lastfeedbacktask.End();
+      }
+      
+      value := maxvalue( value,
+                         previous_end + ifexpr( this.IsParallelWithPrevious() or this.HasFeedbackTask(), // If parallel with previous or has received feedback, no need discharge
+                                                Duration::Zero(), 
+                                                this.DischargeDuration() ) );
+    }
+    
+    this.OperationEarliestEnd( value );
+  *]
+}

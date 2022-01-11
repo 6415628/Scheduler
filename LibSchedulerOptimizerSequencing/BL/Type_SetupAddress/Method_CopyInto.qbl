@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method CopyInto (RunContextSetupAddress runcontext_other) as SetupAddress
+{
+  Description:
+  [*
+    creates a deep copy of this address and inserts it into the given run context.
+    Precondition: the given run context must already contain all its coordinates that are copies of this run context's respective coordinates.
+  *]
+  TextBody:
+  [*
+    // mbr23 Mar-20-2020 (created)
+    address_other := runcontext_other.Address( relnew,
+                                               Id := this.Id(),
+                                               KeyRunContext := runcontext_other.Key() );
+    traverse( this, CoordinateInAddress, cia ) // sorted order traversal
+    {
+      dimension_other := SetupDimension::FindTypeIndexSetupDimension( runcontext_other.Key(), cia.Coordinate().Dimension().Id() );
+      coordinate_other := SetupCoordinate::FindTypeIndexSetupCoordinate( dimension_other.Key(), cia.Coordinate().Id() );
+      SetupCoordinateInAddress::Create( address_other, coordinate_other );
+    }
+    
+    return address_other;
+  *]
+}

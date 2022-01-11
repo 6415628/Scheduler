@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateProgramPhaseTransitionRule (Schedule schedule) as Rule
+{
+  Description: 'Create program phase transition rule test data'
+  TextBody:
+  [*
+    // Create rule
+    rule := Rule::Create( schedule, schedule.GetLastRuleID() );
+    rule.Name( 'Transition rule' );
+    
+    // Set rule type/ rule subtype
+    subtype := select( schedule, RuleType.RuleSubType, rst, rst.Name() = RuleConstant::RuleSubType_MaxCombinedLength() );
+    rule.RuleType( relset, subtype.RuleType() );
+    rule.RuleSubType( relset, subtype );
+    
+    // Create characteristic main - nr of tasks
+    characteristicMain := select( schedule, Characteristic, char, char.ID() = RuleConstant::Characteristic_NumberOfTasks() );
+    rule.CharacteristicMain( relset, characteristicMain );
+    
+    // Create normal attribute in rule and set as transition rules
+    rule.IsEnabled( true );
+    rule.RuleScopeSelected( RuleConstant::RuleScope_ProgramPhase() );
+    rule.IsProgramPhaseTransitionRule( true );
+    rule.RuleValue( 3.0 );
+    
+    programPhaseConfig := select( schedule, ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration.ProgramPhaseConfiguration, ppc,
+                                  ppc.ProgramPhaseConfigurationID() = 'HEAD' );
+    
+    // Create rule scope in program phase
+    RuleScopeInProgramPhase::Create( rule, programPhaseConfig );
+    
+    return rule;
+  *]
+}

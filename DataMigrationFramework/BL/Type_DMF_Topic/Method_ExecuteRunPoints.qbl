@@ -1,0 +1,73 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExecuteRunPoints
+{
+  TextBody:
+  [*
+    // sbt2 May-20-2021 (created)
+    
+    dmf := this.ConvertorDataset();
+    
+    if( not dmf.GetIsParallelConversionThresholdReached() )
+    {
+      traverse( dmf, DatasetType.Dataset, dataset, dataset.CanResetStatus() )
+      {
+        dataset.ResetStatus();
+      }
+      
+      // Initialize the run step execution by running the run point that can be executed
+      runPoints := selectset( this, RunStepRunPoint, runPoint, 
+                              runPoint.GetIsNotStarted(), 
+                              runPoint.CanExecute() );
+      
+      if( runPoints.Size() > 0 )
+      {
+        // Take an arbitrary first RunPoint that is qualified
+        runPoint := runPoints.First();
+        
+        // If we are dealing with RunPoints that are associated with datasets (e.g. pre-processing)
+        // Then we need to take into consideration their priority
+        if( exists( runPoints, Elements, point, not isnull( point.Dataset() ) ) )
+        {
+          runPoint := minselect( runPoints, Elements, point, 
+                                 point.GetIsNotStarted(), 
+                                 point.Dataset().DatasetType().PriorityNr() );
+        }
+    
+        runPoint.InitializeRunStep();
+        
+        // Call this method recursively to see if we can run another runpoint in parallel
+        this.ExecuteRunPoints();
+      }
+      // No more runsteps can be executed, we are done with what we could!
+      // Here it means either we have completed all the run steps successfully, or one of the steps have failed
+      // and that it is not possible to continue
+      else
+      {
+        // Debug - do not delete
+        //logfile( ">>> CheckAllDatasetsProcessed" );
+        
+        // If all prepared datasets are Finished or Failed, end the conversion process
+        if( not dmf.IsPendingProcessing() )
+        { 
+          // If there is no dataset fails, that means all of them pass
+          isAllPassed := not exists( dmf, DatasetType.Dataset, dataset, dataset.GetIsFailed() );
+          
+          if( isAllPassed )
+          {
+            // Debug - do not delete
+            //logfile( ">>> UpdateCurrentVersion" )
+            
+            // ToBeDecided: Not sure if this still makes sense, because different dataset may have different "Last" version
+            dmf.CurrentVersion( relset, dmf.LastConverterVersion() ); // Set the current version as the last version
+          }
+          
+          // Mark the conversion operation as completed
+          dmf.UpdateIsConversionMode( false );
+          dmf.UpdateEnd( DateTime::Now() );
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

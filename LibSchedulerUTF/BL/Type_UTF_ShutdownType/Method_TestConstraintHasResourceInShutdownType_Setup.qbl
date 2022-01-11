@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestConstraintHasResourceInShutdownType_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    hasDuplicateID := false;
+    shutdownTypeID := '';
+    shutdownTypeName := '';
+    defaultduration := Duration::Zero();
+    isValidForPreconCreateEdit := false;
+    hasResourceScopeInShutdownType := false;
+    isViolatedResourceScopeConstraint := false;
+    hasPlannedShutdownTask := false;
+    isValidForPreconDelete := false;
+    
+    this.GetTestVariant( hasDuplicateID,
+                         shutdownTypeID,
+                         shutdownTypeName,
+                         defaultduration,
+                         isValidForPreconCreateEdit,
+                         hasResourceScopeInShutdownType,
+                         isViolatedResourceScopeConstraint,
+                         hasPlannedShutdownTask,
+                         isValidForPreconDelete );
+    
+    // Create shutdown type
+    shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, 'Shutdown Type ID' );
+    
+    // Create resource scope based on variant
+    if( hasResourceScopeInShutdownType )
+    {
+      // Create resource
+      resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Single Resource' );
+      
+      // Create shutdown type in resource
+      UTFMockObjectFactory::CreateShutdownTypeInResource( shutdownType, resource );
+    }
+  *]
+}

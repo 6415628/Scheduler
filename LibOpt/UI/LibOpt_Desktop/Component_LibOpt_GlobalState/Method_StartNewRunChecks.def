@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method StartNewRunChecks (LibOpt_Optimizer optimizer, LibOpt_Run run) as Boolean id:Method_LibOpt_GlobalState_StartNewRunChecks
+{
+  #keys: '[144996.0.1719791355]'
+  Body:
+  [*
+    // The parameter optimizer or run can be used. Only one needs to be set.
+    assert( not isnull( optimizer ) or not isnull( run ), 'not isnull( optimizer ) or not isnull( run )' );
+    
+    // Check if there are no runs currently running
+    optimization := guard( optimizer.Optimization(), run.Optimization() );
+    running := optimization.GetRunningRuns();
+    running_check := running.Size() = 0
+           or MessageBox::Question( this, Translations::LibOpt_Run_StartWithOtherRunning( running.Size() ), Translations::LibOpt_YesNo() ) = 0
+    
+    // Highlight runs that will be cleaned up
+    cleanup_check := not running_check
+           or this.CreateRunCleanupCheck( optimizer, run, 1 );
+    
+    return running_check and cleanup_check;
+  *]
+}

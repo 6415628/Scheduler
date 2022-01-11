@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetVersionString (DMF_DBInterface dbInterface_i, DataUpgradeIO duio_i) as String
+{
+  Description: 'Get version string from DataUpgradeIO by using select query'
+  TextBody:
+  [*
+    // Use dummy metadata object to derive inputs
+    metadata      := construct( DMF_UpgradeabilityMetaData );
+    tableMetadata := metadata.DefinitionName();
+    
+    // Key is always returned by default, which we don't need
+    excludeColumns  := "Key".Tokenize( "," );
+    requiredColumns := dbInterface_i.GetTableColumns( duio_i, tableMetadata, excludeColumns );
+    results         := dbInterface_i.GetRecordsInSingleColumn( duio_i, tableMetadata, requiredColumns );
+    keyValues       := guard( results.Element( 0 ), "" ).Tokenize( DMF_DBInterface::GetValueDelimiter() ); 
+    delim           := DMF_DBInterface::GetKeyValueDelimiter();
+    
+    //combined the columns with its values
+    detailInfos     := selectvalues( keyValues, Elements, keyValue, true,
+                                     keyValue.ReplaceAll( delim, DMF_UpgradeabilityMetaData::GetDetailInfoDelimeter() ) );
+    
+    //rearrange the sequence make sure CoreDataMajorVersion and CoreDataMinorVersion is at first in the list
+    DMF_UpgradeabilityMetaData::FixVersionSequence( &detailInfos, delim );
+    
+    //retrieve only version string based on attribute with prefix "CoreData"
+    versionInfos := construct( Strings );
+    
+    traverse( detailInfos, Elements, detailInfo, 
+              detailInfo.StartsWith( "CoreData" ) )
+    {
+      pair  := detailInfo.Tokenize( ": " );
+      value := guard( pair.Element( 1 ), "" );
+      
+      versionInfos.Add( value );
+    }
+    
+    versionInfo := versionInfos.ToString( '' );
+    return versionInfo;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

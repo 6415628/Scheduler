@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddDemandsAllowedSoft (Demands demands) declarative remote as Boolean
+{
+  Description: 'Checks if demands can be added to the batch by checking soft rules.'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    if( demands.Size() = 1 )
+    {
+      this.CheckIsBatchNotFull();
+      this.CheckIsDemandNotFullyFulfilled( demands.Element( 0 ) );
+    }
+    
+    this.CheckIsNotInFrozenPeriod();
+    DemandBatch::CheckIsDemandScheduledInDemandBatch( demands, this );
+    
+    return feedback.IsAllowed();
+  *]
+}

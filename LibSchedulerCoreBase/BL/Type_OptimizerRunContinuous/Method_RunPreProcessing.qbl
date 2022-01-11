@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride RunPreProcessing
+{
+  TextBody:
+  [*
+    // This is template code and we expect this method is overload at subclassed objects
+    super.RunPreProcessing();
+    
+    isvalidrollbacksnapshot := true;
+    snapshot := this.TakeSnapShot( OptimizerRunContinuous::SnapshotNameInitialDescription(), isvalidrollbacksnapshot );
+    
+    Transaction::Transaction().Propagate( attribute( OptimizerRun, IsAsync ) );
+    Transaction::Transaction().Propagate( attribute( OptimizerRunContinuous, IsKeepBestSolutionInUIInAsyncMode ) );
+    
+    if( this.IsAsync() and this.IsKeepBestSolutionInUIInAsyncMode() )
+    {
+      this.UISnapshot( relset, snapshot );
+    }
+  *]
+}

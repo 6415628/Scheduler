@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateFulfillmentForPlannedOrderSupply (Schedule schedule)
+{
+  Description: 'Create fulfillment for planned order supply.'
+  TextBody:
+  [*
+    planUnit := select( schedule, PlanUnit_SC, planUnit, true );
+    operation := UTFMockObjectFactory::CreateOperation( planUnit );
+    demand := GenericProductPlannedDemand::Create( schedule, DemandType::ProductDependentDemand(), 'Demand1' );
+    supply := GenericProductExternalSupply::Create( schedule, SupplyType::ProductPlannedSupply(), 'Supply1' );
+    
+    supply.Operation_SC( relset, operation );
+    fulfillment := demand.ProductFulfillment( relnew, GenericProductPlannedFulfillment, 
+                                              DemandId := demand.DemandID(), 
+                                              SupplyId := 'Supply1', 
+                                              Supply := supply,
+                                              ProductSupply := supply );
+    fulfillment.Demand( relset, demand );
+    
+    // Propagate relation PlanUnit_SC.Supply which is used for precon check.
+    Transaction::Transaction().Propagate( relation( PlanUnit_SC, Supply ) );
+  *]
+}

@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod HandleTaskStartExceptions (Operation_SC operation, FeedbackTaskInSchedule fbtask, Boolean isfirstfeedback, 
+  String resource_id, DateTime start, String remark, 
+  String scheduledprevopid)
+{
+  TextBody:
+  [*
+    // jiex Sep-8-2016 (created)
+    resource := Resource_SC::FindResource_SC( resource_id );
+    
+    if( isfirstfeedback )
+    {
+      //Exceptions to be checked only for first time receiving task start event
+      fbtask.HandleTaskStartException_PrecedingTaskWithoutReportedStart( operation, start, resource, remark, scheduledprevopid );
+      
+      fbtask.HandleTaskStartException_PrecedingTaskWithoutReportedEnd( start, resource, remark, scheduledprevopid );
+    
+      fbtask.HandleTaskStartException_DifferentResource(operation, start, resource, remark, scheduledprevopid );
+    
+      fbtask.HandleTaskStartException_NotScheduled(operation, start, resource, remark, scheduledprevopid ); 
+    }
+    else
+    {
+      fbtask.HandleTaskStartException_HasEarlierReportedStart( start, resource, remark, scheduledprevopid );
+      
+      fbtask.HandleTaskStartException_InconsistentExecutionFeedback( start, resource, remark, scheduledprevopid ); 
+    }
+  *]
+}

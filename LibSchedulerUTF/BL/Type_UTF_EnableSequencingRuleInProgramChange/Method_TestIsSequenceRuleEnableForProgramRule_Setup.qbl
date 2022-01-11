@@ -1,0 +1,68 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestIsSequenceRuleEnableForProgramRule_Setup (Schedule schedule)
+{
+  Description: "Test program set configuration setting 'Is Sequence Rule Enabled' for program rule - setup"
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    isSequenceRulesEnabled := false;
+    hasViolatedRules := false;
+    hasfeedback := false;
+    
+    this.GetTestVariant( isvariantfound,
+                         isSequenceRulesEnabled,
+                         hasViolatedRules,
+                         hasfeedback );
+    
+    if( isvariantfound )
+    {
+      // Initialize rule framework and characteristic
+      schedule.InitializeRuleFramework();
+      schedule.InitializeCharacteristic();
+      
+      // Create program scheduling data
+      // Plan all operations
+      programDefConfig := this.CreateProgramSchedulingData( schedule );
+      programsetconfig := select( programDefConfig, ProgramSetConfiguration, set, true );
+      programsetconfig.IsSequenceRulesEnabled( isSequenceRulesEnabled );
+      
+      // Create transition rule
+      this.CreateProgramPhaseTransitionRule( schedule );
+        
+      // Create backup program
+      programsetconfig2 := UTFMockObjectFactory::CreateProgramSetConfigurationData( programDefConfig,
+                                                                                    'Backup program',
+                                                                                    'Backup program',
+                                                                                    false );
+      programtypeconfig2 := select( programsetconfig2, ProgramTypeConfiguration, pt, true );
+      programchange1 := minselect( schedule, ProgramChange, pc, true, pc.ProgramChangeID() );
+      programchange1.ProgramChangeInType( relnew, ToProgramTypeConfiguration := programtypeconfig2 );
+    
+      if( hasfeedback )
+      {
+        // Transaction propagate on newly created operations needed before create feedback
+        Transaction::Transaction().Propagate();
+        
+        // Create program feedback
+        this.CreateProgramSchedulingFeedbackData( schedule );
+        
+        // Create operation feedback
+        this.CreateFeedbackForOperations( schedule );
+      }
+        
+      // Create rule based on variant
+      this.CreateRule( schedule, 
+                       RuleConstant::RuleScope_Program(), 
+                       RuleConstant::RuleSubType_NotAllowedJumpValue(), 
+                       RuleConstant::Characteristic_ProductType(), 
+                       programsetconfig2 );
+    }
+    
+    // Gantt chart
+    // Backup program    |------   ------  ------  ------  PROGRAM PHASE-----  ------  ------  -------- | ==> Program rule
+    // Program set       |------     HEAD-----   |-TAIL--|                   |---------HEAD----------   |
+    // ProgramChangeTask | Task0 | Task1 | Task2 | Task3 | ProgramChangeTask | Task4 (Violated) | Task5 |
+  *]
+}

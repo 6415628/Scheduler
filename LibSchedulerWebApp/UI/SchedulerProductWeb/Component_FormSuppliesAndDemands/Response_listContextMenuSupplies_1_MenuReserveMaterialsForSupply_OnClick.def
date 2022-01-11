@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: listContextMenuSupplies_1/MenuReserveMaterialsForSupply
+Response OnClick (structured[Supply] selection) id:Response_listContextMenuSupplies_1_MenuReserveMaterialsForSupply_OnClick
+{
+  #keys: '[143768.1.250798919]'
+  CanBindMultiple: false
+  DefinitionID => /listContextMenuSupplies_1/Responsedef_listContextMenuSupplies_1_MenuRemoveSupplyReservations_478_OnClick
+  GroupServerCalls: true
+  QuillAction
+  {
+    Body:
+    [*
+      // Automatically use selected supplies for reservation
+      
+      demands := selectset( Schedule, Demand, demand, not demand.IsFrozenInSchedule() );
+      fulfillments := selectset( selection, Elements.Fulfillment, f, true );
+      Fulfillment::CreateAutoPlannedFulfillments( demands, selection, fulfillments, false, 0.0 );
+    *]
+  }
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoPreconditionOnUniqueName (output String feedback_o) as Boolean id:Method_DialogCreateEditCampaignType_DoPreconditionOnUniqueName
+{
+  #keys: '[143768.1.1820878549]'
+  Body:
+  [*
+    // Precondition check on input name
+    campaignname := EditFieldCampaignTypeName.Text();
+    
+    nameused := select( DataHolderResourceGroup.Data(),
+                        CampaignType,
+                        campaignType,
+                        guard( campaignType.Name() <> DataHolderCampaignType.Data().Name(), true ),
+                        campaignType.Name() = campaignname );
+    
+    value := isnull( nameused );
+    EditFieldCampaignTypeName.HintClear();
+    
+    if( not value )
+    {
+      feedback := Translations::SC_CampaignType_UniqueName();
+      Utility_SC::Concat( feedback_o, feedback );
+      EditFieldCampaignTypeName.HintError( feedback );
+    }
+    
+    return value;
+  *]
+}

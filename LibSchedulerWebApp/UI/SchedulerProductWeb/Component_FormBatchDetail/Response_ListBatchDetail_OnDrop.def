@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: ListBatchDetail
+Response OnDrop (structured[Operation_SC] source, Operation_SC target) id:Response_ListBatchDetail_OnDrop
+{
+  #keys: '[154390.0.113690390]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebList_OnDrop'
+  GroupServerCalls: true
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey       := actionmodifier.IsControl();
+    ctrlshiftkey  := actionmodifier.IsControl() and actionmodifier.IsShift();
+    batch := target.BatchSequenceElement().Batch();
+    
+    operations    := selectset( batch, BatchSequenceElement.Operation_SC, bo, true, true );
+    operations    := operations.Union( source );
+    result := false;
+    
+    if( batch.IsPlanned() )
+    {
+      batchtask := batch.BatchTask();
+      result := Scheduler.AllowedScheduling( batchtask.BatchResource(), //batchresource
+                                             operations,           //structured operations
+                                             ctrlkey,              //skip soft check
+                                             ctrlshiftkey,         //ctrl shift key
+                                             batchtask.Previous(), //before task
+                                             batchtask.Next(),     //afterbatch
+                                             Operation_SC::GetSelectedObjects( source ),
+                                             feedback,
+                                             isallowedhard )
+    }
+    else
+    {
+      result := Scheduler.AllowedInBatch( operations, not batch.IsPlanned(), ctrlkey, false, feedback, isallowedhard );
+    }
+    
+    return result;
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // OnDrop structured[Operation_SC] --> Operation_SC (dropping on an operation in a batch)
+      if( not isnull( target.BatchSequenceElement() ) )
+      {
+        // (Add operation to batch)
+        target.BatchSequenceElement().Batch().AddOperationsBefore( source, target.BatchSequenceElement() );
+      }
+    *]
+  }
+}

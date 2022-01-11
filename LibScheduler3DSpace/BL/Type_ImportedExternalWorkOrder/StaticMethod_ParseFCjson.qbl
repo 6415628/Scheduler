@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ParseFCjson (Schedule owner, JSON workOrder) as ImportedExternalWorkOrder
+{
+  Description: 'Parse json data to create work order.'
+  TextBody:
+  [*
+    id := ImportedExternalWorkOrder::GetID( workOrder );
+    
+    result := select( owner, ImportedWorkOrder.astype( ImportedExternalWorkOrder ), wo, true, wo.Id() = id );
+    
+    if( isnull( result ) )
+    {
+      result := ImportedExternalWorkOrder::Create( owner, id ).astype( ImportedExternalWorkOrder );
+    }
+    
+    result.Update( workOrder );
+    
+    return result;
+  *]
+}

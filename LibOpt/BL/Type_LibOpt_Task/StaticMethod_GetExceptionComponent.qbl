@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetExceptionComponent (LibOpt_Task task) as LibOpt_Component
+{
+  Description:
+  [*
+    Try to find the actual component that threw the error.
+    
+    When an error is thrown with safety mode enabled, we encode the component to log the error at the right component.
+  *]
+  TextBody:
+  [*
+    component := task.Component();
+    
+    component_key := '';
+    if( LibOpt_Task::TryGetStoredString( task, LibOpt_Task::RollbackStorage_Component(), component_key ) )
+    {
+      converter := StringToKey::ISOConverter();
+      if( converter.CanConvert( component_key ) )
+      {
+        component := LibOpt_Component::FindInstance( task.MDSID(), converter.Convert( component_key ) );
+      }
+    }
+    
+    return component;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

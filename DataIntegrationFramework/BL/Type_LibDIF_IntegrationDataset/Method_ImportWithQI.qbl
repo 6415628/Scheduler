@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportWithQI (String concept_i, LibDIF_DataTransformation dataTransformation_i) as stream[LibDIF_IntegrationDataset]
+{
+  Description:
+  [*
+    Trigger ImportWithQI for the provided concept.
+    Trigger the validation of the integration objects when they all have been imported, based on the provided DataTransformation.
+  *]
+  TextBody:
+  [*
+    // Delete the existing IntegrationObjects before creating the imported ones.
+    this.DeleteIntegrationObjects( dataTransformation_i, concept_i );
+    
+    // Get the applicable PlatformAPI and reactively call its ImportWithQI-method.
+    // This results in a stream that contains an emitted platformAPI for each call of the API,
+    // which can be multiple when the objects have been retrieved in batches.
+    // Use the last one to trigger validation.
+    retVal := this.GetPlatformAPI( concept_i ) -> ImportWithQI() -> TakeLast( 1 ) -> ( platformAPI )
+    {
+      // Valdidate the imported integration objects.
+      return platformAPI.IntegrationDataset() -> ValidateIntegrationObjects( dataTransformation_i );
+    }
+    
+    return retVal;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

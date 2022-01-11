@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method EditScenario (LibSM_Scenario selection, GUIComponent parent) as Number id:Method_LibSM_dlgCreateEditScenario_EditScenario
+{
+  #keys: '[11122.0.37341206]'
+  Body:
+  [*
+    // Edit scenario
+    oldKnowledgeProfile := guard( selection.KnowledgeProfile().Name(), '' );
+    
+    this.Data( selection );
+                                              
+    // Set up and pre-load the meta-data selection boxes.                                          
+    this.EditScenarioForMetaData( selection );
+    
+    isTimezoneIDSelectionEnabled := false;
+    this.ShowHideTimezoneUI( selection.TimezoneID(), isTimezoneIDSelectionEnabled );
+    
+    result := this.DoModal( parent );
+    
+    if( result > 0 )
+    {
+      //Add metadata to structured type
+      metadatas := construct( structured[LibSM_MetaData] );
+      this.SaveScenarioMetaData( metadatas );
+      
+      knowledgeProfile     := selKnowledgeProfile.Data();
+    
+      selection.Update( edtScenarioName.Text(), edtComment.Text(),  ckbCannotDelete.Checked(), sselStorageState.BoundValue(), 
+                        knowledgeProfile, metadatas, selTimezoneID.BoundValue() );
+                        
+      if( oldKnowledgeProfile <> guard( knowledgeProfile.Name(), '' ) )
+      {
+        LibSM_GlobalState.SelectKB( selection );
+      }
+    }
+    return result;
+  *]
+}

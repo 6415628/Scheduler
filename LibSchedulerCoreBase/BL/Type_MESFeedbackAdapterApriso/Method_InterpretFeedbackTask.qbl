@@ -1,0 +1,58 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride InterpretFeedbackTask
+{
+  TextBody:
+  [*
+    imported_apriso_ops := selectsortedset( this, 
+                                            Schedule.ImportedAprisoScheduleProgress_SC.ImportedAprisoOperationProgress_SC.ImportedAprisoOperation_SC, 
+                                            apriso_op, 
+                                            apriso_op.IsValidDataHard(), 
+                                            apriso_op.ActualStartDate() );
+    
+    feedbackmanager := this.FeedbackManager();
+    
+    if( not isnull( feedbackmanager ) )
+    {
+      // plans all task for continuous operations before handling their feedback
+      this.PlanAllFeedbackContinuousOperations( imported_apriso_ops );
+                  
+      traverse( imported_apriso_ops, Elements, apriso_op, apriso_op.HasOperationInScheduler() ) // HasOperationInScheduler already checks whether we have an operation
+      {
+        operation := apriso_op.Operation_SC();
+    
+        // updates the estimated end on operation from feedback, to be used by FeedbackTaskInSchedule
+        operation.UpdateEstimatedEnd( apriso_op );
+        
+        resource := apriso_op.MachineNo();
+        remark := ''; // there is no remark column for ImportedAprisoOperation_SC
+        reportedStart := apriso_op.ActualStartDate();
+        reportedEnd := apriso_op.ActualCompletionDate();
+        reportedActualProcessStart := apriso_op.ActualProcessStartDate()
+        
+        // TASK ENDED
+        if( reportedEnd.IsFinite() )
+        {
+          //When shopfloor give feedback start and end. Import is done after feedback end.
+          //So, when import, the status is End, but actually both Start and End is executed.
+          if( reportedStart.IsFinite() and not operation.HasStarted() )
+          {
+            feedbackmanager.TaskStart( operation, resource, reportedStart, reportedActualProcessStart, remark );
+          }
+    
+          feedbackmanager.TaskEnd( operation, resource, reportedStart, reportedActualProcessStart, reportedEnd, remark );
+        }
+        // TASK PROCESS STARTED
+        else if( apriso_op.ActualProcessStartDate().IsFinite() )
+        {
+          // process started feedback handling not yet implemented, pending #8608, #8609, #8610 and #8611
+        }
+        // TASK STARTED  
+        else if( reportedStart.IsFinite() )
+        {
+          feedbackmanager.TaskStart( operation, resource, reportedStart, reportedActualProcessStart, remark );
+        } 
+      }
+    }
+  *]
+}

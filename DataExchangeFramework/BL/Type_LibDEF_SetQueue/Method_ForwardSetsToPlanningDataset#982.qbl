@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method ForwardSetsToPlanningDataset (Key planningDatasetMDSID_i, String planningDatasetType_i, Key planningDatasetDTD_i, 
+  Number batchSize_i, Boolean isAutoForwarding_i)
+{
+  TextBody:
+  [*
+    batch := construct( LibDEF_Sets );
+    nr    := 0;
+    
+    // Create a batch of sets...
+    traverse( this, SetToPlanningDataset, set, nr < batchSize_i )
+    {
+      set.SetQueueToPlanningDataset( relflush );
+      batch.Add( set );
+      
+      nr++;
+    }  
+    
+    // ...and trigger forwarding to the PlanningDataset.
+    if( batch.Size() > 0 )
+    {
+      this.SetType().Channel().DataRepository().ForwardSetData( planningDatasetMDSID_i, 
+                                                                planningDatasetType_i, 
+                                                                planningDatasetDTD_i, 
+                                                                batch, 
+                                                                isAutoForwarding_i );    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

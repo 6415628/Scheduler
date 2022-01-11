@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_ProductInStockingPoint (CDSchedule cdSchedule, GenericProduct genericProduct)
+{
+  Description: 'Restore product in stocking point core data attributes to planning object'
+  TextBody:
+  [*
+    cdProductInStockingPoints := selectset( cdSchedule, CDEntity.astype( CDProductInStockingPoint ), cdProductInStockingPoint,
+                                            cdProductInStockingPoint.ProductId() = genericProduct.Id() );
+    
+    traverse( cdProductInStockingPoints, Elements, cdProductInStockingPoint )
+    {
+      productInStockingPoint := ProductInStockingPoint::Create( genericProduct, cdProductInStockingPoint.ProductId(), cdProductInStockingPoint.StockingPointId() );
+      CopyCorresponding::CopyFrom( cdProductInStockingPoint ).CopyTo( productInStockingPoint );
+      
+      // Restore inventory target
+      this.RestoreAttributes_InventoryTarget( cdSchedule, productInStockingPoint );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

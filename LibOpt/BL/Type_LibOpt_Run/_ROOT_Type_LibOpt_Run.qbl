@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#root
+#parent: #DomainModel
+Type LibOpt_Run
+{
+  #keys: '5[139164.0.16781100][139164.0.16781098][0.0.0][139164.0.16781099][139164.0.16781101]'
+  BaseType: Object
+  Description:
+  [*
+    The `LibOpt_Run` object contains all the knowledge necessary to start the optimizer.
+    Each time the optimizer is started, a new `LibOpt_Run` will be created containing all relevant data for this specific execution.
+    
+    The `LibOpt_Component` that will be called as the first `LibOpt_Component` of the `LibOpt_Run` can be set using the `SetStartComponent` method.
+    The `LibOpt_Scope` that is sent to the `LibOpt_Component` that will be called as the first `LibOpt_Component` of the `LibOpt_Run` can be set using `SetStartScope`.
+    Use the `Start` method to start the `LibOpt_Run`.
+  *]
+  OnCreate:
+  [*
+    this.InternalIdentifier( this.Key() );
+    this.CreatedOn( DateTime::ActualTime() );
+  *]
+  OnDelete:
+  [*
+    traverse( this, Anchor, anchor )
+    {
+      anchor.Delete();
+    }
+    
+    // Delete the datasets that are created from this dataset.
+    objectinfos := MDSEditor::Editor().ObjectInfos();
+    traverse( this, 
+              Snapshot.astype( LibOpt_SnapshotReplannableCopyDataset ),
+              snapshot,
+              not snapshot.IsDatasetDeleted()
+              and snapshot.Run().MDSIDRun() = snapshot.MDSID()
+              )
+    {
+      snapshot.DeleteDatasetCopyManually( objectinfos );
+    }
+  *]
+  StructuredName: 'LibOpt_Runs'
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

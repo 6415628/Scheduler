@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method DetermineNextStep
+{
+  Description: 'Determine the next step in this optimizer run'
+  TextBody:
+  [*
+    if( not this.Optimizer().IsInStepByStepMode() or
+        this.RunAsSingleRunInStepByStepMode() )
+    {
+      // any procedural calculations needed before GetHasReachedStopCriteria that cannot be done in RunPreprocessing or CallBackFromChild
+      this.DetermineNextStepPreprocess();
+    
+      if( this.GetHasReachedStopCriteria() )
+      {
+        // post-process and return to parent
+        if ( this.IsAsync() )
+        {
+          Schedule::JobOptimizerRunFinalize( this.Optimizer().Schedule().MDSSchedule().ID(), this );
+        }
+        else
+        {
+          this.FinalizeRun();
+        }
+      }
+      else
+      {
+        if ( this.IsAsync() )
+        {
+          Schedule::JobOptimizerRunExecuteStrategy( this.Optimizer().Schedule().MDSSchedule().ID(), this );
+        }
+        else
+        {
+          this.ExecuteStrategy();
+        }
+      }
+    }
+  *]
+}

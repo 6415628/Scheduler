@@ -1,0 +1,82 @@
+Quintiq file version 2.0
+#parent: #root
+Method PostPlanUnitSplitReservationAdjustmentForSupply (PlanUnit_SC oldpu, PlanUnit_SC newpu)
+{
+  Description:
+  [*
+    This logic here splits the existing planned and fixed reservations of the old supply of the current plan unit, 
+    performs greedy material reservation between the old demand and old supply of the current plan unit and the new demand and new supply of the new plan unit.
+  *]
+  TextBody:
+  [*
+    oldFulfillments := oldpu.GetPlannedSupplyFulfillmentsToSplit();
+    oldFulfillmentsQuantities := selectvalues( oldFulfillments, Elements, fulfillment, true, fulfillment.QuantityDecision() );
+    Fulfillment::ZeroQuantityDecision( oldFulfillments ); // set to zero so that Supply.GetAvailableQuantityForFulfillment is accurate when assigning to demand
+    Transaction::Transaction().Propagate( attribute( Supply, QuantityOpen ) ); // needs to be propagated after setting fulfillment to 0
+    Transaction::Transaction().Propagate( attribute( Demand, QuantityOpen ) ); // needs to be propagated after setting fulfillment to 0
+    
+    traverse( oldFulfillments, Elements, fulfillment )
+    {
+      importedExternalFulfillment := fulfillment.ImportedFixedFulfillment();
+      
+      olddemand := fulfillment.Demand();
+      oldsupply := fulfillment.Supply();
+      
+      // select is used because at any given time, there is only ONE planned supply of the same WorkOrderSupplyID per operation per supply
+      // The 'higher' SupplyID is the newer supply
+      newsupply := maxselect( newpu, 
+                              Operation_SC.PlannedSupply, 
+                              newsupply,
+                              newsupply.SupplyType() = oldsupply.SupplyType(),
+                              guard( newsupply.astype( ProductPlannedSupply ).WorkOrderSupplyId() = oldsupply.astype( ProductPlannedSupply ).WorkOrderSupplyId(), true ) // If it is product-based
+                              and guard( newsupply.astype( MaterialPlannedSupply ).WorkOrderOutputMaterialId() = oldsupply.astype( MaterialPlannedSupply ).WorkOrderOutputMaterialId(), true ), // If it is characteristic based
+                              newsupply.SupplyID() );
+    
+      // supplies used
+      grouped_supplies := construct( Supplys );
+      grouped_supplies.Add( newsupply );
+      grouped_supplies.Add( oldsupply );
+      
+      // demands to fulfill, actually there's only one, but its just for code reuse
+      demands := construct( Demands );
+      demands.Add( olddemand );
+    
+      // quantity to keep
+      index := oldFulfillments.Find( fulfillment );
+      quantity_keep := oldFulfillmentsQuantities.Element( index );
+      
+      // fulfillments to reset, actually there's only one, but its just for code reuse - FOR AUTOMATIC RESERVATION
+      fulfillments_to_reset := construct( Fulfillments );
+      fulfillments_to_reset.Add( fulfillment );
+        
+      if( fulfillment.IsManualReservation() )
+      {
+        Fulfillment::CreateManualPlannedFulfillments( demands, grouped_supplies, true, quantity_keep );
+      }
+      else // Fixed reservations are always considered 'auto'
+      {
+        if( fulfillment.IsFixedReservation() )
+        { 
+          newFulfillments := Fulfillment::CreateExternalFulfillments( demands, grouped_supplies, quantity_keep );
+          
+          traverse( newFulfillments, Elements, newFulfillment ) // New external fulfillments need to be set to its ImportedExternalFulfillment
+          {
+            newFulfillment.ImportedFixedFulfillment( relset, importedExternalFulfillment );
+          }
+        }
+        else
+        {
+          // autocreate deletes its own fulfillments with 0 quantity
+          Fulfillment::CreateAutoPlannedFulfillments( demands, grouped_supplies, fulfillments_to_reset, true, quantity_keep );
+        }
+      }
+      
+      // clean up zero quantities - new fulfillments won't be created with zero quantities, the old fulfillment is also inside newFulfillments if QuantityDecision > 0
+      // Otherwise, the old manual fulfillment will maintain QuantityDecision() = 0 and be deleted here
+      if( guard( fulfillment.QuantityDecision() = 0, false ) )
+      {
+        fulfillment.Delete();
+      }
+    }
+  *]
+}

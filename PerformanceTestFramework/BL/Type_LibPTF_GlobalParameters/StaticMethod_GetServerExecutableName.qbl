@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetServerExecutableName () as String
+{
+  Description: 'Retrieves the QServer executable name'
+  TextBody:
+  [*
+    // PTF MODELING HANDLE - QSERVER EXECUTABLE NAME
+    /*
+    The default QServer executable name is "QServer_64". This value has to be "overridden" if the QServer executable has been renamed
+    or a customized log file name has been specified in the Configuration Utility.
+    
+    Steps to change the QServer executable name:
+    1. Create a static method with the name "GetServerExecutableName" on the <LibPTF subclass> in the model.
+    2. Ensure that the static method has return type "String".
+    3. Let the static method return the new QServer executable name.
+    */
+    
+    // Retrieve the QServer executable name
+    methodname := 'GetServerExecutableName';
+    libPTF     := typeof( LibPTF );
+    subclass   := select( libPTF, Specializations, sub, true, true );
+    
+    staticmethod := Reflection::FindStaticMethod( subclass.Name(), methodname );
+    
+    executablename := 'QServer_64';
+    
+    if( not isnull( staticmethod ) )
+    {
+      staticmethod.Execute();
+      executablename := staticmethod.GetStringResult();
+    
+      exeextension    := '.exe';
+      extensionlength := exeextension.Length();
+    
+      // Only do chopping of extension if executablename length is bigger than extension length,
+      // and if extension of the executable name ends with '.exe'
+      if( executablename.Length() >= extensionlength
+          and executablename.ToLower().FindString( exeextension, executablename.Length() - extensionlength ) >= 0 )
+      {
+        executablename := executablename.SubString( 0, executablename.Length() - extensionlength );
+      }
+    }
+    
+    return executablename;
+  *]
+}

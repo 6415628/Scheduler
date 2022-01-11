@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetKPIOperationLateness (constcontent Operation_SCs operations) const declarative remote as Real
+{
+  Description: 'Returns the KPI quantity of operations which are scheduled later than due date'
+  TextBody:
+  [*
+    // Calculate the quantity of operations which are scheduled later than due date
+    // Only the following operations will be calculated
+    // 1. Not dummy work order ( Checking logic in Operation.IsEligibleForKPICalculation )
+    // 2. No feedback ( Checking logic in Operation.IsEligibleForKPICalculation )
+    // 3. Not finished yet ( Checking logic in Operation.IsEligibleForKPICalculation )
+    // 4. IsPlanned
+    // 5. End > DueDate
+    
+    value := sum( operations,
+                  Elements,
+                  op,
+                  op.IsEligibleForKPICalculation()
+                  and op.IsPlanned()
+                  and op.End() > op.DueDate(),
+                  pow( op.NrOfDaysLaterThanDueDate(), 2 ) * op.PlanUnit_SC().Quantity() );
+    
+    return value.Round( 2 );
+  *]
+}

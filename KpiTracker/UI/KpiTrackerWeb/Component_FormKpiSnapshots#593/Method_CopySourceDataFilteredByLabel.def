@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method CopySourceDataFilteredByLabel (structured[KpiLabelValue] selectedLabels) id:Method_FormKpiSnapshots_CopySourceDataFilteredByLabel
+{
+  #keys: '[136398.1.845739376]'
+  Body:
+  [*
+    // Copies the source data from DataHolderSnapshotSetData to DataHolderLabelFilterdSnapshots
+    // while filtering based on the selected Labels.
+    
+    if ( not isnull( DataHolderSnapshotSetData.Data() ) )
+    {
+      originalSet := DataHolderSnapshotSetData.Data().SnapshotData( relget );
+      newSet      := originalSet.Copy();
+      
+      if ( CheckboxEnableLabelFiltering.Checked() )
+      {
+        uniquelabels := selectset( selectedLabels, Elements.Label, sel, true );
+        traverse( newSet, Elements, snapshot )
+        {
+          match := true;
+          traverse( uniquelabels, Elements, label, match )
+          {
+              if ( not exists( snapshot, Label, sslabel,
+                               sslabel.Name() = label.Name(),
+                               exists( selectedLabels, Elements, labelValue, 
+                                            labelValue.Label().Name()  = label.Name()
+                                        and labelValue.Value()         = sslabel.Value() )
+                              )
+                 )
+              {
+                match := false;
+              }
+          }
+          if ( not match )
+          {
+            newSet.Remove( snapshot );
+          }
+        }
+      }
+      
+      DataHolderLabelFilteredSnapshots.Data( &newSet );
+    }
+  *]
+}

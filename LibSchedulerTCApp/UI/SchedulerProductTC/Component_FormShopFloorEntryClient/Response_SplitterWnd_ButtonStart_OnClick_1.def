@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: SplitterWnd/ButtonStart
+Response OnClick (ImportedFeedbackBatch selection) id:Response_SplitterWnd_ButtonStart_OnClick_1
+{
+  #keys: '[12910.0.651974457]'
+  Body:
+  [*
+    // report setup start of selected feedback batch
+    dlg := construct( DialogFeedbackBatch );
+    resource := ResourceSelection.Data();
+    dlg.ReportedResourceSelection().BoundValue( resource.Name() );
+    dlg.Title( Constants::StatusStart() );
+    dlg.Data( selection );
+    dlg.StringSelectionPractice().BoundValue( selection.Practice() );
+    dlg.EnterBatchFeedback( this, Constants::StatusStart() );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /SplitterWnd/Responsedef_SplitterWnd_ButtonStart_OnClick_1
+  Precondition:
+  [*
+    feedback := '';
+    result := false;
+    
+    if( not isnull( ResourceSelection.Data() ) )
+    {
+      result := FormShopFloorEntryClient.IsBatchResource( ResourceSelection.Data() );
+    
+      if( result and not ( ListFeedbackBatch.HasFocus() or (  ValueHolderListLostFocus.Value() = 'ImportedFeedbackBatch' and ( ButtonStop.HasFocus() or ButtonStart.HasFocus() ) ) ) )
+      {
+        feedback := Translations::SC_Designer_ShopFloorEntryButtonStart_FeedbackOnlyAvailableForBatch();
+      }
+      else if( selection.ImportedFeedbackBatchContent( relsize ) = 0 )
+      {
+        feedback := Translations::SC_DesignerListFeedbackBatch_SelectedBatchIsEmpty();
+      }
+    }
+    return result and feedback = '';
+  *]
+}

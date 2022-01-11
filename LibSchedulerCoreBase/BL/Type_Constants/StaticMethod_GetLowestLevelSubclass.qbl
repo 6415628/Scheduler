@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetLowestLevelSubclass (Type type) const as owning Strings
+{
+  Description: 'Retrieve the non-abstract subclasses for a given type.'
+  TextBody:
+  [*
+    lowestSpecializedTypes := construct( Strings );
+    
+    traverse( type, Specializations, specializedType )
+    {
+      if( specializedType.Specializations( relsize ) = 0 ) // If lowest level, add to list
+      {
+        lowestSpecializedTypes.Add( specializedType.Name() );
+      }
+      else // Dig deeper
+      {
+        newSpecialization := Constants::GetLowestLevelSubclass( specializedType );
+        lowestSpecializedTypes := lowestSpecializedTypes.Union( newSpecialization );
+      }
+    }
+    
+    return &lowestSpecializedTypes;
+  *]
+}

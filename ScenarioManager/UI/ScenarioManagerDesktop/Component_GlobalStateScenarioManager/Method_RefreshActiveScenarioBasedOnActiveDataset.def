@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method RefreshActiveScenarioBasedOnActiveDataset () id:Method_LibSM_GlobalState_RefreshActiveScenarioBasedOnActiveDataset
+{
+  #keys: '[136402.0.1170311808]'
+  Body:
+  [*
+    // Updates the 'Active Scenario' (in the respective dataholder)
+    // to match the dataset that is currently selected.
+    
+    selectedmdsid := guard( this.dhActivePlanningDataset().Data().MDSID(), Key::ZeroKey() );
+    if ( guard( dhActiveScenario.Data().Dataset().DatasetMDSID(), Key::ZeroKey() ) <> selectedmdsid )
+    {
+      info( ' >>> ScenarioManager | Dataset switched outside of ScenarioManager, trying to follow. New MDSID = ', selectedmdsid );
+      scenario := select( LibSM_ScenarioManager, ScenarioNode.astype( LibSM_Scenario ), scenario, 
+                          guard( scenario.Dataset().DatasetMDSID(), Key::ZeroKey() ) = selectedmdsid );
+      
+      // Don't check for NULL because if we can't find this scenario
+      // then none should be active. This would an uncommon (but reparable) sitation.                    
+      this.dhActiveScenario().Data( scenario );
+      
+      // Make sure we register also this situation as 'LastUsed' 
+      if ( not isnull( scenario ) ) 
+      {
+        scenario.LastUsedOn( DateTime::Now() );
+      }
+    }
+  *]
+}

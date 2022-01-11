@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test030_DeletedScope (LibOpt_TestDataset dataset)
+{
+  Description: 'Check that we create deleted scope element for the scope elements that are deleted, if the debug functionality is on.'
+  TextBody:
+  [*
+    // Run randomized test
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    run.DebugScope( true );
+    
+    nr_of_scope_elements := Number::Random( 5, 50 );
+    scope := LibOpt_ScopeFat::Create( run );
+    for( j := 0; j < nr_of_scope_elements; j++ )
+    {
+      se := dataset.ScopeElementMock( relnew );
+      scope.Add( se );
+    }
+    
+    nr_to_delete := Number::Random( 0, nr_of_scope_elements );
+    random := selectsortedset( scope.ScopeElements(), Elements, se, true, Real::Random() );
+    
+    traverse( random.SelectFirst( nr_to_delete ), Elements, se )
+    {
+      se.Delete();
+    }
+    
+    actual_nr_deleted := counter( scope.ScopeElements(), Elements.astype( LibOpt_ScopeElementDeleted ), del, true );
+    this.Run().AssertEqual( nr_to_delete, actual_nr_deleted, 'The number of deleted scope elements is incorrect' );
+    this.Run().AssertEqual( nr_of_scope_elements, scope.Size(), 'The number of scope elements is incorrect' );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

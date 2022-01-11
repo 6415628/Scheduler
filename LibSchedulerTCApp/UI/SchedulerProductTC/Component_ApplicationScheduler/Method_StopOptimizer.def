@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method StopOptimizer (String selectedoptimizer) id:Method_ApplicationScheduler_StopOptimizer
+{
+  #keys: '[137186.0.151851165]'
+  Body:
+  [*
+    IsSetRootRunAsInactive := false;
+    
+    if( IsSetRootRunAsInactive )
+    {
+      lastRootRun := maxselect( Schedule, Optimizer.Roots, rootrun, true,
+                                rootrun.StartTime() );
+      lastRootRun.IsActive( false );
+    }
+                   
+    // mbr23, 2019-09-24: added the following to also consider componentized runs to terminate:               
+    last_libopt_run := maxselect( Schedule.Optimization().GetRunningRuns(), Elements, run, true,  
+                                  run.RunNr() );
+    if( not isnull( last_libopt_run ) )
+    {
+      last_libopt_run.Stop();
+    }
+  *]
+}

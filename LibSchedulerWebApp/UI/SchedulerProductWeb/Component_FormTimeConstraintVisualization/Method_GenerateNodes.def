@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenerateNodes (shadow[CustomDrawNodeOperation] startingNode, Number depth, Boolean isupstream) id:Method_FormTimeConstraintVisualization_GenerateNodes
+{
+  #keys: '[132894.0.861956399]'
+  Body:
+  [*
+    // Create upstream / downstream nodes (Recursive)
+    
+    // Get upstream or downstream Operations for node creation and edge linkage
+    startingOperation := startingNode.Operation_SC();
+    nextOperations := this.GetInputOutputs( startingOperation, isupstream );
+    
+    if( depth > 0 and not startingNode.IsDepthLimitMet() )
+    {
+      owner := DataHolderCustomDrawConfiguration.Data(); // DataHolder is set in GenerateTree
+      
+      traverse( nextOperations, Elements, operation,
+                owner.CustomDrawNode( relsize ) <= owner.NodeLimit() )
+      {
+        node := this.FindCreateOperationNodeAndEdge( startingNode, operation, isupstream, depth );
+    
+        if( depth > 0 and not node.IsDepthLimitMet() )
+        { 
+          // Continue upstream/downstream, pass in the newly created node to start generating the next level of nodes
+          this.GenerateNodes( node, depth, isupstream );
+        }
+      }
+    }
+    // Means we have hit the depth limit but there are more upstream/downstream Operations
+    else if( depth = 0 and nextOperations.Size() > 0 )
+    {
+      startingNode.IsDepthLimitMet( true );    
+    }
+  *]
+}

@@ -1,0 +1,66 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionInCreateEditProgramConfiguration (Schedule schedule)
+{
+  Description: 'Test precondition in create edit program configuration data'
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    objectype := '';
+    hasDuplicateID := false;
+    programconfigurationID := '';
+    programconfigurationName := '';
+    isresourcealreadyassigned := false;
+    isValidForPreconCreateEdit := false;
+    
+    this.GetTestVariantForPreconditionCreateEditProgramConfiguration( isvariantfound,
+                                                                      objectype,
+                                                                      hasDuplicateID,
+                                                                      programconfigurationID,
+                                                                      programconfigurationName,
+                                                                      isresourcealreadyassigned,
+                                                                      isValidForPreconCreateEdit );
+    value := false;
+    if( isvariantfound )
+    {
+      programdefinition := select( schedule, ProgramDefinitionConfiguration, pt, true );
+      programset := select( programdefinition, ProgramSetConfiguration, ps, true );
+      programtype := select( programset, ProgramTypeConfiguration, pt, true );
+      programphase := select( programtype, ProgramPhaseConfiguration, ps, true );
+      programtypechange := select( programset, ProgramTypeChangeConfiguration, ptc, true );  
+      
+      value := isValidForPreconCreateEdit;
+      if( objectype = 'program definition' ) 
+      {
+        resources := selectset( schedule, ResourceGroup_SC.Resource_SC, res, true );
+        programdefinition := ifexpr( hasDuplicateID, null( ProgramDefinitionConfiguration ), programdefinition );
+        value := ProgramDefinitionConfiguration::CheckIsValid( schedule, programdefinition, programconfigurationID, programconfigurationName, resources );   
+      }
+      else if( objectype = 'program set' ) 
+      {
+        programset := ifexpr( hasDuplicateID, null( ProgramSetConfiguration ), programset );
+        value := ProgramSetConfiguration::CheckIsValid( programdefinition, programset, programconfigurationID, programconfigurationName );   
+      }
+      else if( objectype = 'program type' ) 
+      {
+        programtype := ifexpr( hasDuplicateID, null( ProgramTypeConfiguration ), programtype );
+        value := ProgramTypeConfiguration::CheckIsValid( programset, programtype, programconfigurationID, programconfigurationName );   
+      }
+      else if( objectype = 'program phase' ) 
+      { 
+        programphase := ifexpr( hasDuplicateID, null( ProgramPhaseConfiguration ), programphase );
+        value := ProgramPhaseConfiguration::CheckIsValid( programtype, programphase, programconfigurationID, programconfigurationName );   
+      }
+      else if( objectype = 'program type change' ) 
+      {
+        programtypechange := ifexpr( hasDuplicateID, null( ProgramTypeChangeConfiguration ), programtypechange );
+        programtype := ifexpr( programconfigurationID = '', null( ProgramTypeConfiguration ), programtype );
+        value := ProgramTypeChangeConfiguration::CheckIsValid( programset, programtypechange, programtype, programtype );   
+      }
+    }
+    
+    this.Run().AssertEqual( isValidForPreconCreateEdit, value,
+                            UTFUtility::GenerateFailedMessage( 'Precondition in creating ' + objectype + ' failed.', this.Variant() ) );
+  *]
+}

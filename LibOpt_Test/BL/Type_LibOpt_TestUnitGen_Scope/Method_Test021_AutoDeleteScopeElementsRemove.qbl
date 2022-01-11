@@ -1,0 +1,76 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test021_AutoDeleteScopeElementsRemove (LibOpt_TestDataset dataset)
+{
+  Description: 'Test if scope elements are automatically cleaned up when the user enables this feature. Test using the `scope.Remove` method. Test when removing scopes.'
+  TextBody:
+  [*
+    orig_auto_delete_scope_elements := dataset.Optimization().AutoDeleteScopeElements();
+    seed := Number::Random();
+    nr_thin_scopes := 3;
+    nr_fat_scopes := 3;
+    nr_of_t1_scope_elements := 25;
+    nr_of_t2_scope_elements := 25;
+    
+    traverse( LibOpt_TestUnitGen_TestDataset::GetBooleanSet(), Elements, auto_delete_scope_elements )
+    {
+      id := ' [ADSE:' + [String] auto_delete_scope_elements + ']';
+      dataset.Optimization().AutoDeleteScopeElements( auto_delete_scope_elements );
+      
+      opt := this.Optimizer( dataset );
+      run := opt.CreateRun();
+      
+      Number::Randomize( seed );
+      
+      // INITIALIZE
+      scopes := construct( LibOpt_Scopes );
+      for( i := 0; i < nr_fat_scopes; i++ )
+      {
+        scopes.Add( LibOpt_ScopeFat::Create( run ) );
+      }
+      for( i := 0; i < nr_thin_scopes; i++ )
+      {
+        scopes.Add( LibOpt_ScopeThin::Create( run ) );
+      }
+      scopes := selectsortedset( scopes, Elements, se, true, Real::Random() );
+      
+      scope_elements := construct( LibOpt_ScopeElements );
+      for( i := 0; i < nr_of_t1_scope_elements; i++ )
+      {
+        scope_elements.Add( dataset.ScopeElementMock( relnew ) );
+      }
+      for( i := 0; i < nr_of_t2_scope_elements; i++ )
+      {
+        scope_elements.Add( dataset.ScopeElementMock2( relnew ) );
+      }
+      scope_elements := selectsortedset( scope_elements, Elements, se, true, Real::Random() );
+      traverse( scope_elements, Elements, se )
+      {
+        traverse( scopes, Elements, scope, Real::Random() < 0.5 )
+        {
+          scope.Add( se );
+        }
+      }
+      nr_unused_scope_elements := counter( scope_elements, Elements, se, se.GetScopes().Size() = 0 );
+      
+      // TEST
+      this.Run().AssertEqual( nr_of_t1_scope_elements + nr_of_t2_scope_elements, counter( scope_elements, Elements, se, true ), 'Incorrect init number of scope elements' + id );
+      
+      traverse( scopes, Elements, scope )
+      {
+        ses := selectset( scope.ScopeElements(), Elements, se, se.GetScopes().Size() = 1 );
+        expected_size := ifexpr( auto_delete_scope_elements, 0, ses.Size() );
+        scope.Remove( scope.ScopeElements() );
+        
+        this.Run().AssertEqual( 0, scope.ScopeElements().Size(), 'Empty scope is not empty' + id );
+        this.Run().AssertEqual( expected_size, counter( ses, Elements, se, true ), 'Incorrect number of scope elements' + id );
+      }
+      
+      expected_size := ifexpr( auto_delete_scope_elements, nr_unused_scope_elements, nr_of_t1_scope_elements + nr_of_t2_scope_elements );
+      this.Run().AssertEqual( expected_size, counter( scope_elements, Elements, se, true ), 'Incorrect final number of scope elements' + id );
+    }
+    
+    dataset.Optimization().AutoDeleteScopeElements( orig_auto_delete_scope_elements );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

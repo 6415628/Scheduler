@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateComponentsSequencingConstructionAutoplan (LibOpt_Run run) as LibOpt_Component
+{
+  Description:
+  [*
+    Creates the components for an autoplanning "optimizer" in the given run and links them accordingly.
+    This autoplanning "optimizer" can also be used as a construction phase part of a sequencing optimizer.
+    Does not set the run's root component. Instead, returns the root component of the created graph.
+  *]
+  TextBody:
+  [*
+    //autoplan step suboptimizer:
+    autoplanstep := SuboptimizerAutoplan::Create( run, "Autoplan Step" );
+    
+    //autoplan step selector:
+    autoplanselector := SelectorUpstreamPlanned::Create( run, "Autoplan Selector" );
+    
+    // autoplan iterator:
+    autoplaniterator := this.Iterator( run, "Autoplan iterator", construct( StopCriterionConstruction ) );
+    
+    // plumbing:
+    autoplaniterator.To( autoplanselector );
+    autoplanselector.To( autoplanstep );
+    
+    return autoplaniterator;
+  *]
+}

@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanAfterBatchOnSingleResource (BatchTasks batchtasks, Task_SC aftertask)
+{
+  Description: 'onDrop BatchTask on SingleTask plans the operation allowed on that resource that are in the BathTask'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    //wooi zhi Oct-5-2012 (created)
+    // traverse through batch tasks and plan one by one
+    // such that the operations in batch task will still stick together in single resource.
+    batchtasks := selectsortedset( batchtasks, Elements, batchtask, true, batchtask.SequenceNr() );
+    traverse( batchtasks, Elements, batchtask )
+    {
+      aftertask := this.PlanAfter( batchtask, aftertask.astype( SingleTaskBase ) );
+    }
+  *]
+}

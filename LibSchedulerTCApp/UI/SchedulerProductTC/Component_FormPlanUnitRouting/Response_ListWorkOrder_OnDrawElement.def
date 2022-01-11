@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: ListWorkOrder
+Response OnDrawElement (WorkOrder element) id:Response_ListWorkOrder_OnDrawElement
+{
+  #keys: '[132688.0.422257294]'
+  Body:
+  [*
+    // Draw work order color column & mandatory/optional scope
+    color := guard( element.WorkOrderColorRange().ColorCode(), '' );
+    if( color <> '' )
+    {
+      drawinfo.Image( 0, 'MONOCHROME_BLOCK', Color::Color( color ) );
+    }
+    
+    // Tertiary image to be drawn - Mandatory/Optional operations for Optimizer
+    imageMandatoryOptionalOperation := '';
+    workOrderOperations := selectset( element, Order_SC.PlanUnit_SC.Operation_SC, operation, true );
+    
+    // ALL operations linked to the work order must be in optimizer scope for the image to be drawn
+    if( DataHolderOptimizerMandatoryOperations.Data().Intersect( workOrderOperations ).Size() = workOrderOperations.Size() ) 
+    {
+      imageMandatoryOptionalOperation := 'GEARS_PREFERENCES'
+    }
+    else if( DataHolderOptimizerOptionalOperations.Data().Intersect( workOrderOperations ).Size() = workOrderOperations.Size() )
+    {
+      imageMandatoryOptionalOperation := 'GEARS'
+    }
+    
+    drawinfo.Image( 1, imageMandatoryOptionalOperation );
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_List_OnDrawElement'
+}

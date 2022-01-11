@@ -1,0 +1,71 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOAInitialSolution (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata)
+{
+  Description: 'Add the initial solution to the POA'
+  TextBody:
+  [*
+    //add initial solution
+    
+    if( this.Settings().IsRespectMakespanKPI() )
+    {
+      // instantiate one path for the makespan virtual path. Plan the frozen makespan end node on it:
+      makespan_pathtype := poa.PathType( SuboptimizerSequencingPOA::NamePOAPathMakespan() );
+      path := poa.InstantiatePath( makespan_pathtype );
+      path.AddNode( poa.Node( this ) );
+      // frozen and fixed is already set on POANode.
+    }
+    
+    // one path per resource or per resource type (if exchangeable):
+    traverse( transientdata.GetPOAPathTypeResources(), Elements, representative_resource )
+    {
+      pathtype := poa.PathType( this.GetPathTypeName( representative_resource ) );
+      resources_in_pathtype := null( ResourceInSuboptimizerSequencings );
+      if( representative_resource.ResourceGroup().IsExchangable() )
+      {
+        // this path type represents multiple resources:
+        resources_in_pathtype := selectset( representative_resource.ResourceGroup(), Resource, r, true );
+      }
+      else
+      {
+        // this path type represents a single resource:
+        resources_in_pathtype := construct( ResourceInSuboptimizerSequencings );
+        resources_in_pathtype.Add( representative_resource );
+      }
+      
+      traverse( resources_in_pathtype, Elements, resource )
+      {
+        path := poa.InstantiatePath( pathtype );
+      
+        // Add all operations that are in scope and planned on this resource to the path in order:
+        traverse( resource.Resource(),
+                  Task_SC.OperationInTask,
+                  operation_sc )
+        {
+          operation := transientdata.Get( operation_sc );
+          if( not isnull( operation ) )
+          {
+            node := poa.Node( operation );
+            if( not isnull( node ) ) // the operation may be out of scope
+            {
+              path.AddNode( node );
+              // frozen and fixed is already set on POANode.
+              
+              // If this operation has a dummy end node, then also add it to the path
+              if( operation.GetRequiresDummyEndNode() )
+              {
+                dummynode := poa.Node( SuboptimizerSequencingPOA::NamePOADummyEndNode( operation ), operation )
+                path.AddNode( dummynode );
+              }
+            }
+          }
+        }
+        node := poa.Node( resource );
+        path.AddNode( node );
+      }
+    }
+    
+    // The model can be extended in the following method
+    this.InitPOAInitialSolutionCustom( poa, transientdata );
+  *]
+}

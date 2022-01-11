@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestImportCharacteristicName_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Create a characteristic
+    characteristic := Characteristic::Create( schedule, 'CharacteristicID', 1 );
+    characteristic.Name( 'Before edit' )
+    
+    // Create imported characteristic
+    schedule.ImportedCharacteristicConfiguration( relnew, 
+                                                  ID := 'CharacteristicID',
+                                                  Name := 'After edit' );
+    
+    // Propogate the method because it is using declarative attribute.
+    Transaction::Transaction().Propagate( method( SynchronizationObject, SynchronizeCharacteristicConfigurations ) );
+    
+    // Sync characteristic
+    schedule.SynchronizationObject().SynchronizeCharacteristicConfigurations();
+  *]
+}

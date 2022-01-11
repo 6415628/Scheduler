@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeResourceConnections
+{
+  Description: 'Synchronizes the allowed rows of the ResourceConnectionAllowed_SC KT into ResourceConnection instances.'
+  TextBody:
+  [*
+    allinstances := selectset( this, Schedule.ResourceGroup_SC.Resource_SC.AsFromResource, rc, true );
+    updatedinstances := construct( ResourceConnections );
+    
+    if( this.Schedule().TechnicalConfiguration().IsResourceConnectionEnabled() )
+    {
+      traverse( ResourceConnectionAllowed_SCTable::Table(), Rows, row,
+                row.IsAllowed() or row.IsVisible() )
+      {
+        fromresources := selectset( this, Schedule.ResourceGroup_SC.Resource_SC, resource,
+                                    ifexpr( row.FromResourceGroupIsWildcard(), true, resource.ResourceGroup_SC().Name() = row.FromResourceGroup() )
+                                    and ifexpr( row.FromResourceIsWildcard(), true, resource.ResourceID() = row.FromResource() ) );
+        toresources := selectset( this, Schedule.ResourceGroup_SC.Resource_SC, resource,
+                                  ifexpr( row.ToResourceGroupIsWildcard(), true, resource.ResourceGroup_SC().Name() = row.ToResourceGroup() )
+                                  and ifexpr( row.ToResourceIsWildcard(), true, resource.ResourceID() = row.ToResource() ) );
+        
+        traverse( fromresources, Elements, fromresource )
+        {
+          traverse( toresources, Elements, toresource )
+          {
+            rc := ResourceConnection::FindResourceConnection( fromresource.ResourceID(), toresource.ResourceID() );
+      
+            if( isnull( rc ) )
+            {
+              rc := ResourceConnection::Create( fromresource, toresource );
+            }
+            
+            updatedinstances.Add( rc );
+          }
+        }
+      }
+    }
+    
+    deletedinstances := allinstances.Difference( updatedinstances );
+    traverse( deletedinstances, Elements, rc )
+    {
+      rc.Delete();
+    }
+  *]
+}

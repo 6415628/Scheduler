@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride OnFinalize (LibOpt_Task task)
+{
+  TextBody:
+  [*
+    // mbr23, 2019-09-10 (overridden)
+    
+    this.LogKPI( task, "after child execution" );
+    if( isnull( this.RollbackKPI() ) )
+    {
+      LibOpt_SnapshotWarning::Throw( task, Translations::LibOpt_Suboptimizer_NoRollbackKPI() );
+    }
+    
+    // compare all snapshots to the current plan:
+    currentkpi := this.RollbackKPI().GetKPI( task );
+    
+    // select those snapshots that are better than the current plan:
+    better_snapshots := selectset( this.GetSnapshots( task ),
+                                   Elements,
+                                   snapshot,
+                                   this.RollbackKPI().Compare( RealVector::Construct( snapshot.RollbackKPI() ), currentkpi ) = -1 );
+    task.Log( better_snapshots.Size().AsQUILL() + " snapshots found that are better than the plan after child execution." );
+    // of these, find the best one:
+    best_snapshot := this.RollbackKPI().GetBest( better_snapshots );
+    // if there is a better one, plan it:
+    postkpicomment := "after no changes";
+    if( not isnull( best_snapshot ) )
+    {
+      lastiterationofsnapshot := maxselect( best_snapshot, IterationPart.IterationPartNM.Iteration, iteration, true, iteration.IterationNr() );
+      task.Log( "Rolling back to " + best_snapshot.Type() + " of iteration " + [String] lastiterationofsnapshot.IterationNr() );
+      best_snapshot.Plan();
+      // Prpoagate needed because the plan may have just changed in the same transaction:
+      this.PropagateKPI( task );
+      postkpicomment := "after modeled rollback";
+    }
+    
+    this.LogKPI( task, postkpicomment );
+  *]
+}

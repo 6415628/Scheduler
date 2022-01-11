@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintOrderDueDate (SuboptimizerMRSPOA_POAOneResourceGroup poa, LibOpt_Task task)
+{
+  Description: 'Add the constraints corresponding to the order due date or suggested due date  POA'
+  TextBody:
+  [*
+    // stn4 Mar-18-2016 (created)
+    // The order due date constraint
+    
+    schedule := this.GetSchedule();
+    scheduletime := schedule.Time();
+    
+    orderend_valueset := POAValueSet::N( poa, "LatestOrderEnd", Real::MaxReal() );
+    
+    POAValueSet::N( poa, "OrderEndFactor", 0.0 );
+    
+    endorderconstraint := poa.NewEndConstraint( SuboptimizerMRSPOA::NamePOAOrderDueDateConstraint() );
+    
+    endorderconstraint.Expression( poa.Expression( SuboptimizerMRSPOA::NamePOATimeExpression() ) );
+    endorderconstraint.ValueSet( orderend_valueset );
+    
+    endorderconstraint.Power( OptimizerRun::GetPOAPower( guard( this.Strategy().MRS_KPIPowerConstraintOptimizerDeliveryPerformance(), OptimizerRun::POADefaultPower() ) ) );
+    endorderconstraint.Factor( guard( this.Strategy().MRS_KPIWeightConstraintOptimizerDeliveryPerformance(), 1.0 ) );
+    endorderconstraint.ViolationOffset( guard( this.Strategy().MRS_KPIOffsetConstraintOptimizerDeliveryPerformance(), 0.0 ) );
+    
+    // Step 1: Define constraint for selected operations
+    traverse( task.Scope().Operations(), Elements, element )
+    {
+      latestendtime := this.GetOperation( element ).DueDateSuggested();
+      latestend := ( latestendtime - scheduletime ).HoursAsReal();
+      node := poa.Node( SuboptimizerMRSPOA::POANameNodeOperation( element ), element );
+      orderend_valueset.Set( node, latestend );
+    }
+  *]
+}

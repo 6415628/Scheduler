@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetNextBlockingReceiveToolTask (DateTime earlieststart, Strings blockids) declarative as DateTime
+{
+  Description: 'Get the start time of the next blocking tool task from receiving (downstream) operation.'
+  TextBody:
+  [*
+    // alexandern Nov-12-2015 (created)
+    nextblockttstart := DateTime::MinDateTime();
+    scheduletime      := this.Resource_SC().Schedule().Time();
+    
+    if( this.Resource_SC().ResourceGroup_SC().HasTransfer() ) // AlexanderNg QP #5843 12-Nov-2015: In FlowSchedule, different PlanUnits can be linked
+    {                                                   // therefore the next blocking tool task should be from its downstream (receiving) operation
+      nextblockreceivingtt := minselect( this.GetOperation(),
+                                         ToOperationDependency.ToOperation.Task_SC.ToolTask,
+                                         receivingtt,
+                                         blockids.Find( receivingtt.BlockID() ) > -1
+                                         and guard( receivingtt.Task().Previous().EarliestEnd(), scheduletime ) > earlieststart,
+                                         guard( receivingtt.Task().Previous().EarliestEnd(), scheduletime ) )
+    
+      if( not isnull( nextblockreceivingtt ) )
+      {
+        nextblockttstart := guard( nextblockreceivingtt.Task().Previous().EarliestEnd(), scheduletime );
+      }
+    }
+    
+    return nextblockttstart;
+  *]
+}

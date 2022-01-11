@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetSnapshotKPI (LibOpt_SnapshotComponent snapshotcomponent, Boolean isPreHandleResultKPI) as LibOpt_SnapshotKPI
+{
+  Description:
+  [*
+    Returns the Snapshot KPI that is a child of the `snapshotcomponent` snapshot. This method will always return `null( LibOpt_SnapshotKPI )` if `snapshotcomponent.Parent()` is not a suboptimizer, because only suboptimizers have a `LibOpt_RollbackKPI`.
+    Note: This method should only be used after the suboptimizer component has been executed. Therefore, for any component upstream from the suboptimizer, this method should only be called from the `LibOpt_Component.DoFinalize`/`LibOpt_Component.OnFinalize` method (or from any method that is called from these methods). 
+    This method can also be called from any method of a component that is downstream of the suboptimizer component.
+    For example, when this method is used in `LibOpt_DatasetCopyConditional.DeleteCondition`, then the `LibOpt_DatasetCopyConditional` can be placed on any component position.
+    This is possible, because `LibOpt_DatasetCopyConditional.DeleteCondition` is called from `LibOpt_Component.DoFinalize`.
+    However, this method should not be used in the `LibOpt_DatasetCopyConditional.CreateCondition` method of the `LibOpt_DatasetCopyConditional` objects that are placed on the 'Initialize/Continue/Handle result/Handle error' component positions of any component.
+  *]
+  TextBody:
+  [*
+    // evr3 Jun-10-2020 (created)
+    snapshotKPI := select( snapshotcomponent,
+                           Children.astype( LibOpt_SnapshotKPI ),
+                           snapshotKPI,
+                           snapshotKPI.IsPreHandleResult() = isPreHandleResultKPI
+                           );
+    
+    return snapshotKPI;
+  *]
+}

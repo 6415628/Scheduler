@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ParseFCjson (Schedule owner, JSON workCenter) as ImportedResourceGroup_SC
+{
+  TextBody:
+  [*
+    resourceGroupID := ImportedResourceGroup_SC::GetWorkCenterID( workCenter );
+    
+    resultResourceGroup := select( owner, ImportedResourceGroup_SC, resourcegroup, true, resourcegroup.ResourceGroup() = resourceGroupID ); 
+    
+    if( isnull( resultResourceGroup ) )
+    {
+      resultResourceGroup := ImportedResourceGroup_SC::Create( owner, resourceGroupID );                             
+    }
+    
+    resultResourceGroup.Update( workCenter );
+    
+    return resultResourceGroup;
+  *]
+}

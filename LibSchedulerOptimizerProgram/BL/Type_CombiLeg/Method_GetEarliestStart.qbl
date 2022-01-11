@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetEarliestStart (CombiLegs scopecombilegs) declarative remote as DateTime
+{
+  TextBody:
+  [*
+    // zyi1 Jul-19-2021 (created)
+    value := this.LeadingCombiProgramPhase().CombiProgramType().CombiProgramSet().ProgramSetConfiguration().ProgramDefinitionConfiguration().Schedule().Time();
+    
+    previousshutdown := guard( this.Leg().FirstTaskOnLeg().PreviousShutdown(), null( Shutdown ) );
+    previousshutdownstart := guard( previousshutdown.TargetStartAllowedFrom(), value );
+    previousshutdownend := previousshutdownstart + guard( previousshutdown.ShutdownDuration(), Duration::Zero() );
+    
+    // If a combileg in scope ends before the previous shutdown, then we do not yet know the real end of the shutdown
+    isunknownendshutdown := not isnull( previousshutdown )
+                            and exists( scopecombilegs, Elements, combileg,
+                                        guard( combileg.Leg().LastTaskOnLeg().End() < previousshutdownend, false ) )
+    if( isunknownendshutdown )
+    {
+      // In that case take the earliest possible end as the upper bound
+      previousshutdownend := previousshutdown.TargetStartAllowedFrom() + previousshutdown.ShutdownDuration();
+    }
+    
+    
+    // If the previous combileg is not in scope, then we cannot move this combileg earlier than the end time of the previous leg
+    if( not exists( scopecombilegs, Elements, combileg,
+                    combileg = this.Previous() ) )
+      {
+      value := guard( this.Previous().LastOperation().EndTime(), value );
+      
+      // Consider the stoppage duration if the taks before the current combileg is a stoppage task
+      leg_first_task := guard( this.Leg().FirstTaskOnLeg(), null( Task_SC ) );  
+      if( not isnull( leg_first_task ) 
+          and not isnull( leg_first_task.Previous() )
+          and leg_first_task.Previous().IsStoppageTask() )
+      {
+        value := value + leg_first_task.Previous().Duration();
+      }
+    }
+    // If the previous leg is in scope and there is a shutdown in between, then consider the shutdown end
+    else if( guard( this.Leg().FirstTaskOnLeg().Previous().istype( ShutdownTask ), false ) )
+    { 
+      value := maxvalue( previousshutdownend,
+                         value );     
+    }
+    
+    return value;
+  *]
+}

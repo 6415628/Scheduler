@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleTaskStartException_InconsistentExecutionFeedback (DateTime start, Resource_SC resource, String remark, 
+  String scheduledprevopid)
+{
+  Description: 'check exception of TaskStart feedback while TaskEnd has been reported earlier'
+  TextBody:
+  [*
+    // jiex Sep-1-2016 (created)
+    // Process exception for TaskStart feedback while TaskEnd has been reported earlier
+    if( this.ReportedEnd().IsFinite() )
+    {
+      if( start >= this.ReportedEnd() )
+      {
+        this.Exception_HasInconsistentFeedback( true );
+        this.Exception_HasReportedEndWithoutReportedStart ( false );
+        this.Exception_EarlierReportedEnd( this.ReportedEnd() );
+        duration := this.End() - this.Start();
+        
+        this.UpdateFeedbackStart( start, resource.ResourceID(), Constants::StatusEnd(), remark, '', '', scheduledprevopid );
+        this.ReportedEnd( start + duration );
+      }
+      else
+      {
+        this.UpdateFeedbackStart( start, resource.ResourceID(), Constants::StatusEnd(), remark, '', '', scheduledprevopid ); 
+        this.Exception_HasReportedEndWithoutReportedStart ( false );
+      }
+    }
+    
+    
+    
+    /*
+    if( this.ReportedEnd().IsFinite() and start >= this.ReportedEnd() )
+    {
+      this.Exception_HasInconsistentFeedback( true );  
+      this.Exception_EarlierReportedEnd( this.ReportedEnd() );
+      duration := this.End() - this.Start();
+      
+      this.UpdateFeedbackStart( start, resource.ResourceID(), Constants::StatusStart(), remark );
+      this.ReportedEnd( start + duration );
+    }
+  *]
+}

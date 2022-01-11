@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride PlanAllFeedbackContinuousOperations (ImportedFeedbackTasks importedfbtasks)
+{
+  TextBody:
+  [*
+    // this structured set of imported fbtasks should be sorted already
+    traverse( importedfbtasks, 
+              Elements,
+              importedfbtask,
+              importedfbtask.IsContinuous()
+              and importedfbtask.HasOperationInScheduler()
+              and importedfbtask.HasResourceInScheduler() )
+    {
+      operation := importedfbtask.Operation_SC();
+      resource := importedfbtask.Resource_SC().astype( SingleResourceBase );
+      
+      // selects the task to plan before based on feedback start time
+      beforetask := maxselect( resource, 
+                               SingleTaskBase, 
+                               t, 
+                               t.Start() <= importedfbtask.Start() and t.GetOperation() <> operation and t.GetOperation().ImportedFeedbackTask( relsize ) > 0,
+                               t.Start(),
+                               t.End() );
+                               
+      replannedTask := resource.PlanAfter( operation, beforetask ).astype( ContinuousTask );
+      // Reset relation to existing FeedbackTaskInSchedule because this task may have been deleted in an earlier mes feedback import eg. END feedback
+      if( not isnull( replannedTask ) )
+      {
+        replannedTask.SetExistingFeedbackTaskInSchedule();
+      }    
+      // we update the task start time so that the next imported fb task is able to grab the right beforetask
+      // this will also allow us to plan different feedback tasks on different resources without worrying about the task start time
+      Transaction::Transaction().Propagate( attribute( ContinuousTask, Start ) );
+      Transaction::Transaction().Propagate( attribute( ContinuousTask, End ) ); 
+    }
+    
+    // propagate to ensure the end time of the feedback task is calculated correctly, meaning the EstimatedEnd is propagated too
+    Transaction::Transaction().Propagate( attribute( ImportedFeedbackTask, End ) );
+  *]
+}

@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+DeclarativeOwningNMRelation CalcFulfillmentLot
+{
+  #keys: '1[129524.0.912096004]'
+  Expression:
+  [*
+    demand := this.Demand();
+    inputfactor := demand.InputFactor(); // used to get the actual quantity required per lot
+    
+    return selectset( demand, 
+                      Operation_SC.Task_SC.InputLot, 
+                      inputlot,
+                      this.IsReserved()
+                      and ( ( this.ReservedCumulativeQuantity() >= inputlot.CumulativeQuantity() * inputfactor 
+                            and guard( this.PreviousFulfillmentLot().ReservedCumulativeQuantity() < inputlot.CumulativeQuantity() * inputfactor, true ) ) // if theres no previous, it is true   
+                            or ( this.ReservedCumulativeQuantity() < inputlot.CumulativeQuantity() * inputfactor
+                                 and guard( this.ReservedCumulativeQuantity() > inputlot.PreviousInputLot().CumulativeQuantity() * inputfactor, true ) ) ) ); // if theres no previous, it is true
+  *]
+  HelperRelation: AsInputLotMaterial
+  InstantiationType: FulfillmentLotMaterial
+  Relation: OutputLotMaterial
+}

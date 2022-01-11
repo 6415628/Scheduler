@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method RollbackCurrentTransaction (String message, LibOpt_Error e)
+{
+  TextBody:
+  [*
+    rollback_storage := LibOpt_Utility::ConstructMathematicalProgramWithoutAnalysis();
+    
+    rollback_storage.StoreString( LibOpt_Suboptimizer::RollbackStorage_HasRollback(), [String] true );
+    if( not isnull( this.SnapshotComponent() ) )
+    {
+      rollback_storage.StoreString( LibOpt_Suboptimizer::RollbackStorage_Snapshot(), this.SnapshotComponent().Serialize().AsString() );
+    }
+    
+    if( not isnull( e ) )
+    {
+      rollback_storage.StoreString( LibOpt_Task::RollbackStorage_Error(), JSONIO::ExportToString( e, "iso8601", "iso8601", "iso8601", 0 ) );
+    }
+    
+    current_transaction := LibOpt_CurrentTransaction::GetCurrentTransaction( this.Component() );
+    last_task := current_transaction.LastTask();
+    if( not isnull( last_task ) )
+    {
+      rollback_storage.StoreString( LibOpt_Task::RollbackStorage_Component(), [String] last_task.Component().Key() );
+    }
+    
+    identifier := LibOpt_Task::AlgorithmStore_Identifier( this );
+    AlgorithmStore::TryRetrieve( identifier ); // Remove it from the AlgorithmStore if it is already stored.
+    AlgorithmStore::Store( identifier, & rollback_storage );
+    
+    LibOpt_Utility::ThrowCleanError( message );
+  *]
+}

@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (DssKpiSnapshotStorage owner, KpiMetaDatas kpis) as DssKpiConfiguration
+{
+  Description: 'Creates a new KpiConfiguration object with the specfied KPIs. This method does NOT check for pre-existence.'
+  TextBody:
+  [*
+    config := owner.Configuration( relnew );
+    
+    traverse( kpis, Elements, kpi ) 
+    {
+      config.MetaDataInConfiguration( relnew, MetaData := kpi );
+    }
+    
+    // Propagate the NumberOfKpis and KpiNames attributes so it'll be correctly
+    // compared for the next snapshot (in the same transaction).
+    Transaction::Transaction().Propagate( attribute( DssKpiConfiguration, NumberOfKpis ) );
+    Transaction::Transaction().Propagate( attribute( DssKpiConfiguration, KpiNames ) );
+    
+    return config;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

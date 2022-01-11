@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+Method DetermineOverlap (LibOpt_UIGraphArc arc) const declarative remote as Number
+{
+  TextBody:
+  [*
+    a_left  := min( this, UIGraphArcPoint, point, true, point.X() );
+    a_right := max( this, UIGraphArcPoint, point, true, point.X() );
+    
+    b_left  := min( arc, UIGraphArcPoint, point, true, point.X() );
+    b_right := max( arc, UIGraphArcPoint, point, true, point.X() );
+    
+    value := LibOpt_UIGraphArc::NoOverlap();
+    if( a_left < b_left )
+    {
+      if( a_right >= b_right )
+      {
+        value := LibOpt_UIGraphArc::OverlapOuter();
+      }
+      else if( b_left < a_right )
+      {
+        value := LibOpt_UIGraphArc::OverlapLeft();
+      }
+    }
+    else if( a_left = b_left )
+    {
+      if( a_right < b_right )
+      {
+        value := LibOpt_UIGraphArc::OverlapInner();
+      }
+      else if( a_right = b_right )
+      {
+        value := LibOpt_UIGraphArc::OverlapEqual();
+      }
+      else
+      {
+        value := LibOpt_UIGraphArc::OverlapOuter();
+      }
+    }
+    else
+    {
+      if( a_right <= b_right )
+      {
+        value := LibOpt_UIGraphArc::OverlapInner();
+      }
+      else if( a_left < b_right )
+      {
+        value := LibOpt_UIGraphArc::OverlapRight();
+      }
+    }
+    
+    return value;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

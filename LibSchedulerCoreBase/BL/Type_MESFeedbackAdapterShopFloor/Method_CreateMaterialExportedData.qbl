@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateMaterialExportedData
+{
+  TextBody:
+  [*
+    exportedschedule := this.FeedbackManager().GetSchedule();
+    
+    // select all fulfillment 
+    fulfillments := selectset(  this, Schedule.Demand.Fulfillment, fulfillment, fulfillment.IsExportNeeded() );
+    
+    // process export material for planned demand & supply that is within scheduling horizon 
+    traverse( fulfillments, Elements, fulfillment )
+    {
+      if( fulfillment.Supply().IsExportNeeded() )
+      {
+        exportedmaterial := this.GetExportedMaterial( exportedschedule, fulfillment.Supply().SupplyID(), fulfillment.Supply().SupplyType() );
+        exportedmaterial.UpdateAttributesForDemandFulfilled( fulfillment.Supply().Operation_SC(), fulfillment.Quantity() );
+      }
+      
+      if( fulfillment.Demand().IsExportNeeded() )
+      {
+        exportedmaterial := this.GetExportedMaterial( exportedschedule, fulfillment.Demand().DemandID(), fulfillment.Demand().DemandType() );
+        exportedmaterial.UpdateAttributesForSupplyConsumed( fulfillment.Demand().Operation_SC(), fulfillment.Quantity() );
+      }
+    }
+  *]
+}

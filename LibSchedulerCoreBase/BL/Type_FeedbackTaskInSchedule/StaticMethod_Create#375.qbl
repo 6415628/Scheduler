@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (FeedbackManager feedbackManager, Operation_SC operation) as FeedbackTaskInSchedule
+{
+  TextBody:
+  [*
+    // Only create blank new feedbackTaskInSchedule here. Set the pairing fbtaskInSF key
+    // Setting the attribute will be done in UpdateFeedbacktask
+    // to minimize changes needed when new attributes are needed
+    
+    // saravanen 20130827 added Task_SC := operation.GetTask()
+    // Chris 20141103 Feedback Handling - #4797: Add OperationID in ShopFloorTask
+    // added OperationID := importedfeedbacktask.OperationID()
+    fbtask := FeedbackTaskInSchedule::Create( feedbackManager, 
+                                              operation.WorkOrderId(),
+                                              operation.PlanUnitId(),
+                                              operation.WorkOrderSequenceNr() );
+    
+    fbtask.CreateUpdateOperationTaskFeedback( operation );
+    fbtask.UpdateTask( operation );
+    
+    return fbtask;
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

@@ -1,0 +1,102 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddInitial (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs, Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // zyi1 Jul-15-2021 (created)
+    // Instantiate the main resource path
+    addinitialsolution := true;  // add this flag for easier of debug, for switching between use and not use initial solution
+    
+    traverse( combilegs, Elements.LeadingCombiProgramPhase.CombiProgramType.CombiProgramSet.Resource_SC, resource )
+    {
+      pathtype := poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathResource( resource ), resource );
+      resourcepath := poa.InstantiatePath( pathtype );
+      
+      // Sort the combilegs that belong to this resource
+      sortedcombilegs := selectsortedset( combilegs, Elements, combileg, 
+                                          combileg.LeadingCombiProgramPhase().CombiProgramType().CombiProgramSet().Resource_SC() = resource,
+                                          combileg.SequenceNr() );
+                                          
+      // Instantiate the combi leg plan paths
+      traverse( sortedcombilegs, Elements, combileg )
+      {
+        combilegpathtype := poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathCombiLeg( combileg ), combileg );
+        combilegpath := poa.InstantiatePath( combilegpathtype );
+        
+        dummystart := poa.Node( SuboptimizerPOACombiLeg::NamePOADummyStart( combileg ), combileg );
+        combilegpath.AddNode( dummystart );
+        dummystart.IsFrozen( true );
+        
+        // Create a node for the first operation of this combileg and if necessary freeze it
+        op := combileg.FirstOperation();
+        
+        if( not isnull( op ) and addinitialsolution )
+        {
+          node := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( op.Operation_SC() ), op.Operation_SC() );
+          if( not isnull( node ) ) //as optional operations are added randomly before poa, not really part of the initial solution
+          {
+            combilegpath.AddNode( node );
+            
+            // If we need to freeze the first node in POA, then do so
+            if( combileg.IsFreezeFirstNodeInPOA() )
+            {
+              node.IsFrozen( true );
+            }
+          }
+          op := op.NextOperation();
+        }
+        
+        // Create nodes for the other operations of this combileg  
+        while( not isnull( op ) and addinitialsolution )
+        {
+          node := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( op.Operation_SC() ), op.Operation_SC() );
+          if( not isnull( node ) )
+          {
+            combilegpath.AddNode( node );
+            // If this is the last operation and we need to freeze the last node in POA, then fix this node
+            if( isnull( op.NextOperation() ) and combileg.IsFreezeLastNodeInPOA() )
+            {
+              node.IsFixed( true );
+            }
+          }
+          
+          op := op.NextOperation();
+        }
+        
+        dummyend := poa.Node( SuboptimizerPOACombiLeg::NamePOADummyEnd( combileg ), combileg );
+        combilegpath.AddNode( dummyend );
+        dummyend.IsFixed( true );
+        
+        // Link the combileg plan paths to the resource path
+        combistartnode := poa.Node( SuboptimizerPOACombiLeg::NamePOACombiLegStart( combileg ), combileg );
+        combiendnode := poa.Node( SuboptimizerPOACombiLeg::NamePOACombiLegEnd( combileg ), combileg );
+        resourcepath.AddNode( combistartnode );
+        resourcepath.AddNode( combiendnode );
+        combistartnode.IsFixed( true );
+        combiendnode.IsFixed( true );
+        poa.NewPlanPath( combilegpath, combistartnode, combiendnode );
+        
+        // If this is the last leg before a shutdown, then add the frozen and fixed shutdown node
+        if( guard( combileg.Leg().GetIsLastLegBeforeShutdown(), false ) )
+        {
+          shutdownnode := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeShutdown( combileg ), combileg );
+          resourcepath.AddNode( shutdownnode );
+          shutdownnode.IsFixed( true );
+          shutdownnode.IsFrozen( true );
+        }
+      }
+    }
+    
+    // Initiate the unplanned collection path
+    unplannedcollection := poa.InstantiateCollection( poa.CollectionType( SuboptimizerPOACombiLeg::NamePOAPathCollectionTypeUnplanned() ) );
+    // Add all operations that are no part of a combileg to the unplanned collection
+    traverse( operations, Elements, operation,
+              not exists( combilegs, Elements.OperationInCombiLeg.Operation_SC, combilegop,
+                          combilegop = operation ) )
+    {
+      node := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation ), operation ); 
+      unplannedcollection.AddNode( node );
+    }
+  *]
+}

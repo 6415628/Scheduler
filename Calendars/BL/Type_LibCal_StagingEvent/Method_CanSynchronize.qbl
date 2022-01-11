@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CanSynchronize () as Boolean
+{
+  TextBody:
+  [*
+    canSynchronize := not this.HasError();
+    
+    if( not canSynchronize )
+    {
+      LibCal_Util::Logfile( "Event '" + this.CalendarID() + "'.'" + this.Subject() + "' " +
+                            'cannot be synchronized. "' + this.Validation() + '"' );
+    }
+    else
+    {
+      // It should also be possible to synchronize the LeadingParticipation.
+      leadingStagPart := this.LeadingStagingParticipation();
+      canSynchronize  := isnull( leadingStagPart )
+                      or not leadingStagPart.HasError();
+                     
+      if( not canSynchronize )
+      {
+        LibCal_Util::Logfile( "Event '" + this.CalendarID() + "'.'" + this.Subject() + "' " +
+                              "cannot be synchronized because its LeadingParticipation '" + leadingStagPart.StagingParticipationID() + "' has an error." +
+                              ' "' + leadingStagPart.Validation() + '"' );
+      }
+      else
+      {
+        // Also the StagingCalendar is not allowed to have an error.
+        canSynchronize := not this.StagingCalendar().HasError();
+        
+        if( not canSynchronize )
+        {
+          LibCal_Util::Logfile( "Event '" + this.CalendarID() + "'.'" + this.Subject() + "' " +
+                                "cannot be synchronized because calendar '" + this.CalendarType() + "'.'" + this.CalendarID() + "' has an error." );
+        }
+      }
+    }
+    
+    return canSynchronize;
+  *]
+}

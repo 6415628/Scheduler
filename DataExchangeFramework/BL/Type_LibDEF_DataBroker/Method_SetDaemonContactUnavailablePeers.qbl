@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetDaemonContactUnavailablePeers
+{
+  Description: 'Enable/Disable the Daemon based on if there are any unavailable Systems (non-BootNode).'
+  TextBody:
+  [*
+    // Jacky CHAN May-3-2016 (created)
+    // only enable if already part of a Domain, and has unavailable Systems
+    value := this.InDomain() and
+             this.HasUnavailablePeers();
+    
+    frequency := Duration::Seconds( LibDEF_Util::GetSettingValueFrequencyContactOtherNodes() );
+    // use StartOfWeek for Mondays
+    startTime := DateTime::Now().StartOfWeek( TimeZone::DeductedDatasetTimezone() );
+    
+    this.EditDaemonProperties( LibDEF_DataBroker::DAEMONNAME_ContactUnavailablePeers(),
+                               value, frequency, startTime );
+  *]
+}

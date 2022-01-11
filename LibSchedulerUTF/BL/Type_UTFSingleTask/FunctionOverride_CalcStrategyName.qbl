@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcStrategyName
+{
+  TextBody:
+  [*
+    value := this.StrategyName_UTF();
+    
+    if( not this.HasStrategyNameUTF() )
+    {
+      // Run back the original code when no UTF manipulation is required on this attribute.
+      value := this.StrategyNameFromLeadTimeStrategy();
+    
+      // when tool simulation is off, use ASAP strategy
+      if( this.HasStrategyToolSimulation() and not this.Resource_SC().ResourceGroup_SC().Schedule().TechnicalConfiguration().IsToolSimulationOn() )
+      {
+        value := Constants::StrategyASAP();
+      }
+    }
+    
+    this.StrategyName( value );
+  *]
+}

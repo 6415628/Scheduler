@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetSnapshotsForKpi (String kpiName, Number top) as owning KpiSnapshotSetData
+{
+  TextBody:
+  [*
+    set := construct( KpiSnapshotSetData );
+    
+    storage       := this.Storage();
+    nrOfSnapshots := minvalue(  storage.NumberOfSnapshots(), top );
+    snapshot      := storage.LastSnapshot();
+    
+    while ( nrOfSnapshots > 0 and not isnull( snapshot ) ) 
+    {
+      if ( snapshot.Configuration().HasKpi( kpiName ) )
+      {
+        data := DssKpiSnapshotRetrieval::ConvertSnapshotToTransportType( snapshot, kpiName );
+        set.SnapshotData( relinsert, &data );
+        nrOfSnapshots--;
+      }
+      snapshot := snapshot.PreviousSnapshot();
+    }
+    
+    return &set;
+  *]
+}

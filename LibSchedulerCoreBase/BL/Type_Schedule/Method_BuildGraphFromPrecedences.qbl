@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method BuildGraphFromPrecedences (GraphProgramGraph graph) as GraphProgramGraph
+{
+  Description: 'Builds the graph with nodes and edges based on work order operation precedences.'
+  TextBody:
+  [*
+    // Start from any imported work order operation
+    traverse( this, ImportedWorkOrderOperation, fromImportedWOO )
+    {
+      fromID := fromImportedWOO.WorkOrderId().Concat( '-' ).Concat( [String]fromImportedWOO.SequenceNr() );
+      
+      // Create FromNode
+      fromNode := graph.FindNode( fromID, fromImportedWOO );
+      
+      if( isnull( fromNode ) )
+      {
+        fromNode := graph.NewNode( fromID, fromImportedWOO );
+      }
+      
+      // Get to any linked 'next' work order operation
+      traverse( fromImportedWOO, FromImportedWOOP, precedence )
+      {
+        toImportedWOO := precedence.AsToImportedWOOP();
+        toID := toImportedWOO.WorkOrderId().Concat( '-' ).Concat( [String]toImportedWOO.SequenceNr() );
+        
+        // Create ToNode
+        toNode := graph.FindNode( toID, toImportedWOO );
+      
+        if( isnull( toNode ) )
+        {
+          toNode := graph.NewNode( toID, toImportedWOO );
+        }
+        
+        // Create edge between FromNode and ToNode
+        edgeID := fromID.Concat( '--->' ).Concat( toID );
+        
+        edge := graph.FindEdge( edgeID, precedence, fromNode, toNode );
+        
+        if( isnull( edge ) )
+        {
+          edge := graph.NewEdge( edgeID, precedence, fromNode, toNode );
+        }
+      }
+    }
+    
+    return graph;
+  *]
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Progress () declarative remote as Real
+{
+  TextBody:
+  [*
+    value := 1.0;
+    
+    zero_duration := Duration::Zero();
+    if( this.MaxIterations() > 0.0
+        and this.MaxDurationLocal() > zero_duration
+        and this.MaxDurationGlobal() > zero_duration )
+    {
+      run := this.Iterator().Run();
+      time := guard( run.LastSnapshot().TimeStamp(), 
+                     ifexpr( run.StartedOn().IsFinite(), run.StartedOn(), run.CreatedOn() ) );
+      
+      iterations      := max( this, Iterator.Task.TaskContext.astype( LibOpt_TaskContextIterator ), context, context.NrOfIterations() / this.MaxIterations() );
+      local_duration  := max( this, Iterator.Task.SnapshotComponent, context, ( time - context.TimeStamp() ) / this.MaxDurationLocal() );
+      global_duration := ( time - this.Iterator().Run().StartedOn() ) / this.MaxDurationGlobal();
+      
+      value := maxvalue( 0.0,
+                         maxvalue( iterations,
+                                   maxvalue( local_duration, global_duration ) ) );
+    }
+    
+    return value;
+  *]
+}

@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CanLoad (Boolean isDatasetStoreEnabled) declarative remote as Boolean
+{
+  Description: 'Returns whether loading the scenarios in this folder (setting them online) is allowed.'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    // Check the number of online scenario allowed
+    if( not feedback.CheckHard( this.IsScenariosLessThanMaxOnlineScenariosAllowed() ) )
+    {
+      scenarioManager := this.ScenarioManager();
+      parameter       := scenarioManager.GlobalParameter();
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_CanSetAvailable_FolderHasScenariosExceededMaxAllowed( scenarioManager.NrOfOnlineScenarios(),
+                                                                                                                 this.Name(),
+                                                                                                                 this.NrOfOfflineScenarios(),
+                                                                                                                 parameter.MaxNrOfLoadedScenarios() ) );
+    }
+    
+    if( not feedback.CheckHard( not this.IsRecycleBin() ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_CanSetAvailable_IsRecycleBin() );
+    }
+    
+    if( not feedback.CheckHard( not this.IsRootFolder() ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_CanSetAvailable_IsRootFolder() );
+    }
+    
+    if( not feedback.CheckHard( not this.IsDeleted() ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_CanNotSetAvailable_IsDeleted() );
+    }
+    
+    // Scenario with Memory-only storage type is not able to set available
+    if( not feedback.CheckHard( this.HasStorageScenario() ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_CanSetAvailable_NotStorageScenario( this.Name() ) );
+    }
+    // Check the IsLoad for all the children of Scenario folder ( Scenario folder and Scenario Node )
+    
+    if( not feedback.CheckHard( not this.IsAllChildrenOnline() ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_CanSetAvailable_AllStorageScenariosAreAvailable() );
+    }
+    // Check isDatasetStoreEnabled when storage type scenario is Cached, StandAloneStorage, and HybridStorage
+    if( not feedback.CheckHard( isDatasetStoreEnabled
+                                or not exists( this, Children.astype( LibSM_Scenario ).Dataset, dataset, dataset.IsDatasetStoreStorage() ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_CanSetAvailable_DatasetStoreNotEnabled( this.Name() ) );
+    }
+    
+    return feedback.IsAllowed() and this.CanLoadCustom( isDatasetStoreEnabled );
+  *]
+}

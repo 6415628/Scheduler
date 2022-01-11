@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestUnreserveMaterialFromFrozenOrLockedTask (Schedule schedule)
+{
+  Description: 'Tests unreserve material from frozen or locked task. Body.'
+  TextBody:
+  [*
+    feedback_o := '';
+    tasks := selectset( schedule, ResourceGroup_SC.Resource_SC.Task_SC, task, true );
+    currentVariant := this.GetCurrentVariant();
+    
+    // Propagate IsLocked and IsFrozenInSchedule attribute value for precon check
+    Transaction::Transaction().Propagate( attribute( Task_SC, IsLocked ) );
+    Transaction::Transaction().Propagate( attribute( Task_SC, IsFrozenInSchedule ) );
+    
+    this.Run().AssertTrue( currentVariant.CanReserveOrUnreserveMaterial() = Task_SC::CanReserveMaterialForTaskSoft( tasks, feedback_o ), 
+                           'Test unreserve material from frozen or locked demand failed' );
+  *]
+}

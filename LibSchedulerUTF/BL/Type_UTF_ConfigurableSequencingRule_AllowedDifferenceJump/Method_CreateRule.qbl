@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateRule (Schedule schedule, String rulesubtypename) as Rule
+{
+  Description: 'Create rule'
+  TextBody:
+  [*
+    // Initialize rule framework
+    schedule.InitializeRuleFramework();
+    
+    // Select rule type
+    ruleType := select( schedule, RuleType, ruletype, ruletype.Name() = RuleConstant::RuleType_AllowedDifferenceJump() );
+    ruleSubType := select( ruleType, RuleSubType, rulesubtype, rulesubtype.Name() = rulesubtypename );  
+    
+    // Create rule
+    rule := Rule::Create( schedule, 1 );
+    
+    rule.RuleType( relset, ruleType );  
+    rule.RuleSubType( relset, ruleSubType );
+    
+    // Set characteristic main - Operation Width
+    characteristicMain := select( schedule, Characteristic, char, char.ID() = RuleConstant::Characteristic_OperationWidth() );
+    rule.CharacteristicMain( relset, characteristicMain );
+    
+    // Create a resource and apply rule scope to rule
+    UTFMockObjectFactory::CreateRuleScopeInSingleResource( schedule, rule, 'Single Resource' );
+    
+    // Create normal attribute in rule
+    rule.IsEnabled( true );
+    rule.RuleScopeSelected( RuleConstant::RuleScope_AllTasksOnResource() );
+    
+    return rule;
+  *]
+}

@@ -1,0 +1,63 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_010_ErrorData (LibOpt_TestDataset dataset)
+{
+  Description: 'This test method tests the decomposition method of the reactive Exception.'
+  TextBody:
+  [*
+    message := 'A random error, thrown for testing purposes';
+    
+    expected_error_code := 0;
+    expected_general_information := message;
+    
+    try
+    {
+      error( message );
+    }
+    onfailure
+    {
+      this.Run().AssertEqual( expected_error_code, e.ErrorNr(), 'Expected error code in manual' );
+      this.Run().AssertEqual( expected_general_information, e.GeneralInformation(), 'Expected general information in manual' );
+    }
+    
+    // Reactive lambda
+    this->( t )
+    {
+      error( message );
+    }->Exception()->( e )
+    {
+      expected_detailed_information  := 'LibOpt_TestUnit_Misc::Test_010_ErrorData (react, line 17)(LibOpt_TestUnit_Misc t, String message = ' + message + '):'
+      expected_developer_information := '';
+    
+      exc := LibOpt_SnapshotError::Read( e );
+      
+      this.Run().AssertEqual( e.ErrorNumber(), exc.Code(), 'Provided error code in reactive' );
+      this.Run().AssertEqual( expected_error_code, exc.Code(), 'Expected error code in reactive' );
+      this.Run().AssertEqual( expected_general_information, exc.GeneralInformation(), 'Expected general information in reactive' );
+      this.Run().AssertEqual( expected_detailed_information, exc.DetailedInformation(), 'Expected detailed information in reactive' );
+      this.Run().AssertEqual( expected_developer_information, exc.DeveloperInformation(), 'Expected developer information in reactive' );
+    }->Exception()->( e )
+    {
+      this.Run().RegisterFailure( 'Exception while checking the Exception: ' + e.Message() );
+    }
+    
+    // Reactive method
+    this->ThrowError( message )->Exception()->( e )
+    {
+      expected_detailed_information  := 'LibOpt_TestUnit_Misc::ThrowError(String message = ' + message + '):'
+      expected_developer_information := '';
+      
+      exc := LibOpt_SnapshotError::Read( e );
+      
+      this.Run().AssertEqual( e.ErrorNumber(), exc.Code(), 'Provided error code in reactive' );
+      this.Run().AssertEqual( expected_error_code, exc.Code(), 'Expected error code in reactive' );
+      this.Run().AssertEqual( expected_general_information, exc.GeneralInformation(), 'Expected general information in reactive' );
+      this.Run().AssertEqual( expected_detailed_information, exc.DetailedInformation(), 'Expected detailed information in reactive' );
+      this.Run().AssertEqual( expected_developer_information, exc.DeveloperInformation(), 'Expected developer information in reactive' );
+    }->Exception()->( e )
+    {
+      this.Run().RegisterFailure( 'Exception while checking the Exception: ' + e.Message() );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

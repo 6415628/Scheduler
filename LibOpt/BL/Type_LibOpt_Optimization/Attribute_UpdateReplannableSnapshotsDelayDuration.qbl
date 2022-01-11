@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Attribute UpdateReplannableSnapshotsDelayDuration
+{
+  #keys: '3[141860.2.1038641485][141860.2.1038641484][141860.2.1038641486]'
+  Description:
+  [*
+    The snapshot of a quick dataset copy is created before the dataset copy creation method is called, because this method is called reactively.
+    Therefore, `MDSEditor::Editor().ObjectInfos().Find( snapshot.DatasetName() )` will be null, when it is called between the creation of the snapshot and the reactive dataset copy call. 
+    
+    This attribute adds a small delay in the method `UpdateReplannableSnapshots` that prevents `MDSEditor::Editor().ObjectInfos().Find( snapshot.DatasetName() )` from being called too early.
+    Note that the transaction priority of a dataset copy transaction is 'medium', while the transaction priority of most reactive methods within the optimizer is 'low'. 
+    This implies that the the dataset copy creation transaction will typically be scheduled when the current transaction ends. So only a small delay is required.
+  *]
+  ValueType: Duration
+  InterfaceProperties { Accessibility: 'Module' }
+}

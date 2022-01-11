@@ -1,0 +1,68 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestApplyRuleScopeToShutdownType_Setup (Schedule schedule)
+{
+  Description: 'Test apply rule scope to shutdown type - setup'
+  TextBody:
+  [*
+    // Get variant attribute
+    hasShutdownInScope := false;
+    hasNoConstraintViolation := false;
+    
+    this.GetTestVariant( hasShutdownInScope,
+                         hasNoConstraintViolation );
+    
+    // Create resource 
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'single resource' );
+    
+    // Create maximum value real rule
+    rule := this.CreateMaximumValueRealRule( schedule );
+    
+    // Create shutdown type and link to resource
+    shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, 'shutdown type' );
+    UTFMockObjectFactory::CreateShutdownTypeInResource( shutdownType, resource );
+    
+    // Assign shutdown type in rule based on variant
+    if( hasShutdownInScope )
+    {
+      rule.RuleScopeSelected( RuleConstant::RuleScope_Shutdown() );
+      UTFMockObjectFactory::CreateRuleScopeInShutdownType( rule, shutdownType );
+    }
+    
+    // Create operation1 with shutdown and plan on resource1 
+    order1 := UTFMockObjectFactory::CreateOrder( schedule, 'Order1' );
+    planUnit1 := UTFMockObjectFactory::CreatePlanUnit( order1, 'Plan Unit 1', 1.0 );
+    operation1 := UTFMockObjectFactory::CreateOperation( planUnit1 );
+    operation1.OperationID( 'Operation1' );
+    task1 := resource.PlanLast( operation1 );
+    resource.InsertShutdown( task1, 
+                             shutdownType, Duration::Hours( 1 ), 
+                             false,
+                             false,
+                             DateTime::MinDateTime(),
+                             Duration::Zero() );
+    
+    // Create operation2 and plan on resource
+    order2 := UTFMockObjectFactory::CreateOrder( schedule, 'Order2' );
+    planUnit2 := UTFMockObjectFactory::CreatePlanUnit( order2, 'Plan Unit 2', 1.0 );
+    operation2 := UTFMockObjectFactory::CreateOperation( planUnit2 );
+    operation2.OperationID( 'Operation2' );
+    resource.PlanLast( operation2 );
+    
+    // Create operation3 and plan on resource
+    order3 := UTFMockObjectFactory::CreateOrder( schedule, 'Order3' );
+    planUnit3 := UTFMockObjectFactory::CreatePlanUnit( order3, 'Plan Unit 3', 1.0 );
+    operation3 := UTFMockObjectFactory::CreateOperation( planUnit3 );
+    operation3.OperationID( 'Operation3' );
+    resource.PlanLast( operation3 );
+    
+    // Define width for operation1, operation2 and operation3
+    // Operation2 and operation3 will violate the rule constraint because the maximum allowed value for width is 10.0 if the rule has shutdown scope
+    operation1.Width( 100.0 );
+    operation2.Width( 100.0 );
+    operation3.Width( 100.0 );
+    
+    // Now the Gantt chart looks like this
+    // | Task1 | Shutdown Task } Task2 | Task3 |
+  *]
+}

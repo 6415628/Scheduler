@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride PlanLast (Task_SCs tasks)
+{
+  Description: 'Plan batchtask to last on resource.'
+  TextBody:
+  [*
+    // Replan if there exists a task with mismatching type
+    isreplan := exists( tasks, Elements, task,
+                        not this.IsTaskTypeMatching( task ) );
+    
+    if( isreplan )
+    {
+      operations := this.GetSortedOperationsFromTasks( tasks );
+    
+      traverse( operations, Elements, operation )
+      {
+        operation.Unplan();
+      }
+      
+      this.CreateBatchAssignOperationsPlanBatch( operations, this.Last().astype( BatchTask ) );
+    }
+    else
+    {
+      batchTasks := selectset( tasks, Elements.astype( BatchTask ), st, true, true )
+      this.PlanLast( batchTasks );
+    }
+  *]
+}

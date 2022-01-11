@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcQuantity
+{
+  TextBody:
+  [*
+    // woi1 Aug-16-2017 (created)
+    
+    // we first take the minimum value of the lot supplying material and the lot requiring material
+    value := minvalue( this.AsOutputLotMaterial().Quantity(), // the supplying lot
+                       this.AsInputLotMaterial().Quantity() ); // the receiving lot
+    
+    // the remainder calculation here let's us know how much left NEEDS to be supplied or how much left CAN be supplied to its receiving lot
+    maximum_remainder := guard( maxvalue( this.Previous().InputRemainderQuantity(), // how much left CAN 
+                                          this.Previous().OutputRemainderQuantity() ), // how much left NEEDED
+                                value );
+    
+    // if there is a remainder, we should be using it
+    if( maximum_remainder > 0 )
+    {
+      value := minvalue( maximum_remainder, value );
+    }
+    
+    this.Quantity( value );
+  *]
+}

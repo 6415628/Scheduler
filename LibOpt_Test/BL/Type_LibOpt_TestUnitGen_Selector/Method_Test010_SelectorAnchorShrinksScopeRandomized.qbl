@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test010_SelectorAnchorShrinksScopeRandomized (LibOpt_TestDataset dataset)
+{
+  Description:
+  [*
+    Randomly test the SelectorAnchor by combining one of the anchor sets, one of the anchor pickers and one of the neighborhood creators.
+    We check that no error is thrown, the resulting scope is not bigger than the original and the selector returns a snapshot.
+  *]
+  TextBody:
+  [*
+    // Run randomized test
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    selector := opt.SelectorAnchor( run, 'Selector', null( LibOpt_AnchorSet, owning ), null( LibOpt_AnchorPicker, owning ), null( LibOpt_NeighborhoodCreator, owning ) );
+    
+    // Determine the anchor set.
+    {
+      set := construct( structured[Type] );
+      set.Add( typeof( LibOpt_AnchorSetAll ) );
+      set.Add( typeof( LibOpt_AnchorSetType ) );
+      selector.AnchorSet( relnew, LibOpt_AnchorSet, set.Element( Number::Random( 0, set.Size() - 1 ) ).Name() );
+      
+      // Set the AnchorSetType type
+      if( selector.AnchorSet().istype( LibOpt_AnchorSetType ) )
+      {
+        selector.AnchorSet().astype( LibOpt_AnchorSetType ).TypeName( typeof( LibOpt_ScopeElementMock ).Name() );
+      }
+    }
+    // Determine the anchor picker.
+    {
+      set := construct( structured[Type] );
+      set.Add( typeof( LibOpt_AnchorPickerRandom ) );
+      set.Add( typeof( LibOpt_AnchorPickerRoundRobin ) );
+      selector.AnchorPicker( relnew, LibOpt_AnchorPicker, set.Element( Number::Random( 0, set.Size() - 1 ) ).Name() );
+    }
+    
+    // Determine the neighborhood creator.
+    {
+      selector.NeighborhoodCreator( relnew, LibOpt_NeighborhoodCreatorTest );
+    }
+    
+    scope := LibOpt_ScopeFat::Create( run, this.CreateScopeElements( dataset, Number::Random( 20, 40 ) ) );
+    
+    run.SetStartComponent( selector );
+    run.SetStartScope( scope );
+    run.DebugScope( true );
+    
+    str := run->Start();
+    str->Exception()->LibOpt_TestUnit_TestDataset::CheckNoException( this );
+    str->|this->CheckScope( selector )->Exception()->LibOpt_TestUnit_TestDataset::CheckNoException( this );
+    this.Run()->AssertEqual( 1, this->GroupAll()->Size(), 'No snapshot was returned by the Selector.' );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

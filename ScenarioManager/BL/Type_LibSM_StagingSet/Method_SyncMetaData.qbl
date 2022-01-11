@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method SyncMetaData (LibSM_ScenarioManager scenarioManager, Boolean overwrite)
+{
+  Description: 'Overwrites/appends the staging metadata to the specified Scenario Manager dataset.'
+  TextBody:
+  [*
+    if( overwrite )
+    {
+      traverse( scenarioManager, MetaData, md )
+      {
+        md.Delete();
+      }
+    }
+    
+    oldMetaData := selectset( scenarioManager, MetaData, md, true );
+    
+    traverse( this, Staging_MetaData, staging, not staging.HasConstraintViolations() )
+    {
+      metadata := select( scenarioManager, MetaData, md, md.Type() = staging.Type() and md.Value() = staging.Value() );
+      if( isnull( metadata ) )
+      {
+        metadata := LibSM_MetaData::Create( scenarioManager,
+                                            staging.Type(),
+                                            staging.Value(),
+                                            staging.Description() );
+      }
+      oldMetaData.Remove( metadata );
+    }
+  *]
+}

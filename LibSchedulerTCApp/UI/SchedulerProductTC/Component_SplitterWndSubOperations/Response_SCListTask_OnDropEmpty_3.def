@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: SCListTask
+Response OnDropEmpty (structured[Operation_SC] information, SingleResourceBase resource) id:Response_SCListTask_OnDropEmpty_3
+{
+  #keys: '[11932.0.390156306]'
+  Body:
+  [*
+    // OnDrop structured[Operation] --> null(Task) On SingleResourceBase
+    
+    resource.PlanLast( information );
+  *]
+  DefinitionID => /SCListTask/Responsedef_SCListTask_OnDropEmpty
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey  := dropaction.IsControl();
+    ctrlshiftkey := dropaction.IsControlShift();
+    
+    return ApplicationScheduler.AllowedScheduling( resource,
+                                                   information,
+                                                   ctrlkey,
+                                                   ctrlshiftkey,
+                                                   resource.Last(),
+                                                   null( Task_SC ),
+                                                   Operation_SC::GetSelectedObjects( information ),
+                                                   feedback,
+                                                   isallowedhard );
+  *]
+  UserRequiresReadWrite: true
+}

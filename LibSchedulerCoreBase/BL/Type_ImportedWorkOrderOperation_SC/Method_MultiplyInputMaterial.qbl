@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method MultiplyInputMaterial (ImportedWorkOrderInputMaterials rows)
+{
+  Description: 'Synchronization method to be used in data multiplication of work order input materials for multiplied work operations.'
+  TextBody:
+  [*
+    // woi1 Apr-28-2017 (created)
+    // ONLY FOR DEVELOPMENT PURPOSES ONLY
+    // ONLY USED WITH DATA MULTIPLIER ONLY
+    traverse( rows, Elements, row, row.IsValidDataHard() )
+    {
+      id := DataMultiplier::GetDemandSupplyId( this.WorkOrderId(), row.Id() )
+      multiplied_woim := ImportedWorkOrderInputMaterial::FindImportedWorkOrderInputMaterial_SC( id );
+      
+      if( isnull( multiplied_woim ) )
+      {
+        multiplied_woim := ImportedExternalWorkOrderInputMaterial::Create( this.Schedule(), id );
+      }
+      
+      multiplied_woim.Update( row );
+    }
+  *]
+}

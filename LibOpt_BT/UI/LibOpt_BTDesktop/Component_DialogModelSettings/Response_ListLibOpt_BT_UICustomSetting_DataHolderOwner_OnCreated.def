@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: ListLibOpt_BT_UICustomSetting/DataHolderOwner
+Response OnCreated () id:Response_ListLibOpt_BT_UICustomSetting_DataHolderOwner_OnCreated
+{
+  #keys: '[139544.1.1248681456]'
+  Body:
+  [*
+    owner := construct( shadow[LibOpt_UIOwner] ); 
+    
+    type := typeof( LibOpt_BT_CustomSetting );
+    
+    allowed_args := construct( structured_Type );
+    allowed_args.Add( typeof( LibOpt_Optimizer ) );
+    allowed_args.Add( typeof( LibOpt_Optimization ) );
+    
+    tv := type.TypeView();
+    stats := selectset( tv, Statics, stat,
+                        stat.Arguments( relsize ) = 1 and
+                        allowed_args.Find( stat.Arguments( relget ).Element( 0 ).ElementType() ) >= 0 );
+    
+    instance := Dialog.Data().WrappedInstance();
+    levels := instance.GetSettingsAncestors();
+    
+    levels.Add( instance );
+    existing := selectset( levels, Elements.CustomSetting, cs, true );
+    traverse( existing, Elements, cs )
+    {
+      stat := select( stats, Elements, stat, 
+                      stat.Name() = cs.MethodName()
+                      and stat.Arguments( relget ).Element( 0 ).ElementType().Name() = cs.ArgumentType() );
+      owner.UICustomSetting( relnew, MethodName := cs.MethodName(),
+                                     ArgumentType := cs.ArgumentType(),
+                                     Description := guard( stat.Description(), '' ),
+                                     CanMove := cs.TrackingTableBase() = instance,
+                                     DefinedOn := cs.TrackingTableBase().GetName(),
+                                     IsCreated := true
+                                     );
+    }
+    
+    // Find non-existing
+    set := selectvalues( existing, Elements, cs, true, cs.MethodName() + '(' + cs.ArgumentType() + ')' );
+    
+    traverse( stats, Elements, stat )
+    {
+      arg := stat.Arguments( relget ).Element( 0 );
+      if( set.Find( stat.Name() + '(' + arg.ElementType().Name() + ')' ) < 0 )
+      {
+        owner.UICustomSetting( relnew, MethodName := stat.Name(),
+                                       ArgumentType := arg.ElementType().Name(),
+                                       Description := stat.Description(),
+                                       CanMove := true,
+                                       IsCreated := false );
+      }
+    }
+    
+    this.Data( & owner );
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIComponent_OnCreated'
+}

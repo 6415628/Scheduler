@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetIsSizeNotOkConstraintText () const declarative remote as String
+{
+  TextBody:
+  [*
+    // gyg1 May-16-2017 (created)
+    str := '';
+    routing := guard( this.Order_SC().WorkOrder().astype( InternalWorkOrder ).Routing(), constnull( Routing ) );
+    
+    if( not isnull( routing ) )
+    {
+      str := Translations::SC_PlanUnit_QuantityMoreThanMaxSize( this, routing );
+      
+      if( this.Quantity() < routing.LotSize() )
+      {
+        str := Translations::SC_PlanUnit_QuantityIsNotFitLotSize( this, routing );
+      }
+      else if( not Utility_SC::CheckIsMultiple( this.Quantity(), routing.LotSize() ) )
+      {
+        str := Translations::SC_PlanUnit_QuantityIsNotMultipleOfLotSize( this, routing );
+      }
+      else if( this.Quantity() < routing.MinSize() )
+      {
+        str := Translations::SC_PlanUnit_QuantityLessThanMinSize( this, routing );
+      }
+    }
+    
+    return str;
+  *]
+}

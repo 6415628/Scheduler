@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#root
+#parent: #DomainModel
+TypeSpecialization SettingsProgram
+{
+  #keys: '2[409844.1.1788877591][409844.1.1788877590]'
+  OnCreate: 'this.Update();'
+  OnDelete:
+  [*
+    // If this setting was active
+    // and there is at least one other setting
+    if( this.IsActive()
+        and this.Optimizer().Settings( relsize ) > 1 )
+    {
+      // select a new setting as the active setting
+      newsetting := select( this, Optimizer.Settings, setting, setting <> this )
+      this.Optimizer().ActiveSettings( relset, newsetting );
+    }
+  *]
+  Parent: LibOpt_Settings
+  StructuredName: 'SettingsPrograms'
+}

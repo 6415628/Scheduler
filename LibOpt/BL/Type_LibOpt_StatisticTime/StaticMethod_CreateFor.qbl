@@ -1,0 +1,73 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateFor (LibOpt_Run run)
+{
+  Description: 'Create `LibOpt_StatisticTimes` for the given "run" (`LibOpt_Run`).'
+  TextBody:
+  [*
+    // lle13 Nov-18-2020 (created)
+    
+    // Create "absolute" and "relative" time statistics on the following levels:
+    // - Run
+    //   - Type (i.e component type)
+    //     - Component
+    //       - Suboptimizer-specific: Initialize, Solve, Handle Result
+    
+    // Create "absolute" and "relative" time statistics on the Run level.
+    // - Note: The static method only returns the "absolute" instance, but the "relative" instance is also created in it.
+    statistictime_run_absolute := LibOpt_StatisticTimeTotal::CreateForRun( run );
+    
+    // Get all components in the run.
+    components_in_run := run.Component( relget );
+    
+    // Get the unique set of component types in the run.
+    componenttypes_in_run := selectuniquevalues( components_in_run, Elements, component,
+                                                 // FILTER
+                                                 true,
+                                                 // VALUE
+                                                 component.ComponentType()
+                                               );
+    
+    // For each component type, create a time statistic and link it to the Run-level time statistic.
+    traverse( componenttypes_in_run, Elements, componenttype )
+    {
+      // Create "absolute" and "relative" time statistics on the Type level.
+      // - Note: The static method only returns the "absolute" instance, but the "relative" instance is also created in it.
+      statistictime_type_absolute := LibOpt_StatisticTimeTotal::CreateForType( run, componenttype, statistictime_run_absolute );
+      
+      // Get the set of components that match the current Type.
+      components_of_type := selectset( components_in_run, Elements, component, component.ComponentType() = componenttype );
+      components_in_run.Remove( components_of_type ); // Remove the selected components from the "run" set for better performance for the above
+                                                      // `selectset` in the next iteration of the `traverse` of 'componentypes_in_run`.
+      
+      // For each component, create a time statistic and link it to the Type-level time statistic.
+      traverse( components_of_type, Elements, component )
+      {
+        // Create "absolute" and "relative" time statistics on the Component level.
+        // - Note: The static method only returns the "absolute" instance, but the "relative" instance is also created in it.
+        statistictime_component_absolute := LibOpt_StatisticTimeTotal::CreateForComponent( run, component, statistictime_type_absolute );
+        
+        // For a component which is a `LibOpt_Suboptimizer`, create the Suboptimizer-specific time statistics.
+        // - Note: All the `Create` static methods in this `if` clause creates both the "absolute" and "relative" time statistics.
+        if( component.istype( LibOpt_Suboptimizer ) )
+        {
+          LibOpt_StatisticTimeSuboptimizer::Create( run, typeof( LibOpt_StatisticTimeSuboptimizerInitialize ),
+                                                    component,
+                                                    statistictime_component_absolute
+                                                  );
+          
+          LibOpt_StatisticTimeSuboptimizer::Create( run, typeof( LibOpt_StatisticTimeSuboptimizerSolve ),
+                                                    component,
+                                                    statistictime_component_absolute
+                                                  );
+          
+          LibOpt_StatisticTimeSuboptimizer::Create( run, typeof( LibOpt_StatisticTimeSuboptimizerHandleResult ),
+                                                    component,
+                                                    statistictime_component_absolute
+                                                  );
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeReservationWO2WO (output Fulfillments updatedinstances)
+{
+  Description: 'Synchronizing external fulfillments between work order supplies and work order demands.'
+  TextBody:
+  [*
+    traverse( this, Schedule.ImportedFixedProductWO2WO, row, row.IsValidDataHard() )
+    {
+      workordersupply := WorkOrderSupply::FindWorkOrderSupply( row.WorkOrderSupplyId() );
+      workorderdemand := WorkOrderDemand::FindWorkOrderDemand( row.WorkOrderDemandId() );
+    
+      demands := selectsortedset( workorderdemand, ProductPlannedDemand, demand, true, demand.DueDate(), demand.Quantity(), demand.DemandID() );
+      supplies := selectsortedset( workordersupply, ProductPlannedSupply, supply, true, supply.AvailableFrom(), supply.Quantity(), supply.SupplyID() );
+    
+      this.SynchronizeExternalFulfillments( demands, supplies, row, updatedinstances );
+    }
+  *]
+}

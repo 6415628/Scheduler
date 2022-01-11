@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcTransferEarliestStart
+{
+  Description: 'Calculate the maximum earliest start of TransferSubTask and ReceiveSubTask that starts when both transferring and receiving resource are available.'
+  TextBody:
+  [*
+    // AlexanderNg Jul-31-2015 (created) QP #5681
+    scheduletime          := this.PlanUnit_SC().Schedule().Time();
+    transferearlieststart := scheduletime;
+    receiveearlieststart  := scheduletime;
+    
+    query := Calendar::Query();
+    
+    transfersubtask := this.TransferSubTask();
+    receivesubtask  := this.ReceiveSubTask();
+    
+    if( not isnull( transfersubtask ) )
+    {
+      // If there is a transfer subtask, get the transfer subtask's earliest start and add the transfer
+      // resource to the calendar query.
+      transferearlieststart := transfersubtask.EarliestStart();
+    
+      // Add the resource calendar where the transfer task is planned to the calendar query
+      query.AddCalendar( transfersubtask.Resource_SC().ResourceCalendar() );
+    }
+    
+    if( not isnull( receivesubtask ) )
+    {
+      // If there is a receive subtask, get the receive subtask's latest start and add the receive
+      // resource to the calendar query.
+      receiveearlieststart := receivesubtask.EarliestStart();
+    
+      // Add the resource calendar where the receive task is planned to the calendar query
+      query.AddCalendar( receivesubtask.Resource_SC().ResourceCalendar() );
+    }
+    
+    // take the later time of either transferearlieststart or receiveearlieststart,
+    // and use calendar query to find the time where the transfer and receive operation
+    // will not overlap with any resource downtime
+    earlieststart := maxvalue( transferearlieststart, receiveearlieststart );
+    nextfitearlieststart := query.NextFit( earlieststart, this.TransferDuration() );
+    
+    this.TransferEarliestStart( nextfitearlieststart );
+  *]
+}

@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetToken (String searchterms, output Number pos, String endchar, 
+  output String token) remote as Boolean
+{
+  TextBody:
+  [*
+    // per Oct-4-2016 (created)
+    token      := '';
+    operands   := '<=>~';
+    terminated := false;
+    
+    while ( pos < searchterms.Length()
+        and searchterms.SubString( pos, 1 ).TrimBoth() <> endchar
+        and (endchar <> '' or operands.FindString( searchterms.SubString( pos, 1 ), 0 ) < 0)
+        and not terminated )
+    {
+      char       := searchterms.SubString( pos, 1 );
+      terminated := char.TrimBoth() = endchar;
+                
+      if ( not terminated )                
+      {
+        token := token + char;
+        pos++;
+      }
+    }
+    
+    if ( endchar <> ''
+     and pos < searchterms.Length()
+     and searchterms.SubString( pos, 1 ).TrimBoth() = endchar )
+    {
+      terminated := true;
+      pos++;
+    }
+    
+    return terminated;
+  *]
+}

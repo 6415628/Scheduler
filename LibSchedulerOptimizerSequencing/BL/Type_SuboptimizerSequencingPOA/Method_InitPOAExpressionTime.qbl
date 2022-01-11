@@ -1,0 +1,82 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOAExpressionTime (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata) as POATransition
+{
+  Description:
+  [*
+    Add the time expression to POA.
+    Returns the created PNN POATransition that defines setup durations based on setup addresses.
+  *]
+  TextBody:
+  [*
+    timeexpression := poa.NewExpression( SuboptimizerSequencingPOA::NamePOAExpressionTime() );
+    
+    // Define the transparent nodes
+    transparentnodes := this.FindOrCreateTransparentNodesSet( poa, transientdata );
+    timeexpression.TransparentNodes( transparentnodes );
+    
+    ///////////////////////////////////////////////////////////////////////////
+    // DurationTransition : Setup Duration (based on POA addresses for the space of possible setup times)
+    ///////////////////////////////////////////////////////////////////////////
+    timeexpressiontransition := POATransition::PNN( poa, SuboptimizerSequencingPOA::NamePOATransitionTime(), 0.0 );
+    timeexpressiontransition.Symmetric( false );
+    timeexpressiontransition.NodeAddress( "SetupAddress" ); // required as in the example in http://qnl-intranet/wiki/doku.php?id=doqm:poapossible:nodeaddress
+    timeexpression.Transition( timeexpressiontransition );
+    
+    traverse( transientdata.GetPOAPathTypeResources(), Elements, resource )
+    {
+      pathtype := poa.PathType( this.GetPathTypeName( resource ) );
+    
+      traverse( resource, AllowedOperationOnResourceUnification.Operation.SetupAddress, address1 )
+      {
+        // any operation as a representative for `address1`:
+        operation1 := select( address1, OperationInSuboptimizerSequencing, op, true, op.TransientData().Key() = transientdata.Key() );
+        traverse( resource, AllowedOperationOnResourceUnification.Operation.SetupAddress, address2, address2 <> address1 )
+        {
+          // any operation as a representative for `address2`:
+          operation2 := select( address2, OperationInSuboptimizerSequencing, op, true, op.TransientData().Key() = transientdata.Key() );
+          // get setup duration from address1 to address2:
+          setupdur := resource.Resource().astype( SingleResourceBase ).GetSetupDuration( operation1.Operation(), operation2.Operation() ).HoursAsReal();
+          if( operation1.IsInSpan() and operation2.IsInSpan() and operation2 = operation1.Next() )
+          {
+            //Adjust the transition in the situation that spanoperations are out of scope. 
+            previous_operation := operation2.Operation().Task_SC().Previous().astype( SingleTaskBase ).OperationAsSingleTask();
+            setupdur := resource.Resource().astype( SingleResourceBase ).GetSetupDuration( previous_operation, operation2.Operation() ).HoursAsReal();
+              
+          }
+          timeexpressiontransition.Set( pathtype, address1, address2, setupdur );
+        }
+      }
+    }
+    
+    ///////////////////////////////////////////////////////////////////////////
+    // DurationParticipation : Process Duration
+    ///////////////////////////////////////////////////////////////////////////
+    timeparticipation := POAParticipation::PN( poa, SuboptimizerSequencingPOA::NamePOAParticipationTime(), 0.0 );
+    timeexpression.Participation( timeparticipation );
+    
+    traverse( transientdata.GetPOAPathTypeResources(), Elements, resource )
+    {
+      pathtype := poa.PathType( this.GetPathTypeName( resource ) );
+      traverse( resource, AllowedOperationOnResourceUnification, allowed_oor )
+      {
+        node := poa.Node( allowed_oor.Operation() );
+        timeparticipation.Set( pathtype, node, allowed_oor.ProcessDuration().HoursAsReal() );
+      }
+    }
+    
+    // We are creating a Composed transition and are only adding normal transitions
+    // This is needed in order for the transition of the POADependency to work. If we only have a normal transition
+    // without the composed transition, then only the dependency works, but not the transition.
+    // A PeopleSupport ticket has been created for this with code CTAS-109595. When this is solved, the composed
+    // transition can be removed.
+    composedtransition := POATransition::Composed( poa, SuboptimizerSequencingPOA::NamePOATransitionTime_Composed(), 0.0 );
+    composedtransition.OperatorKind( POAOperatorKind::Maximum() );
+    composedtransition.Add( timeexpressiontransition );
+    
+    timeexpression.Transition( composedtransition );
+    
+    
+    return timeexpressiontransition;
+  *]
+}

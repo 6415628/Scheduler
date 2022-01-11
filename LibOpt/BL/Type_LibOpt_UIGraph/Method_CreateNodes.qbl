@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateNodes
+{
+  Description:
+  [*
+    Create a node for each component and create the arcs between the nodes. Use dummy nodes so each arc starts at row i and ends at row i + 1.
+    
+    We expect that the LibOpt_Component.Depth is propagated.
+  *]
+  TextBody:
+  [*
+    // Create a node for each component
+    traverse( this, Run.Component, component )
+    {
+      this.UIGraphNode( relnew,
+                        Component := component,
+                        Row := component.Depth(),
+                        Height := 50,
+                        Width := 200,
+                        Name := component.Name(),
+                        ID := this.UIGraphNode( relsize ) );
+    }
+    
+    
+    // Create arcs for each link
+    // Create dummy nodes so each arc is between 2 adjacent rows.
+    traverse( this, Run.Component.Parents, link )
+    {
+      origin := link.GetOrigin();
+      origin_node := origin.UIGraphNode();
+      for( i := origin_node.Row() + 1; i < link.Destination().UIGraphNode().Row(); i++ )
+      {
+        dummy := this.UIGraphNode( relnew,
+                                   Row := i,
+                                   Name := origin.Name() + ' -> ' + link.Destination().Name() + ' #' + [String] i,
+                                   ID := this.UIGraphNode( relsize ) );
+        origin_node.LinkTo( link, dummy );
+        origin_node := dummy;
+      }
+      origin_node.LinkTo( link, link.Destination().UIGraphNode() );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

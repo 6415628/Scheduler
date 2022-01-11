@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: ListScenarios
+Response OnClick (LibSM_Scenario selection) id:Response_ListScenarios_MenuQuickMemoryOnlyCopy_OnClick
+{
+  #keys: '[136398.0.1976585693]'
+  CanBindMultiple: false
+  DefinitionID => /ListScenarios/Responsedef_ListScenarios_WebMenu_OnClick
+  EditSecurity: 'LibSM_CopyScenario'
+  InheritSecurity: false
+  Initiator: 'MenuQuickMemoryOnlyCopy'
+  Precondition:
+  [*
+    groups := LibSM_GlobalState.GetUserGroups();
+    
+    return LibSM_GlobalState.IsVisible( selection )
+       and LibSM_GlobalState.HasValidDataset( selection )
+       and selection.CanQuickCopy( groups );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Quickly copy a scenario without showing the scenario dialog (following origin scenario storage state)
+      isCopyAsMemoryOnly := true;
+      scenario := selection.QuickCopy( isCopyAsMemoryOnly );
+      LibSM_GlobalState.QueueForAutoSelectAfterCopy( scenario );
+      LibSM_GlobalState.QueueForHighlight( scenario );
+    *]
+    GroupServerCalls: false
+  }
+}

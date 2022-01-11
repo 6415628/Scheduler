@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CanLoad (LibSM_ScenarioManager scenarioManager, LibSM_ScenarioNodes scenarioNodes, Boolean isDatasetStoreEnabled) remote as Boolean
+{
+  Description: 'Returns whether there are scenarios in the specified set that can be loaded.'
+  TextBody:
+  [*
+    // Since only sub-nodes of folders will be loaded, but not sub-nodes of scenarios, we need to count 
+    // only the subnodes of the folders. 
+    folders     := selectset( scenarioNodes, Elements.astype( LibSM_ScenarioFolder ), folder, true );
+    // And then add the selected scenarios (if any) back to it.
+    numToLoad   := LibSM_Scenario::ChildCount( folders, true /* only offline scenarios count */ ) 
+                 + ( counter( scenarioNodes, Elements.astype( LibSM_Scenario ), node, not node.IsOnline() ) 
+                     - folders.Size() );
+    canLoadMore := scenarioManager.IsLoadingAdditionalScenariosLessThanOrEqualToMaxAllowed( numToLoad );
+    
+    feedback    := FeedbackObject::LocalFeedback();
+    allowed     := true;
+    
+    if ( not feedback.CheckHard( canLoadMore ) ) 
+    {
+      maxAllowed    := scenarioManager.GlobalParameter().MaxNrOfLoadedScenarios();
+      alreadyLoaded := scenarioManager.NrOfOnlineScenarios();
+      allowed       := false;
+      feedback.AddHard( Translations::LibSM_ScenarioNode_CannotLoadScenarios_MaxAllowed( numToLoad, maxAllowed, alreadyLoaded ) );
+    }
+    else
+    {
+      allowed := exists( scenarioNodes, Elements, scenarioNode, scenarioNode.CanLoad( isDatasetStoreEnabled ) );
+    }
+                       
+    return allowed;
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

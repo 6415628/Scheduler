@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllTestVariantsForPreconditionDeleteProgramConfiguration (output Strings objecttypes, output Booleans hasPlannedProgramChanges, output Booleans isValidForPreconDeletes) as owning Strings
+{
+  Description: 'Return all test variants, variant output arguments (columns) will be used in data creation logic.'
+  TextBody:
+  [*
+    variants := construct( Strings );
+    
+    // --------------------- delete program configuration for program definition/set/type
+    types := construct( Strings );
+    types.Add( "program definition" );
+    types.Add( "program set");
+    types.Add( "program type" );
+    
+    traverse( types, Elements, type )
+    {
+      // Scenario 1: Test precondition in deleting a program configuration with planned program change
+      variants.Add( 'Test precondition in deleting a ' + type + ' with planned program change' );
+      hasPlannedProgramChanges.Add( true );
+      isValidForPreconDeletes.Add( false );
+        
+      // Scenario 2: Test precondition in deleting a program configuration with no planned program change
+      variants.Add( 'Test precondition in deleting a ' + type + ' with no planned program change' );
+      hasPlannedProgramChanges.Add( false );
+      isValidForPreconDeletes.Add( true );
+    }
+    
+    return &variants;
+  *]
+}

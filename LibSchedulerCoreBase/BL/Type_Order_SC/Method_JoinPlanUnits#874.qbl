@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method JoinPlanUnits (PlanUnit_SC planUnitToKeep, PlanUnit_SCs planUnitsToJoin)
+{
+  Description: 'Merges the selected plan units, retaining the earliest planned plan unit and deleting the others, combining all their quantities.'
+  TextBody:
+  [*
+    earliestChildPlanUnits := selectsortedset( planUnitToKeep, Child, childPlanUnit, true, childPlanUnit.ChildNr() );
+    
+    // Join child plan units
+    traverse( earliestChildPlanUnits, Elements, earliestChildPlanUnit )
+    {
+      relatedRemainingChildPlanUnits := selectset( planUnitsToJoin, Elements.Child, remainingChildPlanUnit, 
+                                                   remainingChildPlanUnit.ChildNr() = earliestChildPlanUnit.ChildNr() );
+      relatedRemainingChildPlanUnits.Add( earliestChildPlanUnit );
+      this.JoinPlanUnits( relatedRemainingChildPlanUnits );
+    }
+    
+    // Update current plan unit
+    total_quantity := sum( planUnitsToJoin, Elements, pu, pu.Quantity() ) + planUnitToKeep.Quantity();
+    order := planUnitToKeep.Order_SC();
+    planUnitToKeep.Update( planUnitToKeep, total_quantity, order.GetNrOfLots( total_quantity ) ); // need to update its quantity
+    
+    // Join reservatons
+    this.JoinPlannedDemandReservations( planUnitToKeep, planUnitsToJoin );
+    this.JoinPlannedSupplyReservations( planUnitToKeep, planUnitsToJoin );
+    
+    // Remove remaining plan units
+    traverse( planUnitsToJoin, Elements, pu )
+    {
+      pu.Remove();
+    }
+  *]
+}

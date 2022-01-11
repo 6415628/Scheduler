@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoOnDelete
+{
+  Description: 'Method that executes OnDelete for BatchSequecneElement'
+  TextBody:
+  [*
+    // upon deleting the last element in the batch, we have to unplan the batch task
+    // to avoid having a batch task doing exactly nothing
+    
+    if( this.Batch().BatchSequenceElement( relsize ) <= 1 )
+    {
+      if( not isnull( this.Batch().BatchTask() ) )
+      {
+        this.Batch().BatchTask().Unplan();
+      }
+      this.Batch().Delete();
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

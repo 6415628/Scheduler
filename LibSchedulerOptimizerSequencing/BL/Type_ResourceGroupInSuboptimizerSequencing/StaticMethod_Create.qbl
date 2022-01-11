@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (TransientDataSuboptimizerSequencing owner, ResourceGroup_SC resourcegroup) as ResourceGroupInSuboptimizerSequencing
+{
+  Description:
+  [*
+    does *not* create any owned Resource shadow objects.
+    Precondition: The owning suboptimzier's RunContextSetupAddress must already contain all its resource group info objects.
+  *]
+  TextBody:
+  [*
+    // mbr23 Jan-27-2020 (created)
+    
+    // find or create the correct setup address:
+    unified_setup_durations := owner.Component().astype( SuboptimizerSequencingPOA ).RunContextSetupAddress().FindResourceGroupInfo( resourcegroup ).HasUnifiedSetupDurations();
+    
+    object := owner.ResourceGroup( relnew,
+                                   ResourceGroup := resourcegroup,
+                                   KeyResourceGroup := resourcegroup.Key(),
+                                   KeyTransientData := owner.Key(),
+                                   HasUnifiedSetupDurations := unified_setup_durations );
+    return object;
+  *]
+}

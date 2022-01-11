@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionInDeleteShutdownType_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    hasDuplicateID := false;
+    shutdownTypeID := '';
+    shutdownTypeName := '';
+    defaultduration := Duration::Zero();
+    isValidForPreconCreateEdit := false;
+    hasResourceScopeInShutdownType := false;
+    isViolatedResourceScopeConstraint := false;
+    hasPlannedShutdownTask := false;
+    isValidForPreconDelete := false;
+    
+    this.GetTestVariant( hasDuplicateID,
+                         shutdownTypeID,
+                         shutdownTypeName,
+                         defaultduration,
+                         isValidForPreconCreateEdit,
+                         hasResourceScopeInShutdownType,
+                         isViolatedResourceScopeConstraint,
+                         hasPlannedShutdownTask,
+                         isValidForPreconDelete );
+    
+    // Create resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Single Resource' );
+    
+    // Create task
+    order := UTFMockObjectFactory::CreateOrder( schedule, 'Order ID' );
+    planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'Plan Unit ID', 1.0 );
+    operation := UTFMockObjectFactory::CreateOperation( planUnit );
+    
+    // Plan the task on resource
+    Transaction::Transaction().Propagate( relation( Operation_SC, AllowedOperationOnResource ) );
+    task := resource.PlanLast( operation );
+    
+    // Create shutdown type
+    shutdownTypes := construct( ShutdownTypes );
+    shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, 'Shutdown Type ID' );
+    shutdownTypes.Add( shutdownType );
+    
+    // Create shutdown type in resource
+    UTFMockObjectFactory::CreateShutdownTypeInResource( shutdownType, resource );
+    
+    // Auto assign shutdown subtask
+    ResourceGroup_SC::UpdateStoppageSubTaskTypeInResourceGroup( schedule, shutdownTypes );
+    
+    // Insert shutdown based on variant
+    if( hasPlannedShutdownTask )
+    {
+      resource.InsertShutdown( task, shutdownType, Duration::Zero(), false, false, DateTime::MinDateTime(), Duration::Zero() );
+    }
+  *]
+}

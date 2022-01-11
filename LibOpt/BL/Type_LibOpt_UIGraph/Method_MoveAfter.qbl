@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+Method MoveAfter (LibOpt_UIGraphNode node, LibOpt_UIGraphNode after, Boolean reposition_children)
+{
+  TextBody:
+  [*
+    if( after <> node
+        and ( isnull( after ) or after <> node.Previous() )
+        and ( not isnull( after ) or not isnull( node.Previous() ) ) )
+    {
+      if( isnull( node ) )
+      {
+        node.UIGraphRow().MoveFirst( node );
+      }
+      else
+      {
+        node.UIGraphRow().MoveAfter( node, after );
+      }
+      
+      // Set column
+      traverse( node, UIGraphRow.UIGraphNode, n )
+      {
+        n.Column( guard( n.Previous().Column() + 1, 0 ) );
+      }
+      
+      // Reset arcs
+      traverse( this, UIGraphNode.Incoming.UIGraphArcPoint, p )
+      {
+        p.X( 0 );
+        p.Y( 0 );
+        if( not isnull( p.Next() ) and not isnull( p.Previous() ) )
+        {
+          p.Delete();
+        }
+      }
+      
+      traverse( this, UIGraphNode, n )
+      {
+        n.RelativelyPositionOutgoingArcs();
+      }
+      
+      if( reposition_children )
+      {
+        rows := selectsortedset( this, UIGraphRow, row, row.RowNr() > node.UIGraphRow().RowNr(), row.RowNr() );
+        traverse( rows, Elements, row )
+        {
+          row.SortTopDown();
+        }
+      }
+      
+      this.DrawAfterSequence();
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

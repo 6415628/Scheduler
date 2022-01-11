@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetPreviousOperationForSequencingRuleCheck () declarative remote as Operation_SC
+{
+  Description: 'Get previous operation based on task sequencing in the resource by considering shutdown type'
+  TextBody:
+  [*
+    // Get previous operation based on task sequencing in the resource by considering shutdown type
+    previousoperation := guard( this.Task_SC().Resource_SC().GetBeforeTaskForSequencingRules( this.Task_SC().Previous() ).GetOperation(), 
+                                null( Operation_SC ) );
+    
+    // If this is the first task of resource, get the last feedback task of the resource
+    if( isnull( previousoperation ) 
+        and guard( not isnull( this.Task_SC().AsFirst() ), false ) )
+    {
+      previousoperation := guard( this.Task_SC().Resource_SC().GetLastFeedbackTaskForSequencingRules().OperationTaskFeedback().Operation_SC(), null( Operation_SC ) );
+    }
+    // If current task is feedback task, get previous feedback operation
+    else if( isnull( previousoperation )
+             and guard( not isnull( this.ActiveOperationFeedback().astype( OperationTaskFeedback ).Last().PreviousFeedback() ), false ) )
+    {
+      previousoperation := guard( this.ActiveOperationFeedback().astype( OperationTaskFeedback ).Last().PreviousFeedback().OperationTaskFeedback().Operation_SC(), null( Operation_SC ) );
+    }
+    
+    return previousoperation;
+  *]
+}

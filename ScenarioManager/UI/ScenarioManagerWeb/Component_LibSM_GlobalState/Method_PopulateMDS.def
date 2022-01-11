@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method PopulateMDS () id:Method_LibSM_GlobalState_PopulateMDS
+{
+  #keys: '[136398.0.1891177997]'
+  Body:
+  [*
+    // Updates the DataHolderStandardMDSs with all available datasets.
+    target := construct( structured[ComponentMDSInstance] );
+    mds := LibSM_GlobalState.DataHolderStandardComponentMDS().Data();
+    mds.Refresh();
+    traverse( mds, Folders, f )
+    {
+      toadd := this.FlattenMDSs( f );
+      traverse( toadd, Elements, e )
+      {
+        if ( e.IsLoaded() and e.ComponentMDSKind().Kind() = LibSM_ModelExtensions::GetPlanningDatasetKind() )
+        {
+          target.Add( e );
+        }
+      }
+    }
+    info( 'ScenarioManager: Updating DataHolderStandardMDSs with ', target.Size(), ' elements. ' );
+    DataHolderStandardMDSs.Data( &target );
+  *]
+}

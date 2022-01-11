@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanOperations (Operation_SCs operations)
+{
+  Description: 'Plan all  operations on single resource or batch resource.'
+  TextBody:
+  [*
+    //She Ven 20130107 Execute batch operations before single operations to solve circular
+    batchops := construct( Operation_SCs );
+    singleops := construct( Operation_SCs );
+    traverse( operations, Elements , op, not isnull( op.SelectResource() ) )
+    {
+      if( op.SelectResource().HasBatch() )
+      {
+        batchops.Add( op );
+      }
+      else
+      {
+        singleops.Add( op );
+      }
+    }
+    if( batchops.Size() > 0 )
+    {
+      this.PlanOperationsInBatch( batchops );
+    }
+    if( singleops.Size() > 0 )
+    {
+      this.PlanOperationsIndividually( singleops );
+    }
+  *]
+}

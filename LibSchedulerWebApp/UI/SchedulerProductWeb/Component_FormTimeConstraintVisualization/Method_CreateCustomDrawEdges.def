@@ -1,0 +1,109 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateCustomDrawEdges (shadow[CustomDrawNodeOperation] startingNode, shadow[CustomDrawNodeOperation] nextNode, Boolean isUpstream) as shadow[CustomDrawEdgeOperationDependency] id:Method_FormTimeConstraintVisualization_CreateCustomDrawEdges
+{
+  #keys: '[132894.0.863091930]'
+  Body:
+  [*
+    // Create edge for operation dependency
+    edge := null( shadow[CustomDrawEdgeOperationDependency] );
+    
+    // Get Operations
+    dataDrivenTimeConstraintMode := guard( Schedule.TechnicalConfiguration().IsDataDrivenTimeConstraintsMode(), false );
+    startingOperation := startingNode.Operation_SC();
+    nextOperation := nextNode.Operation_SC();
+    operationDependencies := null( OperationDependencies );
+    
+    // Find operation dependency between operations of both nodes
+    if( isUpstream ) // Upstream
+    {
+      if( dataDrivenTimeConstraintMode )
+      {
+        operationDependencies := selectset( startingOperation, 
+                                            FromOperationDependency.astype( TimeConstraint ), 
+                                            dependency, 
+                                            dependency.FromOperation() = nextOperation );
+      }
+      else
+      {
+        operationDependencies := selectset( startingOperation, 
+                                            FromOperationDependency.astype( OperationMaterial ), 
+                                            dependency, 
+                                            dependency.FromOperation() = nextOperation );
+      }
+    }
+    else // Downstream
+    {
+      if( dataDrivenTimeConstraintMode )
+      {
+        operationDependencies := selectset( startingOperation, 
+                                            ToOperationDependency.astype( TimeConstraint ), 
+                                            dependency, 
+                                            dependency.ToOperation() = nextOperation );
+      }
+      else
+      {
+        operationDependencies := selectset( startingOperation, 
+                                            ToOperationDependency.astype( OperationMaterial ), 
+                                            dependency, 
+                                            dependency.ToOperation() = nextOperation );
+      }
+    }
+    
+    // The concept of edge building is:
+    // The edges are owned by the node 
+    // that has more edges, so that 
+    // the node doesn't have to remember
+    // that many keys, but only one key, which is the key
+    // of the single edge that points to the node
+    traverse( operationDependencies, Elements, operationDependency )
+    {
+      // GetCustomDrawEdgeLabel is the unique identifier among edges between two same nodes
+      // Since there can be more than 1 time constraint between 2 operations
+      // If this String comparison becomes a performance bottleneck
+      // We can consider directly comparing the attributes between 
+      // the precedence instances related to the operation dependencies
+      edge := select( startingNode, CustomDrawEdge, e, 
+                      e.OriginKey() = startingNode.Key().AsQUILL()
+                      and e.DestinationKey() = nextNode.Key().AsQUILL()
+                      and e.IsUpstream() = isUpstream
+                      and e.astype( shadow[CustomDrawEdgeOperationDependency] ).ID() = operationDependency.GetCustomDrawEdgeID() ).astype( shadow[CustomDrawEdgeOperationDependency] );
+      
+      if( isnull( edge ) )
+      {
+        edge := startingNode.CustomDrawEdge( relnew,
+                                             CustomDrawEdgeOperationDependency,
+                                             IsUpstream := isUpstream,
+                                             DestinationKey := nextNode.Key().AsQUILL(),
+                                             OriginKey := startingNode.Key().AsQUILL(),
+                                             ID := operationDependency.GetCustomDrawEdgeID(),
+                                             OperationDependency := operationDependency );  
+      }
+    }
+    // Append destination nodes keys to edge
+    // We need to store the node as key because all these are shadow
+    // and in shadow objects, only the owner has acess to the children
+    // The children DON'T have access to their owner, since edge doesn't 
+    // know its own node, the only way for edge to find its nodes is to remember 
+    // their keys
+    nextNode.OwnerNodeKey( startingNode.Key().AsQUILL() );
+    
+    // Update the depth of the tree, better to update the max depth here
+    // rather than after we have created all the nodes
+    depth := 0;
+    
+    config := DataHolderCustomDrawConfiguration.Data();
+    if( isUpstream )
+    { 
+      depth := maxvalue( nextNode.Depth(), config.UpstreamDepth() )
+      config.UpstreamDepth( depth );
+    }
+    else
+    {
+      depth := maxvalue( nextNode.Depth(), config.DownstreamDepth() )
+      config.DownstreamDepth( depth );
+    }
+    
+    return edge;
+  *]
+}

@@ -1,0 +1,13 @@
+Quintiq file version 2.0
+#parent: #root
+Method ZeroAllFulfillments
+{
+  Description: 'This sets the quantity of fulfillment to 0.0 for all planned fulfillments not created by the user AND not converted to fulfillment by inventory, because deleting fulfillments and recreating them later on will be bad for performance.'
+  TextBody:
+  [*
+    traverse( this, Demand.Fulfillment.astype( ProductPlannedFulfillment ), fulfill, not fulfill.IsManualReservation() and not fulfill.IsFixedReservation() )
+    {
+      fulfill.QuantityDecision( 0.0 );
+    }
+  *]
+}

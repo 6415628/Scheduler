@@ -1,0 +1,62 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test020_PushoutLatestEnd (Schedule schedule)
+{
+  Description: "tests declarative calculation of operations' PushoutLatestEnd attributes."
+  TextBody:
+  [*
+    // mbr23 Jan-28-2020 (created)
+    
+    // start scenario for test is empty schedule:
+    schedule.UnplanAll();
+    // pick two plan units with different order due dates:
+    pu_dueJan08 := selectobject( schedule, PlanUnit_SC, pu, pu.PlanUnitID() = "PU_50_000" );
+    pu_dueJan14 := selectobject( schedule, PlanUnit_SC, pu, pu.PlanUnitID() = "PU_159_000" );
+    op_printing_Jan08 := selectobject( pu_dueJan08, Operation_SC, o, o.Type() = "Printing" );
+    op_casing_Jan08 := selectobject( pu_dueJan08, Operation_SC, o, o.Type() = "Casing" );
+    op_bottom_Jan08 := selectobject( pu_dueJan08, Operation_SC, o, o.Type() = "InsertBottom" );
+    op_printing_Jan14 := selectobject( pu_dueJan14, Operation_SC, o, o.Type() = "Printing" );
+    op_casing_Jan14 := selectobject( pu_dueJan14, Operation_SC, o, o.Type() = "Casing" );
+    op_bottom_Jan14 := selectobject( pu_dueJan14, Operation_SC, o, o.Type() = "InsertBottom" );
+    // pick resources to plan all on:
+    resource_printing := select( schedule, ResourceGroup_SC.Resource_SC.astype( SingleResourceBase ), r, r.ResourceID() = "1101" );
+    resource_casing := select( schedule, ResourceGroup_SC.Resource_SC.astype( SingleResourceBase ), r, r.ResourceID() = "1201" );
+    resource_bottom := select( schedule, ResourceGroup_SC.Resource_SC.astype( SingleResourceBase ), r, r.ResourceID() = "1301" );
+    
+    // plan the Jan14 order's operations:
+    resource_printing.PlanLast( op_printing_Jan14 );
+    resource_casing.PlanLast( op_casing_Jan14 );
+    resource_bottom.PlanLast( op_bottom_Jan14 );
+    
+    // check correct calculation of the PushoutLatestEnd attribute:
+    Transaction::Transaction().PropagateAll();
+    this.Run().AssertEqual( pu_dueJan14.DueDate(),
+                            op_bottom_Jan14.OptimizerSequencing_PushoutLatestEnd(),
+                            "op_bottom_Jan14" );
+    this.Run().AssertEqual( pu_dueJan14.DueDate() - op_bottom_Jan14.Task_SC().ProcessDuration(),
+                            op_casing_Jan14.OptimizerSequencing_PushoutLatestEnd(),
+                            "op_casing_Jan14" );
+    this.Run().AssertEqual( pu_dueJan14.DueDate() - op_bottom_Jan14.Task_SC().ProcessDuration() - op_casing_Jan14.Task_SC().ProcessDuration(),
+                            op_printing_Jan14.OptimizerSequencing_PushoutLatestEnd(),
+                            "op_printing_Jan14" );
+    
+    // now plan the tighter-due operations after the Jan14 ones:
+    resource_printing.PlanLast( op_printing_Jan08 );
+    resource_casing.PlanLast( op_casing_Jan08 );
+    resource_bottom.PlanLast( op_bottom_Jan08 );
+    
+    // check correct calculation of the PushoutLatestEnd attribute. The Jan14 operations can now not anymore be pushed out so far.
+    Transaction::Transaction().PropagateAll();
+    this.Run().AssertEqual( pu_dueJan08.DueDate() - ( op_bottom_Jan08.Task_SC().ProcessDuration() + op_bottom_Jan08.Task_SC().DurationBeforeProcess() + op_bottom_Jan14.Task_SC().DurationAfterProcess() ),
+                            op_bottom_Jan14.OptimizerSequencing_PushoutLatestEnd(),
+                            "op_bottom_Jan14 before Jan12 operation" );
+    this.Run().AssertEqual( minvalue( op_casing_Jan08.OptimizerSequencing_PushoutLatestStart() - op_casing_Jan08.Task_SC().DurationBeforeProcess() - op_casing_Jan14.Task_SC().DurationAfterProcess(),
+                                      op_bottom_Jan14.OptimizerSequencing_PushoutLatestStart() ),
+                            op_casing_Jan14.OptimizerSequencing_PushoutLatestEnd(),
+                            "op_casing_Jan14 before Jan12 operation" );
+    this.Run().AssertEqual( minvalue( op_printing_Jan08.OptimizerSequencing_PushoutLatestStart() - op_printing_Jan08.Task_SC().DurationBeforeProcess() - op_printing_Jan14.Task_SC().DurationAfterProcess(),
+                                      op_casing_Jan14.OptimizerSequencing_PushoutLatestStart() ),
+                            op_printing_Jan14.OptimizerSequencing_PushoutLatestEnd(),
+                            "op_printing_Jan14 before Jan12 operation" );
+  *]
+}

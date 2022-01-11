@@ -1,0 +1,61 @@
+Quintiq file version 2.0
+#parent: #root
+Method API_UpdateDropDown (String filtertext) id:Method_LibGUIFiltering_PanelFilterBoxHelper_API_UpdateDropDown
+{
+  #keys: '[128900.0.377230618]'
+  Body:
+  [*
+    // This method updates the drop down options with the currently selected filter, keeping the last 10 filters in order of use
+    this.IComponentRegistry_Update();
+    
+    filtereditor := this.IPanelFilterBox_Get().EditorFilterBox();
+    current      := filtereditor.Strings().Tokenize( filtereditor.RowSeparator() );
+    if ( filtertext <> '' )
+    {
+      // First remove the current entry for this filter to move it up
+      pos := current.Find( filtertext );
+      if ( pos >= 0 )
+      {
+        current.Delete( pos );
+      }
+    
+      if ( current.Size() > 0 )
+      {
+        current.AddBefore( filtertext, 0 );
+      }
+      else
+      {
+        current.Add( filtertext );
+      }
+    }  
+    
+    // Remove the information for the stored filters  
+    separatorpos := current.Find( this.IGetSeparator() );
+    if ( separatorpos >= 0 )
+    {
+      current.Delete( separatorpos, current.Size() - 1 );
+    }
+    
+    // Strip any excess filters from the list
+    if ( current.Size() > 10 )
+    {
+      current.Delete( 10, current.Size() - 1 );
+    }
+    
+    // Add the stored filters at the end  
+    storedfilters := construct(Strings);
+    this.IStoredFilters_Get( storedfilters );
+    
+    if ( storedfilters.Size() > 0 )
+    {
+      current.Add( this.IGetSeparator() );
+      
+      traverse( storedfilters, Elements, storedfilter )
+      {
+        current.Add( storedfilter );
+      }
+    }
+    
+    filtereditor.Strings( current.ToString( filtereditor.RowSeparator() ) );
+  *]
+}

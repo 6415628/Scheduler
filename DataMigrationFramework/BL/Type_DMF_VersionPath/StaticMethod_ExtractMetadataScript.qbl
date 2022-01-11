@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ExtractMetadataScript (String script_i) declarative as String
+{
+  TextBody:
+  [*
+    // sbt2 Jul-12-2021 (created)
+    metadata := ""; // Defaults to empty value in case of invalid input
+    
+    if( script_i.TrimBoth().Length() > 0 )
+    {
+      // Find the line number within the script for which the section delimiter can be found
+      metadataDelimiterStartLine := DMF_VersionPath::FindLineContains( script_i, DMF_VersionPath::SCRIPT_METADATA_DELIMITER_START() );
+      metadataDelimiterEndLine   := DMF_VersionPath::FindLineContains( script_i, DMF_VersionPath::SCRIPT_METADATA_DELIMITER_END()   );
+      
+      // Only continue processing to extract content if both section delimiter are found
+      if( metadataDelimiterStartLine >= 0 and metadataDelimiterEndLine >= 0 )
+      {
+        scriptLines := script_i.Tokenize( String::NewLine() );
+        metadataLines := construct( Strings );
+        
+        // Get the content between the section delimiter
+        for( i := metadataDelimiterStartLine; i <= metadataDelimiterEndLine; i++ )
+        {
+          metadataLines.Add( scriptLines.Element( i ) );
+        }
+        
+        metadata := metadataLines.ToString( String::NewLine() );
+      }
+    }
+    
+    return metadata;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

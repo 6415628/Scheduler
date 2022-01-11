@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_TestSetDataMultiplier (output Real duration_o, output String response_o, Number resourcemultiplynr, 
+  Number ordermultiplynr) as Boolean id:Method_LibPTF_pnlTestRunner_PTF_TestSetDataMultiplier
+{
+  #keys: '[127084.0.2268657]'
+  Body:
+  [*
+    issuccessful := false;
+    
+    preconditionflag := resourcemultiplynr > 0 and ordermultiplynr > 0; // Your precondition before executing the action
+    
+    if( preconditionflag )
+    {
+      startprecisionctr := OS::PrecisionCounter();
+    
+      this.PTF_GetPTF().SetDataMultiplier( resourcemultiplynr, ordermultiplynr );
+    
+      duration_o   := this.PTF_GetDurationInMilisecond( startprecisionctr );
+      response_o   := Translations::PTF_TestSetDataMultiplier_SuccessResponse( resourcemultiplynr, ordermultiplynr ) ;
+      issuccessful := true;
+    }
+    else
+    {
+      response_o := Translations::PTF_TestSetDataMultiplier_FailResponse(); // Your precondition failed reason
+    }
+    
+    return issuccessful;
+  *]
+}

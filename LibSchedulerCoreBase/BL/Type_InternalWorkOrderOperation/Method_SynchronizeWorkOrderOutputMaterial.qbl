@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SynchronizeWorkOrderOutputMaterial
+{
+  TextBody:
+  [*
+    allinstances := selectset( this, WorkOrderOutputMaterial, workorderoutputmaterial, true )
+    updatedinstances := construct( WorkOrderOutputMaterials );
+    
+    traverse( this, ImportedInternalWorkOrderOperation.ImportedInternalWorkOrderOutputMaterial, row, row.IsValidDataHard() )
+    {
+      workorderoutputmaterial := InternalWorkOrderOutputMaterial::FindInternalWorkOrderOutputMaterial( row.Id() );
+      
+      if( isnull( workorderoutputmaterial ) )
+      {
+        workorderoutputmaterial := this.CreateWorkOrderOutputMaterial( row.Id() ).astype( InternalWorkOrderOutputMaterial );
+      }
+       else if( workorderoutputmaterial.WorkOrderId() <> this.WorkOrderId() )
+      {
+        newoperation := WorkOrderOperation::FindWorkOrderOperation( row.WorkOrderId(), row.SequenceNr() );
+        if( not isnull( newoperation ) )
+        {
+          newoperation.WorkOrderOutputMaterial( relmove, workorderoutputmaterial );
+        }      
+      }
+      
+      workorderoutputmaterial.Update( row );
+      updatedinstances.Add( workorderoutputmaterial );
+    }
+    
+    //Delete work order demands if they do not exist in KT
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, workorderoutputmaterial )
+    {
+      workorderoutputmaterial.Remove();
+    }
+  *]
+}

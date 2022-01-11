@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcCurrentScore
+{
+  TextBody:
+  [*
+    currentPenaltyPrevious := 0;
+    currentPenaltyNext := 0;
+    currentBreakagePenalty := 0;
+    
+    task := this.Transition().Task_SC();
+    selectedoperation := task.astype( SingleTaskBase ).OperationAsSingleTask();
+    operation := this.Operation_SC();
+    
+    if( not isnull( task.Previous() ) )
+    {
+      currentPenaltyPrevious := [Number]task.Previous().astype( SingleTaskBase ).OperationAsSingleTask().GetTotalPenaltyPoints( selectedoperation, false, true );
+    }
+    
+    if( not isnull( task.Next() ) )
+    {
+      currentPenaltyNext := [Number]selectedoperation.GetTotalPenaltyPoints( task.Next().astype( SingleTaskBase ).OperationAsSingleTask(), false, true );
+    }
+    
+    if( not ( isnull( operation.Task_SC() ) or isnull( operation.Task_SC().Previous() ) ) )
+    {
+      currentBreakagePenalty := [Number]operation.Task_SC().Previous().astype( SingleTaskBase ).OperationAsSingleTask().GetTotalPenaltyPoints( operation, false, true );
+    }
+    
+    this.CurrentScore( currentPenaltyPrevious + currentPenaltyNext + currentBreakagePenalty );
+  *]
+}

@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeShiftPatterns
+{
+  Description: '3DSpace specific synchronization. Synchronizes the shift patterns into calendar library equivalent events to be subscribed later by resource calendars.'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    calendarRegistry := schedule.CalendarRegistry();
+    
+    allInstances := selectset( schedule, ShiftPattern, shiftPattern, true );
+    updatedInstances := construct( ShiftPatterns );
+    
+    traverse( schedule, ImportedShiftPattern, importedShiftPattern )
+    {
+      calendarID := importedShiftPattern.ID();
+      shiftPattern := calendarRegistry.FindCalendar( typeof( ShiftPattern ).Name(), calendarID ).astype( ShiftPattern );
+      
+      if( isnull( shiftPattern ) )
+      {
+        shiftPattern := ShiftPattern::Create( schedule, calendarID );
+      }
+      
+      shiftPattern.Update( importedShiftPattern );
+      shiftPattern.SynchronizeTimePeriods();
+      updatedInstances.Add( shiftPattern );
+    }
+    
+    oldInstances := allInstances.Difference( updatedInstances );
+    
+    traverse( oldInstances, Elements, old )
+    {
+      old.Delete();
+    }
+  *]
+}

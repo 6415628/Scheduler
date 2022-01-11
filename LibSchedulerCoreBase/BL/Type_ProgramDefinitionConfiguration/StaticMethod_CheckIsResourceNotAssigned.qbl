@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsResourceNotAssigned (Schedule owner, ProgramDefinitionConfiguration programdefinitionconfiguration, Resource_SCs resources) const declarative remote as Boolean
+{
+  Description: 'Perform checking to ensure the resource is not assigned to another program definition configuration'
+  TextBody:
+  [*
+    // Perform checking to ensure the resource does not have existing program definition configuration
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    if( resources.Size() > 0 )
+    {
+      value := selectvalues( resources, Elements, resource, 
+                             not isnull( resource.ProgramDefinitionConfiguration() )
+                             and resource.ProgramDefinitionConfiguration() <> programdefinitionconfiguration, 
+                             resource.ResourceID() );
+      
+      if( not feedbackobject.CheckHard( value.Size() = 0 ) )
+      {
+        feedbackobject.AddHard( Translations::ProgramConfiguration_ResourceMustNotBeAssigned( value.ToString( ', ' ) ) );
+      }
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

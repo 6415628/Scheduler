@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcCanBeDeleted
+{
+  TextBody:
+  [*
+    // Can be deleted if 
+    // 1. FeedbackProgramChangeTask can be deleted which outside history horizon and has reported end
+    // 2. No planned program task
+    // 3. No normal feedback task linked to this feedback program
+    value := guard( this.FeedbackProgramChangeTask().CanBeDeleted(), true )
+             and not this.HasPlannedProgramTask()
+             and not exists( this, FeedbackProgramType.FeedbackTaskInFeedbackProgramType.FeedbackTaskInSchedule, ft, true );
+    
+    this.CanBeDeleted( value );
+  *]
+}

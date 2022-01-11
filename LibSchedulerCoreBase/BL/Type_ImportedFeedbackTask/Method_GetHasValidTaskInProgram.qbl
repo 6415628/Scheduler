@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidTaskInProgram (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if the imported feedback task has a valid feedback task in program if it is a normal task'
+  TextBody:
+  [*
+    isvalid := true;
+    
+    resource := this.Resource_SC();
+    
+    if( this.Schedule().TechnicalConfiguration().IsImportRelationBetweenFeedbackTaskAndProgram()  // Only execute when FeedbackTaskInProgram is expected as an input
+        and not this.IsStoppageTask()                                                             // Only check for normal task
+        and not isnull( resource )                                                    
+        and not isnull( resource.ProgramDefinitionConfiguration() ) )                             // Only check if resource has program definition
+    {
+      
+      isvalid := exists( this, ImportedFeedbackTaskInProgram, ftip, ftip.IsValidData() );
+      
+      if( not isvalid and not isnull(  feedback_o ) )
+      {
+        name := Schedule::GetSubstituteName( this.Name() );
+        feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedFeedbackTask_Instance( name ),
+                                                                 Translations::SC_ImportedFeedbackTask_ViolateHasValidFeedbackTaskInProgram() ) );     
+      }
+    }
+    
+    return isvalid;
+  *]
+}

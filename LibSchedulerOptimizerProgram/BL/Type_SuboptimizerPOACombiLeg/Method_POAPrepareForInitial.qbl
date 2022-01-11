@@ -1,0 +1,128 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAPrepareForInitial (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs, Operation_SCs operations)
+{
+  Description: 'Prepare for setting the initial solution by converting violated hard transitions to soft constraints with a high penalty'
+  TextBody:
+  [*
+    traverse( combilegs, Elements, combileg )
+    {
+      path := poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathCombiLeg( combileg ), combileg )
+      poapossible := guard( poa.Possible( SuboptimizerPOACombiLeg::NamePOANodePossibleOperationOnLeg( combileg ) ), null( POAPossible ) );
+      
+      // Check for all operations on this combileg(that are in scope)
+      traverse( combileg, OperationInCombiLeg.Operation_SC, operation, exists( operations, Elements, op, op = operation ) )
+      {
+        node := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation ), operation );
+        
+        // whether they have any existing hard constraint violations
+        if( not operation.IsAllHighPriorityRulesOK() )
+        {   
+          //// Handle the hard allowed on leg violations
+          // If the operation is not allowed on the path (but it is planned here)
+          // Then allow it but at a high penalty
+          isallowedonpath := guard( poapossible.Get( node ), true );
+          if( not isallowedonpath )
+          {
+            poapossible.Set( node, true );
+            penaltyparticipation := guard( poa.Participation( SuboptimizerPOACombiLeg::NamePOAParticipationPenalty() ), null( POAParticipation ) );
+            if( not isnull( penaltyparticipation ) )
+            {
+              penaltyparticipation.Set( path, node, this.Settings().PenaltyForHardConstraints() );
+            }
+          }
+          
+          //// Handle the hard transition violations 
+          // Get the node of the previous operation
+          previousoperation:= guard( operation.Task_SC().Previous().astype( SingleTask ).OperationAsSingleTask(), null( Operation_SC ) );
+          previousnode := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( previousoperation ), previousoperation );
+          
+          // Check if this is the first operation of the combileg
+          isfirstoperation := guard( combileg.FirstOperation().Operation_SC(), null( Operation_SC ) ) = operation  
+          hassuitablereplacement := true;
+          
+          if( isfirstoperation )
+          {
+            // If this is the first operation in scope, then check if there is any suitable operation in scope that could be planned in its place
+            // This is important since we will not be able to change the last operation of the previous leg since it is frozen
+            hassuitablereplacement := exists( operations, Elements, otherop,
+                                              otherop <> operation
+                                              and guard( poapossible.Get( previousnode, poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( otherop ), otherop ) ), true ) );
+            
+            // Also, if it is the first operation in scope we need to get the dummy start node since that is the previous node
+            previousoperation := combileg.Previous().LastOperation().Operation_SC();
+            previousnode := poa.Node( SuboptimizerPOACombiLeg::NamePOADummyStart( combileg ), combileg )
+          }
+          
+          
+          // If there is a previous node
+          transitionallowed := true;
+          if( not isnull( previousnode ) )
+          {
+            // Then check if the transition from the previous node to this node is allowed
+            poapossible := guard( poa.Possible( SuboptimizerPOACombiLeg::NamePOAPossibleTransitionAllowed( combileg )), null( POAPossible ) );
+            transitionallowed := guard( poapossible.Get( previousnode, node ), true );
+            
+            // If it is not allowed, then allow it but set a high penalty
+            if( not transitionallowed )
+            {
+              this.POAConvertHardTransitionAllowedToSoft( poa, poapossible, previousnode, node, previousoperation, operation, combileg, hassuitablereplacement );
+            }
+          }
+          
+          // If we have allowed a hard constraint violation between the current first node and the previous leg
+          // Then we also want to allow other (potentially more suitable) operations for which the transition is not allowed
+          if( isfirstoperation and not transitionallowed )
+          {                                        
+            traverse( operations, Elements, otherop )
+            {
+              othernode := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( otherop ), otherop );
+              isotherallowed := poapossible.Get( previousnode, othernode );
+              // Convert the hard transition to a soft penalty if the other node is not allowed
+              if( not isotherallowed )
+              {
+                this.POAConvertHardTransitionAllowedToSoft( poa, poapossible, previousnode, node, previousoperation, otherop, combileg, hassuitablereplacement );
+              }
+            }
+          }
+        }
+        // If this is the last operation of the combileg
+        // And the first operation of the next combileg has a violation
+        if( guard( combileg.LastOperation().Operation_SC(), null( Operation_SC ) ) = operation
+            and guard( not combileg.Next().FirstOperation().Operation_SC().IsAllHighPriorityRulesOK(), false ) )
+        {
+          // Then also check the transition to the dummy end node
+          dummyendnode := poa.Node( SuboptimizerPOACombiLeg::NamePOADummyEnd( combileg ), combileg );
+          poapossible := guard( poa.Possible( SuboptimizerPOACombiLeg::NamePOAPossibleTransitionAllowed( combileg )), null( POAPossible ) );
+          transitionallowed := guard( poapossible.Get( node, dummyendnode ), true );
+          
+          // If the transition is not allowed, then allow it but set a high penalty
+          if( not transitionallowed )
+          {
+            // Check if there is any suitable operation in scope that could be planned in place of the current last operation
+            // This is important since we will not be able to change the first operation of the next leg since it is frozen
+            hassuitablereplacement := exists( operations, Elements, otherop,
+                                              otherop <> operation
+                                              and guard( poapossible.Get( poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( otherop ), otherop ), dummyendnode ), true ) );
+                                            
+            nextoperation := combileg.Next().FirstOperation().Operation_SC();
+            this.POAConvertHardTransitionAllowedToSoft( poa, poapossible, node, dummyendnode, operation, nextoperation, combileg, hassuitablereplacement );
+            
+            // Since we allow the current last operation to violate a hard transition, also allow the other operations
+            traverse( operations, Elements, otheroperation )
+            {
+              othernode := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( otheroperation ), otheroperation );
+              isotherallowed := poapossible.Get( othernode, dummyendnode );
+              // Convert the hard transition to a soft penalty if the other node is not allowed
+              if( not isotherallowed )
+              {
+                this.POAConvertHardTransitionAllowedToSoft( poa, poapossible, othernode, dummyendnode, otheroperation, nextoperation, combileg, hassuitablereplacement );
+              }
+            }
+          }
+        }
+    
+      }
+    }
+  *]
+}

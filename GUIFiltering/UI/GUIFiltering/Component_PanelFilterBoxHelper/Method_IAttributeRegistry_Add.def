@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method IAttributeRegistry_Add (String objecttype, String path) id:Method_LibGUIFiltering_PanelFilterBoxHelper_IAttributeRegistry_Add
+{
+  #keys: '[128900.0.373900164]'
+  Body:
+  [*
+    // This methods checks whether the attribute path provided is valid to be added to the list
+    // In order to be valid, it needs to only traverse across unary relations and have a valid (case sensitive) name
+    attrpath          := '';
+    attrsynonym       := '';
+    attrtype          := '';
+    attributeregistry := this.IAttributeRegistry_Get();
+    
+    if ( this.IAttribute_Resolve( objecttype, path, attrpath, attrsynonym, attrtype ) )
+    {
+      current := select( attributeregistry, LibGUIFiltering_RegisteredAttribute, a, a.Path() = attrpath );
+      if ( not isnull(current) )
+      {
+        current.IsDeleted( false );
+      }
+      else
+      {
+        current := attributeregistry.LibGUIFiltering_RegisteredAttribute( relnew, IsDeleted := false );
+      }
+      current.Path( attrpath );
+      current.Name( attrsynonym );
+      current.DataType( attrtype );
+    }
+  *]
+}

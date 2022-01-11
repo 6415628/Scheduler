@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcRequiredExtraSpace
+{
+  TextBody:
+  [*
+    // jiex Nov-17-2016 (created)
+    
+    value := this.ChargeLength();
+    
+    if( this.IsParallelWithPrevious() )
+    {
+      value := 0;
+    }
+    else if( not isnull( this.GetTriggerOperation() ) )
+    {
+      triggerdischarge := 0.0;
+      
+      if( this.GetTriggerOperation().HasFeedback() )
+      {
+        triggerdischarge := guard( this.GetTriggerOperation().ActiveOperationFeedback().astype( OperationTaskFeedback ).Last().ExportedPreviousCumulativeDischargeLength(), 0 );
+      }
+      else if( not isnull( this.GetTriggerOperation().Task_SC() ) )
+      {
+        triggerdischarge := guard( this.GetTriggerOperation().Task_SC().Previous().astype( ContinuousTask ).CumulativeDischargeLength(), 
+                                   guard( this.Resource_SC().LastFeedbackTaskInSchedule().ExportedCumulativeDischargeLength(), 0.0 ) )
+      }
+      
+      value := this.CumulativeChargeLength() 
+               - this.Resource_SC().Length()
+               - triggerdischarge;
+    }
+    value := maxvalue( 0, value );
+    this.RequiredExtraSpace( value );
+  *]
+}

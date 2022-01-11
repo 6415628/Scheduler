@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method Copy (ProgramDefinitionConfiguration newprogramdefinition, String newprogramsetid, String name, 
+  Boolean isprogamtypechangeallowed, Duration programtypechangeduration, Boolean issequencerulesenabled, 
+  Boolean isfreezeschedulebyprogram) as ProgramSetConfiguration
+{
+  Description: 'Copy program set configuration into new program set configuration'
+  TextBody:
+  [*
+    // Copy program set configuration into new program set configuration
+    newprogramset := ProgramSetConfiguration::Create( newprogramdefinition,
+                                                      newprogramsetid );
+    newprogramset.Update( name, isprogamtypechangeallowed, programtypechangeduration, issequencerulesenabled, isfreezeschedulebyprogram );
+    
+    traverse( this, ProgramTypeConfiguration, programtype )
+    {
+      newprogramtype := ProgramTypeConfiguration::Create( newprogramset, programtype.ProgramTypeConfigurationID() );
+      newprogramtype.ShallowCopyFrom( programtype );
+                                        
+      traverse( programtype, ProgramPhaseConfiguration, programphase )
+      {
+        newprogramphase := ProgramPhaseConfiguration::Create( newprogramtype, programphase.ProgramPhaseConfigurationID() );
+        newprogramphase.ShallowCopyFrom( programphase );
+      }
+    }
+    
+    traverse( this, ProgramTypeChangeConfiguration, programtypechange )
+    {
+      newprogramtypechange := ProgramTypeChangeConfiguration::Create( newprogramset, 
+                                                                      programtypechange.FromProgramTypeConfigurationID(),
+                                                                      programtypechange.ToProgramTypeConfigurationID() );
+      newprogramtypechange.ShallowCopyFrom( programtypechange );
+    }
+    
+    return newprogramset;
+  *]
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: lstScenario
+Response OnDrop (structured[LibSM_ScenarioNode] information, LibSM_ScenarioFolder target) id:Response_lstScenario_OnDrop
+{
+  #keys: '[107496.2.1625560277]'
+  Body:
+  [*
+    // Move selected scenario nodes to a target folder
+    if( target.IsDeleted()
+        or target.IsRecycleBin() )
+    {
+      LibSM_ScenarioNode::Delete( information, target );
+      Application.RemoveHistory();
+    }
+    else
+    {
+      target.Move( information );
+    }
+    
+    LibSM_GlobalState.AutoExpandSelection( this, information );
+  *]
+  DefinitionID: 'Responsedef_GUIComponent_OnDrop'
+  Precondition:
+  [*
+    username := LibSM_GlobalState.GetUserName();
+    isAdmin  := LibSM_GlobalState.IsAdministrator();
+    return LibSM_ScenarioNode::CanMove( target, information, username, isAdmin );
+  *]
+}

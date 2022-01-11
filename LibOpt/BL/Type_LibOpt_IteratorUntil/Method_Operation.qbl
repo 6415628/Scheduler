@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Operation (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    result := stream[JSON]::Success();
+    
+    if( task.CanContinue() )
+    {
+      context := task.TaskContext().astype( LibOpt_TaskContextIterator );
+      if( isnull( context ) )
+      {
+        context := task.TaskContext( relnew, LibOpt_TaskContextIterator );
+      }
+      
+      stopcriterion := this.StopCriterion();
+      
+      result := stream[JSON]::Success();
+      count := this.MaxParallel() - context.NrOfSubtasks();
+      for( i := count; i > 0
+                       and stopcriterion.CanStartIteration( task ) 
+                       and not stopcriterion.ShouldStop( task ); i-- )
+      {
+        reactive_calls := LibOpt_CurrentTransaction::GetSpawnedReactiveCalls();
+        time := OS::PrecisionCounter();
+        continue := this.Continue( task );
+        if( this.ForceInOneTransaction() or this.Run().InOneTransaction() or reactive_calls = LibOpt_CurrentTransaction::GetSpawnedReactiveCalls() )
+        {
+          i++;
+          context.NrOfIterations( context.NrOfIterations() + 1 );
+          
+          if( reactive_calls <> LibOpt_CurrentTransaction::GetSpawnedReactiveCalls() )
+          {
+            LibOpt_SnapshotWarning::Throw( task,
+                                           Translations::LibOpt_Iterator_NotInOneTransaction( this.Name(), LibOpt_CurrentTransaction::GetSpawnedReactiveCallNames( time ) ),
+                                           Translations::LibOpt_Iterator_NotInOneTransaction_Solution(),
+                                           LibOpt_Issue::Severity_4_High()
+                                         );
+          }
+        }
+        else
+        {
+          finish := continue->|
+                    this->Repeat( task, context );
+          result := result->Merge( continue, finish );
+          context.NrOfSubtasks( context.NrOfSubtasks() + 1 );
+        }
+      }
+    }
+    
+    return result;
+  *]
+}

@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExportedDemoDataDemandBatches
+{
+  Description: 'Synchronizes exported demo data demand batches for demo data reimport.'
+  TextBody:
+  [*
+    exportedSchedule := this.Schedule().FeedbackManager().GetSchedule();
+    allInstances := selectset( exportedSchedule, ExportedDemandBatch.astype( ExportedDemoDataDemandBatch ), exportedDemoDataDemandBatch, true );
+    updatedInstances := construct( ExportedDemoDataDemandBatchs );
+    
+    
+    traverse( this, Schedule.DemandBatch, demandBatch )
+    {
+      batchID := demandBatch.BatchID();
+      exportedDemandBatch := ExportedDemoDataDemandBatch::FindExportedDemoDataDemandBatch( batchID );
+      
+      if( isnull( exportedDemandBatch ) )
+      {
+        exportedDemandBatch := ExportedDemoDataDemandBatch::Create( exportedSchedule, batchID );
+      }
+      
+      exportedDemandBatch.Update( demandBatch );
+      exportedDemandBatch.CreateExportedDemandBatchContents();
+      updatedInstances.Add( exportedDemandBatch );
+    }
+    
+    oldInstances := allInstances.Difference( updatedInstances );
+    
+    traverse( oldInstances, Elements, old )
+    {
+      old.Remove();
+    }
+  *]
+}

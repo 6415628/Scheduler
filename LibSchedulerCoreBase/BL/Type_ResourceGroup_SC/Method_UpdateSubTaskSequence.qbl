@@ -1,0 +1,77 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateSubTaskSequence
+{
+  Description: 'Set SubTaskSequence for each ResourceGroup based on imported data and/or data set by dialog. If no data found, by default, setup and process subtask will be used'
+  TextBody:
+  [*
+    // alexandern May-12-2015 (created) QP # 5356
+    
+    // James Kwapien Sep-14-2016 #7717-7720 Switch SubTasks from KTs to Dialogs
+    subtaskids := construct( Strings );
+    
+    // James Kwapien Sep-21-2016 #7707 Sort subtaskset by fixed order to build correct subtasksequence
+    subtaskset := selectsortedset( this,
+                                   SubTaskTypeOnResourceGroup,
+                                   sttorg,
+                                   true,
+                                   guard( sttorg.SubTaskType().Index(), -1 ) );
+    
+    traverse( subtaskset, Elements, subtask )
+    {
+      // James Kwapien #7650 Need to update sub tasks with resource group type if created on shadow object
+      if( subtask.ResourceGroup() = '' )
+      {
+        subtask.ResourceGroup( this.Name() );
+      }
+      
+      subtaskids.Add( subtask.SubTaskID() );
+    }
+    
+    // alexandern 20-May-2015 QP # 5393
+    // James Kwapien Sep-16-2016 Need to add setup and process defaults to SubTaskTypesOnResourceGroup
+    if( subtaskids.Size() = 0 ) 
+    {
+      // Setup SubTaskTypeOnResourceGroup default
+      setup := Constants::SubTask_Setup();
+      subtaskids.Add( setup );
+      setup_sttorg := SubTaskTypeOnResourceGroup::Create( this, setup );
+      setup_sttorg.Update( 0, true, true, false, false );
+      
+      subtasktype := select( this, 
+                             Schedule.SubTaskType, 
+                             stt, 
+                             stt.SubTaskID() = setup );
+      
+      subtasktype.SubTaskTypeOnResourceGroup( relinsert, setup_sttorg );
+    
+      // Process SubTaskTypeOnResourceGroup default
+      process := Constants::SubTask_Process();
+      subtaskids.Add( process );
+      process_sttorg :=SubTaskTypeOnResourceGroup::Create( this, process );
+      process_sttorg.Update( 1, false, false, true, true );
+      
+      subtasktype := select( this, 
+                             Schedule.SubTaskType, 
+                             stt, 
+                             stt.SubTaskID() = process );
+      
+      subtasktype.SubTaskTypeOnResourceGroup( relinsert, process_sttorg );
+    }
+    
+    // Kyle 31-Jul-2015 QP #5686
+    subtasksequence := subtaskids.ToString( ';' )
+    
+    //only update SubTaskSequence attribute if there is a change
+    if( this.SubTaskSequence() <> subtasksequence )
+    {
+      this.SubTaskSequence( subtasksequence );
+    
+      //update all planned task of this resource group.
+      traverse( this, Resource_SC.Task_SC, task )
+      {
+        task.UpdateSubTasks();
+      }
+    }
+  *]
+}

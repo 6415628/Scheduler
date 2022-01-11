@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetDownstreamOperations () as owning Operation_SCs
+{
+  Description: 'Grabs the downstream operations for this operation.'
+  TextBody:
+  [*
+    operations := construct( Operation_SCs );
+    
+    traverse( this, ToOperationDependency.ToOperation, nextoperation )
+    {
+      nextoperationdownstream := nextoperation.GetDownstreamOperations();
+      operations := operations.Union( nextoperationdownstream );
+    }
+    
+    operations.Add( this );
+    
+    return &operations;
+  *]
+}

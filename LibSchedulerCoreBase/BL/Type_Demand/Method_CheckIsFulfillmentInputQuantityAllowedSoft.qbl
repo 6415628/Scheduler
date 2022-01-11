@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsFulfillmentInputQuantityAllowedSoft (Supply supply, Fulfillment fulfillment, String quantity, 
+  output String feedback_o) const declarative remote as Boolean
+{
+  Description: 'Checks soft rules that can be overriden for whether the fulfillment input quantity is allowed.'
+  TextBody:
+  [*
+    value := this.CheckIsNotInFrozenPeriod( true, feedback_o );
+    value := this.CheckIsNotLockedByOptimizer( feedback_o ) and value;
+    
+    qty := guard( StringToReal::UserConverter().Convert( quantity ), -1 ); // converter used to avoid conversion problems for different locales
+    value := this.CheckIsFulfillmentInputQuantityValid( supply, fulfillment, qty, false, feedback_o ) and value;
+    
+    return value;
+  *]
+}

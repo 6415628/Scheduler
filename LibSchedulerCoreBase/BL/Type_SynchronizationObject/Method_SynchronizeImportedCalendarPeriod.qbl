@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeImportedCalendarPeriod
+{
+  Description: 'Synchronize imported calendar period and translate them to internal calendar period instances.'
+  TextBody:
+  [*
+    allPeriodInstances := selectset( this, Schedule.ResourceGroup_SC.Resource_SC.ResourceCalendar.Periods, period, true );
+    updatedPeriodInstances := construct( structured_CalendarPeriod );
+    
+    traverse( this, Schedule.ImportedResourceGroup_SC.ImportedResource_SC, importedResource )
+    {
+      resource := select( this, Schedule.ResourceGroup_SC.Resource_SC, resource, resource.ResourceID() = importedResource.ResourceID() );
+      
+      traverse( importedResource, ImportedCalendarPeriod, importedCalendarPeriod )
+      {
+        calendarPeriod := select( resource, ResourceCalendar.Periods, period, period.From() = importedCalendarPeriod.From()
+                                  and period.Factor() = importedCalendarPeriod.Factor() and period.GroupName() = importedCalendarPeriod.RuleGroupName() );
+        
+        if( isnull( calendarPeriod ) )
+        {
+          calendarPeriod := resource.ResourceCalendar().AddPeriod( importedCalendarPeriod.From(), importedCalendarPeriod.Factor(), 
+                                                                   importedCalendarPeriod.RuleGroupName() );
+        }
+        
+        updatedPeriodInstances.Add( calendarPeriod );
+      }
+    }
+    
+    //Delete old instances
+    oldPeriodInstances := allPeriodInstances.Difference( updatedPeriodInstances );
+    
+    traverse( oldPeriodInstances, Elements, period )
+    {
+      period.Delete();
+    }
+  *]
+}

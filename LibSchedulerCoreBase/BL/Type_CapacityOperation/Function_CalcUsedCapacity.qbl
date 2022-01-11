@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcUsedCapacity
+{
+  TextBody:
+  [*
+    // She Ven Jun-18-2012 (created)
+    value := Duration::Zero();
+    
+    if( this.PlannedStart().IsFinite() and this.PlannedEnd().IsFinite()
+          and not isnull( this.CapacityResourcePeriod() ) )
+    {
+      // issue #3793
+      // Scheduler++ is meant as a rough way of capacity planning. Just like MP, or potentially in the future CP,
+      // it is fine to just plan an operation in a single bucket.
+      value :=  this.PlannedEnd() - this.PlannedStart();
+    }
+    
+    batchsize := guard( this.Operation_SC().BatchSequenceElement().Batch().Size(), 0.0 );
+    if( batchsize > 0 )
+    {
+      value := value / batchsize;
+    }
+    
+    this.UsedCapacity( value );
+  *]
+}

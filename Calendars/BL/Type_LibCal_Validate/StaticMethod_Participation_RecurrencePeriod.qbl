@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Participation_RecurrencePeriod (String participationID_i, Boolean isRecurring_i, Boolean isLeading_i, 
+  Boolean hasSpecificPeriod_i, Date startDate_i, String periodType_i, 
+  Date startOfPeriod_i, Date endOfPeriod_i, String eventInfo_i) as owning FeedbackObject
+{
+  TextBody:
+  [*
+    // Use a FeedbackObject to collect the validation feedback.
+    feedback := LibCal_Validate::FeedbackObject();
+    
+    // Prepare the additional information that will be logged when an error is encountered.
+    baseInfo    := "ParticipationID = " + participationID_i
+               + ", " + ifexpr( isLeading_i, "LeadingParticipation of", "Subscription to" ) + " Event " + eventInfo_i
+               + ", PeriodType = "      + periodType_i;
+    
+    periodStart := "PeriodStartDate = " + startOfPeriod_i.Format( Translations::DateFormat() );
+    periodEnd   := "PeriodEndDate = "   + endOfPeriod_i.  Format( Translations::DateFormat() );
+    
+    // Show the end of the period as part of the additional information, if applicable.
+    moreInfo := baseInfo + ", " + periodStart + ifexpr( periodType_i = LibCal_RecurrencePeriod::TYPE_WITHENDDATE(), ", " + periodEnd, "" );
+    
+    // RecurrencePeriod-related data is only applicable for participations in recurring events,
+    // and when it concerns the LeadingParticipation or a Subscription with HasSpecificPeriod = TRUE.
+    if( isRecurring_i and
+        ( isLeading_i or hasSpecificPeriod_i ) )
+    {
+      // PeriodType
+      LibCal_Validate::RegisterError( LibCal_Validate::Participation_PeriodType( periodType_i ), moreInfo );
+    
+      // PeriodStartDate
+      LibCal_Validate::RegisterError( LibCal_Validate::Participation_PeriodStartDate( startOfPeriod_i ), moreInfo );
+      
+      // PeriodEndDate is only applicable for type WithEndDate.
+      if( periodType_i = LibCal_RecurrencePeriod::TYPE_WITHENDDATE() )
+      {
+        // PeriodEndDate
+        LibCal_Validate::RegisterError( LibCal_Validate::Participation_PeriodEndDate( endOfPeriod_i ), moreInfo );
+        
+        // Do the rest of the validation only if everyting is ok so far.
+        if( feedback.IsAllowed() )
+        {
+          // PeriodEndDate vs PeriodStartDate
+          LibCal_Validate::RegisterError( LibCal_Validate::Participation_PeriodEndDate_PeriodStartDate( endOfPeriod_i, startOfPeriod_i ), moreInfo );
+        }
+      }
+    }
+    
+    return &feedback;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

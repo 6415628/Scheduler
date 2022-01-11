@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCopyProgramConfiguration_Setup (Schedule schedule)
+{
+  Description: 'Test copy program configuration - setup'
+  TextBody:
+  [*
+    programconfigurationID := 'Program Configuration ID';
+    programconfigurationName := 'Program Configuration Name';
+    
+    // Create program definition
+    programdefinition := ProgramDefinitionConfiguration::Create( schedule, programconfigurationID );
+    programdefinition.Name( programconfigurationName );
+    
+    // Create program set
+    programset := ProgramSetConfiguration::Create( programdefinition, programconfigurationID );
+    programset.Name( programconfigurationName );
+    programset.IsProgramTypeChangeAllowed( true );
+    programset.ProgramTypeChangeDuration( Duration::Hours( 1 ) );
+    programset.IsSequenceRulesEnabled( true );
+    programset.IsFreezeScheduleByProgram( true );
+    
+    // Create program type
+    programtype := ProgramTypeConfiguration::Create( programset, programconfigurationID );
+    programtype.Name( programconfigurationName );
+    programtype.ColorCode( 'Color Code' );
+    programtype.IsProgramTypeChangeSettingOverruled( true );
+    programtype.IsProgramTypeChangeAllowedOverruled( true );
+    programtype.ProgramTypeChangeDurationOverruled( Duration::Hours( 1 ) );
+    
+    // Create program phase
+    programphase := ProgramPhaseConfiguration::Create( programtype, programconfigurationID );
+    programphase.Name( programconfigurationName );
+    programphase.ColorCodeOverruled( 'Color Code' );
+    programphase.IsColorCodeOverruled( true );
+    
+    // Create program type change
+    programtypechange := ProgramTypeChangeConfiguration::Create( programset, programconfigurationID, programconfigurationID );
+    programtypechange.IsAllowed( true );
+    programtypechange.ProgramTypeChangeDuration( Duration::Hours( 1 ) );
+    
+    // Create resource
+    resources := construct( Resource_SCs );
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Single Resource' );
+    LeadTimeStrategy_SC::Create( resource, Duration::Zero(), Constants::StrategyASAP() );
+    resource.ProgramDefinitionConfiguration( relset, programdefinition );
+    resources.Add( resource );
+    
+    // Copy program definition
+    programdefinition.Copy( programconfigurationID + '_Copy', programconfigurationName, resources )
+  *]
+}

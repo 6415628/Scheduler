@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericShutdownTask (const Resource_SC resource)
+{
+  Description: 'Backup generic shutdown task core data'
+  TextBody:
+  [*
+    traverse( resource, Task_SC.astype( GenericShutdownTask ), task )
+    {
+      cdShutdownTask := this.CDEntity( relnew, CDGenericShutdownTask );
+      CopyCorresponding::CopyFrom( task ).CopyTo( cdShutdownTask );  
+      
+      // Additonal attribute in core data to persist the resource that this shutdown task belongs
+      cdShutdownTask.ResourceID( resource.ResourceID() ); 
+      
+      // Additional attribute in core data to be used to find the corresponding task during restore
+      cdShutdownTask.BackupTaskID( task.TaskID() );
+      
+      // Additonal attribute in core data to persist the operation that this shutdown task relates to
+      cdShutdownTask.ShutdownID( guard( task.Shutdown().ShutdownID(), '' ) );
+      
+      // Additonal attribute in core data to persist the original sequence that this shutdown task reside in the resource
+      cdShutdownTask.PreviousTaskBackupTaskID( guard( task.Previous().TaskID(), '' ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

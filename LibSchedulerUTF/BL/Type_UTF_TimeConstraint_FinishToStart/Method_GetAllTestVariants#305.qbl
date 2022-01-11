@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllTestVariants (output Booleans hasMinDelays, output DateTimes availableTimes, output DateTimes expectedTimes, 
+  output Booleans exceedMaximumWaitingDurations) as owning Strings
+{
+  Description: 'Return all test variants, variant output arguments (columns) will be used in data creation logic and final assert result comparison.'
+  TextBody:
+  [*
+    variants := construct( Strings );
+    
+    // Scenario 1: No min/max delay
+    variants.Add( 'Finish to start with no delay' );
+    hasMinDelays.Add( false );
+    availableTimes.Add( DateTime::Construct( 2020, 1, 1, 1, 0, 0 ) );
+    expectedTimes.Add( DateTime::Construct( 2020, 1, 2, 0, 0, 0 ) );
+    exceedMaximumWaitingDurations.Add( false );
+    
+    // Scenario 2: Has min/max delay covering also test total offset duration
+    variants.Add( 'Finish to start with delay' );
+    hasMinDelays.Add( true );
+    availableTimes.Add( DateTime::Construct( 2020, 1, 1, 1, 10, 0 ) );
+    expectedTimes.Add( DateTime::Construct( 2020, 1, 1, 23, 50, 0 ) );
+    exceedMaximumWaitingDurations.Add( true );
+    
+    return &variants;
+  *]
+}

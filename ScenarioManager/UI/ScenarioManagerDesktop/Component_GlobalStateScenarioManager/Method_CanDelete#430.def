@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method CanDelete (structured[LibSM_ScenarioNode] nodes, Boolean permanently) as Boolean id:Method_LibSM_GlobalState_CanDelete_430
+{
+  #keys: '[136402.0.1266116032]'
+  Body:
+  [*
+    // For Delete-precondition: Returns whether the selected node may be deleted or not, also depending on whether it's selected.
+    userName      := QuintiqUser::CurrentUser().Name();
+    isAdmin       := QuintiqUser::CurrentUser().IsAdministrator();
+    
+    // First check, which applies to any ScenarioNode.
+    canDelete     :=LibSM_ScenarioNode::CanDelete( nodes, userName, isAdmin, permanently );
+    
+    // Also check if the node happens to be active or has a child that is active.
+    selectedKey   := this.GetSelectedPlanningDatasetKey();
+    isNodeActive  := exists( nodes, Elements, node, 
+                             node.IsScenario() and guard( node.astype( LibSM_Scenario ).Dataset().DatasetMDSID() = selectedKey, false ) );
+    isChildActive := false;
+    
+    if ( canDelete and not isNodeActive and exists( nodes, Elements, node, 
+                                                    node.ChildCount() > 0 ) )
+    {
+      isChildActive := exists( nodes, Elements, node, 
+                               exists( node.GetAllChildren(), Elements.astype( LibSM_Scenario), child, 
+                                       guard( child.Dataset().DatasetMDSID() = selectedKey, false ) ) );
+    }
+    
+    if ( not FeedbackObject::CheckHard( not isNodeActive and not isChildActive ) )
+    {
+      FeedbackObject::AddHard( Translations::LibSM_Scenario_CanNotDelete_ActiveScenario() );
+    }
+    
+    
+    return FeedbackObject::IsAllowed();
+  *]
+}

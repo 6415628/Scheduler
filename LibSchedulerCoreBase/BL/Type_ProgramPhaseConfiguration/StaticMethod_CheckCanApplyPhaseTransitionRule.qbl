@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckCanApplyPhaseTransitionRule (ProgramPhaseConfigurations programphases, Boolean isphasetransitionrule, ProgramPhaseConfigurations selectedProgramPhaseConfigurations, 
+  Rule currentrule) declarative remote as Boolean
+{
+  Description: 'Check can apply phase transition rule for the program phases'
+  TextBody:
+  [*
+    // Check can apply phase transition rule for the program phases
+    // 1. It is not last phase
+    // 2. It does not have phase transition rule
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    value := exists( programphases, Elements, phase, 
+                     selectedProgramPhaseConfigurations.Find( phase ) <> -1
+                     or phase.CheckCanApplyPhaseTransitionRule( isphasetransitionrule, currentrule ) );
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      // Show feedback message if there is phase is not last phase
+      if( exists( programphases, Elements, phase, phase.CheckIsNotLastPhaseForTransitionRule( isphasetransitionrule ) ) )
+      {
+        feedbackobject.AddHard( Translations::RuleScope_PhaseTransitionNotForLastPhase() );
+      }
+      
+      // Show feedback message if there is phase already had existing phase transition rule
+      if( exists( programphases, Elements, phase, phase.CheckHasNoPhaseTransitionRule( isphasetransitionrule, currentrule ) ) )
+      {
+        feedbackobject.AddHard( Translations::RuleScope_OnlyOnePhaseTransitionRuleForPhase() );
+      }
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

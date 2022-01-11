@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: ListContextMenuWorkOrders/MenuCancelRelease
+Response OnClick (structured[WorkOrder] selection) id:Response_ListContextMenuWorkOrders_MenuCancelRelease_OnClick
+{
+  #keys: '[142956.0.1351042550]'
+  CanBindMultiple: false
+  DefinitionID => /ListContextMenuWorkOrders/Responsedef_ListContextMenuWorkOrders_MenuCancelRelease_OnClick
+  GroupServerCalls: true
+  Precondition:
+  [*
+    WorkOrder::CheckCanUnReleaseAndUnMarkForRelease( selection );
+    
+    return FeedbackObject::CurrentFeedback().IsAllowed();
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Cancels released status and unmarks work orders for release
+      hasReleasedWorkOrders := exists( selection, Elements.astype( InternalWorkOrder ), internalWorkOrder, internalWorkOrder.IsReleased() );
+      
+      if( Scheduler.ConstructMessageBoxForSoftPrecondition( hasReleasedWorkOrders,  Translations::WorkOrder_Warning_CancelRelease() ) )
+      {
+        WorkOrder::UnReleaseAndUnMarkForRelease( selection );
+      }
+    *]
+  }
+}

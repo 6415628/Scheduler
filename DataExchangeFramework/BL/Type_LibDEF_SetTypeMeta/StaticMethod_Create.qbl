@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (LibDEF_System owner_i, LibDEF_ChannelMeta channelMeta_i, String name_i, 
+  String guid_i) as LibDEF_SetTypeMeta
+{
+  Description:
+  [*
+    Create and assign primary-key attributes.
+    Also check for primary keys like TypeIndex.
+  *]
+  TextBody:
+  [*
+    // Jacky CHAN Apr-28-2016 (created)
+    systemGUID  := owner_i.GUID();
+    channelName := channelMeta_i.Name();
+    
+    duplicatedSetTypeMeta := LibDEF_SetTypeMeta::FindSetTypeMeta( owner_i.DataBroker(), systemGUID, channelName, name_i );
+    if( not isnull( duplicatedSetTypeMeta ) )
+    {
+      LibDEF_Util::LogErrorInstanceUniqueness( typeof( LibDEF_SetTypeMeta ), duplicatedSetTypeMeta.GetInstanceKeyAsString() );
+    }
+    
+    return owner_i.SetTypeMeta( relnew,
+                                SystemGUID  := systemGUID,
+                                ChannelName := channelName,
+                                Name        := name_i,
+                                GUID        := guid_i );
+  *]
+}

@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckCanFitDemands (Demands demands) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    quantityopen := sum( demands, Elements, demand, demand.QuantityOpen() );
+    value := this.QuantityOpen() >= quantityopen;
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      feedbackobject.AddHard( Translations::SC_DemandBatch_DemandsQuantityOpenGreaterThanBatchQuantityOpen( quantityopen, this.QuantityOpen() ) );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

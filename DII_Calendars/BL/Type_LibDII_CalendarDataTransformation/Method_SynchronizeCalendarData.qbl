@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeCalendarData (LibDIO_IntegrationObjects integrationCalendars_i, String context_i, Boolean doDelete_i, 
+  Boolean keepIfNotCreatedByIntegration_i) as owning LibCal_Calendars
+{
+  TextBody:
+  [*
+    // First synchronize the Calendars...
+    synchronizedCalendars := this.SynchronizeCalendars( integrationCalendars_i );
+    
+    // ...then synchronize the Events, including their LeadingParticipation...
+    this.SynchronizeEvents( integrationCalendars_i, context_i, doDelete_i, keepIfNotCreatedByIntegration_i );
+    
+    // ...and finally synchronize the Subscriptions, i.e. the Participations in other Calendars.
+    this.SynchronizeSubscriptions( integrationCalendars_i, context_i, doDelete_i, keepIfNotCreatedByIntegration_i );
+    
+    return &synchronizedCalendars;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

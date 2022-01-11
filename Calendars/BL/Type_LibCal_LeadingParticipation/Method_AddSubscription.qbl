@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddSubscription (LibCal_Calendar subscriber_i, Boolean useLeadingPeriod_i) as LibCal_Subscription
+{
+  Description: 'Let subscriber_i subscribe to the Participation by creating a copy of it and registering it as Subscription.'
+  TextBody:
+  [*
+    subscription := null( LibCal_Subscription );
+    
+    // Don't add a subscripton to self (safe-guard).
+    if( this.Calendar() <> subscriber_i )
+    {
+      // Create a subscription for calendar_i, including the RecurrencePeriod if applicable.
+      includingPeriod := not useLeadingPeriod_i;
+      subscription    := LibCal_Subscription::Create( subscriber_i, this, includingPeriod );
+      subscription.UseLeadingPeriod( useLeadingPeriod_i );
+      
+      // Register as subscription of the current LeadingParticipation.
+      this.Subscription( relinsert, subscription );
+    
+      // Copy all occurrences of the LeadingParticipation.
+      // The ones that are not applicable will be removed later on, if necessary.
+      subscription.CopyOccurrences();
+    }
+    
+    return subscription;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

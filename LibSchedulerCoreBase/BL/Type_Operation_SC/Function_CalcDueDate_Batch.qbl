@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcDueDate_Batch
+{
+  Description: 'For no-batchoperations the DueDate_Batch is the duedate batch of the next operation minus the leadtime'
+  TextBody:
+  [*
+    // TG4AvK080508
+    
+    // TG introduced a general function
+    // Call general method first, because there can be some other batch operations in the PU.
+    value := this.CalculateDueDate_Batch_General();
+    
+    //if this operation is planned in a batch, the duedate_batch of this operation is the duedate of the batch.
+    if( this.PlannedInBatch() )
+    {
+      value := minvalue( value,
+                         guard( this.BatchSequenceElement().Batch().DueDate(), DateTime::MaxDateTime() )
+                       );
+    }
+    
+    this.DueDate_Batch( value );
+  *]
+}

@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPrecondCanDeleteFrozenProgramChange (Schedule schedule)
+{
+  Description: 'Test delete frozen program change precondition checking'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    isfreezeschedulebyprogram := false;
+    isprogram1alltasksfreeze := false;
+    isprogram2alltasksfreeze := false;
+    
+    this.GetTestVariantForForFreezeScheduleByProgram(  isvariantfound,
+                                                       isfreezeschedulebyprogram,
+                                                       isprogram1alltasksfreeze,
+                                                       isprogram2alltasksfreeze );
+    value := true;
+    
+    // Only setup when variant found
+    if( isvariantfound )
+    {
+      programchange1 := minselect( schedule, ResourceGroup_SC.Resource_SC.ProgramChange.ProgramChangeTask, task, task.SequenceNr() );
+      programchange2 := maxselect( schedule, ResourceGroup_SC.Resource_SC.ProgramChange.ProgramChangeTask, task, task.SequenceNr() );
+      
+      feedback := '';
+      programchange1task := construct( ProgramChangeTasks );
+      programchange1task.Add( programchange1 );
+      programchange2task := construct( ProgramChangeTasks );
+      programchange2task.Add( programchange2 );
+      value := not Task_SC::CanUnplanSoft( programchange1task, feedback ) // Do not allow delete frozen program change 1
+               and Task_SC::CanUnplanSoft( programchange2task, feedback ); // Allow delete not frozen program change 2   
+    }
+     
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Test precondition delete frozen program change failed.', 
+                           this.Variant() ) );
+    
+    // Gantt chart
+    // Program set        |----------------- Program 1 ----------------------|                    |-----Program 2----|
+    // ProgramChangeTask1 (Frozen) | Task1(Frozen) --- Task3(Frozen)- Task 7 | ProgramChangeTask2 | Task 8 - Task 15 |
+  *]
+}

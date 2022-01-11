@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleQuillError (LibOpt_Task task, QuillError e)
+{
+  Description:
+  [*
+    When an error happens in user code we catch it in the same transaction.
+    
+    We call this method with the `QuillError` we caught on the component that caused the error.
+    By default we create an error snapshot in this method.
+    
+    Then we call this method again on all previous components that were executed in this transaction as well, except that the `QuillError` is a null instance.
+    
+    After calling these methods we always rollback the transaction. So the only thing you can do in this method is change the snapshot tree, as these will be preserved.
+  *]
+  TextBody:
+  [*
+    if( not isnull( task.SnapshotComponent() ) )
+    {
+      task.SnapshotComponent().Finalize();
+    }
+    
+    is_captured := false;
+    err := LibOpt_SnapshotError::Read( e, task, is_captured );
+    if( not is_captured and not LibOpt_SnapshotError::IsUserError( Translations::LibOpt_Optimization_CapturedException_Regex(), err ) )
+    {
+      this.HandleException( err, task, false );
+    }
+  *]
+}

@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedScheduling (Resource_SC resource, structured[CampaignTask] campaignTasks, Boolean skipSoftCheck, 
+  Boolean ctrlShiftKey, Task_SC beforeTask, Task_SC afterTask, 
+  String identifier, output String feedback_o, output Boolean isAllowedHard_o) as Boolean id:Method_Scheduler_AllowedScheduling_847
+{
+  #keys: '[142956.2.72385695]'
+  Body:
+  [*
+    // Precondition for dragging and dropping CampaignTasks onto Task
+    value := CampaignTask::CanReplan( campaignTasks, feedback_o );
+    
+    if( value )
+    {
+      campaignTasksToReplan := selectset( campaignTasks, Elements, campaigntask, campaigntask.CanReplan() );
+      tasks := selectset( campaignTasksToReplan, Elements.OperationCampaign.Task_SC, t, true );
+      
+      if( resource.istype( SingleResourceBase ) )
+      {
+        value := Scheduler.AllowedScheduling( resource.astype( SingleResourceBase ),
+                                              tasks,
+                                              skipSoftCheck,
+                                              ctrlShiftKey,
+                                              beforeTask,
+                                              afterTask,
+                                              identifier,
+                                              feedback_o,
+                                              isAllowedHard_o );
+      }
+      else
+      {
+        value := Scheduler.AllowedScheduling( resource.astype( BatchResource ),
+                                              tasks,
+                                              skipSoftCheck,
+                                              ctrlShiftKey,
+                                              beforeTask,
+                                              afterTask,
+                                              identifier,
+                                              feedback_o,
+                                              isAllowedHard_o );
+      }
+    }
+    
+    return value;
+  *]
+}

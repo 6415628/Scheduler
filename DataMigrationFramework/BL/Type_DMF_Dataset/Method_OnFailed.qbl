@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnFailed (Exception ex)
+{
+  Description: 'Post fail run step'
+  TextBody:
+  [*
+    // When a dataset finished conversion
+    // we will update the status etc
+    status := DMF_Utility::ID_Failed();
+    this.UpdateStatus( status );
+    this.UpdateEnd( DateTime::Now() );
+    //need to update all the dependent daasets
+    if( this.DatasetType().DatasetTypeDependent( relsize ) > 0 )
+    {
+      this.DatasetType().OnFailed();
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,68 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test069_StatisticTimeSuboptimizerSolve_Relative (LibOpt_TestDataset dataset)
+{
+  Description: 'Test that we get the right amount of issues for `LibOpt_StatisticTimeSolve` that is configured with `IsAbsolute` false'
+  TextBody:
+  [*
+    nr_iterations := 20;
+    
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    run.DebugScope( true );
+    
+    scope_elements := construct( LibOpt_ScopeElementSleeps );
+    for( i := 0; i < nr_iterations; i++ )
+    {
+      scope_elements.Add( LibOpt_ScopeElementSleep::Create( dataset, '#' + [String] i, Duration::Millis( 10 ) ) );
+    }
+    
+    scope_elements := selectsortedset( scope_elements, Elements, scope_element, true, Real::Random() );
+    
+    violation := scope_elements.Element( 1 )
+    violation.SleepDuration( Duration::Millis( 200 ) );
+    
+    scope_elements := selectsortedset( scope_elements, Elements, scope_element, true, Real::Random() );
+    
+    scope := LibOpt_Scope::Create( run, scope_elements );
+    run.SetStartScope( scope );
+    
+    scopes := construct( LibOpt_Scopes );
+    traverse( scope_elements, Elements, scope_element )
+    {
+      scope := LibOpt_Scope::Create( run );
+      scope.Add( scope_element );
+      scopes.Add( scope );
+    }
+    
+    iterator := opt.IteratorForEachScope( run, 'Iterator', opt.ScopeProviderScripted( scopes ) );
+    
+    suboptimizer := opt.SuboptimizerPOAReflection( run, 'Suboptimizer', opt.RollbackKPIStatic() );
+    suboptimizer.SetInitialize( method( LibOpt_TestUnit_Statistic, M06X_Suboptimizer_Initialize_SleepScope,
+                                        LibOpt_Suboptimizer, POAAlgorithm, LibOpt_Task ) );
+    suboptimizer.SetExecute( method( LibOpt_TestUnit_Statistic, M06X_SuboptimizerPOA_Execute_Sleep100,
+                                     POAAlgorithm ) );
+    
+    iterator.To( suboptimizer );
+    
+    this.NoException( run->Start()->|void->( )
+    {
+      statistics := selectset( run, Statistic.astype( LibOpt_StatisticTimeSuboptimizerSolve ), statistic,
+                               not statistic.IsAbsolute() );
+      
+      if( this.Run().AssertEqual( 1, statistics.Size(), 'Incorrect amount of statistics' ) )
+      {
+        statistic := selectobject( statistics, Elements, statistic, statistic.Component() = suboptimizer );
+        
+        this.Run().AssertEqual( nr_iterations, statistic.NrElements(), 'Incorrect amount of elements' );
+        this.Run().AssertGreaterOrEqual( 1, statistic.Issue( relsize ), 'Incorrect amount of issues' );
+        
+        snapshot := selectobject( violation, ScopeElementOnScope.Scope.AsInputScope, snapshot, snapshot.Component() = suboptimizer );
+        
+        this.Run().AssertEqual( 1, counter( snapshot, IterationPart.Snapshot.Issue, issue, issue.Statistic() = statistic ), 'Unexpected issue count on violation' );
+        
+      }
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

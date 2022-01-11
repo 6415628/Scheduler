@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method ResetToDemoData (String demoCategoryName, String demoDatasetName, Boolean importERPDataOnly)
+{
+  TextBody:
+  [*
+    // Move demo data related files from demo scenario folder
+    this.MoveDemoDataExcelsFromDemoScenarioFolder( demoCategoryName, demoDatasetName );
+    
+    schedule := this.Schedule();
+    schedule.ResetAll();
+    // Import all available optimizer strategies and settings
+    importObject := schedule.ImportObject();
+    importObject.ImportOptimizerConfigurations();
+    
+    // ImportERP and MPS
+    schedule.ImportAndSynchronizeERP();
+    schedule.ImportFromMPS();
+    
+    if( not importERPDataOnly )
+    {
+      // Trigger import
+      this.ImportDemoData();
+      
+      // Propagate to recompute imported object attributes/relations
+      Transaction::Transaction().Propagate();
+      
+      // Trigger synchronization
+      this.SynchronizeDemoData();
+      
+      // Set running instance IDs based on demo data.
+      this.ResetDemoScheduleRunningInstanceID();
+    }
+    
+    this.DemoCategorySelected( demoCategoryName );
+    this.DemoDataSelected( demoDatasetName );
+  *]
+}

@@ -1,0 +1,63 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetSpan (LibOpt_Scope scope, Number MaxSpanElements) as owning LibOpt_ScopeElementOnRuns
+{
+  Description: 'calculates and returns the span of the given scope.'
+  TextBody:
+  [*
+    // mbr23 Jan-10-2020 (created)
+    span := scope.SpanOnRun(); // start with the span that was already created upstream in the components graph
+    
+    // the span is constructed iteratively by extension rules. Each rule application may extend the span, but not shrink it.
+    // there are some extension rules that need to be executed only once, because they are span-agnostic:
+    // `rule` is span-agnostic iff there exists a result r(rule) s.t. apply_rule(span) = span \union r(rule) for any span.
+    SelectorSpan::ExtendSpanUpstream( &span, scope );
+    SelectorSpan::ExtendSpanDownstream( &span, scope );
+    SelectorSpan::ExtendSpanSequenceNeighbors( &span, scope );
+    SelectorSpan::ExtendSpanResourceAppendix( &span, scope );
+    // The "stream closure" rule has since its introduction been removed from the span definition in the OSD, because it is not necessary for the POA suboptimizer.
+    // The intention was that adding a "stream closure" to the span would be a solution for the complicated "optimistic" stream timing constraints, but it turned out not to.
+    // It actually made things more complicated because it adds unplanned operations to the span -- which the suboptimizer can't handle as of now.
+    // It may turn out to be necessary to re-enable it in the future, so we keep the next comment line as a reference:
+    //SelectorSpan::ExtendSpanStreamClosure( span, scope );
+    
+    // iterative closure for those rules that are not span-agnostic:
+    has_changed := true;
+    
+    // reset filler attribute
+    SelectorSpan::ResetFillerAttributes( scope );
+    
+    while( has_changed )
+    {
+      // extend the span by the different rules:
+      has_changed := SelectorSpan::ExtendSpanResourceClosure( &span, scope );
+      has_changed := has_changed or SelectorSpan::ExtendSpanSequenceClosure( &span, scope );
+      has_changed := has_changed or SelectorSpan::ExtendSpanNoBufferWait( &span, scope );
+    }
+    
+    
+    assert( scope.ScopeElementsExSpan().Intersect( selectset( span, Elements.ScopeElement, se, true ) ).Size() = 0,
+            'Span contains elements that are in the input scope to span construction! This is a bug.' );
+    
+    
+    
+    if( span.Size() > MaxSpanElements )
+    {
+      // Span is too large, remove all Span elements of which IsFiller is set to true
+      traverse( span, Elements, seor, seor.ScopeElement().istype( ScopeElementOperation ) 
+                and seor.ScopeElement().astype( ScopeElementOperation ).Operation_SC().OptimizerSequencing_IsFiller() )
+      { 
+        span.Remove( seor );
+      }
+      runcontext := select( scope.Run(), RunContext.astype( RunContextSetupAddress ), rc, true );
+    
+      spanops := selectset( span, Elements.ScopeElement.astype( ScopeElementOperation ).Operation_SC, op, true );
+      if( not isnull( runcontext ) )
+      {
+        runcontext.UpdateOperationDimension( spanops );
+      }
+    }
+    
+    return &span;
+  *]
+}

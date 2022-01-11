@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcType
+{
+  TextBody:
+  [*
+    // WOI1 Sep-8-2016 (created)
+    
+    value := Constants::OM_Precedence(); // created during operation dependency synchronization between operations of different plan unit
+    
+    if( not isnull( this.Fulfillment() ) )
+    {
+      value := Constants::OM_Fulfillment(); // created during material reservation
+    }
+    else if( guard( this.ToOperation().PlanUnit_SC() = this.FromOperation().PlanUnit_SC(), false ) ) // this is null during oncreate, because relations not set yet. OnCreate called during relnew or relinsert
+    {
+      value := Constants::OM_PreviousNext(); // created during normal operation synchronization between operations of the same plan unit
+    }
+    
+    this.Type( value );
+  *]
+}

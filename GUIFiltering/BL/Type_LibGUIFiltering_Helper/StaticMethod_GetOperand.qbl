@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetOperand (String searchterms, output Number pos, String defaultoperand) remote as String
+{
+  TextBody:
+  [*
+    // per Oct-4-2016 (created)
+    char     := searchterms.SubString( pos, 1 );
+    nextchar := guard( searchterms.SubString( pos + 1, 1 ), '' );
+    operand  := defaultoperand;
+    
+    if ( char = '='
+      or char = '~' )
+    {
+      operand := char;
+      pos++;
+    }
+    else if ( char = '.' )
+    {
+      operand := '.';
+      pos++;
+      
+      while ( pos < searchterms.Length()
+          and searchterms.SubString( pos, 1 ) = '.' )
+      {
+        pos++;
+        operand := operand + '.';
+      }
+    }
+    else if ( char = '<' or char = '>' )
+    {
+      if ( nextchar = '='
+       or (char     = '<' and nextchar = '>') )
+      {
+        operand := char + nextchar;
+        pos++;
+      }                            
+      else
+      {
+        operand := char;
+      }
+      pos++;
+    }
+    else if ( char = '!' and nextchar = '~' )
+    {
+      operand := '!~';
+      pos     := pos + 2;
+    }
+    
+    LibGUIFiltering_Helper::SkipSpaces( searchterms, pos );
+    
+    return operand;
+  *]
+  InterfaceProperties { Visibility: 'BusinessModel' }
+}

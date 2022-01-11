@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (Task_SC selection, Resource_SC row) id:Response_GanttChartSchedulingCentre_MenuInsertProgram_OnClick
+{
+  #keys: '[143388.0.1951195920]'
+  Body:
+  [*
+    // Insert program change before selected task 
+    
+    value := true;
+    
+    // Prompt the warning message if the selected task is in frozen period
+    if( selection.IsFrozenInSchedule() )
+    {
+      value := MessageBox::Question( this, Translations::SC_SchedulingInFrozenPeriodConfirmation(), '&Yes|&No' ) = 0
+    }
+    
+    if( value )
+    {
+      dlg := construct( DialogCreateEditProgramChange ); 
+      
+      dlg.InsertProgramChange( this, row, selection );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => /Responsedef_GanttChartSchedulingCentre_Menu_OnClick
+  Initiator: 'MenuInsertProgram'
+  Precondition:
+  [*
+    return row.CheckCanInsertProgramChange( selection );
+  *]
+}

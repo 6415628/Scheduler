@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleBatchStartException_InconsistentExecutionFeedback (DateTime start, Resource_SC resource, String remark, 
+  String practice)
+{
+  Description: 'check exception of TaskStart feedback while TaskEnd has been reported earlier'
+  TextBody:
+  [*
+    // jiex Sep-1-2016 (created)
+    // Process exception for TaskStart feedback while TaskEnd has been reported earlier
+    if( this.EndReadIn().IsFinite() )
+    {
+      if( start >= this.EndReadIn() )
+      {
+        this.Exception_HasInconsistentFeedback( true );
+        this.Exception_HasReportedEndWithoutReportedStart ( false );
+        this.Exception_EarlierReportedEnd( this.EndReadIn() );
+        duration := this.End() - this.Start();
+        
+        this.UpdateFeedbackStart( start, resource.ResourceID(), Constants::StatusEnd(), remark, practice );
+        this.EndReadIn( start + duration );
+      }
+      else
+      {
+        this.UpdateFeedbackStart( start, resource.ResourceID(), Constants::StatusEnd(), remark, practice ); 
+        this.Exception_HasReportedEndWithoutReportedStart ( false );
+      }
+    }
+  *]
+}

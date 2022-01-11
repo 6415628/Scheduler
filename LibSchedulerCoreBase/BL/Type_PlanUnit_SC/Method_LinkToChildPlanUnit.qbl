@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Method LinkToChildPlanUnit (PlanUnit_SC planUnit)
+{
+  Description: 'Set relation to child plan unit, creates operation material between last operation of parent to first operation of child.'
+  TextBody:
+  [*
+    if( isnull( planUnit.Parent() ) ) // We currently do not support changing parents of child plan units
+    {
+      planUnit.Parent( relset, this );
+      planUnit.ChildNr( this.GetLastChildNr() );
+      lastOperationOfParent := maxselect( this, Operation_SC, op, true, op.SequenceNr() );
+      firstOperationOfChild := minselect( planUnit, Operation_SC, op, true, op.SequenceNr() );
+      firstOperationOfChild.CreateInputOperationMaterial( lastOperationOfParent, planUnit.Quantity() );
+    }
+  *]
+}

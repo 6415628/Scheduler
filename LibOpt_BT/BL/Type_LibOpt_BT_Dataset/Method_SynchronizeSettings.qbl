@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeSettings () as LibOpt_BT_PromiseVoid
+{
+  TextBody:
+  [*
+    if( not isnull( this.SyncingSettings() ) )
+    {
+      this.SyncingSettings().Delete();
+    }
+    
+    promise := LibOpt_BT_PromiseVoid::Create( this.TrackingTable().BenchmarkTrackingDataset(), Translations::LibOpt_BT_PromiseVoid_SynchronizeSettings( this.Name(), this.TrackingTable().Description() ) );
+    this.SyncingSettings( relset, promise );
+    
+    copy := this.GetCopy( DatasetState::Temporary() );
+    listen := promise.Listen( copy )
+    promise.Listen( listen->|copy->( optimization )
+    {
+      optimizer := this.TrackingTable().GetOptimizer( optimization );
+      settings := optimizer.ActiveSettings();
+      if( isnull( settings ) )
+      {
+        this.Settings( '' );
+      }
+      else
+      {
+        nvt := settings.Export();
+        this.Settings( LibOpt_Utility::NamedValueToJSON( nvt.Root() ).Build().AsString() );
+      }
+    } );
+    
+    return promise;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

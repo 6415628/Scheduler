@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetUniqueFeedback (Boolean value, FeedbackObject feedbacklocal) const declarative remote as Boolean
+{
+  Description: 'Process feedback object for exists quantor'
+  TextBody:
+  [*
+    // Process feedback object for exists quantor
+    // Input argument value is the return value of exists quantor
+    // 1. if value = FALSE and feedback object HasFeedback, it means exists quantor is returning FALSE due to all checkings are failed, so continue to get unique feedback messages
+    // 2. if value = TRUE, it means exists quantor is returning TRUE, so all feedback messages need to be cleared and feedbacklocalobject.IsAllowed should be changed from FALSE to TRUE
+    if( not value and feedbacklocal.HasFeedback() )
+    {
+      Utility_SC::GetUniqueFeedback( feedbacklocal );
+    }
+    else
+    {
+      feedbacklocal.Clear();
+      // Workaround to check value although the text is cleared. To force check for server method.
+      feedbacklocal.CheckHard( value );
+    }
+    
+    return feedbacklocal.IsAllowed();
+  *]
+}

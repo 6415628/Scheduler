@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcCanBeDeleted
+{
+  TextBody:
+  [*
+    // jiex Oct-17-2016 (created)
+    // dependence on the related exportedtask/batchcontent 
+    value := true;
+    
+    isbatch := this.BatchId() <> '';
+    issupply := this.Consumer() <> '';
+    
+    if( isbatch )
+    {
+      value := guard( ifexpr( issupply,
+                               this.AsExportedSupplyOnBatchContent().CanBeDeleted(),
+                               this.AsExportedDemandOnBatchContent().CanBeDeleted() ),
+                               true );
+    }
+    else 
+    {
+      value := guard( ifexpr( issupply,
+                              this.AsExportedSupply().CanBeDeleted(),
+                              this.AsExportedDemand().CanBeDeleted() ),
+                              true );
+                       
+    } 
+    
+    this.CanBeDeleted( value );
+  *]
+}

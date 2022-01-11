@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method CanSelect () declarative remote as Boolean
+{
+  Description: "Returns whether selecting the scenario is allowed (making it the 'active' scenario)."
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    if( not feedback.CheckHard( this.HasDataset() ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_DoesNotHaveADataset_RefreshToCheckAgain( this.Name() ) );
+    }
+    
+    if( not feedback.CheckHard( guard( this.Dataset().IsLoaded(), false ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_CanNotSelect_NotLoaded() );
+    }
+    
+    if( not feedback.CheckHard( not guard( this.Dataset().IsLoadingInProgress(), false ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_CanNotSelect_LoadingInProgress() );
+    }
+    
+    if( not feedback.CheckHard( not this.IsDeleted() ) ) 
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_CanNotDoAction_IsRecycleBin() );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

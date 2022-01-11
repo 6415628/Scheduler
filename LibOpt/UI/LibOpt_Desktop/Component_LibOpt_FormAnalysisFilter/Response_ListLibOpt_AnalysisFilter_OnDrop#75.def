@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: ListLibOpt_AnalysisFilter
+Response OnDrop (shadow[LibOpt_UISnapshotAttribute] information, LibOpt_AnalysisFilter target) id:Response_ListLibOpt_AnalysisFilter_OnDrop_75
+{
+  #keys: '[139164.4.1020339453]'
+  Body:
+  [*
+    // LibOpt_AnalysisFilterAttribute using shadow[LibOpt_UISnapshotAttribute]
+    
+    name := information.AttributeName();
+    if( information.Type() = typeof( BinaryValue ).Name() )
+    {
+      name := name + '[0]';
+    }
+    
+    dlg := construct( DialogLibOpt_AnalysisFilterAttribute );
+    
+    dlg.New( this, DataHolderAnalysis.Data(), information.Snapshot().GetComponent(), information.Path(), name, Form.GetReal( information ), not dropaction.IsControl() );
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIComponent_OnDrop'
+  Precondition:
+  [*
+    LibOpt_Analysis::AnalysisExistsPrecondition( DataHolderAnalysis.Data() );
+    LibOpt_AnalysisFilterAttribute::PreconditionOnType( information.Type() );
+    
+    return FeedbackObject::CurrentFeedback().IsAllowedWithOverride( dropaction.IsControl() );
+  *]
+}

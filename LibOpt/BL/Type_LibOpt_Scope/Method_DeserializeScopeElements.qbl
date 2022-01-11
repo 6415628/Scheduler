@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method DeserializeScopeElements (JSON array)
+{
+  TextBody:
+  [*
+    key_comment := LibOpt_Scope::JSON_Comment();
+    key_id := attribute( LibOpt_ScopeElement, InternalIdentifier ).Name();
+    optimization := this.Run().Optimization();
+    scope_elements := selectsortedset( optimization, ScopeElement, se, true, se.InternalIdentifier() );
+    se_index := 0;
+    for( i := 0; i < array.Size(); i++ )
+    {
+      json_se := array.Get( i );
+      comment := json_se.Get( key_comment ).GetString();
+      id := [Key] json_se.Get( key_id ).GetString();
+      
+      // Find the scope element in the set of scope elements.
+      for( {}; se_index < scope_elements.Size() and scope_elements.Element( se_index ).InternalIdentifier() < id; se_index++ )
+      { }
+      scope_element := guard( scope_elements.Element( se_index ), null( LibOpt_ScopeElement ) );
+      if( isnull( scope_element ) or id <> scope_element.InternalIdentifier() )
+      {
+        identifier := json_se.Get( attribute( LibOpt_ScopeElement, Identifier ).Name() ).GetString();
+        details := json_se.Get( attribute( LibOpt_ScopeElement, Details ).Name() ).GetString();
+        scope_element := LibOpt_ScopeElementDeleted::Create( this.Run().Optimization(), id, details, identifier, true );
+      }
+      
+      this.Add( scope_element, comment );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetExportDatabaseFileName (String fileName_i, Boolean isTemplate_i) as String
+{
+  Description: 'Assumption: If no upgrade path is available, we will fal back to the SysDefinitions directory'
+  TextBody:
+  [*
+    // tgn3 Apr-6-2021 (created)
+    settings := this.ConvertorDataset().Settings();
+    
+    // Get the relevant subfolder(s)
+    fileExportDir := ifexpr( isTemplate_i, 
+                             settings.DataUpgradeTemplatesDirectory(), 
+                             settings.DataUpgradeExportDirectory() );
+    
+    dbFileName := fileExportDir + fileName_i + DMF_DBInterface::GetDatabaseExtension();
+    
+    // Debug - do not delete
+    //logfile( ">>> dbFileName", dbFileName );
+    
+    return dbFileName;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

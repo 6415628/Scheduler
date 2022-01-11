@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanOperationsInBatch (Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // She Ven 20121008 #4514 Plan On Selected Resource doesn't plan all operations to the selected resource (due to resetting on selected resource)
+    //this.PlanOperations( operations, null( BatchResource ) )
+    /*
+    Gooi Code
+    1. Create Batch
+    2. Fill the batch
+    3. Plan the batch
+    */
+    while( operations.Size() > 0 )
+    {
+      firstoperation := operations.Element( 0 );
+    
+      batch := Batch::Create( this, firstoperation.Type() );
+    
+      // add a batch operation to set the practice for the batch
+      batch.AddOperation( operations.Element( 0 ) );
+      // To set the batch's practice
+      Transaction::Transaction().Propagate();
+      
+      resource := BatchResource::SelectResource( batch ); 
+      
+      //plan related operations in batch
+      Schedule::PlanRelatedOperationsBefore( operations.Element( 0 ), resource, null( BatchTask ), true, false );
+      
+      operations.Delete( 0 );  
+      
+      if( not isnull( resource ) )
+      {
+        resource.PlanLast( batch );
+      }
+      
+      batch.AddOperationToBatch( operations );
+    }
+  *]
+}

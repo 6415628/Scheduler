@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method New (GUIComponent parent) as LibSM_KnowledgeProfile id:Method_LibSM_dlgCreateEditKnowledgeProfile_New
+{
+  #keys: '[107496.2.1552069369]'
+  Body:
+  [*
+    // New kb branch selection
+    scenarioManager := LibSM_GlobalState.GetScenarioManagerDataset();
+    scenarioManagerMDS := LibSM_GlobalState.GetScenarioManagerMDS();
+    
+    shadowKnowledgeProfile := scenarioManager.KnowledgeProfile( relshadow );
+    
+    traverse( scenarioManagerMDS, MDSKBs, kb )
+    {
+      shadowKnowledgeProfile.KnowledgeBaseBranchInProfile( relnew,
+                                                                 KBDefinitionName := kb.Name(),
+                                                                 KBBranchName     := kb.Branch(),
+                                                                 KBBranchVersion  := kb.Version() );
+    }
+    
+    Dialog.Data( shadowKnowledgeProfile );
+    
+    if( Dialog.DoModal( parent ) > 0 )
+    {
+      // Get all new created branches in dataholder to instantiate new knowledge base branch
+      traverse( dhNewKBBranch.Data(), Elements, branch )
+      {
+        shadowNewKBbranch := selectobject( shadowKnowledgeProfile,
+                                           KnowledgeBaseBranchInProfile,
+                                           KBbranch,
+                                           KBbranch.KBDefinitionName() = branch.KBDefinitionName()
+                                       and KBbranch.KBBranchName()     = branch.KBBranchName() );
+                                     
+        LibSM_GlobalState.InstantiateNewKnowledgeBranch( shadowNewKBbranch.KBDefinitionName(), shadowNewKBbranch.KBBranchName() );
+      }
+      
+      shadowKnowledgeProfile.Commit();
+    }
+    
+    return shadowKnowledgeProfile.WrappedInstance();
+  *]
+}

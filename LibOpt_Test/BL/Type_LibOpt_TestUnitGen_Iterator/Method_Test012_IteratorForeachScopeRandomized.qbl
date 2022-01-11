@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test012_IteratorForEachScopeRandomized (LibOpt_TestDataset dataset)
+{
+  Description: 'Create random iterator test cases, varying the number of scopes and max number of parallel. Check whether the iterator does the correct number of iterations and max number of parallel.'
+  TextBody:
+  [*
+    // Run randomized test
+    nr_of_scopes := Number::Random( 1, 20 );
+    nr_of_parallel := Number::Random( 1, 10 );
+    
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    scopes := construct( LibOpt_Scopes );
+    for( i := 0; i < nr_of_scopes; i++ )
+    {
+      scopes.Add( LibOpt_Scope::Create( run ) );
+    }
+    
+    scope_provider := opt.ScopeProviderScripted( scopes );
+    iterator := opt.IteratorForEachScope( run, 'Iterator', & scope_provider );
+    iterator.MaxParallel( nr_of_parallel );
+    
+    component := opt.ComponentCounter( run, 'Counter' );
+    component.Delay( Duration::Millis( 10 ) );
+    iterator.To( component );
+    
+    run.SetStartComponent( iterator );
+    
+    str := run->Start();
+    str->IgnoreException()->|void->()
+      {
+        this.Run().AssertEqual( nr_of_scopes, component.NrOfTimesCalled(), 'Number of calls has an unexpected value' );
+        
+        this.CheckMaxParallel( run, nr_of_parallel );
+      }
+    str->Exception()->( e )
+    {
+      this.Run().RegisterFailure( 'Exception caught: ' + e.Message() + ', parallel = ' + [String] nr_of_parallel + ', scopes =' + [String] nr_of_scopes  );
+    };
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

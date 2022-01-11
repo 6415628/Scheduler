@@ -1,0 +1,74 @@
+Quintiq file version 2.0
+#parent: #root
+Method Copy (LibSM_ScenarioNode newParentNode, String newScenarioName, String newComment, 
+  String newStorageState, LibSM_KnowledgeProfile newKnowledgeProfile, LibSM_MetaDatas newMetaData, 
+  Boolean isCreateCopyAsChildOfOrigin) as LibSM_Scenario
+{
+  Description: 'Create a copy of this scenario (For timezone supported)'
+  TextBody:
+  [*
+    // Create a new scenario. This should be handled by the ScenarioFactory to make 
+    // sure we get the correct type.
+    scenario := this.ScenarioManager().ScenarioFactory().CreateScenarioFromScenario( this );
+    
+    scenario.Name( newScenarioName );
+    scenario.Comment( newComment );
+    
+    scenario.KnowledgeProfile( relset, newKnowledgeProfile );
+    
+    //Overload the metadata instead of fixed number.
+    traverse( newMetaData, Elements, metadata )
+    {
+      scenario.MetaDataInScenario( relnew, MetaData := metadata );  
+    }
+    
+    scenario.TimezoneID( this.TimezoneID() );
+    
+    scenario.IsScenario( true );
+    scenario.UpdateLastChanged();
+    scenario.OriginScenario( relset, this ); // Remember origin
+    
+    // Copy assumptions from source scenario to copied scenario
+    assumptionsInSourceScenario := selectset( this, Assumption, assumption, true );
+    LibSM_Assumption::Copy( assumptionsInSourceScenario, scenario );
+    
+    //this.LibSM_ScenarioManager().UpdateDataset( mdsId, scenario );
+    parentNode := newParentNode;
+    if ( isCreateCopyAsChildOfOrigin )
+    {
+      parentNode := this; 
+    }
+    
+    // Add the scenario in the tree structure.
+    copiedScenario := this.ScenarioManager().AddLeaf( parentNode, &scenario ).astype( LibSM_Scenario );  
+    
+    // Create the actual copy of the dataset.
+    newDatasetName := LibSM_Scenario::ConvertScenarioNameToIdentifier( newScenarioName );
+    
+    // Check the uniqueness of the name for the copied dataset, 
+    // or else append the datetime to the name to copied dataset.
+    isCopiedNameUnique := unique( this, ScenarioManager.ScenarioNode.astype( LibSM_Scenario ), scenarionode, true, scenarionode.Name() = newDatasetName );
+    newDatasetName := ifexpr( isCopiedNameUnique,
+                              newDatasetName,
+                              this.ScenarioManager().ScenarioFactory().GetUniqueDatasetName( newDatasetName ) );
+    
+    dataset := this.Dataset().Copy( copiedScenario, newDatasetName, newStorageState );  
+    
+    dataset->Exception()->( ex )
+    {
+      // Creating the actual scenario failed, and so we should notify the user. 
+      LibSM_Util::Info( 'Copy scenario failed: ' + ex.Message() ) ;
+    
+      // Remove the scenario from the owner.
+      copiedScenario.Delete();
+      
+      // Create a Message instance to alert the user about this.
+      LibSM_Message::Create( this.ScenarioManager(), 
+                             Translations::LibSM_Scenario_CopyFailed( ex.Message(), this.Name() ) );                          
+    }
+    // Call a post-processing method on the created scenario after the dataset has been created.
+    dataset->|copiedScenario->CreationPostProcessCustom( true );
+    
+    return copiedScenario;
+  *]
+}

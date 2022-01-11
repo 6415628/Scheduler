@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcProcessDuration
+{
+  Description: 'Calculates duration for executing the operation on the resource. It is overloaded in subclasses.'
+  TextBody:
+  [*
+    quantity := this.Operation_SC().PlanUnit_SC().Quantity();
+    
+    // Commented because it doesn't make sense to calculate the batch process duration using the sum of the its batch elements' plan unit quantity
+    // It should be using its corresponding plan unit size instead
+    
+    /*
+    if( this.Operation_SC().PlannedInBatch() )
+    {
+      quantity := guard( this.Operation_SC().BatchSequenceElement().Batch().Size(), quantity );
+    }  
+    */
+    
+    value := this.FixedProcessDuration() +  quantity * this.ProcessDurationPerQuantity();
+    
+    this.ProcessDuration( value );
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

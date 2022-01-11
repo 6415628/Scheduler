@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleTaskStartException_PrecedingTaskWithoutReportedStart (Operation_SC operation, DateTime start, Resource_SC resource, 
+  String remark, String scheduledprevopid)
+{
+  Description: 'Check exception for TaskStart feedback reported while one or more preceding tasks have not yet started'
+  TextBody:
+  [*
+    // jiex Sep-1-2016 (created)
+    // Check exception for TaskStart feedback reported while one or more preceding tasks have not yet started 
+    if( not isnull( resource ) and not isnull( operation.Task_SC()))
+    {  
+      // Only check on normal task sequence by excluding stoppage task
+      preceding_task := minselect( resource, Task_SC, task,     
+                                   task.SequenceNr() < operation.Task_SC().SequenceNr()
+                                   and not task.IsStoppageTask()
+                                   and not task.HasFeedbackTask(),
+                                   task.SequenceNr() );
+                                   
+      if( not isnull( preceding_task ) )
+      {
+        this.Exception_IsExecutedSequenceChanged( true );
+        this.Exception_PrecedingTaskID( preceding_task.TaskID() );
+        
+        this.UpdateFeedbackStart( start, resource.ResourceID(), Constants::StatusStart(), remark, '', '', scheduledprevopid );     
+      }
+    }
+  *]
+}

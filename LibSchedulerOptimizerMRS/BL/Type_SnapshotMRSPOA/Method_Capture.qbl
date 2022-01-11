@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method Capture (Algorithm algorithm)
+{
+  TextBody:
+  [*
+    poa := algorithm.astype( SuboptimizerMRSPOA_POAOneResourceGroup );
+    if( not isnull( poa ) )
+    {
+      // which resource group did we actually execute on? Extract from the algorithm:
+      resourcenodes := selectset( poa, Nodes, n, not isnull( poa.AsResource_SC( n, this ) ) );
+      resourcegroup := null( ResourceGroup_SC );
+      traverse( resourcenodes, Elements, resourcenode )
+      {
+        node_resourcegroup := poa.AsResource_SC( resourcenode, this ).ResourceGroup_SC();
+        if( not isnull( resourcegroup ) and resourcegroup <> node_resourcegroup )
+        {
+          debuginfo( this.DefinitionName(), "Capture POAOneResourceGroup algorithm: WARNING: the POA contains more than one resource group, this has not been tested:", resourcegroup.Name(), "and", node_resourcegroup.Name() );
+        }
+        resourcegroup := node_resourcegroup;
+      }
+      
+      if( not isnull( resourcegroup ) )
+      {
+        // save the data:
+        legacysnapshot := this.SnapshotMRSPOADetails( relnew, ResourceGroupName := resourcegroup.Name() );
+        timeexpression := poa.Expression( SuboptimizerMRSPOA::NamePOATimeExpression() );
+        traverse( poa.Solution(), PathTypes.Paths, runpath )
+        {
+          // a bit dirty: find out the planned resource by looking up by its path type name:
+          resource_pathtype_name := runpath.PathType().PathType().Role();
+          resource := select( resourcegroup, Resource_SC, res, SuboptimizerMRSPOA::POANamePathResource( res ) = resource_pathtype_name );
+          
+          // for each operation node, create snapshot element:
+          traverse( runpath.Expression( timeexpression ), Nodes, runtimeexpressionnode, not isnull( poa.AsOperation_SC( runtimeexpressionnode.Node(), this ) ) )
+          {
+            operation := poa.AsOperation_SC( runtimeexpressionnode.Node(), this );
+            operation_in_suboptimizer := this.GetComponent().astype( SuboptimizerMRSPOA ).GetOperation( operation );
+            legacysnapshot.AddElement( operation_in_suboptimizer, runtimeexpressionnode, resource );
+          }
+        }
+        legacysnapshot.ComputeTimingMismatches();
+      }
+      else
+      {
+        debuginfo( this.DefinitionName(), "Capture POAOneResourceGroup algorithm: the POA contained no resource group!" );
+      } 
+    }
+  *]
+}

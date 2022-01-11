@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateAvailableCombilegs (CombiLegs availablecombilegs, CombiLeg selectedcombileg) as owning CombiLegs
+{
+  Description: 'Update the available combilegs'
+  TextBody:
+  [*
+    // If we select a combileg without min rules, then we can only choose other combilegs without min rules
+    hasnominrules := selectedcombileg.GetHasMinCumulativeRules();
+    combilegs := construct( CombiLegs );
+    if( hasnominrules )
+    {
+      combilegs := selectset( availablecombilegs, Elements, combileg, not combileg.GetHasMinCumulativeRules() );
+    }
+    // Otherwise, we can only select combilegs that share min cumulative rules with the currently selected combileg
+    else
+    {
+      combilegs := selectset( availablecombilegs, Elements, combileg, combileg.GetHasSameMinRulesAsOtherCombileg( selectedcombileg ) )
+    }
+    
+    return &combilegs;
+  *]
+}

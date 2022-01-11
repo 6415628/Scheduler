@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method Capture (LibOpt_Task task, String comment)
+{
+  Description: 'Note: the given task can be null.'
+  TextBody:
+  [*
+    suboptimizer := guard( task.Component().astype( LibOpt_Suboptimizer ), null( LibOpt_Suboptimizer ) );
+    
+    snapshot := this.Parent();
+    while( not isnull( snapshot ) and isnull( suboptimizer ) )
+    {
+      suboptimizer := guard( snapshot.astype( LibOpt_SnapshotComponent ).Component().astype( LibOpt_Suboptimizer ), null( LibOpt_Suboptimizer ) );
+      snapshot := snapshot.Parent();
+    }
+    
+    if( not isnull( suboptimizer ) and not isnull( suboptimizer.RollbackKPI() ) )
+    {
+      this.RollbackKPI( suboptimizer.RollbackKPI().GetKPI( task ).AsBinaryValue() );
+    }
+    
+    this.Comment( comment );
+    this.IsPreHandleResult( comment = Translations::LibOpt_SnapshotKPI_CommentPreHandleResult() );
+  *]
+}

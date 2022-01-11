@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Delete (LibSM_ScenarioNodes scenarioNodes, LibSM_ScenarioFolder targetFolder)
+{
+  Description: 'Move scenarios to recycle bin'
+  TextBody:
+  [*
+    /*
+    1. set offline for all scenarios ( also those in selected folder ) that have "Storage" ( E.g: Full, Partial, Hybrid, Cached )
+    2. move scenario nodes to folder passed in ( can be RecycleBin, can be other folder in recycle bin )
+    */
+    
+    // QP 1839, When a folder is deleted its scenarios must be unloaded
+    
+    // this is recursive method that unloads all online non MemoryOnly scenarios
+    LibSM_ScenarioNode::Unload( scenarioNodes );
+    
+    
+    scenarioNodesToMove := selectset( scenarioNodes, Elements, node,
+                                      not exists( scenarioNodes, Elements, e, node.Parent() = e ) );
+    
+    targetFolder.Move( scenarioNodesToMove );
+  *]
+}

@@ -1,0 +1,116 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDrawNode (BatchTask element, Resource_SC row) id:Response_GanttChartSchedulingCentre_OnDrawNode_4
+{
+  #keys: '[12910.0.1173361922]'
+  Body:
+  [*
+    // OnDrawNode BatchTask
+    // Kyle 12-05-2015 #5365 Update Gantt Chart Node color according to subtask type
+    subtasks := selectsortedset( element, SubTask, subtask, true, subtask.SequenceNr() );
+    
+    traverse( subtasks, Elements, subtask )
+    {
+      if( subtask.istype( SetupSubTask ) )
+      {
+        drawinfo.AddCompartment( ColorScheme.Setup(), subtask.Duration() );
+      }
+      else if( subtask.istype( TransferSubTask ) )
+      {
+        st := subtask.astype( TransferSubTask );
+    
+        drawinfo.AddCompartment( ColorScheme.IdleDuration(), st.IdleDuration() );
+        drawinfo.AddCompartment( ColorScheme.Transfer(), st.TransferDuration() );
+      }
+      else if( subtask.istype( ReceiveSubTask ) )
+      {
+        st := subtask.astype( ReceiveSubTask );
+    
+        drawinfo.AddCompartment( ColorScheme.IdleDuration(), st.IdleDuration() );
+        drawinfo.AddCompartment( ColorScheme.Receive(), st.TransferDuration() );
+      }
+      else if( not element.HasConstraintViolations() )
+      {
+        color := ColorScheme.Scheduled();
+        workorders := selectset( element, OperationInTask.PlanUnit_SC.Order_SC.WorkOrder, wo, true );
+        if( subtask.istype( ProcessSubTask ) )
+        {
+          // Show order color
+          if( MenuShowOrderColor.Checked()
+              and workorders.Size() = 1 // only if the batch contains operations of one and same work order 
+              and not isnull( workorders.Element( 0 ).WorkOrderColorRange() ) )
+          {
+            color := Color::Color( workorders.Element( 0 ).WorkOrderColorRange().ColorCode() );
+          }
+          // Highlight selected product
+          else if( MenuHighlightSelectedProduct.Checked()
+                   and workorders.Size() = 1 // only if the batch contains operations of one and same work order 
+                   and exists( DataHolderHighlightSelectedProduct.Data(),
+                               Elements,
+                               product,
+                               workorders.Element( 0 ).Order_SC().Product_SC() = product ) )
+          {
+            color := ColorScheme.HighlightProduct();
+          }
+          else if( element.Finished() )
+          {
+            color := ColorScheme.Finished();
+          }
+          else if( element.Started() )
+          {
+            color := ColorScheme.Started()
+          }
+          else if( element.IsFrozenInSchedule() )
+          {
+            color := ColorScheme.IsFrozenInSchedule()
+          }
+          else if( element.IsLocked() )
+          {
+            color := ColorScheme.IsLockedByOptimizer();
+          }
+          else if( element.IsStartInSchedulingHorizon() )
+          {
+            color := ColorScheme.IsStartInSchedulingHorizon()
+          }
+          
+        }
+        else if( subtask.istype ( NoBufferWaitSubTask ) )
+        {
+          color := ColorScheme.NoBufferWait();
+        }
+        else if( subtask.istype ( NoBufferActionSubTask ) )
+        {
+          color := ColorScheme.NoBufferAction();
+        }
+        else if( subtask.istype ( NoBufferOutflowSubTask ) )
+        {
+          color := ColorScheme.NoBufferOutflow();
+        }
+        else if( subtask.istype ( CleanUpSubTask ) )
+        {
+          color := ColorScheme.CleanUp();
+        }
+        else if( subtask.istype ( NoBufferActionInputSubTask ) )
+        {
+          color := ColorScheme.NoBufferActionInput();
+        }
+        
+        drawinfo.AddCompartment( color, subtask.Duration() );
+      }
+      else
+      {
+        drawinfo.AddCompartment( drawinfo.BackgroundColor(), subtask.Duration() );
+      }
+    
+      //Draw the idle time compartments between subtasks
+      nextsubtask := subtask.Next();
+    
+      if( not isnull( nextsubtask ) )
+      {
+        idleduration := nextsubtask.Start() - subtask.End();
+        drawinfo.AddCompartment( ColorScheme.IdleDuration(), idleduration );
+      }
+    }
+  *]
+  DefinitionID: 'Responsedef_GanttChart_OnDrawNode'
+}

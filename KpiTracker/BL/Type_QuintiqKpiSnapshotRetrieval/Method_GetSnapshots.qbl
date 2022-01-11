@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetSnapshots (DateTime startDateTime, DateTime endDateTime, String timeType, 
+  Number top) as owning KpiSnapshotSetData
+{
+  TextBody:
+  [*
+    set    := construct( KpiSnapshotSetData );
+    source := null( structured[ DssKpiSnapshot ], owning );
+    
+    if ( timeType = KpiSnapshotRetrieval::TimeType_Server() )
+    {
+      source := selectset( this, Storage.Snapshot, snapshot, 
+                           snapshot.ServerDateTime() >= startDateTime
+                       and snapshot.ServerDateTime() <= endDateTime );
+    }
+    else
+    {
+      source := selectset( this, Storage.Snapshot, snapshot, 
+                           snapshot.PlanDateTime() >= startDateTime
+                       and snapshot.PlanDateTime() <= endDateTime );
+    }
+    
+    items := 0;
+    traverse( source, Elements, snapshot, items < top )
+    {
+      set.SnapshotData( relinsert, DssKpiSnapshotRetrieval::ConvertSnapshotToTransportType( snapshot ) );
+      items++;
+    }
+    
+    return &set;
+  *]
+}

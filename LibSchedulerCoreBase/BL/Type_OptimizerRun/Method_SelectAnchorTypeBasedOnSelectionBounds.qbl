@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectAnchorTypeBasedOnSelectionBounds () as AnchorType
+{
+  Description:
+  [*
+    Selects an anchor type at random.
+    Assumes SetAnchorTypeProbabilities and SetAnchorTypeSelectionBounds have been executed.
+    Can return null if all anchor types are disallowed, or all of them have zero probability for another reason
+  *]
+  TextBody:
+  [*
+    // svt1 Aug-2-2017 (created)
+    selectionreal := Real::Random();
+    
+    anchortype := select( this, AnchorType, at, at.MinSelectionBoundInclusive() <= selectionreal and at.MaxSelectionBoundExclusive() > selectionreal );
+       
+    // extreme corner case: selectionreal was 1.0 and led to no anchortype selected
+    // because of exclusive check on upper bound
+    if( isnull( anchortype ) and selectionreal = 1.0 )
+    {
+      anchortype := select( this, AnchorType, at, at.MaxSelectionBoundExclusive() > 0.999 )
+    } 
+    
+    return anchortype;
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

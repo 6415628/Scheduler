@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcAmount
+{
+  TextBody:
+  [*
+    quantity := 0.0; // we don't want unplanned operations to affect stock levels
+    
+    qtyreserved := guard( this.Demand().QuantityReserved(), quantity );
+    
+    if( not isnull( this.InputLot() ) )
+    {
+      quantity := minvalue( qtyreserved, this.InputLot().Quantity() * guard( this.Demand().InputFactor(), 0 ) );
+    }
+    // for external demands or planned operations with demands, their quantities should reflect immediately
+    else if( guard( not this.Demand().IsPlannedDemand(), false ) or guard( this.Operation_SC().IsPlanned(), false ) )
+    {
+      quantity := qtyreserved;
+    }
+    
+    this.Amount( -quantity );
+  *]
+}

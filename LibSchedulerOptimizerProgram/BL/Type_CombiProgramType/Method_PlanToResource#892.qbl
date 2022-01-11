@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanToResource (CombiLegs combilegs, Operation_SCs scope_operations)
+{
+  TextBody:
+  [*
+    // yifei Aug-10-2021 (created)
+    // if the combi belong to a master combi which works as active combi ( means it's already planned ), then unplan the in scope tasks in the program first,  only keep the program change task
+    //  then plan the operations in this combi after the program change task
+    //  otherwise, we are plan this combi as a new programtype at the end of the resource
+    
+    isresyncactive := false;
+    cpt := this;
+    
+    // If this CPT is linked to a master combi program type (which has is the active combi), then select that master CPT instead
+    if( guard( not isnull(this.MasterCombiProgramType().ProgramTypeAsActiveCombi() ), false ) )
+    {
+      cpt := this.MasterCombiProgramType();
+      cpt.UnplanTasks( scope_operations );
+    }
+    
+    // Sequence the combilegs and plan them one by one
+    traverse( combilegs, Elements, combileg )
+    {
+      // The or resyncactive is after the method since we always want to plan the combileg
+      // also if we already know that we need to resync
+      isresyncactive := combileg.PlanToResource( scope_operations ) or isresyncactive;
+    }
+    
+    //synchronize the active combis
+    // This synchronization needs to happen after planning all the combilegs since it will delete the old combi elements
+    if( isresyncactive )
+    {
+      Transaction::Transaction().Propagate( relation( TaskInProgramSet, ProgramPhase ) );
+      cpt.SynchronizeActiveProgramTypeCombiElements();
+    }
+    
+    Transaction::Transaction().Propagate( attribute( CombiProgramType, IsActive ) );
+    if( this.IsActive() )
+    {
+      this.MasterCombiProgramType( relset, this );
+    }
+  *]
+}

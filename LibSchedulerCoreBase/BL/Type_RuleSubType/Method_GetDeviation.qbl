@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetDeviation (const Rule rule, const Operation_SC previousoperation, const Operation_SC currentoperation) const declarative remote as Real
+{
+  Description: 'Get deviation between the rule value and operation value when validation is failed'
+  TextBody:
+  [*
+    // Get deviation between the rule value and operation value
+    value := 0.0;
+    
+    // Only calculate the deviation
+    // 1. The rule is applicable for these operations ( Enabled/ Condition Checkings )
+    // 2. The rule is invalid for these operations
+    if( currentoperation.CheckIsRuleApplicable( rule, previousoperation, rule.CharacteristicMain() )
+        and not this.Validate( rule, previousoperation, currentoperation ) )
+    {
+      do_rule := this.GetRuleDataObject( rule, previousoperation, currentoperation );
+      value := this.CalculateDeviation( rule, do_rule );  
+    }
+    
+    return value;
+  *]
+}

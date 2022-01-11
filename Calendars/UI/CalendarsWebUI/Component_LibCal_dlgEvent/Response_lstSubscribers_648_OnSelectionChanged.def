@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: lstSubscribers_648
+Response OnSelectionChanged (LibCal_Calendar selection) id:Response_lstSubscribers_648_OnSelectionChanged
+{
+  #keys: '[131094.0.2115486352]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebList_OnSelectionChanged'
+  QuillAction
+  {
+    Body:
+    [*
+      // Initialize the list by setting the checkmark for the subscribing calendars when this has not been done before.
+      // This should only be done when OnSelectionChanged is executed for the first time.
+      if( lblIsInitialized.Text() = "false" )
+      {
+        // Get the calendars of the subscriptions.
+        calendars := selectset( dhEvent.Data(), LeadingParticipation.Subscription.Calendar, calendar, true, true ).Unique();
+        
+        traverse( calendars, Elements, subscriber )
+        {
+          lstSubscribers.ExtendCheckByKey( subscriber.Key() );
+        }
+          
+        // Register that the list has been initialized.
+        lblIsInitialized.Text( "true" );
+      }
+    *]
+    GroupServerCalls: false
+  }
+}

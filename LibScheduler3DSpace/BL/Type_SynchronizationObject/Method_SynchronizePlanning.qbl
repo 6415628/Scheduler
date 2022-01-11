@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizePlanning
+{
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    // Canceled work orders are to be deleted, no need to plan them
+    workOrders := selectset( schedule, 
+                             WorkOrder.astype( ExternalWorkOrder ), 
+                             externalWorkOrder,
+                             externalWorkOrder.Maturity() <> Constants::MaturityStatus_CANCELLED() );
+    
+    traverse( schedule, ResourceGroup_SC.Resource_SC, resource )
+    {
+      // Plan per resource, sorted by start and end time
+      sortedWorkOrderOperations := selectsortedset( workOrders,
+                                                    Elements.WorkOrderOperation.astype( ExternalWorkOrderOperation ),
+                                                    workOrderOperation,
+                                                    workOrderOperation.ResourceID() = resource.ResourceID(),
+                                                    workOrderOperation.StartTime(),
+                                                    workOrderOperation.EndTime() );
+                                                    
+      traverse( sortedWorkOrderOperations, Elements, workOrderOperation )
+      {
+        sortedOperations := selectsortedset( workOrderOperation, Operation_SC, op, true, op.OperationID() );
+        resource.PlanLast( sortedOperations );
+      }
+    }
+  *]
+}

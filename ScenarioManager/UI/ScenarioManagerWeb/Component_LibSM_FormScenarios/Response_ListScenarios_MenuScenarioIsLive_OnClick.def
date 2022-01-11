@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: ListScenarios
+Response OnClick (LibSM_Scenario selection) id:Response_ListScenarios_MenuScenarioIsLive_OnClick
+{
+  #keys: '[146450.0.1521981932]'
+  CanBindMultiple: false
+  DefinitionID => /ListScenarios/Responsedef_ListScenarios_WebMenu_OnClick
+  EditSecurity: 'LibSM_SetLiveScenario'
+  InheritSecurity: false
+  Initiator: 'MenuScenarioIsLive'
+  Precondition:
+  [*
+    return LibSM_GlobalState.HasValidDataset( selection );
+  *]
+  UserRequiresReadWrite: true
+  QuillAction
+  {
+    Body:
+    [*
+      if( not selection.IsLive() 
+          or WebMessageBox::Question( Translations::LibSM_Scenario_ConfirmUnLive( selection.Name() ), Translations::LibSM_Question_YesNo_Web() ) = 0 )
+      {
+        selection.IsLive( not selection.IsLive() );
+      }
+    *]
+    GroupServerCalls: false
+  }
+}

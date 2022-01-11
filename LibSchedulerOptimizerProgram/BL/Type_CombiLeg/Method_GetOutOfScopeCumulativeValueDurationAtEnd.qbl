@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetOutOfScopeCumulativeValueDurationAtEnd (Characteristic characteristic, Boolean isminrule, ProgramSetConfiguration programsetconfig, 
+  Boolean isphaserule, CombiLegs combilegs) as Real
+{
+  Description: 'For time expressions, get the out of scope duration after the horizon to subtract from the rule value'
+  TextBody:
+  [*
+    value := 0.0;
+    if( characteristic.ID() = RuleConstant::Characteristic_DurationInHours() )
+    {
+      
+      // Check if this combileg is the last combileg in scope of its program type that is related to the input programset
+      islastinprogram := not exists( combilegs, Elements, scope_combileg,
+                                      // scope combileg must be before this combileg
+                                      scope_combileg.SequenceNr() > this.SequenceNr()
+                                      // this combileg belongs to a combiprogramtype that is part of the input program set
+                                      and this.GetIsSameProgram( scope_combileg, programsetconfig ) );
+      
+      // If this was the last in the program it is automatically the first in the phase
+      islastinphase := islastinprogram
+                        // or if there is no later combileg in scope part of the same phase
+                        or not exists( combilegs, Elements, scope_combileg,
+                                      // scope combileg must be before this combileg
+                                      scope_combileg.SequenceNr() > this.SequenceNr()
+                                      // this combileg belongs to a combiprogramtype that is part of the input program set
+                                      and this.GetIsSamePhase( scope_combileg, programsetconfig ) );
+      
+      // Only subtract the cummulative out of scope value for the last combileg of the programtype/phase belonging to this program set configuration                                                  
+      if( islastinprogram
+          or ( islastinphase and isphaserule ) )
+      {
+        // Get the cummulative out of scope value
+        nextcombileg := this.Next();
+        // Get the end time of this leg, if this leg is still empty get the end time of the previous leg, if that one is also empty then use the schedule start time
+        endofcurrent := guard( this.Leg().LastTaskOnLeg().End(), 
+                               guard( this.Previous().Leg().LastTaskOnLeg().End(),
+                                      this.LeadingCombiProgramPhase().CombiProgramType().CombiProgramSet().ProgramSetConfiguration().ProgramDefinitionConfiguration().Schedule().Time() ) );
+        
+        endofnext := endofcurrent;
+        while( not isnull( nextcombileg )
+               // consider the next leg as long is it is part of the same program for a program rule
+               and ( ( not isphaserule
+                       and this.GetIsSameProgram( nextcombileg, programsetconfig ) )
+                     // or part of the same phase for a phase rule
+                     or ( isphaserule
+                          and this.GetIsSamePhase( nextcombileg, programsetconfig ) ) ) )
+        {
+          endofnext := maxvalue( guard( nextcombileg.Leg().LastTaskOnLeg().End(), endofnext ), endofnext );
+          nextcombileg := nextcombileg.Next();
+        }
+        // Duration in hours of the out of scope legs:
+        value := (endofnext - endofcurrent).HoursAsReal();
+      }
+    }
+    
+    return value;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

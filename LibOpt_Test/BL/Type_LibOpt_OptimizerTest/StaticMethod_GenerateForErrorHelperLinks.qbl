@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GenerateForErrorHelperLinks (LibOpt_Component component) as owning LibOpt_Runs
+{
+  Description: 'Permutate the task transporters of the links to add `InOneTransaction`'
+  TextBody:
+  [*
+    links := component.GetOutgoingLinks();
+    
+    result := null( LibOpt_Runs, owning );
+    if( links.Size() = 0 )
+    {
+      result := construct( LibOpt_Runs );
+      result.Add( component.Run() );
+    }
+    else if( links.Size() = 1 )
+    {
+      link := links.First();
+      result := LibOpt_OptimizerTest::GenerateForErrorHelperLinks( link.Destination() );
+    
+      if( not link.TaskTransporter().istype( LibOpt_TaskTransporterOneTransaction ) )
+      {
+        size := result.Size();
+        for( i := 0; i < size; i++ )
+        {
+          template := result.Element( i );
+          copy := template.Copy();
+          copy.Comment( ifexpr( template.Comment() = '', '', template.Comment() + ' - ' ) + 'one-transaction[' + link.GetOrigin().Name() + ',' + link.Destination().Name() + ']' );
+          copy_link := select( copy, Component.Parents, l,
+                               l.GetOrigin().Name() = link.GetOrigin().Name()
+                               and l.Destination().Name() = link.Destination().Name() );
+          copy_link.SetTaskTransporterOneTransaction( true );
+          result.Add( copy );
+        }
+      }
+    }
+    else
+    {
+      error( 'Currently not working for branches' );
+    }
+    return & result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

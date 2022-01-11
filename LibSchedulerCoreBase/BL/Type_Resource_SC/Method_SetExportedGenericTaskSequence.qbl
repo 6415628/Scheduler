@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetExportedGenericTaskSequence
+{
+  Description: 'Rearrange exported generic task and set the previous operation id.'
+  TextBody:
+  [*
+    extasks := selectsortedset( this,
+                                ExportedSingleTask.astype( GenericExportedSingleTask ),
+                                extask,
+                                true,
+                                extask.Start()//sort with Start instead of Exportedstart because if the exportedtask has feedback, the start time might differs from the initial exported start time
+                               );
+    // Set scheduled previous operation id for each exported task
+    prevopid := '';
+    
+    for( i := 0; i < extasks.Size() ; i++ )
+    {
+      if( i > 0 )
+      {
+        prevopid := extasks.Element( i - 1 ).OperationID();
+      }
+    
+      extasks.Element( i ).ScheduledPrevOperationID( prevopid );
+    
+      //Sequence nr is used in view for sorting purpose.
+      extasks.Element( i ).SequenceNr( i );
+    }
+  *]
+}

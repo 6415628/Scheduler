@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericBatchResource (const ResourceGroup_SC resourcegroup)
+{
+  Description: 'Backup generic batch resource core data'
+  TextBody:
+  [*
+    traverse( resourcegroup, Resource_SC.astype( GenericBatchResource ), genericBatchResource )
+    {
+      cdGenericBatchResource := this.CDEntity( relnew, CDGenericBatchResource );
+      CopyCorresponding::CopyFrom( genericBatchResource ).CopyTo( cdGenericBatchResource );
+      
+      // Backup lead time strategy
+      this.BackupLeadTimeStrategy( genericBatchResource );
+      
+      // Backup resource connection
+      this.BackupResourceConnection( genericBatchResource );
+        
+      // Backup resource explicit time interval
+      this.BackupResourceExplicitTimeInterval( genericBatchResource );
+      
+      // Backup batch task
+      this.BackupGenericBatchTask( genericBatchResource );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

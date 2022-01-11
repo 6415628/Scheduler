@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+DeclarativeOwningNMRelation CalcOutputLotMaterial
+{
+  #keys: '1[129524.0.912121593]'
+  Expression:
+  [*
+    return selectset( this, 
+                      Task_SC.OperationInTask.ToOperationDependency.astype( OperationMaterial ).AsInputOperationMaterialWOFulfillment.Task_SC.InputLot, 
+                      nextop_inputlot, 
+                      ( this.CumulativeQuantity() >= nextop_inputlot.CumulativeQuantity()
+                        and guard( this.PreviousOutputLot().CumulativeQuantity() < nextop_inputlot.CumulativeQuantity(), true ) ) // if theres no previous, it is true
+                      or ( this.CumulativeQuantity() < nextop_inputlot.CumulativeQuantity()
+                           and guard( this.CumulativeQuantity() > nextop_inputlot.PreviousInputLot().CumulativeQuantity(), true ) ) ); // if theres no previous, it is true
+  *]
+  HelperRelation: AsInputLotMaterial
+  InstantiationType: OutputLotLotMaterial
+  Relation: OutputLotMaterial
+}

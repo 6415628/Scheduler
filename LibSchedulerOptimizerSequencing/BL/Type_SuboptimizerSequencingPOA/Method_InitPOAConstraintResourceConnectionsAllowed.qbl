@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOAConstraintResourceConnectionsAllowed (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata)
+{
+  Description: 'Add the constraint that ensures that POA only plans allowed resource connections.'
+  TextBody:
+  [*
+    // default false; only allow allowed ones.
+    default_allowed := false;
+    possible := POAPossible::PP( poa, SuboptimizerSequencingPOA::NamePOAConstraintResourceConnectionAllowed(), default_allowed );
+    possible.Symmetric( true ); // functionally asymmetric, but needs to be symmetric for POA. See OSD chapter "known limitations".
+    dependency := poa.NewDependency( SuboptimizerSequencingPOA::NamePOAConstraintResourceConnectionAllowed() );
+    constr := poa.DependencyAllowedConstraint();
+    constr.Allowed( possible );
+    constr.Dependency( dependency );
+    
+    // set the allowed resource connections:
+    traverse( transientdata.GetPOAPathTypeResources(), Elements, from_resource )
+    {
+      from_pathtype := poa.PathType( this.GetPathTypeName( from_resource ) );
+      traverse( from_resource, AsAllowedFromResource.ToResource, to_resource )
+      {
+        to_pathtype := poa.PathType( this.GetPathTypeName( to_resource ) );
+        possible.Set( from_pathtype, to_pathtype, true );
+      }
+    }
+                                     
+    // set the node pairs on which to apply:
+    traverse( transientdata, OperationInSuboptimizerSequencing, from_operation )
+    {
+      from_node := poa.Node( from_operation );
+      traverse( from_operation, OutputDependency.AsInputDependency, to_operation )
+      {
+        to_node := poa.Node( to_operation );
+        dependency.Add( from_node, to_node );
+      }
+    }
+  *]
+}

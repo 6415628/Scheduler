@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: ListIteration
+Response OnClick (structured[LibOpt_Iteration] selection) id:Response_ListIteration_MenuSelectRelatedIssues_OnClick
+{
+  #keys: '[142652.0.2014616829]'
+  Body:
+  [*
+    // Select the Issues in ListIssue which are related to the Iterations selected here.
+    formissue := select( Application.Frame(), SubComponents.astype( LibOpt_FormIssue ), form, true );
+    
+    if( not isnull( formissue ) )
+    {
+      listissue := formissue.ListIssue();
+      
+      // Clear the current selections first. 
+      listissue.SelectByKey( Key::ZeroKey() );
+      
+      // Select related Issues.
+      traverse( selection, Elements, iteration )
+      {
+        traverse( iteration.GetIssues(), Elements, issue )
+        {
+          listissue.ExtendSelectByKey( issue.Key() );
+        }
+      }  
+    }
+  *]
+  DefinitionID => /ListIteration/Responsedef_ListIteration_Menu_OnClick
+  Initiator: 'MenuSelectRelatedIssues'
+  Precondition:
+  [*
+    return LibOpt_Iteration::SelectRelatedIssuesPrecondition( selection );
+  *]
+}

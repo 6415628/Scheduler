@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method ToggleResourceGroupFSPLAndPlanRelatedOperations (ResourceGroup_SCs resourcegroupswithfspl, ResourceGroup_SCs resourcegroupwithplanrelatedoperations)
+{
+  Description: 'Toggle resource group FSPL and plan related operations logic to avoid circularity when planning demo data tasks.'
+  TextBody:
+  [*
+    traverse( resourcegroupswithfspl, Elements, resourcegroup )
+    {
+      resourcegroup.HasFixedSequencePlanLogic( not resourcegroup.HasFixedSequencePlanLogic() );
+    }
+    
+    
+    traverse( resourcegroupwithplanrelatedoperations, Elements, resourcegroup )
+    {
+      resourcegroup.IsPlanRelatedOperations( not resourcegroup.IsPlanRelatedOperations() );
+    }
+    
+    Transaction::Transaction().Propagate( attribute( Resource_SC, IsPlanRelatedOperations ) );
+  *]
+}

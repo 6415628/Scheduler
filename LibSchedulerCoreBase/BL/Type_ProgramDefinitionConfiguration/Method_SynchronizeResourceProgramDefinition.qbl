@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeResourceProgramDefinition (ImportedProgramDefinitionConfiguration importedprogramdefinitionconfiguration)
+{
+  Description: 'Synchronize resource program definition from imported data'
+  TextBody:
+  [*
+    allinstances := selectset( this, Resource_SC, res, true );
+    updatedinstances := construct( Resource_SCs );
+    
+    traverse( importedprogramdefinitionconfiguration, ImportedResourceProgramDefinition, importedresprogdefinition )
+    {
+      resource := Resource_SC::FindResource_SC( importedresprogdefinition.ResourceID() );
+      programdefinition := ProgramDefinitionConfiguration::FindProgramDefinitionConfiguration( importedresprogdefinition.ProgramDefinitionConfigurationID() );
+      if( not isnull( resource )
+          and not isnull( programdefinition ) )
+      {
+        // Assign program definition
+        resource.AssignProgramDefinitionConfiguration( programdefinition );
+      }
+    
+      updatedinstances.Add( resource );
+    }
+    
+    // Unassign program definition
+    oldinstances := allinstances.Difference( updatedinstances );
+    Resource_SC::UnassignProgramDefinitionConfiguration( oldinstances );
+  *]
+}

@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeProgramSetConfiguration (ImportedProgramDefinitionConfiguration importedprogramdefinitionconfiguration)
+{
+  Description: 'Synchronize program set configuration from imported data'
+  TextBody:
+  [*
+    // Synchronize program set configuration from imported data
+    allinstances := selectset( this, ProgramSetConfiguration, set, true );
+    updatedinstances := construct( ProgramSetConfigurations );
+    
+    traverse( importedprogramdefinitionconfiguration, ImportedProgramSetConfiguration, importedset )
+    {
+      programset := ProgramSetConfiguration::FindProgramSetDefinition( importedset.ProgramDefinitionConfigurationID(),
+                                                                       importedset.ProgramSetConfigurationID() );
+      
+      if( isnull( programset ) )
+      {
+        programset := ProgramSetConfiguration::Create( this, importedset.ProgramSetConfigurationID() );
+      }
+        
+      // Synchronize program type and progam type change
+      programset.SynchronizeProgramTypeConfiguration( importedset );
+      programset.SynchronizeProgramTypeChangeConfiguration( importedset );
+      programset.Update( importedset );
+      
+      updatedinstances.Add( programset );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    traverse( oldinstances, Elements, e )
+    {
+      e.Remove();
+    }
+  *]
+}

@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod DoFinalizeDataset (stream[JSON] streamsuccess, LibOpt_Task task, output Boolean hascreatedstream_o) as stream[JSON]
+{
+  Description:
+  [*
+    Finalize the dataset copies that were created on this component.
+    In `DoFinalizeDatasetCopyDelete` the `DeleteCondition` of each dataset copy is checked and the dataset is deleted if needed.
+    In `DoFinalizeDatasetCopyChangeToStandAlone` all the remaining (memory only) dataset copies are converted to stand-alone datasets.
+  *]
+  TextBody:
+  [*
+    // evr3 Jun-30-2020 (created)
+    // If component X is linked to a previous component by using a TaskTransporterOneTransaction, then DoFinalize is not called when an error occurs during the execution of component X.
+    // Therefore, when an error is thrown, all dataset copies that were created before this error are handled in LibOpt_CurrentTransaction::HandleQuillError.
+    // If component X is linked to a previous component by using a TaskTransporterReactive, then the DoFinalize method of this component is still executed. 
+    // In this case, a dataset that is created on the 'Finalize' component position still needs to be handled.
+    // In DoFinalizeDatasetCopyDelete and DoFinalizeDatasetCopyChangeToStandAlone we ensure that we do not double check the dataset copies that were already checked in HandleQuillError.
+    
+    // For performance reasons, we only want to start a reactive call (and hence a new transaction) 
+    // if any LibOpt_SnapshotReplannableCopyDataset (for which HasExecutedDoFinalizeDatasetCopyDelete is still false) exists on this task.
+    if( exists( task,
+                SnapshotComponent.Children.astype( LibOpt_SnapshotReplannableCopyDataset ), 
+                snapshot, 
+                not snapshot.IsDatasetDeletedByOptimizer() 
+                and not snapshot.HasFailedToCreateDataset()
+                and not snapshot.HasExecutedDoFinalizeDatasetCopyDelete()
+                )    
+       )
+    {
+      if( not task.Run().InOneTransaction() )
+      {
+        streamsuccess := streamsuccess
+                         ->|task->LibOpt_DatasetCopyConditional::DoFinalizeDatasetCopyDelete( false )
+                         ->|task->LibOpt_DatasetCopyConditional::DoFinalizeDatasetCopyChangeToStandAlone()
+                         ->|streamsuccess;
+        hascreatedstream_o := true;
+      }
+      else
+      {
+        LibOpt_DatasetCopyConditional::DoFinalizeDatasetCopyDelete( task, false );   
+        // Convert all memory-only datasets that are not deleted to standalone datasets.
+        LibOpt_DatasetCopyConditional::DoFinalizeDatasetCopyChangeToStandAlone( task );
+      }
+    }
+    
+    return streamsuccess;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

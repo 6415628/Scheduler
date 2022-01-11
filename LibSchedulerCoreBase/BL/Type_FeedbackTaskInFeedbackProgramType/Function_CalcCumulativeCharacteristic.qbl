@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcCumulativeCharacteristic
+{
+  TextBody:
+  [*
+    // Construct vectors 
+    cumulativecharacteristic := BinaryValue::Construct();
+    cumulativerealvalue := BinaryValue::Construct();
+    
+    // Only calculate the phase sequence number if there is program type
+    if( not isnull( this.FeedbackProgramType() ) 
+        and not isnull( this.FeedbackProgramType().ProgramTypeConfiguration() ) )
+    {
+      // Checks whether there is feedback program type archived cumulative values if there is no previous feedback task in program
+      previoustaskcummulativecharacteristic := guard( this.PreviousFeedbackTaskInProgram().CumulativeCharacteristic(), 
+                                                      this.FeedbackProgramType().ArchivedCumulativeCharacteristic() );
+      previoustaskcummulativerealvalue := guard( this.PreviousFeedbackTaskInProgram().CumulativeRealValues(), 
+                                                 this.FeedbackProgramType().ArchivedCumulativeRealValues() );
+      
+      // Calculate cumulative characteristic binary value
+      TaskInProgramSet::GetCumulativeCharacteristicBinaryValue( this.FeedbackProgramType().ProgramTypeConfiguration(),
+                                                                this.GetOperation(),
+                                                                previoustaskcummulativecharacteristic,
+                                                                previoustaskcummulativerealvalue,
+                                                                this.FeedbackProgramType().Start(),
+                                                                this.FeedbackTaskInSchedule().End(),
+                                                                cumulativecharacteristic,
+                                                                cumulativerealvalue );
+    }
+                                                                
+    this.CumulativeCharacteristic( cumulativecharacteristic );
+    this.CumulativeRealValues( cumulativerealvalue );
+  *]
+}

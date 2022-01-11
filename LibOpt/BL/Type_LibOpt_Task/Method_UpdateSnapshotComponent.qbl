@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateSnapshotComponent (JSON json)
+{
+  Description: 'Replace the `SnapshotComponent` with the deserialized `SnapshotComponent` from the `JSON`.'
+  TextBody:
+  [*
+    snapshot_deserialize := LibOpt_Snapshot::Deserialize( json, this.Run() );
+    
+    // Delete current snapshot
+    if( not isnull( this.SnapshotComponent() ) )
+    {
+      // Decrease the NrTimesCalled, for deleting the snapshots
+      descendants := this.SnapshotComponent().Descendants();
+      descendants.Add( this.SnapshotComponent() );
+      traverse( descendants, Elements.astype( LibOpt_SnapshotComponent ), snapshot )
+      {
+        snapshot.Component().NrTimesCalled( snapshot.Component().NrTimesCalled() - 1 );
+      }
+      this.SnapshotComponent().Delete();
+    }
+    
+    snapshot_parent := guard( this.Parent().SnapshotComponent(), null( LibOpt_SnapshotComponent ) );
+    snapshot_deserialize.Parent( relset, snapshot_parent );
+    this.SnapshotComponent( relset, snapshot_deserialize.astype( LibOpt_SnapshotComponent ) );
+    
+    // Increase the NrTimesCalled, for adding new snapshots
+    descendants := snapshot_deserialize.Descendants();
+    descendants.Add( this.SnapshotComponent() );
+    traverse( descendants, Elements.astype( LibOpt_SnapshotComponent ), snapshot )
+    {
+      snapshot.Component().NrTimesCalled( snapshot.Component().NrTimesCalled() + 1 );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

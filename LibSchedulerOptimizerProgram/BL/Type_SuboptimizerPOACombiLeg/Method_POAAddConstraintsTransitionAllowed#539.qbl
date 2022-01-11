@@ -1,0 +1,77 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintsTransitionAllowed (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs, Operation_SCs operations)
+{
+  TextBody:
+  [*
+    traverse( combilegs, Elements, combilegforpath )
+    {
+      
+      default_allowed := true;
+      poapossible := POAPossible::NN( poa, SuboptimizerPOACombiLeg::NamePOAPossibleTransitionAllowed( combilegforpath ), default_allowed );
+    
+      dummystart := poa.Node( SuboptimizerPOACombiLeg::NamePOADummyStart( combilegforpath ), combilegforpath );
+      dummyend := poa.Node( SuboptimizerPOACombiLeg::NamePOADummyEnd( combilegforpath ), combilegforpath );
+    
+      lastoperation := guard( combilegforpath.LastOperation().Operation_SC(), null( Operation_SC ) );
+      lastopnode := guard( poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( lastoperation ), lastoperation ), null( POANode ) );
+      
+      allowedoperations := selectset( operations, Elements, operation, combilegforpath.GetIsOperationAllowedHard( operation ) );
+      
+      traverse( allowedoperations, Elements, operation1 )
+      {
+        node1 := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation1 ), operation1 );
+        poapossible.Set( dummyend, node1, false );
+        
+        // Consider the transition beween the prev leg's last operation and the first operation of this leg
+        // POA can't see transitions between plan paths, so we consider this transition on the dummy start node of the leg (if the prevlegendop is frozen)
+        // For Combi generation we set all violations to soft
+        prevlegendop := this.GetLastOperationPreviousLegIfFrozenAndRelevant( combilegforpath, combilegs );
+        if( not isnull( prevlegendop ) and not this.IsCombiGeneration()  )
+        {
+          isallowed := combilegforpath.GetCostSequenceViolation( prevlegendop.CombiLeg(), prevlegendop.Operation_SC(), operation1, true ) <=0.0; 
+          if( not isallowed ) 
+          {
+            poapossible.Set( dummystart, node1, false );
+          }
+        }
+        
+        // Consider the transition beween the this leg's last operation and the first operation of next leg
+        // POA can't see transitions between plan paths, so we consider this transition on the dummy end node of this leg (if the nextlegstartop is frozen)
+        nextlegstartop := this.GetFirstOperationNextLegIfFrozenAndRelevant( combilegforpath, combilegs );
+        if( not isnull( nextlegstartop ) )
+        {
+          isallowed := nextlegstartop.CombiLeg().GetCostSequenceViolation( combilegforpath, operation1, nextlegstartop.Operation_SC(), true ) <=0.0; 
+          if( not isallowed ) 
+          {
+            poapossible.Set( node1, dummyend, false );
+          }
+        }          
+        
+        // Forbid all transitions from this operation 1 to any operation2 that has a hard transition violation
+        //traverse( operations, Elements, operation2, combileg.GetIsOperationAllowedHard( operation2 ) and combileg.GetCostSequenceViolation( combileg, operation1, operation2,true ) > 0.0 )
+        //{
+        //  node2 := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation2 ), operation2 );
+        // poapossible.Set( node1, node2, false );
+        //}
+        
+        // If the last node of this combileg should be frozen
+        if( combilegforpath.IsFreezeLastNodeInPOA() and not isnull( lastopnode ) )
+        {
+          // Then disallow all transitions from the last operation to all regular nodes (so only allow to dummy end, which means nothing can be planned in between)
+          
+          poapossible.Set( lastopnode, node1, false );
+        }
+      }
+      
+      this.POAAddConstraintsTransitionAllowed_MatrixFilling( poa, combilegforpath, allowedoperations );
+    
+      
+      pathtype := poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathCombiLeg( combilegforpath), combilegforpath );
+      
+      
+      pathtype.TransitionAllowed( poapossible );
+      
+    }
+  *]
+}

@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeFeedbackAdapters
+{
+  TextBody:
+  [*
+    allInstances := selectset( this, Schedule.MESFeedbackAdapter, adapter, true );
+    updatedInstances := construct( MESFeedbackAdapters );
+     
+    allAdapters := Constants::GetMESFeedbackAdapterSpecializations().Tokenize( ';' );
+    
+    traverse( allAdapters, Elements, adapterDefinitionName )
+    {
+      mesFeedbackAdapter := MESFeedbackAdapter::FindMESFeedbackAdapterTypeIndex( adapterDefinitionName );
+      
+      if( isnull( mesFeedbackAdapter ) )
+      {
+        mesFeedbackAdapter := MESFeedbackAdapter::Create( this.Schedule(), adapterDefinitionName );
+      }
+      
+      updatedInstances.Add( mesFeedbackAdapter );
+    }
+    
+    oldInstances := allInstances.Difference( updatedInstances );
+    
+    traverse( oldInstances, Elements, old )
+    {
+      old.Delete();
+    }
+  *]
+}

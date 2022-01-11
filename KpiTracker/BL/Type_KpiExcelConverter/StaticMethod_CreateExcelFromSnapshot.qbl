@@ -1,0 +1,81 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateExcelFromSnapshot (KpiSnapshotSetData snapshotSetData, KpiTracker kpitracker) as BinaryValue
+{
+  Description: 'Creates a Excel string out of the specified KpiSnapshotDatas'
+  TextBody:
+  [*
+    // Render header line.
+    lines := construct( Strings );
+    
+    conversion := ConversionOptions::System();
+    
+    lines.Add( '<?xml version="1.0" encoding="UTF-16"?>' );
+    lines.Add( '<table>' );
+    lines.Add( '<name>KpiValue</name>' );
+    
+    lines.Add( '<column>' );
+    lines.Add( '<name>PlanDateTime</name>' );
+    lines.Add( '<type>String</type>' );
+    traverse( snapshotSetData, SnapshotData, snapshot ) 
+    {
+      lines.Add( '<cell value="' + snapshot.PlanDateTime().Format( 'Y-M2-D2TH2:m:sZ', conversion ) + '" />' );
+    }
+    lines.Add( '</column>' );
+    
+    lines.Add( '<column>' );
+    lines.Add( '<name>ServerDateTime</name>' );
+    lines.Add( '<type>String</type>' );
+    traverse( snapshotSetData, SnapshotData, snapshot ) 
+    {
+      lines.Add( '<cell value="' + snapshot.ServerDateTime().Format( 'Y-M2-D2TH2:m:sZ', conversion ) + '" />' );
+    }
+    lines.Add( '</column>' );
+    
+    lines.Add( '<column>' );
+    lines.Add( '<name>RetentionPolicyID</name>' );
+    lines.Add( '<type>String</type>' );
+    traverse( snapshotSetData, SnapshotData, snapshot ) 
+    {
+      lines.Add( '<cell value="' + snapshot.RetentionPolicyIdentification() + '" />' );
+    }
+    lines.Add( '</column>' );
+    
+    // -- Label 
+    sortedLabels := selectsortedset( kpitracker, Label, label, true, label.Name() );
+    traverse( sortedLabels, Elements, label )
+    {
+      lines.Add( '<column>' );
+      lines.Add( '<name>' + "label_" + label.Name() + '</name>' );
+      lines.Add( '<type>String</type>' );
+      traverse( snapshotSetData, SnapshotData, snapshot ) 
+      {
+        labelValue := select( snapshot, Label, labelV, label.Name() = labelV.Name() );
+        lines.Add( '<cell value="' + guard( labelValue.Value(), "" ) + '" />' );
+      }
+      lines.Add( '</column>' );
+    }
+    
+    
+    // -- Value 
+    sortedKpis   := selectsortedset( kpitracker, MetaData, kpi, true, kpi.Name() );
+    traverse( sortedKpis, Elements, kpi )
+    {
+      lines.Add( '<column>' );
+      lines.Add( '<name>' + "kpi_" + kpi.Name() + '</name>' );
+      lines.Add( '<type>String</type>' );
+      traverse( snapshotSetData, SnapshotData, snapshot )
+      {
+        kpiValue := select( snapshot, Value, value, kpi.Name() = value.Name() );
+        lines.Add( '<cell value="' + guard( [String]kpiValue.Value(), "" ) + '" />' );
+      }
+      lines.Add( '</column>' );
+    }
+    
+    // Send result.
+    lines.Add( '</table>' );
+    binary := BinaryValue::Construct( lines.Concatenate( String::NewLine() ) );
+    return binary;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

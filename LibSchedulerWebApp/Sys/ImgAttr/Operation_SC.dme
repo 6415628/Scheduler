@@ -1,0 +1,425 @@
+Quintiq file version 2.0
+#parent: #root
+TypeDataInterface Operation_SC
+{
+  TypeKey: '[100134.0.39847595]'
+  ImageDataMember AllConstraints
+  {
+    #keys: '1[136010.2.894004142]'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'All constraints'
+        Image: 'SMILEY_RED'
+        Quill: 'object.HasConstraintViolations()'
+        Value: 'All constraints'
+      }
+    ]
+  }
+  ImageDataMember ImgAlloy
+  {
+    #keys: '1[124980.0.140353222]'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Image: 'EDITOBJECT'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Image: 'EDITOBJECT'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Image: 'EDITOBJECT'
+      }
+    ]
+  }
+  ImageDataMember ImgCurrentStockLevel
+  {
+    #keys: '1[124980.0.140516065]'
+    Description: 'Current stock level below minimum or above maximum'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Current stock level below minimum'
+        Image: 'NAV_DOWN_RED'
+        Quill: 'select( object, PlanUnit_SC.Order_SC.Product_SC.ProductInStockingPoint, pisp, true ).IsCurrentStockLevelBelowMinimum()'
+        Value: 'ImgIsCurrentStockLevelBelowMinimum'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Current stock level above maximum'
+        Image: 'NAV_UP_RED'
+        Quill: 'select( object, PlanUnit_SC.Order_SC.Product_SC.ProductInStockingPoint, pisp, true ).IsCurrentStockLevelAboveMaximum()'
+        Value: 'ImgCurrentStockLevelAboveMaximum'
+      }
+    ]
+  }
+  ImageDataMember ImgDueNotPlanned
+  {
+    #keys: '1[133918.0.318977805]'
+    Description: 'Due not planned'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Due not planned'
+        Image: 'DATE-TIME'
+        Quill:
+        [*
+          not object.HasFeedback() 
+                        and not object.Finished() 
+                        and object.IsCPPlanDue() 
+                        and not( object.IsOnTime() and object.IsPlanned() )
+        *]
+        Value: 'ImgDueNotPlanned'
+      }
+    ]
+  }
+  ImageDataMember ImgHasFeedback
+  {
+    #keys: '1[107652.0.173843429]'
+    Description: 'Operation has feedback'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Has feedback'
+        Image: 'CHECK2'
+        Quill: 'object.HasFeedback()'
+        Value: 'ImgHasFeedback'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Completed'
+        Image: 'CHECK'
+        Quill: 'object.IsCompleted()'
+        Value: 'ImgIsCompleted'
+      }
+    ]
+  }
+  ImageDataMember ImgInBatch
+  {
+    #keys: '1[154390.0.379510261]'
+    Description: 'Operation is in batch'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'operation is in batch'
+        Image: 'CUBE_GREEN_ADD'
+        Quill: 'object.PlannedInBatch()'
+        Value: 'IsInBatch'
+      }
+    ]
+  }
+  ImageDataMember ImgIsInCPWindow
+  {
+    #keys: '1[105706.0.2061477894]'
+    Description: 'CP suggested time window status'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Is scheduled after CP suggested end'
+        Image: 'SELECTION_DOWN'
+        Quill: 'object.End().IsFinite() and object.End() > object.MPS_WindowEnd()'
+        Value: 'ImgIsInCPWindow1'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Is scheduled before CP suggested time window'
+        Image: 'SELECTION_UP'
+        Quill: 'object.Start().IsFinite() and object.Start() < object.MPS_WindowStart()'
+        Value: 'ImgIsInCPWindow2'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Is scheduled in CP suggested time window'
+        Image: 'ELEMENT_SELECTION'
+        Quill: 'object.Start().IsFinite() and object.End().IsFinite() and object.IsInCPWindow()'
+        Value: 'ImgIsInCPWindow3'
+      }
+    ]
+  }
+  ImageDataMember ImgIsOnHold
+  {
+    #keys: '1[145930.6.561970516]'
+    Description: 'Operation is on hold'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Is on hold'
+        Image: 'STOP'
+        Quill: 'object.IsOnHold()'
+        Value: 'ImgIsOnHold'
+      }
+    ]
+  }
+  ImageDataMember ImgIsOnTime
+  {
+    #keys: '1[145930.2.1273098181]'
+    Description: 'Operation is scheduled on time.'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Operation is not scheduled on time.'
+        Image: 'ALARMCLOCK'
+        Quill: 'not object.GetIsScheduledOnTime();'
+        Value: 'Late'
+      }
+    ]
+  }
+  ImageDataMember ImgIsPlanned
+  {
+    #keys: '1[107652.0.172788674]'
+    Description: 'Operation is planned'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Finished'
+        Image: 'NAVIGATE_CHECK_GREEN'
+        Quill: 'object.Finished()'
+        Value: 'ImgIsFinished'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Planned in frozen horizon'
+        Image: 'SNOWFLAKE'
+        Quill: 'object.IsFrozenInSchedule()'
+        Value: 'ImgIsFrozen'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Planned'
+        Image: 'GANTTCHART'
+        Quill: 'object.IsPlanned()'
+        Value: 'ImgIsPlanned'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Operation is planned in a batch, but the batch is not scheduled yet'
+        Image: 'CUBES_GREEN'
+        Quill: 'object.PlannedInBatch()'
+        Value: 'ImgIsInBatch'
+      }
+    ]
+  }
+  ImageDataMember ImgOperationType_Default
+  {
+    #keys: '1[109706.1.1878910292]'
+    Description: 'Default - Hotmill operation type'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Welding'
+        Image: 'SHIELD_NEW'
+        Quill: 'object.Type()="Welding"'
+        Value: 'ImgWelding'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Scalping'
+        Image: 'BRUSH4'
+        Quill: "object.Type() = 'Scalping'"
+        Value: 'ImgScalping'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Heating'
+        Image: 'DRINK_RED'
+        Quill: "object.Type() = 'Heating'"
+        Value: 'ImgHeating'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Hot rolling'
+        Image: 'GAUZE_BANDAGE'
+        Quill: "object.Type() = 'HotRolling'"
+        Value: 'ImgHotRolling'
+      }
+    ]
+  }
+  ImageDataMember ImgOperationType_FlowDemo
+  {
+    #keys: '1[122454.0.328896145]'
+    Description: 'The image used for the operation type in Flow Demo'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Printing'
+        Image: 'PRINTER'
+        Quill: "object.Type() = 'Printing'"
+        Value: 'imgPrinting'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Casing'
+        Image: 'BRIEFCASE2'
+        Quill: "object.Type() = 'Casing'"
+        Value: 'imgCasing'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Insert Bottom'
+        Image: 'UP_PLUS'
+        Quill: "object.Type() = 'InsertBottom'"
+        Value: 'imgInsertBottom'
+      }
+    ]
+  }
+  ImageDataMember ImgOperationType_MyFirstScheduler
+  {
+    #keys: '1[104006.1.121672742]'
+    Description: 'My First Scheduler operation type.'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Printing'
+        Image: 'BRUSH4'
+        Quill: "object.Type() = 'Printing'"
+        Value: 'ImgPrinting'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Coating'
+        Image: 'GAUZE_BANDAGE'
+        Quill: "object.Type() = 'Coating'"
+        Value: 'ImgCoating'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Labeling'
+        Image: 'STAPLER'
+        Quill: "object.Type() = 'Labeling'"
+        Value: 'ImgLabeling'
+      }
+    ]
+  }
+  ImageDataMember ImgOperationType_Paperbags
+  {
+    #keys: '1[124980.0.1212712138]'
+    Description: 'Paperbags operation type'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Printing'
+        Image: 'PRINTER'
+        Quill: 'object.Type()="Printing"'
+        Value: 'ImgPrinting'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Casing'
+        Image: 'GAUZE_BANDAGE'
+        Quill: 'object.Type()="Casing"'
+        Value: 'ImgCasing'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'InsertBottom'
+        Image: 'BOX_INTO'
+        Quill: 'object.Type()="InsertBottom"'
+        Value: 'ImgInsertBottom'
+      }
+    ]
+  }
+  ImageDataMember ImgProductType_MyFirstScheduler
+  {
+    #keys: '1[109706.1.1928990382]'
+    Description: 'My First Scheduler product type.'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'A1'
+        Image: 'FLOWER_YELLOW'
+        Quill: "object.PlanUnit_SC().Order_SC().Type() = 'A1'"
+        Value: 'ImgA1'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'B2'
+        Image: 'FLOWER_BLUE'
+        Quill: "object.PlanUnit_SC().Order_SC().Type() = 'B2'"
+        Value: 'ImgB2'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'C3'
+        Image: 'FLOWER_RED'
+        Quill: "object.PlanUnit_SC().Order_SC().Type() = 'C3'"
+        Value: 'ImgC3'
+      }
+    ]
+  }
+  ImageDataMember ImgScheduledStockLevel
+  {
+    #keys: '1[124980.0.140506866]'
+    Description: 'Scheduled stock level below minimum or above maximum'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Scheduled stock level above maximum'
+        Image: 'NAV_UP_BLUE'
+        Quill: 'select( object, PlanUnit_SC.Order_SC.Product_SC.ProductInStockingPoint, pisp, true ).IsScheduledStockLevelAboveMaximum()'
+        Value: 'ImgIsScheduledStockLevelAboveMaximum'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Scheduled stock level below minimum'
+        Image: 'NAV_DOWN_BLUE'
+        Quill: 'select( object, PlanUnit_SC.Order_SC.Product_SC.ProductInStockingPoint, pisp, true ).IsScheduledStockLevelBelowMinimum()'
+        Value: 'ImgIsScheduledStockLevelBelowMinimum'
+      }
+    ]
+  }
+  ImageDataMember IsNextOperationPlanned
+  {
+    #keys: '1[105706.1.2062194348]'
+    Description: 'Next operation is planned'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Next operation is planned'
+        Image: 'NAVIGATE_RIGHT'
+        Quill: 'object.IsNextPlanned() and not isnull( object.FirstOutputOperationMaterial().AsFirstInputOperationMaterial() )'
+        Value: 'ImgIsNextOperationPlanned'
+      }
+    ]
+  }
+  ImageDataMember MaterialStatus
+  {
+    #keys: '1[114198.0.795674690]'
+    Description: 'Is material reserved'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Material has been reserved'
+        Image: 'BOX'
+        Quill: 'object.PlannedDemand( relsize ) > 0 and object.MaterialFullyFulfilled()'
+        Value: 'ImgMaterialIsFullyReserved'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Material needs to be reserved'
+        Image: 'BOX_WHITE'
+        Quill: 'not object.MaterialFullyFulfilled()'
+        Value: 'ImgMaterialIsNotFullyReserved'
+      }
+    ]
+  }
+}

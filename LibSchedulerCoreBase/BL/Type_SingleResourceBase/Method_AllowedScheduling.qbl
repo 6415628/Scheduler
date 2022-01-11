@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedScheduling (CampaignTasks campaigntasks, Boolean skipsoftcheck, Boolean ctrlshiftkey, 
+  Boolean movedown, output String feedback_o, output Boolean isallowedhard_o) declarative remote as Boolean
+{
+  Description: 'Check if all selected campaign tasks are allowed scheduling. The before and after task is not generic across the selection.'
+  TextBody:
+  [*
+    // janer Jul-9-2014 (created)
+    // Traverse is used instead of forall because before and after task is not generic across the selection.
+    // JK 12-16-2016 QP 8382 Updated logic in method to work with updated object model with support for multiple campaigns
+    
+    value := campaigntasks.Size() > 0;
+    
+    traverse( campaigntasks, Elements, campaigntask )
+    {
+      //Move Up
+      previouscampaigntask := campaigntask.PreviousCampaignTask();
+      aftertask := guard( previouscampaigntask.OwningTask(), null( Task_SC ) );
+      beforetask := guard( previouscampaigntask.PreviousCampaignTask().LastOperationCampaign().Task_SC(), null( Task_SC ) );
+      //Move Down
+      if( movedown )
+      {
+        nextcampaigntask := campaigntask.NextCampaignTask();
+        beforetask := guard( nextcampaigntask.LastOperationCampaign().Task_SC(), null( Task_SC ) );
+        aftertask := guard( nextcampaigntask.NextCampaignTask().OwningTask(), null( Task_SC ) );
+      }
+    
+      tasks := selectset( campaigntask, OperationCampaign.Task_SC, task, true, true );
+    
+      value := this.AllowedScheduling( tasks, beforetask, aftertask, skipsoftcheck, false, feedback_o, isallowedhard_o )
+               and value;
+    }
+    
+    return value;
+  *]
+}

@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetSnapshotsOnPreviousIteration () const as constcontent owning LibOpt_Snapshots
+{
+  TextBody:
+  [*
+    snapshot_iteration := this;
+    
+    while( not isnull( snapshot_iteration.Parent() )
+           and not guard( snapshot_iteration.Parent().astype( LibOpt_SnapshotComponent ).Component().istype( LibOpt_Iterator ), false ) )
+    {
+      snapshot_iteration := snapshot_iteration.Parent();
+    }
+    snapshot_previous_iteration := snapshot_iteration.Previous();
+    
+    result := construct( LibOpt_Snapshots, constcontent );
+    if( not isnull( snapshot_previous_iteration ) )
+    {
+      result := selectset( snapshot_previous_iteration.DescendantsConst(), Elements, snapshot,
+                        snapshot.DefinitionName() = this.DefinitionName()
+                        and snapshot.Type() = this.Type() );
+      result.Add( snapshot_previous_iteration ); // .Descendants() does not return the root.
+    }
+    
+    return &result;
+  *]
+}

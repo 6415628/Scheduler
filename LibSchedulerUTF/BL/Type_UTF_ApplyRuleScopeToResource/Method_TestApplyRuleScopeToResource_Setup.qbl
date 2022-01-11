@@ -1,0 +1,94 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestApplyRuleScopeToResource_Setup (Schedule schedule)
+{
+  Description: 'Test apply rule scope to resource - setup'
+  TextBody:
+  [*
+    // Get variant attribute
+    planOnResourceWithRule := false;
+    hasNoConstraintViolation := false;
+    
+    this.GetTestVariant( planOnResourceWithRule,
+                         hasNoConstraintViolation );
+    
+    // Create rule
+    rule := Rule::Create( schedule, 1 );
+    
+    // Create rule type
+    ruleType := UTFMockObjectFactory::CreateRuleType( schedule,
+                                                      RuleConstant::RuleType_AllowedDifferenceJump() );
+    
+    rule.RuleType( relset, ruleType );
+    
+    // Create rule subtype - Allowed Absolute Difference Upwards
+    ruleSubtype := UTFMockObjectFactory::CreateRuleSubtypeDifferenceJump( ruleType, 
+                                                                          RuleConstant::RuleSubType_AllowedAbsoluteDifferenceUpwards(),
+                                                                          true,
+                                                                          RuleConstant::Direction_Upwards(), 
+                                                                          RuleConstant::Limit_Allowed() );
+    
+    rule.RuleSubType( relset, ruleSubtype );
+    
+    // Create characteristic main - Operation Width
+    characteristicMain := UTFMockObjectFactory::CreateCharacteristic( schedule,
+                                                                      RuleConstant::Characteristic_OperationWidth(),
+                                                                      false, 
+                                                                      true, 
+                                                                      false, 
+                                                                      RuleConstant::ValueType_Real(), 
+                                                                      true, 
+                                                                      false );
+    
+    rule.CharacteristicMain( relset, characteristicMain );
+    
+    // Set normal attribute in rule
+    rule.IsEnabled( true );
+    rule.IsMultipleRangesEnabled( false );
+    rule.RuleValue( 1.0 )
+    rule.RuleScopeSelected( RuleConstant::RuleScope_AllTasksOnResource() );
+    
+    // Create resource1
+    resource1WithoutRule := UTFMockObjectFactory::CreateSingleResource( schedule, 'Resource1' );
+    
+    // Create resource2 and apply rule scope to rule.
+    resource2WithRule := UTFMockObjectFactory::CreateRuleScopeInSingleResource( schedule,
+                                                                                rule,
+                                                                                'Resource2' );
+    
+    // Create operation1 and plan on resource1 to act as control
+    order1 := UTFMockObjectFactory::CreateOrder( schedule, 'Order1' );
+    planUnit1 := UTFMockObjectFactory::CreatePlanUnit( order1, 'Plan Unit 1', 1.0 );
+    operation1 := UTFMockObjectFactory::CreateOperation( planUnit1 );
+    operation1.OperationID( 'Operation1' );
+    resource1WithoutRule.PlanLast( operation1 );
+    
+    // Create operation2 and plan on resource2 to act as control
+    order2 := UTFMockObjectFactory::CreateOrder( schedule, 'Order2' );
+    planUnit2 := UTFMockObjectFactory::CreatePlanUnit( order2, 'Plan Unit 2', 1.0 );
+    operation2 := UTFMockObjectFactory::CreateOperation( planUnit2 );
+    operation2.OperationID( 'Operation2' );
+    resource2WithRule.PlanLast( operation2 );
+    
+    // Create operation3
+    order3 := UTFMockObjectFactory::CreateOrder( schedule, 'Order3' );
+    planUnit3 := UTFMockObjectFactory::CreatePlanUnit( order3, 'Plan Unit 3', 1.0 );
+    operation3 := UTFMockObjectFactory::CreateOperation( planUnit3 );
+    operation3.OperationID( 'Operation3' );
+    
+    // Plan operation3 to either resource with rule or wirhout rule based on variant
+    if( planOnResourceWithRule )
+    {
+      resource2WithRule.PlanLast( operation3 );  
+    }
+    else
+    {
+      resource1WithoutRule.PlanLast( operation3 );  
+    }
+    
+    // Define width for operation1, operation2 and operation3
+    operation1.Width( 100.0 );
+    operation2.Width( 100.0 );
+    operation3.Width( 200.0 );
+  *]
+}

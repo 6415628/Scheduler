@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ExportTranslation (String filePath, String translationIDPrefix)
+{
+  TextBody:
+  [*
+    /* Export translation based on the translation ID prefix
+    1. translationElements is in format <Identifier>|<translation text>|[<argumentName#argumentDataType>\*]
+    2. So, write the translation into file and export them from model.
+    */
+    
+    try
+    {
+      file := OSFile::Construct();
+      file.Open( filePath, LibSM_Util::GetFileAccess_ReadWrite(), true );
+    
+      traverse( DomainModel::Domain(), ModeledInfoMessageDefinitions.InfoMessageDefinitions, def,
+              def.Identifier().StartsWith( translationIDPrefix ) )
+      {
+        identifier := def.Identifier().TrimBoth();
+        text       := def.DefaultText().TrimBoth().ReplaceAll( String::NewLine(), LibSM_Util::GetNewLine() );
+        arguments  := construct( Strings );
+    
+        traverse( def, ArgumentDefinitions, arg )
+        {
+          arguments.Add( arg.Name() + LibSM_Util::GetTranslationSeparator_3() + arg.Type().ShortName() );
+        }
+    
+        textLine := identifier + LibSM_Util::GetTranslationSeparator_1() + text + LibSM_Util::GetTranslationSeparator_1() + arguments.ToString( LibSM_Util::GetTranslationSeparator_2() );
+    
+        file.WriteTextLine( textLine );
+      }
+    }
+    onerror
+    {
+      LibSM_Util::LogError( LibSM_Util::GetFileAccess_CouldNotOpenFile() + filePath );
+    }
+  *]
+}

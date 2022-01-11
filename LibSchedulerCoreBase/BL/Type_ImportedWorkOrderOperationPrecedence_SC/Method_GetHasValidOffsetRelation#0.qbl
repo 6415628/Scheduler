@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidOffsetRelation (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if imported object has valid offset relation'
+  TextBody:
+  [*
+    // The valid OffsetRelation are {(empty), Min, Max, Synch} 
+    isvalid := this.OffsetRelation().Length() = 0
+               or this.OffsetRelation() = Constants::TimeConstraint_OffsetRelation_Max()
+               or this.OffsetRelation() = Constants::TimeConstraint_OffsetRelation_Min()
+               or this.OffsetRelation() = Constants::TimeConstraint_OffsetRelation_Synch();
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedWorkOrderOperationPrecedence_Instance( name ),
+                                                               Translations::SC_ImportedWorkOrderOperationPrecedence_ViolateOffsetRelationAllowedValues() ) );
+    }
+    
+    return isvalid;
+  *]
+}

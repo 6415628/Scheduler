@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ImportFromFile (LibDEF_DataBroker dataBroker_i, String filePath_i) as LibDEF_IntegrationEvent
+{
+  Description: 'Import an IntegrationEvent from exported file'
+  TextBody:
+  [*
+    // Import into an object
+    event := LibDEF_IntegrationEvent::XMLFileImportIntegrationEventXML( filePath_i );
+    
+    // Mark event as 'completed'
+    event.IsCompletedInTransaction( true );
+    event := dataBroker_i.IntegrationEvent( relinsert, &event );
+    
+    // Remove the file
+    OS::RemoveFile( filePath_i );
+    
+    return event;
+  *]
+}

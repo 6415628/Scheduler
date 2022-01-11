@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method CopyScenario (LibSM_Scenario selection, GUIComponent parent) as LibSM_Scenario id:Method_LibSM_dlgCreateEditScenario_CopyScenario
+{
+  #keys: '[11122.0.45744572]'
+  Body:
+  [*
+    // Copy scenario
+    newScenario := null( LibSM_Scenario );
+    
+    this.Title( 'Copy scenario - origin scenario: ' );
+    this.Data( selection );
+    vhIsCopyScenario.Value( [String]true );  // So that OK button precondition checks for unique scenario/dataset name
+    
+    isTimezoneIDSelectionEnabled := false;
+    this.ShowHideTimezoneUI( selection.TimezoneID(), isTimezoneIDSelectionEnabled );
+    
+    result := this.DoModal( parent );
+    
+    if( result > 0 )
+    {
+      knowledgeProfile     := selKnowledgeProfile.Data();
+      
+      // Add metadata to structure type
+      metadata := construct( structured[ LibSM_MetaData ] );
+      metadata.Add( metaPlanningLevel.selMetaDataSelection().Data() );
+      metadata.Add( metaPlanType.selMetaDataSelection().Data() );
+      metadata.Add( metaLifecycleStatus.selMetaDataSelection().Data() );
+      
+      editor               := ExternalMDSEditor::Editor();
+      
+      newScenario := selection.Copy( selection.ParentNode(),                                  
+                                     edtScenarioName.Text(),
+                                     edtComment.Text(),                                      
+                                     sselStorageState.BoundValue(),
+                                     knowledgeProfile,
+                                     metadata,
+                                     false );
+    
+      // Select knowledge branch  
+      panel := LibSM_GlobalState;
+      panel.SelectKB( newScenario );    
+    
+      // Update objectinfos data holder, so that the scenario can be selected
+      panel.dhObjectInfo().Data( editor.LoadedObjectInfos() );
+      
+    }
+    
+    return newScenario;
+  *]
+}

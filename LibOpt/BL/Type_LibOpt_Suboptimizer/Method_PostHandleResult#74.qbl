@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method PostHandleResult (LibOpt_Task task, RealVector kpi_pre)
+{
+  TextBody:
+  [*
+    snapshot := this.LogKPI( task, Translations::LibOpt_SnapshotKPI_CommentPostHandleResult() );
+    
+    if( isnull( this.RollbackKPI() ) )
+    {
+      // Throw a warning if it has not been thrown before in this snapshot.
+      if( not isnull( kpi_pre ) )
+      {
+        LibOpt_SnapshotWarning::Throw( task, Translations::LibOpt_Suboptimizer_NoRollbackKPI(), LibOpt_Issue::Severity_4_High() );
+      }
+    }
+    else
+    {
+      kpi_post := this.RollbackKPI().GetKPI( task );
+      should_rollback := this.ShouldRollback( kpi_pre, kpi_post );
+        
+      if( should_rollback )
+      {
+        // We copy the dataset after creating the post handle result snapshot, but before setting the snapshot.IsRolledBack() attribute to true. 
+        // This is to clearly indicate in the client that the data in the copied dataset is not rolled back.
+        LibOpt_DatasetCopyConditional::CopyDatasetConditionally( LibOpt_Suboptimizer::ComponentPosition_Rollback(), task, true );  
+      }
+      
+      // Store rollback KPI difference
+      if( task.Run().HasSnapshots() )
+      {
+        LibOpt_SnapshotSuboptimizer::Create( task.Run(), kpi_pre, kpi_post, this.RollbackKPI(), should_rollback );
+      }
+      
+      if( should_rollback )
+      {
+        if( not isnull( snapshot ) )
+        {
+          snapshot.IsRolledBack( true );
+        }
+        this.Rollback( kpi_pre, kpi_post, task );
+      }
+    }
+  *]
+}

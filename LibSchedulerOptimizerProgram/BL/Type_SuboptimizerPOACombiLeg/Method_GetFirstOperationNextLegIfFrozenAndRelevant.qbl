@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetFirstOperationNextLegIfFrozenAndRelevant (CombiLeg combileg, CombiLegs combilegs) as OperationInCombiLeg
+{
+  Description:
+  [*
+    Returns the first operation of the next leg if
+    > This operation is frozen for the POA
+    > And this operation is relevant for sequence constraints
+  *]
+  TextBody:
+  [*
+    // Select the next leg start operation for the case that POA is running in combi generation & set covering mode
+    // and not in the construction phase (since there won't be a relevant next combileg in the construction phase)
+    nextlegstartop := null( OperationInCombiLeg );
+    if( this.IsCombiGeneration() and not this.IsConstructionPhase() )
+    {
+      // For the combi generation, we only want to consider the next leg if it is not null and it is relevant for the rules
+      // We do not need to check whether it is in scope, since we always plan left to right,
+      // so if the next leg is in scope, then it is empty ( even in the improvement phase )
+      // and so we will return a null operation and ignore the transitions
+      // Moreover, we always put entire programs in scope, so the first not out of scope leg will always be the first of the next program
+      // Which means that we can find it from all combilegs related to the last in scope leg
+      if( not isnull( combileg.Next() )
+          and combileg.GetIsNextAndRelevantForSeqRules( combileg.Next() ) )
+      {
+        nextlegstartop := combileg.Next().FirstOperation();
+      }
+    }
+    // Select the next leg start operation if this is pure POA mode
+    else if( not this.IsCombiGeneration() )
+    {
+      nextcombileg := combileg.GetNextCombiLegIfInScopeAndRelevantForSequence( combilegs );
+      
+      // If the next leg is in scope and the first operation is frozen, then select it
+      if( guard( nextcombileg.IsFreezeFirstNodeInPOA(), false ) )
+      {
+        nextlegstartop := nextcombileg.FirstOperation();
+      }
+      // Else if the next combileg is not in scope but it is relevant for the sequencing rules
+      else if( isnull( nextcombileg )
+               and not exists( combilegs, Elements, combileg2, combileg2 = combileg.Next() )
+               and combileg.GetIsNextAndRelevantForSeqRules( combileg.Next() ) )
+      {
+        // then select the next leg to freeze the first operation
+        nextlegstartop := combileg.Next().FirstOperation();
+      }
+    }
+    
+    return nextlegstartop;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

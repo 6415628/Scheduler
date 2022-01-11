@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateRun (LibOpt_Optimizer optimizer) as LibOpt_Run
+{
+  Description: 'Create a new `LibOpt_Run` using the `LibOpt_Optimizer` passed in.'
+  TextBody:
+  [*
+    run := null( LibOpt_Run );
+    try
+    {
+      default_scope := optimizer.DefaultScope();
+      run := this.CreateRun( optimizer, default_scope );
+    }
+    onerror
+    {
+      run := maxselect( optimizer, Run, r, true, r.RunNr() );
+      LibOpt_SnapshotError::Throw( run, LibOpt_SnapshotError::Read( e ) );
+      run.RollbackOneTransaction();
+    }
+    onfailure
+    {
+      run := maxselect( optimizer, Run, r, true, r.RunNr() );
+      LibOpt_SnapshotError::Throw( run, LibOpt_SnapshotError::Read( e ) );
+      run.RollbackOneTransaction();
+    }
+    
+    this.OptimizeScopeThinQueue();
+    return run;
+  *]
+}

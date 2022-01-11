@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitOperationOnBucketConstraints (LibOpt_Task task, SuboptimizerMPPTAssignment_PTAssignmentMP program, TransientDataSuboptimizerPTAssignment transientData) as SuboptimizerMPPTAssignment_PTAssignmentMP
+{
+  TextBody:
+  [*
+    // jkr8 Jul-16-2021 (created)
+    
+    /////////////////////////////////////////////////////////////
+    // sum_o(NrOpsAssigned_(o,b) >= IsUsed_b, forall b=1,...,B //
+    /////////////////////////////////////////////////////////////
+    // Operations are only allowed to be planned on a bucket that is used.
+    
+    traverse( transientData, Bucket, bucket, true )
+    {
+      constr := program.OperationOnBucketConstraints().New( bucket );
+      
+      traverse( transientData, OperationGroup, operationGroup, true )
+      {
+        constr.NewTerm( 1.0, program.NrOpsAssignedVariables().Get( operationGroup, bucket ) );
+      }
+      
+      constr.NewTerm( -1.0, program.IsUsedVariables().Get( bucket ) );
+      
+      constr.RHSValue( 0.0 );
+    }
+    
+    /////////////////////////////////////////////////////////////////
+    // sum_o(NrOpsAssigned_(o,b) <= M * IsUsed_b, forall b=1,...,B //
+    /////////////////////////////////////////////////////////////////
+    // A bucket can only be used if at least 1 operation is assigned to the bucket.
+    
+    bigM := [Real] sum( transientData, OperationGroup, operationGroup, true, operationGroup.NrOperationsInGroup() );
+    
+    traverse( transientData, Bucket, bucket, true )
+    {
+      constr := program.MinOneOperationOnBucketConstraints().New( bucket );
+      
+      traverse( transientData, OperationGroup, operationGroup, true )
+      {
+        constr.NewTerm( 1.0, program.NrOpsAssignedVariables().Get( operationGroup,bucket ) );
+      }
+      constr.NewTerm( -bigM, program.IsUsedVariables().Get( bucket ) );
+      
+      constr.RHSValue( 0.0 );
+    }
+    
+    return program;
+  *]
+}

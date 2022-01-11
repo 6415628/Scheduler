@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method WaitForDatasetCopyDeletion (Keys dataset_mdsids, Duration timeout) as stream[Void]
+{
+  Description: 'Wait for all dataset copies to be deleted, or timeout with an error'
+  TextBody:
+  [*
+    start_time := OS::PrecisionCounter();
+    
+    return LibOpt_TestUnit_DatasetCopy::WaitForDatasetCopyDeletion( dataset_mdsids )
+    // Until the timeout. Add 1 second due to the way the Until is implemented:
+    // If timeout if 10 seconds, it may stop anywhere between 9 and 10 seconds.
+    // With +1 we make sure we stop anywhere between 10 and 11 seconds.
+           ->Until( timeout + Duration::Seconds( 1 ) )
+           ->|void->()
+    {
+      time_elapsed := Duration::Seconds( ( OS::PrecisionCounter() - start_time ) / OS::PrecisionCounterFrequency() );
+      info( time_elapsed );
+      this.Run().AssertLess( timeout, time_elapsed, 'Dataset deletion timeout' );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

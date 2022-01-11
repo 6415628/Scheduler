@@ -1,0 +1,58 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateProgramSchedulingData (Schedule schedule) as ProgramDefinitionConfiguration
+{
+  Description: 'Create program scheduling test data'
+  TextBody:
+  [*
+    // Create resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource' );
+    
+    // Assign ASAP lead time strategy
+    LeadTimeStrategy_SC::Create( resource, Duration::Zero(), Constants::StrategyASAP() );
+    Transaction::Transaction().Propagate( attribute( Resource_SC, StrategyName ) );
+    
+    // Create program definition
+    programdefinition := this.CreateProgramDefinitionData( schedule );
+    
+    // Assign program definition to resource 
+    resource.AssignProgramDefinitionConfiguration( programdefinition );
+    
+    // Insert program change
+    programtype := selectset( programdefinition, ProgramSetConfiguration.ProgramTypeConfiguration, pt, true );
+    resource.InsertProgramChange( null( Task_SC ), programtype, false, Duration::Zero() );
+    
+    taskstart := schedule.Time();
+    // Create tasks
+    for( i := 0; i <= 3; i++ )
+    {
+      // Create operation
+      product := GenericProduct::Create( schedule, 'Product_' + [String]i );
+      order := UTFMockObjectFactory::CreateOrder( schedule, 'Order_' + [String]i );
+      order.Product_SC( relset, product );
+      planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'Plan Unit_' + [String]i, 1.0 );
+      operation := UTFMockObjectFactory::CreateOperation( planUnit );
+      operation.OperationID( 'Operation_' + [String]i );
+      task := resource.PlanLast( operation );
+      task.astype( UTFSingleTask ).HasStartUTF( true );
+      task.astype( UTFSingleTask ).HasEndUTF( true );
+      task.astype( UTFSingleTask ).Start_UTF( taskstart );
+      task.astype( UTFSingleTask ).End_UTF( taskstart + Duration::Hours( 1 ) );
+      taskstart := taskstart + Duration::Hours( 1 );
+      
+      // Assign attribute value for operations to violate rule
+      if( i <> 2 )
+      {
+        operation.Width( 100.0 );
+        operation.PlanUnit_SC().Order_SC().Product_SC().Type( 'SH' );
+      }
+      else
+      {
+        operation.Width( 300.0 );
+        operation.PlanUnit_SC().Order_SC().Product_SC().Type( 'CO' );
+      }
+    }
+    
+    return programdefinition;
+  *]
+}

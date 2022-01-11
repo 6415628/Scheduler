@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateJSONTimeCalendars () as owning JSONBuilder
+{
+  Description: 'Create JSON data for time calendars from schedule dataset, specifically from resource calendars.'
+  TextBody:
+  [*
+    // Create timeCalendars array
+    timeCalendars := JSON::Array();
+    
+    // Create timeCalendarAssignment object
+    timeCalendarAssignment := JSON::Object();
+    resourceCalendarID := this.ResourceCalendar().CalendarID();
+    timeCalendarAssignment.Add( Constants::JSON_TimeCalendarAssignment_ShiftPatternID(), resourceCalendarID );
+    timeCalendarAssignment.Add( Constants::JSON_TimeCalendarAssignment_Text(), resourceCalendarID );
+    timeCalendarAssignment.Add( Constants::JSON_TimeCalendarAssignment_ChunkStartDate(), DateTimeToString::ISOConverter().Convert( this.Schedule().Time() ) );
+    timeCalendarAssignment.Add( Constants::JSON_TimeCalendarAssignment_ChunkEndDate(), DateTimeToString::ISOConverter().Convert( DateTime::Construct( 2050, 01, 01 ) ) );
+    timeCalendarAssignment.Add( Constants::JSON_TimeCalendarAssignment_Priority(), 0 );
+    
+    // Add timeCalendarAssignment to timeCalendars
+    timeCalendars.Add( timeCalendarAssignment );
+    
+    return &timeCalendars;
+  *]
+}

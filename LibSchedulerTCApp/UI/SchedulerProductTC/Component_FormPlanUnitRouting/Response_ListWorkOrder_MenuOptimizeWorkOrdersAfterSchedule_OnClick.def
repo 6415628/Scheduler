@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: ListWorkOrder
+Response OnClick (structured[WorkOrder] selection) id:Response_ListWorkOrder_MenuOptimizeWorkOrdersAfterSchedule_OnClick
+{
+  #keys: '[137186.0.740757450]'
+  Body:
+  [*
+    // Optimize operations in selected work orders after current schedule
+    
+    // Clear scoped operations - which also clears DataHolderOptimizerAllScopedOperations because it has data extractors grabbing from Mandatory and Optional dataholders
+    DataHolderOptimizerMandatoryOperations.Data().Flush();
+    DataHolderOptimizerOptionalOperations.Data().Flush();
+    
+    // Scope selection
+    unplannedoperations := selectset( selection, Elements.WorkOrderOperation.Operation_SC, op, not op.IsPlanned() and not op.HasFeedback() and not op.IsFrozenInSchedule() );
+    DataHolderOptimizerMandatoryOperations.Data( &unplannedoperations );
+    
+    // Get all allowed resources
+    resources := Operation_SC::GetAllowedResources( DataHolderOptimizerMandatoryOperations.Data() );
+    
+    // Optimize - we call AllScopedOperations here because it has data extractors that grab from Mandatory and Optional dataholders
+    Schedule.Optimization().OptimizerSequencing().OptimizeWithDefaultSettings( DataHolderOptimizerMandatoryOperations.Data(), resources );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /ListWorkOrder/Responsedef_ListWorkOrder_Menu_OnClick
+  Initiator: 'MenuOptimizeWorkOrdersAfterSchedule'
+  Precondition:
+  [*
+    // Kyle 8-July-2015 QP #5632
+    // Check if system contains batch and is optimizer enabled.
+    allowed := Schedule.AllowedOptimize( feedback );
+    
+    if( allowed )
+    {
+      // Check if there are more than one operation selected.
+      nr_of_ops := counter( selection, Elements.WorkOrderOperation.Operation_SC, op, true );
+      allowed := nr_of_ops > 1;
+      feedback := Translations::SC_InvalidOperationSelectionSize();
+    }
+    
+    return allowed;
+  *]
+}

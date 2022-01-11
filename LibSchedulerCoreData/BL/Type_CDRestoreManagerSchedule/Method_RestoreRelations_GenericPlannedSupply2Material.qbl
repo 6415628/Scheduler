@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericPlannedSupply2Material (CDSchedule cdSchedule, GenericMaterialExternalSupply genericMaterialExternalSupply)
+{
+  Description: 'Restore generic planned supply to material core data attributes to planning object'
+  TextBody:
+  [*
+    genericPlannedSupply2Materials := selectset( cdSchedule, CDEntity.astype( CDGenericPlannedSupply2Material ), cdGenericPlannedSupply2Material,
+                                                 cdGenericPlannedSupply2Material.MaterialID() = genericMaterialExternalSupply.SupplyID() );
+    
+    traverse( genericPlannedSupply2Materials, Elements, cdGenericPlannedSupply2Material )
+    {
+      genericPlannedSupply2Material := PlannedSupply2Material::FindPlannedSupply2Material( cdGenericPlannedSupply2Material.MaterialID(),
+                                                                                           cdGenericPlannedSupply2Material.WorkOrderOutputMaterialID() );
+                                               
+      if( not isnull( genericPlannedSupply2Material ) )
+      {
+        // ExternalSupply, M-1
+        genericPlannedSupply2Material.ExternalSupply( relset, genericMaterialExternalSupply );
+        
+        // ImportedPlannedSupply2Inventory_SC, M-1
+        importedPlannedSupply2Inventory := ImportedPlannedSupply2Material_SC::FindImportedPlannedSupply2Material_SC( cdGenericPlannedSupply2Material.MaterialID(),
+                                                                                                                     cdGenericPlannedSupply2Material.WorkOrderOutputMaterialID() );
+        genericPlannedSupply2Material.ImportedPlannedSupply2Inventory_SC( relset, importedPlannedSupply2Inventory );                                                                                                               
+        
+        // MaterialPlannedSupply, M-1
+        materialPlannedSupply := MaterialPlannedSupply::FindMaterialPlannedSupply( cdGenericPlannedSupply2Material.MaterialPlannedSupplyType(), 
+                                                                                   cdGenericPlannedSupply2Material.WorkOrderOutputMaterialID() );
+        genericPlannedSupply2Material.MaterialPlannedSupply( relset, materialPlannedSupply );
+        
+        // PlannedSupply, M-1
+        genericPlannedSupply2Material.PlannedSupply( relset, materialPlannedSupply );
+        
+        // Restore FulfillmentConversion
+        this.RestoreRelations_FulfillmentConversion( cdSchedule, genericPlannedSupply2Material );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: ListBatchOperations
+Response OnDrop (structured[Operation_SC] information, structured[Batch] masterselection) id:Response_ListBatchOperations_OnDrop
+{
+  #keys: '[141590.0.76837725]'
+  Body:
+  [*
+    // OnDrop structured[Operation_SC] --> null(Operation_SC) / Batch
+    masterselection.Element( 0 ).AddOperations( information );
+  *]
+  DefinitionID => /ListBatchOperations/Responsedef_ListBatchOperations_OnDrop
+  Precondition:
+  [*
+    result :=  SplitterWndBatches.CheckSingleBatchSelection( masterselection, feedback );
+    
+    if( result )
+    {
+      isallowedhard := true;
+      ctrlkey       := dropaction.IsControl();
+      ctrlshiftkey  := dropaction.IsControlShift();
+    
+      operations    := selectset( masterselection.Element( 0 ), BatchSequenceElement.Operation_SC, bo, true, true );
+      operations    := operations.Union( information );
+    
+      if( masterselection.Element( 0 ).IsPlanned() )
+      {
+        batchtask := masterselection.Element( 0 ).BatchTask();
+        result := ApplicationScheduler.AllowedScheduling( batchtask.BatchResource(), //batchresource
+                                                          operations,             //structured operations
+                                                          ctrlkey,              //skip soft check
+                                                          ctrlshiftkey,         //ctrl shift key
+                                                          batchtask.Previous(), //before task
+                                                          batchtask.Next(),     //afterbatch
+                                                          Operation_SC::GetSelectedObjects( information ),
+                                                          feedback,
+                                                          isallowedhard )
+      }
+      else
+      {
+        result := ApplicationScheduler.AllowedInBatch( operations, not masterselection.Element( 0 ).IsPlanned(), ctrlkey, false, feedback, isallowedhard );
+      }
+    }
+    
+    return result;
+  *]
+}

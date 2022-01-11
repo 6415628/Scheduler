@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedBatchOnResource (Operation_SCs operations, Boolean skipsoftcheck, output String feedback_o, 
+  output Boolean isallowedhard_o) declarative remote as Boolean
+{
+  Description: 'Checks machine allowed rules'
+  TextBody:
+  [*
+    // jan er Jun-10-2014 (created)
+    /*
+    1. Checks batch resource allowed hard rules ( default and customized )
+    2. Checks batch resource allowed soft rules ( default and customized )
+    */
+    
+    //Hard rules
+    value := this.AllowedBatchOnResourceHardDefault( operations, feedback_o );
+    value := value and this.AllowedBatchOnResourceHardCustomized( operations, feedback_o );
+    
+    isallowedhard_o := isallowedhard_o and value;
+    
+    //Soft rules
+    if( value and not skipsoftcheck )
+    {
+      value := this.AllowedBatchOnResourceSoftDefault( operations, feedback_o ) and value;
+      value := this.AllowedBatchOnResourceSoftCustomized( operations, feedback_o ) and value;
+    }
+    
+    return value;
+  *]
+}

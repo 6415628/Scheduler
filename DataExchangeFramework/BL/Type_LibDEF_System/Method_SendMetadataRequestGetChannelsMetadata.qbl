@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendMetadataRequestGetChannelsMetadata (LibDEF_Systems targets_i)
+{
+  Description: 'Send a Metadata message for requesting Metadata of the local Channels.'
+  TextBody:
+  [*
+    // Jacky CHAN May-13-2016 (created)
+    // for local System, request SyncMetadata from DataRepository
+    dataBroker     := this.DataBroker();
+    hasLocalSystem := false;
+    traverse( targets_i, Elements, target,
+              target.GUID() = this.DataBroker().SystemGUID() )
+    {
+      targets_i.Remove( target );
+      hasLocalSystem := true;
+    }
+    
+    if( hasLocalSystem )
+    {
+      // request sync from DataRepository
+      LibDEF_DataRepository::SyncToDataBroker( false );
+    }
+    
+    if( targets_i.Size() > 0 )
+    {
+      nvt := LibDEF_DataAccessor::CreateMessageMetadata();
+    
+      // define Type
+      LibDEF_DataAccessor::SetMetadataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_TYPE(), LibDEF_DataAccessor::TYPE_METADATA_GETCHANNELSMETADATA() );
+    
+      // export ChannelMetas
+      nvBody := LibDEF_DataAccessor::GetMetadataBody( nvt );
+      traverse( this, ChannelMeta, channelMeta )
+      {
+        NamedValueTreeIO::Export( channelMeta, nvt, nvBody, false );
+      }
+    
+      traverse( targets_i, Elements, target )
+      {
+        event := dataBroker.EventCreate( target, false );
+        LibDEF_Util::EventLog( event, "Requesting system metadata" );
+    
+        dataBroker.SendMessage( target, nvt, LibDEF_DataAccessor::KIND_REQUEST(), event );
+      }
+    }
+  *]
+}

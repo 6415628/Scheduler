@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method LeaveDomain (Boolean doInformBootNode_i)
+{
+  Description: 'Leave the current Domain.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-26-2016 (created)
+    // Refresh values from model settings
+    SettingsEngine::SettingsEngine().ProcessUpdates();
+    
+    event := this.EventCreate( this.BootNode(), false );
+    
+    // must not have Domain-GUID
+    domainGUID := LibDEF_Util::GetSettingValueDomainGUID();
+    if( domainGUID = "" )
+    {
+      if( doInformBootNode_i )
+      {
+        // inform BootNode
+        this.UpdateDomainGUID( event );
+      }
+      else
+      {
+        // this should be done only with administrative rights
+        this.LeftDomain( event );
+      }
+    }
+    else
+    {
+      LibDEF_Util::EventLogError( event,
+                                  "Failed to leave Domain",
+                                  "Cannot leave Domain, the Domain-GUID value is not empty. Check the model settings." );
+    }
+  *]
+}

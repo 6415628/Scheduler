@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedInBatch (structured[Operation_SC] operations, Boolean isbatchingwithoutscheduling, Boolean skipsoftcheck, 
+  Boolean ctrlshiftkey, output String feedback_o, output Boolean isallowedhard_o) as Boolean id:Method_Scheduler_AllowedInBatch
+{
+  #keys: '[151084.0.259370750]'
+  Body:
+  [*
+    /*
+    This precondition covers the use cases of adding batch elements to batch.
+    1. OnDrop structured[Operation] --> Batch operations list in Batches Form
+    
+    This precondition checks whether the operations are allowed to replan and whether they allowed to be batched together
+    */
+    
+    value := Operation_SC::CanReplan( operations, skipsoftcheck, feedback_o, isallowedhard_o );
+    
+    value := Operation_SC::AllowedInBatch( operations, null( Resource_SC ), skipsoftcheck, feedback_o, isallowedhard_o )
+             and value;
+    
+    if( isbatchingwithoutscheduling )
+    {
+      value := Operation_SC::CheckIsOperationNotScheduled( operations, skipsoftcheck, feedback_o, isallowedhard_o ) and value;
+      value := Operation_SC::CheckBatchingSize( operations, skipsoftcheck, feedback_o ) and value;
+    }
+    
+    if( not value and feedback_o.Length() > 0 )
+    {
+      feedback_o := Translations::SC_CannotBeBatched( Operation_SC::GetSelectedObjects( operations ) ) + String::NewLine() + feedback_o;
+    
+      if( isallowedhard_o and not ctrlshiftkey  )
+      {
+        feedback_o := feedback_o + String::NewLine() +  Translations::SC_HoldCtrlToOverride();
+      }
+    }
+    
+    feedback_o := Schedule::TrimFeedback( feedback_o );
+    
+    return value;
+  *]
+}

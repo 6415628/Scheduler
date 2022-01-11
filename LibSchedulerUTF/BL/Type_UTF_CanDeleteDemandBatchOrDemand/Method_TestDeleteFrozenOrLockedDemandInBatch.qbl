@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestDeleteFrozenOrLockedDemandInBatch (Schedule schedule)
+{
+  Description: 'Tests delete frozen or locked demand in batch. Body.'
+  TextBody:
+  [*
+    feedback_o := '';
+    demandInBatches := selectset( schedule, DemandBatch.DemandInBatch, demandInBatch, true );
+    currentVariant := this.GetCurrentVariant();
+    
+    // Propagate IsLocked and IsFrozenInSchedule attribute value for precon check
+    Transaction::Transaction().Propagate( attribute( Demand, IsLocked ) );
+    Transaction::Transaction().Propagate( attribute( DemandBatch, IsLocked ) );
+    Transaction::Transaction().Propagate( attribute( DemandInBatch, IsFrozenInSchedule ) );
+    
+    this.Run().AssertTrue( currentVariant.CanReserveOrUnreserveMaterial() = DemandInBatch::CanDeleteSoft( demandInBatches, feedback_o ), 
+                           'Test delete frozen or locked demand in batch failed' );
+  *]
+}

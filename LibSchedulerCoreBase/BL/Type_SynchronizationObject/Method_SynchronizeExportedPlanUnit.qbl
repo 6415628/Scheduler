@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExportedPlanUnit
+{
+  Description: 'Synchronize exported plan unit instances for all work orders.'
+  TextBody:
+  [*
+    exportedSchedule := this.Schedule().FeedbackManager().ExportedSchedule();
+    allinstances := selectset( this, Schedule.FeedbackManager.ExportedSchedule.ExportedPlanUnit.astype( ExportedDemoDataPlanUnit ), exportedPlanUnit, true );
+    updatedinstances := construct( ExportedDemoDataPlanUnits );
+    
+    traverse( this, Schedule.WorkOrder.Order_SC.PlanUnit_SC, planUnit )
+    {
+      exportedDemoDataPlanUnit := ExportedDemoDataPlanUnit::FindExportedDemoDataPlanUnit( planUnit.PlanUnitID() );
+      
+      if( isnull( exportedDemoDataPlanUnit ) )
+      {
+        exportedDemoDataPlanUnit := ExportedDemoDataPlanUnit::Create( exportedSchedule, planUnit.PlanUnitID() );
+      }
+      
+      if( not isnull( exportedDemoDataPlanUnit ) )
+      {
+        exportedDemoDataPlanUnit.Update( planUnit );
+      }
+      
+      updatedinstances.Add( exportedDemoDataPlanUnit );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, exportedDemoDataPlanUnit )
+    {
+      exportedDemoDataPlanUnit.Remove();
+    }
+  *]
+}

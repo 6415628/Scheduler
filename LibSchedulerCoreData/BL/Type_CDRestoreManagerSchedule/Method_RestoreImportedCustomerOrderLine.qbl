@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedCustomerOrderLine (CDIntegration cdintegration)
+{
+  Description: 'Restore imported calendar period core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedCustomerOrderLine_SC
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedCustomerOrderLine ), cdcol )
+    {
+      importedCustomerOrderLine := schedule.ImportedCustomerOrderLine_SC( relnew, 
+                                                                          OrderNr := cdcol.OrderNr(),
+                                                                          OrderLineNr := cdcol.OrderLineNr()
+                                                                        );
+      CopyCorresponding::CopyFrom( cdcol ).CopyTo( importedCustomerOrderLine );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

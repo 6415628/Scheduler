@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method Setup (Schedule schedule)
+{
+  Description: 'Setup logic for all tests related to synchronizing work order operation precedence.'
+  TextBody:
+  [*
+    // Create technical configuration and set IsDataDrivenTimeContraintsMode to true
+    UTFMockObjectFactory::CreateImportedTechnicalConfiguration( schedule, UTFUtility::UTF(), true );
+    
+    // Retrieve test variant data controller columns
+    hasValidCircularPrecedence := false;
+    hasValidDependencyType := false;
+    hasValidNoBufferType := false;
+    hasValidOffsetRelation := false;
+    result := false;
+    
+    this.GetTestVariant( hasValidCircularPrecedence, hasValidDependencyType, hasValidNoBufferType, hasValidOffsetRelation, result );
+    
+    // Get correct inputs
+    dependencyType := ifexpr( hasValidDependencyType, Constants::TimeConstraint_DependencyType_FinishToStart(), UTFUtility::UTF() );
+    noBufferType := ifexpr( hasValidNoBufferType, Constants::TimeConstraint_NoBufferType_Outflow(), UTFUtility::UTF() );
+    offsetRelation := ifexpr( hasValidOffsetRelation, Constants::TimeConstraint_OffsetRelation_Max(), UTFUtility::UTF() );
+    
+    // Create 2 ImportedExternalWorkOrderOperation that is required for precedence sanity checking
+    fromWorkOrderOperation := ImportedExternalWorkOrderOperation::Create( schedule, 'WO1', 20 );
+    toWorkOrderOperation := ImportedExternalWorkOrderOperation::Create( schedule, 'WO2', 10 );
+    
+    // Create default precedence
+    UTFMockObjectFactory::CreateImportedWorkOrderOperationPrecedence( schedule,
+                                                                      fromWorkOrderOperation,
+                                                                      toWorkOrderOperation,
+                                                                      dependencyType,
+                                                                      noBufferType,
+                                                                      offsetRelation );
+                                                                      
+    // Create circular-causing precedence
+    if( not hasValidCircularPrecedence )
+    {
+      UTFMockObjectFactory::CreateImportedWorkOrderOperationPrecedence( schedule, 
+                                                                        toWorkOrderOperation,
+                                                                        fromWorkOrderOperation,
+                                                                        dependencyType,
+                                                                        noBufferType,
+                                                                        offsetRelation );
+    }
+  *]
+}

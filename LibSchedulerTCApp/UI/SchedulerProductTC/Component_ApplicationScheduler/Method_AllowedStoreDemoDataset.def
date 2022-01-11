@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedStoreDemoDataset (output String feedback_o) as Boolean id:Method_ApplicationScheduler_AllowedStoreDemoDataset
+{
+  #keys: '[125460.0.1151261749]'
+  Body:
+  [*
+    // ckr3 Sep-8-2017 (created)
+    value := true;
+    
+    if( isnull( Schedule ) )
+    {
+      value := false;
+      Utility_SC::Concat( feedback_o, Translations::SC_StoreDemoData_NoSelectedDataset() );
+    }                 
+    else
+    {
+      if( Schedule.MDSSchedule().Name() <> Constants::ScheduleDataset() )
+      {
+        value := false;
+        Utility_SC::Concat( feedback_o, Translations::SC_StoreDemoData_SelectedDatasetNotSchedule( Schedule.MDSSchedule().Name() ) );
+      }
+      
+      if( Schedule.MDSSchedule().State() <> Constants::GetStandAloneStorageStateString() )
+      {
+        value := false;
+        Utility_SC::Concat( feedback_o, Translations::SC_StoreDemoData_SelectedDatasetNotStandalone() );
+      }                           
+    }              
+    
+    return value;
+  *]
+}

@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetConcept (String fileName_i) as String
+{
+  Description:
+  [*
+    Get the concept that is imported from the name of the file.
+    The name of the file is expected to start with the name of the concept.
+    Is only required for ImportAsIfFrom3DSpace.
+  *]
+  TextBody:
+  [*
+    // The name of the file is expected to start with the name of the concept followed by an underscore, e.g. "resource_ids.json".
+    concept     := guard( fileName_i.SubString( 0, fileName_i.FindString( "_", 0 ) ).ToLower(), "" );
+    isSupported := false;
+    
+    // Check if the concept is supported.
+    if( concept <> "" )
+    {
+      traverse( this.DoGetConcepts(), Elements, supportedConcept, not isSupported )
+      {
+        if( concept = supportedConcept.ToLower() )
+        {
+          concept     := supportedConcept;  // Use uppercase and lowercase of the supportedConcept.
+          isSupported := true;
+        }
+      }
+    }
+    
+    if( not isSupported )
+    {
+      LibDIF_Util::Error( "Filename should start with the name of a supported concept, followed by an '_' | Filename = '" + fileName_i + "'" );
+    }
+    
+    return concept;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

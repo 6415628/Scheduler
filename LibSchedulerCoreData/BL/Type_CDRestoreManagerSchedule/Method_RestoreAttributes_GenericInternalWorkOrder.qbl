@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericInternalWorkOrder (CDSchedule cdschedule)
+{
+  Description: 'Restore generic internal work order core data attributes to planning object'
+  TextBody:
+  [*
+    // Restore InternalWorkOrder
+    schedule := this.Schedule();
+    
+    traverse( cdschedule, CDEntity.astype( CDGenericInternalWorkOrder ), cdiwo )
+    {
+      genericInternalWorkOrder := GenericInternalWorkOrder::Create( schedule, cdiwo.Id() );
+      CopyCorresponding::CopyFrom( cdiwo ).CopyTo( genericInternalWorkOrder );
+      
+      // Restore internal work order operations that belongs to this internal work order
+      this.RestoreAttributes_GenericInternalWorkOrderOperation( cdschedule, genericInternalWorkOrder );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

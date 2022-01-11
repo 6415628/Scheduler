@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride PlanBefore (Task_SCs tasks, Task_SC before)
+{
+  TextBody:
+  [*
+    // Get sorted tasks
+    sortedtasks := Resource_SC::GetSortedTasksFromTasks( tasks );
+    
+    // Plan the sorted tasks
+    operations := construct( Operation_SCs );
+    // Perform 'chunking' during planning so that tasks with operations are planned in 1 go to maintain the original sequence
+    traverse( sortedtasks, Elements, task )
+    {
+      // If there is no operation for the task, just plan the task before the "before" task
+      if( isnull( task.GetOperation() ) )
+      {
+        // If there is operations collected in previous loop, plan the operations first
+        if( operations.Size() > 0 )
+        {
+           this.PlanBefore( operations, before );
+           // After plan the operations, just flush the structured set in order to collect new set of operations to be planned
+           operations.Flush();
+        } 
+        // Plan the task without operation
+        this.PlanBefore( task, before ); 
+      }
+      else
+      {
+        // Collect the operation to be planned
+        operations.Add( task.GetOperation() ); 
+      }
+    }
+    
+    // If there is operations collected in traverse loop, plan the operations
+    if( operations.Size() > 0 )
+    {
+      this.PlanBefore( operations, before );
+    }
+  *]
+}

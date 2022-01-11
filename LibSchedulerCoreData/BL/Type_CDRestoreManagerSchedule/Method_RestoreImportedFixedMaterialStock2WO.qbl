@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedFixedMaterialStock2WO (CDIntegration cdintegration)
+{
+  Description: 'Restore imported fixed material stock 2WO core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedFixedMaterialStock2WO
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedFixedMaterialStock2WO ), cdfms )
+    {
+      importedFixedMaterialStock2WO := schedule.ImportedFixedMaterialStock2WO( relnew, 
+                                                                               WorkOrderInputMaterialId := cdfms.WorkOrderInputMaterialId(),
+                                                                               StockMaterialId := cdfms.StockMaterialId()
+                                                                              );
+      CopyCorresponding::CopyFrom( cdfms ).CopyTo( importedFixedMaterialStock2WO );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

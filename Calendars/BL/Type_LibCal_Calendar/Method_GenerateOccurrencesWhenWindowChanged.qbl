@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenerateOccurrencesWhenWindowChanged
+{
+  TextBody:
+  [*
+    // Update the CalendarTime after a potential change of the Start of the Window.
+    timezone := this.GetTimeZone();
+    this.CalendarTime( this.Start().AddAsPeriod( timezone, Duration::Days( this.History() ) ) );
+    
+    windowChanged := guard( this.StartDate() <> this.PreviousStartDate(), false )
+                  or guard( this.EndDate()   <> this.PreviousEndDate(),   false );
+    
+    if( windowChanged )
+    {
+      // Let the Events generate their occurrences based on the changed calendar window.
+      traverse( this, Event.LeadingParticipation, leadPart )
+      {
+        onlyWhenChanged := false;
+        leadPart.UpdateCalendar( onlyWhenChanged );
+      }
+    
+      // Also update the occurrences of the subscriptions to other events.
+      // This is only necessary when there is (or was!) as difference between the window of the calendar and
+      // the window of the calendar to which is subscribed.
+      traverse( this.Subscriptions(), Elements, subscription )
+      {
+        eventCalendarStartDate := subscription.Event().Calendar().StartDate();
+        eventCalendarEndDate   := subscription.Event().Calendar().EndDate();
+        if(    eventCalendarStartDate <> this.StartDate()
+            or eventCalendarStartDate <> this.PreviousStartDate()
+            or eventCalendarEndDate   <> this.EndDate()
+            or eventCalendarEndDate   <> this.PreviousEndDate() )
+        {
+          subscription.AlignOccurrences( this.PreviousStartDate(), this.PreviousEndDate() );
+        }
+      }
+    
+      // Update the previous dates for the next check.
+      // This should only be done after updating the calendars, because during the update
+      // the previous dates are required to determine if new time intervals should be generated.
+      this.PreviousStartDate( this.StartDate() );
+      this.PreviousEndDate(   this.EndDate()   );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

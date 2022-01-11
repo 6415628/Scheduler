@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod RenameAfterType (Type type, NamedValueTree nvt, NamedValue nv)
+{
+  Description:
+  [*
+    Make sure the branches in the named value tree that represent an owning relation are called after the type that is owned.
+    
+    This method reverses the RenameAfterRelation method.
+  *]
+  TextBody:
+  [*
+    // mbr23 Apr-24-2020 (created)
+    // copied from member method in this type from LibOpt, because it is de facto static.
+    
+    traverse( nv.Children(), Elements, child )
+    {
+      if( child.GetValue().istype( Key ) )
+      {
+        rel := select( LibOpt_Utility::GetTypeAncestors( type ), Elements.MdlRelSideElements.astype( MdlModeledRelSideElement ), rel,
+                       rel.Name() = child.Name()
+                       and guard( rel.RelationSide().OwningSideBool(), false ) );
+        if( not isnull( rel ) )
+        {
+          if( rel.OtherSide().FromType().Name() <> child.Name() )
+          {
+            new_child := nv.AddChild( nvt.GetHandle( rel.OtherSide().FromType().Name() ) );
+            new_child.SetValue( child.GetValue() );
+            child.Move( new_child, true );
+            child.Delete( false );
+            child := new_child;
+          }
+          NVTPortable::RenameAfterType( rel.OtherSide().FromType(), nvt, child );
+        }
+      }
+    }
+  *]
+}

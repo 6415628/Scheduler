@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Deserialize (JSON json)
+{
+  TextBody:
+  [*
+    super.Deserialize( json );
+    
+    component_name := LibOpt_Message::Get( json, LibOpt_SnapshotComponent::JSON_Component() );
+    if( component_name.IsString() )
+    {
+      component := this.Run().FindComponent( component_name.GetString() );
+      
+      this.Component( relset, component );
+    }
+    
+    input_scope_json := LibOpt_Message::Get( json, LibOpt_SnapshotComponent::JSON_InputScope() );
+    this.InputScope( relset, this.DeserializeScope( input_scope_json ) );
+    
+    output_scope_json := LibOpt_Message::Get( json, LibOpt_SnapshotComponent::JSON_OutputScope() );
+    this.OutputScope( relset, this.DeserializeScope( output_scope_json ) );
+    
+    this.CheckNeedsIterationThread();
+  *]
+}

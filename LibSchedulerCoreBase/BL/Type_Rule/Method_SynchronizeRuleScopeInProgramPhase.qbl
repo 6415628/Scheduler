@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeRuleScopeInProgramPhase (ImportedRule importedRule)
+{
+  Description: 'Synchronize rule scope in program phase'
+  TextBody:
+  [*
+    // Get all current instances
+    allInstances := selectset( this, RuleScopeInProgramPhase, ele, true );
+    updatedInstances := construct( RuleScopeInProgramPhases );
+    
+    // Rule scope in program phase
+    traverse( importedRule, ImportedRuleScopeInProgramPhase, ele )
+    {
+      programPhaseConfiguration :=  ProgramPhaseConfiguration::FindProgramPhaseConfiguration( ele.ProgramDefinitionConfigurationID(),
+                                                                                              ele.ProgramSetConfigurationID(),
+                                                                                              ele.ProgramTypeConfigurationID(),
+                                                                                              ele.ProgramPhaseConfigurationID() );
+      rsipp := select( this,
+                       RuleScopeInProgramPhase, 
+                       rulescope, 
+                       rulescope.ProgramPhaseConfiguration().ProgramDefinitionConfigurationID() = ele.ProgramDefinitionConfigurationID()
+                       and rulescope.ProgramPhaseConfiguration().ProgramSetConfigurationID() = ele.ProgramSetConfigurationID()
+                       and rulescope.ProgramPhaseConfiguration().ProgramTypeConfigurationID() = ele.ProgramTypeConfigurationID()
+                       and rulescope.ProgramPhaseConfiguration().ProgramPhaseConfigurationID() = ele.ProgramPhaseConfigurationID() );
+                                      
+      if( not isnull( programPhaseConfiguration ) and isnull( rsipp ) )
+      {
+        rsipp := RuleScopeInProgramPhase::Create( this, programPhaseConfiguration );
+      }
+      
+      if( not isnull( rsipp ) )
+      {
+        updatedInstances.Add( rsipp ); 
+      }
+    }
+    
+    // Delete old instances
+    oldInstances := allInstances.Difference( updatedInstances );
+    traverse( oldInstances, Elements, e )
+    {
+      e.Remove(); 
+    }
+  *]
+}

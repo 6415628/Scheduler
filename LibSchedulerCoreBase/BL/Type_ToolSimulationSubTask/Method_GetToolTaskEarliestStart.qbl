@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetToolTaskEarliestStart (ToolTask tooltask, DateTime earlieststart) declarative as DateTime
+{
+  Description: 'Get the earliest start for a tool task considering its offset based on the resource where the task of the tool task is planned.'
+  TextBody:
+  [*
+    // alexandern Jan-7-2016 (created) QP #6082
+    resource        := tooltask.Task().Resource_SC();
+    ttearlieststart := DateTime::MinDateTime();
+    
+    if( tooltask.Offset() > Duration::Zero() )
+    {
+      ttearlieststart := resource.ResourceCalendar().Add( earlieststart, tooltask.Offset() );
+    }
+    else
+    {
+      ttearlieststart := resource.ResourceCalendar().Subtract( earlieststart, - tooltask.Offset() );
+    }
+    
+    return ttearlieststart;
+  *]
+}

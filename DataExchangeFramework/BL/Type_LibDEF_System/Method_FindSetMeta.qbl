@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method FindSetMeta (String setTypeGUID_i, String setGUID_i, String actionFeedback_i, 
+  LibDEF_IntegrationEvent event_i) as LibDEF_SetMeta
+{
+  TextBody:
+  [*
+    set := null( LibDEF_SetMeta );
+    setTypeMeta := select( this, SetTypeMeta, setTypeMeta, setTypeMeta.GUID() = setTypeGUID_i );
+    
+    if( not isnull( setTypeMeta ) )
+    {
+      set := select( setTypeMeta, SetMeta, setMeta, setMeta.GUID() = setGUID_i );
+    }
+    else
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  actionFeedback_i,
+                                  actionFeedback_i + "The Set Type with GUID '" + setTypeGUID_i + "' is not found in the DataBroker." );
+    }
+    
+    return set;
+  *]
+}

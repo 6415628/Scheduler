@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportOptimizerStrategy
+{
+  TextBody:
+  [*
+    // kag1 Aug-1-2017 (created)
+    
+    this.ImportOptimizerStrategyInScenarioManager();
+    
+    defaultOptimizerStrategy := select( this, OptimizerStrategyInScenarioManager, optimizerstrategy, optimizerstrategy.IsDefault() );
+    
+    // If no default optimizer strategy is defined, set any optimizer strategy as default
+    if( isnull( defaultOptimizerStrategy ) and this.OptimizerStrategyInScenarioManager( relsize ) >= 1 )
+    {
+      defaultOptimizerStrategy := select( this, OptimizerStrategyInScenarioManager, optimizerstrategy, true );
+      defaultOptimizerStrategy.SetAsDefault();
+    }
+    
+    // Update scenario manager strategies
+    traverse( this, OptimizerStrategyInScenarioManager, optimizerstrategy )
+    {
+      this.UpdateScenarioManagerStrategy( optimizerstrategy );
+    }
+    
+    // Update default strategy in scheduler
+    if(  not isnull( defaultOptimizerStrategy ) )
+    {
+     this.UpdateOptimizerConfigurationInScheduler( defaultOptimizerStrategy );  
+    }
+  *]
+}

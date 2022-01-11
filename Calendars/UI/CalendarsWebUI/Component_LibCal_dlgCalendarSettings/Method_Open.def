@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method Open (LibCal_Calendar calendar_i, Boolean isSingleCalendar_i) id:Method_LibCal_dlgCalendarSettings_Open
+{
+  #keys: '[131094.1.162980865]'
+  Body:
+  [*
+    if( not isnull( calendar_i ) )
+    {
+      // Set the data and open the Dialog.
+      dhCalendar.Data( calendar_i );
+      base := calendar_i.Base();
+      
+      if( TimeZone::HasTimeZoneSupport() )
+      {
+        // Show the Base of the calendar in the timezone of the calendar.
+        // Subtract the offset of the current timezone, because that will be added by the DateTime-control again.
+        timezone := calendar_i.GetTimeZone();
+        base     := base + timezone.RawOffset() - LibCal_GlobalState.GetLocalTimeZone().RawOffset();
+      }
+      dtBase.DateTime( base );
+    
+      if( isSingleCalendar_i )
+      {
+        this.Title( "Settings of calendar " + calendar_i.CalendarID() );
+        dhCalendars.Data().Add( calendar_i );
+      }
+    
+      Form.Show( "modal" );
+    }
+  *]
+}

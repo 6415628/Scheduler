@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcTotalPreviousInconsistence
+{
+  TextBody:
+  [*
+    adherencekpihorizon := this.Schedule().Time() - this.ResourceGroup_SC().KPIAdherenceHorizon();
+    
+    // due to the KPI is sum( Inconsistecne )/ sum( feedback task ).
+    // So I need sumup fbbatch.InconsistenceQuantity.
+    value := sum( this,
+                  FeedbackBatchInSchedule,
+                  fbbtask,
+                  fbbtask.Start() >= adherencekpihorizon,
+                  fbbtask.InconsistenceQuantity() );
+    
+    this.TotalPreviousInconsistence( value );
+  *]
+}

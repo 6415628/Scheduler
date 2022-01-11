@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeDemandBatchRouting
+{
+  TextBody:
+  [*
+    allinstances := selectset( this, DemandBatchRoutingStep , alldbr, true );
+    updatedinstances := construct( DemandBatchRoutingSteps );
+    
+    traverse( this, ImportedDemandBatchType.ImportedDemandBatchRoutingStep, row, row.IsValidDataHard() )
+    {
+      demandbatchrouting := DemandBatchRoutingStep::FindDemandBatchRouting( row.BatchType(), row.SequenceNr() );
+      
+      if( isnull( demandbatchrouting ) )
+      {
+        demandbatchrouting := DemandBatchRoutingStep::Create( this, row.BatchType(), row.SequenceNr() );
+      }
+      
+      demandbatchrouting.Update( row );
+      
+      updatedinstances.Add( demandbatchrouting );
+    }
+    
+    // Delete obsoleted data
+    oldinstances := allinstances.Difference( updatedinstances );
+    DemandBatchRoutingStep::Remove( oldinstances );
+  *]
+}

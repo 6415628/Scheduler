@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValuesDatesOK () as Boolean id:Method_LibCal_dlgEventParticipation_ValuesDatesOK
+{
+  #keys: '[131092.1.1300388]'
+  Body:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    timezone := this.GetCalendarTimeZone();
+    
+    if( dsStartDate.Date().IsInfinite() )
+    {
+      feedback.AddHard( Translations::Event_InvalidStartDate() );
+    }
+    
+    if( dsEndDate.Date().IsInfinite() )
+    {
+      feedback.AddHard( Translations::Event_InvalidEndDate() );
+    }
+    
+    if( feedback.IsAllowed() )
+    {
+      start := dsStartDate.Date().DateTime( timezone ).AddAsPeriod( timezone, durStartTimeOfDay.Duration() );
+      end   := dsEndDate  .Date().DateTime( timezone ).AddAsPeriod( timezone, durEndTimeOfDay  .Duration() );
+      
+      if( end <= start )
+      {
+        feedback.AddHard( Translations::Event_EndMustBeGreaterThanStart() );
+      }
+      
+      // End must be greater than StartOfCalendar.
+      startOfCalendar := dhEvent.Data().Calendar().Start();
+      if( end <= startOfCalendar )
+      {
+        convOps := ConversionOptions::ISO();
+        feedback.AddHard( Translations::Event_EndMustBeGreaterThanStartOfCalendar( end            .Format( Translations::DateTimeFormat(), convOps ),
+                                                                                   startOfCalendar.Format( Translations::DateTimeFormat(), convOps ) ) ); 
+      }
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestKPIProductionSequenceAdherence_Setup (Schedule schedule)
+{
+  Description: 'Test KPI ProductionSequenceAdherence - setup'
+  TextBody:
+  [*
+    isvariantfound := false;
+    isadherence := false;
+    isdummyworkorder := false;
+    iswithinadherencekpihorizon := false;
+    kpivalue := 0.0;
+    
+    this.GetTestVariantForKPIProductionAdherence( isvariantfound,
+                                                  isadherence,
+                                                  isdummyworkorder,
+                                                  iswithinadherencekpihorizon,
+                                                  kpivalue );
+    
+    if( isvariantfound )
+    {  
+      // Create resource
+      resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource' );
+      resource.ResourceGroup_SC().UseConfiguredKPIAdherenceHorizon( true );
+      resource.ResourceGroup_SC().ConfiguredKPIAdherenceHorizon( Duration::Hours( 6 ) );
+      kpiadherencehorizonstart := schedule.Time() - Duration::Hours( 6 );
+      
+      // Create operations and plan operations
+      this.CreateOperations( schedule, resource, true, schedule.Time() );
+      
+      // Update 1st operation
+      operation := select( schedule, PlanUnit_SC.Operation_SC, op, op.SequenceNr() = 1 );
+      operation.PlanUnit_SC().Order_SC().IsDummyWorkOrder( isdummyworkorder );
+      
+      // Transaction propagate is needed on newly created operations before create feedback
+      Transaction::Transaction().Propagate()  
+      
+      // Create feedback task
+      feedbackstart := ifexpr( iswithinadherencekpihorizon, 
+                               kpiadherencehorizonstart, 
+                               kpiadherencehorizonstart - Duration::Hours( 0.5 ) );
+      this.CreateFeedbackForOperations( schedule, false, feedbackstart );
+      traverse( schedule, FeedbackManager.FeedbackTaskInSchedule, fbtask )
+      {  
+        if( fbtask.OperationID() = operation.OperationID() )
+        {
+          fbtask.IsPreviousAdherence( isadherence );
+        }
+        else
+        {
+          fbtask.IsPreviousAdherence( true );  
+        }
+      }
+    }
+  *]
+}

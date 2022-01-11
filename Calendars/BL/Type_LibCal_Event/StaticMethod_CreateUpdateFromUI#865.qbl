@@ -1,0 +1,65 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateUpdateFromUI (LibCal_Calendar owner_i, LibCal_LeadingParticipation participation_i, String subject_i, 
+  String description_i, String type_i, Real capacity_i, 
+  LibCal_EventCategory category_i, Boolean isDefault_i, Date startDate_i, 
+  Duration startTimeOfDay_i, Date endDate_i, Duration endTimeOfDay_i, 
+  Boolean isAllDay_i, Boolean isRecurring_i, Number recurrenceInterval_i, 
+  String patternType_i, String patternWeekly_Weekdays_i, Boolean patternMonthly_IsDay_i, 
+  Number patternMonthly_Day_i, String patternMonthly_WeekOfMonth_i, String patternMonthly_DayOfWeek_i, 
+  Boolean patternYearly_IsDate_i, Number patternYearly_Month_i, Number patternYearly_Day_i, 
+  String patternYearly_WeekOfMonth_i, String patternYearly_DayOfWeek_i, String periodType_i, 
+  Date periodStartDate_i, Date periodEndDate_i, LibCal_Calendars subscribers_i) as LibCal_Event
+{
+  Description: 'Create and/or update an Event and its LeadingParticipation, based on information from the UI.'
+  TextBody:
+  [*
+    event    := null( LibCal_Event );
+    leadPart := participation_i;
+    timezone := owner_i.GetTimeZone();
+    
+    if( isnull( leadPart ) )
+    {
+      // Create a new Event. This also creates a new LeadingParticipation.
+      event    := LibCal_Event::Create( owner_i, "", Date::Today( timezone ), 1 );
+      leadPart := event.LeadingParticipation();
+    }
+    else
+    {
+      // Get the event of the participation.
+      event := leadPart.Event();
+    }
+    
+    // Update the event...
+    duration := endDate_i.Add( timezone, endTimeOfDay_i ) - startDate_i.Add( timezone, startTimeOfDay_i );
+    isFromUI := true;
+    event.Update( subject_i, description_i, type_i, capacity_i, isDefault_i, startTimeOfDay_i, endTimeOfDay_i, duration, isAllDay_i, isFromUI );
+    
+    // Changing the category is a different kind of change, with no impact on the event itself.
+    event.EventCategory( relset, category_i );
+    
+    // ...and its recurrence pattern.
+    event.UpdateRecurrencePattern( isRecurring_i, patternType_i, recurrenceInterval_i,
+                                   patternWeekly_Weekdays_i,
+                                   patternMonthly_IsDay_i, patternMonthly_Day_i,  patternMonthly_WeekOfMonth_i, patternMonthly_DayOfWeek_i,
+                                   patternYearly_IsDate_i, patternYearly_Month_i, patternYearly_Day_i, patternYearly_WeekOfMonth_i, patternYearly_DayOfWeek_i );
+    
+    // Update the participation...
+    leadPart.Update( startDate_i, endDate_i );
+    
+    // ...and its recurrence period.
+    leadPart.UpdateRecurrencePeriod( isRecurring_i, periodType_i, periodStartDate_i, periodEndDate_i );
+    
+    // Effectuate the changes.
+    leadPart.UpdateCalendarWhenChanged();
+    
+    // Set the subscribers. Must be done *after* UpdateCalendar.
+    leadPart.SetSubscribers( subscribers_i );
+    
+    // Call a post-processing method that can be extended to implement additional logic.
+    event.OnCreateUpdateFromUI();
+    
+    return event;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

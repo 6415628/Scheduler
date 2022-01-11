@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method AnalysisAttributes () as owning structured_MdlAttrElement
+{
+  TextBody:
+  [*
+    // Get all attributes
+    type := typeofexpression( this );
+    
+    result := construct( structured_MdlAttrElement );
+    while( not isnull( type ) and type <> typeof( Object ) )
+    {
+      attributes := selectset( type, MdlAttrElements.astype( MdlModeledAttrElement ), att,
+                               att.ModeledAttribute().DefinitionInterfaceProperties().Accessibility() = 'Public' );
+      result.AddInPlace( attributes );
+      type := type.Parent();
+    }
+    
+    result.Remove( attribute( LibOpt_Snapshot, Details ) );
+    result.Remove( attribute( LibOpt_Snapshot, HasConstraintViolations ) );
+    result.Remove( attribute( LibOpt_Snapshot, NrIssues ) );
+    result.Remove( attribute( LibOpt_Snapshot, PrecisionTimeStamp ) );
+    result.Remove( attribute( LibOpt_Snapshot, SequenceNr ) );
+    result.Remove( attribute( LibOpt_Snapshot, TimeStamp ) );
+    result.Remove( attribute( LibOpt_Snapshot, TimeSince ) );
+    result.Remove( attribute( LibOpt_Snapshot, Type ) );
+    
+    return & result;
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

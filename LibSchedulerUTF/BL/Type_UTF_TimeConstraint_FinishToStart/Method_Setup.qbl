@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method Setup (Schedule schedule)
+{
+  Description: 'Setup logic for all tests related to synchronizing work order operation precedence.'
+  TextBody:
+  [*
+    schedule.Time( DateTime::Construct( 2020, 1, 1, 0, 0, 0 ) );
+    
+    // Create technical configuration and set IsDataDrivenTimeContraintsMode to true
+    UTFMockObjectFactory::CreateImportedTechnicalConfiguration( schedule, UTFUtility::UTF(), true );
+    
+    // Retrieve test variant data controller columns
+    hasMinDelay := false;
+    availableTime := DateTime::MinDateTime();
+    expectedTime := DateTime::MinDateTime();
+    exceedMaximumWaitingDuration := false;
+    
+    this.GetTestVariant( hasMinDelay, availableTime, expectedTime, exceedMaximumWaitingDuration );
+    
+    // Create resource group and UTF resource
+    resource1 := UTFMockObjectFactory::CreateSingleResource( schedule, 'Resource_01' );
+    LeadTimeStrategy_SC::Create( resource1, Duration::Zero(), Constants::StrategyASAP() )
+    resource2 := UTFMockObjectFactory::CreateSingleResource( schedule, 'Resource_02' );
+    LeadTimeStrategy_SC::Create( resource2, Duration::Zero(), Constants::StrategyASAP() )
+    
+    // Create subtasks
+    subtaskTypes := Constants::SubTask_SetupProcessCleanUp();
+    UTFMockObjectFactory::CreateSubtaskTypeOnResourceGroup( resource1.ResourceGroup_SC(), subtaskTypes, Constants::SubTask_Process(), Constants::SubTask_Process() );
+    UTFMockObjectFactory::CreateSubtaskTypeOnResourceGroup( resource2.ResourceGroup_SC(), subtaskTypes, Constants::SubTask_Process(), Constants::SubTask_Process() );
+    
+    // Create order and plan unit
+    planUnit1 := UTFMockObjectFactory::CreateOrderAndPlanUnit( schedule, 'Order_01', 1.0 );
+    planUnit2 := UTFMockObjectFactory::CreateOrderAndPlanUnit( schedule, 'Order_02', 1.0 );
+    planUnit1.Order_SC().DueDate( DateTime::Construct( 2020, 1, 2, 0, 0, 0 ) );
+    planUnit2.Order_SC().DueDate( DateTime::Construct( 2020, 1, 2, 0, 0, 0 ) );
+    
+    // Create test object operation
+    operation1 := UTFMockObjectFactory::CreateOperation( planUnit1 );
+    operation2 := UTFMockObjectFactory::CreateOperation( planUnit2 );
+    operation2.LatestStart_UTF( DateTime::Construct( 2020, 1, 2, 0, 0, 0 ) );
+    
+    // Create finish to start time constraint
+    offsetType := ifexpr( hasMinDelay, Constants::TimeConstraint_OffsetRelation_Min(), '' );
+    UTFMockObjectFactory::CreateTimeConstraint( schedule, 'TimeConstraint_01', operation1, operation2, Constants::TimeConstraint_DependencyType_FinishToStart(),
+                                                offsetType, Duration::Minutes( 10 ) );
+    
+    // Create tasks
+    UTFMockObjectFactory::CreateSingleTask( resource1, operation1, Duration::Zero(), Duration::Minutes( 60 ), Duration::Minutes( 30 ) );
+    UTFMockObjectFactory::CreateSingleTask( resource2, operation2, Duration::Minutes( 30 ), Duration::Minutes( 60 ), Duration::Zero() );
+  *]
+}

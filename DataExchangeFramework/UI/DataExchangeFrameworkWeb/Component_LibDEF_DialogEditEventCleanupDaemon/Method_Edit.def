@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method Edit () id:Method_LibDEF_DialogEditEventCleanupDaemon_Edit
+{
+  #keys: '[143398.0.685637420]'
+  Body:
+  [*
+    // Edit cleanup integration event daemon properties
+    daemonName := LibDEF_DataBroker::DAEMONNAME_CleanupIntegrationEvent();
+    
+    daemon     := select( LibDEF_DataBroker.MDSLibDEF_DataBroker(), MDSObjectDaemons, daemon,
+                          daemon.Name() = daemonName );
+    
+    if( not isnull( daemon ) )
+    {
+      lblName.Text( daemon.Name() );
+      // the daemon is enabled if the frequency is not zero
+      if( daemon.LocalFrequency() <> Duration::Zero() )
+      {
+        cbEnableDaemon.Checked( daemon.LocalFrequency() <> Duration::Zero() );
+        dsDaemonFrequency.Duration( daemon.LocalFrequency() );
+        if( TimeZone::HasTimeZoneSupport() )
+        {
+          // For timezone-aware, GMT time is needed for the selector.
+          dtsDaemonStartTime.DateTime( daemon.LocalStartGMTTime() );
+        }
+        else
+        {
+          // For legacy mode, the correct datetime is constructed from StartDate and StartTimeOfDay.
+          timezone  := TimeZone::Construct( this.GetUserTimeZoneID() );
+          startTime := daemon.LocalStartDate().Add( timezone, daemon.LocalStartTimeOfDay() );
+          dtsDaemonStartTime.DateTime( startTime );
+        }
+      }
+      else
+      {
+        // set the default values
+        dsDaemonFrequency.Duration( LibDEF_DataBroker::DAEMONDEFAULTFREQUENCY_CleanupIntegrationEvent() );
+        dtsDaemonStartTime.DateTime ( this.GetLastSundayOfDataBroker() );
+      }
+    
+      this.Show( "modal" );
+    }
+    else
+    {
+      WebMessageBox::Warning( Application,
+                           "Daemon '" + daemonName + "' is not found in LibDMF_DataBroker dataset." + String::NewLine() +
+                           "Please make sure it is created.",
+                           "OK" );
+    }
+  *]
+}

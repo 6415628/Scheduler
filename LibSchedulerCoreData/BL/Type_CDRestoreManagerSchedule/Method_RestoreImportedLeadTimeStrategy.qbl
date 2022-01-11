@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedLeadTimeStrategy (CDIntegration cdintegration, ImportedResource_SC importedresource)
+{
+  Description: 'Restore imported lead time strategy core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedLeadTimeStrategy_SC
+    cdImportedLeadTimeStrategys := selectset( cdintegration, CDEntity.astype( CDImportedLeadTimeStrategy ), cdlts, 
+                                              cdlts.ResourceID() = importedresource.ResourceID()
+                                             );
+    
+    traverse( cdImportedLeadTimeStrategys, Elements, cdlts )
+    {
+      importedLeadTimeStrategy := ImportedLeadTimeStrategy_SC::Create( importedresource, cdlts.MinDistance(), cdlts.Strategy() );
+      CopyCorresponding::CopyFrom( cdlts ).CopyTo( importedLeadTimeStrategy );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

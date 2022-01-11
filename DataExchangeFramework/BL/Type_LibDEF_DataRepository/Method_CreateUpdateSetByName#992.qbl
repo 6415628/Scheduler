@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateUpdateSetByName (String channelName_i, String setTypeName_i, Strings setNames_i, 
+  LibDEF_DataTransformation dataTransformation_i, Strings dataFilterArguments_i)
+{
+  Description: 'Wrapper method that accepts structure objects'
+  TextBody:
+  [*
+    setType := LibDEF_SetType::GetSetTypeByName( this, setTypeName_i );
+    
+    if( isnull( setType ) )
+    {
+      LibDEF_Util::LogError( "Error getting a Set from DataRepository, SetType '" + setTypeName_i + "' cannot be found." );
+    }
+    
+    index := 0;
+    
+    // Create the Sets and put them in the SetQueue.
+    // When batching is enabled, a batch of sets is sent to the DataBroker each time the batchsize is reached.
+    traverse( setNames_i, Elements, setName )
+    { 
+      this.CreateUpdateSetByName( channelName_i,
+                                  setTypeName_i, 
+                                  setName,                               
+                                  dataTransformation_i, 
+                                  guard( dataFilterArguments_i.Element( index ), "" ) );
+      index++;                              
+    }
+    
+    // Also send the last Sets that did not make a full batch anymore.
+    setType.SetQueue().SyncSetsToBroker();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

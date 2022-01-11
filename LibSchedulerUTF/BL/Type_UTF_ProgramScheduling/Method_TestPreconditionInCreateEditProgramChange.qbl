@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionInCreateEditProgramChange (Schedule schedule)
+{
+  Description: 'Test precondition in create/edit program change'
+  TextBody:
+  [*
+    // Get variant data
+    resourceType := '';
+    leadTimeStrategy := '';
+    hasResourceProgramDefinition := false;
+    isaftertaskprogramchange := false;
+    isValidForPreconInsert := false;
+    hasProgramChange := false;
+    hasFeedback := false;
+    isValidForPreconDelete := false;
+    hasProgramType := false;
+    isValidForPreconCreateEdit := false;
+    isallowedtypechangeonprogramtypelevel := false;
+    isallowedtypechangeonprogramtypechangelevel := false;
+    isValidForConstraintProgramTypeChange := false;
+    
+    this.GetTestVariant( resourceType,
+                         leadTimeStrategy,
+                         hasResourceProgramDefinition,
+                         isaftertaskprogramchange,
+                         isValidForPreconInsert,
+                         hasProgramChange,
+                         hasFeedback,
+                         isValidForPreconDelete,
+                         hasProgramType,
+                         isValidForPreconCreateEdit,
+                         isallowedtypechangeonprogramtypelevel,
+                         isallowedtypechangeonprogramtypechangelevel,
+                         isValidForConstraintProgramTypeChange );
+    
+    programchange := select( schedule, ProgramChange, programchagne, true );
+    programtypes := selectset( programchange, ProgramChangeInType.ToProgramTypeConfiguration, pt, true );
+    
+    value := ProgramChange::CheckIsValid( programtypes, programchange, true );
+    
+    this.Run().AssertEqual( isValidForPreconCreateEdit, value, 
+                            UTFUtility::GenerateFailedMessage( 'Precondition in creating program change failed.', this.Variant() ) );
+  *]
+}

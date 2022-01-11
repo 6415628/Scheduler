@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetIsModeAllowed (output Strings feedback_o) declarative remote as Boolean
+{
+  Description: 'Checks that the set mode is among the allowed modes.'
+  TextBody:
+  [*
+    // mbr23 Mar-27-2020 (created)
+    feedback := '';
+    isvalid := SettingsSequencing::CheckIsModeAllowed( this.Mode(), feedback );
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    { 
+      feedbacks := feedback.Tokenize( '\n' );
+               
+      traverse(feedbacks, Elements, feedbackstring ) 
+      {
+        feedback_o.Add( SanityCheckMessage::GetFormattedMessage( this.Id(),
+                                                                 feedbackstring ) );
+      }
+    }
+    
+    return isvalid;
+  *]
+}

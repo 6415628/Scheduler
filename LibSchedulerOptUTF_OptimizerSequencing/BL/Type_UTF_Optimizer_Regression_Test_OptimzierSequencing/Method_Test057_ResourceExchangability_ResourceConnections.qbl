@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test057_ResourceExchangability_ResourceConnections (Schedule schedule)
+{
+  Description:
+  [*
+    Removes one resource connection and asserts that the optimizer correctly identifies both connected resource groups as not exchangable.
+    Input is 3 operations; one per resource group.
+  *]
+  TextBody:
+  [*
+    // precondition: the UTS KT must correcly set 3 scope operation
+    this->Run_Test03x_IsPlanned( schedule )->| void->() {
+      transientdata := UTF_Optimizer_Regression_Test_OptimizerSequencing::GetLastTransientData( schedule );
+      this.Run().AssertFalse( isnull( transientdata ), "Transient Data not saved by optimizer" );
+      traverse( transientdata, ResourceGroup, rg )
+      {
+        if( rg.ResourceGroup().Index() = 0 or rg.ResourceGroup().Index() = 1 )
+        {
+          this.Run().AssertFalse( rg.IsExchangable(), "The optimizer did not recognize that resource group " + rg.ResourceGroup().Name() + " is not exchangable." );
+        }
+        else
+        {
+          this.Run().AssertTrue( rg.IsExchangable(), "The optimizer did not recognize that resource group " + rg.ResourceGroup().Name() + " is exchangable." );
+        }
+      }
+    }->Exception()->(exception) {
+      this.Run().RegisterFailure( "post-optimization assert failed:\n" + exception.Message() );
+    };
+  *]
+}

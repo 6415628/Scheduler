@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateCoreDatasets () as stream[Void]
+{
+  TextBody:
+  [*
+    // Create core datasets based on planning datasets
+    trackProgress := stream[Void]::Success();
+    
+    // Load CD Schedule datasets
+    objectInfos := MDSEditor::Editor().ObjectInfos( typeof( Schedule ).Name() );
+    traverse( objectInfos, Elements, planningDatasetInfo )
+    {
+      trackProgress := trackProgress->Merge( CDSchedule::CreateDataset( planningDatasetInfo )->AsVoid(), 
+                                             CDIntegration::CreateDataset( planningDatasetInfo )->AsVoid() );
+    }
+    
+    // Load CD ScenarioManager datasets
+    objectInfos := MDSEditor::Editor().ObjectInfos( typeof( LibSM_ScenarioManager ).Name() );
+    traverse( objectInfos, Elements, planningDatasetInfo )
+    {
+      trackProgress := trackProgress->Merge( CDScenarioManager::CreateDataset( planningDatasetInfo )->AsVoid() );
+    }
+    
+    return trackProgress->GroupAll()->AsVoid();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeOptimizerSettingsSequencing
+{
+  Description: 'Synchronizes the imported optimizer settings with the internal ones.'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    optimizer := schedule.Optimization().OptimizerSequencing();
+    
+    allinstances := selectset( optimizer, Settings, setting, true );  
+    updatedinstances := construct( SettingsSequencings );
+    
+    traverse( schedule, ImportedSettingsSequencing, importedSettings, importedSettings.IsValidDataHard() )
+    {
+      id := importedSettings.Id();
+      settings := SettingsSequencing::FindTypeIndexSettingsSequencing( id );
+      
+      if( isnull( settings ) )
+      {
+        settings := SettingsSequencing::Create( optimizer, id );
+      }
+      
+      settings.Update( importedSettings );
+      updatedinstances.Add( settings );
+    }
+    
+    // Delete settings objects that do not exist anymore
+    oldinstances := allinstances.Difference( updatedinstances );
+    traverse( oldinstances, Elements, setting )
+    {
+      setting.Delete();
+    }
+  *]
+}

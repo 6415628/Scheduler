@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleResponseError (JSON json_i) as Boolean
+{
+  TextBody:
+  [*
+    errorFound := false;
+    
+    // See if the JSON contains an error.
+    if( json_i.Has( "error" ) )
+    {
+      errorElement := json_i.Get( "error" );
+      
+      // Get the error information and raise an error.
+      errorCode    := errorElement.Get( "code" ).GetString();
+      errorMsg     := errorElement.Get( "message" ).GetString();
+      errorDetails := "";
+      
+      errorDetails := errorDetails
+                    + this.GetErrorDetailInfo( errorElement, "parameterName"     )
+                    + this.GetErrorDetailInfo( errorElement, "parameterLocation" )
+                    + this.GetErrorDetailInfo( errorElement, "problemDetail"     );
+      
+      if( errorElement.Has( "suggestedFix" ) )
+      {
+        suggestedFix := errorElement.Get( "suggestedFix" );
+    
+        errorDetails := errorDetails
+                      + this.GetErrorDetailInfo( suggestedFix, "action"           )
+                      + this.GetErrorDetailInfo( suggestedFix, "acceptedValues"   )
+                      + this.GetErrorDetailInfo( suggestedFix, "acceptedFormat"   )
+                      + this.GetErrorDetailInfo( suggestedFix, "acceptedDataType" )
+                      + this.GetErrorDetailInfo( suggestedFix, "arraySizeLimit"   )
+      }
+      
+      LibDIF_Util::Error( errorCode + " - " + errorMsg + errorDetails );
+    }
+    
+    return errorFound;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

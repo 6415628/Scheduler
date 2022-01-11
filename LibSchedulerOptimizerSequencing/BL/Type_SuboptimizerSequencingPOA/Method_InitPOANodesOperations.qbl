@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOANodesOperations (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata)
+{
+  Description: 'Adds one node per operation of the input scope'
+  TextBody:
+  [*
+    //Create one node for each operation
+    traverse( transientdata, OperationInSuboptimizerSequencing, operation )
+    {
+      // the operation node gets as address its setup address:
+      node := poa.AddNode( operation, operation.SetupAddress() );
+      if( this.Run().DebugScope() )
+      {
+        node.CacheId( operation.Operation().OperationID() );
+      }
+    
+      schedule := this.GetSchedule();
+      unplannedcost := schedule.OptimizerStrategyInSchedule().MRS_KPIWeightUnplanned();
+      node.UnplannedCost( unplannedcost );
+      
+      // Create a dummy end node if necessary
+      requiresdummynode := operation.GetRequiresDummyEndNode();
+      dummynode := null( POANode );
+      if( requiresdummynode )
+      {
+        // Give the dummy node the same address as the main node
+        dummynode := poa.AddNode( SuboptimizerSequencingPOA::NamePOADummyEndNode( operation ), operation, operation.SetupAddress() );
+        
+        if( this.Run().DebugScope() )
+        {
+          dummynode.CacheId( SuboptimizerSequencingPOA::NamePOADummyEndNode( operation ) );
+        }
+        
+        // Set the dummy node unplanned cost to zero (the main node already accounts for the unplanned cost)
+        dummynode.UnplannedCost( 0.0 );
+        
+        // Create an adjacent POA Plan pair of the main node and the dummy node to ensure they are always planned next to eachother.
+        planpair := poa.DefinePair( node, dummynode );
+        planpair.Adjacent( true );
+      }
+      
+      // fix it if it is in the scope span, and even freeze it if it's the first planned operation (of the scope) of a resource:
+      if( operation.IsFrozenInSchedule() )
+      {
+        this.FreezeNode( node, dummynode, requiresdummynode );
+      }
+      else if( not operation.IsAllowedToReplan() )
+      {
+        this.FixNode( node, dummynode, requiresdummynode );
+        
+        // additional freezing rule: freeze all operations on span resources, as the optimizer must not change the resources' sequences:
+        if( operation.IsFirstOfGroupOfOperationsInScopeOnResource() or operation.IsOnSpanResource() )
+        {
+          this.FreezeNode( node, dummynode, requiresdummynode );
+        }
+      }
+    }
+  *]
+}

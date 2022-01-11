@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: Toolbar/btnApply
+Response OnClick () id:Response_Toolbar_btnApply_OnClick
+{
+  #keys: '[129856.0.25136361]'
+  Body:
+  [*
+    Dialog.ApplyChanges();
+    Dialog.Data().Commit();
+    
+    // Update all related resources on same resource group
+    Dialog.Data().WrappedInstance().SynchronizeGroupResources();
+  *]
+  DefinitionID: 'Responsedef_GUIButtonBase_OnClick'
+  Precondition:
+  [*
+    // James Kwapien QP #7630 MaxBatchSize input > 0 precondition if applicable
+    return Resource_SC::IsValid( feedback, 
+                                 Schedule,
+                                 guard( Dialog.Data().ResourceGroup_SC().HasBatches(), false ), 
+                                 ApplicationScheduler.GetEditorRealValue( EditorMaxBatchSize ),
+                                 guard( Dialog.Data().ResourceGroup_SC(), null( ResourceGroup_SC ) ),
+                                 EditorResourceID.Text(),
+                                 guard( Dialog.Data().WrappedInstance().ResourceID(), '' ),
+                                 EditorName.Text(),
+                                 guard( Dialog.Data().ResourceGroup_SC().IsContinuous(), false ),
+                                 ApplicationScheduler.GetEditorRealValue( EditorResourceLength ),
+                                 ApplicationScheduler.GetEditorRealValue( EditorParallelLoadWidth ),
+                                 ApplicationScheduler.GetEditorRealValue( EditorParallelLoadGap ),
+                                 ApplicationScheduler.GetEditorRealValue( EditorGapLength ),
+                                 ApplicationScheduler.GetEditorRealValue( EditorResourceSpeed ),
+                                 CheckBoxIsToolSimulationHasHorizon.Checked(),
+                                 GUIDurationSelectorToolSimulationHorizon.Duration(),
+                                 Dialog.Data().WrappedInstance(),
+                                 StringSelectionStrategy.Text() );
+  *]
+}

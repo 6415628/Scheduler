@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateIssue (LibOpt_SnapshotSuboptimizer snapshotsuboptimizer, String issuetype, const constcontent LibOpt_StatisticSeverityScaleEntrys severityscaleentries_lowerthresholdviolation, 
+  const constcontent LibOpt_StatisticSeverityScaleEntrys severityscaleentries_upperthresholdviolation)
+{
+  Description: 'Create a `LibOpt_Issue` for the given "snapshot suboptimizer" (`LibOpt_SnapshotSuboptimizer`) if its `LibOpt_SnapshotSuboptimizer.IsRollback` value is `true`.'
+  TextBody:
+  [*
+    if( snapshotsuboptimizer.IsRollback() )
+    {
+      // Create an Issue and link it to the relevant Snapshot.
+      LibOpt_Issue::Create( this,
+                            snapshotsuboptimizer,
+                            issuetype,
+                            this.Focus() + ', ' + Translations::LibOpt_IterationNr( snapshotsuboptimizer.GetIteration().IterationNr(), this.Run().TotalNrOfIterations() ),
+                            LibOpt_Issue::Severity_4_High(), // consider rollback as high issue always
+                            Translations::LibOpt_Issue_Details_SuboptimizerRollback( RealVector::Construct( snapshotsuboptimizer.Improvement() ) )
+                         );
+    }
+  *]
+}

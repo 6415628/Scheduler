@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test041_DatasetCopyConditional_CompleteDeletion (LibOpt_TestDataset dataset)
+{
+  Description:
+  [*
+    Check that a dataset is removed from `MDSEditor::Editor().ObjectInfos()` when a dataset is deleted during a run.
+    `MDSEditor::Editor().ObjectInfos()` is only updated when the dataset is completely removed. This can take a while when there are many datasets that have to be deleted. Therefore, in this method, we only create and delete a single dataset. 
+    Note: In other unit tests, for example in the unit tests that call the `AssertsForComponentPositionDeletedDataset` method, we only check if the `LibOpt_SnapshotReplannableCopyDataset.IsDatasetDeletedByOptimizer` attribute has been set to `true`.
+  *]
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( true );
+    run := opt.CreateRun();
+    
+    // Create any component and set a LibOpt_DatasetCopyConditional_UnitTest_DeleteConditionTrue on a component position of that component.
+    // This dataset copy is always created and then always deleted during the run.
+    flowcomponent := opt.ComponentFlow( run, 'Flow', true );
+    initializeposition := select( flowcomponent, ComponentPosition, cp, cp.Name() = LibOpt_Component::ComponentPosition_Initialize() );
+    initializeposition.SetDatasetCopy( typeof( LibOpt_DatasetCopyConditional_UnitTest_DeleteConditionTrue ).Name() );
+    
+    objectinfosbeforerun := MDSEditor::Editor().ObjectInfos();
+    objectinfonames := selectvalues( objectinfosbeforerun, Elements, objectinfo, true, objectinfo.Name() );
+    
+    str := run->Start()
+    ->|stream[Void]::Wait( this.MDSEditorUpdateTime() ) // Wait some time to ensure that the dataset copies have been created and that MDSEditor::Editor().ObjectInfos() is updated. 
+    ->|void->() // Start a reactive call to handle the created dataset copies.
+    {
+      objectinfos := MDSEditor::Editor().ObjectInfos();
+      nrcreateddatasetcopies := counter( objectinfos,
+                                         Elements,
+                                         objectinfo,
+                                         objectinfonames.Find( objectinfo.Name() ) < 0 // Only consider the datasets that were created during this run. Any datasets that were created before this run should be ignored. 
+                                         and LibOpt_TestUnit_DatasetCopy::IsDatasetChildOfUnitTestDataset( objectinfo, dataset )
+                                         );
+      this.Run().AssertEqual( 0, //Expected value
+                              nrcreateddatasetcopies, //Actual value
+                              "Expected that all dataset copies would have been deleted by the end of the run. However, "
+                              + [String] nrcreateddatasetcopies
+                              + " dataset copies still exist."
+                              ); 
+    }   
+    
+    this.NoException( str );
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

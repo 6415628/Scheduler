@@ -1,0 +1,91 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddExpressionSoftRulePenalty (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs, Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // zyi1 Jul-22-2021 (created)
+    penaltyexpression := poa.NewExpression( SuboptimizerPOACombiLeg::NamePOAExpressionSoftRulePenalty() );
+    
+    penaltytransition := POATransition::PNN( poa, SuboptimizerPOACombiLeg::NamePOATransitionSoftRulePenalty(), 0.0 );
+    penaltytransition.Symmetric( false );
+    penaltyexpression.Transition( penaltytransition );
+    
+    penaltyparticipation := POAParticipation::PN( poa, SuboptimizerPOACombiLeg::NamePOAParticipationPenalty(), 0.0 );
+    penaltyexpression.Participation( penaltyparticipation );
+    
+    traverse( combilegs, Elements, combilegforpath )
+    {
+      dummystart := poa.Node( SuboptimizerPOACombiLeg::NamePOADummyStart( combilegforpath ), combilegforpath );
+      dummyend := poa.Node( SuboptimizerPOACombiLeg::NamePOADummyEnd( combilegforpath ), combilegforpath );
+      pathtype := poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathCombiLeg( combilegforpath ), combilegforpath );
+      
+      traverse( operations, Elements, operation1, combilegforpath.GetIsOperationAllowedHard( operation1 ) )
+      {
+        node1 := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation1 ), operation1 );
+           
+        // Consider the transition beween the prev leg's last operation and the first operation of this leg
+        // POA can't see transitions between plan paths, so we consider this transition on the dummy start node of the leg (if the prevlegendop is frozen)
+        prevlegendop := this.GetLastOperationPreviousLegIfFrozenAndRelevant( combilegforpath, combilegs );
+        if( not isnull( prevlegendop ) )
+        {
+          transitioncost := combilegforpath.GetCostSequenceViolation( prevlegendop.CombiLeg(), prevlegendop.Operation_SC(), operation1, false ); 
+          
+          hardtransitioncost :=  0.0      
+          // For combi generation set the transitions between legs as soft
+          if( this.IsCombiGeneration() )
+          {
+            hardtransitioncost := combilegforpath.GetCostSequenceViolation( prevlegendop.CombiLeg(), prevlegendop.Operation_SC(), operation1, true )
+          }
+                                     
+          if( transitioncost > 0.0 or hardtransitioncost > 0.0 ) 
+          {
+            // The hard transition cost is equal to the hard constraint penalty
+            hardtransitioncost := ifexpr( hardtransitioncost > 0.0,
+                                          this.Settings().PenaltyForHardConstraints(),
+                                          0.0 );
+                              
+            weight := ( transitioncost * operation1.PlanUnit_SC().Quantity() + hardtransitioncost );
+            penaltytransition.Set( pathtype, dummystart, node1, weight );
+          }
+        }
+        
+        // Consider the transition beween this leg's last operation and the first operation of next leg
+        // POA can't see transitions between plan paths, so we consider this transition on the dummy end node of this leg (if the nextlegstartop is frozen)
+        nextlegstartop := this.GetFirstOperationNextLegIfFrozenAndRelevant( combilegforpath, combilegs );
+        if( not isnull( nextlegstartop ) )
+        {
+          transitioncost := nextlegstartop.CombiLeg().GetCostSequenceViolation( combilegforpath, operation1, nextlegstartop.Operation_SC(), false ); 
+          
+          hardtransitioncost := 0.0;
+          // If this is combi generation, then all combileg boundary transition violations are soft
+          if( this.IsCombiGeneration()  )
+          {
+            hardtransitioncost := combilegforpath.Next().GetCostSequenceViolation( combilegforpath, nextlegstartop.Operation_SC(), operation1, true )
+          }
+                                     
+          if( transitioncost > 0.0 or hardtransitioncost > 0.0 ) 
+          {
+            // The hard transition cost is equal to the hard constraint penalty + a factor times the violation (to encourage POA to choose smaller violations)
+            hardtransitioncost := ifexpr( hardtransitioncost > 0.0,
+                                          this.Settings().PenaltyForHardConstraints(),
+                                          0.0 );
+                              
+            weight := ( transitioncost * operation1.PlanUnit_SC().Quantity() + hardtransitioncost );
+            penaltytransition.Set( pathtype, node1, dummyend, weight );
+          }
+        }  
+        
+        
+        // Add a violation cost for planning a node on a soft not allowed leg
+        if( not combilegforpath.GetIsOperationAllowedSoft( operation1 ) ) 
+        {                        
+          weight := combilegforpath.GetSoftAllowedViolationCost( operation1 ) * operation1.PlanUnit_SC().Quantity();
+          penaltyparticipation.Set( pathtype, node1, weight );
+        }
+        
+        // The soft penalty between the in scope operations is handled in the SoftRulePenalty_MatrixFilling method to improve the performanceq
+      }
+    }
+  *]
+}

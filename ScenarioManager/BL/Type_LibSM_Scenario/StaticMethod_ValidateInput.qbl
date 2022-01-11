@@ -1,0 +1,71 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ValidateInput (LibSM_ScenarioManager scenarioManager, String scenarioName, LibSM_Scenario oldScenario, 
+  String storageState, Boolean storageEnabled, Boolean datasetStoreEnabled, 
+  LibSM_KnowledgeProfile knowledgeProfile) remote as Boolean
+{
+  Description: 'Validate scenario before allowing to create / update'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    // Can't have an empty name.
+    if( not feedback.CheckHard( not scenarioName.TrimBoth() = '' ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_ValidateInput_NameEmpty() );
+    }
+    
+    // Check the name of scenario with existing scenario
+    if( not feedback.CheckHard( not exists( scenarioManager, ScenarioNode.astype( LibSM_Scenario ), scenario,
+                                            scenario <> oldScenario,
+                                            scenario.Name() = scenarioName ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_ValidateInput_NameExists( scenarioName ) );
+    }
+    /*
+    // Check Planning level when isCheckedPlanningLevel is true 
+    if( not feedback.CheckHard( not isCheckedPlanningLevel or not isnull( planningLevel ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_ValidateInput_IsNullPlanningLevel() );
+    }
+    
+    // Check Lifecycle status when isCheckedLifecycleStatus is true 
+    if( not feedback.CheckHard( not isCheckedLifecycleStatus or not isnull( lifecycleStatus ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_ValidateInput_IsNullLifecycleStatus() );
+    }
+        
+    // Check Plan type when isCheckedPlanType is true.
+    if ( not feedback.CheckHard( not isCheckedPlanType or not isnull( planType ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_ValidateInput_IsNullPlanType() );
+    }
+    
+    */
+    
+    if( not feedback.CheckHard( not isnull( knowledgeProfile ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_ValidateInput_KnowledgeProfileEmpty() );
+    }
+        
+    // Check the storageEnabled when storageState of scenario is Full, Partial, Cached and Hybrid.
+    if( not feedback.CheckHard( storageEnabled 
+                             or storageState = LibSM_Dataset::GetStorageStateStandalone()
+                             or storageState = LibSM_Dataset::GetStorageStateMemoryOnly() ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_CanNotCreate_StorageNotEnabled() );
+    }
+    
+    // Check the datasetStoreEnabled when storageState of scenario is Cached, Standalone and Hybrid.
+    if( not feedback.CheckHard( datasetStoreEnabled
+                             or storageState = LibSM_Dataset::GetStorageStateFull()
+                             or storageState = LibSM_Dataset::GetStorageStatePartial()
+                             or storageState = LibSM_Dataset::GetStorageStateMemoryOnly() ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_CanNotCreate_DatasetStoreNotEnabled() );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

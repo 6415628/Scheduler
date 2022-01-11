@@ -1,0 +1,14 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetCanExecuteRunStep (DMF_RunStep runStep_i) declarative as Boolean
+{
+  TextBody:
+  [*
+    return super.GetCanExecuteRunStep( runStep_i ) and
+           // UpgradePre must be completed first
+           forall( runStep_i, Topic.TopicStep.astype( DMF_TopicStep_UpgradePre ).RunStep, preStep,
+                   preStep.GetIsFinished() ) and
+           // Datasets that this dataset depends on must first completes their conversion
+           guard( runStep_i.IsParentDatasetRunStepsCompleted(), true );
+  *]
+}

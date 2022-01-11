@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method ApplySettingsDemandBatches () id:Method_ApplicationScheduler_ApplySettingsDemandBatches
+{
+  #keys: '[134372.0.94539568]'
+  Body:
+  [*
+    // Enable or disable functionality for demand batches
+    isenabled := guard( Schedule.Functionality().IsEnableDemandBatches(), true );
+    
+    // Hide items on Application
+    menuFormDemandBatches.Visible( isenabled );
+    menuFormBatchableDemands.Visible( isenabled );
+    
+    // Hide entire MenuBatching if both demand batches and batches are disabled
+    MenuBatching.Visible( isenabled or guard( Schedule.Functionality().IsEnableOperationBatches(), true ) );
+    
+    // Hide items on other forms if they're open
+    // FormProductionEnvironment
+    formProductionEnvironment := select( Application.Frame(), SubComponents.astype( FormProductionEnvironment ), formProductionEnvironment, true );
+    
+    if( not isnull( formProductionEnvironment ) )
+    {
+      formProductionEnvironment.ApplySettingsDemandBatches();
+    }
+    
+    // if disabled, close relevant forms if they're open
+    if( not isenabled )
+    {
+      formDemandBatch := select( Application.Frame(), SubComponents.astype( FormDemandBatch ), formDemandBatch, true );
+    
+      if( not isnull( formDemandBatch ) )
+      {
+        formDemandBatch.Close();
+      }
+      
+      formBatchableDemand := select( Application.Frame(), SubComponents.astype( FormBatchableDemand ), formBatchableDemand, true );
+      
+      if( not isnull( formBatchableDemand ) )
+      {
+        formBatchableDemand.Close();
+      }
+    }
+  *]
+}

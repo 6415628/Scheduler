@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SelectAnchor (LibOpt_ScopeElements anchors) as LibOpt_ScopeElement
+{
+  TextBody:
+  [*
+    // weighted random selection:
+    candidates := selectsortedset( anchors, Elements.astype( ScopeElementOperation ), seo,
+                                   // Only consider candidates that are not locked
+                                   not guard( seo.OnRun( this.SelectorAnchor().Run() ).IsLocked(), true ),
+                                   // Prioritize by selection score
+                                   - seo.SelectionScore() );
+    
+    // traverse over the sorted list of candidates and pick the one when the cumulative selection score has surpassed the pivot score:
+    sum_scores := sum( candidates, Elements, seo, true, seo.SelectionScore() );
+    pivot_score := Real::Random() * sum_scores;
+    
+    score_cumulative := 0.0;
+    current_candidate := null( ScopeElementOperation );
+    while( score_cumulative <= pivot_score and candidates.Size() > 0 )
+    {
+      current_candidate := candidates.First();
+      candidates.Remove( current_candidate );
+      score_cumulative := score_cumulative + current_candidate.SelectionScore();
+    }
+    
+    return current_candidate;
+  *]
+}

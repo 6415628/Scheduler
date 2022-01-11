@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetRuleScopeButtonValues (RuleType ruletype) const declarative remote as owning Strings
+{
+  Description: 'Get rule scope button values based on rule type'
+  TextBody:
+  [*
+    // Get rule scope button values based on rule type
+    
+    values := construct( Strings );
+    
+    if( not isnull( ruletype ) )
+    {
+      if( ruletype.Name() = RuleConstant::RuleType_AllowedDifferenceJump() 
+          or ruletype.Name() = RuleConstant::RuleType_AllowedValueJump() )
+      {
+        values.Add( RuleConstant::RuleScope_AllTasksOnResource() );
+        values.Add( RuleConstant::RuleScope_Program() );
+        values.Add( RuleConstant::RuleScope_ProgramPhase() );
+      }
+      else if(  ruletype.Name() = RuleConstant::RuleType_AllowedValueMinMaxCheck()
+                or ruletype.Name() = RuleConstant::RuleType_AllowedValueStringsCheck() )
+      {
+        values.Add( RuleConstant::RuleScope_AllTasksOnResource() );
+        values.Add( RuleConstant::RuleScope_Shutdown() );
+        values.Add( RuleConstant::RuleScope_Program() );
+        values.Add( RuleConstant::RuleScope_ProgramPhase() );  
+      }
+      else if(  ruletype.Name() = RuleConstant::RuleType_OverlappingRange() )
+      {
+        values.Add( RuleConstant::RuleScope_AllTasksOnResource() );
+      }
+      else if(  ruletype.Name() = RuleConstant::RuleType_MinMaxCombinedLength() )
+      {
+        values.Add( RuleConstant::RuleScope_Program() );
+        values.Add( RuleConstant::RuleScope_ProgramPhase() );    
+      }
+    }
+    
+    return &values;
+  *]
+}

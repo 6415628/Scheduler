@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddTemplate (DataUpgradeIO duio_i, String fileName_i, Object rootObject_i, 
+  Boolean augmentColumns_i)
+{
+  Description: 'Attempt to add template (can overwrite file if one already exists)'
+  TextBody:
+  [*
+    // tgn3 Apr-8-2021 (created)
+    
+    // This operation can fail if a template was already exported for a file
+    try
+    { 
+      duio_i.CreateTemplate( typeofexpression( rootObject_i ) );
+      
+      if( augmentColumns_i )
+      {
+        settings := this.ConvertorDataset().Settings();
+        
+        fileName    := fileName_i.ReplaceAll( settings.DataUpgradeTemplatesDirectory(), "" ); 
+        datasetKind := guard( fileName.Tokenize( "_" ).Element( 0 ), "" );  // Guard is just in case
+        
+        // Debug - do not delete
+        //logfile( ">>> DBInterface.AddTemplate FileName", datasetKind );
+        
+        this.AugmentColumns( duio_i, datasetKind );
+      }
+    }
+    onerror
+    {
+      msg := "Failed to create template for file [" + fileName_i + "]. Reason: " + e.DetailedInformation();
+      
+      DMF_Utility::LogInfo( msg ); 
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

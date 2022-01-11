@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method CanCreateScenario (structured_UserGroupDefinition userGroups) remote as Boolean
+{
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    // Check if the total nr of currently loaded scenario already exceeded max allowed 
+    // (this method will add onto the FeedbackObject).
+    this.IsLoadedScenariosLessThanMaxAllowed( Translations::LibSM_ScenarioManager_Action_Create() );
+    // Check if the total nr of scenarios is already at the max configured.
+    this.IsScenariosLessThanMaxAllowed( Translations::LibSM_ScenarioManager_Action_Create() );
+    
+    if ( not feedback.CheckHard( LibSM_Util::HasFunctionality( userGroups, 'LibSM_CreateScenario' ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_NotAllowedToCreate() );
+    }
+    
+    return feedback.IsAllowed() and this.CanCreateScenarioCustom();
+  *]
+}

@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintLatestEnd (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs, Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // zyi1 Jul-19-2021 (created)
+    
+    latestends := POAValueSet::N( poa, SuboptimizerPOACombiLeg::NamePOAConstraintLatestEnd(), Real::MaxReal() );
+    
+    schedule := this.GetSchedule();
+    
+    traverse( combilegs, Elements, combileg )
+    {
+      traverse( operations, Elements, operation, combileg.GetIsOperationAllowedHard( operation ) )
+      {
+        latestend := operation.LatestEnd();
+        if( latestend.IsFinite() )
+        {
+          end := latestend.HoursAsReal( schedule.Time() );
+          node := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation ), operation );
+          latestends.Set( node, end );
+          debuginfo( ' op: ', operation.OperationID(), ' latest end: ', latestend );
+        }
+      }
+    }
+    
+    constr := poa.NewEndConstraint( SuboptimizerPOACombiLeg::NamePOAConstraintLatestEnd() );
+    constr.Expression( poa.Expression( SuboptimizerPOACombiLeg::NamePOAExpressionTime() ) );
+    constr.ValueSet( latestends );
+    constr.SetEnd();
+    
+    
+    constr.Hard( false );
+    constr.ViolationOffset( 0.0 );
+    constr.Factor( this.Settings().KPILatenessTechnicalFactor() * guard( this.Strategy().KPIWeightOperationLateness(), 0.0 ) );
+    constr.Power( this.Settings().KPILatenessPower() );
+  *]
+}

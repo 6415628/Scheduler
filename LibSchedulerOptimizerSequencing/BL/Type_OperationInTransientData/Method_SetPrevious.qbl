@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetPrevious (LibOpt_Task task)
+{
+  Description: "sets this operation's `Previous` relation correctly, if this operation has a predecessor that is in the same task's scope. Should only happen as part of object creation."
+  TextBody:
+  [*
+    // mbr23 Jan-21-2020 (created)
+    
+    op := this.FindPreviousScopeOperation( task );
+    
+    if( not isnull( op ) )
+    {
+      se := op.ScopeElementOperation();
+      if( not isnull( se ) )
+      {
+        seor := se.OnRun( this.TransientData().Task().Run() );
+        if( not isnull( seor ) )
+        {
+          in_transientdata := OperationInSuboptimizerSequencing::FindTypeIndexOperationInTransientData( this.KeyTransientData(), seor.Key() );
+          if( not isnull( in_transientdata ) )
+          {
+            this.Previous( relset, in_transientdata );
+          }
+        }
+      }
+    }
+  *]
+}

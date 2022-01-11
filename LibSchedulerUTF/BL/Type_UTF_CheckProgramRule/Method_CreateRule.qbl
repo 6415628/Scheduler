@@ -1,0 +1,66 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateRule (Schedule schedule, String ruleScope, String ruleSubtype, 
+  String characteristic, ProgramDefinitionConfiguration programDefConfig) as Rule
+{
+  TextBody:
+  [*
+    rule := Rule::Create( schedule, schedule.GetLastRuleID() );
+    
+    // Set rule type/ rule subtype based on variant
+    subtype := select( schedule, RuleType.RuleSubType, rst, rst.Name() = ruleSubtype );
+    rule.RuleType( relset, subtype.RuleType() );
+    rule.RuleSubType( relset, subtype );
+    
+    // Create characteristic main based on variant
+    characteristicMain := select( schedule, Characteristic, char, char.ID() = characteristic );
+    rule.CharacteristicMain( relset, characteristicMain );
+    
+    // Enable rule 
+    rule.IsEnabled( true );
+    
+    // Set rule scope based on variant
+    rule.RuleScopeSelected( ruleScope );
+    
+    if( ruleScope = RuleConstant::RuleScope_Program() )
+    {
+      // Create rule scope in program type
+      programTypeConfig := select( schedule, ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration, ptc, true );
+      RuleScopeInProgramType::Create( rule, programTypeConfig );
+    }
+    else
+    {
+      // Create rule scope in program phase
+      programPhaseConfigs := selectset( schedule, ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration.ProgramPhaseConfiguration, ppc, true );
+      traverse( programPhaseConfigs, Elements, ppc )
+      {
+        RuleScopeInProgramPhase::Create( rule, ppc );
+      }
+    }
+    
+    if( ruleSubtype = RuleConstant::RuleSubType_NotAllowedJumpValue() )
+    {
+      // Create and assign rule changeover value
+      rule.RuleChangeOver( relnew,
+                           From := 'SH',
+                           To := 'CO' ); 
+    }
+    else if( ruleSubtype = RuleConstant::RuleSubType_MaxCombinedLength() )
+    {
+      rule.RuleValue( 1.0 ); 
+    }
+    else
+    {
+      if( ruleScope = RuleConstant::RuleScope_Program() )
+      {
+        rule.RuleValue( 5.0 );  
+      }
+      else
+      {
+        rule.RuleValue( 2.0 ); 
+      }
+    }
+    
+    return rule;
+  *]
+}

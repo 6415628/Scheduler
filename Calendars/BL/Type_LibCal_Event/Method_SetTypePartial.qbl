@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetTypePartial (Real capacity_i) as LibCal_Event
+{
+  Description:
+  [*
+    Set the type of the event to 'Partial', if allowed.
+    Otherwise set it to 'Available'.
+  *]
+  TextBody:
+  [*
+    // Use a FeedbackObject to collect the validation feedback.
+    feedback := LibCal_Validate::FeedbackObject();
+    
+    // Validate if using partial capacity is allowed.
+    // Is only a warning, because if it is not allowed the type will be changed.
+    moreInfo := this.GetEventInfo();
+    LibCal_Validate::RegisterWarning( LibCal_Validate::Event_UsePartialCapacity( LibCal_Event::TYPE_PARTIAL(), capacity_i ), moreInfo );
+    
+    // Type can only be set to Partial if partial capacity is enabled.
+    if( LibCal_Event::USE_PARTIAL_CAPACITY() )
+    {
+      //isChanged := this.Type() <> LibCal_Event::TYPE_PARTIAL()
+      //          or this.PartialCapacity() <> capacity_i;
+      // this.IsChanged( isChanged ); Change of Type or Capacity should NOT trigger re-generation of occurrences.
+                
+      this.Type( LibCal_Event::TYPE_PARTIAL() );
+      
+      // Validate the capacity.
+      moreInfo := moreInfo + ", PartialCapacity = " + LibCal_Util::RealToString( capacity_i );
+      LibCal_Validate::RegisterError( LibCal_Validate::Event_PartialCapacity( capacity_i ), moreInfo );
+    }
+    else
+    {
+      // Force the type to be Available otherwise, unless the capacity is 0.0;
+      // In that case set it to Unavailable.
+      if( capacity_i = 0.0 )
+      {
+        this.SetTypeUnavailable();
+      }
+      else
+      {
+        this.SetTypeAvailable();
+      }
+    }
+    
+    // Process the feedback that has been registered by the validation (if any).
+    LibCal_Util::ProcessFeedbackObject( feedback );
+    
+    // The below is only executed when no validation errors were encountered.
+    // Set the ParticalCapacity, also when it is not used.
+    this.PartialCapacity( capacity_i );
+                          
+    // Make the API fluent.
+    return this;
+  *]
+}

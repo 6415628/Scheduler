@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeRuleChangeOver (ImportedRule importedrule)
+{
+  Description: 'Create and update rule change over.'
+  TextBody:
+  [*
+    allinstances := selectset( this, RuleChangeOver, rco, true );
+    updatedinstances := construct( RuleChangeOvers );
+    
+    traverse( importedrule, ImportedRuleChangeOver, irco )
+    {
+      rulechangeover := select( this, RuleChangeOver, rco, 
+                                rco.From() = irco.From() 
+                                and rco.To() = irco.To() );
+      
+      if( isnull( rulechangeover ) )
+      {
+        rulechangeover := RuleChangeOver::Create( this, irco );
+      }
+      updatedinstances.Add( rulechangeover );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, rco )
+    {
+      rco.Remove();
+    }
+  *]
+}

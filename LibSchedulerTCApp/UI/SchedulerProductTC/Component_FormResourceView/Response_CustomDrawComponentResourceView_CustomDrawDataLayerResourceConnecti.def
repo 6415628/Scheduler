@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: CustomDrawComponentResourceView/CustomDrawDataLayerResourceConnectionEdge
+Response OnDrawObject (ResourceConnection object) id:Response_CustomDrawComponentResourceView_CustomDrawDataLayerResourceConnectionEdge_OnDrawObject
+{
+  #keys: '[134650.0.96753474]'
+  Body:
+  [*
+    // Draw Resouce connection
+    /*
+    resourceto := select( DataHolderShadowResourceNode.Data(), Elements, node, exists( object.VisibleToResource(), ResourceNode, r, r = node.WrappedInstance() and r.ResourceView() = DataHolderSelectedResourceView.Data() )  and node.IsVisible() )
+    resourcefrom := select( DataHolderShadowResourceNode.Data(), Elements, node, exists( object.VisibleFromResource(), ResourceNode, r, r = node.WrappedInstance() and r.ResourceView() = DataHolderSelectedResourceView.Data() )  and node.IsVisible() )
+    */
+    resourceto := select( DataHolderShadowResourceNode.Data(), Elements, node, object.VisibleToResource().ResourceID() = node.ResourceID() and node.IsVisible() )
+    resourcefrom := select( DataHolderShadowResourceNode.Data(), Elements, node, object.VisibleFromResource().ResourceID() = node.ResourceID() and node.IsVisible() )
+    
+    if( not ( isnull( resourcefrom ) or isnull( resourceto ) ) )
+    {
+    // draw line
+    minx := minvalue ( resourcefrom.X(), resourceto.X() );
+    miny := minvalue ( resourcefrom.Y(), resourceto.Y() );
+    
+    // region always starts at 0,0
+    adjustX := 0 - minx;
+    adjustY := 0 - miny;
+    
+    color := ifexpr( object.IsAllowed(),  ColorScheme.ResourceConnection_Allowed(), ColorScheme.ResourceConnection_Disallowed() );
+    
+    surface.Pen().Color( color );
+    surface.Pen().Width( 1 );
+    surface.Pen().Style( PenSpecification::StyleDashed() );
+    surface.Draw( GraphicalLine::LineTo( resourcefrom.X() + adjustX, resourcefrom.Y() + adjustY, resourceto.X() + adjustX, resourceto.Y() + adjustY, 1 ) );
+    }
+  *]
+  DefinitionID: 'Responsedef_CustomDrawDataLayer_OnDrawObject'
+}

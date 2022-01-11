@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Serialize (ActionElement meth) as String
+{
+  Description:
+  [*
+    Convert a method reference into a string.
+    
+    This should only be used in unit tests.
+  *]
+  TextBody:
+  [*
+    json := JSON::Object()
+    
+    if( not meth.istype( ModeledStaticMethodActionElement ) )
+    {
+      error( 'ActionElement of type ' + typeofexpression( meth ).Name() + ' is not supported. Only static methods are supported' );
+    }
+    json.Add( LibOpt_Reflection::JSON_Type(), meth.TargetType().Name() );
+    json.Add( LibOpt_Reflection::JSON_MethodName(), meth.Name() );
+    
+    arguments := JSON::Array();
+    traverse( meth, astype( ModeledStaticMethodActionElement ).ModeledStaticMethodDefinition.Arguments, argument )
+    {
+      arguments.Add( argument.Type().Name() );
+    }
+    
+    json.Add( LibOpt_Reflection::JSON_Arguments(), arguments );
+    
+    return json.AsString();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

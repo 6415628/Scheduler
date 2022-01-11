@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method SOAPExchangeDataOnFailure (LibDEF_IntegrationEvent event_i, String systemGUID_i, String systemHostName_i, 
+  Number systemPortNumber_i, NamedValueTree nvt_i, Number soapErrorNumber_i, 
+  String soapErrorText_i)
+{
+  Description: 'SOAP Client failure handler.'
+  TextBody:
+  [*
+    // Complete the existing event
+    if( not isnull( event_i ) )
+    {
+      // Intentionally not use Event hook here as we do not want to raise an error in this body, and we would like the error encountered to be displayed under "ErrorMessage"
+      event_i.CreateActivity( "Failed to send data to " + LibDEF_Util::FormatCoordinateToString( systemHostName_i, systemPortNumber_i ) + " via SOAP",
+                              false,                                                                                                                      // Activity should be categorized as "Failed"
+                              "Error number: " + [String]soapErrorNumber_i + ', Error message: ' + soapErrorText_i );
+    }
+    
+    // mark the system as unavailable (might need to filter by error unreachable)
+    if( systemGUID_i.Length() > 0 )
+    {
+      LibDEF_System::MarkAvailability( this, systemGUID_i, false, event_i );
+    }
+    
+    LibDEF_IntegrationEvent::EventComplete( event_i );
+    
+    // handle specific cases
+    this.OnFailureExchangeData( nvt_i, systemGUID_i );
+  *]
+}

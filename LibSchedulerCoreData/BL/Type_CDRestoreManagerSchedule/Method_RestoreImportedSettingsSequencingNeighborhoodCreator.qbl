@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedSettingsSequencingNeighborhoodCreator (CDIntegration cdintegration, ImportedSettingsSequencing importedsettingssequencing)
+{
+  Description: 'Restore imported settings sequencing neighborhood creator core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedSettingsSequencingNeighborhoodCreator
+    cdimportedSettingsSequencingNeighborhoodCreators := selectset( cdintegration, CDEntity.astype( CDImportedSettingsSequencingNeighborhoodCreator ), cdisnc, 
+                                                                   cdisnc.SettingsId() = importedsettingssequencing.Id() 
+                                                                 );
+    traverse( cdimportedSettingsSequencingNeighborhoodCreators, Elements, cdisnc )
+    {
+      importedSettingsSequencingNeighborhoodCreator := importedsettingssequencing.ImportedSettingsSequencingNeighborhoodCreator( relnew,
+                                                                                                                                 SettingsId := cdisnc.SettingsId()
+                                                                                                                               );
+      CopyCorresponding::CopyFrom( cdisnc ).CopyTo( importedSettingsSequencingNeighborhoodCreator );   
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

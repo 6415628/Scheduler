@@ -1,0 +1,140 @@
+Quintiq file version 2.0
+#parent: #root
+Method SyncScenarios (LibSM_ScenarioManager scenarioManager, LibSM_Staging_Scenarios stagingScenarios)
+{
+  TextBody:
+  [*
+    /* NOTE: A scenario can have a parent node and could be multiple level down the hierarchy
+    - The source of data does not guarantee the order of scenarios
+    So,
+    1. If staging scenario's staging parent node is not processed yet, then it will be imported in next batch
+    2. Only create scenarios with parent node found in application, else it is assigned to "All scenarios" folder
+    3. Staging scenario without dataset found will not be created
+    */
+    
+    scenariosWithoutParent := construct( LibSM_Staging_Scenarios );
+    
+    objectInfos := MDSEditor::Editor().ObjectInfos();    
+    
+    traverse( stagingScenarios, Elements, staging )
+    {
+      stagingParent := select( this, Staging_Scenario, scenario, 
+                               scenario <> staging,
+                               scenario.Name() = staging.ParentName() );
+    
+      // Gather and import in next batch if the staging parent is not processed yet
+      if( guard( not stagingParent.IsProcessed(), false ) )
+      { 
+        scenariosWithoutParent.Add( staging );
+      }
+      else
+      { 
+        parentNode := select( scenarioManager, ScenarioNode, node,
+                              node.IsFolder() = staging.IsParentAFolder(),
+                              node.Name()     = staging.ParentName() );
+        
+        if( isnull( parentNode ) )
+        {
+          // No parentnode found, use the rootfolder as parentnode.
+          parentNode := select( scenarioManager, ScenarioNode.astype( LibSM_ScenarioFolder ), folder,
+                                folder.Name() = LibSM_ScenarioManager::GetFolderRoot() );
+        }  
+        
+        staging.IsProcessed( true );
+        current := select( scenarioManager, ScenarioNode.astype( LibSM_Scenario ), scenario,
+                           scenario.Name() = staging.Name() );
+                         
+        if( isnull( current ) )
+        {
+          objectInfo := select( objectInfos, Elements, objectinfo,
+                                objectinfo.Name() = staging.DatasetName() );
+                                
+        
+          // Only create scenario and link to the dataset if dataset exists
+          if( not isnull( objectInfo ) )
+          { 
+            planningLevel    := select( scenarioManager, MetaData, metadata,
+                                        metadata.Value() = staging.PlanningLevel() and
+                                        metadata.Type() = LibSM_MetaData::METADATA_PLANNINGLEVEL() );
+            planType         := select( scenarioManager, MetaData, metadata,
+                                        metadata.Value() = staging.PlanType() and
+                                        metadata.Type() = LibSM_MetaData::METADATA_PLANTYPE() );  
+            lifecycleStatus  := select( scenarioManager, MetaData, metadata,
+                                        metadata.Value() = staging.LifecycleStatus() and
+                                        metadata.Type() = LibSM_MetaData::METADATA_LIFECYCLESTATUS() );                                                                                    
+            knowledgeProfile := select( scenarioManager, KnowledgeProfile, kp,
+                                        kp.Name() = staging.KnowledgeProfileName() );
+                                        
+            // Create metadata if not existed and link to dataset                           
+            if( isnull( planningLevel ) )
+            {
+              planningLevel := LibSM_MetaData::Create( scenarioManager,
+                                                       LibSM_MetaData::METADATA_PLANNINGLEVEL(),
+                                                       staging.PlanningLevel(),
+                                                       "" );
+              info( "Add Planning level here " );
+            }
+            if( isnull( planType ) )
+            {
+              planType := LibSM_MetaData::Create( scenarioManager,
+                                                  LibSM_MetaData::METADATA_PLANTYPE(),
+                                                  staging.PlanType(),
+                                                  "" );
+            }
+            if( isnull( lifecycleStatus ) )
+            {
+              lifecycleStatus := LibSM_MetaData::Create( scenarioManager,
+                                                         LibSM_MetaData::METADATA_LIFECYCLESTATUS(),
+                                                         staging.LifecycleStatus(),
+                                                         "" );
+            }
+            
+            // Add metadata to structured type
+            metadata := construct( structured[ LibSM_MetaData ] );
+            metadata.Add( planningLevel );
+            metadata.Add( planType );
+            metadata.Add( lifecycleStatus );
+            
+            dataset := LibSM_Dataset::Create( scenarioManager, 
+                                              objectInfo.Kind(),
+                                              staging.DatasetName(),
+                                              objectInfo.Path(),
+                                              objectInfo.TimeZoneID() );
+          
+            current := scenarioManager.ScenarioFactory().CreateScenarioFromDataset( dataset,
+                                                                                    parentNode,
+                                                                                    staging.Name(),
+                                                                                    staging.Comment(),
+                                                                                    false, // Not IsLive
+                                                                                    "",
+                                                                                    knowledgeProfile,
+                                                                                    metadata,
+                                                                                    objectInfo.TimeZoneID()
+                                                                                  );
+            dataset.UpdateState( objectInfo.MDSID() );                                                                               
+          
+            current.CreatedBy ( staging.CreatedBy() );
+            current.CreatedOn ( staging.CreatedOn() );
+            current.ChangedBy ( staging.ChangedBy() );
+            current.ChangedOn ( staging.ChangedOn() );
+            staging.ErrorMesssage( "" );
+          }
+          else
+          {
+            errorMessage := "Scenario '" + staging.Name() + "' is not imported because dataset '" + staging.DatasetName() + "' does not exist.";
+            staging.ErrorMesssage( errorMessage );
+            LibSM_Util::LogInfo( errorMessage );
+          }
+        }
+      } // end outer if
+    } // end of traverse
+    
+    if( scenariosWithoutParent.Size() > 0 )
+    {
+      debuginfo( "The following staging scenarios will be imported in next batch" );
+      debuginfo( "Scenarios:", selectvalues( scenariosWithoutParent, Elements, scenario, true, scenario.Name() ).ToString( "," ) );
+      this.SyncScenarios( scenarioManager, scenariosWithoutParent );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

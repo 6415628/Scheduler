@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: lstSnapshots
+Response OnClick (structured[shadow[KpiSnapshotData]] selection) id:Response_lstSnapshots_MenuExportAsEXCEL_OnClick
+{
+  #keys: '[146450.0.1761583342]'
+  Body:
+  [*
+    //Export to EXCEL file
+    nvt := Kpi_GlobalState.ConvertShadowSnapshotDataToNvt( selection );
+    xls := KpiExcelConverter::CreateExcelFromNvtContainingMultiple( nvt, KpiTracker );
+    
+    filename := this.Application().GetSaveFileName( "KpiSnapshot", "xlsx", "Excel workbook (*.xlsx)" );
+    if( filename <> '' )
+    {
+      table := TableHandle::ImportXML( xls );
+      
+      savefile := Application.GetClientFile( filename );
+      XLS::SaveTable( table, savefile.LocalFileName() );
+      
+      Application.TransferToClient( savefile );
+      Application.RemoveLocalCopy( savefile );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => /lstSnapshots/Responsedef_lstSnapshots_Menu_OnClick
+  Initiator: 'MenuExportAsEXCEL'
+}

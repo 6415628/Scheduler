@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    super.Setup( schedule );
+    
+    routing := select( schedule, Routing, routing, true );
+    markForReleaseInstance := this.GetMarkForReleaseInstance( this.Variant() );
+    
+    if( markForReleaseInstance.IsInternalWorkOrder() )
+    {
+      internalWorkOrder := routing.CreateWorkOrder( null( ProductInStockingPoint ), 1.0, 1, DateTime::Now(), false );
+      internalWorkOrder.IsReleased( markForReleaseInstance.IsReleased() );
+      
+      if( markForReleaseInstance.IsWorkOrderFrozen() )
+      {
+        this.CreateAndPlanAnOperation( schedule );
+      }
+      
+      if( markForReleaseInstance.IsMarkedForRelease() )
+      {
+        workOrders := selectset( schedule, WorkOrder, workOrder, true );
+        WorkOrder::MarkForRelease( workOrders );
+      }
+    }
+    else
+    {
+      UTFMockObjectFactory::CreateGenericExternalWorkOrder( schedule, 'WO_01', 'R_01' );
+    }
+    
+    if( markForReleaseInstance.HasMultipleSelection() )
+    {
+      internalWorkOrder1 := routing.CreateWorkOrder( null( ProductInStockingPoint ), 1.0, 1, DateTime::Now(), false );
+      internalWorkOrder1.IsReleased( markForReleaseInstance.IsReleased() );
+    }
+    
+    // Propagate attribute InternalWorkOrder.IsMarkedForRelease which is required for precon check
+    Transaction::Transaction().Propagate( attribute( InternalWorkOrder, IsMarkedForRelease ) );
+  *]
+}

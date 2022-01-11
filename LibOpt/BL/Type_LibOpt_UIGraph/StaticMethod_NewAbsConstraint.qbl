@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod NewAbsConstraint (MathematicalProgram program, LibOpt_UIGraphNode node, LibOpt_UIGraphNodes elements, 
+  String constr_name, String pos_id, String neg_id, 
+  Real offset) declarative
+{
+  TextBody:
+  [*
+    if( elements.Size() > 0 )
+    {
+      constr := program.NewConstraint( constr_name, node );
+      var := program.Variable( LibOpt_UIGraph::VarX(), node );
+      traverse( elements, Elements, elem )
+      {
+        var_elem := program.Variable( LibOpt_UIGraph::VarX(), elem );
+        constr.NewTerm( -1.0 / elements.Size(), var_elem );
+      }
+      
+      var_dist_pos := program.Variable( pos_id, node );
+      var_dist_neg := program.Variable( neg_id, node );
+      constr.NewTerm(  1.0, var_dist_pos );
+      constr.NewTerm( -1.0, var_dist_neg );
+      
+      constr.Sense( MPConstraintSense::Equal().AsString() );
+      constr.RHSValue( offset );
+      constr.NewTerm( 1.0, var );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestSynchronizeEquipment (Schedule schedule)
+{
+  Description: 'Tests the synchronization of equipment to resource and resource group.'
+  TextBody:
+  [*
+    integrationAPI := schedule.IntegrationAPI();
+    
+    index := 0; 
+    id := "E_01"; name := "Equipement 1"; description := "Equipment_01"; equipmentClassID := "EC_01"; description := 'EquipmentClass 1'; id := "EC_01"; name := 'EquipmentClass_01';
+    feedbackHistory := Duration::Hours( 1 ); frozenHorizon := Duration::Hours( 2 ); schedulingWindow := Duration::Hours( 3 ); 
+    canOverlapCalendarBreak := true; canProcessOverlapCalendarBreak:= true; isPlanRelatedOperations := true; useFeedbackHistory := true; useFrozenHorizon := true; 
+    useSchedulingWindow := true; isBottleneck := true; hasFixedSequencePlanLogic := true; hasPractice := true; isBatchResource := true; isContinuous := true;
+    isContinuousResourceTransverseLoading := true;
+    continuousResourceLength := 0.0; continuousResourceSpeed := 1.0; maxBatchSize := 2.0; maximumParallelLoadWidth := 3.0; minimumGapLength := 4.0; minimumParallelLoadGap := 5.0;
+    
+    // Create equipment and equipment class object.
+    integrationAPI.GetIntegrationDataset() -> FlushAndCreateEquipment( canOverlapCalendarBreak, canProcessOverlapCalendarBreak, description, equipmentClassID, feedbackHistory, frozenHorizon, id, index, 
+                                                               isBottleneck, isPlanRelatedOperations, name, schedulingWindow, useFeedbackHistory, useFrozenHorizon, useSchedulingWindow ) -> ( equipment )
+    {
+      integrationAPI.GetIntegrationDataset() -> FlushAndCreateEquipmentClass( continuousResourceLength, continuousResourceSpeed, description, hasFixedSequencePlanLogic, hasPractice, id, isBatchResource,
+                                                                      isContinuous, isContinuousResourceTransverseLoading, maxBatchSize, maximumParallelLoadWidth, minimumGapLength, 
+                                                                      minimumParallelLoadGap, name ) -> ( equipmentClass )
+      {
+        // Synchronize equipment and equipment class.
+        integrationAPI -> SynchronizeData( LibDII_DataTransformationEquipment::ID() ) -> ( synchronizeEquipmentStream )
+        {
+          integrationAPI -> SynchronizeData( LibDII_DataTransformationEquipmentClass::ID() ) -> ( synchronizeEquipmentClassStream )
+          {
+            // Assert result
+            this -> CompareEquipmentAndResource( schedule, equipment, equipmentClass );
+          }
+        }
+      }
+    }
+  *]
+}

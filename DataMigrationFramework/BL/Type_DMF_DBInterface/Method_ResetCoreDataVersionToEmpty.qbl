@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method ResetCoreDataVersionToEmpty (DataUpgradeIO duio_i, Strings requiredColumns_i) as Boolean
+{
+  TextBody:
+  [*
+    // UPDATE table reset it to empty
+    msg     := "";
+    delim   := DMF_DBInterface::GetValueDelimiter();
+    
+    /* Example - Return key-value pairs in a concatenated column
+    UPDATE DMF_UpgradeabilityMetaData SET CoreDataMajorVersion = '',CoreDataMinorVersion = '',CoreDataBuildVersion = '',CoreDataPatchVersion = '';
+    */              
+    concatenatedColumns := selectvalues( requiredColumns_i, Elements, column, column.StartsWith( "CoreData" ), 
+                                         column + " = ''" ).ToString( delim );
+    
+    query := "UPDATE "+ typeof( DMF_UpgradeabilityMetaData ).Name() + String::NewLine() +
+             "SET " + concatenatedColumns + ";";
+    
+    isSuccess := concatenatedColumns.Length() > 0 and this.Execute( duio_i, query, msg );
+    
+    // DevNote: this may actually not be necessary, but is done so for consistency with other execute patterns
+    if( not isSuccess )
+    {
+      DMF_Utility::LogWarning( msg ); 
+    }
+    
+    return isSuccess;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

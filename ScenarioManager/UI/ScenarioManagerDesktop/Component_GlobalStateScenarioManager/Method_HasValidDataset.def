@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method HasValidDataset (LibSM_Scenario scenario, Boolean fastCheck) as Boolean id:Method_LibSM_GlobalState_HasValidDataset
+{
+  #keys: '[136398.1.587826915]'
+  Body:
+  [*
+    // Check if a scenario has a valid dataset
+    feedbackObject := FeedbackObject::LocalFeedback();
+    
+    if( not feedbackObject.CheckHard( not isnull( scenario ) ) )
+    {
+      feedbackObject.AddHard( Translations::LibSM_Scenario_HasDataset() );
+    }
+    
+    if( not feedbackObject.CheckHard( scenario.HasDataset() )
+     or not feedbackObject.CheckHard( fastCheck or this.CheckDatasetExists( scenario ) ) )
+    {
+    
+      feedbackObject.AddHard( Translations::LibSM_Scenario_DoesNotHaveADataset_RefreshToCheckAgain( scenario.Name() ) );
+    }
+    
+    return feedbackObject.IsAllowed();
+  *]
+}

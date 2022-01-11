@@ -1,0 +1,75 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test010_GetSubset (LibOpt_TestDataset dataset)
+{
+  Description: 'Test whether the `scope.ScopeElements( type )` method works correctly.'
+  TextBody:
+  [*
+    nr_of_t1_scope_elements := 10;
+    nr_of_t2_scope_elements := 15;
+    nr_of_scope_elements := nr_of_t1_scope_elements + nr_of_t2_scope_elements;
+    
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    
+    scope_elements := construct( LibOpt_ScopeElements );
+    for( i := 0; i < nr_of_t1_scope_elements; i++ )
+    {
+      scope_elements.Add( dataset.ScopeElementMock( relnew ) );
+    }
+    for( i := 0; i < nr_of_t2_scope_elements; i++ )
+    {
+      scope_elements.Add( dataset.ScopeElementMock2( relnew ) );
+    }
+    
+    traverse( LibOpt_TestUnitGen_TestDataset::GetBooleanSet(), Elements, debug_scope )
+    {
+      run.DebugScope( debug_scope );
+      scope := LibOpt_Scope::Create( run, scope_elements );
+      
+      id := ' debug_scope=' + [String] debug_scope;
+      
+      // TEST
+      this.Run().AssertEqual( nr_of_scope_elements,
+                              scope.ScopeElements().Size(),
+                              'scope.ScopeElements()' + id );
+      this.Run().AssertEqual( nr_of_scope_elements,
+                              scope.ScopeElements( typeof( Object ) ).Size(),
+                              'scope.ScopeElements( typeof( Object ) )' + id );
+      this.Run().AssertEqual( nr_of_scope_elements,
+                              scope.ScopeElements( typeof( LibOpt_ScopeElement ) ).Size(),
+                              'scope.ScopeElements( typeof( LibOpt_ScopeElement ) )' + id );
+      this.Run().AssertEqual( nr_of_scope_elements,
+                              scope.ScopeElements( typeof( LibOpt_ScopeElementMockHierarchical ) ).Size(),
+                              'scope.ScopeElements( typeof( LibOpt_ScopeElementMockHierarchical ) )' + id );
+      this.Run().AssertEqual( nr_of_t1_scope_elements,
+                              scope.ScopeElements( typeof( LibOpt_ScopeElementMock ) ).Size(),
+                              'scope.ScopeElements( typeof( LibOpt_ScopeElementMock ) )' + id );
+      this.Run().AssertEqual( nr_of_t2_scope_elements,
+                              scope.ScopeElements( typeof( LibOpt_ScopeElementMock2 ) ).Size(),
+                              'scope.ScopeElements( typeof( LibOpt_ScopeElementMock2 ) )' + id );
+                              
+                              
+      this.Run().AssertEqual( nr_of_scope_elements,
+                              scope.ScopeElementsConst().Size(),
+                              'scope.ScopeElementsConst()' + id );
+      this.Run().AssertEqual( nr_of_scope_elements,
+                              scope.ScopeElementsConst( typeof( Object ) ).Size(),
+                              'scope.ScopeElementsConst( typeof( Object ) )' + id );
+      this.Run().AssertEqual( nr_of_scope_elements,
+                              scope.ScopeElementsConst( typeof( LibOpt_ScopeElement ) ).Size(),
+                              'scope.ScopeElementsConst( typeof( LibOpt_ScopeElement ) )' + id );
+      this.Run().AssertEqual( nr_of_scope_elements,
+                              scope.ScopeElementsConst( typeof( LibOpt_ScopeElementMockHierarchical ) ).Size(),
+                              'scope.ScopeElementsConst( typeof( LibOpt_ScopeElementMockHierarchical ) )' + id );
+      this.Run().AssertEqual( nr_of_t1_scope_elements,
+                              scope.ScopeElementsConst( typeof( LibOpt_ScopeElementMock ) ).Size(),
+                              'scope.ScopeElementsConst( typeof( LibOpt_ScopeElementMock ) )' + id );
+      this.Run().AssertEqual( nr_of_t2_scope_elements,
+                              scope.ScopeElementsConst( typeof( LibOpt_ScopeElementMock2 ) ).Size(),
+                              'scope.ScopeElementsConst( typeof( LibOpt_ScopeElementMock2 ) )' + id );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

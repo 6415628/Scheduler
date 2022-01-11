@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateNewBranch (GUIComponent parent, LibSM_KnowledgeBaseBranchInProfile kbBranch) id:Method_LibSM_dlgEditKBBranchName_CreateNewBranch
+{
+  #keys: '[123216.0.251992218]'
+  Body:
+  [*
+    // Create a new branch
+    dlg := construct( LibSM_dlgEditKBBranchName );
+    edtKBDefinitionName.Enabled( false );
+    dlg.vhIsCheckBranchNameNeeded().Enabled( true );
+    
+    selectedKB := shadow( kbBranch );
+    dlg.Data( selectedKB );
+    dlg.edtBranchVersion().Text( "1.0.0.0" );
+    
+    if( dlg.DoModal( parent ) > 0 )
+    {
+      shadowNewSelectedKBBranch := dlg.Data();
+      shadowNewSelectedKBBranch.KBBranchVersion( dlg.edtBranchVersion().Text() );
+      
+      kbBranch.Update( shadowNewSelectedKBBranch.KBBranchName(), shadowNewSelectedKBBranch.KBBranchVersion() );
+      newSelectedKBBranch := shadowNewSelectedKBBranch.WrappedInstance();
+      
+      LibSM_GlobalState.InstantiateNewKnowledgeBranch( newSelectedKBBranch.KBDefinitionName(), newSelectedKBBranch.KBBranchName() );
+      
+      LibSM_GlobalState.SelectKB( kbBranch.KnowledgeProfile(),
+                                           newSelectedKBBranch.KBDefinitionName(),
+                                           newSelectedKBBranch.KBBranchName(),
+                                           newSelectedKBBranch.KBBranchVersion() );
+    }
+  *]
+}

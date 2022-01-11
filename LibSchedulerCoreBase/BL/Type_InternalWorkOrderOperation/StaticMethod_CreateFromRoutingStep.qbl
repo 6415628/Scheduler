@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateFromRoutingStep (WorkOrder owner, RoutingStep routingstep)
+{
+  Description: 'Creates work order operation instance based on routing step.'
+  TextBody:
+  [*
+    // WOI1 Oct-31-2016 (created)
+    
+    woid := owner.Id();
+    seqnr := routingstep.SequenceNr();
+    
+    workorderoperation := guard( WorkOrderOperation::FindWorkOrderOperation( woid, seqnr ).astype( InternalWorkOrderOperation ),
+                                 null( InternalWorkOrderOperation ) );
+    
+    if( isnull( workorderoperation ) )
+    {
+      // create work order operation instance 
+      workorderoperation := owner.CreateWorkOrderOperation( seqnr ).astype( InternalWorkOrderOperation );
+    }
+    // update attributes
+    workorderoperation.UpdateAndSynchronizeOperations( routingstep );
+    
+    // create work order demands and work order input materials
+    routingstepinputs := selectset( routingstep, RoutingStepInput, routingstepinput, true );
+    workorderoperation.CreateDemandAndInputMaterialFromRouting( routingstepinputs );
+    
+    // create work order supplies and work order output materials
+    routingstepoutputs := selectset( routingstep, RoutingStepOutput, routingstepoutput, true );
+    workorderoperation.CreateSupplyAndOutputMaterialFromRouting( routingstepoutputs );
+  *]
+}

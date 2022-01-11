@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedRuleScopeInResource (CDIntegration cdintegration, ImportedRule importedrule)
+{
+  Description: 'Restore imported rule scope in resource core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedRuleScopeInResource
+    cdimportedRuleScopeInResources := selectset( cdintegration, CDEntity.astype( CDImportedRuleScopeInResource ), cdirir, 
+                                                 cdirir.RuleID() = importedrule.RuleID() 
+                                               );
+    traverse( cdimportedRuleScopeInResources, Elements, cdirir )
+    {
+      importedRuleScopeInResource := importedrule.ImportedRuleScopeInResource( relnew,
+                                                                               ResourceID := cdirir.ResourceID(),
+                                                                               RuleID := cdirir.RuleID()
+                                                                             );
+      CopyCorresponding::CopyFrom( cdirir ).CopyTo( importedRuleScopeInResource );   
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetNonCumulativeRules (TaskInProgramSet previoustaskinprogramset, Operation_SC previousoperation) declarative remote as owning Rules
+{
+  Description: 'Get all program or phase non cumulative rules'
+  TextBody:
+  [*
+    // Get all program or phase non cumulative rules
+    
+    // Check whether has previous task/previous feedback operation has same program phase
+    hasprevioustaskinphase := guard( previoustaskinprogramset.ProgramPhase() = this.ProgramPhase(), false )
+                                     or exists( previousoperation, OperationTaskFeedback.FeedbackTaskInSchedule.FeedbackTaskInFeedbackProgramType.FeedbackProgramPhase.ProgramPhase, programphase,
+                                                programphase = this.ProgramPhase() );
+    
+    phaserules := selectset( this, ProgramPhase.ProgramPhaseConfiguration.RuleScopeInProgramPhase.Rule, rule,
+                             ( not rule.RuleSubType().IsCheckOnPreviousOperation() or hasprevioustaskinphase ),
+                             not rule.IsProgramPhaseTransitionRule()
+                             and not rule.RuleSubType().IsCumulativeValueNeeded() );
+    
+    // Check whether has previous task/previous feedback operation has same program type
+    hasprevioustaskinprogram := guard( previoustaskinprogramset.ProgramType() = this.ProgramType(), false )
+                                       or exists( previousoperation, OperationTaskFeedback.FeedbackTaskInSchedule.FeedbackTaskInFeedbackProgramType.FeedbackProgramType.ProgramType, programtype,
+                                                  programtype = this.ProgramType() );
+    programrules := selectset( this, ProgramType.ProgramTypeConfiguration.RuleScopeInProgramType.Rule, rule,
+                               ( not rule.RuleSubType().IsCheckOnPreviousOperation() or hasprevioustaskinprogram ),
+                                not rule.RuleSubType().IsCumulativeValueNeeded() );
+    
+    rules := phaserules.Union( programrules );
+    
+    return &rules;
+  *]
+}

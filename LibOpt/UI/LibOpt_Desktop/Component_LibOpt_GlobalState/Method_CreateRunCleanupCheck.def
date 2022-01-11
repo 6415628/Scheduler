@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateRunCleanupCheck (LibOpt_Optimizer optimizer, LibOpt_Run run, Number expected_new_runs) as Boolean id:Method_LibOpt_GlobalState_CreateRunCleanupCheck
+{
+  #keys: '[144996.0.1719791578]'
+  Body:
+  [*
+    // The parameter optimizer or run can be used. Only one needs to be set.
+    assert( not isnull( optimizer ) or not isnull( run ), 'not isnull( optimizer ) or not isnull( run )' );
+    
+    // Highlight runs that will be cleaned up
+    cleanup := guard( optimizer.GetRunsForCleanup( expected_new_runs ),
+                      run.OptimizerGetRunsForCleanup( expected_new_runs ) );
+    
+    optimizer_name := guard( optimizer.Name(), run.OptimizerName() );
+    
+    return cleanup.Size() = 0
+           or MessageBox::Question( this, Translations::LibOpt_Optimizer_CleanUpRuns( optimizer_name, cleanup ), Translations::LibOpt_YesNo() ) = 0
+  *]
+}

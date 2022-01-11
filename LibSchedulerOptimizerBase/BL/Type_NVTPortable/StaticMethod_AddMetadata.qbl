@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod AddMetadata (Type type, NamedValueTree nvt, NamedValue nv)
+{
+  TextBody:
+  [*
+    // mbr23 Apr-24-2020 (created)
+    // copied from member method in this type from LibOpt, because it is de facto static.
+    
+    traverse( nv.Children(), Elements, child )
+    {
+      children := child.Children();
+      if( children.Size() = 0 )
+      {
+        attr := select( LibOpt_Utility::GetTypeAncestors( type ), Elements.MdlAttrElements.astype( MdlModeledAttrElement ), a, a.Name() = child.Name() );
+        
+        if( not isnull( attr ) )
+        {
+          LibSE_SettingsContainer::AddMetadata( nvt, child, attr, type );
+        }
+      }
+      else
+      {
+        rel := select( LibOpt_Utility::GetTypeAncestors( type ), Elements.MdlRelSideElements, rel, rel.Name() = child.Name() );
+        NVTPortable::AddMetadata( rel.OtherSide().Type(), nvt, child );
+      }
+    }
+  *]
+}

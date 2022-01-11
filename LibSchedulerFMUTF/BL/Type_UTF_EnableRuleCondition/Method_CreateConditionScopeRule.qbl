@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateConditionScopeRule (Schedule schedule, String ruleSubtype, String conditionType, 
+  Boolean conditionValue, String conditionScope) as Rule
+{
+  Description: 'Create shutdown rule test data'
+  TextBody:
+  [*
+    rule := Rule::Create( schedule, 1 );
+    
+    // Assign rule type and rule subtype
+    rst := select( schedule, RuleType.RuleSubType, r, r.Name() = ruleSubtype );
+    rule.RuleSubType( relset, rst );
+    rule.RuleType( relset, rst.RuleType() );
+    
+    if( ruleSubtype = RuleConstant::RuleSubType_NotAllowedJumpValue() )
+    {
+      // Create rule changeover
+      rule.RuleChangeOver( relnew,
+                           From := 'A',
+                           To := 'B' );
+    }
+    
+    // Assign characteristic
+    charMain := null( Characteristic );
+    if( ruleSubtype = RuleConstant::RuleSubType_NotAllowedJumpValue() )
+    {
+      charMain := select( schedule, Characteristic, char, char.Name() = RuleConstant::Characteristic_ProductType() );
+    }
+    else
+    {
+      charMain := select( schedule, Characteristic, char, char.Name() = RuleConstant::Characteristic_OperationWidth() );
+    }
+    rule.CharacteristicMain( relset, charMain );
+    
+    charCondition := select( schedule, Characteristic, char, char.Name() = conditionType );
+    rule.CharacteristicCondition( relset, charCondition );
+    
+    // Enable rule
+    rule.IsEnabled( true );
+    
+    // Enable rule condition
+    rule.IsConditionEnabled( true );
+    
+    // Assign ConditionValue based on variant
+    rule.ConditionValue( conditionValue );
+    
+    // Assign ConditionScope based on variant 
+    rule.ConditionScope( conditionScope );
+    
+    // Create a resource and apply rule scope to rule
+    rule.RuleScopeSelected( RuleConstant::RuleScope_AllTasksOnResource() );
+    UTFMockObjectFactory::CreateRuleScopeInSingleResource( schedule, rule, 'resource' );
+    
+    // Assign rule value
+    rule.RuleValue( 15.0 );
+    
+    return rule;
+  *]
+}

@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoFinalize (LibOpt_Task task) as stream[JSON]
+{
+  Description:
+  [*
+    This method calls a second `DoFinalize` method. This second `DoFinalize` handles the deletion of dataset copies and deletes the task.
+    The second `DoFinalize` method uses an output variable. This output variable prevents us from calling `DoFinalize` reactively.
+    
+    This method is not supposed to be overridden.
+  *]
+  TextBody:
+  [*
+    returnstream := stream[JSON]::Success();
+    
+    if( not this.Run().IsFailed() )
+    {
+       hascreatedstream := false;
+       returnstream := this.DoFinalize( task,
+                                        hascreatedstream // hascreatedstream is an output variable, so we cannot pass 'false' directly.
+                                        );
+    }
+    
+    return returnstream;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

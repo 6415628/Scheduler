@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExportToXLS () id:Method_LibDIF_pnlButtonExportToXLS_ExportToXLS
+{
+  #keys: '[146730.0.581585637]'
+  Body:
+  [*
+    // Trigger the export of data to XLS.
+    // The Server will store the data that must we written to the file in attribute ExportData of the IntegrationAPI-instance.
+    // Attribute ExportID of the IntegrationAPI-instance is 'monitored' by lblExportID using databinding.
+    // When the value of the attribute changes, the label will trigger the writing of the data to file
+    // iff the ExportID matches the value that is provided to the Server by this method.
+    // So the assignment of exportID to attribute ExportID acts as a callback from the Server to the
+    // Client that the ExportData is ready to be retrieved.
+    
+    // Get the model objects that will be exported.
+    objects := this.GetObjects();
+    
+    // Generate an exportID and register it so that there can be recognized later on that the ExportData is for this Client.
+    exportID := Key::NextPersistentKey();
+    lblMyExportID.Text( [String]exportID );
+    
+    // Trigger the export, providing the exportID and the objects-to-be-exported.
+    dataTransformationID := this.GetDataTransformationID();
+    brokerID             := this.GetBrokerID();
+    dhIntegrationAPI.Data().ExportToXLS( exportID, objects, dataTransformationID, brokerID );
+  *]
+}

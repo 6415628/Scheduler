@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateCalendar () id:Method_LibCal_dpCalendarSettings_UpdateCalendar
+{
+  #keys: '[146730.0.1349446254]'
+  Body:
+  [*
+    // Update the calendar with the changes.
+    base            :=         dtBase.DateTime();
+    updateInterval  :=         durUpdateInterval.Duration();
+    windowNrOfDays  := [Number]edtWindow .Text();
+    historyNrOfDays := [Number]edtHistory.Text();
+    
+    if( TimeZone::HasTimeZoneSupport() )
+    {
+      // Compensate for the behavior of the DateTime-control of the Base.
+      timezone := this.Data().GetTimeZone();
+      base     := base - timezone.RawOffset() + LibCal_GlobalState.GetLocalTimeZone().RawOffset();
+    }
+    
+    this.Data().Update( base, updateInterval, windowNrOfDays, historyNrOfDays );
+  *]
+}

@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedOnResourceHardDefault (output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Default allowed rules for operation on resouce (hard rules)'
+  TextBody:
+  [*
+    // Implement default hard allowed rule here
+    value := true; 
+    
+    if( not this.Resource_SC().Schedule().IsOptimizationService() )
+    {
+      /*
+      1. Check preferred or alternative resource
+         Chris 20141204 #4953:  Implement preferred resource and alternative resource implementation
+      */
+      
+      value := ( this.HasExternalAllowedResourceRule() or this.CheckPreferredOrAlternativeResource( feedback_o ) )
+               and this.Operation_SC().CheckIsCompleted( feedback_o );
+    }
+    
+    return value;
+  *]
+}

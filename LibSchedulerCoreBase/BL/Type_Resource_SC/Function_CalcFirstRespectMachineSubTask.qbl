@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcFirstRespectMachineSubTask
+{
+  Description:
+  [*
+    Defines the first subtask with machine dependency.
+    First subtask in the subtask sequence will be selected if not configured by user.
+  *]
+  TextBody:
+  [*
+    // khang chuen Jul-31-2015 (created)
+    //James Kwapien Sep-14-2016 #7719 Dialogs set first respect machine sub task, must account for priority of all inputs
+    value := '';
+    uservalue := this.FirstRespectMachineSubTaskUser();
+    rgvalue := this.ResourceGroup_SC().FirstRespectMachineSubTaskType();
+    
+    // Resource group value (set by import and dialogs) is used if it exists
+    if( rgvalue <> '' )
+    {
+      value := rgvalue;
+    }
+    // If resource group value does not exist then user value if it exists
+    else if( uservalue <> '' )
+    {
+      value := uservalue;
+    }
+    // If no otherwise defined value exists then use first sub task of sub task sequence
+    else
+    {
+      value := this.ResourceGroup_SC().FirstSubTask();
+    }
+    
+    this.FirstRespectMachineSubTask( value );
+  *]
+}

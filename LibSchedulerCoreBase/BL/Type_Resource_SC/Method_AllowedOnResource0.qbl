@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedOnResource (Operation_SC operation, Boolean skipsoftcheck, output String feedback_o, 
+  output Boolean isallowedhard_o) declarative remote as Boolean
+{
+  Description: 'Checks machine allowed rules'
+  TextBody:
+  [*
+    // saravanen May-21-2014 (created)
+    /*
+    1. Checks operation type matches resource type, and checks if operation on resource exists
+    2. Checks operation on resource allowed hard rules ( default and customized )
+    3. Checks operation on resource allowed soft rules ( default and customized )
+    */
+    
+    oor := select( operation, OperationOnResource, oor, true, oor.Resource_SC() = this );
+    // Hard rules
+    value := not isnull( oor ) and oor.AllowedOnResourceHardDefault( feedback_o );   
+    value := value and oor.AllowedOnResourceHardCustomized( feedback_o );
+    value := value and oor.AllowedOnUpstreamResourceHard( feedback_o );
+    value := value and oor.AllowedOnDownstreamResourceHard( feedback_o );
+    
+    isallowedhard_o := isallowedhard_o and value;
+    
+    // Soft rules
+    if( value and not skipsoftcheck )
+    {
+      value := oor.AllowedOnResourceSoftDefault( feedback_o ) and value;
+      value := oor.CheckResourceConnection( feedback_o ) and value;
+      value := oor.AllowedOnResourceSoftCustomized( feedback_o ) and value;
+      value := oor.AllowedOnUpstreamResourceSoft( feedback_o ) and value;
+      value := oor.AllowedOnDownstreamResourceSoft( feedback_o ) and value;
+    }
+    
+    return value
+  *]
+}

@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionDeleteProgramChange_Setup (Schedule schedule)
+{
+  Description: 'Test precondition delete program change - setup'
+  TextBody:
+  [*
+    // Create resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Single Resource' );
+    
+    // Create normal task and plan it
+    order := UTFMockObjectFactory::CreateOrder( schedule, 'Order ID' );
+    planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'Plan Unit ID', 1.0 );
+    operation := UTFMockObjectFactory::CreateOperation( planUnit );
+    Transaction::Transaction().Propagate( relation( Operation_SC, AllowedOperationOnResource ) );
+    task := resource.PlanLast( operation );
+    
+    // Create program definition data
+    programdefinition := UTFMockObjectFactory::CreateProgramDefinitionData( schedule, 'Program definition id', false );
+    programtype := selectset( programdefinition, ProgramSetConfiguration.ProgramTypeConfiguration, pt, true );
+    
+    // Assign program definition to resource
+    resource.AssignProgramDefinitionConfiguration( programdefinition );
+    
+    // Insert program change
+    resource.InsertProgramChange( task, programtype, false, Duration::Zero() );
+  *]
+}

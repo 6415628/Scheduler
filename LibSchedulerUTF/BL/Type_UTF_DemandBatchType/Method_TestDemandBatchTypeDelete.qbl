@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestDemandBatchTypeDelete (Schedule schedule)
+{
+  Description: 'Test the delete sync logic of demand batch type.'
+  TextBody:
+  [*
+    importedDemandBatchType := select( schedule, ImportedDemandBatchType, importedDemandBatchType, true );
+    importedDemandBatchType.Delete();
+    
+    schedule.SynchronizationObject().SynchronizeDemandBatchTypes();
+    
+    noDemandBatchType := not exists( schedule, DemandBatchType, demandBatchType, true );
+    
+    this.Run().AssertTrue( noDemandBatchType, UTFUtility::GenerateFailedMessage( 'DemandBatchType_Delete', '' ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

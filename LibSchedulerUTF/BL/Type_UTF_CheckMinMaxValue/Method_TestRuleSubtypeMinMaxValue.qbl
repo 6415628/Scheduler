@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRuleSubtypeMinMaxValue (Schedule schedule)
+{
+  Description: 'Test rule subtype min max value'
+  TextBody:
+  [*
+    // Get variant attribute
+    characteristicType := '';
+    isMinimum := false;
+    ruleValue := 0.0;
+    operationAttributeValue := 0.0;
+    hasNoConstraintViolation := false;
+    
+    this.GetTestVariant( characteristicType,
+                         ruleValue,
+                         isMinimum,
+                         operationAttributeValue,
+                         hasNoConstraintViolation );
+    
+    task := select( schedule, Operation_SC.Task_SC, t , true );
+    
+    // Propagate constraint
+    Transaction::Transaction().Propagate( constraint( Task_SC, IsAllHighPriorityRulesOK ) );
+    Transaction::Transaction().Propagate( constraint( Task_SC, IsAllLowPriorityRulesOK ) );
+    value := task.IsAllHighPriorityRulesOK() and task.IsAllLowPriorityRulesOK();
+    
+    this.Run().AssertEqual( hasNoConstraintViolation, value );
+  *]
+}

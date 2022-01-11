@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetIsAllowed
+{
+  TextBody:
+  [*
+    // zyi1 Jul-12-2021 (created)
+    isallowed := this.OperationOnResource().IsAllowedHard();
+    
+    if( isallowed )
+    {
+      // The optimizer does not allow operations in a phase that violate a hard constraint
+      // Or that would trigger a phase transition (since the optimizer predefines the phases)
+      // We cannot check the cumulative or sequence dependent rules here since they depend on the planning
+      traverse( this, 
+                PPCOnResource.RuleOnPPCOnResource.Rule, 
+                rule, 
+                ( rule.IsHardConstraintForOptimizer() 
+                  or rule.IsProgramPhaseTransitionRule() )
+                and not rule.RuleSubType().IsCumulativeValueNeeded()
+                and not rule.RuleSubType().IsCheckOnPreviousOperation() )
+      {
+        doobject := rule.RuleSubType().GetRuleDataObject( rule, null( Operation_SC), this.Operation_SC() );
+        isallowed := isallowed and rule.RuleSubType().Validate( rule, doobject );
+      }
+    }
+    
+    this.IsAllowed( isallowed );
+  *]
+}

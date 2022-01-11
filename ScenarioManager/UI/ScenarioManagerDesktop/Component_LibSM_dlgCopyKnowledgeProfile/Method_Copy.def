@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method Copy (GUIComponent parent, LibSM_KnowledgeProfile selection) as LibSM_KnowledgeProfile id:Method_LibSM_dlgCopyKnowledgeProfile_Copy
+{
+  #keys: '[107496.2.1657994443]'
+  Body:
+  [*
+    // Copy knowledge profile
+    newProfile := null( LibSM_KnowledgeProfile );
+    
+    this.Title( this.Title() + ' (source profile: ' + selection.Name() + ')' );
+    
+    data := LibSM_GlobalState.GetScenarioManagerDataset().KnowledgeProfile( relshadow );
+    dhSourceKnowledgeProfile.Data( selection );
+    
+    traverse( selection, KnowledgeBaseBranchInProfile, branch )
+    {
+      data.KnowledgeBaseBranchInProfile( relnew,
+                                         KBDefinitionName := branch.KBDefinitionName(),
+                                         KBBranchName := branch.KBBranchName(),
+                                         KBBranchVersion := branch.KBBranchVersion() );
+    }
+    
+    Dialog.Data( data );
+    
+    if( Dialog.DoModal( parent ) > 0 )
+    {
+      data.Commit();
+      newProfile := data.WrappedInstance();
+      LibSM_GlobalState.CopyKnowledgeBranches( selection, newProfile );
+    }
+    
+    return newProfile;
+  *]
+}

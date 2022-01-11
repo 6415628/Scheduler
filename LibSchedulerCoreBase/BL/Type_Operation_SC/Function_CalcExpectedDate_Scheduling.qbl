@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcExpectedDate_Scheduling
+{
+  Description:
+  [*
+    The expected date of an operation is its end if it is planned or the expected date
+    of the previous operation with transporttime and leadtime added.
+  *]
+  TextBody:
+  [*
+    // TG
+    // #201052
+    // Structure of functions (this and CalcExpectedDate) changed
+    // TG4AvK080508
+    
+    // Dependent on due_date as opposed to the order_duedate to make sure the suggesteddate is taken into account as well
+    value := this.DueDate();
+    
+    // Take the expected date based on latest previous operation
+    if( not this.IsFirstOperation() )
+    {
+      // TG updated to IOM
+      // Kyle 11-05-2015 #5344 Use TotalOffsetDuration instead of TransportCoolingDuration
+      value := max( this, FromOperationDependency, iom, iom.HasFromOperation(), iom.FromOperation().ExpectedDate_Scheduling() + iom.TotalOffsetDuration() );
+    }
+    
+    // Take into account the schedule-end as well as earliest plan start on earliest available resource group, it makes no sense to plan something before that
+    value := maxvalue( value, this.EarliestAvailableResourceGroupTime() );
+    
+    value := value + this.LeadTime() + this.ExpectedDuration()
+    
+    
+    this.ExpectedDate_Scheduling( value );
+  *]
+}

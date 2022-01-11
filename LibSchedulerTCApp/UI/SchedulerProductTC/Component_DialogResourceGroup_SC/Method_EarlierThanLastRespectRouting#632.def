@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method EarlierThanLastRespectRouting (shadow[SubTaskTypeOnResourceGroup] sttorg_i, output String feedback_o) as Boolean id:Method_DialogResourceGroup_SC_EarlierThanLastRespectRouting_632
+{
+  #keys: '[129856.0.83390754]'
+  Body:
+  [*
+    // James Kwapien #7704 First respect routing subtask must have sequencenr
+    // less than last respect routing subtask sequencenr
+    rg := Dialog.Data();
+    
+    laterlastrespect := not exists( rg,
+                                    SubTaskTypeOnResourceGroup,
+                                    sttorg,
+                                    sttorg.IsLastRespectRouting(),
+                                    sttorg.SequenceNr() < sttorg_i.SequenceNr() );
+                                    
+    SubTaskTypeOnResourceGroup::EarlierThanLastRespectRouting( laterlastrespect, feedback_o );
+                           
+    return laterlastrespect;
+  *]
+}

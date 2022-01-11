@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateJSONCalendars () as owning JSONBuilder
+{
+  Description: 'Creates calendars in JSON from the current dataset.'
+  TextBody:
+  [*
+    calendars := JSON::Object();
+    
+    // Create empty closedDays array
+    // No weekly recurring unavailable events for Scheduler demos, therefore no instance to create
+    closedDays := JSON::Array();
+    calendars.Add( Constants::JSON_ClosedDays(), closedDays );
+    
+    // Create shiftPatterns array
+    // Scheduler demos all have calendars that start open, but don't have weekly recurrence for open events
+    // Therefore we will simply create a fully open week
+    shiftPatterns := JSON::Array();
+    
+    // Create shiftPattern per resource calendar
+    traverse( this, ResourceGroup_SC.Resource_SC.ResourceCalendar, resourceCalendar )
+    {
+      shiftPattern := JSON::Object(); 
+      shiftPattern.Add( Constants::JSON_ShiftPattern_ID(), resourceCalendar.CalendarID() );
+      shiftPattern.Add( Constants::JSON_ShiftPattern_Label(), resourceCalendar.CalendarID() );
+      
+      
+      // Create periods array
+      periods := JSON::Array();
+      period := JSON::Object();
+      period.Add( Constants::JSON_TimePeriod_StartDay(), 1 ); // Start on first day of week
+      period.Add( Constants::JSON_TimePeriod_StartTime(), 0 ); // Start from midnight
+      period.Add( Constants::JSON_TimePeriod_EndDay(), 7 ); // End on last day of week
+      period.Add( Constants::JSON_TimePeriod_EndTime(), 86400 ); // End on midnight
+      periods.Add( period );
+                                                                                                                                                          
+      shiftPattern.Add( Constants::JSON_Periods(), periods ); // Add periods per shift pattern
+      shiftPatterns.Add( shiftPattern );
+    }
+    
+    // Adding resourceCalendars to calendars
+    calendars.Add( Constants::JSON_ShiftPatterns(), shiftPatterns );
+    
+    return &calendars;
+  *]
+}

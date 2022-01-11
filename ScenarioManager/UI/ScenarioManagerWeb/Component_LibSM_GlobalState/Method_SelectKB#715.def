@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectKB (LibSM_Scenario scenario) id:Method_LibSM_GlobalState_SelectKB_715
+{
+  #keys: '[136398.0.1981030793]'
+  Body:
+  [*
+    info( ' [0] Setting the knowledge for Scenario ', scenario.Name() );
+    // Updates the selected knowledge of the specified Scenario to match its Knowledge Profile.
+    componentMDS := ApplicationScope.ComponentMDS();
+    componentMDS.Refresh();
+    
+    info( ' [1] Getting a flat list of all MDS instances. ' );
+    allMDSs := this.GetMDSsFlat( componentMDS );
+    
+    info( ' [2] Getting the ComponentMDSInstance that matches the Scenarios dataset' );
+    componentMDSInstance := select( allMDSs, Elements, mds, 
+                                    mds.IsLoaded()    // Only process the Loaded MDSs, since we can't change the knowledge on unloaded ones.
+                                and mds.MDSID().MDSKey() = scenario.Dataset().DatasetMDSID() );
+    if ( isnull( componentMDSInstance ) )
+    {
+      info( ' [2.1] Skipping this Scenario because its dataset is not loaded. ' );
+    }
+    else
+    {
+      info( ' [2.2] ComponentMDSInstance = ', componentMDSInstance.Name() );
+      mdsHandle            := componentMDSInstance.GetMDSHandle();
+      
+      info( ' [3] Get the MDSKBInfos for the dataset' );
+      editor      := CKBEditor::Create();
+      mdsKBInfos  := editor.GetMDSKBs( mdsHandle );
+      
+      
+      info( ' [4] For each element in the Scenarios Knowledge Profile, find the matching info and update it. ' );
+      traverse( mdsKBInfos, Elements.KBFullID, mdsKBFullID )
+      {
+        info( ' [4.1] For dataset ', componentMDSInstance.Name(), ' get all the available branches/versions for KB ', mdsKBFullID.Name() );
+        kbid       := mdsKBFullID.KBID();
+        kbInfos    := editor.GetKBStructure( kbid );
+        
+        profileBranch := select( scenario, KnowledgeProfile.KnowledgeBaseBranchInProfile, branch, 
+                                 branch.KBDefinitionName() = mdsKBFullID.Name() );
+                                 
+        info( ' [4.2] Find the last version of the requested branch/version ', profileBranch.KBBranchName(), ' - ', profileBranch.KBBranchVersion() );
+        lastKBInfo := maxselect( kbInfos, Elements.KBFullID, inf, 
+                                 inf.Domain() = mdsKBFullID.Domain() 
+                             and inf.Branch() = profileBranch.KBBranchName()
+                             and inf.Version() = profileBranch.KBBranchVersion(),
+                                 inf.ChangeNr() );
+        
+          
+        info( ' [4.3] Of dataset ', componentMDSInstance.Name(), ' updating KB ', lastKBInfo.Name(), ' to use branch ', lastKBInfo.Branch(), ' and version ', lastKBInfo.Version() ); 
+        editor.SelectMDSKB( mdsHandle, lastKBInfo );
+      }
+    }
+  *]
+}

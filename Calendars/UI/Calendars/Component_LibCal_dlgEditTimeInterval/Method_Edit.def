@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method Edit (GUIComponent parent_i, ExplicitTimeInterval timeInterval_i) as Number id:Method_LibCal_dlgEditTimeInterval_Edit
+{
+  #keys: '[131094.0.1401969130]'
+  Body:
+  [*
+    sTimeInterval := shadow( timeInterval_i );
+    Dialog.Data( sTimeInterval );
+    
+    // In principle the dialog can also be used for 'generic' ExplicitTimeIntervals;
+    // in that case there is no Event.
+    event    := guard( timeInterval_i.astype( LibCal_ExplicitTimeInterval ).Participation().Event(),
+                       null( LibCal_Event ) );
+    timezone := Dialog.GetCalendarTimeZone();
+    
+    // Initialize the controls...
+    datStartDate     .Date(     sTimeInterval.Start().Date(      timezone ) );  // Get rid of the time,
+    durStartTimeOfDay.Duration( sTimeInterval.Start().TimeOfDay( timezone ) );  // put it in its own control.
+    
+    datEndDate     .Date(     sTimeInterval.End().Date(      timezone ) );
+    durEndTimeOfDay.Duration( sTimeInterval.End().TimeOfDay( timezone ) );
+    
+    isAllDay := guard( event.IsAllDay(), false )
+            and sTimeInterval.Start().TimeOfDay( timezone ) = Duration::Zero()
+            and sTimeInterval.End()  .TimeOfDay( timezone ) = Duration::Zero();    
+    ckbIsAllDay.Checked( isAllDay );
+    
+    // Show the EventInfo as tooltip of the subject of the Event.
+    lblSubject.SetProperty( "Tooltip", guard( event.Info(), "" ) );
+    
+    // ... and the 'memory'.
+    vhStartDate.Data( datStartDate.Date() );
+    vhStartTimeOfDay.Data( durStartTimeOfDay.Duration() );
+    
+    vhEndDate.Data( datEndDate.Date() );
+    vhEndTimeOfDay.Data( durEndTimeOfDay.Duration() );
+    
+    this.UpdateDuration();   
+    this.ShowAllDay();
+    
+    // Hide the panel if there is no EventInfo to show.
+    pnlEventInfo.Visible( not isnull( event ) );
+    
+    return Dialog.DoModal( parent_i );
+  *]
+}

@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetEarliestStartDifference (OperationDependencies out_scope_operation_dependencies, Operation_SC operation) as Duration
+{
+  Description: 'Over all upstream operation dependencies, take the shortest duration for the difference between the earliest start and the actual start of the operation'
+  TextBody:
+  [*
+    // jkr8 Jan-5-2021 (created)
+    
+    // Take the latest available time from its input operation material(s) plus the transfer duration (or optimistic transfer duration if the upstream operation is unplanned) to this operation's resource
+    earlieststartom := max( out_scope_operation_dependencies,
+                            Elements.astype( OperationMaterial ),
+                            iom,
+                            true,
+                            iom.OptimisticAvailableTime() 
+                            + iom.GetOptimisticTransferDuration( guard( iom.FromOperation().PlannedResource(), null( Resource_SC ) ), 
+                                                                 operation.PlannedResource() ) );
+    
+    // We need to take the maximum of the earliest start of the OperationMaterial and the timeconstraint.
+    earlieststarttc := max( out_scope_operation_dependencies,
+                            Elements.astype( TimeConstraint ),
+                            tc,
+                            true,
+                            tc.AvailableTime() );
+    
+    value := guard( operation.Start() - maxvalue( earlieststartom, earlieststarttc ), Duration::Zero() );
+    
+    return value;
+  *]
+}

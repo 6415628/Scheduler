@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetDataStatusAndModeImage (Key selectedPlanningDatasetMDSID) declarative remote as String
+{
+  Description: 'Returns a string value for the name of the icon to use when drawing the scenario in the overview.'
+  TextBody:
+  [*
+    imageKey := '';
+    dataset  := this.Dataset();
+    
+    if( this.IsLoadingInProgress() )
+    {
+       imageKey := "DATA_TIME";
+    }
+    else if ( not dataset.IsActive() ) 
+    {
+      imageKey := "DATA_WARNING";
+    }
+    else if( not this.IsOnline() )
+    {
+      imageKey :=  "DATA_DOWN";
+    }
+    else if( guard( dataset.IsFullStorage(), false ) )
+    {
+      imageKey := "DATA_ADD";
+    }
+    else if( guard( dataset.IsMemoryOnlyStorage(), false ) )
+    {
+      imageKey := "DATA_FORBIDDEN";
+    }
+    else if( guard( dataset.IsPartialStorage(), false ) )
+    {
+      imageKey := "DATA";
+    }
+    else if( guard( dataset.IsCachedStorage(), false ) )
+    {
+      imageKey := "DATA_COPY3";
+    }
+    else if( guard( dataset.IsHybridStorage(), false ) )
+    {
+      imageKey := "DATA_COPY2";
+    }
+    else if( guard( dataset.IsStandAloneStorage(), false ) )
+    {
+      imageKey := "DATA_ADD2";
+    }
+    
+    return imageKey;
+  *]
+}

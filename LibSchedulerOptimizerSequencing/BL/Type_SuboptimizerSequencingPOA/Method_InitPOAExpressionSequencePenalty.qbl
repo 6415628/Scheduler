@@ -1,0 +1,65 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOAExpressionSequencePenalty (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata, POATransition timeexpression_setuptransition)
+{
+  Description:
+  [*
+    Add the sequence penalty expression to POA.
+    The PNN POATransition that defines setup durations based on setup addresses must be given as an input argument to provide setup durations. (Otherwise, table methods need to be called O(n^3) times)
+  *]
+  TextBody:
+  [*
+    sequencepenaltyexpression := poa.NewExpression( SuboptimizerSequencingPOA::NamePOAExpressionSequencePenalty() );
+    
+    // Define the transparent nodes
+    transparentnodes := this.FindOrCreateTransparentNodesSet( poa, transientdata );
+    sequencepenaltyexpression.TransparentNodes( transparentnodes );
+    
+    ///////////////////////////////////////////////////////////////////////////
+    // DurationTransition : Setup Duration + Earliness Prevention + project-specific sequence penalty
+    ///////////////////////////////////////////////////////////////////////////
+    sequencepenaltytransition := POATransition::PNN( poa, SuboptimizerSequencingPOA::NamePOATransitionSequencePenalty(), 0.0 );
+    sequencepenaltytransition.Symmetric( false );
+    sequencepenaltyexpression.Transition( sequencepenaltytransition );
+    
+    traverse( transientdata.GetPOAPathTypeResources(), Elements, resource )
+    {
+      setupdurationweight := resource.GetKPIWeightSequencePenalty( this );
+      pathtype := poa.PathType( this.GetPathTypeName( resource ) );
+      allowed_oors := selectset( resource, AllowedOperationOnResourceUnification, oor, true );
+    
+      traverse( allowed_oors, Elements, oor1 )
+      {
+        node1 := poa.Node( oor1.Operation() );
+    
+        traverse( allowed_oors, Elements, oor2,
+                  oor1 <> oor2 )
+        {
+          node2 := poa.Node( oor2.Operation() );
+          //get the sequence penalty between operation1 and operation2
+          sequencepenalty := 0.0;
+          if( guard( resource.Resource().astype( SingleResourceBase ).HasSequencePenalty(), false ) ) // sequence penalty is only supported on non-batch resources
+          {
+            sequencepenalty := resource.Resource().astype( SingleResourceBase ).GetSequencePenalty( oor1.Operation().Operation(), oor2.Operation().Operation() );
+          }
+          // add setup time as defined over setup addresses in `timeexpression_setuptransition`:
+          setup := timeexpression_setuptransition.Get( pathtype, POA::Address( oor1.Operation().SetupAddress() ), POA::Address( oor2.Operation().SetupAddress() ) );
+          sequencepenalty := sequencepenalty + setup;
+          // weight with factor:
+          sequencepenalty := sequencepenalty * setupdurationweight;
+          
+          // out of order penalty:
+          duedatedifference := oor1.Operation().Operation().OptimisticDueDateSuggested() - oor2.Operation().Operation().OptimisticDueDateSuggested();
+          if( duedatedifference > Duration::Zero() )
+          {
+            // op1 is due after op2. Penalize this transition to prevent out-of-order planning. This will help later iterations to plan orders on time.
+            penaltyoffset := this.Settings().OutOfOrderPenaltyOffset();
+            sequencepenalty := sequencepenalty + ( penaltyoffset + duedatedifference ).HoursAsReal() * this.Settings().OutOfOrderPenaltyFactor();
+          }
+          
+          sequencepenaltytransition.Set( pathtype, node1, node2, sequencepenalty );
+        }
+      }
+    }
+  *]
+}

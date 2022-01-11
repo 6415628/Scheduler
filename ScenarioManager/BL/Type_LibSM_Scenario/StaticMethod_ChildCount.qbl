@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ChildCount (LibSM_ScenarioNodes scenarioNodes, Boolean onlyOffline) remote as Number
+{
+  Description: 'Counts the number of scenarios in the given set and the children of the nodes in the set, removing duplicates.'
+  TextBody:
+  [*
+    allChildren := construct( structured[LibSM_ScenarioNode] );
+    
+    traverse( scenarioNodes, Elements, node ) 
+    {
+      allChildren.Add( node );
+      nodeChildren := LibSM_Scenario::GetAllChildScenarios( node );
+      allChildren := allChildren.Union( nodeChildren );
+    }
+    
+    // Reduce to only unique elements.
+    allChildren := allChildren.Unique();
+    // Reduce to only only scenarios (if specified).
+    if ( onlyOffline )
+    {
+      allChildren := selectset( allChildren, Elements.astype( LibSM_Scenario ), scenario, 
+                                not scenario.IsOnline() 
+                            and not scenario.IsLoadingInProgress() );
+    }
+    
+    
+    return allChildren.Size();
+  *]
+}

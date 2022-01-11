@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method IAttributeRegistry_GetAttributes (shadow[LibGUIFiltering_RegisteredComponent] registeredcomponent, internal[GanttChart] ganttchart, internal[GanttChartRowDefinition] rowdef, 
+  String restriction) id:Method_LibGUIFiltering_PanelFilterBoxHelper_IAttributeRegistry_GetAttributes_107
+{
+  #keys: '[128900.0.373900260]'
+  Body:
+  [*
+    // TODO: object type should already be set
+    objecttype := registeredcomponent.ObjectType();
+    if ( objecttype <> '' )
+    {
+      nodesdefinitions := selectset( rowdef, SubComponents.astype(GanttChartNodesDefinition), nd, nd.GetProperty( 'MergeWidth' ) = '' );
+      
+      traverse( nodesdefinitions, Elements, nodesdef )
+      {
+        ucis                 := construct(structured[UserConfigurableInformation]);
+        inspected            := construct(structured[GUIComponent]);
+        configuredattributes := construct( Strings );
+        
+        this.IComponent_GetUserConfigurableInformations( nodesdef, ganttchart, objecttype, ucis, inspected, true );
+        
+        traverse( ucis, Elements, uci )
+        {
+          if ( not isnull(uci)
+           and uci.ObjectText() <> '' )
+          {
+            this.IAttributeRegistry_GetValueAttributes( uci.ObjectText(), configuredattributes );
+          }
+          else if ( nodesdef.Legend() <> '' )
+          {
+            this.IAttributeRegistry_GetValueAttributes( nodesdef.Legend(), configuredattributes );
+          }
+        }
+        
+        if ( configuredattributes.Size() = 0
+         and nodesdef.Legend() <> '' )
+        {
+          this.IAttributeRegistry_GetValueAttributes( nodesdef.Legend(), configuredattributes );
+        }
+      
+        traverse( configuredattributes, Elements, attr )
+        {
+          this.IAttributeRegistry_Add( objecttype, attr );
+        }
+      }
+    }
+  *]
+}

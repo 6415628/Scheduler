@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+Method IValue_IsDate (shadow[LibGUIFiltering_Term] term) as Boolean id:Method_LibGUIFiltering_PanelFilterBoxHelper_IValue_IsDate
+{
+  #keys: '[128900.0.373900173]'
+  Body:
+  [*
+    found := false;
+    
+    if ( term.IsRange() )
+    {
+      starttoken    := term.RangeStart();
+      startmodifier := term.RangeStartModifier();
+      endtoken      := term.RangeEnd();
+      endmodifier   := term.RangeEndModifier();
+      startdate     := Date::MinDate();
+      enddate       := Date::MinDate();
+    
+      if ( LibGUIFiltering_Helper::CheckIsDate( starttoken, startmodifier, startdate )
+       and LibGUIFiltering_Helper::CheckIsDate( endtoken  , endmodifier  , enddate   ) )
+      {
+        found := true;
+    
+        term.RangeStart( starttoken );
+        term.RangeStartModifier( startmodifier );
+    
+        term.RangeEnd( endtoken );
+        term.RangeEndModifier( endmodifier );
+    
+        term.Modifier( startmodifier );
+    
+        term.ValueType( 'Date' );
+      }
+    }
+    else
+    {
+      token    := term.Token();
+      modifier := term.Modifier();
+      date     := Date::MinDate();
+    
+      if ( LibGUIFiltering_Helper::CheckIsDate( token, modifier, date ) )
+      {
+        found := true;
+    
+        term.Token( token );
+        term.Modifier( modifier );
+        term.ValueType( 'Date' );
+      }
+    }
+    
+    if ( found
+     and term.Operand() = '~' )
+    {
+      term.Operand( '=' );
+    }
+    
+    return found;
+  *]
+}

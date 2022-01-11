@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetRuleDataObjectOpt (Operation_SC previous_op) as owning DORule_DataObjectSequencingRule
+{
+  Description: "Get rule data object information as input to rule framework for validation for operation's characteristic,"
+  TextBody:
+  [*
+    // Get rule data object information as input to rule framework for validation
+    valuetype := this.Characteristic().ValueType();
+    
+    previous_characteristic := select( previous_op, OperationCharacteristic, oc, oc.Characteristic() = this.Characteristic() );
+    // Construct rule data object
+    dosequencingrule := construct( DORule_DataObjectSequencingRule );
+    
+    // Set HasPreviousOperation based on whether there is previous operation characteristic
+    dosequencingrule.HasPreviousOperation( not isnull( previous_characteristic ) );
+    
+    // Set min/max related fields if it is range characteristic
+    if( this.Characteristic().IsRange() )
+    {
+      dosequencingrule.PreviousMinRealValue( guard( previous_characteristic.MinimumValue(), 0.0 ) );
+      dosequencingrule.PreviousMaxRealValue( guard( previous_characteristic.MaximumValue(), 0.0 ) );
+      dosequencingrule.CurrentMinRealValue( this.MinimumValue() );
+      dosequencingrule.CurrentMaxRealValue( this.MaximumValue() );
+    }
+    // Set real related fields if value type is Real/Number
+    else if( valuetype = RuleConstant::ValueType_Real() 
+        or valuetype = RuleConstant::ValueType_Number() )
+    {
+      dosequencingrule.PreviousRealValue( guard( previous_characteristic.RealValue(), 0.0 ) );
+      dosequencingrule.CurrentRealValue( this.RealValue() );
+    }
+    // Set string related fields if value type String
+    else if( valuetype = RuleConstant::ValueType_String() )
+    {
+      dosequencingrule.PreviousStringValue( guard( previous_characteristic.StringValue(), '' ) );
+      dosequencingrule.CurrentStringValue( this.StringValue() );
+    }
+    // Set string related fields if value type is Boolean
+    else if( valuetype = RuleConstant::ValueType_Boolean() )
+    {
+      dosequencingrule.PreviousStringValue( guard( [String]previous_characteristic.BooleanValue(), '' ) );
+      dosequencingrule.CurrentStringValue( [String]this.BooleanValue() );
+    }
+    
+    return &dosequencingrule;
+  *]
+}

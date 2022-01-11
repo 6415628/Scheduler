@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveConfigurationRequestPing (owning NamedValueTree nvt_i, NamedValue body_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive Configuration message of Ping.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-29-2016 (created)
+    LibDEF_Util::EventLog( event_i, "Receiving ping request" );
+    
+    sender           := LibDEF_DataAccessor::GetHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SYSTEMGUID_FROM() );
+    requestingSystem := LibDEF_System::FindSystemByGUID( this, sender );
+    
+    if( not isnull( requestingSystem ) )
+    {
+      this.SendConfigurationSuccessPing( requestingSystem, &nvt_i, event_i );
+    }
+    else
+    {
+      // log security
+      LibDEF_Util::EventLogError( event_i,
+                                  "Failed to ping system",
+                                  "Ping is rejected. Requestor with SystemGUID '" + sender + "' is not a known System." );
+    }
+  *]
+}

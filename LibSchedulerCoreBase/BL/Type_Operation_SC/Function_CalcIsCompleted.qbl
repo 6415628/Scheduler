@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcIsCompleted
+{
+  TextBody:
+  [*
+    // jiex Feb-10-2017 (created)
+    // 1. The downstream Has WIPdemand which fully fullied by upstream (this operation).
+    // 2. DownStream is Completed. 
+    // We encountered a case where PlanUnit A's operations produced a supply for a WIP demand for an operation in PlanUnit B
+    // This resulted in PlanUnit A's operations IsCompleted=true, which is wrong
+    // So now we limit the IsCompleted calculation to operations within same PlanUnit or Parent-Child PlanUnits
+    
+    value := exists( this, ToOperationDependency.ToOperation.PlannedDemand.astype( MaterialPlannedDemand ), d, 
+                     d.PlanUnit_SC() = this.PlanUnit_SC() // Limit this check to within the same plan unit
+                     or d.PlanUnit_SC().Parent() = this.PlanUnit_SC(), // Limit to between parent/child plan units
+                     d.IsWIPDemand() and d.IsFullyFulfilled() )
+             or exists( this, ToOperationDependency.ToOperation, op,
+                        op.PlanUnit_SC() = this.PlanUnit_SC() // Limit this check to within the same plan unit
+                        or op.PlanUnit_SC().Parent() = this.PlanUnit_SC(), // Limit to between parent/child plan units 
+                        op.IsCompleted() ) ;
+             
+    this.IsCompleted( value );
+  *]
+}

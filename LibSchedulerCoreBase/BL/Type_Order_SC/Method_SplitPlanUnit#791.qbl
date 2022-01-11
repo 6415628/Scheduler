@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method SplitPlanUnit (PlanUnit_SC planUnit, PlanUnit_SC newPlanUnit, Real quantity, 
+  Number nroflots)
+{
+  Description: 'Splits the selected plan unit quantity according user input.'
+  TextBody:
+  [*
+    original_pu_quantity := planUnit.Quantity();
+    difference_quantity := original_pu_quantity - quantity;
+    
+    // Reduce quantity of old plan unit after split
+    planUnit.Update( planUnit, difference_quantity, this.GetNrOfLots( difference_quantity ) ); // need to update its quantity
+    
+    // Split tasks of the old plan unit by planning the tasks of the new plan unit
+    this.SplitTasks( planUnit, newPlanUnit );
+    
+    // these needs to be propagated as they are declarative before running greedy material reservaton after splitting - creation of new plan unit
+    this.PostPlanUnitSplitPropagationForReservationAdjustment();
+    
+    // Planned & Fixed reservation - handle post split greedy reservation between demands (new and existing) with the existing supply and vice versa
+    this.PostPlanUnitSplitReservationAdjustmentForDemand( planUnit, newPlanUnit );
+    
+    // Planned & Fixed reservation - handle post split greedy reservation between supplies (new and existing) with the existing demand and vice versa
+    this.PostPlanUnitSplitReservationAdjustmentForSupply( planUnit, newPlanUnit );
+    
+    // Split child plan units of original plan unit and link it to the new plan unit
+    planUnit.SplitChildPlanUnitsForNewPlanUnit( newPlanUnit, quantity );
+  *]
+}

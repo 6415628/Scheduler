@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod DeleteDataset (String datasetName_i)
+{
+  TextBody:
+  [*
+    // First see if the dataset is online.
+    includeOffline := false;
+    datasetKey     := LibCal_ImportExportDataset::FindDatasetKey( datasetName_i, includeOffline );
+    
+    if( datasetKey <> Key::ZeroKey() )
+    {
+      // Capture the dataset to be able to get its StorageState. 
+      MDSLibCal_ImportExportDataset::Root( datasetKey )->( dataset )
+      {
+        // First unload the dataset.
+        DatasetController::Unload( datasetKey );
+    
+        // Delete the dataset if necessary.
+        // Should not be done for a MemoryOnly-dataset, because that is already automatically deleted after it has been unloaded.
+        if( dataset.MDSLibCal_ImportExportDataset().State() <> DatasetState::MemoryOnly().AsString() )
+        {
+          DatasetController::Delete( datasetKey );
+        }
+      }
+    }
+    else
+    {
+      // See if the dataset is offline. 
+      includeOffline := true;
+      datasetKey     := LibCal_ImportExportDataset::FindDatasetKey( datasetName_i, includeOffline );
+    
+      if( datasetKey <> Key::ZeroKey() )
+      {
+        // Delete the datsset.
+        DatasetController::Delete( datasetKey );
+      }
+    }
+  *]
+}

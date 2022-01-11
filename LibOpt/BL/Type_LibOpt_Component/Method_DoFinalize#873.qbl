@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoFinalize (LibOpt_Task task, output Boolean hascreatedstream_o) as stream[JSON]
+{
+  Description:
+  [*
+    This method makes sure that the `DoFinalizeCurrentComponent` method is executed in the right order. This method should be executed for all components.
+    When a `LibOpt_TaskTransporterOneTransaction` is used to execute a component, then the execution of the `DoFinalize` method can be delayed. When this happens, the `DoFinalize` method is called in a single transaction together with the `DoFinalize` methods of other components.
+    We want to finalize the component that is the most downstream first. 
+    Therefore, this method ensures that the `DoFinalizeCurrentComponent` method is called first for the most downstream component for which the `DoFinalizeCurrentComponent` method hasn't been excuted yet.
+  *]
+  TextBody:
+  [*
+    // evr3 Jun-16-2020 (created)
+    
+    streamJSON := stream[JSON]::Success();
+    
+    // If this task has any subtasks, then we call DoFinalize for each of these subtasks.
+    // Note: A subtask can only exist if DoFinalize/DoFinalizeCurrentComponent has not been executed yet for this subtask, 
+    // because executing DoFinalizeCurrentComponent for a (sub)task results in the deletion of the (sub)task.
+    traverse( task, Children, subtask, not hascreatedstream_o )
+    {  
+      streamJSON := subtask.Component().DoFinalize( subtask, hascreatedstream_o );
+      // If calling DoFinalize for a subtask did not create a stream, then the subtask is deleted when DoFinalize finished executing for that subtask.
+      // If calling DoFinalize for a subtask did create a stream, then hascreatedstream_o will be true. The subtask will only be deleted after this stream terminates.
+      // We therefore escape this traverse and wait until the stream is terminated.
+    }
+    
+    if( not hascreatedstream_o )
+    {
+      // If none of the subtasks created a stream, then we execute DoFinalizeCurrentComponent, which performs the actual finalize actions for this component. 
+      // Note: We will call DoFinalizeCurrentComponent eventually for this component, because if we did create a stream, then we will call DoFinalize again in the 'else'-block below.
+      streamJSON := this.DoFinalizeCurrentComponent( task, hascreatedstream_o ); 
+    }
+    else
+    {
+      // If we did create a stream, then we wait until we have resolved this stream (which will delete a subtask). Then we call DoFinalize again. 
+      streamJSON := streamJSON->|this->DoFinalize( task ); 
+    }
+    
+    return streamJSON;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

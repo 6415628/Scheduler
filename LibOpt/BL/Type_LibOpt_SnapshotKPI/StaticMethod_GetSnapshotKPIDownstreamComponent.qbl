@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetSnapshotKPIDownstreamComponent (LibOpt_SnapshotComponent snapshotcomponent, Boolean isPreHandleResultKPI) as LibOpt_SnapshotKPI
+{
+  Description:
+  [*
+    Returns the snapshot KPI of this component or the next component that uses SnapshotKPIs. 
+    Note: This method should only be used after all downstream components have been executed. This means that this method should only be used in methods that are called by the `LibOpt_Component.DoFinalize`/`LibOpt_Component.OnFinalize` methods of a component.
+    For example, when this method is used in `LibOpt_DatasetCopyConditional.DeleteCondition`, then the `LibOpt_DatasetCopyConditional` can be placed on any component position.
+    This is possible, because `LibOpt_DatasetCopyConditional.DeleteCondition` is called from `LibOpt_Component.DoFinalize`.
+    However, this method should not be used in the `LibOpt_DatasetCopyConditional.CreateCondition` method of the `LibOpt_DatasetCopyConditional` objects that are placed on the 'Initialize/Continue/Handle result/Handle error' component positions of any component.
+  *]
+  TextBody:
+  [*
+    // evr3 May-20-2020 (created)
+    snapshotKPI := minselect( snapshotcomponent.Descendants(),
+                              Elements.astype( LibOpt_SnapshotKPI ),
+                              snapshotKPI,
+                              snapshotKPI.IsPreHandleResult() = isPreHandleResultKPI,
+                              snapshotKPI.GetComponent().SequenceNr()
+                              );
+    
+    return snapshotKPI;
+  *]
+}

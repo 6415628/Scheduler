@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: CustomDrawComponentResourceView/CustomDrawDataLayerResourceConnectionEdge
+Response OnDetermineRegion (ResourceConnection object) id:Response_CustomDrawComponentResourceView_CustomDrawDataLayerResourceConnectionEdge_OnDetermineRegion
+{
+  #keys: '[134650.0.96753442]'
+  Body:
+  [*
+    // Determine region for ResourceConnection
+    // minvalue( From, To )
+    resourceto := select( DataHolderShadowResourceNode.Data(), Elements, node, object.IsVisibleKT() and object.VisibleToResource().ResourceID() = node.ResourceID() and node.IsVisible() )
+    resourcefrom := select( DataHolderShadowResourceNode.Data(), Elements, node, object.IsVisibleKT() and object.VisibleFromResource().ResourceID() = node.ResourceID() and node.IsVisible() )
+    
+    if( not ( isnull( resourcefrom ) or isnull( resourceto ) ) )
+    {
+      minx := minvalue ( resourcefrom.X(), resourceto.X() );
+      miny := minvalue ( resourcefrom.Y(), resourceto.Y() );
+      maxx := maxvalue ( resourcefrom.X(), resourceto.X() );
+      maxy := maxvalue ( resourcefrom.X(), resourceto.Y() );
+      height := maxvalue( maxx - minx, 1 );
+      width := maxvalue( maxy - miny, 1 );
+      
+      this.AddRegion( minx, miny, height, width );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_CustomDrawDataLayer_OnDetermineRegion'
+}

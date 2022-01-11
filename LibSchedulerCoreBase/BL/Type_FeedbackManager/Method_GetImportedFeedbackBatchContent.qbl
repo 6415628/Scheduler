@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetImportedFeedbackBatchContent (ImportedFeedbackBatch importedfeedbackbatch, ExportedOperationBatchContent exportedbatchcontent) as ImportedFeedbackBatchContent
+{
+  Description: 'Get imported feedback batch content. If not exist, create one.'
+  TextBody:
+  [*
+    // janer Oct-17-2014 (created)
+    // Get imported feedback batch content
+    
+    // zi hao: 05312017 cannot use type index as planunit can be left empty in ImportedFeedbackTask if the order has only one plan unit
+    fbcontent := select( importedfeedbackbatch, ImportedFeedbackBatchContent, importedfbc,
+                         exportedbatchcontent.Operation_SC().Match( importedfbc.WorkOrderId(), 
+                                                                    importedfbc.PlanUnitId(), 
+                                                                    importedfbc.WorkOrderOperationSequenceNr() ) );
+    
+    if( isnull( fbcontent ) )
+    {
+      // Create one if not exist
+      fbcontent := ImportedFeedbackBatchContent::Create( importedfeedbackbatch, exportedbatchcontent );
+    }
+    
+    return fbcontent;
+  *]
+}

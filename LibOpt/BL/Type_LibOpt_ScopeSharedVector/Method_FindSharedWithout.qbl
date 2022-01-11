@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride FindSharedWithout (LibOpt_ScopeThin scope) as LibOpt_ScopeShared
+{
+  TextBody:
+  [*
+    vector := NumberVector::Construct( this.Set() );
+    
+    vector.Set( scope.Index(), vector.Get( scope.Index() ).BitAnd( scope.Mask().BitNot() ) );
+    
+    // Determine the reduced size of the NumberVector
+    size := vector.Size();
+    for( {}; size > 1 and vector.Get( size - 1 ) = 0; size-- )
+    { }
+    
+    result := null( LibOpt_ScopeShared );
+    if( size = 1 )
+    {
+      result := LibOpt_ScopeShared32::FindSet32( vector.Get( 0 ), this.Group() );
+    }
+    else
+    {
+      if( size <> vector.Size() )
+      {
+        vector.Resize( size );
+      }
+      result := LibOpt_ScopeSharedVector::FindSetVector( vector.AsBinaryValue(), this.Group() );
+    }
+    
+    return result;
+  *]
+}

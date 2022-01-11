@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetNameCopyDataset (LibOpt_Component component, String namecurrentdataset, String componentpositionname) as String
+{
+  Description:
+  [*
+    Returns the dataset name that will be used for the new dataset. This method is extensible!
+    Note: Characters other than: '-', '_', 'a-z', 'A-Z' and '0-9' will be removed after this method. This is to prevent errors when calling `mdsobject.Copy()`. Also, it is recommended to use a short name for the new dataset. 
+    If the path of the new dataset exceeds the maximum path length supported by Windows (260 characters), then an error will be thrown. 
+    Note that the path to the Quintiq installation takes up a significant chunck of these characters. Therefore, we recommend you to locate your DSS folder near the root of your drive. 
+    Also, if the dataset name already exists, then a suffix will automatically be added.
+  *]
+  TextBody:
+  [*
+    // evr3 Apr-28-2020 (created)
+    // This method can be extended if different dataset names are desired
+    
+    run := component.Run();
+    namenewdataset := namecurrentdataset;
+    
+    namenewdataset := namenewdataset
+                      + '-r' + [String] run.RunNr().Format( 'N(LPad0(4))' ) // Padded with zeros to make sorting consistent
+                      + '-t' + DateTime::ActualTime().Format( 'D2_H2ms', ConversionOptions::ISO() )
+                      + '-' + component.Name()
+                      + '-' + componentpositionname;
+    
+    return namenewdataset;
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

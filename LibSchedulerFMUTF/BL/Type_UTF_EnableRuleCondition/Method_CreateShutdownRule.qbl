@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateShutdownRule (Schedule schedule) as Rule
+{
+  Description: 'Create shutdown rule test data'
+  TextBody:
+  [*
+    // Get shutdown type
+    shutdowntype:= select( schedule, ShutdownType, st, true );
+    
+    // Create not allowed jump rule in shutdown scope
+    rule := Rule::Create( schedule, 1 );
+    rule.Name( 'Shutdown rule' );
+    
+    // Set rule type/ rule subtype for Maximum Value rule subtype
+    subtype := select( schedule, RuleType.RuleSubType, rst, rst.Name() = RuleConstant::RuleSubType_MaximumValue() );
+    rule.RuleType( relset, subtype.RuleType() );
+    rule.RuleSubType( relset, subtype );
+    
+    // Set characteristic main to OperationWidth
+    characteristicMain := select( schedule, Characteristic, char, char.ID() = RuleConstant::Characteristic_OperationWidth() );
+    rule.CharacteristicMain( relset, characteristicMain );
+    
+    // Enable rule
+    rule.IsEnabled( true );
+    
+    // Set rule threshold value to 50
+    rule.RuleValue( 50 );
+    
+    // Create shutdown scope in rule
+    rule.RuleScopeSelected( RuleConstant::RuleScope_Shutdown() );
+    UTFMockObjectFactory::CreateRuleScopeInShutdownType( rule, shutdowntype );
+    
+    // Set the shutdown scope details
+    rule.IsBeforeShutdown( true );
+    rule.RuleScopeShutdownAggregateThreshold( 10 );
+    
+    // Set the shutdown scope characteristic to NumberOfTasks
+    characteristicScope := select( schedule, Characteristic, char, char.ID() = RuleConstant::Characteristic_NumberOfTasks() );
+    rule.CharacteristicScope( relset, characteristicScope );
+    
+    return rule;
+  *]
+}

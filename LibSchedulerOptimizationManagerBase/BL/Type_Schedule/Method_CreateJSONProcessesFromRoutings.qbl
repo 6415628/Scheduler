@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateJSONProcessesFromRoutings () as owning JSONBuilder
+{
+  Description: 'Creates processes (routings) in JSON from the current dataset based on routings used to create external work orders.'
+  TextBody:
+  [*
+    // Get existing routing from created external work orders
+    // This is unlikely because NONE of Scheduler's existing datasets have such scenario
+    processes := JSON::Array();
+    
+    traverse( this, WorkOrder.astype( ExternalWorkOrder ).Routing, routing )
+    {
+      process := JSON::Object();
+      process.Add( Constants::JSON_Process_ID(), routing.RoutingId() );
+      process.Add( Constants::JSON_Process_Name(), routing.Name() );
+      process.Add( Constants::JSON_Process_Label(), routing.Label() );
+      
+      // Create Operations (RoutingStep)
+      operations := routing.CreateJSONProcessOperations();
+      
+      process.Add( Constants::JSON_Process_Operations(), operations );
+      processes.Add( process );
+    }
+    
+    return &processes;
+  *]
+}

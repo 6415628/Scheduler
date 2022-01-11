@@ -1,0 +1,68 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestImportProgramConfiguration (Schedule schedule)
+{
+  Description: 'Test import program configuration'
+  TextBody:
+  [*
+    importedprogramdefinition := select( schedule, ImportedProgramDefinitionConfiguration, imp, true );
+    importedprogramset := select( schedule, ImportedProgramSetConfiguration, imp, true );
+    importedprogramtype := select( schedule, ImportedProgramTypeConfiguration, imp, true );
+    importedprogramphase1 := select( schedule, ImportedProgramPhaseConfiguration, imp, imp.SequenceNr() = 0 );
+    importedprogramphase2 := select( schedule, ImportedProgramPhaseConfiguration, imp, imp.SequenceNr() = 1 );
+    importedprogramtypechange := select( schedule, ImportedProgramTypeChangeConfiguration, imp, true );
+    importedresprogramdefinition := select( schedule, ImportedResourceProgramDefinition, imp, true );
+    
+    programdefinition := select( schedule, ProgramDefinitionConfiguration, data, true );
+    programset := select( programdefinition, ProgramSetConfiguration, data, true );
+    programtype := select( programset, ProgramTypeConfiguration, data, true );
+    programphase1 := select( programtype, ProgramPhaseConfiguration, data, data.SequenceNr() = 0 );
+    programphase2 := select( programtype, ProgramPhaseConfiguration, data, data.SequenceNr() = 1 );
+    programtypechange := select( programset, ProgramTypeChangeConfiguration, data, true );
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, data, data.ResourceID() = importedresprogramdefinition.ResourceID() );
+    
+    isprogramdefinitioncreated := not isnull( programdefinition )
+                                  and programdefinition.Name() = importedprogramdefinition.Name();
+    
+    isprogramsetcreated := not isnull( programset )
+                           and programset.Name() = importedprogramset.Name()
+                           and programset.IsProgramTypeChangeAllowed() = importedprogramset.IsProgramTypeChangeAllowed()
+                           and programset.ProgramTypeChangeDuration() = importedprogramset.ProgramTypeChangeDuration()
+                           and programset.IsSequenceRulesEnabled() = importedprogramset.IsSequenceRulesEnabled()
+                           and programset.IsFreezeScheduleByProgram() = importedprogramset.IsFreezeScheduleByProgram();
+                                                                                                                        
+    isprogramtypecreated := not isnull( programtype )
+                            and programtype.Name() = importedprogramtype.Name()
+                            and programtype.ColorCode() = importedprogramtype.ColorCode()
+                            and programtype.IsProgramTypeChangeSettingOverruled() = importedprogramtype.IsProgramTypeChangeSettingOverruled()
+                            and programtype.IsProgramTypeChangeAllowedOverruled() = importedprogramtype.IsProgramTypeChangeAllowedOverruled()
+                            and programtype.ProgramTypeChangeDurationOverruled() = importedprogramtype.ProgramTypeChangeDurationOverruled();
+    
+    isprogramphase1created := not isnull( programphase1 )
+                              and programphase1.Name() = importedprogramphase1.Name()
+                              and programphase1.ColorCodeOverruled() = importedprogramphase1.ColorCodeOverruled()
+                              and programphase1.IsColorCodeOverruled() = importedprogramphase1.IsColorCodeOverruled();
+    
+    isprogramphase2created := not isnull( programphase2 )
+                              and programphase2.Name() = importedprogramphase2.Name()
+                              and programphase2.ColorCodeOverruled() = importedprogramphase2.ColorCodeOverruled()
+                              and programphase2.IsColorCodeOverruled() = importedprogramphase2.IsColorCodeOverruled();
+    
+    isprogramtypechangecreated := not isnull( programtypechange )
+                                  and programtypechange.IsAllowed() = importedprogramtypechange.IsAllowed()
+                                  and programtypechange.ProgramTypeChangeDuration() = importedprogramtypechange.ProgramTypeChangeDuration();
+    
+    isresourceprogramdefinitionassigned := not isnull( resource )
+                                           and resource.ProgramDefinitionConfigurationID() = importedresprogramdefinition.ProgramDefinitionConfigurationID();
+    value := isprogramdefinitioncreated 
+             and isprogramsetcreated
+             and isprogramtypecreated
+             and isprogramphase1created
+             and isprogramphase2created
+             and isprogramtypechangecreated
+             and isresourceprogramdefinitionassigned;
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Import program configuration failed.', this.Variant() ) );
+  *]
+}

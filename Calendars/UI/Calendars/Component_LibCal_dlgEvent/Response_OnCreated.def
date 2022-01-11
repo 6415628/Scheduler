@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnCreated () id:Response_LibCal_dlgEvent_OnCreated
+{
+  #keys: '[131094.0.1174419404]'
+  Body:
+  [*
+    // Generic initialization
+    calendar := this.Data().Calendar();
+    this.Title( "Event for calendar '" + calendar.CalendarID() + "'" );
+    
+    // Only show the checkbox for common events.
+    if( not calendar.istype( LibCal_CommonCalendar ) )
+    { 
+      lblApplyToNewResources.SetProperty( "NumberLines", 0 );  // Looks better this way.
+      ckbIsDefault.Visible( false );
+    }
+    
+    this.InitializeCapacity();
+    this.InitializeCategories();
+    this.InitializeSubscribers();
+    
+    this.InitializeWeekdayButtons();
+    
+    // Explicitly call UpdateDuration because it will not always be triggered automatically
+    // when the dialog is opened (not if both StartTimeOfDay and EndTimeOfDay are 0:00).
+    this.UpdateDuration();
+    
+    // If applicable, i.e. when UserData has been set to 1 in InitializeCapacity(),
+    // inform the user that the EventType and Capacity of the event was changed because
+    // partial capacity is not allowed anymore (edge-case).
+    // Showing this message in InitializeCapacity results in a 'broken' dialog. Therefore the message is shown here.
+    if( this.UserData() = 1 )
+    {
+      this.WarnAboutChangedEventType();
+    }
+    
+    // Enable days only mode when applicable.
+    if( LibCal_Event::USE_ONLY_DAYS() )
+    {
+      this.EnableDaysOnlyMode();
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIComponent_OnCreated'
+}

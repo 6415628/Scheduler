@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method Run_Test_ResourceExchangability_Positive (Schedule schedule, String method_shortname_inputscope) as stream[JSON]
+{
+  Description:
+  [*
+    Runs the SelectorSpan->Suboptimizer components of the optimizer and asserts that the optimizer has correctly identified that resource groups are exchangable.
+    Input operations are taken from KT for the given method short name.
+  *]
+  TextBody:
+  [*
+    unplanfirst := true;
+    result := this->Run_Test_IsPlanned( schedule, method_shortname_inputscope, unplanfirst );
+    extraassert := void->After( result )->(){
+      transientdata := UTF_Optimizer_Regression_Test_OptimizerSequencing::GetLastTransientData( schedule );
+      this.Run().AssertFalse( isnull( transientdata ), "Transient Data not saved by optimizer" );
+      this.Run().AssertEqual( counter( schedule, ResourceGroup_SC, rg, true ),
+                              counter( transientdata, ResourceGroup, rg, true ),
+                              "Resource groups shadowed in the optimizer are different than actual resource groups." );
+      traverse( transientdata, ResourceGroup, rg )
+      {
+        this.Run().AssertTrue( rg.IsExchangable(), "The optimizer did not recognize that resource group " + rg.ResourceGroup().Name() + " is exchangable." );
+      }
+    }
+    
+    extraassert->Exception()->( exception ) {
+      this.Run().RegisterFailure( "post-optimization checks failed:\n" + exception.Message() );
+    };
+    
+    return result;
+  *]
+}

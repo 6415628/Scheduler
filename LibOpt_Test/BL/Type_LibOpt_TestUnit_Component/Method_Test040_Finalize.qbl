@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test040_Finalize (LibOpt_TestDataset dataset)
+{
+  Description: 'Check that the finalize is called when the component is aborted.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    count := opt.ComponentCounter( run, 'Counter' );
+    count.CheckAborted( false );
+    count.CountOnFinalize( true );
+    abort := opt.ComponentAbort( run, 'Abort' );
+    
+    
+    count.To( abort );
+    
+    run.SetStartComponent( count );
+    
+    str := run.Start();
+    str->|this->( this )
+        {
+          this.Run().AssertEqual( 1, count.NrOfTimesCalled(), 'Number of calls has an unexpected value' );
+        }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestFeedbackShutdown (Schedule schedule)
+{
+  Description: 'Test feedback shutdown'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    isplannedshutdown := false;
+    
+    this.GetTestVariantForFeedbackShutdown( isvariantfound,
+                                            isplannedshutdown );
+    
+    value := true;
+    
+    // Only do checking when variant found
+    if( isvariantfound )
+    {
+      shutdown := select( schedule, Shutdown, st, true );
+      // Only true if the shutdown does not have planned task but only have feedback task
+      value := isnull( shutdown.Task_SC() )
+               and not isnull( shutdown.FeedbackShutdownTask() );
+    }      
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Test feedback shutdown failed.', 
+                           this.Variant() ) );
+  *]
+}

@@ -1,0 +1,64 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateComponentsSequencingMetaOptimization (LibOpt_Run run, const SettingsSequencingMeta settings_sequencingmeta, const SettingsSequencingNeighborhoodCreator settings_neighborhoodcreator, 
+  const SettingsSequencingDistanceMetric settings_distancemetric, const SettingsSequencingPOA settings_poa, const OptimizerStrategy strategy, 
+  Duration timelimit_global) as LibOpt_Component
+{
+  Description:
+  [*
+    Creates the components of the "true optimization" part (i.e. without heuristic construction phase) of the SequencingMeta optimizer in the given run and links them accordingly.
+    Does not set the run's root component. Instead, returns the root component of the created graph.
+    Does not use the settings or strategy of this optimizer, but the ones given.
+  *]
+  TextBody:
+  [*
+    iterator := this.IteratorUntil( run, "iterator" );
+    if( settings_sequencingmeta.MaxIterations() >= 0 )
+    {
+      iterator.SetMaxIterations( settings_sequencingmeta.MaxIterations() );
+    }
+    iterator.SetMaxLocalDuration( settings_sequencingmeta.MaxDuration() );
+    iterator.SetMaxGlobalDuration( timelimit_global );
+    
+    switch_construction := SwitchConstructionSequencing::Create( run, "construction needed?" );
+    switch := this.SwitchProbability( run, "switch" );
+    
+    selector_random := this.SelectorAnchor( run,
+                                            "random anchor",
+                                            this.AnchorSetType( typeof( ScopeElementOperation ) ),
+                                            this.AnchorPickerRandomScheduler(),
+                                            this.NeighborhoodCreatorDistanceMetric( settings_neighborhoodcreator.NumOperations(), settings_distancemetric ) );
+    selector_operationscore := this.SelectorAnchor( run,
+                                                    "operation score selector",
+                                                    this.AnchorSetType( typeof( ScopeElementOperation ) ),
+                                                    this.AnchorPickerOperationScore(),
+                                                    this.NeighborhoodCreatorDistanceMetric( settings_neighborhoodcreator.NumOperations(), settings_distancemetric ) );
+    
+    selector_span := SelectorSpan::Create( run, 
+                                           "span creator",
+                                           SettingsSequencingNeighborhoodCreatorForSpanCreator::ConstructFrom( settings_neighborhoodcreator ) );
+    
+    
+    runcontext_setupaddress := RunContextSetupAddress::CreateAndInitialize( run, "setup addresses" );
+    suboptimizer := SuboptimizerSequencingPOA::Create( run,
+                                                       "suboptimizer",
+                                                       runcontext_setupaddress,
+                                                       SettingsSequencingPOAForSuboptimizer::ConstructFrom( settings_poa ),
+                                                       StrategyForSuboptimizerSequencingPOA::ConstructFrom( strategy ) );
+    
+    suboptimizer.RollbackKPI( relset, construct( RollbackKPISchedule ) );
+    bulkselectors := this.CreateComponentsSequencingUnplannedConstruction( run, selector_span, settings_neighborhoodcreator );
+    
+    // plumbing:
+    iterator.To( switch_construction );
+    switch_construction.BranchConstruction( bulkselectors );
+    switch_construction.BranchElse( switch );
+    switch.Branch( settings_sequencingmeta.ProbabilityRandomAnchor(), selector_random );
+    switch.Branch( 1 - settings_sequencingmeta.ProbabilityRandomAnchor(), selector_operationscore );
+    selector_random.To( selector_span );
+    selector_operationscore.To( selector_span );
+    selector_span.To( suboptimizer );
+    
+    return iterator;
+  *]
+}

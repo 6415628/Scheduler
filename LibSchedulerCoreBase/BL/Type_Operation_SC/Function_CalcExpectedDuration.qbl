@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcExpectedDuration
+{
+  Description: 'Calculate the expected duration of an operation by checking on Operation is planned or finished.'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // The default is 0:00, and it works, but the calculation can be overloaded if it is needed.
+    // Kyle 03-Aug-2015 QP # 5690
+    value := guard( this.Task_SC().ExpectedDuration(), Duration::Zero() );
+    
+    // Operation has feedback or is finished
+    if( this.HasFeedback() or this.Finished() )
+    {
+      value := guard( this.ActiveOperationFeedback().ReportedDuration(), Duration::Zero() );
+    }
+    
+    this.ExpectedDuration( value );
+  *]
+}

@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (TransientDataSuboptimizerSequencing owner, OperationDependency transfermaterial) as OperationMaterialInSuboptimizerSequencing
+{
+  TextBody:
+  [*
+    // mbr23 Jan-21-2020 (created)
+    upstreamoperation := OperationInSuboptimizerSequencing::FindOrCreate( owner, transfermaterial.FromOperation() );
+    downstreamoperation := OperationInSuboptimizerSequencing::FindOrCreate( owner, transfermaterial.ToOperation() );
+    object := owner.OperationDependencyInSuboptimizerSequencing( relnew,
+                                                                 OperationMaterialInSuboptimizerSequencing,
+                                                                 OperationDependency := transfermaterial,
+                                                                 KeyOperationDependency := transfermaterial.Key(),
+                                                                 KeyTransientData := owner.Key(),
+                                                                 AsOutputDependency := upstreamoperation,
+                                                                 AsInputDependency := downstreamoperation );
+    return object;
+  *]
+}

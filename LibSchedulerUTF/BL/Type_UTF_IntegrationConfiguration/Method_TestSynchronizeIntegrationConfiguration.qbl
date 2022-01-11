@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestSynchronizeIntegrationConfiguration (Schedule schedule)
+{
+  Description: 'Tests the synchronization of integration configuration instance.'
+  TextBody:
+  [*
+    integrationConfiguration := schedule.IntegrationConfiguration();
+    importedIntegrationConfiguration := schedule.ImportedIntegrationConfiguration();
+    
+    isIntegrationConfigurationSynchronized := not isnull( integrationConfiguration ) and not isnull( importedIntegrationConfiguration )
+                                              and integrationConfiguration.ActiveFeedbackAdapter() = importedIntegrationConfiguration.ActiveFeedbackAdapter()
+                                              and integrationConfiguration.MPSDestinationFileName() = importedIntegrationConfiguration.MPSDestinationFileName()
+                                              and integrationConfiguration.MPSDestinationFilePath() = importedIntegrationConfiguration.MPSDestinationFilePath()
+                                              and integrationConfiguration.MPSDatasetID() = importedIntegrationConfiguration.MPSDatasetID()
+                                              and integrationConfiguration.SanityCheckLimit() = importedIntegrationConfiguration.SanityCheckLimit()
+                                              and integrationConfiguration.ShopFloorHistory() = importedIntegrationConfiguration.ShopFloorHistory()
+                                              and integrationConfiguration.UseDataExchangeFramework() = importedIntegrationConfiguration.UseDataExchangeFramework()
+                                              and integrationConfiguration.UseCommonInformationModel() = importedIntegrationConfiguration.UseCommonInformationModel();
+    
+    this.Run().AssertTrue( isIntegrationConfigurationSynchronized, UTFUtility::GenerateFailedMessage( 'SynchronizeIntegrationConfiguration', '' ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

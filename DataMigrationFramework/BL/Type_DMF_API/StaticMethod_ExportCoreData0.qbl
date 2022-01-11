@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ExportCoreData (Key mdsid_i, DMF_Datasets datasets_i) as stream[Void]
+{
+  Description: 'Export core data for one or more datasets from the UI'
+  TextBody:
+  [*
+    ret_s := DMF_ConvertorDataset::GetDMFDataset( mdsid_i )->( dmf )
+    {
+      exported_s := stream[Void]::Success();
+      // If the set is empty, assume export all
+      if( datasets_i.Size() = 0 )
+      {
+        exported_s := dmf.ExportAllCoreData(); 
+      }
+      else
+      {
+        exported_s := dmf.ExportCoreData( datasets_i );
+      }
+      return exported_s;
+    }
+    
+    ret_s->Exception()->( ex )
+    {
+      msg := "ExportCoreData failed. Reason: ";
+      
+      DMF_Utility::LogException( msg, ex );
+    }
+    
+    return ret_s->AsVoid();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

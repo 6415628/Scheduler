@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test015_StoreRunInformation (Schedule schedule)
+{
+  Description: 'Store information about the run like hardware and branch information.'
+  TextBody:
+  [*
+    // Get hardware information
+    machine := OS::ComputerName();
+    
+    // Get branch information
+    versionID := "";
+    versionCommitTime := DateTime::MinDateTime();
+    branchname := "";
+    repo := guard( VCRepository::OpenRepository( "git", 
+                                                 'Scheduler', // identifier (not relevant)
+                                                 'Domain:models/Scheduler' ), // repositoryurl pointing to git folder
+                   null( VCRepository, owning ) );
+    if( not isnull( repo ) )
+    {
+      repo.UpdateBranches();
+      activebranch  := select( repo, Branches, abranch, abranch.IsActive() );
+      if( not isnull( activebranch ) )
+      {
+        branchname := activebranch.ID().Name();
+        repo.UpdateVersionsForBranch( activebranch );
+        version       := minselect( activebranch, VersionsInBranch, v, true, v.SequenceNumber() ).Version();
+        versionID := version.VersionID();
+        versionCommitTime := version.CommitTime();
+      }
+    }
+    
+    // Store the information on the run.
+    testrun := this.Run().LibUTF_UnitTestRun().LibUTF_TestRun();
+    testrun.MachineName( machine );
+    testrun.BranchName( branchname );
+    testrun.BranchLastCommitID( versionID );
+    testrun.BranchLastCommitTime( versionCommitTime );
+    
+    // Workaround for not being able to store configurable columns in a view in pane 
+    // Measurement groups of form LibUTF_frmUTF. The reason is that when the form gets
+    // opened, method RefreshConfigurableColumns is called which removes all configurable 
+    // columns and adds configurable columns for the measurement values
+    testrun.BTSCalculatedTotalKPI( this.GetBTSCalculatedTotalKPIString() );
+    testrun.BTSCalculatedAbsoluteTotalKPI( this.GetBTSCalculatedAbsoluteTotalKPIString() );
+    testrun.BTSDelta( this.GetBTSDeltaString() );
+    testrun.BTSImgDelta( this.GetBTSImgDeltaString() );
+    
+    // Create measurement group and link name of dataset to the upcoming KPI values
+    name := schedule.MDSSchedule().Name();
+    this.Run().AddMeasurementGroup( name );
+  *]
+}

@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateCharacteristicMain (Schedule schedule, Rule rule) #extension
+{
+  TextBody:
+  [*
+    // Get variant attribute
+    characteristicType := '';
+    isAllowedValue := false;
+    ruleValueString := '';
+    operationAttributeValue := '';
+    hasConstraintViolation := false;
+    
+    this.GetTestVariant( characteristicType,
+                         isAllowedValue,
+                         ruleValueString,
+                         operationAttributeValue,
+                         hasConstraintViolation );
+    
+    // Create characteristic main based on variant
+    
+    valueType := ifexpr( characteristicType = RuleConstant::Characteristic_OperationNeedsEdgeTrimming() 
+                         or characteristicType = RuleConstant::Characteristic_OperationNeedsOil(),
+                         RuleConstant::ValueType_Boolean(),
+                         RuleConstant::ValueType_String() );
+    
+    characteristicMain := UTFMockObjectFactory::CreateCharacteristic( schedule,
+                                                                      characteristicType,
+                                                                      false, true, false, valueType, true, false );
+    
+    rule.CharacteristicMain( relset, characteristicMain );
+  *]
+}

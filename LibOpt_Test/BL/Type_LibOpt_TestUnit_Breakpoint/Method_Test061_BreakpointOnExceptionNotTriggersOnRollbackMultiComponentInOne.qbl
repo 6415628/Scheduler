@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test061_BreakpointOnExceptionNotTriggersOnRollbackMultiComponentInOneTransaction (LibOpt_TestDataset dataset)
+{
+  Description: 'Test that the breakpoint on exception does not trigger on a rollback when previous component + init + handle result is in one transaction.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    // Script of the rollback KPI
+    kpi_script := opt.RollbackKPIScripted( 1 );
+    kpi_script.Enqueue( 0.0 );
+    kpi_script.Enqueue( 100.0 );
+    
+    // Create tree
+    component := opt.ComponentCounter( run, 'Counter' );
+    
+    suboptimizer := opt.MPSuboptimizer( run, 'MP', LibOpt_MyRunContextForUTF::Create( run ), & kpi_script );
+    suboptimizer.InOneTransaction( true );
+    
+    component.To( suboptimizer ).AsOneTransaction( false );
+    
+    // Set breakpoints
+    component_position := select( suboptimizer, ComponentPosition, bp, bp.Name() = LibOpt_Component::ComponentPosition_Error() );
+    component_position.SetBreakpoint();
+    
+    component_position := select( component, ComponentPosition, bp, bp.Name() = LibOpt_Component::ComponentPosition_Error() );
+    component_position.SetBreakpoint();
+    
+    // Test
+    this.NoException( run.Start() );
+    test := this->WaitForBreakpoint( run, null( LibUTF_IterationRun ) )->|void->()
+    {
+      this.Run().AssertTrue( run.BreakpointEvent( relsize ) = 0, 'Breakpoint triggered' );
+    }
+    // Just in case
+    ->|run->Stop();
+    
+    this.NoException( test );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateUpdate (FeedbackTaskInSchedule owner, FeedbackProgramType feedbackprogramtype, Boolean isbyuser) as FeedbackTaskInFeedbackProgramType
+{
+  Description: 'Create feedback task in feedback program type and link the feedback program type'
+  TextBody:
+  [*
+    // Create feedback task in feedback program type if it does not exists
+    ftifpt := select( owner, FeedbackTaskInFeedbackProgramType, ftifpt, ftifpt.FeedbackProgramType() = feedbackprogramtype );
+    
+    if( isnull( ftifpt ) )
+    {
+      ftifpt := owner.FeedbackTaskInFeedbackProgramType( relnew );
+      
+      if( not isbyuser )
+      {
+        ftifpt.UpdateReportedFeedback( feedbackprogramtype );
+      }
+    
+      ftifpt.UpdateUserReportedFeedback( isbyuser, 
+                                         feedbackprogramtype.ProgramDefinitionConfigurationID(),
+                                         feedbackprogramtype.ProgramSetConfigurationID(),
+                                         feedbackprogramtype.ProgramTypeConfigurationID(),
+                                         feedbackprogramtype.ExternalProgramID() );
+                                         
+      
+    }
+    
+    return ftifpt;
+  *]
+}

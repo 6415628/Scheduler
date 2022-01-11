@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetDateOfDayOfMonth (Date startOfMonth_i, String weekOfMonth_i, String dayOfWeek_i) declarative remote as Date
+{
+  Description:
+  [*
+    Determine the date of the applicable day of the month.
+    Is implemented as a static method so it can be also used by RecurrencePatternYearly.
+  *]
+  TextBody:
+  [*
+    date := startOfMonth_i;
+    
+    // Get the first applicable day of the week.
+    days      := Translations::Pattern_Days().Tokenize( ";" );
+    dayOfWeek := days.Find( dayOfWeek_i ) + 1;  // + 1 because monday = 1
+    
+    while( date.DayOfWeek() <> dayOfWeek )
+    {
+      date := date + 1;
+    }
+    
+    // Take the same day of the Nth week.
+    weeks := Translations::Pattern_WeekOfMonth().Tokenize( ";" );
+    week  := weeks.Find( weekOfMonth_i );
+    
+    date  := date + week * 7;
+    
+    // If 'last' results in a date in the next month, take the day of the previous week
+    // (i.e. the fourth week is the last).
+    if( date.Month() <> startOfMonth_i.Month() )
+    {
+      date := date - 7;
+    }
+    
+    return date;
+  *]
+}

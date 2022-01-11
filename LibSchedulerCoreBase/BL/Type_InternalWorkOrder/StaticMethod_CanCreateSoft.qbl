@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CanCreateSoft (Boolean isdiscrete, String quantity, Routing routing, 
+  Date duedate, Boolean skipsoftcheck, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Soft checking rules that can be overriden.'
+  TextBody:
+  [*
+    // WOI1 Nov-3-2016 (created)
+    // MODELING HANDLE SC
+    // Add Soft rules here for creating work orders in work order dialog
+    
+    value := true;
+    
+    if( not skipsoftcheck )
+    {
+      // Add soft rules here
+      value := routing.CheckQuantitySoft( isdiscrete, quantity, feedback_o ) and value;
+      value := routing.CheckDueDateAfterCompanyTime( duedate, feedback_o ) and value;
+      
+      feedback_o := feedback_o + String::NewLine() + Translations::SC_CheckBoxToOverride();
+    }
+    
+    return value;
+  *]
+}

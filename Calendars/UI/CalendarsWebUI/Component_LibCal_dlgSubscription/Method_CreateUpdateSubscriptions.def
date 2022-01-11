@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateUpdateSubscriptions () id:Method_LibCal_dlgSubscription_CreateUpdateSubscriptions
+{
+  #keys: '[146730.0.242131378]'
+  Body:
+  [*
+    if( dhParticipationsToSubscribeTo.Data().Size() <= 1 )
+    {
+      // Create or update a single subscription.
+      this.CreateUpdateSubscription();
+    }
+    else
+    {
+      // Create multiple subscriptions
+      subscribers := dhSubscribers.Data();
+      subscribeTo := dhParticipationsToSubscribeTo.Data(); 
+      
+      useLeadingPeriod := ckbAllOccurrences.Checked();
+      periodType       := ifexpr( ckbEndOfPeriod.Checked(), LibCal_RecurrencePeriod::TYPE_WITHENDDATE(),
+                                                            LibCal_RecurrencePeriod::TYPE_WITHOUTEND() );
+      startofPeriod := dsStartOfPeriod.Date();
+      endOfPeriod   := dsEndOfPeriod  .Date();
+      
+      // Make it happen in the Server.
+      LibCal_Subscription::CreateSubscriptions( subscribers, subscribeTo,
+                                                useLeadingPeriod, periodType, startofPeriod, endOfPeriod );    
+    }
+  *]
+}

@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method MergeOperations (Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // Find existing batches. These batches should be cleaned up after adding operations to current batch.
+    existingbatches := selectset( operations, Elements.BatchSequenceElement.Batch, batch,
+                                  this <> batch );
+    
+    this.AddOperations( operations );
+    
+    traverse( existingbatches, Elements, batch, batch.BatchSequenceElement( relsize ) = 0 )
+    {
+      batch.Delete();
+    }
+  *]
+}

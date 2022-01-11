@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcAggregatedEarliestStart
+{
+  TextBody:
+  [*
+    // jkr8 Sep-6-2021 (created)
+    
+    schedule := this.TransientData().Component().astype( SuboptimizerMPPTAssignment ).GetSchedule();
+    scheduledtime := schedule.Time();
+    
+    value := scheduledtime;
+    if( this.NrOperationsInGroup() > 0 )
+    {
+      value := scheduledtime + sum( this, OperationInOptimizerProgram, operation, true, operation.Operation_SC().EarliestStart() - scheduledtime ) / this.NrOperationsInGroup();
+    }
+    
+    this.AggregatedEarliestStart( value );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

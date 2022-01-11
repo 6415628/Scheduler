@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericMaterialExternalFulfillment (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic material external fulfillment core data attributes to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdSchedule, CDEntity.astype( CDGenericMaterialExternalFulfillment ), cdGenericMaterialExternalFulfillment )
+    {
+      genericMaterialExternalFulfillment := select( schedule, Demand.Fulfillment.astype( GenericMaterialExternalFulfillment ), genericMaterialExternalFulfillment, 
+                                                    genericMaterialExternalFulfillment.DemandId() = cdGenericMaterialExternalFulfillment.DemandId()
+                                                    and genericMaterialExternalFulfillment.Demand().DemandType() = cdGenericMaterialExternalFulfillment.DemandType()
+                                                    and genericMaterialExternalFulfillment.SupplyId() = cdGenericMaterialExternalFulfillment.SupplyId()
+                                                    and genericMaterialExternalFulfillment.BackupSupplyType() = cdGenericMaterialExternalFulfillment.SupplyType() 
+                                                   );
+                                                    
+                                                    
+      if( not isnull( genericMaterialExternalFulfillment ) )
+      {
+        // ImportedFixedFulfillment, M-1     
+        importedFixedFulfillment := select( schedule, ImportedFulfillment.astype( ImportedFixedFulfillment ), iff, iff.BackupImportedID() = cdGenericMaterialExternalFulfillment.ImportedFixedFulfillmentBackupID() );
+        genericMaterialExternalFulfillment.ImportedFixedFulfillment( relset, importedFixedFulfillment );                     
+        
+        // MaterialSupply, M-1
+        materialsupply := select( schedule, Supply.astype( MaterialSupply ), ms, 
+                                  ms.SupplyID() = cdGenericMaterialExternalFulfillment.SupplyId()
+                                  and ms.SupplyType() = cdGenericMaterialExternalFulfillment.SupplyType() );
+                                                 
+        genericMaterialExternalFulfillment.MaterialSupply( relset, materialsupply );
+        genericMaterialExternalFulfillment.Supply( relset, materialsupply );
+        
+        // OperationMaterial, 1-1
+        operationMaterial := select( schedule, PlanUnit_SC.OperationMaterial, operationMaterial, operationMaterial.OperationMaterialID() = cdGenericMaterialExternalFulfillment.OperationMaterialID() );
+        genericMaterialExternalFulfillment.OperationMaterial( relset, operationMaterial );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

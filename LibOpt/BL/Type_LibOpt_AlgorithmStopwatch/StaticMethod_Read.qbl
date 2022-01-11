@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Read (Algorithm algorithm, String id) const as Duration
+{
+  Description: 'Get the current duration from the stopwatch with the given id.'
+  TextBody:
+  [*
+    value := Duration::Zero();
+    
+    if( LibOpt_AlgorithmStopwatch::HasValue( algorithm, id ) )
+    {
+    
+      time := guard( algorithm.RetrieveReal( LibOpt_AlgorithmStopwatch::StrTimeStored( id ) ), 0.0 );
+      if( LibOpt_AlgorithmStopwatch::IsRunning( algorithm, id ) )
+      {
+        time := time + guard( OS::PrecisionCounter() - algorithm.RetrieveReal( LibOpt_AlgorithmStopwatch::StrTimeStart( id ) ), 0.0 );
+      }
+      
+      value := Duration::Seconds( time / OS::PrecisionCounterFrequency() );
+    }
+    
+    return value;
+  *]
+}

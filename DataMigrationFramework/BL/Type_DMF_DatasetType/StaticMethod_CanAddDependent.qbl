@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CanAddDependent (DMF_DatasetType datasetType_i, String datasetTypeName_i, DMF_DatasetType dependent_i, 
+  String dependentName_i) remote as Boolean
+{
+  Description: 'Can add dependent to the dataset type'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    //precheck to ensure not isnull dataset type for both datasetType_i and dependent_i
+    DMF_DatasetType::HasDatasetType( datasetType_i, datasetTypeName_i );
+    DMF_DatasetType::HasDatasetType( dependent_i, dependentName_i );
+    
+    //normal validation only when both datasetType_i and dependent_i is not null checked, prevent error
+    if( feedback.IsAllowed() )
+    {
+      datasetType_i.HasSamePriority( dependent_i );  
+      dependent_i.IsNotCircularDependent( datasetType_i );
+    }                   
+    
+    return feedback.IsAllowed();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

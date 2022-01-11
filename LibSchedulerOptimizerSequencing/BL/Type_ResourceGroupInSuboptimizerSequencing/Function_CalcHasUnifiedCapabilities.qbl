@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcHasUnifiedCapabilities
+{
+  TextBody:
+  [*
+    // mbr23 Jan-27-2020 (created)
+    
+    value := true;
+    
+    if( this.Resource( relsize ) > 0 )
+    {
+      // check all allowed operations of resources:
+      anyresource := select( this, Resource, r, true );
+      hash := anyresource.AllowedReplannableOperationsHash();
+      hashesmatch := forall( this, Resource, r, true, r.AllowedReplannableOperationsHash() = hash );
+      if( not hashesmatch )
+      {
+        // allowed operations are not unified.
+        value := false;
+      }
+      else
+      {
+        // Matching hashes are an indication of equality, but not a proof. Test proper equality:
+        allowed_operations := anyresource.GetAllowedReplannableOperations();
+        traverse( this, Resource, resource, value )
+        {
+          if( not ResourceGroupInSuboptimizerSequencing::IsEqualSets( resource.GetAllowedReplannableOperations(), allowed_operations ) )
+          {
+            value := false;
+          }
+        }
+      }
+    }
+    
+    this.HasUnifiedCapabilities( value );
+  *]
+}

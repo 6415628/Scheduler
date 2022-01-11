@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetLargestMaximumBatchSizeResource () declarative remote as BatchResource
+{
+  TextBody:
+  [*
+    // sin li Jan-19-2018 (created)
+    // Resource.Name to make sure we're not randomly selecting the Resource with same MaxBatchSize
+    // MinSelect to make sure we are sorting the name ascendingly
+    // Negative MaximumBatchSize because of MinSelect
+    batchresource := minselect( this, AllowedBatchOnResource.BatchResource, resource,
+                                true,
+                                - resource.MaximumBatchSize(),
+                                resource.Name() );
+    
+    // if there's no allowed batch on resource, then just find within all linked batch resources
+    if( isnull( batchresource ) )
+    { 
+      batchresource := minselect( this, BatchOnResource.BatchResource, resource,
+                                  true,
+                                  - resource.MaximumBatchSize(),
+                                  resource.Name() );
+    }
+    
+    return batchresource;
+  *]
+}

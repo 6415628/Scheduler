@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method AssertWorkOrders (Schedule schedule, JSON workOrdersArray)
+{
+  Description: 'Checks whether the schedule has work orders that matches the JSON input data.'
+  TextBody:
+  [*
+    for( i := 0; i < workOrdersArray.Size(); i++ )
+    {
+      workOrderJSON := workOrdersArray.Get( i );
+      maturity := ImportedExternalWorkOrder::GetMaturity( workOrderJSON );
+      
+      if( maturity <> Constants::MaturityStatus_CANCELLED() )
+      {
+        id :=  ImportedExternalWorkOrder::GetID( workOrderJSON );
+          
+        workOrder := select( schedule, WorkOrder.astype( ExternalWorkOrder ), externalWorkOrder, externalWorkOrder.Id() = id );
+        
+        if( this.Run().AssertTrue( not isnull( workOrder ), Translations::LibSchedulerOptMgrUTF_WorkOrder_NotCreated( id ) ) )
+        {
+          this.Run().AssertEqual( ImportedExternalWorkOrder::GetProcessID( workOrderJSON ), workOrder.RoutingID() );
+          this.Run().AssertEqual( ImportedExternalWorkOrder::GetDueDate( workOrderJSON ), workOrder.DueDate() );
+          this.Run().AssertEqual( ImportedExternalWorkOrder::GetQuantity( workOrderJSON ), workOrder.Quantity() ); 
+          this.Run().AssertEqual( maturity, workOrder.Maturity() );
+          this.Run().AssertEqual( ImportedExternalWorkOrder::GetPriority( workOrderJSON ), workOrder.Priority() );
+        }
+      }
+    }
+    
+    // Only consider non cancelled imported work orders
+    nrOfImportedWorkOrders := counter( schedule, 
+                                       ImportedWorkOrder.astype( ImportedExternalWorkOrder ),
+                                       importedExternalWorkOrder,
+                                       importedExternalWorkOrder.Maturity() <> Constants::MaturityStatus_CANCELLED() );
+    
+    this.Run().AssertTrue( nrOfImportedWorkOrders = schedule.WorkOrder( relsize ),
+                           Translations::LibSchedulerOptMgrUTF_Update_NotAllWorkOrdersCreated() );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

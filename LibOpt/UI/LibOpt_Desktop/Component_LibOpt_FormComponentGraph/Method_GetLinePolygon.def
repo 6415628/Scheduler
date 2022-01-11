@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetLinePolygon (NumberVector vect) as Polygon id:Method_LibOpt_FormComponentGraph_GetLinePolygon
+{
+  #keys: '[139164.3.1008855746]'
+  Body:
+  [*
+    poly := construct( Polygon );
+    
+    scale_x := ValueHolderScaleX.Data();
+    scale_y := ValueHolderScaleY.Data();
+    
+    scale := minvalue( scale_x, scale_y );
+    
+    for( i := 0; i < vect.Size() - 3; i := i + 2 )
+    {
+      poly.AddPoint( vect.Get( i ), vect.Get( i + 1 ) );
+    }                     
+    x := vect.Get( vect.Size() - 2 );
+    y := vect.Get( vect.Size() - 1 );
+    
+    arrow_size := maxvalue( 3, 12 - maxvalue( 2, 2 / scale ) );
+    arrow_size_x := [Number] ( arrow_size * scale / 2 );
+    arrow_size_y := [Number] ( arrow_size * scale );
+    
+    poly.AddPoint( x, y - arrow_size_y );     
+    poly.AddPoint( x - arrow_size_x, y - arrow_size_y );
+    poly.AddPoint( x, y );
+    poly.AddPoint( x + arrow_size_x, y - arrow_size_y );
+    poly.AddPoint( x, y - arrow_size_y );
+    for( i := vect.Size() - 4; i > 1; i := i - 2 )
+    {
+      poly.AddPoint( vect.Get( i ), vect.Get( i + 1 ) );
+    }
+    
+    
+    return & poly;
+  *]
+  Declarative: true
+  ReturnsOwning: true
+}

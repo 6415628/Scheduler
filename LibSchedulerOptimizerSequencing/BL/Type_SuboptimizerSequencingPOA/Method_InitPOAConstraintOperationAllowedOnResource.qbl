@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOAConstraintOperationAllowedOnResource (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata)
+{
+  Description:
+  [*
+    Adds the constraint which allows or disallows an operation on a resource. This constraint is always hard.
+    (Technically not a POA constraint, but a NodesAllowed POAPossible)
+  *]
+  TextBody:
+  [*
+    traverse( transientdata.GetPOAPathTypeResources(), Elements, resource )
+    {
+      pathtype := poa.PathType( this.GetPathTypeName( resource ) );
+      default_allowed := false;
+      nodepossible := POAPossible::N( poa, SuboptimizerSequencingPOA::NamePOAPossibleOperationOnResource( resource.Resource() ), default_allowed );
+      pathtype.NodesAllowed( nodepossible );
+      allowed_operations := null( OperationInSuboptimizerSequencings );
+      path_resources := null( ResourceInSuboptimizerSequencings );
+      // even if they are exchangable, the resources may not share allowedness of operations that are not replannable.
+      if( resource.ResourceGroup().IsExchangable() )
+      {
+        allowed_operations := selectset( resource.ResourceGroup(), Resource.AllowedOperationOnResource.Operation, op, true );
+        path_resources := selectset( resource.ResourceGroup(), Resource, res, true );
+      }
+      else
+      {
+        allowed_operations := selectset( resource, AllowedOperationOnResource.Operation, op, true );
+        path_resources := construct( ResourceInSuboptimizerSequencings );
+        path_resources.Add( resource );
+      }
+      traverse( allowed_operations, Elements, operation )
+      {
+        // allow this operation
+        node := poa.Node( operation );
+        nodepossible.Set( node, true );
+        // and allow its dummy end node if it exists
+        if( operation.GetRequiresDummyEndNode() )
+        {
+          dummynode := poa.Node( SuboptimizerSequencingPOA::NamePOADummyEndNode( operation ), operation );
+          nodepossible.Set( dummynode, true );
+        }
+      }
+      
+      traverse( path_resources, Elements, res )
+      {
+        node := poa.Node( res );
+        nodepossible.Set( node, true );
+      }
+    }
+  *]
+}

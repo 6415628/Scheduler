@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GenerateIds (NamedValue nvtNode, String parentId)
+{
+  Description: 'Re-generates IDs for all NVT tree nodes to avoid type index errors at process import.'
+  TextBody:
+  [*
+    fieldId := LibWiz_NVTTools::Id();
+    fieldParentId := LibWiz_NVTTools::ParentId();
+    
+    if( LibWiz_NVTTools::HasField( nvtNode, fieldId ) )
+    {
+      // Generate new node ID
+      oldId := LibWiz_NVTTools::GetFieldValue( nvtNode, fieldId );
+      nodeId := ifexpr( oldId <> '', LibWiz_Wizard::GenerateId(), '' );
+    
+      traverse( nvtNode.Children(), Elements, e,
+                LibWiz_NVTTools::HasField( e, fieldId ) )
+      {
+        LibWiz_NVTTools::GenerateIds( e, nodeId );
+      }
+      
+      // Set node ID
+      LibWiz_NVTTools::SetFieldValue( nvtNode, fieldId, nodeId );
+      
+      // Update parent ID
+      LibWiz_NVTTools::SetFieldValue( nvtNode, fieldParentId, parentId );
+    }
+  *]
+}

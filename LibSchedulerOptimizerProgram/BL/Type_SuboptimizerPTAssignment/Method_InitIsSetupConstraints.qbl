@@ -1,0 +1,80 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitIsSetupConstraints (LibOpt_Task task, SuboptimizerMPPTAssignment_PTAssignmentMP program, TransientDataSuboptimizerPTAssignment transientData) as SuboptimizerMPPTAssignment_PTAssignmentMP
+{
+  TextBody:
+  [*
+    // jkr8 Jul-16-2021 (created)
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // sum_(u, u <> t) IsSetup_(t,u,b) >= IsProgramAssigned_(t,b-1), forall t in allProgramSets, b = 2,...,B  //
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // there must be a program type u for which the IsSetup variable is set to 1 if the program is assigned to program type t.
+    ptcnumber := counter( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, programType, true );
+    
+    traverse( transientData, Bucket, bucket, bucket.SequenceNr() <> 0 and ptcnumber > 1 )
+    {
+      traverse( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, programType, true )
+      {
+        constr := program.IsSetupFromConstraints().New( programType, bucket );
+        
+        traverse( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, otherProgramType, otherProgramType.Name() <> programType.Name() )
+        {
+          constr.NewTerm( 1.0, program.IsSetupVariables().Get( programType, bucket, otherProgramType ) );
+        }
+        
+        constr.NewTerm( -1.0, program.IsProgramAssignedVariables().Get( programType, bucket.PreviousBucket() ) );
+        
+        constr.RHSValue( 0.0 );
+      } 
+    }
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // sum_(u, u <> t) IsSetup_(u,t,b) >= IsProgramAssigned_(t,b), forall t in allProgramSets, b = 1,...,B-1  //
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // there must be a program type u for which the IsSetup variable is set to 1 if the program is assigned to program type t.
+    
+    traverse( transientData, Bucket, bucket, not isnull( bucket.NextBucket() ) and ptcnumber > 1 )
+    {
+      traverse( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, programType, true )
+      {
+        constr := program.IsSetupToConstraints().New( programType, bucket );
+        
+        traverse( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, otherProgramType, otherProgramType.Name() <> programType.Name() )
+        {
+          constr.NewTerm( 1.0, program.IsSetupVariables().Get( otherProgramType, bucket, programType ) );
+        }
+        
+        constr.NewTerm( -1.0, program.IsProgramAssignedVariables().Get( programType, bucket ) );
+        
+        constr.RHSValue( 0.0 );
+      } 
+    }
+    
+    ////////////////////////////////////////////////////////////////////
+    // Setup = sum_b( sum_t( sum_u( SetupTime_(t,u) * IsSetup_(t,u,b) //
+    ////////////////////////////////////////////////////////////////////
+    // The setup is equal to the setuptime multiplied with the boolean variable whether a setup has occurred.
+    
+    constr := program.SetupDurationConstraints().New();
+    
+    constr.NewTerm( 1.0, program.SetupDurationVariables().Get() );
+    
+    traverse( transientData, Bucket, bucket, true )
+    {
+      traverse( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, programType, true )
+      {
+         traverse( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, otherProgramType, programType.Name() <> otherProgramType.Name() )
+         {
+           //Get the setup duration related to the program type change.
+           setupCost := ProgramTypeChangeConfiguration::GetProgramTypeChangeDuration( programType, otherProgramType ).HoursAsReal();
+           constr.NewTerm( -setupCost, program.IsSetupVariables().Get( programType, bucket, otherProgramType ) );
+         }
+      }
+    }
+    
+    constr.RHSValue( 0.0 );
+    
+    return program;
+  *]
+}

@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetSubgraph () as owning LibOpt_UIGraphNodes
+{
+  TextBody:
+  [*
+    vector := BooleanVector::Construct( this.UIGraph().UIGraphNode( relsize ) );
+    vector.Set( this.ID(), true );
+    
+    result := construct( LibOpt_UIGraphNodes );
+    result.Add( this );
+    
+    for( i := 0; i < result.Size(); i++ )
+    {
+      traverse( result.Element( i ), Outgoing.Destination, node, not vector.Get( node.ID() ) )
+      {
+        result.Add( node );
+        vector.Set( node.ID(), true );
+      }
+    }
+    
+    return & result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

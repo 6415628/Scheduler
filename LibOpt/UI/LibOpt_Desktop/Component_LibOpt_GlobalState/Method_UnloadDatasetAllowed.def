@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method UnloadDatasetAllowed (structured[LibOpt_SnapshotReplannableCopyDataset] snapshots) as Boolean id:Method_LibOpt_GlobalState_UnloadDatasetAllowed
+{
+  #keys: '[141860.2.581338533]'
+  Body:
+  [*
+    // Precondition method for the UnloadDataset method
+    feedbackobj := FeedbackObject::LocalFeedback();
+                   
+    hasLoadedDataset := exists( snapshots,
+                                Elements,
+                                snapshot,
+                                snapshot.IsDatasetLoaded()
+                                and not snapshot.IsDatasetDeleted()
+                                );
+                   
+    hasCreatedAnyDataset := exists( snapshots,
+                                    Elements,
+                                    snapshot,
+                                    snapshot.HasCreatedDataset()
+                                    );                                
+    
+    if( not feedbackobj.CheckHard( hasCreatedAnyDataset ) )
+    {
+      feedbackobj.AddHard( Translations::LibOpt_SnapshotReplannable_Precondition_DatasetBeingCreated() );
+    }
+    else if( not feedbackobj.CheckHard( hasLoadedDataset ) )
+    {
+      feedbackobj.AddHard( Translations::LibOpt_SnapshotReplannable_Precondition_UnloadDataset() );
+    }
+    
+    return feedbackobj.IsAllowed();
+  *]
+}

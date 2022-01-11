@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method ConfigureForOneTransaction (Boolean needs_propagation)
+{
+  Description:
+  [*
+    Using this method, one can easily change the `LibOpt_Run` to work in one transaction.
+    This method can easily be called in the `LibOpt_Optimizer.CreateComponents` method, or in the method calling the `LibOpt_Optimizer.CreateComponents` method.
+    
+    Note that the if the iterator executing in one transaction, and a rollback or error occurs, all iterations will be reverted and the error message will be shown to the user.
+    When using only one transaction, thoroughly test!
+  *]
+  TextBody:
+  [*
+    // Set the run to be executed in one transaction.
+    this.InOneTransaction( true );
+    
+    // Set all links to use one transaction.
+    traverse( this, Component.Parents, link )
+    {
+      link.SetTaskTransporterOneTransaction( needs_propagation );
+    }
+    
+    // Set all suboptimizers to use one transaction.
+    traverse( this, Component.astype( LibOpt_Suboptimizer ), subopt )
+    {
+      subopt.InOneTransaction( true );
+    }
+  *]
+}

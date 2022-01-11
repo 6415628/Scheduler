@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test014_Span_ScopeSpanningResourceClosure (Schedule schedule)
+{
+  Description: 'tests the span calculation\'s "resource closure" requirement.'
+  TextBody:
+  [*
+    // mbr23 Jan-10-2020 (created)
+    
+    // start scenario for test is empty schedule:
+    schedule.UnplanAll();
+    
+    scope := construct( LibOpt_ScopeElements );
+    resources_planned := construct( LibOpt_ScopeElements );
+    // Select operations
+    operations := this.GetMethodOperationsInScope( this.GetCurrentMethodShortName(), schedule );
+    traverse( operations, Elements, op )
+    {
+      scope.Add( op.GetOrCreateScopeElement() );
+      // and plan one of its upstream operations:
+      upstream := select( op, FromOperationDependency.FromOperation, o, true );
+      if( not isnull( upstream ) )
+      {
+        task := upstream.Plan();
+        resources_planned.Add( task.Resource_SC().GetOrCreateScopeElement() );
+      }
+      // and plan one of its downstream operations:
+      downstream := select( op, ToOperationDependency.ToOperation, o, true );
+      if( not isnull( downstream ) )
+      {
+        task := downstream.Plan();
+        resources_planned.Add( task.Resource_SC().GetOrCreateScopeElement() );
+      }
+    }
+    
+    run := UTF_Optimizer_Regression_Test_OptimizerSequencing::CreateSelectorScopeOnlyRun( UTF_Optimizer_Regression_Test_OptimizerSequencing::Optimizer( schedule ),
+                                                                                          scope,
+                                                                                          null( SettingsSequencingNeighborhoodCreatorForSpanCreator, owning ) );
+    selector := selectobject( run, Component, c, true );
+    
+    // assert that span contains `resources_planned`: 
+    run.Start() ->| resources_planned -> UTF_Optimizer_Regression_Test_OptimizerSequencing::AssertOutputScopeContains( this.Run(), selector )->Exception()->(exception) {
+      this.Run().RegisterFailure( "post-optimization assert failed:\n" + exception.Message() );
+    };
+  *]
+}

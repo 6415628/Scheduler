@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllTestVariants (output Booleans isexternalwooresourcealloweds, output Booleans ispositiveexternalprocessdurations, output Durations processdurations) as owning Strings
+{
+  Description: 'Return all test variants, variant output arguments (columns) will be used in data creation logic.'
+  TextBody:
+  [*
+    variants := construct( Strings );
+    
+    // External - Fixed process duration 1 hour + PlanUnitQuantity 5 * Process duration per quantiy 1 hour
+    totalexternalprocessduration := Duration::Hours( 6 ); 
+    // Default KT - PlanUnitQuantity 5 * Process duration per quantiy 10 minutes
+    totaldefaultktprocessduration := Duration::Minutes( 50 );
+    
+    // Scenario 1: Test work order operation resource with positive process duration and IsAllowed = TRUE
+    variants.Add( 'Test work order operation resource with positive process duration and IsAllowed = TRUE' );
+    isexternalwooresourcealloweds.Add( true );
+    ispositiveexternalprocessdurations.Add( true );
+    processdurations.Add( totalexternalprocessduration );
+    
+    // Scenario 2: Test work order operation resource with positive process duration and IsAllowed = FALSE
+    variants.Add( 'Test work order operation resource with positive process duration and IsAllowed = FALSE' );
+    isexternalwooresourcealloweds.Add( false );
+    ispositiveexternalprocessdurations.Add( true );
+    processdurations.Add( totalexternalprocessduration );
+    
+    // Scenario 3: Test work order operation resource with zero process duration and IsAllowed = TRUE
+    variants.Add( 'Test work order operation resource with zero process duration and IsAllowed = TRUE' );
+    isexternalwooresourcealloweds.Add( true );
+    ispositiveexternalprocessdurations.Add( false );
+    processdurations.Add( totaldefaultktprocessduration );
+    
+    // Scenario 4: Test work order operation resource with zero process duration and IsAllowed = FALSE
+    variants.Add( 'Test work order operation resource with zero process duration and IsAllowed = FALSE' );
+    isexternalwooresourcealloweds.Add( false );
+    ispositiveexternalprocessdurations.Add( false );
+    processdurations.Add( totaldefaultktprocessduration );
+    
+    return &variants;
+  *]
+}

@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateDataPieces (LibDEF_NamedValueTreeContainer nvtContainer_i)
+{
+  Description: 'Create data pieces for buffering based on the chunks of NVT contained in the given NVT container group.'
+  TextBody:
+  [*
+    this.DataPiece( relflush );
+    
+    payloadChecksum := BinaryValue::Construct(); // initialize output variable
+    seqNr := 0;
+      
+    traverse( nvtContainer_i, NamedValueTree, nvt )
+    {
+      payload := LibDEF_DataAccessor::NVTSerializeBinary( nvt.GetNamedValueTree(), payloadChecksum );
+      LibDEF_DataPiece::Create( this, seqNr, payload, payloadChecksum );
+      seqNr++;
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

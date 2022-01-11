@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod OnServerStartup (String datasetFolder, String datasetName, String storageState, 
+  String timezoneId)
+{
+  TextBody:
+  [*
+    LibSM_Util::LogInfo( "LibSM_ScenarioManager::OnServerStartup()" );
+    
+    // Check arguments.
+    if( TimeZone::HasTimeZoneSupport()
+        and not TimeZone::IsSupportedTimeZoneID( timezoneId ) )
+    {  
+      error( "Timezone '" + timezoneId + "' is not supported. Make sure it is listed in Server commandline property 'timezones'" ); 
+    }   
+    
+    // Start looking for an existing ScenarioManager dataset 
+    keys := DatasetController::Find( DatasetFindOptions::Construct( datasetName )
+                                     .IncludeOffline( true )
+                                     .Path( datasetFolder ) );
+                                    
+    
+    if ( keys.Size() = 1 )
+    {
+      // A LibSM_ScenarioManager dataset exists. Is it loaded?
+      datasetKey := keys.Element( 0 );
+      objectInfo := MDSEditor::Editor().LoadedObjectInfo( datasetKey );
+      if ( not isnull( objectInfo ) )
+      {
+        // It's loaded. Do nothing else.
+        LibSM_Util::LogInfo( "ScenarioManager-Dataset is already loaded" ); 
+      }
+      else 
+      {
+        // Not loaded, let's do so.
+        LibSM_Util::LogInfo( "Loading ScenarioManager-Dataset (storage state argument: '" + storageState + "')" );
+        MDSLibSM_ScenarioManager::Load( datasetKey );
+      }
+    }
+    else if ( keys.Size() = 0 )
+    {
+      // No LibSM_ScenarioManager dataset exists.
+      LibSM_Util::LogInfo( "Creating ScenarioManager-Dataset '" + datasetName + "' with state '" + storageState + "' "
+                           + ifexpr( TimeZone::HasTimeZoneSupport(), " and TimeZoneID '" + timezoneId + "'", "") );
+    
+      mds := MDSLibSM_ScenarioManager::CreateMDS( datasetName, storageState, datasetFolder );
+      if( TimeZone::HasTimeZoneSupport() )
+      {
+        // Set the timezoneID if relevant.
+        mds.TimezoneID( timezoneId );
+      }
+    }
+  *]
+}

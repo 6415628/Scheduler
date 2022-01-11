@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method DeleteUpStreamFulfillment
+{
+  Description: 'Delete upstream fulfillments while the operation is completed.'
+  TextBody:
+  [*
+    // jiex Feb-10-2017 (created)
+    // Use IsWipDemand and not Fullyfulfilled by upstream to indates the status completed on upstreams.
+    // Delete fulfillments for thoes upstreams not scheduled.
+    
+    if( exists( this, PlannedDemand.astype( MaterialPlannedDemand ), d, d.IsWIPDemand() and not d.IsFullyFulfilledByUpstream() ) )
+    {
+      upstreams := selectset( this.GetUpstreamOperations(), Elements, op, not op.IsPlanned() );
+        
+      fulfillments := selectset( upstreams, Elements.PlannedDemand.Fulfillment, f, true );
+      
+      Fulfillment::DeletePlannedFulfillment( fulfillments );
+    }
+  *]
+}

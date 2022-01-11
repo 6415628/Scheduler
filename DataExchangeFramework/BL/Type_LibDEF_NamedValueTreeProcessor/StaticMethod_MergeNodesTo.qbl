@@ -1,0 +1,93 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod MergeNodesTo (structured_NamedValue nodesToMerge_i, NamedValue targetNode_i)
+{
+  Description:
+  [*
+    Merge the given nodes to the target node.
+    By merging is actually about copying and resolving duplicated children.
+    The merging is done in recursive manner.
+  *]
+  TextBody:
+  [*
+    // To save performance, the algorithm of merging is done in this way:
+    // 1. First blindly copy all children from source to target.
+    // 2. Then at target node, sort the children (by now it already include duplicates).
+    // 3. Traverse the sorted children, compare with previous child at each entry, if the same then merge those duplicated children.
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    // 1. First blindly copy all children from source to target.
+    traverse( nodesToMerge_i, Elements, nodeToMerge )
+    {
+      nodeToMergeChildren := nodeToMerge.Children();
+      traverse( nodeToMergeChildren, Elements, childToMerge )
+      {
+        childToMerge.Copy( targetNode_i, true );
+      }
+    }
+    
+    // 2. Then at target node, sort the children (by now it already include duplicates).
+    // 3. Traverse the sorted children, compare with previous child at each entry, if the same then merge those duplicated children.
+    sortedTargetChildren := LibDEF_NamedValueTreeProcessor::GetSortedChildren( targetNode_i.Children() );
+    
+    if( sortedTargetChildren.Size() > 0 )
+    {
+      prevTargetChild := null( NamedValue );
+      anchorChild := sortedTargetChildren.Element( 0 ); // only change when current child different than previous child or no previous child
+      childrenToMerge := construct( structured[NamedValue] ); // variable to collect pointers to duplicated children
+      traverse( sortedTargetChildren, Elements, targetChild )
+      {
+        if( not isnull( prevTargetChild ) )
+        {
+          // Check whether previous is same or not.
+          // If same, then put the child into the collection of duplicated children
+          if( prevTargetChild.Name() = targetChild.Name()
+              and prevTargetChild.ValueToString() = targetChild.ValueToString() )
+          {
+            childrenToMerge.Add( targetChild );
+          }
+          else
+          {
+            // Merge all the so-far collected duplicated children to the anchor child (the first child in the group of duplicated children)
+            if( childrenToMerge.Size() > 0 )
+            {
+              LibDEF_NamedValueTreeProcessor::MergeNodesTo( childrenToMerge, anchorChild );
+            }
+            
+            // Delete the instances of the duplicated children that has been merged to the anchor child.
+            // This is necessary so that those duplicated children do not exist in the NVT anymore.
+            // We have to do the explicit Delete of each object to actually delete the instance.
+            // Flushing the childrenToMerge set alone won't delete the instances because the set only contains the "pointers" to the object instance
+            // (meaning we are only deleting the pointers and not the real object instance).
+            traverse( childrenToMerge, Elements, e )
+            {
+              e.Delete( true );
+            }
+            childrenToMerge.Flush(); // now flush the pointers to start from empty set
+            
+            // Update the anchor child to be the currently different child
+            anchorChild := targetChild;
+          }
+        }
+        prevTargetChild := targetChild;
+      }
+      
+      // Merge for the last group of duplicated children (if there is any).
+      if( childrenToMerge.Size() > 0 )
+      {
+        LibDEF_NamedValueTreeProcessor::MergeNodesTo( childrenToMerge, anchorChild );
+      }
+      
+      // For this last group, again, delete the instances of the duplicated children that has been merged to the anchor child.
+      // This is necessary so that those duplicated children do not exist in the NVT anymore.
+      // We have to do the explicit Delete of each object to actually delete the instance.
+      // Flushing the childrenToMerge set alone won't delete the instances because the set only contains the "pointers" to the object instance
+      // (meaning we are only deleting the pointers and not the real object instance).
+      traverse( childrenToMerge, Elements, e )
+      {
+        e.Delete( true );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Protected' }
+}

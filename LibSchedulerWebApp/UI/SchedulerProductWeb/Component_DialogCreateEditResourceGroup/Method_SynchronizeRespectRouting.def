@@ -1,0 +1,109 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeRespectRouting () id:Method_DialogCreateEditResourceGroup_SynchronizeRespectRouting
+{
+  #keys: '[143768.1.1620114040]'
+  Body:
+  [*
+    // Receive subtask is first respect routing, previous subtask before transfer subtask is last respect routing
+    // This synchronization method needs to be in the Designer as opposed to the OnCommit method for SubTaskTypeOnResourceGroup or ResourceGroup_SC
+    // because the user needs to be able to instantly get feedback regarding which sub task is routed in which way                                          
+    resourceGroup := DialogCreateEditResourceGroup.DataHolderResourceGroup().Data();   
+                   
+    // Does receive subtasktypeonresourcegroup exist?
+    receive := select( resourceGroup,
+                       SubTaskTypeOnResourceGroup,
+                       sttorg,
+                       sttorg.SubTaskID() = Constants::SubTask_Receive() );
+              
+    // Current firstrespectrouting
+    firstrespectrouting := select( resourceGroup, 
+                                   SubTaskTypeOnResourceGroup, 
+                                   sttorg, 
+                                   sttorg.IsFirstRespectRouting() );
+    
+     
+                       
+    // If receive subtask exists, it is first respect routing sub task                     
+    if( not isnull( receive ))
+    {
+      if( not isnull( firstrespectrouting ))
+      {
+        firstrespectrouting.IsFirstRespectRouting( false );
+      } 
+      receive.IsFirstRespectRouting( true );
+    }
+    // No receive sub task, if the first respect routing still available, then maintain it. Else, the first available subtask is first respect routing
+    else if( isnull( firstrespectrouting ) )
+    {  
+      firstrespectrouting := minselect( resourceGroup, 
+                                        SubTaskTypeOnResourceGroup,
+                                        sttorg,
+                                        not isnull( sttorg.SubTaskType() ),
+                                        sttorg.SubTaskType().Index() );
+                                        
+      if( not isnull( firstrespectrouting ))
+      {
+        firstrespectrouting.IsFirstRespectRouting( true );
+      }
+    }             
+    
+    // Does transfer subtasktypeonresourcegroup exist?
+    transfer := select( resourceGroup,
+                        SubTaskTypeOnResourceGroup,
+                        sttorg,
+                        sttorg.SubTaskID() = Constants::SubTask_Transfer() );
+          
+    // current lastrespectrouting
+    lastrespectrouting := select( resourceGroup, 
+                                  SubTaskTypeOnResourceGroup, 
+                                  sttorg, 
+                                  sttorg.IsLastRespectRouting() );
+                             
+    // If transfer subtask exists and previous subtask to transfer sub task exists,
+    // previous subtask to transfer subtask is the last respect routing subtask                         
+    if( not isnull( transfer ))
+    {   
+      subtaskbeforetransfer := select( resourceGroup, 
+                                       SubTaskTypeOnResourceGroup, 
+                                       sttorg, 
+                                       sttorg.SequenceNr() = transfer.SequenceNr() - 1 );
+    
+      if( not isnull( subtaskbeforetransfer ))
+      {     
+        if( not isnull( lastrespectrouting ))
+        {
+          lastrespectrouting.IsLastRespectRouting( false );
+        }
+        subtaskbeforetransfer.IsLastRespectRouting( true );
+      }
+      // Sub task prior to transfer task does not exist, if the last respect routing still available, then maintain it. Else, the last available subtask is last respect routing
+      else if( isnull( lastrespectrouting ) ) 
+      {
+        lastrespectrouting := maxselect( resourceGroup,
+                                         SubTaskTypeOnResourceGroup,
+                                         sttorg,
+                                         not isnull( sttorg.SubTaskType() ),
+                                         sttorg.SubTaskType().Index() );
+                                       
+        if( not isnull( lastrespectrouting ))
+        {
+          lastrespectrouting.IsLastRespectRouting( true );
+        }  
+      }
+    }
+    else if( isnull( lastrespectrouting ) ) // No transfer sub task, and there is currently no last respect routing subtask, so last available sub task is last respect routing
+    {
+      lastrespectrouting := maxselect( resourceGroup,
+                                       SubTaskTypeOnResourceGroup,
+                                       sttorg,
+                                       not isnull( sttorg.SubTaskType() ),
+                                       sttorg.SubTaskType().Index() );
+                                       
+      if( not isnull( lastrespectrouting ))
+      {
+        lastrespectrouting.IsLastRespectRouting( true );
+      }
+    }
+  *]
+}

@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method StopRun
+{
+  TextBody:
+  [*
+    // Mark the item as not running, if it has been aborted before.
+    traverse( this, RunSequence.RunSequenceElement, elem, elem.IsAborted() and elem.IsRunning() )
+    {
+      elem.IsRunning( false );
+      elem.IsCompleted( true );
+    }
+    
+    traverse( this, RunSequence.RunSequenceElement, elem, elem.IsRunning() )
+    {
+      objinfo := MDSEditor::Editor().ObjectInfos().Find( elem.DatasetName() );
+      
+      if( isnull( objinfo ) )
+      {
+        elem.Delete();
+      }
+      else
+      {
+        kind := objinfo.Kind();
+        m := Reflection::FindStaticMethodBySignature( 'MDS' + kind, 'Root', 'Key' );
+        m.AddArgument( objinfo.MDSID().MDSKey() );
+        
+        m.Execute();
+        result := m.GetStreamResult();
+        dataset := result.astype( stream[Object] );
+        opt := dataset->LibOpt_BT_DatasetGeneric::GetOptimizationFromDataset();
+        opt->( opt )
+        {
+          traverse( opt, Optimizer.Run, run )
+          {
+            run.Stop();
+          }
+        }
+        
+        elem.IsAborted( true );
+      }
+    }
+    
+    traverse( this, RunSequence.RunSequenceElement, elem, not elem.IsCompleted() and not elem.IsAborted() )
+    {
+      elem.Delete();
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

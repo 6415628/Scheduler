@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetKPIPreferenceRuleViolation (constcontent Operation_SCs operations) const declarative remote as Real
+{
+  Description: 'Returns the KPI penalty for preference rule violation'
+  TextBody:
+  [*
+    // Calculate the penalty for preference rule violation
+    // Only the following operations will be calculated
+    // 1. No feedback
+    // 2. Not finished yet
+    // 3. IsPlanned
+    
+    value := sum( operations,
+                  Elements,
+                  op,
+                  not op.HasFeedback() 
+                  and not op.Finished() 
+                  and op.IsPlanned(),
+                  op.PlanUnit_SC().Quantity() * op.PenaltyForPreferenceRuleViolation() );
+    
+    return value.Round( 2 );
+  *]
+}

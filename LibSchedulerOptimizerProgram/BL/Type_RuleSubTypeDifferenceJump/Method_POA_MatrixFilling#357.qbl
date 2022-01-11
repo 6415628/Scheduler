@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride POA_MatrixFilling (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLeg combileg, Operation_SCs operations, 
+  Rule rule, Boolean isforsoftrulepenalty)
+{
+  TextBody:
+  [*
+    rulevalueset1 := construct( structured[Real] );
+    rulevalueset2 := construct( structured[Real] );
+    operationsvalueset1 := construct( structured[Operation_SC] );
+    operationsvalueset2 := construct( structured[Operation_SC] );
+    //Get the valuesets which we will later traverse over to check if the rule is broken.
+    this.GetValueSetsForPOA_MatrixFilling( operations, rule, &rulevalueset1, &rulevalueset2, &operationsvalueset1, &operationsvalueset2 );
+    
+    this.POA_MatrixFilling( poa, combileg, rule, rulevalueset1, rulevalueset2, operationsvalueset1, operationsvalueset2, isforsoftrulepenalty );
+    // In case of the condition scope being either task, we also need to check the rule value sets in opposite order.
+    if( rule.IsConditionEnabled()
+        and rule.IsConditionScopeEitherTask() )
+    {
+      this.POA_MatrixFilling( poa, combileg, rule, rulevalueset2, rulevalueset1, operationsvalueset2, operationsvalueset1, isforsoftrulepenalty );
+    }
+  *]
+}

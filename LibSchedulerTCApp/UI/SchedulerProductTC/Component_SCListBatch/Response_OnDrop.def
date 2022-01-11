@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDrop (structured[Operation_SC] information, Batch target) id:Response_SCListBatch_OnDrop
+{
+  #keys: '[109706.2.154007494]'
+  Body:
+  [*
+    // OnDrop structured[Operation] --> Batch List
+    
+    ctrlshift := dropaction.IsControlShift();
+    
+    if( not isnull( target ) and not ctrlshift )
+    {
+      // (Add operation to batch)
+      target.AddOperations( information );
+    }
+    else
+    {
+      Batch::CreateBatchAssignOperations( information, Schedule );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIComponent_OnDrop'
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey       := dropaction.IsControl();
+    ctrlshiftkey  := dropaction.IsControlShift();
+    
+    operations := construct( Operation_SCs );
+    
+    if( not ctrlshiftkey ) //when ctrlshiftkey = false and not isnull droptarget, the intention is to merge all operations into the droptarget
+    {
+      operations  := selectset( target, BatchSequenceElement.Operation_SC, bo, true, true ); //operations from the drop target
+    }
+    
+    information := information.Union( operations )
+    result := true;
+    
+    if( target.IsPlanned() and not ctrlshiftkey )
+    {
+      batchtask := target.BatchTask();
+      result := ApplicationScheduler.AllowedScheduling( batchtask.BatchResource(), //batchresource
+                                                        information,        //structured operations
+                                                        ctrlkey,            //skip soft check
+                                                        ctrlshiftkey,       //ctrl shift key
+                                                        batchtask.Previous(),  //before task
+                                                        batchtask.Next(),      //afterbatch
+                                                        Operation_SC::GetSelectedObjects( information ),
+                                                        feedback,
+                                                        isallowedhard )
+    }
+    else
+    {
+      result := ApplicationScheduler.AllowedInBatch( information, not target.IsPlanned(), ctrlkey, ctrlshiftkey,  feedback, isallowedhard );
+    }
+    
+    return result;
+  *]
+}

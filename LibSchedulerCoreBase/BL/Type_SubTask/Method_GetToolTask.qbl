@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetToolTask () declarative as owning OperationOnResourceToolRequirements
+{
+  Description: 'Get calculation of ToolTask relation'
+  TextBody:
+  [*
+    toolrequirements := construct( OperationOnResourceToolRequirements );
+    
+    // Only instantiate tool task when subtask duration is not zero
+    if( this.Task_SC().HasStrategyToolSimulation() and this.NetDuration() > Duration::Zero() )
+    {
+      toolrequirements := selectset( this.Task_SC().GetOperation(),
+                                     AsSelectedFromOperation_SC,
+                                     tr,
+                                     tr.SubTaskDefinitionName() = this.DefinitionName() );
+    }
+    
+    return &toolrequirements
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

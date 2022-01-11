@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeRoutingStepInputs
+{
+  Description: 'Synronizes routing step inputs based on imported routing step inputs from ERP/MES systems.'
+  TextBody:
+  [*
+    // WOI1 Oct-27-2016 (created)
+    allinstances := selectset( this, RoutingStepInput, routingstepinput, true );
+    updatedinstances := construct( RoutingStepInputs );
+    
+    traverse( this, ImportedRoutingStep_SC.ImportedRoutingStepInput_SC, row, row.IsValidDataHard() )
+    {
+      routingid := row.RoutingId();
+      routingstepsequencenr := row.RoutingStepSequenceNr();
+      productid := row.ProductId();
+      stockingpointid := row.StockingPointId();
+      
+      routingstepinput := RoutingStepInput::FindRoutingStepInput( routingid, routingstepsequencenr, productid, stockingpointid );
+    
+      if( isnull( routingstepinput ) )
+      {
+        routingstepinput := this.CreateRoutingStepInput( routingid, routingstepsequencenr, stockingpointid, productid );
+      }
+    
+      routingstepinput.Update( row );
+      routingstepinput.SynchronizeDemandAndInputMaterialFromRouting();
+      
+      updatedinstances.Add( routingstepinput );
+    }
+    
+    // Delete routing step inputs if they do not exist in ERP
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    // routing step inputs can be deleted anytime, because demands can be deleted anytime.
+    traverse( oldinstances, Elements, routingstepinput )
+    {
+      routingstepinput.Delete();
+    }
+  *]
+}

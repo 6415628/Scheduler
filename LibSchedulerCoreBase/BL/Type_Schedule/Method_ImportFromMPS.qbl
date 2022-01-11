@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportFromMPS
+{
+  Description: 'Import data from MPS'
+  TextBody:
+  [*
+    // Import MPS plan
+    this.ImportObject().ImportMPS();
+    
+    // Propagate IsValidData hard before synchronization
+    Transaction::Transaction().Propagate( attribute( ImportedMPSPlan, IsValidDataHard ) );
+    Transaction::Transaction().Propagate( attribute( ImportedMPSPlannedOrder, IsValidDataHard ) );
+    Transaction::Transaction().Propagate( attribute( ImportedInventoryTarget, IsValidDataHard ) );
+    Transaction::Transaction().Propagate( relation( ImportedProductInStockingPoint_SC, ImportedInventoryTarget ) );
+    
+    // Check if there is new MPS Plan
+    this.HasNewMPSPlan( this.CheckHasNewMPSPlan() );
+    
+    // Synchronize MPS plan and planned orders.
+    this.SynchronizationObject().SynchronizeMPSPlan();
+    
+    // Synchronize inventory targets
+    this.SynchronizationObject().SynchronizeInventoryTargets();
+  *]
+}

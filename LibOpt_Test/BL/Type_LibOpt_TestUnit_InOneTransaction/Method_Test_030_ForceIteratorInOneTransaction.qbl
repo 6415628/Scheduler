@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_030_ForceIteratorInOneTransaction (LibOpt_TestDataset dataset)
+{
+  Description: 'Check if there is a warning thrown if the `LibOpt_Iterator` if `ForceInOneTransaction` is true and a stream is created.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    iterator := opt.IteratorUntil( run, 'Iterator' );
+    iterator.ForceInOneTransaction( true );
+    iterator.SetMaxIterations( 1 );
+    component := opt.ComponentCreateStream( run, 'Stream' );
+    
+    iterator.To( component ).AsOneTransaction( false );
+    
+    this.NoException( run.Start()->|void->( )
+    {
+      this.Run().AssertEqual( 1, iterator.SnapshotComponent( relsize ) );
+      this.Run().AssertEqual( 1, counter( iterator, SnapshotComponent.Children.astype( LibOpt_SnapshotWarning ), warning, true ) );
+      
+      traverse( iterator, SnapshotComponent.Children.astype( LibOpt_SnapshotWarning ), warning )
+      {
+        this.Run().AssertEqual( Translations::LibOpt_Iterator_NotInOneTransaction_Solution(), warning.PossibleSolution() );
+      }
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

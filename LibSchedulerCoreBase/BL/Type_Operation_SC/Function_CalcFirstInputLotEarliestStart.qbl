@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcFirstInputLotEarliestStart
+{
+  TextBody:
+  [*
+    // woi1 Aug-29-2017 (created)
+    value := DateTime::MaxDateTime();
+    
+    if( this.PlanUnit_SC().IsLotLeadTimeLogicOn() )
+    {
+      // normal operation material - get maximum earliest end for sufficient lot material
+      upstream_op_earliest_sufficient_lot_material := max( this, 
+                                                           InputOperationMaterialWOFulfillment,
+                                                           om,
+                                                           true,
+                                                           om.LotAvailableTime() + om.TotalOffsetDuration() ); // done on OM level to include TotalOffsetDuration
+      
+      // for material reservation - get maximum earliest end for sufficient fulfillment lot material
+      demand_earlieststart := max( this, PlannedDemand, demand, true, demand.FirstInputLotDemandEarliestStart() );
+      
+      value := maxvalue( upstream_op_earliest_sufficient_lot_material, demand_earlieststart );
+    }
+    
+    this.FirstInputLotEarliestStart( value );
+  *]
+}

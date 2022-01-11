@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcSeverity
+{
+  TextBody:
+  [*
+    // mlr7 Oct-10-2020 (created)
+    
+    set_size := ceil( 0.05 * this.NrElements() );
+    
+    value := 0.0;
+    
+    if( set_size > 0 )
+    {
+      sorted_issues := selectsortedset( this, Issue, issue, true, issue.Severity() );
+      severities := selectvalues( sorted_issues.SelectLast( set_size ), Elements, issue, true, issue.Severity() );
+      
+      // Add zeroes to fill up the set of severities so that we can take 5% of severities.
+      // The zeroes represent an element in the statistic without an issue.
+      for( i := severities.Size(); i < set_size; i++ )
+      {
+        severities.Add( 0.0 );
+      }
+      
+      value := average( severities, Elements, severity, true, severity );
+    }
+    
+    this.Severity( value );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

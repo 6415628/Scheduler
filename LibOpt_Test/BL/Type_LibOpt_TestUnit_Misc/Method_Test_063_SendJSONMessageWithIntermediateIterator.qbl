@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_063_SendJSONMessageWithIntermediateIterator (LibOpt_TestDataset dataset)
+{
+  Description: 'Check whether a JSON message can be obtained outside of the run, when an Iterator is in-between.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    iterations := 5;
+    iterator := opt.IteratorUntil( run, 'Iterator' );
+    iterator.SetMaxIterations( iterations );
+    
+    json := JSON::Object();
+    message := opt.ComponentSendMessage( run, 'Message', json.Build() );
+    
+    iterator.To( message );
+    
+    this.NoException( run.Start()->GroupAll()->( jsons )
+    {
+      this.Run().AssertEqual( iterations, jsons.Size(), 'Incorrect amount of JSONs received' );
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

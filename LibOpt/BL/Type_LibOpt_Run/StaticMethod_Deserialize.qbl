@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Deserialize (JSON json, LibOpt_Optimizer owner) as LibOpt_Run
+{
+  TextBody:
+  [*
+    key := [Key]json.Get( attribute( LibOpt_Run, Key ).Name() + owner.Name() ).GetString();
+    identifier := [Key]json.Get( attribute( LibOpt_Run, InternalIdentifier ).Name() + owner.Name() ).GetString();
+    
+    run := LibOpt_Run::FindInstance( owner.MDSID(), key );
+    
+    if( not isnull( run  ) )
+    {
+      run.Delete();
+    }
+    
+    result := null( LibOpt_Run );
+    
+    if( exists( owner, Run, r, r.InternalIdentifier() = identifier, r.StartedOn() <> DateTime::MinDateTime() ) )
+    {
+      error( Translations::LibOpt_Run_NothingToRecover() );
+    }
+    else
+    {
+      result := null( LibOpt_Run );
+      importedrun := LibOpt_Message::ReadObject( json, typeof( LibOpt_Run ) ).astype( LibOpt_Run );
+    
+      if( not isnull( importedrun ) )
+      {
+        result := owner.Run( relinsert, &importedrun );
+      
+        // Link the scope elements to the scope
+        json_scopes := json.Get( typeof( LibOpt_Scope ).Name() );
+        traverse( result, Scope.astype( LibOpt_ScopeFat ), scope )
+        {
+          json_scope := json_scopes.Get( [String] scope.InternalIdentifier() );
+          scope.DeserializeScopeElements( json_scope );
+        }
+        
+        result.HasIterations( true );
+        
+        Transaction::Transaction().Propagate( method( LibOpt_Run, CreateStatisticsAndIssuesPrecondition, Boolean ) );
+        if( result.CreateStatisticsAndIssuesPrecondition( true /*is fail-fast check*/ ) )
+        {
+          result.CreateStatisticsAndIssues();
+        }
+      }
+    }
+    
+    return result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

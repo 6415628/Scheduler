@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: ListLibOpt_AnalysisScopeElement
+Response OnClick (structured[shadow[LibOpt_UIAnalysisScopeElement]] selection) id:Response_ListLibOpt_AnalysisScopeElement_MenuFind_OnClick
+{
+  #keys: '[139164.4.578213445]'
+  Body:
+  [*
+    tags := selectvalues( DataHolderTags.Data(), Elements, tag, true, tag.Name() );
+    seos := selectset( selection, Elements.ScopeElement.ScopeElementOnScope, seos,
+                       tags.Size() = 0 or exists( tags, Elements, tag, seos.ContainsTag( tag ) ) );
+                                
+    input := selectset( seos, Elements.Scope.AsInputScope, snapshot, true );
+    
+    output := selectset( seos, Elements.Scope.AsOutputScope, snapshot, true );
+    
+    snapshots := selectset( input.Union( output ), Elements, snapshot,
+                            ( DataHolderComponents.Data().Size() = 0 or DataHolderComponents.Data().Find( snapshot.Component() ) >= 0 )
+                            and DataHolderAnalysis.Data().Filter( snapshot ) );
+    
+    Form.ShowSnapshots( snapshots );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /ListLibOpt_AnalysisScopeElement/Responsedef_ListLibOpt_AnalysisScopeElement_Menu_OnClick
+  Initiator: 'MenuFind'
+}

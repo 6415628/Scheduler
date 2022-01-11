@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: GanttChartResourceSchedule_925
+Response OnDrop (structured[Operation_SC] source, CampaignTypeOnResource droprow, CampaignTask droptarget, 
+  CampaignTask beforedroptarget, CampaignTask afterdroptarget) id:Response_GanttChartResourceSchedule_925_OnDrop_384
+{
+  #keys: '[142956.2.72386903]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebGanttChart_OnDrop'
+  GroupServerCalls: true
+  Precondition:
+  [*
+    isallowedhard := true;
+    aftercampaigntask := guard( droprow.FirstCampaignTaskOfTypeOnResource(), null( CampaignTask ) );
+    ctrlkey       := actionmodifier.IsControl();
+    ctrlshift     := ctrlkey and actionmodifier.IsShift();
+    identifier := Operation_SC::GetSelectedObjects( source );
+    
+    if( not isnull( beforedroptarget ) )
+    {
+      aftercampaigntask := guard( beforedroptarget.NextCampaignTaskOfTypeOnResource(), null( CampaignTask ) );
+    }
+    
+    return Scheduler.AllowedScheduling( droprow.Resource_SC(),
+                                        source,
+                                        ctrlkey,
+                                        ctrlshift,
+                                        beforedroptarget,
+                                        aftercampaigntask,
+                                        identifier,
+                                        feedback,
+                                        isallowedhard );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // OnDrop structured[Operation] --> CampaignTask 
+      lastTask := null( Task_SC );
+      
+      if( not isnull( beforedroptarget ) )
+      {
+        lastTask := beforedroptarget.LastOperationCampaign().Task_SC();
+      }  
+      
+      if( droprow.Resource_SC().istype( SingleResourceBase ) )
+      {
+        // Campaign task for single resource
+        droprow.Resource_SC().astype( SingleResourceBase ).PlanAfter( source, lastTask.astype ( SingleTaskBase ) );
+      }
+      else
+      {
+        // Campaign task for batch resource
+        droprow.Resource_SC().astype( BatchResource ).CreateBatchAssignOperationsPlanBatch( source, guard( lastTask.astype( BatchTask ), null( BatchTask ) )  );
+      }
+    *]
+  }
+}

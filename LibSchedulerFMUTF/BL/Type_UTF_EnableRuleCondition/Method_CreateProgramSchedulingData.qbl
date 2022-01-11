@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateProgramSchedulingData (Schedule schedule) as ProgramDefinitionConfiguration
+{
+  Description: 'Create program scheduling test data'
+  TextBody:
+  [*
+    // Create resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource' );
+    
+    // Assign ASAP lead time strategy
+    LeadTimeStrategy_SC::Create( resource, Duration::Zero(), Constants::StrategyASAP() );
+    Transaction::Transaction().Propagate( attribute( Resource_SC, StrategyName ) );
+    
+    // Create program definition
+    programdefinition := UTFMockObjectFactory::CreateProgramDefinitionData( schedule, 'Program definition id', true );
+    
+    // Assign program definition to both resource 1 
+    resource.AssignProgramDefinitionConfiguration( programdefinition );
+    
+    // Insert program change 
+    programtype := selectset( programdefinition, ProgramSetConfiguration.ProgramTypeConfiguration, pt, true );
+    resource.InsertProgramChange( null( Task_SC ), programtype, false, Duration::Zero() );
+    
+    // Create 15 tasks
+    for( i := 1; i <= 15; i++ )
+    {
+      // Create operation
+      order := UTFMockObjectFactory::CreateOrder( schedule, 'Order_'+ [String]i );
+      planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'Plan Unit_'+ [String]i, 1.0 );
+      operation := UTFMockObjectFactory::CreateOperation( planUnit );
+      operation.OperationID( 'Operation_' + [String]i );
+      operation.Practice( 'SH' );
+      operation.Width( 1.0 );
+      operation.Length( 1.0 );
+      resource.PlanLast( operation );
+    }
+    
+    return programdefinition;
+  *]
+}

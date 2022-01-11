@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestConstraintIsPhaseTransitionRuleOK (Schedule schedule)
+{
+  Description: 'Test constraint IsPhaseTransitionRuleOK'
+  TextBody:
+  [*
+    // Get program phases and check the constraint
+    phases := selectset( schedule, ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration.ProgramPhaseConfiguration, phase, true );
+    headphase := select( phases, Elements, phase, phase.ProgramPhaseConfigurationID() = 'HEAD' );
+    bodyphase := select( phases, Elements, phase, phase.ProgramPhaseConfigurationID() = 'BODY' );
+    tailphase := select( phases, Elements, phase, phase.ProgramPhaseConfigurationID() = 'TAIL' );
+    
+    // Transaction propagate on constraint
+    Transaction::Transaction().Propagate( constraint( ProgramTypeConfiguration, IsPhaseTransitionRuleOK ) );
+    
+    isvalid := headphase.IsPhaseTransitionRuleOK()
+               and not bodyphase.IsPhaseTransitionRuleOK()
+               and tailphase.IsPhaseTransitionRuleOK();
+    
+    this.Run().AssertTrue( isvalid, 
+                           UTFUtility::GenerateFailedMessage( 'Program phase constraint "IsPhaseTransitionRuleOK" failed', this.Variant() ) );
+  *]
+}

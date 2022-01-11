@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetActualSetupDuration () declarative remote as Duration
+{
+  Description: 'The actual setup duration of all subtasks.'
+  TextBody:
+  [*
+    //gooi changed, issue 20611, seq 4, 25 may 2009, 15:43
+    // We return the actual duration based on calendar and calendarstrategy
+    value := Duration::Zero();
+    //subtask := select( this.SubTaskSequence(), SubTask.astype( SetupSubTask ), st, true, true )
+    subtask := select( this, SubTask.astype( SetupSubTask ), st, st.Start().IsFinite(), true )
+    
+    if( not isnull( subtask ) )
+    {
+      value := subtask.Duration();
+      next := subtask.Next();
+    
+      if( not isnull( next ) )
+      {
+        value := next.Start() - subtask.Start();
+      }
+    }
+    return value;
+  *]
+}

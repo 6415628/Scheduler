@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateJSONProcessOperations () as owning JSONBuilder
+{
+  Description: 'Creates process operations (routing steps) in JSON from the current dataset.'
+  TextBody:
+  [*
+    // Create Operations (RoutingStep)
+    operations := JSON::Array();
+    
+    sortedRoutingSteps := selectsortedset( this, RoutingStep, routingStep, true, routingStep.SequenceNr() );
+    
+    traverse( sortedRoutingSteps, Elements, routingStep )
+    {
+      operation := JSON::Object();
+      
+      // Generate ID if it doesn't exist yet
+      id := ifexpr( routingStep.ID().Length() > 0, 
+                    routingStep.ID(), 
+                    routingStep.RoutingId().Concat( '-' ).Concat( NumberToString::StandardConverter().Convert( routingStep.SequenceNr() ) ) );
+      
+      operation.Add( Constants::JSON_Process_Operation_ID(), id );
+      operation.Add( Constants::JSON_Process_Operation_ProportionalToQty(), routingStep.ProportionalToQty() );
+      operation.Add( Constants::JSON_Process_Operation_PreparationTime(), routingStep.PreparationTime().TotalInSeconds() );
+      operation.Add( Constants::JSON_Process_Operation_TomBefore(), routingStep.TomBefore().TotalInSeconds() );
+      operation.Add( Constants::JSON_Process_Operation_TomAfter(), routingStep.TomAfter().TotalInSeconds() );
+      operation.Add( Constants::JSON_Process_Operation_Interruptible(), true );
+      
+      // Create Capable Resources
+      capableResources := routingStep.CreateJSONCapableResources();
+      operation.Add( Constants::JSON_CapableResources(), capableResources );
+      
+      operations.Add( operation );
+    }
+    
+    return &operations
+  *]
+}

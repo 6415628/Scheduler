@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateSupplies (Schedule schedule) as owning Supplys
+{
+  Description: 'Create supplies based on test instance.'
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    testinstance := this.GetTestInstanceMain( variant );
+    
+    testInstanceSupplies := this.GetTestInstanceSupplies( this.Variant() );
+    supplies := construct( Supplys );
+    
+    traverse( testInstanceSupplies, Elements, row )
+    {
+      supplyID := row.ID();
+      supplyType := row.SupplyType();
+      
+      supply := Supply::FindSupply( supplyType, supplyID );
+      
+      if( isnull( supply ) )
+      {
+        supply := UTFMockObjectFactory::CreateSupply( schedule, supplyType, supplyID );
+      }
+      
+      supply.StockingPointId( row.StockingPointID() );
+      supply.Quantity( row.Quantity() );
+                                               
+      if( supply.istype( MaterialSupply ) ) // This can be updated later when we move UoM to Supply level
+      {
+        supply.astype( MaterialSupply ).UoM( row.UoM() );
+        supply.astype( MaterialSupply ).IsDiscreteImported( row.IsDiscrete() );
+      }
+      
+      if( supply.istype( ProductSupply ) )
+      {
+        supply.astype( ProductSupply ).ProductId( row.ProductID() );
+      }
+      
+      // UTF injected values
+      supply.QuantityConvertedToInventory_UTF( testinstance.SupplyQuantityConverted() );
+      supply.QuantityReserved_UTF( testinstance.SupplyQuantityReserved() );
+      supply.IsWorkOrderCompleted_UTF( testinstance.SupplyIsWorkOrderCompleted() );
+      
+      supplies.Add( supply );
+    }
+    
+    return &supplies;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

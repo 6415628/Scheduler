@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeLeadTimeStrategies (ImportedResourceGroup_SC importedrg)
+{
+  Description: 'Synchronize the LeadTimeStrategies with the ImportedLeadTimeStrategies.'
+  TextBody:
+  [*
+    // James Kwapien Sep-1-2016 QP #7695
+    allinstances := selectset( this, LeadTimeStrategy_SC, lts, true );
+    updatedinstances := construct( LeadTimeStrategy_SCs );
+    importedresourceset := selectset( importedrg, 
+                                      ImportedResource_SC, 
+                                      importedresource, 
+                                      importedresource.ResourceID() = this.ResourceID() );
+    
+    
+    traverse( importedresourceset, Elements, importedresource )
+    {
+      // Add default lead time strategy to updated list if none are imported
+      if( importedresource.ImportedLeadTimeStrategy_SC( relsize ) = 0 )
+      {
+        lts_default := LeadTimeStrategy_SC::Create( this, Duration::Zero(), Constants::SC_LeadTimeStrategy_Name_ASAP() );
+        updatedinstances.Add( lts_default );
+      }
+      else // Add imported lead time strategies to updated list
+      {
+        traverse( importedresource, ImportedLeadTimeStrategy_SC, row )
+        {
+          //Check to see if lts already exist. If it does, do not create new lts and just update the existing one. 
+          lts := select( allinstances, 
+                         Elements, 
+                         leadtimestrategy, 
+                         leadtimestrategy.StrategyName() = row.Strategy() );
+          if( isnull( lts ) )
+          {
+            lts := LeadTimeStrategy_SC::Create( this, row.MinDistance(), row.Strategy() );
+          }
+          lts.Update( row ); 
+          updatedinstances.Add( lts );
+        }
+      }
+    } 
+    
+    // Delete lead time strategies if they do not exist in data broker
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, old )
+    {
+      old.Delete();
+    }
+  *]
+}

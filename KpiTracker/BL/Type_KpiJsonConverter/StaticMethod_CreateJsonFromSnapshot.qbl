@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateJsonFromSnapshot (KpiSnapshotData snapshot) as owning JSON
+{
+  Description: 'Creates a JSON object out of the specified KpiSnapshotData'
+  TextBody:
+  [*
+    json := JSON::Object();
+    
+    conversion := ConversionOptions::System();
+    
+    json.Add( 'plan_datetime', snapshot.PlanDateTime().Format( 'Y-M2-D2TH2:m:sZ', conversion ) );  
+    json.Add( 'server_datetime', snapshot.ServerDateTime().Format( 'Y-M2-D2TH2:m:sZ', conversion ) );    
+    json.Add( 'retentionpolicyid', snapshot.RetentionPolicyIdentification() );
+    
+    labels := JSON::Array();
+    traverse( snapshot, Label, label )
+    {
+      labels.Add( JSON::Object().Add( 'name', label.Name() ).Add( 'value', label.Value() ) );
+    }
+    
+    json.Add( 'label', labels );
+    
+    values := JSON::Array();
+    traverse( snapshot, Value, value )
+    {
+      values.Add( JSON::Object().Add( 'kpi_name', value.Name() ).Add( 'kpi_value', value.Value() ) );
+    }
+    
+    json.Add( 'kpi', values );
+    
+    return json.Build();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

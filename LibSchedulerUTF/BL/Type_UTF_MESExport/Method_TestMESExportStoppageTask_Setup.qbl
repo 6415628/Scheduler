@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestMESExportStoppageTask_Setup (Schedule schedule)
+{
+  Description: 'Unit test for checking the attribute of stoppage task before and after value upon exporting MES - setup'
+  TextBody:
+  [*
+    // Get variant value
+    isVariantFound := false;
+    taskType := '';
+    
+    this.GetStoppageTaskTestVariant( isVariantFound,
+                                     taskType );
+    
+    // Create feedback adapter 
+    this.SetShopFloorAdapterActive( schedule );
+    
+    // Create task based on variant
+    if( this.Variant() = 'Test with exporting program task' )
+    {
+      // Create program task
+      this.CreateProgramTask( schedule );
+    }
+    else if( this.Variant() = 'Test with exporting shutdown task' )
+    {
+      // Create shutdown task
+      this.CreateSingleResourceAndAssignShutdownTask( schedule );
+    }
+    
+    // Export MES
+    Transaction::Transaction().Propagate( method( ExportObject , ExportMES ) );
+    schedule.ExportObject().ExportMES();
+  *]
+}

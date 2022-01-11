@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestHandleSingleFeedback_StartFeedbackTaskReceiveEndStatusAndReportedEnd_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    this.Setup( schedule );
+    
+    // Propagate operationOnResource and Resource because it is set declaratively.                                       
+    Transaction::Transaction().Propagate( relation( OperationOnResource, Resource_SC ) );
+    
+    // Giving start status, reported start and reported process start to operation.
+    reportedStart := DateTime::Construct( 2017, 1, 1, 4, 0, 0 );
+    reportedProcessStart := DateTime::Construct( 2017, 1, 1, 4, 0, 0 );
+    operation := select( schedule, PlanUnit_SC.Operation_SC, operation, true );
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, resource, true );
+    remark := Constants::EmptyString();
+    
+    schedule.FeedbackManager().TaskStart( operation, resource.ResourceID(), reportedStart, reportedProcessStart, remark );
+  *]
+}

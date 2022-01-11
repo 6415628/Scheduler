@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeOperations (WorkOrderOperations workOrderOperations)
+{
+  Description: 'Synchronize operations in plan unit based on input work order operations.'
+  TextBody:
+  [*
+    allinstances := selectset( this, Operation_SC, operation, true );
+    updatedinstances := construct( Operation_SCs );
+    
+    woos := selectsortedset( workOrderOperations, Elements, woo, true, woo.SequenceNr() )
+    previousoperation := null( Operation_SC );
+    operationseqnr := 0;
+    
+    traverse( workOrderOperations, Elements, woo )
+    {
+      operation := this.UpdateOperation( woo, previousoperation, woos.Size(), operationseqnr );
+      updatedinstances.Add( operation );
+      previousoperation := operation;
+      operationseqnr++;
+    }
+    
+    // Delete unwanted existing operations
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, operation )
+    {
+      operation.RemoveItselfDemandAndSupplies();
+    }
+  *]
+}

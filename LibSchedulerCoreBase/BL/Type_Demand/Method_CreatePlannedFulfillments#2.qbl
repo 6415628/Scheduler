@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreatePlannedFulfillments (Supplys supplies, Boolean ismanual, Boolean iskeepquantity, 
+  output Real quantity_keep) as owning Fulfillments
+{
+  Description: 'Create fulfillment for the demand based on the available supplies that passed in. Only returns NEW fulfillments.'
+  TextBody:
+  [*
+    demandqty := this.GetQuantityOpen();
+    
+    if( iskeepquantity ) // if splitting plan unit happens, we want have a material reservation quantity to maintain
+    {
+      demandqty := minvalue( quantity_keep, demandqty );
+    }
+    
+    feedback := ''; // for code reuse
+    createdFulfillments := construct( Fulfillments );
+    
+    traverse( supplies, Elements, supply, 
+              demandqty > 0 
+              and supply.GetQuantityOpen() > 0
+              and this.AllowedRulesHard( supply, false, feedback )
+              and ( ismanual
+                    or this.AllowedRulesSoft( supply, false, feedback ) ) ) // we also apply soft rule checking when doing automatic material reservation
+    {
+      fulfillment := select( this, PlannedFulfillmentOfDemand, f, not f.IsFixedReservation() and f.Supply() = supply );       
+    
+      if( ismanual or guard( not fulfillment.IsManualReservation(), true ) )   // if it is manual, all fulfillment can be overwritten. 
+      {
+        supplyqty := supply.GetQuantityOpen() + guard( fulfillment.QuantityDecision(), 0.0 );
+        demandqty := demandqty + guard( fulfillment.QuantityDecision(), 0.0 );
+    
+        suggestedqty := this.GetSuggestedQuantity( demandqty, supply, supplyqty ); 
+    
+        if( suggestedqty > 0 ) 
+        {
+          this.PreprocessingReserveMaterial();
+          
+          if( isnull( fulfillment ) )
+          {
+            fulfillment := this.CreatePlannedFulfillment( supply );
+            createdFulfillments.Add( fulfillment );  
+            // Updates the FSPL graph after material reservation
+            this.FSPLUpdateGraph();
+          }
+                   
+          fulfillment.Update( suggestedqty, ismanual );
+        }
+        
+        quantity_keep := quantity_keep - demandqty; // for the next demand to reuse when splitting 
+        demandqty := demandqty - suggestedqty; // removes the suggested quantity from the demand quantity
+      }
+    }
+    
+    // Calls fix circularity logic if it is a planned operation to fix any possible circularity
+    this.FSPLFixCircularity();
+    
+    return &createdFulfillments;
+  *]
+}

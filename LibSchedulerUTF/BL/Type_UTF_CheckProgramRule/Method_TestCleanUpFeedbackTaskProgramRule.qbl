@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCleanUpFeedbackTaskProgramRule (Schedule schedule)
+{
+  Description: 'Test clean up feedback task program rule'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    ruleScope := '';
+    ruleSubtype := '';
+    characteristic := '';
+    isProgramTypeNoViolated := false;
+    isProgramPhaseHeadNoViolated := false;
+    isProgramPhaseTailNoViolated := false;
+    isfeedbackstarted := false;
+    isTask2NoViolated := false;
+    isTask3NoViolated := false;
+    
+    this.GetTestVariantForFeedbackProgram( isvariantfound, 
+                                           ruleScope,
+                                           ruleSubtype,
+                                           characteristic,
+                                           isProgramTypeNoViolated,
+                                           isProgramPhaseHeadNoViolated,
+                                           isProgramPhaseTailNoViolated,
+                                           isfeedbackstarted,
+                                           isTask2NoViolated,
+                                           isTask3NoViolated );
+    
+    isValid := true;
+    
+    if( isvariantfound )
+    {
+      // Only valid with following conditions
+      // - Operation 0 feedback task is cleaned up
+      // - Operation 1 feedback task still remains because last feedback task is needed for rule framework checking
+      // - Rule checking on planned task and program
+      isfbtaskcleanup := schedule.FeedbackManager().FeedbackTaskInSchedule( relsize ) = 1;
+      isfbtask1exists := exists( schedule, FeedbackManager.FeedbackTaskInSchedule, feedbacktask, 
+                                 feedbacktask.OperationID() = 'Operation_1' );
+                                 
+      programType := select( schedule, ProgramChange.ProgramType, pt, true );
+      programPhaseHead := select( schedule, ProgramChange.ProgramType.ProgramPhase, pp, pp.ProgramPhaseConfiguration().ProgramPhaseConfigurationID() = 'HEAD' );
+      programPhaseTail := select( schedule, ProgramChange.ProgramType.ProgramPhase, pp, pp.ProgramPhaseConfiguration().ProgramPhaseConfigurationID() = 'TAIL' );
+      task2 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'Operation_2' );
+      task3 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'Operation_3' );
+      
+      isValid := isfbtaskcleanup
+                 and isfbtask1exists
+                 and ( programType.IsAllHighPriorityCombinedLengthRulesOK() and programType.IsAllLowPriorityCombinedLengthRulesOK() ) = isProgramTypeNoViolated
+                 and ( programPhaseHead.IsAllHighPriorityCombinedLengthRulesOK() and programPhaseHead.IsAllLowPriorityCombinedLengthRulesOK() ) = isProgramPhaseHeadNoViolated
+                 and ( programPhaseTail.IsAllHighPriorityCombinedLengthRulesOK() and programPhaseTail.IsAllLowPriorityCombinedLengthRulesOK() ) = isProgramPhaseTailNoViolated
+                 and ( task2.IsAllHighPriorityRulesOK() and task2.IsAllLowPriorityRulesOK() ) = isTask2NoViolated
+                 and ( task3.IsAllHighPriorityRulesOK() and task3.IsAllLowPriorityRulesOK() ) = isTask3NoViolated;
+    }                       
+    this.Run().AssertTrue( isValid,
+                           UTFUtility::GenerateFailedMessage( 'Test clean up feedback task program rule failed.', this.Variant() ) );
+  *]
+}

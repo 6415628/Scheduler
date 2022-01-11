@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddSubscription (LibCal_Calendar subscriber_i, LibCal_ExplicitTimeInterval occurrence_i) as LibCal_Subscription
+{
+  Description: 'Let subscriber_i subscribe to a specific occurrence_i of an event.'
+  TextBody:
+  [*
+    subscription := null( LibCal_Subscription );
+    
+    // See if there is already a subscription for occurrence_i.
+    leadingETI   := ifexpr( isnull( occurrence_i.LeadingETI() ), occurrence_i, occurrence_i.LeadingETI() );
+    timeInterval := select( leadingETI, SubscribingETI, subscribingETI, true, subscribingETI.Calendar() = subscriber_i );
+    
+    if( not isnull( timeInterval ) )
+    {
+      // Return the already existing subscription.
+      subscription := timeInterval.Participation().astype( LibCal_Subscription );
+    }
+    else
+    {
+      // Create a new subscription, linked to the LeadingParticipation of the event.
+      useLeadingPeriod := false;
+      subscription     := occurrence_i.Participation().Event().LeadingParticipation().AddSubscription( subscriber_i, useLeadingPeriod );
+      
+      if( not isnull( subscription ) )
+      {
+        // Let the recurrence period end at the same day that it starts, in order to have just ONE occurrence.
+        timezone := this.Calendar().GetTimeZone();
+        subscription.UpdateSubscription( LibCal_RecurrencePeriod::TYPE_WITHENDDATE(), occurrence_i.Start().Date( timezone ),
+                                                                                      occurrence_i.Start().Date( timezone ) );
+      }
+    }
+    
+    return subscription;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

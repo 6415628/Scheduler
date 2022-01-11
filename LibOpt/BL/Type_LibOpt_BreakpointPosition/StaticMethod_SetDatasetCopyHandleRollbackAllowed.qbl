@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod SetDatasetCopyHandleRollbackAllowed (LibOpt_Components components) remote as Boolean
+{
+  Description:
+  [*
+    Throw a precondition for all components that don't have a 'Handle rollback' component position.
+    This method is used for the 'Set dataset copies (Initialize + Rollback)' context menu item in the 'Components' form.
+  *]
+  TextBody:
+  [*
+    // evr3 Jun-19-2020 (created)
+    feedbackobj := FeedbackObject::LocalFeedback();
+    
+    traverse( components, Elements, component )
+    {
+      hasrollbackposition := exists( component, ComponentPosition, cp, cp.Name() = LibOpt_Suboptimizer::ComponentPosition_Rollback() ) 
+      if( not feedbackobj.CheckHard( hasrollbackposition ) )
+      {
+        feedbackobj.AddHard( Translations::LibOpt_Component_Precondition_HasNoRollbackComponentPosition( component ) ); 
+      }
+    }
+    
+    return feedbackobj.IsAllowed();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

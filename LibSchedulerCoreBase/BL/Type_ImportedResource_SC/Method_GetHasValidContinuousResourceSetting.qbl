@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidContinuousResourceSetting (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if imported resource has a valid setting if it is continuous resource .'
+  TextBody:
+  [*
+    // chin wai Jul-20-2016 (created)
+    feedback := '';
+    isvalid := Resource_SC::IsValidContinuousInput( feedback, 
+                                                    this.ImportedResourceGroup_SC().IsContinuous(),
+                                                    this.Length(),
+                                                    this.MaximumParallelLoadWidth(),
+                                                    this.MinimumParallelLoadGap(),
+                                                    this.MinimumGapLength(), 
+                                                    this.Speed() );
+                                                    
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    { 
+      feedbacks := feedback.Tokenize( '\n' );
+               
+      traverse(feedbacks, Elements, feedbackstring ) 
+      {
+        feedback_o.Add( SanityCheckMessage::GetFormattedMessage( this.GetName(),
+                                                                 feedbackstring ) );
+      }
+    }
+    
+    return isvalid;
+  *]
+}

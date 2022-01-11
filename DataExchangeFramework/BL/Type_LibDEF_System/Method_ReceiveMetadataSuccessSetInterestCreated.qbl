@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveMetadataSuccessSetInterestCreated (NamedValueTree nvt_i, NamedValue body_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive a Metadata message for reply of created SetInterest.'
+  TextBody:
+  [*
+    LibDEF_Util::EventLog( event_i, "Receiving Set Interest created acknowledgement" );
+    
+    setTypeGUID := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SETTYPEGUID() );
+    setGUID     := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SETGUID()     );
+    
+    actionFeedbackText := "Set Interest cannot be created. ";
+    
+    setMeta := this.FindSetMeta( setTypeGUID, setGUID, actionFeedbackText, event_i );
+    
+    if( not isnull( setMeta ) )
+    {
+      setInterestOfDatasetHandle := nvt_i.GetHandle( typeof( LibDEF_SetInterestOfDataset ).Name() );
+      setInterest := NamedValueTreeIO::ImportObject( nvt_i, body_i.Child( setInterestOfDatasetHandle ), typeof( LibDEF_SetInterestOfDataset ) ).astype( LibDEF_SetInterestOfDataset );
+      
+      // Checks if the Set is already interested by the dataset
+      info( "set interest MDSID:", setInterest.DatasetMDSID() );
+      if( not setMeta.IsInterestedByDataset( setInterest.DatasetMDSID() ) )
+      { 
+        // The DatasetInterest can be inserted directly into the DatasetInterest relation.
+        setMeta.SetInterestOfDataset( relinsert, &setInterest );
+      }
+    
+      // End of receive metadata success set interest created
+      LibDEF_IntegrationEvent::EventComplete( event_i );
+    }
+    else
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  actionFeedbackText,
+                                  actionFeedbackText + "The Set with GUID '" + setGUID + "' is not found in the DataBroker." );
+    }
+  *]
+}

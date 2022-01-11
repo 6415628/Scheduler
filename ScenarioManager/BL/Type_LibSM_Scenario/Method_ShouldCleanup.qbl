@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method ShouldCleanup () remote as Boolean
+{
+  Description: "CAN EXTEND | Returns whether the Scenario should be cleaned up (moved to the Recycle Bin) based on it's age and the 'Cleanup' settings on GlobalParameter."
+  TextBody:
+  [*
+    config := this.ScenarioManager().GlobalParameter();
+    
+    return  not this.IsLive() and 
+            (
+                // In case of 'By Creation' compare the Created On date + the max. age (CleanUpDuration) with the current time.
+                ( config.CleanUpStrategy() = LibSM_GlobalParameter::CLEANUP_CREATION() and
+                 this.CreatedOn() + config.CleanUpDuration() < DateTime::Now() )
+                // In case of 'By Usage' compare the LastUsedOn + the max. age (CleanUpDuration) with the current time.
+            or ( config.CleanUpStrategy() = LibSM_GlobalParameter::CLEANUP_USAGE() and
+                 // in case a Scenario has never been used, use the Created date instead.
+                 maxvalue( this.LastUsedOn(), this.CreatedOn() ) + config.CleanUpDuration() < DateTime::Now() )
+            );
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method DeleteScenarioNodes (structured[LibSM_ScenarioNode] selection) id:Method_LibSM_GlobalState_DeleteScenarioNodes
+{
+  #keys: '[136398.0.1933180699]'
+  Body:
+  [*
+    // Delete selected scenario nodes
+    key              := this.GetSelectedPlanningDatasetKey(); 
+    scenarioManager  := this.GetScenarioManagerDataset();
+    recycleBinFolder := scenarioManager.RecycleBinFolder();
+     
+    if( not isnull( recycleBinFolder ) )
+    {
+      if( exists( selection, Elements, e, e.IsDeleted() ) ) 
+      {
+        message := this.DetermineConfirmationMessageForPermanentDelete( selection );
+          
+        if( WebMessageBox::Question( message, Translations::LibSM_Question_YesNo_Web() ) = 0 )
+        {
+          LibSM_ScenarioNode::Delete( selection, scenarioManager.RecycleBinFolder() );      
+          //Application.RemoveHistory();
+        }
+      }
+      else  
+      {
+        LibSM_ScenarioNode::Delete( selection, scenarioManager.RecycleBinFolder() )
+        this.AutoExpandSelection( Application.ActiveComponent().astype( WebList ), selection );
+        selectedScenario := select ( selection, Elements.astype( LibSM_Scenario ), ds, guard( ds.Dataset().DatasetMDSID(), Key::ZeroKey() ) = key );
+        if ( not isnull( selectedScenario ) )
+        {
+          // One of the selected scenarios (for deletion) is actually the active scenario, hence
+          // we should unselect the active scenario.
+          this.DeselectScenario( selectedScenario );
+        }
+    
+        //Application.RemoveHistory();
+      }
+    }
+  *]
+}

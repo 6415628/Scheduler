@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Operation (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    // mbr23, 2019-09-02
+    snapshot := this.CreateSnapshot( task );
+    
+    // only keep those ResourceGroups that are also in the input scope as focus resource groups.
+    resource_groups := selectset( task.Scope().ScopeElements(),
+                                  Elements.astype( ScopeElementResourceGroup ),
+                                  se,
+                                  task.Scope().Contains( se.ResourceGroup_SC().ScopeElementFocusResourceGroup() ) );
+    if( resource_groups.Size() = 0 )
+    {
+      error( "no resources to select" );
+    }
+    traverse( resource_groups, Elements, resourcegroup )
+    {
+      snapshot.AddResourceGroup( resourcegroup.ResourceGroup_SC() );
+    }
+    
+    // Add all resources of this resource group that are part of the input scope
+    resources := selectset( task.Scope().ScopeElements(),
+                            Elements.astype( ScopeElementResource ),
+                            se,
+                            exists( resource_groups, Elements, rg,
+                                    rg.ResourceGroup_SC() = se.Resource_SC().ResourceGroup_SC() ) );
+    
+    // only keep those operations that can be planned on the selected resource groups:
+    operations := selectset( task.Scope().ScopeElements(),
+                             Elements.astype( ScopeElementOperation ),
+                             se,
+                             guard( resource_groups.Find( se.Operation_SC().Task_SC().Resource_SC().ResourceGroup_SC().ScopeElementResourceGroup() ) >= 0, false ) or
+                             exists( resource_groups,
+                                     Elements.ResourceGroup_SC.Resource_SC,
+                                     resource,
+                                     se.Operation_SC().AllowedOnResource( resource ) ) );
+    
+    // new scope is the union of above resource groups and operations:
+    scope_elements := construct( structured[ LibOpt_ScopeElement ] ).Add( resource_groups ).Add( operations ).Add( resources );
+    scope := LibOpt_Scope::Create( task.Run(), scope_elements );
+    
+    // sets the flag to mark the operations in the active run
+    this.SetFlagActiveInOptRun( scope );
+    
+    return this.Continue( task, scope );
+  *]
+}

@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method ScoreOffset (DateTime earlieststart) declarative as Real
+{
+  Description: 'Calculate score such that first subtask can use the tool, will use the tool first.'
+  TextBody:
+  [*
+    //
+    // Calculate score such that first subtask can use the tool, will use the tool first.
+    // Scoring is defined as : Distance from schedule time to the latest start of the tool tasks
+    // The shorter the distance the task is, the task will get to use the tool first.
+    //
+    
+    subtask             := this.SubTask(); // should evaluate SubTask instead of Task
+    schedule            := subtask.Resource_SC().Schedule();
+    /* AlexanderNg 15-Oct-2015: This method has been moved from StrategyToolSimulation object to this object.
+       "task" is used in the max below to replace "this.AsStrategyToolSimulation"
+       as the previous Task from the StrategyToolSimulation is equal to the "task" from this ToolSimulationSubTask
+    */
+    tool_earliest_start := max( subtask, ToolTask, tt, tt.Offset() );   // the max distance that the tool task can start.
+    key_offset          := this.Key().MinorKey() / 10000;   // using key as tire breaker.
+    score               := ( earlieststart + tool_earliest_start - schedule.Time() ).DaysAsReal() * 100000   // the distance from schedule time to latest start of the tool tasks.
+    return -( score + key_offset );
+  *]
+}

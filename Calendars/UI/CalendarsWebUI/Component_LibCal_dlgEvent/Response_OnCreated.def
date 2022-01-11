@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnCreated () id:Response_LibCal_dlgEventParticipation_OnCreated
+{
+  #keys: '[131092.0.2141062571]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebComponent_OnCreated'
+  QuillAction
+  {
+    Body:
+    [*
+      // Generic initialization
+      calendar := dhLeadingParticipation.Data().Calendar();
+      this.Title( "Event for calendar '" + calendar.CalendarID() + "'" );
+      
+      // Only show the checkbox for common events.
+      pnlApplyToNewResources.Visible( calendar.istype( LibCal_CommonCalendar ) );
+      
+      this.InitializeWeekdayButtons();
+      this.InitializeRecurrence();
+      this.DisableEvent();
+      
+      this.InitializeTimezone();
+      this.InitializeDuration();
+      
+      // Enable days only mode when applicable.
+      if( LibCal_Event::USE_ONLY_DAYS() )
+      {
+        this.EnableDaysOnlyMode();
+        
+        // When running in days only mode, the NumberPicker is used.
+        nrOfDays := maxvalue( dhEvent.Data().Duration().Ceil( Duration::Days( 1 ) ).Days(), 1 );
+        npDuration.Number( nrOfDays );
+      }
+    *]
+    GroupServerCalls: false
+  }
+}

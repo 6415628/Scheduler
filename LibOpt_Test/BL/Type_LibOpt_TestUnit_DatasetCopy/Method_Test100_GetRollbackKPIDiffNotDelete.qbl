@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test100_GetRollbackKPIDiffNotDelete (LibOpt_TestDataset dataset)
+{
+  Description: 'Check if a dataset copy is not deleted when the `DeleteCondition` of the `LibOpt_DatasetCopyConditional_UnitTest_GetRollbackKPIDiff` method detects an increase in the RollbackKPI.'
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( true );
+    run := opt.CreateRun();
+    runcontextforutf := LibOpt_MyRunContextForUTF::Create( run );
+    
+    // Script of the rollback KPI
+    kpi_script := opt.RollbackKPIScripted( 1 );
+    kpi_script.Enqueue( 10.0 );
+    kpi_script.Enqueue( 20.0 );
+    
+    // The GetRollbackKPIDiff method should work for suboptimizer components, but also for components that are upstream of the suboptimizer.
+    // So we test if a dataset copies are handled correctly in both locations. 
+    flowcomponent := opt.ComponentFlow( run, 'Flow', false );
+    suboptimizer := opt.MPSuboptimizer( run, 'Suboptimizer', runcontextforutf, & kpi_script );
+    flowcomponent.To( suboptimizer );
+    
+    // Set a LibOpt_DatasetCopyConditional_UnitTest_GetRollbackKPIDiff object on the 'Initialize' component position of both components.
+    initializeflowcomponent := select( flowcomponent, ComponentPosition, position, position.Name() = LibOpt_Component::ComponentPosition_Initialize() );
+    initializeflowcomponent.SetDatasetCopy( typeof( LibOpt_DatasetCopyConditional_UnitTest_GetRollbackKPIDiff ).Name() );
+    initializesuboptimizer := select( suboptimizer, ComponentPosition, position, position.Name() = LibOpt_Component::ComponentPosition_Initialize() );
+    initializesuboptimizer.SetDatasetCopy( typeof( LibOpt_DatasetCopyConditional_UnitTest_GetRollbackKPIDiff ).Name() );
+    
+    streamrun := run.Start(); 
+    
+    // Wait until the run is finished.
+    str := streamrun
+    ->|stream[Void]::Wait( this.MDSEditorUpdateTime() ) // Wait some time to ensure that the dataset copies are succesfully created.
+    ->|void->()
+    {
+      traverse( run,
+                Component.ComponentPosition,
+                componentposition,
+                not isnull( componentposition.DatasetCopyConditional() ) 
+                )
+      {
+        LibOpt_TestUnit_DatasetCopy::AssertsForComponentPositionCreatedDataset( this, componentposition );
+      }
+    }
+    this.NoException( str );
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValuesPeriodRangeOK () as Boolean id:Method_LibCal_dlgEvent_ValuesPeriodRangeOK
+{
+  #keys: '[131094.1.45609393]'
+  Body:
+  [*
+    // Some additional checks that should result in the OK-button being disabled, but should not prevent the EndOfPeriod from being set.
+    feedback   := FeedbackObject::LocalFeedback();
+    periodKind := "recurrence";
+    timezone   := this.GetCalendarTimeZone();
+    
+    // EndOfPeriod must be greater than StartOfPeriod.
+    startOfPeriod := dtStartOfPeriod.DateTime().Date( timezone );
+    endOfPeriod   := dtEndOfPeriod  .DateTime().Date( timezone );
+    
+    if( ckbEndOfPeriod.Checked() and
+        dtEndOfPeriod.DateTime() < dtStartOfPeriod.DateTime() )
+    {
+      feedback.AddHard( Translations::Period_EndMustBeGreaterThanStartOfPeriod( periodKind,
+                                                                                startOfPeriod.Format( Translations::DateFormat() ),
+                                                                                endOfPeriod  .Format( Translations::DateFormat() ) ) );
+    }
+    
+    // EndOfPeriod must be greater than StartOfCalendar.
+    startOfCalendar := dhEvent.Data().Calendar().StartDate();
+    if( ckbEndOfPeriod.Checked() and
+        dtEndOfPeriod.DateTime().Date( timezone ) < startOfCalendar )
+    {
+      feedback.AddHard( Translations::Period_EndMustBeGreaterThanStartOfCalendar( periodKind,
+                                                                                  endOfPeriod    .Format( Translations::DateFormat() ),
+                                                                                  startOfCalendar.Format( Translations::DateFormat() ) ) ); 
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

@@ -1,0 +1,158 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod PlanRelatedOperationsBeforeDownstream (Operation_SC target_operation, Resource_SC target_resource, Task_SC element, 
+  Boolean isplanlast)
+{
+  Description: 'Do downstream automated planning starting from the one immediately after the target operation'
+  TextBody:
+  [*
+    // The logic goes like this:
+    // a. If the target_operation is replanned on the same resource, do nothing. FSPL will kicks in to fix any CBL error.
+    // b. If the target_operation is replanned on a different resource and if the related operation is planned on an allowed resource, do nothing.
+    // c. If the target_operation is replanned on a different resource and if the related operation is planned on a disallowed resource, 
+    //    plan the related operation to the allowed resource
+    // d. If the target_operation is not planned, plan the related operation to the allowed resource.
+    
+    planunit := target_operation.PlanUnit_SC();  
+    resourceconnection_enabled := planunit.Schedule().TechnicalConfiguration().IsResourceConnectionEnabled() 
+    //Perform partial propagate for Task.End so that element.End is updated correctly
+    Transaction::Transaction().Propagate( attribute( Task_SC, Start ))
+    
+    target_time := DateTime::MinDateTime();
+    scheduleTime := planunit.Schedule().Time();
+    //Do downstream automated planning starting from the one immediately after the target operation
+    downstream_ops := selectsortedset( planunit, Operation_SC, op, 
+                                       op.SequenceNr() > target_operation.SequenceNr()
+                                       and not op.HasFeedback(), 
+                                       op.SequenceNr() );
+    
+    Operation_SC::SetIsPlanning( downstream_ops, true );
+    
+    current_resource := target_resource; //current resource will be updated when each downstream op is assigned to a resource
+    //current_resource = null when during the traverse, we encounter a batch operation that is not planned or when no allowed resource found
+    traverse( downstream_ops, Elements, down_op, not isnull( current_resource ) )
+    {
+      //Perform partial propagate for Task.Start, Task.End, OperationInTask
+      Transaction::Transaction().Propagate( attribute( Task_SC, Start ))
+      Transaction::Transaction().Propagate( attribute( Task_SC, End ))
+      Transaction::Transaction().Propagate( relation( Task_SC, OperationInTask ))
+      
+      //When down_op is not batch
+      if( ( down_op.IsPlanned() and not down_op.PlannedInBatch() )
+          or down_op.IsExclusiveSingle() )
+      {     
+        //first check if the operation is already planned on an allowed resource
+        down_task := down_op.Task_SC();
+        is_allowed := false;       //reset this everytime a new down_op is being processed
+        
+        if( not isnull( down_task ) )
+        {
+          //check whether the down_op is planned on an allowed oor and allowed connection resource
+          down_resource := down_task.Resource_SC();
+          is_allowed_resource := down_resource.IsPlanRelatedOperations();
+          is_allowed_oor := exists( down_op, AllowedOORPlanRelated, oor, oor.Resource_SC() = down_resource )
+          is_allowed_connection :=  not resourceconnection_enabled
+                                    or exists( down_resource, AsAllowedToResource.AllowedFromResource, rc, rc = current_resource );  
+          is_allowed := is_allowed_resource and is_allowed_oor and is_allowed_connection;    
+        } 
+    
+        if( not is_allowed )
+        {
+          //when down_op is not planned, or when down_op is planned on a disallowed resource
+          //find the allowed resource connection
+          allowed_connection_resources := selectset( current_resource, AsAllowedFromResource.AllowedToResource, r, 
+                                                     exists( down_op, OperationOnResourceGroup.ResourceGroup_SC, rg, rg = r.ResourceGroup_SC() ) );
+    
+          if( not resourceconnection_enabled )
+          {
+            allowed_connection_resources := selectset( current_resource, ResourceGroup_SC.Schedule.ResourceGroup_SC.Resource_SC, r,
+                                                       exists( down_op, OperationOnResourceGroup.ResourceGroup_SC, rg, rg = r.ResourceGroup_SC() ) );
+          }
+                                                     
+          //find the allowed oor
+          allowed_connection_oor := selectset( allowed_connection_resources, Elements.OperationOnResource, oor, true );
+          allowed_oor := selectset( down_op, AllowedOORPlanRelated, r, true );
+          //find the allowed resources which fulfill resource connection and oor allowed rules
+          allowed_resources := selectsortedset ( allowed_oor.Intersect( allowed_connection_oor ), Elements, oor,
+                                                 oor.Resource_SC().IsPlanRelatedOperations(),
+                                                 not oor.IsAllowedSoftExcludingResourceConnection(),               //prioritized on planning without soft constraint violation
+                                                 guard( oor.Resource_SC().Last().End(), DateTime::MinDateTime() ), //prioritized on empty/earliest available resource
+                                                 oor.Resource_SC().ResourceID() );                                 //then with the smallest resource id                                           
+          
+                              
+          //apply load balancing to decide which resource to choose
+          selectedresource := null( Resource_SC );
+          selectedresource_lastreceived := DateTime::MinDateTime(); //in the selected resource, the time material is received from current resource
+          
+          traverse( allowed_resources, Elements.Resource_SC, res )
+          { 
+            target_time := maxvalue( guard( res.LastFrozenTask().End(), scheduleTime ),
+                                     guard( element.Start(), scheduleTime ) );
+            tasks_before_target_time := selectset( res, Task_SC, t, t.Start() <= target_time );
+            if( isplanlast )
+            {
+              tasks_before_target_time := selectset( res, Task_SC, t, true );
+            }
+            
+            last_received_task :=  maxselect( tasks_before_target_time, Elements, t, 
+                                              exists( t.GetOperation(), 
+                                                      FromOperationDependency.FromOperation.Task_SC.Resource_SC, 
+                                                      r,
+                                                      r = current_resource ),                                   
+                                              t.Start())
+            //this is the time when the last material is received from current resource to selected resource                   
+            last_received_time := guard( last_received_task.End(), DateTime::MinDateTime() )   
+            
+            if( isnull( selectedresource )                                    //First time, always set selectedresource
+                or ( not isnull( selectedresource )                           //Not first time
+                     and selectedresource_lastreceived.IsFinite()            
+                     and last_received_time < selectedresource_lastreceived ))
+            {
+              //First time, always set selectedresource
+              //Not first time, set selectedresource when the last material received time earlier
+              selectedresource := res;           
+              selectedresource_lastreceived := last_received_time
+            }           
+          }
+          
+          //Do the actual planning now
+          if( not isnull( selectedresource ) )
+          {
+            //select the position based on the target_operation planned time
+            down_element := minselect( selectedresource, Task_SC.astype( SingleTaskBase ), t,
+                                       t.Start() >= target_time,
+                                       t.Start() );
+    
+            if( isplanlast )
+            {
+              element := selectedresource.astype( SingleResourceBase ).PlanLast( down_op );
+            }
+            else
+            {
+              element := selectedresource.astype( SingleResourceBase ).PlanBefore( down_op, down_element );
+            }          
+          }
+          
+          current_resource := selectedresource;
+        }
+      }
+      else
+      {
+        //When up_op is a batch
+        if( down_op.IsPlanned() )
+        {
+          //Proceed only when it is planned
+          current_resource := down_op.Task_SC().Resource_SC();
+        }
+        else
+        {
+          //Stop recursive planning when encounter a batch op that is not planned
+          current_resource := null( Resource_SC );
+        }
+      }
+    }
+    
+    Operation_SC::SetIsPlanning( downstream_ops, false );
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

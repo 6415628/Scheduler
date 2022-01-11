@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedRuleValueString (CDIntegration cdintegration, ImportedRule importedrule)
+{
+  Description: 'Restore imported rule value string core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedRuleValueString
+    cdimportedRuleValueStrings := selectset( cdintegration, CDEntity.astype( CDImportedRuleValueString ), cdirvs, 
+                                             cdirvs.RuleID() = importedrule.RuleID() 
+                                           );
+    traverse( cdimportedRuleValueStrings, Elements, cdirvs )
+    {
+      importedRuleValueString := importedrule.ImportedRuleValueString( relnew,
+                                                                       Value := cdirvs.Value(),
+                                                                       RuleID := cdirvs.RuleID()
+                                                                     );
+      CopyCorresponding::CopyFrom( cdirvs ).CopyTo( importedRuleValueString );   
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

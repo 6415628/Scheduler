@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method DeleteNotImportedCalendars (LibCal_Calendars synchronizedCalendars_i, String context_i, Boolean keepIfNotImported_i)
+{
+  Description:
+  [*
+    Delete the calendars that are not present in the imported data.
+    keepIfNotImported_i = TRUE does not delete missing instances that were not created by a previous import (i.e. have been created manually or by the application).
+  *]
+  TextBody:
+  [*
+    // Can be overridden if more specific delete-behavior is required.
+    
+    // Get the calendars that are expected to be part of the import,
+    // and determine which if them are missing in the calendars that have been synchronized. 
+    expectedCalendars := this.GetCalendars( context_i );
+    missingCalendars  := expectedCalendars.Difference( synchronizedCalendars_i );
+    
+    // Delete the calendars that were not present in the imported data.  
+    traverse( missingCalendars, Elements, calendar )
+    {
+      if( calendar.IsCreatedByImport() or not keepIfNotImported_i )
+      {
+        LibCal_Util::DebugInfo( "Deleting calendar '" + calendar.CalendarID() + "'" );
+        calendar.Delete();
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

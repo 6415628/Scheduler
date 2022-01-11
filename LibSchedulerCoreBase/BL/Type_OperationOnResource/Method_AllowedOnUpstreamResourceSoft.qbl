@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedOnUpstreamResourceSoft (output String feedback_o) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    value := true;
+    
+    // Only check upstream resources if plan related operation is true
+    if( this.Resource_SC().IsPlanRelatedOperations() )
+    {
+      // Get upstream operation
+      upstream_op := select( this, Operation_SC.FromOperationDependency.FromOperation, op,
+                             op.PlanUnit_SC() = this.Operation_SC().PlanUnit_SC() );
+    
+      // Do not check further if operation has feedback
+      if( not isnull( upstream_op ) and not upstream_op.HasFeedback() )
+      {
+        // Check if upstream operation resources requires plan related operation
+        isupstreamplanrelated := exists( upstream_op, OperationOnResourceGroup.ResourceGroup_SC, rg,
+                                         rg.IsPlanRelatedOperations() );
+      
+        if( isupstreamplanrelated )
+        {
+          // Find allowed resources
+          upstream_oors := selectset( upstream_op, OperationOnResource, oor,
+                                      oor.Resource_SC().IsPlanRelatedOperations()
+                                      and oor.IsAllowedSoft()
+                                      and oor.IsAllowedUpstreamSoft() );
+      
+          // If resource connection is enabled, include only connected resources
+          if( guard( this.Operation_SC().Schedule().TechnicalConfiguration().IsResourceConnectionEnabled(), false ) )
+          {
+            upstream_connected_oors := selectset( this, Resource_SC.AsAllowedToResource.AllowedFromResource.OperationOnResource, oor, true );
+            upstream_oors := upstream_oors.Intersect( upstream_connected_oors );
+          }
+      
+          // Allowed when upstream operation is allowed on at least 1 resource
+          value := upstream_oors.Size() > 0;
+        }
+      }
+    }
+    
+    if( not value )
+    {
+      Utility_SC::Concat( feedback_o, Translations::SC_Operation_RelatedUpstreamNotAllowedOnAnyResources() );  
+    }
+    
+    return value;
+  *]
+}

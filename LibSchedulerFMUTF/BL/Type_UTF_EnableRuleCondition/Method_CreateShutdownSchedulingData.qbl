@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateShutdownSchedulingData (Schedule schedule)
+{
+  Description: 'Create shutdown scheduling test data'
+  TextBody:
+  [*
+    // Create shutdown type and assign to resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource' );
+    shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, 'shutdown type' );
+    UTFMockObjectFactory::CreateShutdownTypeInResource( shutdownType, resource );
+    
+    // Create operation1 and plan it
+    operation1 := UTFMockObjectFactory::CreateOperation( schedule, 'operation1', 10.0 );
+    operation1.OperationID( 'operation1' );
+    operation1.Length( 10.0 );
+    task1 := resource.PlanLast( operation1 );
+    task1.astype( UTFSingleTask ).HasStartUTF( true );
+    task1.astype( UTFSingleTask ).HasEndUTF( true );
+    task1.astype( UTFSingleTask ).Start_UTF( DateTime::Construct( 2000, 1, 5, 0, 0, 0 ) );
+    task1.astype( UTFSingleTask ).End_UTF( DateTime::Construct( 2000, 1, 5, 1, 0, 0 ) );
+    
+    // Create operation2 and plan it
+    operation2 := UTFMockObjectFactory::CreateOperation( schedule, 'operation2', 10.0 );
+    operation1.OperationID( 'operation2' );
+    operation2.Length( 10.0 );
+    task2 := resource.PlanLast( operation2 );
+    task2.astype( UTFSingleTask ).HasStartUTF( true );
+    task2.astype( UTFSingleTask ).HasEndUTF( true );
+    task2.astype( UTFSingleTask ).Start_UTF( DateTime::Construct( 2000, 1, 5, 1, 0, 0 ) );
+    task2.astype( UTFSingleTask ).End_UTF( DateTime::Construct( 2000, 1, 5, 2, 0, 0 ) );
+    
+    // Assign a shutdown at operation2
+    shutdownTask := resource.InsertShutdown( task2, shutdownType, Duration::Hours( 1 ), true, false, DateTime::MinDateTime(), Duration::Zero() );
+    shutdownTask.astype( UTFShutdownTask ).HasStartUTF( true );
+    shutdownTask.astype( UTFShutdownTask ).HasEndUTF( true );
+    shutdownTask.astype( UTFShutdownTask ).Start_UTF( DateTime::Construct( 2000, 1, 5, 2, 0, 0 ) );
+    shutdownTask.astype( UTFShutdownTask ).End_UTF( DateTime::Construct( 2000, 1, 5, 3, 0, 0 ) );
+    
+    // Assign operation width that will violate the rule
+    operation1.Width( 100.0 );
+    operation2.Width( 100.0 );
+    
+    // Gantt chart
+    // | Task1 | Task2 | Shutdown Task
+  *]
+}

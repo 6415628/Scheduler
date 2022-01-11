@@ -1,0 +1,69 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCleanUpFeedbackTaskProgramRule_Setup (Schedule schedule)
+{
+  Description: 'Test clean up feedback task program rule - setup'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    ruleScope := '';
+    ruleSubtype := '';
+    characteristic := '';
+    isProgramTypeNoViolated := false;
+    isProgramPhaseHeadNoViolated := false;
+    isProgramPhaseTailNoViolated := false;
+    isfeedbackstarted := false;
+    isTask2NoViolated := false;
+    isTask3NoViolated := false;
+    
+    this.GetTestVariantForFeedbackProgram( isvariantfound, 
+                                           ruleScope,
+                                           ruleSubtype,
+                                           characteristic,
+                                           isProgramTypeNoViolated,
+                                           isProgramPhaseHeadNoViolated,
+                                           isProgramPhaseTailNoViolated,
+                                           isfeedbackstarted,
+                                           isTask2NoViolated,
+                                           isTask3NoViolated );
+    
+    if( isvariantfound )
+    {
+      // Initialize rule framework and characteristic
+      schedule.InitializeRuleFramework();
+      schedule.InitializeCharacteristic();
+      
+      // Create program scheduling data
+      // Plan all operations
+      programDefConfig := this.CreateProgramSchedulingData( schedule );
+      
+      // Create transition rule
+      this.CreateProgramPhaseTransitionRule( schedule );
+      
+      // Create rule based on variant
+      this.CreateRule( schedule, ruleScope, ruleSubtype, characteristic, programDefConfig );
+          
+      // Create feedback program 
+      this.CreateProgramSchedulingFeedbackData( schedule );
+      
+      // Transaction propagate is needed to propagate operation related information before create feedback
+      Transaction::Transaction().Propagate();
+      
+      // Create feedback for first operation
+      this.CreateFeedbackForOperations( schedule, false, false );
+      
+      // Transaction propagate for attributes CanBeDeleted and Cumulative attributes
+      Transaction::Transaction().Propagate( attribute( FeedbackTask, CanBeDeleted ) );
+      Transaction::Transaction().Propagate( attribute( FeedbackTaskInFeedbackProgramType, CumulativeCharacteristic ) );  
+      Transaction::Transaction().Propagate( attribute( FeedbackTaskInFeedbackProgramType, CumulativeRealValues ) ); 
+      
+      // Clean up feedback for shopfloor history
+      schedule.FeedbackManager().CleanUpFeedbackTaskAndBatchesInSchedule();
+    }
+    
+    // Gantt chart
+    //                           |             HEAD                                            |-TAIL--|
+    // FeedbackProgramChangeTask | Feedback Task0 (CleanUp) | Feedback Task1 (Remains) | Task2 | Task3 |
+  *]
+}

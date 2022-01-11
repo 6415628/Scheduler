@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method ScoreASAP (DateTime earlieststart) declarative as Real
+{
+  Description: 'Calculate score such that first subtask that is planned first will get to use the tool first.'
+  TextBody:
+  [*
+    //
+    // Calculate score such that first subtask that is planned first will get to use the tool first.
+    // Scoring is defined as : Distance from schedule time to the start of the subtask.
+    // The shorter the distance the subtask is, the subtask will get to use the tool first.
+    //
+    
+    subtask    := this.SubTask(); // use SubTask instead of Task here to avoid the confusion that the simulation is done on SubTask level, not Task level
+    schedule   := subtask.Resource_SC().Schedule();
+    key_offset := this.Key().MinorKey() / 10000;   // using key as tire breaker
+    score      := ( earlieststart - schedule.Time() ).DaysAsReal() * 100000   // the distance from schedule time to task start.
+    return -( score + key_offset );
+  *]
+}

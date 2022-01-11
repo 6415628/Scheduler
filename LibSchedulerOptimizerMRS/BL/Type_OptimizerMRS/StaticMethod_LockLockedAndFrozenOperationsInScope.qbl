@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod LockLockedAndFrozenOperationsInScope (LibOpt_Run run)
+{
+  Description:
+  [*
+    Marks all of the given run's operations in the given run as `locked` which are either frozen or locked in the manual schedule; and marks the others as unlocked.
+    This only affects the given run. To be precise, the ScopeElementOnRun objects.
+  *]
+  TextBody:
+  [*
+    // mbr23 Aug-28-2019 (created)
+    
+    traverse( run, ScopeElementOnRun, scopeelementonrun, scopeelementonrun.ScopeElement().istype( ScopeElementOperation ) )
+    {
+      operation := scopeelementonrun.ScopeElement().astype( ScopeElementOperation ).Operation_SC();
+      value := operation.IsPlanned() and ( operation.IsLocked() or operation.IsFrozenInSchedule() );
+      scopeelementonrun.IsLocked( value );
+    }
+  *]
+}

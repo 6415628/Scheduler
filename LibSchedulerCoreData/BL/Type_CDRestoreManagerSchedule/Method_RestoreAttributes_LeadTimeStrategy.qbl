@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_LeadTimeStrategy (CDSchedule cdschedule)
+{
+  Description: 'Restore lead time strategy core data attributes to planning object'
+  TextBody:
+  [*
+    traverse( cdschedule, CDEntity.astype( CDLeadTimeStrategy ), cdlts )
+    {
+      resource := Resource_SC::FindResource_SC( cdlts.ResourceID() );
+      
+      if( not isnull( resource ) )
+      {
+        lts := LeadTimeStrategy_SC::Create( resource, cdlts.MinDistance(), cdlts.StrategyName() );
+        CopyCorresponding::CopyFrom( cdlts ).CopyTo( lts );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

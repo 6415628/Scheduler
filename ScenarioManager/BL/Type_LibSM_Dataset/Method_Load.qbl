@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method Load () as LibSM_Dataset
+{
+  Description: 'Loads the underlying dataset into memory, if it not already is.'
+  TextBody:
+  [*
+    this.UpdateState();
+    if ( not this.IsLoaded() and not this.IsLoadingInProgress() )
+    {
+      this.IsLoadingInProgress( true );
+      DatasetController::Load(this.DatasetMDSID())
+      ->IgnoreException()->( obj, this )
+      {
+        // Force refreshing the dataset state.
+        this.UpdateState();
+      }
+    }
+    return this;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

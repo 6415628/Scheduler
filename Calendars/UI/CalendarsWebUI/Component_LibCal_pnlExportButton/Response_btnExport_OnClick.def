@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: btnExport
+Response OnClick () id:Response_LibCal_pnlExportButton_btnExport_OnClick
+{
+  #keys: '[131094.0.2075445445]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebButton_OnClick'
+  Precondition:
+  [*
+    return LibCal_GlobalState.HasImportExportImplemented();
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Trigger the export of the calendars to XLS.
+      // The Server will store the data that must we written to the file in attribute ExportData
+      // of the ExportSource (a subtype of LibCal_ImportExport).
+      // Attribute ExportID of the ExportSource is 'monitored' by lblExportID using databinding.
+      // When the value of the attribute changes, the label will trigger the writing of the data to file
+      // iff the ExportID matches the value that is provided to the Server by this method.
+      // So the assignment of exportID to attribute ExportID acts as a callback from the Server to the
+      // Client that the ExportData is ready to be retrieved.
+      
+      // Get the calendars that will be exported.
+      calendars := LibCal_pnlExportButton.GetCalendars();
+      
+      // Generate an exportID and register it so that there can be recognized later on that the ExportData is for this Client.
+      exportID := Key::NextPersistentKey();
+      lblMyExportID.Text( [String]exportID );
+      
+      // Trigger the export, providing the exportID and the calendars-to-be-exported.
+      exportSource := LibCal_pnlExportButton.GetExportSource();
+      if( not isnull( exportSource ) )
+      {
+        exportSource.Export( exportID, calendars );
+      }
+    *]
+    GroupServerCalls: false
+  }
+}

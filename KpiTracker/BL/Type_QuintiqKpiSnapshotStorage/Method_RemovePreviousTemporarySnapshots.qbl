@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method RemovePreviousTemporarySnapshots (DssKpiSnapshot snapshot)
+{
+  Description: "Removes the other 'temporary' snapshots that were stored with the same label/value combination as the specified snapshot."
+  TextBody:
+  [*
+    assert ( snapshot.RetentionPolicy().Identification() = KpiRetentionPolicy::POLICY_TEMPORARY() )
+    
+    // Propagate the LabelValueInSnapshot Name/Value attribute so we can use them in the comparison.
+    Transaction::Transaction().Propagate( attribute( KpiLabelValueInSnapshot, Name ) );
+    Transaction::Transaction().Propagate( attribute( KpiLabelValueInSnapshot, Value ) );
+    
+    old := selectset( snapshot.RetentionPolicy(), Snapshot, s,
+                      s <> snapshot and 
+                      s.LabelValueInSnapshot( relsize ) = snapshot.LabelValueInSnapshot( relsize ),
+                      forall( snapshot, LabelValueInSnapshot, lv1,
+                              exists( s, LabelValueInSnapshot, lv2,
+                                      lv1.Name() = lv2.Name()
+                                  and lv1.Value() = lv2.Value() ) ) );
+    
+    traverse( old, Elements, s )
+    {
+      s.Delete();
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

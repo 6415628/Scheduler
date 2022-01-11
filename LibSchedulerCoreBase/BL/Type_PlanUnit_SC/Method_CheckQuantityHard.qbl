@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckQuantityHard (Boolean issplit, String quantity, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Checks whether the input quantity is allowed to create a work order from this routing, cannot be overriden.'
+  TextBody:
+  [*
+    // WOI1 Nov-7-2016 (created)
+    // MODELING HANDLE SC
+    // add hard rules here
+    
+    value := this.CheckQuantityIsEntered( quantity, feedback_o );
+    
+    if( value ) // added this if check to perform quantity conversion without errors when quantity is empty
+    {
+      qty := guard( StringToReal::UserConverter().Convert( quantity ), -1 ); // converts it in the server to accomodate different locales
+      value := value and this.CheckQuantityMoreThanZero( qty, feedback_o )
+               and this.CheckQuantityIsFinite( qty, feedback_o );
+               
+      if( issplit ) // if this is used for splitting, check whether the split quantity is equal to the existing plan unit's quantity
+      {
+        value := value and this.CheckQuantityIsNotAll( qty, feedback_o )
+                 and this.CheckQuantityIsNotMoreThanExisting( qty, feedback_o )
+                 and this.CheckSplitDiscreteQuantityAllowed( qty, feedback_o ); 
+      }
+    }
+    
+    return value;
+  *]
+}

@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllTestVariants (output Booleans hasShelfLifeExpirationDates, output DateTimes shelfLifeExpirationDates, output DateTimes ends, 
+  output Booleans isValids) as owning Strings
+{
+  Description: 'Return all test variants, variant output arguments (columns) will be used in data creation logic.'
+  TextBody:
+  [*
+    variants := construct( Strings );
+    
+    // Scenario 1: Test with no shelf life expiration date.
+    variants.Add( 'Test with no shelf life expiration date' );
+    hasShelfLifeExpirationDates.Add( false );
+    shelfLifeExpirationDates.Add( DateTime::MaxDateTime() );
+    ends.Add( DateTime::Construct( 2020, 01 ,01 ) );
+    isValids.Add( true );
+    
+    // Scenario 2: Test with has shelf life expiration date and before due date.
+    variants.Add( 'Test with has shelf life expiration date and before due date' );
+    hasShelfLifeExpirationDates.Add( true );
+    shelfLifeExpirationDates.Add( DateTime::Construct( 2019, 01, 01 ) );
+    ends.Add( DateTime::Construct( 2020, 01 ,01 ) );
+    isValids.Add( false );
+    
+    // Scenario 3: Test with has shelf life expiration date and after due date.
+    variants.Add( 'Test with has shelf life expiration date and after due date' );
+    hasShelfLifeExpirationDates.Add( true );
+    shelfLifeExpirationDates.Add( DateTime::Construct( 2021, 01, 01 ) );
+    ends.Add( DateTime::Construct( 2020, 01 ,01 ) );
+    isValids.Add( true );
+    
+    return &variants;
+  *]
+}

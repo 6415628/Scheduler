@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetVersionCompleted () as DMF_ConvertorVersion
+{
+  Description: 'Get the highest version that has been completed'
+  TextBody:
+  [*
+    // This logic might be improvable, the reason I do it this way, is as follow:
+    // To update the global version, say for example all V4 conversions are done,
+    // but some V3 conversions failed (This is possible when you have different datasettypes for different versions)
+    // The version still stays at V2, then the next time they run conversion,
+    // we run V3 and if all of them passed, then the global version becomes V4, not V3
+    
+    convertor := this.ConvertorVersion().ConvertorDataset();
+    version := null( DMF_ConvertorVersion )  
+    isComplete := true;
+    
+    traverse( convertor, ConvertorVersion, cv, 
+              cv.SequenceNr() > guard( convertor.CurrentVersion().SequenceNr(), -1 )
+              and isComplete )
+    {
+      if( forall( cv, DatasetInConvertorVersion, dicv, 
+                  dicv.GetIsFinished() ) )
+      {
+        version := cv;
+      }
+      else
+      {
+        isComplete := false;
+      }
+    }
+    
+    return version;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

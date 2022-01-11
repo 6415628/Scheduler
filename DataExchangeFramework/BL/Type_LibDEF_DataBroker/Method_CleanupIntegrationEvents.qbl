@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Method CleanupIntegrationEvents
+{
+  TextBody:
+  [*
+    maxAge := Duration::Days( 30 ); // TODO: configurable
+    now    := DateTime::Now();
+    
+    // Cleanup IntegrationEvent where the age is over 30 days
+    traverse( this, IntegrationEvent, event,
+              now - event.TimestampLastUpdated() > maxAge )
+    {
+      event.Delete();
+    }
+  *]
+}

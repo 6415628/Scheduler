@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericInternalWorkOrderSupply (CDSchedule cdSchedule, GenericInternalWorkOrderOperation genericInternalWorkOrderOperation)
+{
+  Description: 'Restore generic internal work order supply core data relations to planning object'
+  TextBody:
+  [*
+    cdGenericInternalWorkOrderSupplies := selectset( cdSchedule, CDEntity.astype( CDGenericInternalWorkOrderSupply ), cdGenericInternalWorkOrderSupply,
+                                                     cdGenericInternalWorkOrderSupply.WorkOrderId() = genericInternalWorkOrderOperation.WorkOrderId()
+                                                     and cdGenericInternalWorkOrderSupply.SequenceNr() = genericInternalWorkOrderOperation.SequenceNr() );
+     
+    traverse( cdGenericInternalWorkOrderSupplies, Elements, cdGenericInternalWorkOrderSupply )
+    {
+      genericInternalWorkOrderSupply := InternalWorkOrderSupply::FindInternalWorkOrderSupply( cdGenericInternalWorkOrderSupply.Id() );
+     
+      if( not isnull( genericInternalWorkOrderSupply ) )
+      {
+        // ImportedInternalWorkOrderSupply, 1-1 and ImportedWorkOrderSupply, 1-1
+        importedInternalWorkOrderSupply := ImportedInternalWorkOrderSupply::FindImportedInternalWorkOrderSupply( cdGenericInternalWorkOrderSupply.Id() );
+        genericInternalWorkOrderSupply.ImportedInternalWorkOrderSupply( relset, importedInternalWorkOrderSupply );  
+        genericInternalWorkOrderSupply.ImportedWorkOrderSupply( relset, importedInternalWorkOrderSupply );
+        
+        // ProductInStockingPoint, M-1
+        genericInternalWorkOrderSupply.ProductInStockingPoint( relset, ProductInStockingPoint::FindProductInStockingPoint( cdGenericInternalWorkOrderSupply.StockingPointId(),
+                                                                                                                           cdGenericInternalWorkOrderSupply.ProductId() ) );
+                                                                                                                           
+        // RoutingStepOutput, M-1
+        routingstepoutput := RoutingStepOutput::FindRoutingStepOutput( cdGenericInternalWorkOrderSupply.RoutingID(), 
+                                                                       cdGenericInternalWorkOrderSupply.RoutingStepOutputSequenceNr(), 
+                                                                       cdGenericInternalWorkOrderSupply.ProductId(), 
+                                                                       cdGenericInternalWorkOrderSupply.StockingPointId() 
+                                                                     );
+        genericInternalWorkOrderSupply.RoutingStepOutput( relset, routingstepoutput );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

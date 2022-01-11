@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_FeedbackBatchInSchedule (CDSchedule cdschedule)
+{
+  Description: 'Restore feedback batch in schedule core data attributes to planning object'
+  TextBody:
+  [*
+    // Restore feedback batch in schedule
+    feedbackmanager := this.Schedule().FeedbackManager();
+    
+    traverse( cdschedule, CDEntity.astype( CDFeedbackBatchInSchedule ), cdfeedbackbatchinschedule )
+    {
+      feedbackbatchinschedule := FeedbackBatchInSchedule::Create( feedbackmanager, cdfeedbackbatchinschedule.BatchID() );
+      CopyCorresponding::CopyFrom( cdfeedbackbatchinschedule ).CopyTo( feedbackbatchinschedule );   
+      
+      this.RestoreAttributes_FeedbackBatchContentInSchedule( cdschedule, feedbackbatchinschedule );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

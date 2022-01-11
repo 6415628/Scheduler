@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestKPITotalProductionTime (Schedule schedule)
+{
+  Description: 'Test KPI TotalProductionTime'
+  TextBody:
+  [*
+    isvariantfound := false;
+    isdummyworkorder := false;
+    
+    this.GetTestVariantForKPIProductivityAndProductionTime( isvariantfound,
+                                                            isdummyworkorder );
+    kpivalue := 0.0;
+    actualkpivalue := 0.0;
+    if( isvariantfound )
+    {
+      kpivalue := ifexpr( isdummyworkorder, 4, 5 );
+      actualkpivalue := schedule.KPITotalProductionTime();  
+    }
+    
+    this.Run().AssertEqual( kpivalue, actualkpivalue,
+                            UTFUtility::GenerateFailedMessage( 'Test KPI checking TotalProductionTime failed', this.Variant() ) );
+  *]
+}

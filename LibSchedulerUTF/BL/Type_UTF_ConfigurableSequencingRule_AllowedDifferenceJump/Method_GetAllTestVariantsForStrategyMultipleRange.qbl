@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllTestVariantsForStrategyMultipleRange (output Reals rulevaluerange1, output Reals rulevaluerange2, output Strings strategymultipleranges, 
+  output Booleans isValids) as owning Strings
+{
+  Description: 'Return all test variants, variant output arguments (columns) will be used in data creation logic.'
+  TextBody:
+  [*
+    variants := construct( Strings );
+    
+    strategys := construct( Strings );
+    strategys.Add( RuleConstant::StrategyMultipleRange_FirstTask() );
+    strategys.Add( RuleConstant::StrategyMultipleRange_SecondTask() );
+    strategys.Add( RuleConstant::StrategyMultipleRange_Smallest() );
+    strategys.Add( RuleConstant::StrategyMultipleRange_Greatest() );
+    
+    i := 1;
+    traverse( strategys, Elements, strategy )
+    {
+      // Scenario: Test strategy multiple range ( NO VIOLATION )
+      variants.Add( 'Scenario ' + [String]i + ' - Test strategy multiple range ' + strategy + ' ( NO VIOLATION )' );
+      if( strategy = RuleConstant::StrategyMultipleRange_FirstTask() 
+          or strategy = RuleConstant::StrategyMultipleRange_Smallest() )
+      {
+        rulevaluerange1.Add( 100.0 );
+        rulevaluerange2.Add( 99.0 );
+      }
+      else
+      {
+        rulevaluerange1.Add( 99.0 );
+        rulevaluerange2.Add( 100.0 ); 
+      }
+      strategymultipleranges.Add( strategy );
+      isValids.Add( true );
+      
+      i ++;
+      
+      // Scenario: Test strategy multiple range ( VIOLATION )
+      variants.Add( 'Scenario ' + [String]i + ' - Test strategy multiple range ' + strategy + ' ( VIOLATION )' );
+      if( strategy = RuleConstant::StrategyMultipleRange_FirstTask() 
+          or strategy = RuleConstant::StrategyMultipleRange_Smallest() )
+      {
+        rulevaluerange1.Add( 99.0 );
+        rulevaluerange2.Add( 100.0 );
+      }
+      else
+      {
+        rulevaluerange1.Add( 100.0 );
+        rulevaluerange2.Add( 99.0 ); 
+      }
+      strategymultipleranges.Add( strategy );
+      isValids.Add( false );
+      
+      i ++;
+    }
+    
+    return &variants;
+  *]
+}

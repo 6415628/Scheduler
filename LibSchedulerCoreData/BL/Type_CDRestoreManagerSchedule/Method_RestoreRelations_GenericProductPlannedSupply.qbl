@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericProductPlannedSupply (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic product planned supply core data attributes to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdSchedule, CDEntity.astype( CDGenericProductPlannedSupply ), cdGenericProductPlannedSupply )
+    {
+      genericProductPlannedSupply := ProductPlannedSupply::FindProductPlannedSupply( cdGenericProductPlannedSupply.SupplyType(),
+                                                                                     cdGenericProductPlannedSupply.SupplyID() );
+    
+      if( not isnull( genericProductPlannedSupply ) )
+      {
+        // DemandBatch, M-1
+        demandBatch := DemandBatch::FindDemandBatch( cdGenericProductPlannedSupply.BatchID() );
+        genericProductPlannedSupply.DemandBatch( relset, demandBatch );
+        
+        // Operation, M-1
+        operation := select( schedule, PlanUnit_SC.Operation_SC, operation, operation.OperationID() = cdGenericProductPlannedSupply.OperationID() );
+        genericProductPlannedSupply.Operation_SC( relset, operation );
+        
+        // WorkOrderSupply, M-1
+        workOrderSupply := WorkOrderSupply::FindWorkOrderSupply( cdGenericProductPlannedSupply.WorkOrderSupplyId() );                               
+        genericProductPlannedSupply.WorkOrderSupply( relset, workOrderSupply );     
+      }                                     
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    currentVariant := this.GetCurrentVariant();
+    
+    if( currentVariant.IsOperationFrozenByFrozenPeriod() )
+    {
+      schedule.PlanningConfiguration().FrozenPeriod( Duration::Hours( 10 ) );
+    }
+    
+    // Create upstream, current and downstream operations, their linkages, resource groups and resources
+    planUnit := UTFMockObjectFactory::CreateOrderAndPlanUnit( schedule, this.Variant(), 1.0 );
+    previousOperation := null( UTFOperation );
+    
+    for( i := 1; i <= 3; i++ )
+    {
+      name := this.Variant().Concat( '-' ).Concat( [String] i );
+      operation := UTFMockObjectFactory::CreateOperation( planUnit );
+      operation.CreateInputOperationMaterial( previousOperation, planUnit.Quantity() );
+      // Set FSPL for 2nd and 3rd operation
+      resourceGroup := UTFMockObjectFactory::CreateResourceGroup( schedule, name );
+      resourceGroup.HasFixedSequencePlanLogic( i > 1 and currentVariant.IsDownstreamOperationHasFSPL() );
+      // Plan operation
+      resource := UTFMockObjectFactory::CreateSingleResource( resourceGroup, name );
+      task := resource.PlanLast( operation );
+      
+      // Freeze or lock 2nd operation
+      if( i = 2 )
+      {
+        operation.IsLockedByOptimizer( currentVariant.IsOperationLockedByOptimizer() );
+        task.IsFrozenByUser( currentVariant.IsOperationFrozenByUser() );
+      }
+      
+      previousOperation := operation;
+    }
+  *]
+}

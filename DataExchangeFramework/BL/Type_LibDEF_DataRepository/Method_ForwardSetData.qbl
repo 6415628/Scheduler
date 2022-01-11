@@ -1,0 +1,67 @@
+Quintiq file version 2.0
+#parent: #root
+Method ForwardSetData (Key planningDatasetMDSID_i, String planningDatasetType_i, Key planningDatasetDTD_i, 
+  String setGUID_i, Boolean isAutoForwarding_i)
+{
+  Description: 'Look for the Set and return its SetObjects to the planning dataset.'
+  TextBody:
+  [*
+    // Jacky CHAN May-20-2016 (created)
+    set := select( this, Channel.SetType.Set, set,
+                   set.GUID() = setGUID_i );
+    if( isnull( set ) )
+    {
+      LibDEF_Util::LogError( "Set with GUID '" + setGUID_i + "' cannot be requested, it does not exist. ");
+    }
+    
+    sets := construct( LibDEF_Sets );
+    sets.Add( set );
+    
+    // Reuse the method for maintainability.
+    this.ForwardSetData( planningDatasetMDSID_i, planningDatasetType_i, planningDatasetDTD_i, sets, isAutoForwarding_i );
+    
+    /*
+    
+    // use Reflection to return the Set
+    // signature is required for multiple Jobs with different argument types, due to polymorphism
+    job := Reflection::FindStaticMethodBySignature( planningDatasetType_i, LibDEF_API::JOBNAME_ProcessSet(),
+                                                    typeof( MDSID ).Name(),
+                                                    typeof( LibDEF_Set ).Name(),
+                                                    typeof( Boolean ).Name() );
+    if( isnull( job ) )
+    {
+      LibDEF_Util::LogWarning( "Failed to forward Set to Dataset: " +
+                               "Job '" + LibDEF_API::JOBNAME_ProcessSet() + "' cannot be found in Type '" + planningDatasetType_i + "'. Implement it first." );
+    }
+    else
+    {
+      // The Job can only be called if the target dataset is already loaded.
+      // First use LoadedObjectInfo, because that is much faster than using ObjectInfo.
+      datasetObjectInfo := MDSEditor::Editor().LoadedObjectInfo( planningDatasetMDSID_i );
+      
+      if( not isnull( datasetObjectInfo ) )
+      {
+        job.AddObjectArgument( datasetObjectInfo.MDSID() );
+        job.AddObjectArgument( set );
+        job.AddArgument      ( isAutoForwarding_i );
+    
+        job.Execute();
+      }
+      else
+      {  
+        // Error handling: determine what is wrong with the dataset.
+        datasetObjectInfo := MDSEditor::Editor().ObjectInfo( planningDatasetMDSID_i );
+        datasetFound      := not isnull( datasetObjectInfo );
+        
+        LibDEF_Util::LogWarning( "Failed to forward Set to Dataset: Dataset of '" +
+                                 ifexpr( not datasetFound,
+                                         planningDatasetType_i + "' with key '" + [String]planningDatasetMDSID_i + "' does not exist",
+                                         LibDEF_Util::FormatDatasetString( datasetObjectInfo ) + "' is not loaded" ) +
+                                 ". Please make sure the dataset " +
+                                 ifexpr( not datasetFound,
+                                         "exists.",
+                                         "is loaded." ) );
+      }
+    }
+  *]
+}

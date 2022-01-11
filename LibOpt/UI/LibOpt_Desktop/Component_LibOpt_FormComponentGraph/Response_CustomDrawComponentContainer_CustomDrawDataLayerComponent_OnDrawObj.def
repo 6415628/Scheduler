@@ -1,0 +1,125 @@
+Quintiq file version 2.0
+#parent: CustomDrawComponentContainer/CustomDrawDataLayerComponent
+Response OnDrawObject (LibOpt_Component object) id:Response_CustomDrawComponentContainer_CustomDrawDataLayerComponent_OnDrawObject
+{
+  #keys: '[139164.3.945949135]'
+  Body:
+  [*
+    scale_x := ValueHolderScaleX.Data();
+    scale_y := ValueHolderScaleY.Data();
+    
+    image := object.UIImage();
+    
+    height := region.Height();
+    
+    DEFAULT_OFFSET := 5;
+    
+    color := Form.GetColor( object );
+     
+    surface.Brush().Color( color );
+    
+    surface.Draw( shape );
+    
+    surface.Brush().Color( Color::White() );
+    
+    offset := minvalue( 5, [Number] ( DEFAULT_OFFSET * maxvalue( scale_x, scale_y ) ) );
+    diameter := [Number] ( ( object.UIGraphNode().Height() - offset * 2 ) * minvalue( scale_x, scale_y ) );
+    circle_offset_y := [Number] ( ( height - diameter ) / 2 );
+    circle_offset_x := minvalue( [Number] ( scale_x * DEFAULT_OFFSET ), circle_offset_y );
+    surface.Pen().Width( 0 );
+    surface.Circle( circle_offset_x, circle_offset_y, diameter );
+    
+    // Progress
+    if( object.Task( relsize ) > 0 )
+    {                          
+      prog := object.Progress();
+      
+      if( prog < 1.0 )
+      {
+        surface.Brush().Color( color );
+        surface.Circle( circle_offset_x + 2, circle_offset_y + 2, diameter - 4 );
+      
+        surface.Brush().Color( Color::Color( 255, 255, 255, 0.75 ) );
+        surface.Circle( circle_offset_x + 2, circle_offset_y + 2, diameter - 4 );
+      }                               
+      surface.Brush().Color( color );
+      if( prog < 0.0 )
+      {
+        surface.Brush().Color( Color::Red() );
+      }
+      surface.Pie( circle_offset_x + 2, circle_offset_y + 2, diameter - 4, diameter - 4, -90, [Number] ( 360 * prog ) );
+      
+      surface.Brush().Color( Color::White() );
+      surface.Circle( circle_offset_x + 4, circle_offset_y + 4, diameter - 8 );
+    }
+    
+    status := object.Run().Status();
+    if( status = LibOpt_RunStatus::Loaded() )
+    {
+      image_size := [Number] ( diameter * sin( 0.25 * pi ) - 4 );
+      image_offset := [Number] ( ( diameter - image_size ) / 2 );
+      
+      surface.Image( circle_offset_x + image_offset,
+                     circle_offset_y + image_offset,
+                     image_size, image_size, image );
+    }
+    else
+    {
+      nr_text := object.NrTimesCalled();                                       
+      format := TextFormat::Construct();
+      format.AlignMiddle();
+      format.AlignCenter();
+      font_size := surface.Font().Size();
+      surface.Font().Size( 100 );
+      surface.Font().Bold( true );
+      surface.TextColor( color );
+      surface.TextFit( circle_offset_x + 6, circle_offset_y + 6, diameter - 12, diameter - 12, [String] nr_text, font_size, format );
+      surface.Font().Size( font_size );
+      surface.TextColor( Color::Black() );
+    }
+    
+    if( not object.CanBeCalled() )
+    {
+      overlaycolor := Color::Color( 255, 255, 255, 0.5 );
+      surface.Brush().Color( overlaycolor );
+      surface.Pen().Width( 1 );
+      surface.Draw( shape );
+    }
+    
+    format := TextFormat::Construct();
+    format.WrapWords();
+    
+    surface.Font().Bold( true );
+    
+    text_region := region.CenterRect( region.Width() - offset * 2, region.Height() - offset * 2 );
+    text_region := text_region.RightRect( text_region.Width() - diameter - circle_offset_x * 2 + offset, text_region.Height() );
+    
+    lines := text.TrimBoth().Tokenize( String::NewLine() );
+    
+    if( lines.Size() = 1 )
+    {
+      format.AlignMiddle();
+      surface.TextFit( text_region, lines.Element( 0 ), 1, format );
+    }
+    else if( lines.Size() > 1 )
+    {
+      format.AlignBottom();
+      line_offset := 2;
+      line_height := [Number] ( ( text_region.Height() - line_offset * ( lines.Size() - 1 ) ) / lines.Size() );
+      for( i := 0; i < lines.Size(); i++ )
+      {
+        if( i = lines.Size() - 1 )
+        {
+          format.AlignTop();
+        }
+        line_region := text_region.BottomRect( text_region.Width(), text_region.Height() - ( line_offset + line_height ) * i )
+                                  .TopRect( text_region.Width(), line_height );
+        surface.TextFit( line_region, lines.Element( i ), 1, format );
+        surface.Font().Bold( false );
+        format.AlignMiddle();
+      }
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_CustomDrawDataLayer_OnDrawObject'
+}

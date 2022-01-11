@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CleanUpFeedbackedTask
+{
+  Description: 'To unplan task that has feedback.'
+  TextBody:
+  [*
+    // Unplan the task if it has feedback or if it is aborted
+    batch_aborted := exists( this, OperationInTask, operation, operation.HasBeenAborted() );
+    
+    // saravanen 20130621 Proceed with unplanning only if FSPL is not required on Feedback
+    if( this.HasFeedbackTask() or batch_aborted ) // Also unplan if Batch is aborted
+    { 
+      // Unplan the task if it has feedback.
+      batch := this.Batch();
+      // all batch sequence element that has feedback will be removed from the task.
+      // Hence it no longer Has Feedback.
+      // saravanen 20130621 Added conditions to Traverse for FSPL on feedback to work properly
+      
+      
+      //To propagate IsAllFSPLOperationWithFeedback so that when all FSPL operation has feedback, we can proceed to clean up the feedbacked task
+      //The full transaction propagate cannot happen before this method because it will cause CBL error as at this stage, the related task are not replanned to the right position yet by FSPL
+      Transaction::Transaction().Propagate( attribute( PlanUnit_SC, HasFSPLFeedback ) );
+      
+      traverse( batch,
+                BatchSequenceElement,
+                element,
+                batch_aborted // Unplan all if the batch is aborted
+                or ( element.HasFeedback()
+                     and ( not element.Operation_SC().IsFSPLHandlingNeeded()
+                           or element.Operation_SC().PlanUnit_SC().HasFSPLFeedback() ) ) )
+      {
+        batch.RemoveBatchSequenceElements( element );
+      }
+    }
+  *]
+}

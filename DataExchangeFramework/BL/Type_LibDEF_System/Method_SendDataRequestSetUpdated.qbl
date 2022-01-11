@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendDataRequestSetUpdated (LibDEF_Set set_i, LibDEF_Systems targets_i)
+{
+  Description: 'Send a Data-Request message of that Set which has been updated in DataRepository.'
+  TextBody:
+  [*
+    // To save performance cost, cache the NVT of the set here so we can avoid redoing the NVT export of the Set inside the methods called below.
+    setNvt := NamedValueTreeIO::Export( set_i );
+    isNewSet := false;
+    
+    /**** NON-CHUNKED TRANSMISSION ****/
+    targetsWithoutChunking := selectset( targets_i, Elements, target,
+                                         not target.CanSendDataByChunking() );
+    
+    if( targetsWithoutChunking.Size() > 0 )
+    { 
+      this.SendDataRequestSetBulkTransmission( targetsWithoutChunking, set_i, isNewSet, setNvt );
+    }
+    
+    /**** CHUNKED TRANSMISSION ****/
+    targetsWithChunking := targets_i.Difference( targetsWithoutChunking );
+    if( targetsWithChunking.Size() > 0 )
+    { 
+      this.SendDataRequestSetChunkedTransmission( targetsWithChunking, set_i, isNewSet, setNvt );
+    }
+  *]
+}

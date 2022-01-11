@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckCanJoin (WorkOrders workOrders) declarative remote
+{
+  Description: 'Check if all work orders can be join'
+  TextBody:
+  [*
+    isSplit := false;
+    
+    isMoreThanOneWorkOrders := WorkOrder::CheckIsSelectedMoreThanOneWorkOrder( workOrders );
+    
+    if ( isMoreThanOneWorkOrders )
+    {
+        isAllInternalWorkOrders := WorkOrder::CheckIsAllInternalWorkOrders( workOrders, Constants::Function_Join() );
+          
+        if ( isAllInternalWorkOrders )
+        {
+          internalWorkOrders := selectset( workOrders, Elements.astype( InternalWorkOrder ), internalworkorder, true );
+          
+          InternalWorkOrder::CheckHasSameProduct( internalWorkOrders );
+          InternalWorkOrder::CheckHasSameRouting( internalWorkOrders );
+          InternalWorkOrder::CheckHasNoOperationPlanned( internalWorkOrders );
+          InternalWorkOrder::CheckHasNoMaterialReservedForIt( internalWorkOrders, isSplit );
+          InternalWorkOrder::CheckHasNoMaterialReservedForOthers( internalWorkOrders, isSplit );
+          InternalWorkOrder::CheckIsNotMarkedForRelease( internalWorkOrders, isSplit );
+          WorkOrder::CheckNotReleased( internalWorkOrders ); 
+        }
+    }
+  *]
+}

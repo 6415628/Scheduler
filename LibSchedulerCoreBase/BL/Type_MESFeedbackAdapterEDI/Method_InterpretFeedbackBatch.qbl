@@ -1,0 +1,70 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride InterpretFeedbackBatch
+{
+  TextBody:
+  [*
+    importedfbbatches := selectset( this.Schedule(),
+                                    ImportedFeedbackBatch,
+                                    importedfeedbackbatch,
+                                    true,
+                                    importedfeedbackbatch.HasFeedback() 
+                                  );
+    
+    traverse( importedfbbatches, Elements, importedfeedbackbatch )
+    {
+      status := importedfeedbackbatch.Status();
+      batchid := importedfeedbackbatch.BatchID();
+      remark := importedfeedbackbatch.Remark();
+      resource_id := importedfeedbackbatch.Resource();
+      practice := importedfeedbackbatch.Practice();
+      start := importedfeedbackbatch.Start();
+      startReadIn := importedfeedbackbatch.StartReadIn();
+      processStartReadIn := importedfeedbackbatch.ProcessStartReadIn();
+      end := importedfeedbackbatch.End();
+    
+      operations := importedfeedbackbatch.GetOperations();
+      
+      // Cancel obsoleted feedback if the task was reported on non-batch resource previously
+      traverse( operations, Elements, operation, operation.HasTaskFeedback() )
+      {
+        operation.CancelObsoletedTaskFeedback( start );
+      }
+      
+      if( status = Constants::StatusStart() )
+      {
+        if( operations.Size() > 0 )
+        {
+          this.FeedbackManager().BatchStart( batchid, operations, resource_id, start, processStartReadIn, practice, remark);
+        }      
+      }
+      
+      if( status = Constants::StatusEnd() )
+      {
+        fbbatchinschedule := FeedbackBatchInSchedule::FindFeedbackBatchInSchedule( batchid ); 
+        
+        if( isnull( fbbatchinschedule ) and startReadIn.IsFinite()) 
+        {
+          //When MES give feedback start and end. Import is done after feedback end.
+          //So, when import, the status is End, but actually both Start and End is executed.
+          if( operations.Size() > 0 )
+          {
+            this.FeedbackManager().BatchStart( batchid, operations, resource_id, start, processStartReadIn, practice, remark );
+          }
+        }
+        
+        this.FeedbackManager().BatchEnd( batchid, resource_id, startReadIn, processStartReadIn ,end, remark );
+      }
+      
+      if( status = Constants::StatusCancelled() )
+      {
+        this.FeedbackManager().BatchCancelled( batchid, resource_id, end, remark );      
+      }
+      
+      if( status = Constants::StatusAborted() )
+      {
+        this.FeedbackManager().BatchAborted( batchid, resource_id, end, remark );
+      }
+    }
+  *]
+}

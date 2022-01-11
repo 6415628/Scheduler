@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method InsertShutdownWithShutdownID (String shutdownid, Task_SC aftertask, ShutdownType shutdowntype, 
+  Duration shutdowndurationuser, Boolean hasshutdowndurationuser, Boolean istargetstartenabled, 
+  DateTime targetstart, Duration maxtargetstartdeviation) as ShutdownTask
+{
+  Description: 'Insert shutdown after the selected task'
+  TextBody:
+  [*
+    // Insert shutdown after the selected task
+    shutdown := Shutdown::Create( this.Schedule(), shutdownid );
+    shutdown.Update( shutdowntype, 
+                     shutdowndurationuser, 
+                     hasshutdowndurationuser,
+                     istargetstartenabled, 
+                     targetstart, 
+                     maxtargetstartdeviation );
+    
+    // Insert shutdown task after the selected task
+    shutdowntask := this.ConstructShutdownTask();
+    shutdowntask := this.AddAfter( &shutdowntask, aftertask ).astype( ShutdownTask );
+    
+    // Set relation between Shutdown and ShutdownTask
+    shutdowntask.Shutdown( relset, shutdown );
+    
+    // Update FSPL operation in task and FSPL graph
+    this.UpdateFSPLOperationInTaskAndGraph( shutdowntask, null( Task_SC ), null( Task_SC ), null( BatchSequenceElement ) );
+    
+    return shutdowntask;
+  *]
+}

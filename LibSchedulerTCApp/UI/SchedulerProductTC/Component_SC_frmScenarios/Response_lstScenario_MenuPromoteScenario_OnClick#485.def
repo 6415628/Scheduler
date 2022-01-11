@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: lstScenario
+Response OnClick (Scenario selection) id:Response_lstScenario_MenuPromoteScenario_OnClick_485
+{
+  #keys: '[136010.4.511540797]'
+  Body:
+  [*
+    // Promote scenario to leading scenario
+    demotedScenario := select( LibSM_ScenarioManager, ScenarioNode.astype( Scenario ), scenario,
+                               scenario.IsLeadingScenario() );
+    
+    value := MessageBox::Question( this, 
+                                   Translations::Scenario_PromoteMessage( selection.Name() ) , 
+                                   '&Yes|&No' ) = 0;
+    
+    if( value )
+    {
+      Scenario::PromoteLeadingScenario( demotedScenario, selection );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_lstScenario_Menu_OnClick'
+  Initiator: 'MenuPromoteScenario'
+  Precondition:
+  [*
+    return selection.CanPromote();
+  *]
+}

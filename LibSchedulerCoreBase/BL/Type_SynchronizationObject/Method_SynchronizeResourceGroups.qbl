@@ -1,0 +1,63 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeResourceGroups
+{
+  Description: 'Synchronize the ResourceGroups with the ImportedResourceGroups.'
+  TextBody:
+  [*
+    // James Kwapien 20160901 Synchronize all resource groups from imported type
+    
+    schedule := this.Schedule();
+    needfsplsynchronization := false;
+    allinstances := selectset( schedule, ResourceGroup_SC, rg, true );
+    updatedinstances := construct( ResourceGroup_SCs );
+    
+    traverse( schedule, ImportedResourceGroup_SC, row  )
+    {
+      resourcegroup := select( this.Schedule(), 
+                               ResourceGroup_SC,
+                               rg,
+                               rg.Name() = row.ResourceGroup() );
+    
+      if( isnull( resourcegroup ))
+      {
+        resourcegroup := schedule.CreateResourceGroup( row.ResourceGroup(), row.ResourceType() ); 
+      }
+    
+      resourcegroup.Update( row );
+    
+      updatedinstances.Add( resourcegroup );
+    
+      resourcegroup.SynchronizeResources();
+    
+      // JK 12-17-2016 QP 8389 Import and synchronize campaign types
+      resourcegroup.SynchronizeCampaignTypes();
+    
+      if( resourcegroup.HasFixedSequencePlanLogic() )
+      {
+        needfsplsynchronization := true;
+      }
+    
+     
+      
+      // James Kwapien #7724 Sep-15-2016
+      resourcegroup.SynchronizeSubTaskTypesOnRG();
+    
+      resourcegroup.UpdateSubTaskSequence();
+    } 
+      
+    if( needfsplsynchronization )
+    {
+      this.SynchronizeFSPLResourceGroups();
+    }
+    
+    // Find resource groups that do not exist in data broker
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    // Delete resource groups that do not exist in data broker and can be deleted
+    traverse( oldinstances, Elements, old, old.CanBeDeleted() )
+    {
+      old.Delete();
+    }
+  *]
+}

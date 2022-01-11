@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method Compare (const RealVector kpi1, const RealVector kpi2) as Number
+{
+  Description:
+  [*
+    Compares the two given leveld KPIs and determines which is better, as determined by this RollbackKPI's IsMinimize(Number level) method.
+    
+    Returns -1 if kpi1 is better than kpi2.
+    Returns 0 if kpi1 is as good as kpi2.
+    Returns 1 if kpi1 is worse than kpi2.
+  *]
+  TextBody:
+  [*
+    // mbr23 Sep-10-2019 (created)
+    change := kpi1.Minus( kpi2 );
+    diff_index := LibOpt_RollbackKPI::GetDiffIndex( kpi1, kpi2 ) // vector index (level) on which the 2 KPIs first differ
+    // diff_index = -1 implies kpi1 = kpi2.
+    
+    result := 0;
+    if( diff_index >= 0 )
+    {
+      // there is a change.
+      isminimize := this.IsMinimize( diff_index );
+      is1smallerthan2 := change.Get( diff_index ) < 0.0;
+      isbetter1than2 := isminimize = is1smallerthan2; // "kpi1 is better than kpi2"
+      result := ifexpr( isbetter1than2, -1, 1 );
+    }
+    
+    return result;
+  *]
+}

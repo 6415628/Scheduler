@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestEnableDisableRule (Schedule schedule)
+{
+  Description: 'Test enabling and disabling rule'
+  TextBody:
+  [*
+    // Get variant attribute
+    isEnabled := false;
+    hasNoConstraintViolation := false;
+    
+    this.GetTestVariant( isEnabled,
+                         hasNoConstraintViolation );
+    
+    task2 := select( schedule, Operation_SC.Task_SC, task,
+                     task.GetOperation().OperationID() = 'Operation2' );
+    
+    // Propoagete constraint isAllLowPriorityRulesOK and isAllHighPriorityRulesOK
+    Transaction::Transaction().Propagate( constraint( Task_SC, IsAllLowPriorityRulesOK ) );
+    Transaction::Transaction().Propagate( constraint( Task_SC, IsAllHighPriorityRulesOK ) );
+    
+    value := task2.IsAllLowPriorityRulesOK() and 
+             task2.IsAllHighPriorityRulesOK();
+    
+    this.Run().AssertEqual( hasNoConstraintViolation, value,
+                            UTFUtility::GenerateFailedMessage( 'Enabling or disabling rule failed.',
+                                                               this.Variant() ) );
+  *]
+}

@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcIsParallelWithPrevious
+{
+  TextBody:
+  [*
+    // jiex Nov-4-2016 (created)
+    isallowhard := this.IsParallelLoadAllowedPractice() and this.IsParallelLoadAllowedWidth() and not this.IsFirstAfterDownTime();
+    
+    value := isallowhard and                    
+             ( not isnull( this.Previous() ) 
+               or ( not isnull( this.Resource_SC().LastFeedbackTaskInSchedule() ) 
+                    and not isnull( this.Resource_SC().LastFeedbackTaskInSchedule().OperationTaskFeedback() ) 
+                    and this.Resource_SC().LastFeedbackTaskInSchedule().OperationTaskFeedback().Operation_SC().Practice() = this.GetOperation().Practice() 
+                    and this.IsParallelWithFeedback() ) 
+             );
+    
+    this.IsParallelWithPrevious( value );
+  *]
+}

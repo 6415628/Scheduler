@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method Rollback (String message, QuillError e)
+{
+  Description:
+  [*
+    Rollback the current transaction.
+    
+    Depending on the way the run is being executed this may differ:
+    - If the run is completely running in one transaction, we need to throw an error specifying that the run cannot be shown as we only have one transaction and we wasted it (by throwing an error).
+    We don't have another transaction to handle the error, so we require the user to press the context menu "Recover last failed run" on the "Optimizers" form.
+    This should show an alert box to the user.
+    - If the run is running normally we throw an error that is not noticable in the server log.
+  *]
+  TextBody:
+  [*
+    task := this.FirstTask();
+    run := task.Run();
+    
+    if( run.InOneTransaction() )
+    {
+      run.RollbackOneTransaction();
+    }
+    else
+    {
+      is_captured := false;
+      libopt_e := LibOpt_SnapshotError::Read( e, this.LastTask(), is_captured );
+      task.RollbackCurrentTransaction( message, libopt_e );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

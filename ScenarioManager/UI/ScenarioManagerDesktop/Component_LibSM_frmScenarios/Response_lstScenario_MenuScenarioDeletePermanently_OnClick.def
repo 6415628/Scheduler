@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: lstScenario
+Response OnClick (structured[LibSM_ScenarioNode] selection) id:Response_lstScenario_MenuScenarioDeletePermanently_OnClick
+{
+  #keys: '[116520.0.16442930]'
+  Body:
+  [*
+    // delete scenarios ( and folders if selected as well ) permanently
+    message := Form.DetermineConfirmationMessageForPermanentDelete( selection );
+    
+    if( MessageBox::Warning( this, message, Translations::LibSM_Question_YesNo() ) = 0 )
+    {
+      LibSM_ScenarioNode::DeletePermanently( selection );
+      Application.RemoveHistory();
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => /lstScenario/Responsedef_lstScenario_Menu_OnClick
+  Initiator: 'MenuScenarioDeletePermanently'
+  Precondition:
+  [*
+    return LibSM_GlobalState.CanDelete( selection, true /* permanently */ );
+  *]
+}

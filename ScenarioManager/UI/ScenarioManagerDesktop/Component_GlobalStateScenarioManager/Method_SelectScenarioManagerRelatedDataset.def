@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectScenarioManagerRelatedDataset () id:Method_LibSM_GlobalState_SelectScenarioManagerRelatedDataset
+{
+  #keys: '[136398.1.587826959]'
+  Body:
+  [*
+    // Update application title.
+    key := this.GetSelectedPlanningDatasetKey();
+    
+    this.SelectScenarioManager();
+    
+    scenarioManager := this.GetScenarioManagerDataset();
+    
+    if( not key = Key::ZeroKey() )
+    {
+      // Check that current scenario is created by current user
+      // or is authorized for the current user
+      scenario := scenarioManager.GetScenarioByDatasetMDSID( key );
+    
+      if( isnull( scenario ) )
+      {
+        // false, deselect current scenario and select something else
+        this.DeselectScenario( null( internal[GUIComponent] ), key );
+    
+        scenario := select( scenarioManager,
+                            ScenarioNode.astype( LibSM_Scenario ),
+                            node,
+                            this.IsAuthorizedScenario( node ) )
+      }
+    
+      this.SelectScenario( scenario );
+    }
+  *]
+}

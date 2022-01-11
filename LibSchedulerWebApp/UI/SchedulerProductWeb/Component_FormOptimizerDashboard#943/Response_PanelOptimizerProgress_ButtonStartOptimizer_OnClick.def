@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: PanelOptimizerProgress/ButtonStartOptimizer
+Response OnClick () id:Response_PanelOptimizerProgress_ButtonStartOptimizer_OnClick
+{
+  #keys: '[143768.1.1921097356]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebButton_OnClick'
+  GroupServerCalls: true
+  Precondition:
+  [*
+    // Check if system contains batch and is optimizer enabled.
+    isOptimizing := CheckboxIsOptimizing.Checked();
+    
+    value := isOptimizing
+             // Check if Schedule exist
+             or ( not isnull( Schedule )
+                  // Check if schedule allow optimization
+                  and Schedule.AllowedOptimize( feedback )
+                  // Check if there is at least one relevant operation selected.
+                  and Scheduler.IsOptimizerScopeValid( DropDownStringListOptimizerType.Text(), feedback ) );
+    
+    return value;
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      if( CheckboxIsOptimizing.Checked() )
+      {
+        Scheduler.StopOptimizer();
+      }
+      else
+      {
+        Scheduler.OptimizeSelectedOperations( DropDownStringListOptimizerType.Text() );
+      }
+    *]
+  }
+}

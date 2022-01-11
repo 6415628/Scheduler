@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetDurationBetweenSpanOperations (OperationInSuboptimizerSequencing operation1, OperationInSuboptimizerSequencing operation2, ResourceInSuboptimizerSequencing resource) as Real
+{
+  Description:
+  [*
+    Get the duration between two span operations. 
+    
+    Note: this only works when operation1 and operation2 are both planned on the same resource and operation2 is planned after operation 1
+  *]
+  TextBody:
+  [*
+    // jkr8 Nov-23-2020 (created)
+    
+    previous_operation := operation2.Operation().Task_SC().Previous().astype( SingleTaskBase ).OperationAsSingleTask();
+    
+    transition := 0.0;
+    
+    // Continue until we arrive at the previous operation.
+    while( previous_operation <> operation1.Operation() )
+    {
+      current_operation := previous_operation;
+      transition := transition + previous_operation.Task_SC().ProcessDuration().HoursAsReal();
+      
+      previous_operation := current_operation.Task_SC().Previous().astype( SingleTaskBase ).OperationAsSingleTask();
+      
+      transition := transition + resource.Resource().astype( SingleResourceBase ).GetSetupDuration( previous_operation, current_operation ).HoursAsReal(); 
+    
+    }
+    
+    return transition;
+  *]
+}

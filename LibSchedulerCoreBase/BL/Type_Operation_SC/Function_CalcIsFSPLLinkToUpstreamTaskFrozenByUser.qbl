@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcIsFSPLLinkToUpstreamTaskFrozenByUser
+{
+  TextBody:
+  [*
+    value := this.HasFSPL() and exists( this, 
+                                        InputOperationMaterialWOFulfillment.AsOutputOperationMaterialWOFulfillment, 
+                                        upstreamOperation, 
+                                        upstreamOperation.HasFSPL(), 
+                                        guard( upstreamOperation.GetTask().IsFrozenByUser()
+                                               or upstreamOperation.GetTask().NoBufferWaitSubTask().Task_SC().IsFrozenByLaterTaskSiblingFrozenByUser()
+                                               or upstreamOperation.GetTask().IsFrozenByResourceFrozenPeriod(), false )
+                                        or upstreamOperation.HasFeedback()
+                                        or upstreamOperation.IsFSPLLinkToUpstreamTaskFrozenByUser() );
+    
+    this.IsFSPLLinkToUpstreamTaskFrozenByUser( value );
+  *]
+}

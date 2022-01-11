@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveDataSuccess (NamedValueTree nvt_i, LibDEF_System sender_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive Data-Success message, to be handled by the System of the sender, or the System representing local.'
+  TextBody:
+  [*
+    // Jacky CHAN May-26-2016 (created)
+    LibDEF_Util::EventLog( event_i, "Processing Data-Success message" );
+    
+    // retrieve type
+    type := LibDEF_DataAccessor::GetDataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_TYPE() );
+    
+    if( type = LibDEF_DataAccessor::TYPE_DATA_GETSET() )
+    {
+      sender_i.ReceiveDataSuccessGetSet( nvt_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_DATA_GETSETCHUNKED() )
+    {
+      sender_i.ReceiveDataByChunk( nvt_i, event_i );
+    }
+    else
+    {
+      LibDEF_Util::EventLogError( event_i, 
+                                  "Failed to process Data-Success message",
+                                  "Failed to process Data-Success message, no handler defined for the Type '" + type + "'." );
+    }
+  *]
+}

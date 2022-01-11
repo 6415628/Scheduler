@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method SyncMetaData (KpiTracker kpiTracker)
+{
+  Description: 'Append the metadata from KpiStagingSet to the KpiTracker dataset'
+  TextBody:
+  [*
+    oldmetadata:= selectset( kpiTracker, MetaData, md, true );
+    
+    traverse( this, StagingSet_MetaData, staging )
+    {
+      metadata := select(  kpiTracker, MetaData, md, md.Name() = staging.Name() );
+      if( isnull( metadata ) )
+      {
+        metadata              := kpiTracker.MetaData( relnew, 
+                                                      GenericKpiMetaData );
+        metadata.Name         ( staging.Name() ); 
+        metadata.DisplayName  ( staging.DisplayName() );
+        metadata.Description  ( staging.Description() );
+        metadata.IsMaximize   ( staging.IsMaximize() );
+        metadata.IsMinimize   ( staging.IsMinimize() );
+        metadata.UnitOfMeasure( staging.UnitOfMeasure() );
+      }
+      oldmetadata.Remove( metadata );
+    }
+  *]
+}

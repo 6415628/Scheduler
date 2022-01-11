@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidLotSizeLesserEqualMaxSize (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Checks if routing has valid lot size that is greater or equal to max size. If max size is zero, meaning there is no max size that the lot size needs to respect.'
+  TextBody:
+  [*
+    // WOI1 Oct-31-2016 (created)
+    isvalid := this.LotSize() <= this.MaxSize() or this.MaxSize() = 0; // it's okay when max size is zero, which means no max size
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedRouting_Instance( this.GetName() ),
+                                                               Translations::SC_ImportedRouting_ViolateHasValidLotSizeLesserEqualMaxSize() ) );
+    }
+    
+    return isvalid;
+  *]
+}

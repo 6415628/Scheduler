@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetBootNode (LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Determine BootNode by reading information from the configuration.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-19-2016 (created)
+    LibDEF_Util::EventLog( event_i, "Retrieving BootNode configuration." );
+    
+    bootNodeHost := LibDEF_Util::GetSettingValueBootNodeHostName();
+    bootNodePort := LibDEF_Util::GetSettingValueBootNodePortNumber();
+    
+    // if this System is the BootNode
+    if( bootNodeHost = "" or bootNodePort = 0 )
+    {
+      this.SystemLocal().SetAsBootNode();
+      this.SetInDomain( true );
+    
+      // update coordinate since being BootNode has the rights
+      currentHostName   := OS::ComputerName();
+      currentPortNumber := LibDEF_Util::GetSettingValueWebServerPortNumber();
+      this.SystemLocal().ChangeKeySystemByCoordinate( currentHostName, currentPortNumber, event_i );
+    
+      LibDEF_Util::EventLog( event_i,
+                             "This System is the BootNode. " +
+                             "Host name: " + this.BootNode().HostName() + "; Port number: " + [String]this.BootNode().PortNumber() );
+    }
+  *]
+}

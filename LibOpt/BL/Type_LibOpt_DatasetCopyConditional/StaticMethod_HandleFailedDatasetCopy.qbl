@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod HandleFailedDatasetCopy (Exception exception, LibOpt_Run run, String namenewdataset)
+{
+  Description:
+  [*
+    Copying a dataset can fail (for example, if the dataset name is too long). 
+    The `LibOpt_SnapshotReplannableCopyDataset.HasFailedToCreateDataset` attribute is used to show this failure in the 'Snapshots' form.
+  *]
+  TextBody:
+  [*
+    // evr3 Apr-28-2020 (created)
+    snapshot := LibOpt_SnapshotReplannableCopyDataset::GetSnapshotReplannableCopyDataset( run, namenewdataset );
+    snapshot.HasFailedToCreateDataset( true );
+    
+    // Create an error snapshot that gets placed a level below the replannable snapshot.
+    liboptexception := LibOpt_SnapshotError::Read( exception );
+    LibOpt_SnapshotError::Throw( run, snapshot, liboptexception );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

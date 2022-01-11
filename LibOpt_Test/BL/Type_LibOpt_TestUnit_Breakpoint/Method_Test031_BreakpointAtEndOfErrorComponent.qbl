@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test031_BreakpointAtEndOfErrorComponent (LibOpt_TestDataset dataset)
+{
+  Description:
+  [*
+    Check if we stop executing as we hit a breakpoint at the end of a component that throws an error.
+    See what happens when we continue
+  *]
+  TextBody:
+  [*
+    positions := construct( Strings );
+    positions.Add( LibOpt_ComponentErrorPosition::Operation() );
+    positions.Add( LibOpt_ComponentErrorPosition::OperationReactive() );
+    traverse( positions, Elements, position )
+    {
+      opt := this.Optimizer( dataset );
+      run := opt.CreateRun();
+    
+      iterator := opt.IteratorUntil( run, 'Iterator' );
+      iterator.SetMaxIterations( 4 );
+      switch := opt.SwitchRoundRobin( run, 'Switch' );
+    
+      component1 := opt.ComponentError( run, 'Error', position );
+      component2 := opt.ComponentCounter( run, 'Counter' );
+    
+      iterator.To( switch );
+      switch.Branch( component1 );
+      switch.Branch( component2 );
+    
+      component_position := select( component1, ComponentPosition, bp, bp.Name() = LibOpt_Component::ComponentPosition_Error() );
+      component_position.SetBreakpoint();
+      
+      run.SetStartComponent( iterator );
+      str := run->Start();
+      test := this->WaitForBreakpoint( run, this.Run() )
+        ->|this->( this )
+        {
+          this.Run().AssertEqual( 0, component2.NrOfTimesCalled(), 'Number of calls has an unexpected value with position = ' + position );
+        }
+        ->|run->Continue()
+        ->|this->WaitForBreakpoint( run, this.Run() )
+        ->|run->Stop()
+        ->|this->( this )
+        {
+          this.Run().AssertEqual( 1, component2.NrOfTimesCalled(), 'Number of calls has an unexpected value with position = ' + position );
+        }->Exception()->LibOpt_TestUnit_TestDataset::CheckNoException( this );
+      this.NoException( test );
+      str->Exception()->LibOpt_TestUnit_TestDataset::CheckNoException( this );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

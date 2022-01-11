@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ApplyDefinedBy (NamedValueTree nvt, NamedValue delta_node, NamedValue settings_node, 
+  String definedby) remote
+{
+  TextBody:
+  [*
+    children := delta_node.Children();
+    if( children.Size() = 0 )
+    {
+      definedby_node := guard( settings_node.Child( nvt.GetHandle( LibSE_SettingsContainer::Handle_Metadata() ) )
+                                            .Child( nvt.GetHandle( LibSE_SettingsContainer::Handle_DefinedBy() ) ),
+                               null( NamedValue ) );
+      if( not isnull( definedby_node ) )
+      {
+        definedby_node.SetValue( definedby );
+      }
+    }
+    else
+    {
+      traverse( children, Elements, child )
+      {
+        settings_child := select( settings_node.Children(), Elements, c, c.Name() = child.Name() );
+        if( not isnull( settings_child ) )
+        {
+          LibOpt_BT_TrackingTableBase::ApplyDefinedBy( nvt, child, settings_child, definedby );
+        }
+      }
+    }
+  *]
+}

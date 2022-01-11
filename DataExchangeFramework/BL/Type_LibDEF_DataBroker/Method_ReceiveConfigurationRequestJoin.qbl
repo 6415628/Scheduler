@@ -1,0 +1,68 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveConfigurationRequestJoin (NamedValueTree nvt_i, NamedValue body_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive Configuration message for requesting to join domain.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-22-2016 (created)
+    LibDEF_Util::EventLog( event_i, "Receiving join request" );
+    
+    // retrieve requestor's hostname
+    hostName   := LibDEF_DataAccessor::GetBodyPropertyAsString( nvt_i, LibDEF_DataAccessor::HANDLE_CONFIGURATION(), LibDEF_DataAccessor::HEADER_HOSTNAME() );
+    
+    // retrieve requestor's portnumber
+    portNumber := LibDEF_DataAccessor::GetBodyPropertyAsNumber( nvt_i, LibDEF_DataAccessor::HANDLE_CONFIGURATION(), LibDEF_DataAccessor::HEADER_PORTNUMBER() );
+    
+    // retrieve requestor's systemname
+    systemName := LibDEF_DataAccessor::GetBodyPropertyAsString( nvt_i, LibDEF_DataAccessor::HANDLE_CONFIGURATION(), LibDEF_DataAccessor::HEADER_SYSTEMNAME() );
+    
+    // retrieve requestor's (assuming) SystemGUID
+    systemGUID := LibDEF_DataAccessor::GetHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SYSTEMGUID_FROM() );
+    
+    // check if requesting System has registered before
+    requestorSystem := LibDEF_System::FindSystemByGUID( this, systemGUID );
+    // check if any System with matching host and port
+    matchedSystem   := LibDEF_System::FindSystemByCoordinate( this, hostName, portNumber );
+    
+    if( not isnull( matchedSystem ) and matchedSystem.GUID() <> systemGUID )
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  "Cannot accept Request to join Domain",
+                                  "Cannot accept Request to join Domain. System with same coordinate " +
+                                  LibDEF_Util::FormatCoordinateToString( matchedSystem.HostName(), matchedSystem.PortNumber() ) + " already exists." );
+    }
+    else
+    {
+      if( isnull( requestorSystem ) )
+      {
+        // create the joining System
+        if( this.IsBootNode() )
+        {
+          // assign a new System-GUID instead
+          requestorSystem := LibDEF_System::Create( this, hostName, portNumber );
+        }
+        else
+        {
+          // use the System-GUID as assigned by the BootNode before broadcast
+          requestorSystem := LibDEF_System::Create( this, systemGUID, hostName, portNumber );
+        }
+      }
+      else
+      {
+        requestorSystem.ChangeKeySystemByCoordinate( hostName, portNumber, event_i );
+      }
+    
+      // update
+      requestorSystem.Name( systemName );
+    
+      // sync channels
+      systems := construct( LibDEF_Systems );
+      systems.Add( requestorSystem );
+      this.SyncChannelMetasFromRoutingTable( nvt_i, body_i, systems, requestorSystem.GUID(), event_i );
+    
+      // reply with success
+      this.SendConfigurationSuccessJoin( requestorSystem, event_i );
+    }
+  *]
+}

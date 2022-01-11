@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test022_StatisticError_InOneTransaction (LibOpt_TestDataset dataset)
+{
+  Description: 'Test that the `LibOpt_StatisticError` creates issues for every `LibOpt_SnapshotError` even when it was thrown in a run `InOneTransaction`.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    opt.ComponentParentReflection( run, 'Error',
+                                   method( LibOpt_TestUnit_Statistic, M022_Operation_Error,
+                                           LibOpt_ComponentParent, LibOpt_Task ) );
+    
+    run.ConfigureForOneTransaction();
+    
+    this.NoException( run
+                      ->Start()
+                      ->IgnoreException()
+                      ->|opt->RecoverLastFailedRun()
+                      ->( run )
+    {
+      
+      statistics := selectset( run, Statistic.astype( LibOpt_StatisticError ), statistic, true );
+      
+      this.Run().AssertEqual( 1, statistics.Size(), 'Incorrect amount of error statistics' );
+      
+      nr_errors := counter( run, Snapshot.astype( LibOpt_SnapshotError ), snapshot, true );
+      this.Run().AssertEqual( 1, nr_errors, 'Unexpected number of errors' );
+      
+      // Check that for every snapshot there is an issue associated
+      traverse( run, Snapshot.astype( LibOpt_SnapshotError ), snapshot )
+      {
+        component := snapshot.GetComponent();
+        issues := counter( snapshot.IterationPart(), SnapshotComponent.Issue, issue,
+                           issue.Statistic().Component() = component
+                           and guard( issue.Statistic().astype( LibOpt_StatisticError ).LogEntryDetails() = snapshot.Details(), false ) );
+        this.Run().AssertEqual( 1, issues, 'Nr of issues for this snapshot is incorrect' );
+      }
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

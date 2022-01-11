@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValidateRulesForConstraintCheck (Resource_SC resource, DORule_DataObjectSequencingRule do_rule, Characteristic characteristic, 
+  Boolean ishardconstraintforoptimizer) declarative remote as Boolean
+{
+  Description: 'Rule validation on current operation and data object rule information for constraint checking'
+  TextBody:
+  [*
+    // Rule validation based on data object rule information
+    rules := this.GetRulesForOperation( resource, 
+                                        this.GetPreviousOperationForSequencingRuleCheck(), 
+                                        characteristic, 
+                                        null(  Task_SC ), 
+                                        null( Task_SC ) );
+    
+    // Validate non program/phase rules
+    value := forall( rules, Elements, rule,
+                     not isnull( rule.RuleSubType() )
+                     and rule.IsHardConstraintForOptimizer() = ishardconstraintforoptimizer,
+                     rule.RuleSubType().Validate( rule, do_rule ) );
+    
+    // Validate program/phase rules
+    value := value and this.ValidateProgramRulesForConstraintCheck( resource, 
+                                                                    do_rule,
+                                                                    characteristic, 
+                                                                    ishardconstraintforoptimizer );
+    
+    return value;
+  *]
+}

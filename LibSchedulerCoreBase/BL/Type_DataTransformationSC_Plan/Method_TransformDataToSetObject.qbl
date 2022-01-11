@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride TransformDataToSetObject (Object object_i, LibDEF_SetObject setObject_i)
+{
+  TextBody:
+  [*
+    // 1) Cast the input datatype as the type of data to be transformed.
+    dataInstance := object_i.astype( SC2MPS_PlanUnit );
+    
+    // 2) Create an instance of LibDMCSC_Plan with the datatype instance.
+    planunit := setObject_i.astype( LibDEC_SC_Plan );
+    
+    // 3) Update attributes.
+    planunit.ID( dataInstance.ID() );
+    planunit.OrderID( dataInstance.OrderID() );
+    planunit.Quantity( dataInstance.Quantity() );
+    planunit.CanBeDeleted( dataInstance.CanBeDeleted() );
+    planunit.DatasetID( dataInstance.DatasetID() );
+    
+    traverse( dataInstance, SC2MPS_Operation, ops )
+    {
+      scplanops := LibDEC_SC_Plan_Operation::Create( planunit, ops.ID() );
+    
+      scplanops.SC_PlanUnitID( ops.SC_PlanUnitID() );
+      scplanops.OrderID( ops.OrderID() );
+      scplanops.CanBeDeleted( ops.CanBeDeleted() );
+      scplanops.DatasetID( ops.DatasetID() );
+      scplanops.IsFinished( ops.IsFinished() );
+      scplanops.IsScheduled( ops.IsScheduled() );
+      scplanops.Resource( ops.ResourceID() );
+      scplanops.ScheduledStart( ops.ScheduledStart() );
+      scplanops.ScheduledEnd( ops.ScheduledEnd() );
+      scplanops.ExternalSequenceNr( ops.ExternalSequenceNr() );
+      scplanops.Type( ops.Type() );
+      scplanops.RoutingID( ops.RoutingID() );
+      scplanops.RoutingStepSequenceNr( ops.RoutingStepSequenceNr() );
+      scplanops.Quantity( ops.Quantity() );
+    }
+  *]
+}

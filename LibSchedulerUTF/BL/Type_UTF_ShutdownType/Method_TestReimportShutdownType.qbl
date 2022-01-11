@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestReimportShutdownType (Schedule schedule)
+{
+  TextBody:
+  [*
+    importedShutdownType := select( schedule, ImportedShutdownType, ist, ist.ShutdownTypeID() = 'Shutdown Type' );
+    importedShutdownTypeInResource := select( schedule, ImportedShutdownTypeInResource, istir, istir.ShutdownTypeID() = 'Shutdown Type' );
+    
+    shutdownType := select( schedule, ShutdownType, st, st.ShutdownTypeID() = 'Shutdown Type' );
+    shutdownTypeInResource := select( shutdownType, ShutdownTypeInResource, stir, stir.ShutdownTypeID() = 'Shutdown Type' );
+    resourceGroup2 := select( schedule, ResourceGroup_SC, rg, rg.Name() = 'Resource2' );
+    resource2 := select( resourceGroup2, Resource_SC, r, r.ResourceID() = 'Resource2' );
+    
+    isShutdownTypeUpdatedWithImportedObject := not isnull( shutdownType )
+                                               and shutdownType.ShutdownTypeID() = importedShutdownType.ShutdownTypeID() 
+                                               and shutdownType.Name() = importedShutdownType.Name()
+                                               and shutdownType.DefaultDuration() = importedShutdownType.DefaultDuration()
+                                               and shutdownType.ColorCode() = importedShutdownType.ColorCode() 
+                                               and shutdownType.IsSequenceRulesEnabled() = importedShutdownType.IsSequenceRulesEnabled()
+                                               and shutdownType.IsLinkToPrecedingTask() = importedShutdownType.IsLinkToPrecedingTask();
+    
+    isShutdownTypeInResourceUpdatedWithImportedObject := not isnull( shutdownTypeInResource )
+                                                         and shutdownTypeInResource.ResourceID() = importedShutdownTypeInResource.ResourceID()
+                                                         and shutdownTypeInResource.ShutdownTypeID() = importedShutdownTypeInResource.ShutdownTypeID()
+                                                         and shutdownTypeInResource.ShutdownType() = shutdownType
+                                                         and shutdownTypeInResource.Resource_SC() = resource2;
+    
+    isShudownSubtaskCreated := exists( resourceGroup2, SubTaskTypeOnResourceGroup, storg,
+                                       storg.SubTaskType().SubTaskID() = Constants::SubTask_Stoppage()
+                                       and storg.SubTaskType().SubTaskName() = Constants::SubTask_Stoppage_Name() );
+    
+    value := isShutdownTypeUpdatedWithImportedObject 
+             and isShutdownTypeInResourceUpdatedWithImportedObject
+             and isShudownSubtaskCreated;
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Reimport shutdown type to update existing shutdown type attribute failed.', this.Variant() ) );
+  *]
+}

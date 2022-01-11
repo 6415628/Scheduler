@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod WaitForDatasetCopyDeletion (Keys dataset_mdsids) as stream[Void]
+{
+  Description: 'Check if the given set of MDSIDs is unloaded, and if not, check again until it is the case.'
+  TextBody:
+  [*
+    objectinfos := MDSEditor::Editor().ObjectInfos();
+    
+    dataset_mdsids := selectset( dataset_mdsids, Elements, mdsid, not isnull( objectinfos.Find( mdsid ) ) )
+    
+    result := stream[Void]::Success();
+    if( dataset_mdsids.Size() > 0 )
+    {
+      result := dataset_mdsids -> LibOpt_TestUnit_DatasetCopy::WaitForDatasetCopyDeletion();
+    }
+    
+    return result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

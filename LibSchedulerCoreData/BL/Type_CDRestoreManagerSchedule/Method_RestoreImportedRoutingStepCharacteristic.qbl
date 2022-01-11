@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedRoutingStepCharacteristic (CDIntegration cdintegration)
+{
+  Description: 'Restore imported routing step characteristic core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedRoutingStepCharacteristic
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedRoutingStepCharacteristic ), cdirsc )
+    {
+      importedroutingstepCharacteristic := schedule.ImportedRoutingStepCharacteristic( relnew, 
+                                                                                       RoutingID := cdirsc.RoutingID(),
+                                                                                       SequenceNr := cdirsc.SequenceNr()
+                                                                                     );
+      CopyCorresponding::CopyFrom( cdirsc ).CopyTo( importedroutingstepCharacteristic );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

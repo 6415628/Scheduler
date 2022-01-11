@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method CalculateStartTime (String status) id:Method_DialogFeedbackTask_CalculateStartTime
+{
+  #keys: '[12910.0.825774437]'
+  Body:
+  [*
+    // if its 'reporting start', maxvalue( lasttast.end(), scheduled start() )
+    // if already has reported start, reported start
+    // if its 'reporting end', estimated end.
+    datetime := Dialog.Data().End();
+    
+    if( status = Constants::StatusStart() )
+    {
+      datetime := Dialog.Data().Start();
+      importedfeedbacktask := Dialog.Data().ImportedFeedbackTask();
+                                                                                                                                                
+      // jx for continuous resource, the feedback task start should always use planned start as initial start time                                                                                                                                            
+      if( ( isnull( importedfeedbacktask ) or not importedfeedbacktask.HasReportedStart() ) and not Dialog.Data().Resource_SC().IsContinuous() ) 
+      {
+        lasttask := maxselect( Dialog.Data(), ExportedSchedule.FeedbackManager.ImportedFeedbackTask , fbt, fbt.HasReportedStart(), fbt.End() );
+        if( not isnull( lasttask ) )
+        {
+          datetime := lasttask.End();
+        }
+      }
+    }
+    
+    GUIDateTimeSelector.DateTime( datetime );
+  *]
+}

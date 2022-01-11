@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method Open (GUIComponent parent, LibOpt_Run run, output structured[LibOpt_ScopeElement] scope_elements) as Boolean id:Method_LibOpt_DialogScopeElements_Open
+{
+  #keys: '[139544.0.603011377]'
+  Body:
+  [*
+    Dialog.Data( run );
+    
+    // Select the start scope
+    ses := run.StartScope().ScopeElementsConst();
+    if( ses.Size() > 0 )
+    {
+      first := ses.First();
+      ListLibOpt_ScopeElement.SelectByKey( first.Key() );
+      traverse( ses, Elements, se, se <> first )
+      {
+        ListLibOpt_ScopeElement.ExtendSelectByKey( se.Key() );
+      }
+    }
+    
+    value := Dialog.DoModal( parent ) > 0;
+    scope_elements := DataHolderSelectedCached.Data();
+    
+    return value;
+  *]
+}

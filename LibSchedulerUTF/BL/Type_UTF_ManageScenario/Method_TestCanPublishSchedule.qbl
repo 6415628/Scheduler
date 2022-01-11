@@ -1,0 +1,16 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCanPublishSchedule (LibSM_ScenarioManager scenarioManager, Schedule schedule)
+{
+  Description: 'Test can publish schedule.'
+  TextBody:
+  [*
+    feedback := '';
+    leadingScenario := select( scenarioManager, ScenarioNode.astype( Scenario ), scenario, scenario.IsLeadingScenario() );
+    nonLeadingScenario := select( scenarioManager, ScenarioNode.astype( Scenario ), scenario, not scenario.IsLeadingScenario() );
+    
+    this.Run().AssertTrue( Schedule::CheckCanPublishSchedule( schedule, leadingScenario, feedback )
+                           and not Schedule::CheckCanPublishSchedule( schedule, nonLeadingScenario, feedback ),
+                           UTFUtility::GenerateFailedMessage( 'Precondition for can publish schedule failed', this.Variant() ) );
+  *]
+}

@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_060_SendJSONMessage (LibOpt_TestDataset dataset)
+{
+  Description: 'Check whether a JSON message can be obtained outside of the run.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    json := JSON::Object();
+    opt.ComponentSendMessage( run, 'Message', json.Build() );
+    
+    this.NoException( run.Start()->GroupAll()->( jsons )
+    {
+      this.Run().AssertEqual( 1, jsons.Size(), 'Incorrect amount of JSONs received' );
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Event_Pattern_Weekdays (String weekdays_i) as String
+{
+  TextBody:
+  [*
+    msg := "";
+    
+    if( weekdays_i <> "" )
+    {
+      // The allowed values are defined in the TranslationTable.
+      separator     := ';';  // ToDo: should be a static method.
+      allowedValues := Translations::Pattern_DaysShort().Tokenize( separator );
+    
+      if( allowedValues.Size() = 7 )
+      {
+        // Get rid of separators at start and end.
+        weekdays := weekdays_i;
+        if( weekdays.StartsWith( separator ) )
+        {
+          weekdays := weekdays.Erase( 0, 1 );
+        }
+        if( weekdays.EndsWith( separator ) )
+        {
+          weekdays := weekdays.Erase( weekdays.Length() - 1, 1 );
+        }
+      
+        days := weekdays.Tokenize( separator );
+        traverse( days, Elements, day, msg = "" )
+        {
+          if( allowedValues.Find( day ) < 0 )
+          {
+            msg := "Weekdays contains unexpected value '" + day + "'";
+          }
+        }
+      }
+      else
+      {
+        msg := [String]allowedValues.Size() + " days defined in Translations::Pattern_DaysShort(), should be 7";
+      }
+    }
+    else
+    {
+      msg := "Weekdays are missing";
+    }
+    
+    return msg;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

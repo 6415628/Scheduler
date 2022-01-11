@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Job JobRequestFromCP
+{
+  Priority: 'Default'
+  Text:
+  [*
+    systemGUID := guard( databroker_i.BootNode().GUID(), '' ); 
+    channelname := LibDEC_ChannelCP_Plan::CHANNEL_NAME();
+    setTypeName := Constants::DEF_MPS_Plan();
+    setName := Constants::DEF_MPS_Plan();
+    
+    // 1. Get set created by CP, set should be created by exporting system
+    set := LibDEF_SetMeta::FindSetMeta( databroker_i, systemGUID, channelname, setTypeName, setName );
+    if( not isnull( set ) )
+    {
+      // 2. Request set data of MPS_Plan to import plan units from CP
+      dtd := this.DataTransformationDefinition();
+      dtd.RequestSetDataExternally( channelname, set.GUID() );
+    }
+    else
+    {
+      LibDEF_Util::LogError( "Unable to get the '" + setName + "' Set from boot node. Please check if the Set exist." );
+    }
+  *]
+  JobArguments:
+  [
+    JobArgument databroker_i { MDSDefinition: LibDEF_DataBroker }
+  ]
+}

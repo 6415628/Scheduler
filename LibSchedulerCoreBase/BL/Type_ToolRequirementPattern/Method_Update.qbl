@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update (Duration configuredDuration, Boolean isPathDependent, Number nrOfTools, 
+  Duration offset, Boolean useConfiguredDuration, String fromResourceGroupID, 
+  String subtaskID, String toResourceID, String toResourceGroupID, 
+  String blockID)
+{
+  TextBody:
+  [*
+    this.ConfiguredDuration( configuredDuration );
+    this.IsPathDependent( isPathDependent );
+    this.NrOfTools( nrOfTools );
+    this.Offset( offset );
+    this.UseConfiguredDuration( useConfiguredDuration );
+    
+    
+    // From resource
+    fromResourceGroup := select( this.Schedule(), ResourceGroup_SC, group, group.Name() = fromResourceGroupID );
+    this.FromResourceGroup_SC( relset, fromResourceGroup );
+    this.SubTaskTypeOnResourceGroup( relset, select( fromResourceGroup, SubTaskTypeOnResourceGroup, st, st.SubTaskID() = subtaskID ) );
+    
+    // To resource
+    toResourceGroup := select( this.Schedule(), ResourceGroup_SC, group, group.Name() = toResourceGroupID );
+    this.ToResourceGroup_SC( relset, toResourceGroup );
+    this.ToResource_SC( relset, Resource_SC::FindResource_SC( toResourceID ) );
+    
+    // Block
+    this.ToolBlock( relset, select( this.Schedule(), ToolBlock, b, b.BlockID() = blockID ) );
+  *]
+}

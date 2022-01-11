@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestMoveOperation (Schedule schedule)
+{
+  Description: 'Simulate test of move operation request.'
+  TextBody:
+  [*
+    // Get data for test variant
+    feedback_o := '';
+    operationID := '';
+    resourceID := '';
+    insertionTime := DateTime::MinDateTime();
+    result := false;
+    this.GetDataForTestVariant( this.Variant(), operationID, resourceID, insertionTime, result );
+    
+    schedule.MoveOperationBasedOnJSON( this.GetJSONMoveOperation( operationID, resourceID, insertionTime ).AsString(), feedback_o );
+    
+    // Propagate start time before assert.
+    Transaction::Transaction().Propagate( attribute( Task_SC, Start ) );
+    
+    task := select( schedule, Operation_SC.Task_SC.astype( SingleTask ), task, 
+                    task.OperationAsSingleTask().WorkOrderOperation().astype( ExternalWorkOrderOperation ).ExternalOperationID() = operationID );
+    
+    this.Run().AssertTrue( guard( ( task.Resource_SC().ResourceID() = resourceID
+                                    and task.Start() = insertionTime ), false ) = result
+                           , UTFUtility::GenerateFailedMessage( 'Move operation based on JSON data failed', this.Variant() ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

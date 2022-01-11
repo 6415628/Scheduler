@@ -1,0 +1,139 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpgradeDemoDatasets (String democategory, String demodata) id:Method_ApplicationScheduler_UpgradeDemoDatasets
+{
+  #keys: '[125460.0.457086395]'
+  Body:
+  [*
+    // Upgrade demo dataset
+    // democategory : e.g. Constants::DemoCategory_Sales()
+    // demodata : e.g. Constants::DemoData_AluminumHotRolling()
+    showinfo := false;
+    if( showinfo )
+    {
+      info( '========================== Upgrade ', demodata, '==========================' );
+    }
+    
+    mdskind := 'Schedule';
+    mdspath := '/root';
+    mdsname := 'Schedule';
+    
+    backupPath := ifexpr( democategory = Constants::DemoCategory_Sales(), Schedule::GetBackupDirectory(), Schedule::GetBackupTestDirectory() );
+    demofolder := backupPath.Concat( demodata );
+    editor := ExternalMDSEditor::Editor();
+    
+    if( showinfo )
+    {
+      info( 'Check and upgrade selected dataset' );
+    }
+    // Following block is needed when the application already has a demo dataset with outdated structure.
+    try
+    {
+      // Following line would throw error if any Schedule dataset has invalid structure
+      editor.ObjectInfo( mdskind, mdspath, mdsname );
+    }
+    onerror
+    {
+      if( showinfo )
+      {
+        info( '>>>> Upgrade physical tables...' );
+      }
+      editor.UpgradePhysicalTables( true );
+    }
+    
+    if( showinfo )
+    {
+      info( 'Unload & delete dataset' );
+    }
+    schedule := editor.ObjectInfo( mdskind, mdspath, mdsname );
+    
+    // Unload and delete dataset
+    if( not isnull( schedule ) )
+    {
+      if( schedule.IsLoaded() )
+      {
+        editor.UnloadMDS( schedule.MDSID() );
+      }
+      
+      if( schedule.IsStoredInDB() )
+      {
+        editor.DeleteMDS( schedule.MDSID() );
+      }
+    }
+    
+    if( showinfo )
+    {
+      info( 'Copy & upgrade dataset' );
+    }
+    // Copy original file to DSS folder and perform upgrade physical tables
+    try
+    {
+      // Copy original file to DSS folder
+      editor.RestoreDBExportFile( backupPath.Concat( demodata ), "QDB" );
+      // Following line would throw error if any Schedule dataset has invalid structure
+      schedule := ExternalMDSEditor::Editor().ObjectInfo( mdskind, mdspath, mdsname );
+    }
+    onerror
+    {
+      //Upgrade physical tables
+      if( showinfo )
+      {
+        info( '>>>> Upgrade physical tables...' );
+      }
+      editor.UpgradePhysicalTables( true );
+    }
+    
+    if( showinfo )
+    {
+      info( 'Unlock & load dataset' );
+    }
+    // Unlock and load dataset
+    schedule := ExternalMDSEditor::Editor().ObjectInfo( mdskind, mdspath, mdsname );
+    if( not isnull( schedule ) )
+    {
+      if( showinfo )
+      {
+        info( '>>>> Force unlock dataset...' );
+      }
+      ExternalMDSEditor::Editor().ForceUnlockMDS( schedule );
+      if( showinfo )
+      {
+        info( '>>>> Load dataset...' );
+      }
+      ExternalMDSEditor::Editor().LoadMDS( schedule.MDSID(), schedule.State() );
+    }
+    
+    // Due to the LoadMDS is assync, this sleep is needed, could further improved using Timer
+    OS::Sleep( 2000 );
+    
+    if( showinfo )
+    {
+      info( 'Remove original file' );
+    }
+    // Remove original schedule file
+    if(  OS::IsDirectory( demofolder ) )
+    {
+      files := OS::SimpleScanDirectory( demofolder, 'Schedule*.qdataset' );
+      traverse( files, Elements, file )
+      {
+        OS::RemoveFile( file );
+      }
+    }
+    
+    if( showinfo )
+    {
+      info( 'Store upgrade dataset' );
+    }
+    // Store upgraded dataset
+    if( not isnull( schedule ) )
+    {
+      mdsids := MDSIDs::Create( schedule.MDSID() );
+      editor.CreateDBExportFile( demofolder, 'QDB', mdsids );
+    }
+    
+    if( showinfo )
+    {
+      info( 'Completed' );
+    }
+  *]
+}

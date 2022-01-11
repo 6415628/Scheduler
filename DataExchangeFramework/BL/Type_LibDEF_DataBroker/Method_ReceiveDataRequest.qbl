@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveDataRequest (NamedValueTree nvt_i, LibDEF_System sender_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive Data-Request message, to be handled by the System of the sender, or the System representing local.'
+  TextBody:
+  [*
+    // Jacky CHAN May-26-2016 (created)
+    LibDEF_Util::EventLog( event_i, "Processing Data-Request message" );
+    
+    // some Metadata messages should be handled by the local System
+    systemLocal := this.SystemLocal();
+    
+    // retrieve type
+    type := LibDEF_DataAccessor::GetDataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_TYPE() );
+    
+    if( type = LibDEF_DataAccessor::TYPE_DATA_SETCREATED() )
+    {
+      sender_i.ReceiveDataRequestSetCreated( nvt_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_DATA_SETCREATEDCHUNKED() )
+    {
+      sender_i.ReceiveDataByChunk( nvt_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_DATA_SETUPDATED() )
+    {
+      sender_i.ReceiveDataRequestSetUpdated( nvt_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_DATA_SETUPDATEDCHUNKED() )
+    {
+      sender_i.ReceiveDataByChunk( nvt_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_DATA_GETSET() )
+    {
+      systemLocal.ReceiveDataRequestGetSet( nvt_i, sender_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_DATA_GETSETCHUNKED() )
+    {
+      systemLocal.ReceiveDataRequestGetSetChunked( nvt_i, sender_i, event_i );
+    }
+    else
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  "Failed to process Data-Request message",
+                                  "Failed to process Data-Request message, no handler defined for the Type '" + type + "'." );
+    }
+  *]
+}

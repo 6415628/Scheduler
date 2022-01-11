@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetAnchorTypeProbabilities
+{
+  Description: 'Sets the probability of the anchor types for this OptimizerRun to be the next anchor'
+  TextBody:
+  [*
+    // svt1 Aug-2-2017 (created)
+    // sets equal probability for all anchor types that can be executed
+    // if you need something more specific, overload this method
+    
+    // initially set all probabilities to 0
+    traverse( this, AnchorType, at )
+    {
+      at.SetProbability( 0.0 ); 
+    }
+    
+    // only currently allowed anchor types will get non-zero probability
+    allowedanchortypes := selectset( this, AnchorType, at, at.CanExecute() );
+    
+    // assign equal probability
+    if( allowedanchortypes.Size() > 0 )
+    {
+      probability := 1.0 / allowedanchortypes.Size(); 
+      
+      traverse( allowedanchortypes, Elements, at )
+      {
+        at.SetProbability( probability );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

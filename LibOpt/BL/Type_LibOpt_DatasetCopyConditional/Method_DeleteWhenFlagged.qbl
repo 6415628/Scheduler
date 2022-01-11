@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method DeleteWhenFlagged (Boolean isdatasetconstructed)
+{
+  Description:
+  [*
+    If the `LibOpt_SnapshotReplannableCopyDataset.HasExecutedDoFinalizeDatasetCopyDelete` attribute is `true` for a snapshot, then we know that we have executed the `LibOpt_DatasetCopyConditional::DoFinalizeDatasetCopyDelete` method for that snapshot.
+    When `LibOpt_DatasetCopyConditional::DoFinalizeDatasetCopyDelete` has been executed for a snapshot, then we do not need the `this` object anymore for that snapshot.
+    Therefore, if the `this` object is flagged for deletion and if `LibOpt_SnapshotReplannableCopyDataset.HasExecutedDoFinalizeDatasetCopyDelete` is `true` for all snapshots that have been created by the `this` object (so all snapshots in the `this.SnapshotReplannableCopyDataset` relation), 
+    then we can safely delete `this`.
+  *]
+  TextBody:
+  [*
+    // evr3 Jun-19-2020 (created)
+    if( this.IsFlaggedForDeletion() 
+        // We can safely delete all 'LibOpt_DatasetCopyConditional' objects in a newly constructed dataset, 
+        // because there won't be any reactive calls that might require a 'LibOpt_DatasetCopyConditional' object in a new dataset. 
+        and ( isdatasetconstructed 
+              or forall( this, 
+                         SnapshotReplannableCopyDataset,
+                         snapshot,
+                         snapshot.HasExecutedDoFinalizeDatasetCopyDelete() 
+                         )
+              )
+        )
+    {
+      this.Delete();
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

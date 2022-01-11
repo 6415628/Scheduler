@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateUpdateSubscription () id:Method_LibCal_dlgSubscription_CreateUpdateSubscription
+{
+  #keys: '[131094.1.564224375]'
+  Body:
+  [*
+    subscribers  := dhSubscribers.Data();
+    subscribeTo  := dhParticipationToSubscribeTo.Data().Event(); 
+    subscription := dhSubscription.Data();  // Is NULL when a new subscription is created.
+    
+    useLeadingPeriod := ckbAllOccurrences.Checked();
+    isRecurring      := dhParticipationToSubscribeTo.Data().IsRecurring();
+    periodType       := ifexpr( ckbEndOfPeriod.Checked(), LibCal_RecurrencePeriod::TYPE_WITHENDDATE(),
+                                                          LibCal_RecurrencePeriod::TYPE_WITHOUTEND() );
+    startofPeriod := dsStartOfPeriod.Date();
+    endOfPeriod   := dsEndOfPeriod  .Date();
+    
+    // Make it happen in the Server.
+    LibCal_Subscription::CreateUpdate( subscribers, subscribeTo, subscription,
+                                       useLeadingPeriod, isRecurring, periodType,
+                                       startofPeriod, endOfPeriod );
+  *]
+}

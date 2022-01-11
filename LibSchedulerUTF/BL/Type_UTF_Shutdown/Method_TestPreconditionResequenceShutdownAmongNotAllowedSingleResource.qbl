@@ -1,0 +1,15 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionResequenceShutdownAmongNotAllowedSingleResource (Schedule schedule)
+{
+  TextBody:
+  [*
+    resource2 := select( schedule, ResourceGroup_SC.Resource_SC, r, r.ResourceID() = 'resource2' );
+    shutdownTask := select( schedule, Shutdown.Task_SC.astype( ShutdownTask ), t, true );
+    
+    isAllowedHard_o := false;
+    value := shutdownTask.CheckIsAllowedOnResource( resource2, isAllowedHard_o );
+    
+    this.Run().AssertFalse( value );
+  *]
+}

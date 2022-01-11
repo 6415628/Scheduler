@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (LibOpt_Analysiss analysiss, LibOpt_Components components)
+{
+  TextBody:
+  [*
+    traverse( analysiss, Elements, analysis )
+    {
+      traverse( components, Elements, component )
+      {
+        if( component.Run() <> analysis.Run() )
+        {
+          component := select( analysis, Run.Component, c,
+                               c.Name() = component.Name()
+                               and c.DefinitionName() = component.DefinitionName() );
+        }
+        if( not isnull( component ) )
+        {
+          analysis.AnalysisFilter( relnew, LibOpt_AnalysisFilterPath, Component := component );
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

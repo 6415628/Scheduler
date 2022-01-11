@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_ProfilerReset (String filename) as Boolean id:Method_LibPTF_pnlTestRunner_PTF_ProfilerReset
+{
+  #keys: '[105690.0.906478895]'
+  Body:
+  [*
+    // Reset the profiler
+    profiler := Domain.ExecuteMonitor();
+    
+    if( not isnull( profiler ) )
+    {
+      generated := "";
+    
+      if( profiler.Active() )
+      {
+        // Determine the filename to be used. If no filename is provided "profile.txt" is used.
+        // MIND: the result so far is exported.
+        filename := vhResultLogPath.Value() + ifexpr( filename <> "", filename, "profile.txt" );
+    
+        profiler.Export( filename );
+    
+        generated := ", file '" + filename + "' generated";
+      }
+    
+      profiler.Reset();
+    
+      debuginfo( "PTF: Profiler reset" + generated );
+    }
+    else
+    {
+      debuginfo( "PTF_ProfilerReset: Profiler not found" );
+    }
+    
+    // Return true in all cases.
+    return true;
+  *]
+}

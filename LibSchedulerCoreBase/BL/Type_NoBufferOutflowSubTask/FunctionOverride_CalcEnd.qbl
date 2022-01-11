@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcEnd
+{
+  Description:
+  [*
+    Compute the end of NoBufferOutflowSubTask base on next latest operation's first respect routing subtask's end
+    Also takes the next latest operation's calendar strategy into account when performing computation.
+  *]
+  TextBody:
+  [*
+    start         := this.Start();
+    end           := this.Start();
+    
+    if( not this.Task_SC().HasReportedEnd() )
+    {
+      nextoperation := this.GetNextOperation();
+      
+      if( not isnull( nextoperation ) and not isnull( nextoperation.GetTask() ) )
+      {
+        nexttask := nextoperation.GetTask();
+        
+        // the total duration from the current task's start to the next task's process end
+        duration := nexttask.LastRespectRoutingSubTask().End() - start;
+        
+        end := start + duration; // we don't need calendar because NoBufferOutflowSubTask does not depend on it's own calendar
+      }
+      
+      //NoBufferOutflow should take TransportCoolingDuration into account. 
+      //If material takes 10 minutes to transport between resources, 
+      //then NoBufferOutflow should be allowed to end 10 minutes before downstream task starts. 
+      transport := this.GetTransportCoolingDuration( nextoperation );
+      
+      if( transport.IsFinite() )
+      {
+        end := end - transport;
+      }  
+    }
+    
+    value := maxvalue( end, start );
+    
+    this.End( value );
+  *]
+}

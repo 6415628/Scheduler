@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method IComponent_GetUserConfigurableInformations (internal[GUIComponent] subcomponent, internal[GUIComponent] root, String objecttype, 
+  structured[internal[UserConfigurableInformation]] ucis, structured[internal[GUIComponent]] inspected, Boolean checkparent) id:Method_LibGUIFiltering_PanelFilterBoxHelper_IComponent_GetUserConfigurableInformations
+{
+  #keys: '[128900.0.374374803]'
+  Body:
+  [*
+    inspected.Add( subcomponent );
+    
+    uci := guard( subcomponent.astype(UserConfigurableInformation), null(UserConfigurableInformation) );
+    
+    if ( not isnull(uci) )
+    {
+      if ( uci.ObjectType() = objecttype
+       and ucis.Find( uci ) < 0 )
+      {
+        ucis.Add( uci );
+      }
+    }
+    else
+    {
+      traverse( subcomponent, SubComponents, sc, inspected.Find( sc ) < 0 )
+      {
+        this.IComponent_GetUserConfigurableInformations( sc, root, objecttype, ucis, inspected, false );
+      }
+    }
+    
+    if ( ucis.Size() = 0
+     and checkparent
+     and subcomponent <> root )
+    {
+      parent := subcomponent;
+      
+      repeat
+      {
+        parent := parent.Parent();
+        
+        if ( inspected.Find( parent ) < 0 )
+        {
+          this.IComponent_GetUserConfigurableInformations( parent, root, objecttype, ucis, inspected, true );
+        }              
+        else
+        {
+          parent := null(GUIComponent);
+        }
+      }
+      until ( isnull(parent) or parent = root );
+    }
+  *]
+}

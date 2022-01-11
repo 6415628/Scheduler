@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckNewKnowledgeProfileName (String newBranchName) as String id:Method_LibSM_GlobalState_CheckNewKnowledgeProfileName
+{
+  #keys: '[136398.1.587826889]'
+  Body:
+  [*
+    //This is part of designer function, could not be moved into validateinput yet...
+    msg := ''
+    
+    editor := CKBEditor::Create();
+    kbids := editor.GetKBs();
+    
+    isValidName := true;
+    scenarioManagerMDS := this.GetScenarioManagerMDS();
+    
+    traverse( scenarioManagerMDS, MDSKBs, kbSM, isValidName )
+    {
+      kbid := select( kbids, Elements, kbid, kbid.Name() = kbSM.Name() );
+    
+      kbinfos := editor.GetKBStructure( kbid );
+    
+      if( exists( kbinfos, Elements.KBFullID, k, k.Branch() = newBranchName ) )
+      {
+        isValidName := false;
+        msg := Translations::LibSM_KnowledgeProfile_BranchAlreadyExists( newBranchName, kbid.Name() );
+      }
+    }
+    
+    return msg;
+  *]
+}

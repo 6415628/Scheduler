@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: SCListTask
+Response OnSelectionChanged (structured[Task_SC] selection) id:Response_SCListTask_OnSelectionChanged
+{
+  #keys: '[12142.0.51483522]'
+  Body:
+  [*
+    // update detail panel selected tasks for structured[task]
+    lastelement := selection.Element( selection.Size() - 1 );
+    
+    // update detail panel current batch for single batch
+    if( lastelement.istype( SingleTaskBase ) )
+    {
+      op := lastelement.astype( SingleTaskBase ).OperationAsSingleTask()
+      DataHolderSelectedOperation.Data( op )
+    }
+    else
+    {
+      batch := lastelement.astype( BatchTask ).Batch();
+      DataHolderCurrentBatch.Data( batch );
+    }
+    
+    // update detail panel selected tasks for structured tasks
+    //5.0
+    ApplicationScheduler.UpdateDataHolderSelectedTasks( 'GUIDataExtractorSelectedTasksSCListTask' )
+    //Form.UpdateDetailPanelSelectedTasks( selection );
+    /*
+    //Show the Operation Window on Gantt Chart
+    if( selection.Size() = 1 )
+    {
+      ChartMarkingCPWindowStart.SetProperty( 'MarkPosition', selection.Element( 0 ).GetOperation().CPPlannedStart().AsQUILL() );
+      ChartMarkingCPWindowEnd.SetProperty( 'MarkPosition', selection.Element( 0 ).GetOperation().CPPlannedEnd().AsQUILL() );
+    }
+    else
+    {
+      ChartMarkingCPWindowStart.SetProperty( 'MarkPosition', 0 );
+      ChartMarkingCPWindowEnd.SetProperty( 'MarkPosition', 0 );
+    }
+  *]
+  DefinitionID: 'Responsedef_List_OnSelectionChanged'
+}

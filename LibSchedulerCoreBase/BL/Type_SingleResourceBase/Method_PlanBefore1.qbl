@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanBefore (SingleTaskBases tasks, Task_SC element)
+{
+  Description: 'Move all single tasks to a spot before other single task.'
+  TextBody:
+  [*
+    tasks := selectsortedset( tasks, Elements, task, true, task.SequenceNr() );
+    operations := selectset( tasks, Elements.OperationAsSingleTask, op, true );
+    Operation_SC::SetIsPlanning( operations, true );
+    
+    task := element;
+    
+    traverse( tasks, Elements, t )
+    {
+      single_op := t.OperationAsSingleTask();
+      
+      if( this.IsPlanRelatedOperations() )
+      {
+        Schedule::PlanRelatedOperationsBefore( single_op, this, task, false, false );
+      }
+      
+      //yl issue 228060
+      this.PlanBefore( single_op, task );
+    
+      // She Ven 20130116 #5197 the attribute is obselete
+      //task.AutomationCalcTaskOnTask( false );
+    }
+    
+    this.Schedule().AutomaticProductBasedMaterialReservationBySorting();
+    Operation_SC::SetIsPlanning( operations, false );
+  *]
+}

@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CanDelete (KpiMetaDatas kpis) remote as Boolean
+{
+  Description: 'Returns whehter the specified KpiMetaData objects may be deleted or not. Will also set the FeedbackObject with an appropriate message.'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    if ( kpis.Size() > 0 ) 
+    {
+      // Get a reference to the KpiTracker from the first element in the structured.
+      kpiTracker := kpis.Element( 0 ).KpiTracker();
+      
+      traverse( kpis, Elements, kpi ) 
+      {
+        if ( not feedback.CheckHard( kpiTracker.SnapshotStorage().CanDeleteKpiMetaData( kpi ) ) )
+        {
+          feedback.AddHard( Translations::Kpi_MetaData_UsedCantBeDeleted( kpi.DisplayName() ) );
+        }
+      }
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

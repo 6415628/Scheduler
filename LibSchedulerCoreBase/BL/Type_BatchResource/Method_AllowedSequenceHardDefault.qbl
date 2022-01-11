@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedSequenceHardDefault (Operation_SCs operations, Task_SC beforetask, Task_SC aftertask, 
+  output String feedback_o) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    // fon1 Aug-15-2016 (created)
+    // 1. dropping before the sequence (i.e., beforetask & aftertask are empty) is not allowed if the first task on the resource has feedback
+    // 2. disallow moving a fspl bound task that is part of a plan unit with operations with feedback
+    // 3. ensure that we do not sequence a task before any task with plan unit already receiving feedback
+    
+    return this.CheckTaskHasFeedbackAllowedSequence( beforetask, aftertask, feedback_o ) // 1
+           and this.CheckMovedTaskWithFSPLFeedbackOnPlanUnit( operations, feedback_o ) // 2
+           and this.CheckAdjacentTaskWithFSPLFeedbackOnPlanUnit( beforetask, aftertask, feedback_o ); // 3
+  *]
+}

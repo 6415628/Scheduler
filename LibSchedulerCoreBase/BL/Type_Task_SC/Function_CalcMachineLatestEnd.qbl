@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcMachineLatestEnd
+{
+  Description: 'Calculate the latest possible end of the last subtask in the task according to the resource availability, including the duration that are allowed to overlap with next task.'
+  TextBody:
+  [*
+    end := DateTime::MaxDateTime();
+    
+    if( not isnull( this.Next() ) )
+    {
+      // Kyle June 03, 2015 #5470
+      end := this.Resource_SC().ResourceCalendar().Add( this.Next().Start(),
+                                                        minvalue( this.DurationAfterMachineEnd(), this.Next().DurationBeforeMachineStart() ) );
+    }
+    
+    this.MachineLatestEnd( end );
+  *]
+}

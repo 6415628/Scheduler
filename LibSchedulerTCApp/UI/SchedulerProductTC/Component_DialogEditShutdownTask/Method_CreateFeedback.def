@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateFeedback (internal[GUIComponent] parent, ShutdownTask selection) id:Method_DialogEditFeedbackShutdownTask_CreateFeedback
+{
+  #keys: '[155412.0.275665732]'
+  Body:
+  [*
+    // Create feedback for program change task
+    owner := Schedule.FeedbackManager();
+    
+    data := owner.FeedbackStoppageTask( relshadow,
+                                        FeedbackShutdownTask,
+                                        ExternalStoppageTaskID := selection.TaskID(),
+                                        WorkOrderId := '',
+                                        PlanUnitId := '',
+                                        WorkOrderOperationSequenceNr := 0,
+                                        ReportedStart := selection.Start(),
+                                        ReportedEnd := selection.End(),
+                                        Start := selection.Start(),
+                                        End := selection.End() );
+    
+    Dialog.Data( data );
+    
+    shutdown := shadow( selection.Shutdown() );   
+    DataHolderShutdown.Data( shutdown );
+    
+    Dialog.InitializeComponent();
+    
+    // Show dialog
+    if( Dialog.DoModal( parent ) > 0 )
+    {                    
+      FeedbackShutdownTask::CreateFeedback( owner,
+                                            selection,
+                                            CheckBoxHasUserReportedStart.Checked(),
+                                            GUIDateTimeSelectorUserReportedStart.DateTime(),
+                                            CheckBoxHasUserReportedEnd.Checked(),
+                                            GUIDateTimeSelectorUserReportedEnd.DateTime(),
+                                            CheckBoxHasUserReportedShutdownType.Checked(),
+                                            SelectionUserReportedShutdownType.Data(),
+                                            Constants::StatusEnd() );
+    }
+  *]
+}

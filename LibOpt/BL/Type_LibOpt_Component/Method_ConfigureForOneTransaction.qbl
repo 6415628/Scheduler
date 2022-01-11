@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method ConfigureForOneTransaction (Boolean needs_propagation)
+{
+  Description:
+  [*
+    Configures this component and all downstream components to execute in a single transaction.
+    If the given boolean argument is set to true, there will be a propagation between each pair of components when executing.
+    Warning: this configures all the downstream components' links to be executed in one transaction. These downstream components may have several parents, and hence may be downstream components of a different component. The execution of that other component will likewise be affected: the subtree containing only subcomponents of this component will be executed in one transaction.
+  *]
+  TextBody:
+  [*
+    traverse( this.GetDownstreamLinks(), Elements, downstreamlink )
+    {
+      downstreamlink.SetTaskTransporterOneTransaction( needs_propagation );
+    }
+    // Set all suboptimizers to use one transaction.
+    traverse( this.GetDownstreamComponents(), Elements.astype( LibOpt_Suboptimizer ), subopt )
+    {
+      subopt.InOneTransaction( true );
+    }
+  *]
+}

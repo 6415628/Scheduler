@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeDemoCategoriesAndScenarios
+{
+  Description: 'Synchronize demo categories and scenarios.'
+  TextBody:
+  [*
+    targetfolder := Constants::DemoScenarioFolderPath();
+    demoCategoryNames := Schedule::GetAllFoldersInTargetFolder( targetfolder ).Tokenize( ';' );
+    
+    allExistingDemoCategories := selectset( this, Schedule.DemoManager.DemoCategory, demoCategory, true );
+    updatedDemoCategories := construct( DemoCategories );
+    
+    traverse( demoCategoryNames, Elements, demoCategoryName )
+    {
+      demoCategory := DemoCategory::FindDemoCategory( demoCategoryName );
+      
+      if( isnull( demoCategory ) )
+      {
+        demoCategory := DemoCategory::Create( this.Schedule().DemoManager(), demoCategoryName );
+      }
+      
+      // SynchronizeDemoScenarios
+      this.SynchronizeDemoScenarios( demoCategory );
+      
+      updatedDemoCategories.Add( demoCategory );
+    }
+    
+    demoCategoriesToRemove := allExistingDemoCategories.Difference( updatedDemoCategories );
+    DemoCategory::Remove( demoCategoriesToRemove );
+  *]
+}

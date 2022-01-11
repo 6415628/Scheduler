@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericInternalWorkOrderInputMaterial (const GenericInternalWorkOrderOperation genericInternalWorkOrderOperation)
+{
+  Description: 'Backup generic internal work order input material core data'
+  TextBody:
+  [*
+    traverse( genericInternalWorkOrderOperation, WorkOrderInputMaterial.astype( GenericInternalWorkOrderInputMaterial ), genericInternalWorkOrderInputMaterial )
+    {
+      cdGenericInternalWorkOrderInputMaterial := this.CDEntity( relnew, CDGenericInternalWorkOrderInputMaterial );
+      CopyCorresponding::CopyFrom( genericInternalWorkOrderInputMaterial ).CopyTo( cdGenericInternalWorkOrderInputMaterial );  
+      
+      // Additonal attribute in core data to persist the routing step input that this internal work order input material belongs
+      cdGenericInternalWorkOrderInputMaterial.RoutingID( guard( genericInternalWorkOrderInputMaterial.RoutingStepInput().RoutingId(), '' ) );
+      cdGenericInternalWorkOrderInputMaterial.RoutingStepInputProductID( guard( genericInternalWorkOrderInputMaterial.RoutingStepInput().ProductId(), '' ) );
+      cdGenericInternalWorkOrderInputMaterial.RoutingStepInputSequenceNr( guard( genericInternalWorkOrderInputMaterial.RoutingStepInput().RoutingStepSequenceNr(), -1 ) ); 
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

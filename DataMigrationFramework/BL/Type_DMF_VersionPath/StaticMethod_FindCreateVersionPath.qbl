@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod FindCreateVersionPath (DMF_VersionLookup owner, String path, String filename) as DMF_VersionPath
+{
+  TextBody:
+  [*
+    fullfilename          := path.Concat( filename );
+    filenamewithoutprefix := ifexpr( filename.Length() > 0, filename.RestString( owner.GetFileNamePrefix().Length() ), '' );
+    suffix                := DMF_DBInterface::GetScriptFileExtension();
+    fromversion           := ifexpr( filenamewithoutprefix.Length() > 0 and filenamewithoutprefix.Regex( DMF_DBInterface::GetPatternSQLFile() ), 
+                                     filenamewithoutprefix.SubString( 0, filenamewithoutprefix.Length() - suffix.Length() ), 
+                                     ifexpr( filenamewithoutprefix.Length() > 0, filenamewithoutprefix, '' ) );
+    
+    versionpath := select( owner, VersionPath, vpath, vpath.IsMatch( filename, fromversion ) );
+    
+    if( OS::IsFile( fullfilename ) )
+    {  
+      if( isnull( versionpath ) )
+      {
+        versionpath := DMF_VersionPath::Create( owner );
+      }
+      
+      file := versionpath.OpenScript( fullfilename );
+      
+      versionpath.Update( file, path );  
+      file.Close();
+    }
+    else
+    {
+      //log event where the file was removed while proccessing
+    }
+    
+    return versionpath;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

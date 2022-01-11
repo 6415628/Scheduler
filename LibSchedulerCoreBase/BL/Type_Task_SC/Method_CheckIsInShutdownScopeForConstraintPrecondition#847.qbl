@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsInShutdownScopeForConstraintPrecondition (Rule rule) declarative remote as Boolean
+{
+  Description: 'Check whether current task is in the shutdown scope of input rule for constraint and precondition checking'
+  TextBody:
+  [*
+    // Check whether current task is in the shutdown scope of input rule for constraint and precondition checking
+    previouscumulativecharacteristic := BinaryValue::Construct( );
+    previouscumulativerealvalue := BinaryValue::Construct( );  
+    value := false;
+    
+    shutdown := ifexpr( rule.IsBeforeShutdown(), this.NextShutdown(), this.PreviousShutdown() );
+    if( not isnull( shutdown )
+        and exists( rule, RuleScopeInShutdownType.ShutdownType, st, st = shutdown.ShutdownType() ) )
+    {  
+      // If is before shutdown scope, need to get the before shutdown cumulative values
+      if( rule.IsBeforeShutdown() 
+          and this.IsWithinBeforeShutdownScope() )
+      {
+        this.GetBeforeShutdownPreviousCumulativeCharacteristic( previouscumulativecharacteristic,
+                                                                previouscumulativerealvalue );
+        value := this.CheckIsInShutdownScopeForCumulativeValueCalculation( rule, 
+                                                                previouscumulativecharacteristic,
+                                                                previouscumulativerealvalue );
+      }
+      // If is after shutdown scope, need to get the before shutdown cumulative values
+      else if( not rule.IsBeforeShutdown() 
+               and this.IsWithinAfterShutdownScope() )
+      {  
+        this.GetAfterShutdownPreviousCumulativeCharacteristic( previouscumulativecharacteristic,
+                                                               previouscumulativerealvalue );
+        value := this.CheckIsInShutdownScopeForCumulativeValueCalculation( rule, 
+                                                                previouscumulativecharacteristic,
+                                                                previouscumulativerealvalue );   
+      }
+    }
+    
+    return value;
+  *]
+}

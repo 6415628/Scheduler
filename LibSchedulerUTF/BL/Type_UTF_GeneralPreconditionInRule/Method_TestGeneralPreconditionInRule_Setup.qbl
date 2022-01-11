@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestGeneralPreconditionInRule_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    ruleName := '';
+    ruleType := '';
+    ruleSubType := '';
+    isConditionChecked := false;
+    conditionCharacteristic := '';
+    isValid := false;
+    
+    this.GetTestVariant( ruleName,
+                         ruleType,
+                         ruleSubType,
+                         isConditionChecked,
+                         conditionCharacteristic,
+                         isValid );
+    
+    rule_ruleType := null( RuleType );
+    rule_ruleSubType := null( RuleSubType );
+    rule_conditionCharacteristic := null( Characteristic );
+    
+    // Create rule type and rule sub type
+    if( ruleType <> '' 
+        and ruleSubType <> '' )
+    {
+      rule_ruleType := RuleType::Create( schedule, ruleType );
+      RuleSubTypeDifferenceJump::Create( rule_ruleType, ruleSubType );
+    }
+    
+    // Create characteristic
+    if( conditionCharacteristic <> '' )
+    {
+      rule_conditionCharacteristic := Characteristic::Create( schedule, conditionCharacteristic, 1 );
+    }
+    
+    // Create rule
+    rule := Rule::Create( schedule, 1 );
+    rule.Name( ruleName );
+    rule.RuleType( relset, rule_ruleType );
+    rule.RuleSubType( relset, rule_ruleSubType  );
+    rule.IsConditionEnabled( isConditionChecked );
+    rule.CharacteristicCondition( relset, rule_conditionCharacteristic );
+    
+    // Create a rule with same name if it is checking for unique rule name
+    if( ruleName = 'UniqueRuleName' )
+    {
+      rule := Rule::Create( schedule, 2 );
+      rule.Name( ruleName );  
+    }
+  *]
+}

@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupStockElementSupply (const StockingPointStock stockingpointstock)
+{
+  Description: 'Backup stock element supply core data'
+  TextBody:
+  [*
+    traverse( stockingpointstock, ScheduleStockElement.astype( StockElementSupply ), stockelementsupply )
+    {
+      cdStockElementSupply := this.CDEntity( relnew, CDStockElementSupply );
+      CopyCorresponding::CopyFrom( stockelementsupply ).CopyTo( cdStockElementSupply );
+      
+      // Persist the relation to product in stocking point stock
+      cdStockElementSupply.StockingPointID( stockingpointstock.StockingPointID() );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

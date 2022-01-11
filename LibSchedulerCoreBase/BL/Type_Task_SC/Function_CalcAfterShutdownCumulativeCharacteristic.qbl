@@ -1,0 +1,64 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcAfterShutdownCumulativeCharacteristic
+{
+  TextBody:
+  [*
+    // Construct vectors 
+    cumulativecharacteristic := BinaryValue::Construct();
+    cumulativerealvalue := BinaryValue::Construct();
+    iswithinaftershutdownscope := false;
+    
+    // Only calculate after shudown rule scope cumulative values if it is needed
+    if( this.CheckIsAfterShutdownRuleCheckingNeeded() )
+    {
+      // Get previous cumulative characteristic values
+      previouscumulativecharacteristic := BinaryValue::Construct( );
+      previouscumulativerealvalue := BinaryValue::Construct( );  
+      this.GetAfterShutdownPreviousCumulativeCharacteristic( previouscumulativecharacteristic,
+                                                             previouscumulativerealvalue );
+                                                      
+      // Get previous shutdown end
+      shutdownend := guard( this.PreviousShutdown().End(), DateTime::MinDateTime() );
+      
+      // Get after shutdown scope rules
+      shutdownrules := selectset( this, PreviousShutdown.ResponsibleShutdownType.RuleScopeInShutdownType.Rule, rule,
+                                  not rule.IsBeforeShutdown()
+                                  and rule.IsEnabled() );  
+      cumulativecharacteristics := selectset( shutdownrules, Elements.CharacteristicScope, char, true );                                          
+    
+      // Checks whether current task is within the after shutdown scope
+      iswithinaftershutdownscope := exists( shutdownrules, Elements, rule, 
+                                            this.CheckIsInShutdownScopeForCumulativeValueCalculation( rule,
+                                                                                                      previouscumulativecharacteristic,
+                                                                                                      previouscumulativerealvalue ) );
+                                                                                                        
+      // Only calculate current cumulative values if it is within after shutdown scope
+      if( iswithinaftershutdownscope )
+      {
+        // If there is feedback task, just use back previous cumulative values as current cumulative values
+        if( this.HasFeedbackTask() )
+        {
+          cumulativecharacteristic := previouscumulativecharacteristic;
+          cumulativerealvalue := previouscumulativerealvalue;  
+        }
+        else
+        {  
+          // Calculate cumulative characteristic binary value
+          Characteristic::GetCharacteristicBinaryValue( cumulativecharacteristics, 
+                                                        this.GetOperation(),
+                                                        previouscumulativecharacteristic,
+                                                        previouscumulativerealvalue,
+                                                        shutdownend, 
+                                                        this.End(),
+                                                        cumulativecharacteristic,
+                                                        cumulativerealvalue );
+        }
+      }
+    }
+    
+    this.IsWithinAfterShutdownScope( iswithinaftershutdownscope );                                                            
+    this.AfterShutdownCumulativeCharacteristic( cumulativecharacteristic );
+    this.AfterShutdownCumulativeRealValues( cumulativerealvalue );
+  *]
+}

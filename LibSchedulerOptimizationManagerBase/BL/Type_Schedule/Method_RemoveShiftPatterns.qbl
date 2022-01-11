@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method RemoveShiftPatterns (JSON jsonTree)
+{
+  Description: 'Remove imported shift patterns data based on JSON input.'
+  TextBody:
+  [*
+    shiftPatternsJSON := guard( jsonTree.Get( Constants::JSON_Remove_ShiftPatterns() ), null( JSON, owning ) );
+    
+    if( not isnull( shiftPatternsJSON ) )
+    {
+      for( i := 0; i < shiftPatternsJSON.Size(); i++ )
+      {
+        shiftPatternID := shiftPatternsJSON.Get( i ).GetString();
+        shiftPattern := ImportedShiftPattern::FindImportedShiftPattern( shiftPatternID );
+        
+        if( not isnull( shiftPattern ) )
+        {
+          // Clean up time periods and assignments for a more complete removal as we only receive shift patterns
+          shiftPattern.CleanUpTimePeriods();
+          shiftPattern.CleanUpShiftPatternAssignments();
+          shiftPattern.Remove();
+        }
+        else
+        {
+          logfile( Translations::LibSchedulerOptMgr_Remove_ShiftPattern_NotFound( shiftPatternID ) );
+        }
+      }
+    }
+  *]
+}

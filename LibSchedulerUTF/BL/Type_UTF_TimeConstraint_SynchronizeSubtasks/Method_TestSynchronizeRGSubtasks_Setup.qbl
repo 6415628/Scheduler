@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestSynchronizeRGSubtasks_Setup (Schedule schedule)
+{
+  Description: 'Setup by creating the required mock and dependent objects.'
+  TextBody:
+  [*
+    // Create TechnicalParameters and set the IsTimeConstraintMode flag value.
+    isTimeConstraintModeManual := false;
+    isOptimizationService := false;
+    resultSubtasks := 0;
+    this.GetDataForTestVariant( schedule, this.Variant(), isTimeConstraintModeManual, resultSubtasks );
+    
+    UTFMockObjectFactory::CreateGenericTechnicalConfiguration( schedule, 'TechnicalConfig01', isTimeConstraintModeManual );
+    schedule.IsOptimizationService( isOptimizationService );
+    
+    // Create ImportedResourceGroup_SC and ResourceGroup_SC.
+    resourceGroupName := 'ResourceGroup01';
+    importedResourceGroup := UTFMockObjectFactory::CreateImportedResourceGroup( schedule, resourceGroupName );
+    resourceGroup := UTFMockObjectFactory::CreateResourceGroup( schedule, resourceGroupName );
+    
+    // Create ImportedSubTaskTypeOnResourceGroup.
+    traverse( schedule, SubTaskType, subTaskType )
+    {
+      UTFMockObjectFactory::CreateImportedSubTaskTypeOnResourceGroup( importedResourceGroup, subTaskType.SubTaskID() )
+    }
+    
+    // Trigger synchronization of subtasks for resource group.
+    resourceGroup.SynchronizeSubTaskTypesOnRG();
+  *]
+}

@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeDemoDataDemandBatch
+{
+  Description: 'Synchronize demand batch and its contents from demo data.'
+  TextBody:
+  [*
+    objectFactory := this.Schedule().ObjectFactory();
+    
+    traverse( this, Schedule.ImportedDemandBatch.astype( ImportedDemoDataDemandBatch ), importedDemoDataDemandBatch, importedDemoDataDemandBatch.IsValidDataHard() )
+    {
+      demandBatchID := importedDemoDataDemandBatch.DemandBatchID();
+      demandBatch := DemandBatch::FindDemandBatch( demandBatchID );
+      demandBatchType := guard( importedDemoDataDemandBatch.ImportedDemandBatchType().DemandBatchType(), null( DemandBatchType ) );
+      
+      if( isnull( demandBatch ) and not isnull( demandBatchType ) )
+      {
+        demandBatch := objectFactory.CreateDemandBatch( demandBatchID, demandBatchType );
+      }
+      
+      demandBatch.Update( importedDemoDataDemandBatch );
+      demandBatch.SynchronizeDemoDataBatchContents();
+    }
+  *]
+}

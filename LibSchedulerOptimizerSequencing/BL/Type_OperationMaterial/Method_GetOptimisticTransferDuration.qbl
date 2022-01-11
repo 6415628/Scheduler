@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetOptimisticTransferDuration (Resource_SC transfer_resource, Resource_SC receive_resource) declarative as Duration
+{
+  Description:
+  [*
+    If both arguments are null, returns the fastest possible transfer duration of the material on any combination of output and input resources the respective operations are allowed on (as per OperationOnResource.IsAllowedHard).
+    If only the transfer_resource is null, returns the fastest possible transfer duration of the material to the given receiving resource across any allowed transfer resource (as per OperationOnResource.IsAllowedHard).
+    If only the receive_resource is null, returns the fastest possible transfer duration of the material from the given transfer resource across any allowed receiving resource (as per OperationOnResource.IsAllowedHard).
+    If both arguments are not null, returns the actual (i.e., non-optimistic) transfer duration.
+  *]
+  TextBody:
+  [*
+    // mbr23 Jan-23-2020 (created)
+    duartion_per_quantity := this.GetOptimisticTransferDurationPerQuantity( transfer_resource, receive_resource );
+    duration := Duration::Zero();
+    if( this.Quantity() > 0 )
+    {
+      if( duartion_per_quantity.IsMaxInfinity() )
+      {
+        duration := Duration::MaxDuration();
+      }
+      else
+      {
+        duration := this.Quantity() * duartion_per_quantity;
+      }
+    }
+    return duration;
+  *]
+}

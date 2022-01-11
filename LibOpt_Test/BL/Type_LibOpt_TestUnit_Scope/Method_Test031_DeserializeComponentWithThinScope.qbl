@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test031_DeserializeComponentWithThinScope (LibOpt_TestDataset dataset)
+{
+  Description: 'Test if the snapshots with a thin scope can correctly be deserialized after an error or rollback.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    c1 := opt.ComponentParentReflection( run, 'C', 
+                                         method( LibOpt_TestUnit_Scope, Component_CopyScope,
+                                                 LibOpt_ComponentParent, LibOpt_Task ) );
+    c2 := opt.ComponentError( run, 'E', LibOpt_ComponentErrorPosition::Operation() );
+    c1.To( c2 ).AsOneTransaction( false );
+    
+    // Set breakpoint
+    breakpoint_position := select( c2, ComponentPosition, bp, bp.Name() = LibOpt_Component::ComponentPosition_Error() );
+    breakpoint_position.SetBreakpoint();
+    
+    run.DebugScope( false );
+    
+    se := dataset.ScopeElementMock( relnew );
+    scope := LibOpt_Scope::Create( run );
+    scope.Add( se );
+    run.SetStartScope( scope );
+    
+    exec := run->Start();
+    this.NoException( exec );
+    test := this->WaitForBreakpoint( run, this.Run() )->|void->()
+    {
+      // We expect the scope to not make it to be deserialized.
+      this.Run().AssertEqual( 1, run.Scope( relsize ), 'run.Scope( relsize )' );
+      this.Run().AssertEqual( 3, run.Snapshot( relsize ), 'run.Snapshot( relsize )' );
+      
+      traverse( run, Scope, s )
+      {
+        this.Run().AssertEqual( 1, s.ScopeElements().Size(), 'new_scope.ScopeElements().Size()' );
+      }
+    }
+    ->|run->Stop();
+    
+    exec->|void->()
+    {
+      // Check that the LibOpt_ScopeThin is also removed.
+      this.Run().AssertEqual( 0, run.Scope( relsize ), 'run.Scope( relsize )' );
+    }
+    
+    this.NoException( test );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

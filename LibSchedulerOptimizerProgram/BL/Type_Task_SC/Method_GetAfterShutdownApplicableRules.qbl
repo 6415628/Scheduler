@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAfterShutdownApplicableRules () declarative remote as owning Rules
+{
+  TextBody:
+  [*
+    // yifei Sep-14-2021 (created)
+    previouscumulativecharacteristic := BinaryValue::Construct( );
+    previouscumulativerealvalue := BinaryValue::Construct( );  
+    this.GetAfterShutdownPreviousCumulativeCharacteristic( previouscumulativecharacteristic,
+                                                           previouscumulativerealvalue );
+    
+    shutdownrules := selectset( this, PreviousShutdown.ResponsibleShutdownType.RuleScopeInShutdownType.Rule, rule,
+                                  not rule.IsBeforeShutdown()
+                                  and rule.IsEnabled() 
+                                  and this.CheckIsInShutdownScopeForCumulativeValueCalculation( rule, 
+                                                                                                previouscumulativecharacteristic,
+                                                                                                previouscumulativerealvalue ) );
+    
+    return &shutdownrules;
+  *]
+}

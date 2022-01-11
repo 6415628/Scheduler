@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddCalendar (SuboptimizerMRSPOA_POAOneResourceGroup poa, LibOpt_Task task)
+{
+  Description: 'This method adds the calendars defined in the model to  POA'
+  TextBody:
+  [*
+    // stn4 Mar-29-2016 (created)
+    timeExpr := poa.Expression( "TimeExpression" );
+    
+    schedule := this.GetSchedule();
+    scheduletime := schedule.Time();
+    
+    traverse( task.Scope().ResourceGroups(), Elements.Resource_SC, resource )
+    {
+      earieststartonresource := scheduletime;
+      sortedCalendars := selectsortedset( resource, ResourceCalendar.Elements, e, true, e.Start(), e.End() );
+      
+      calendarexists := exists( sortedCalendars, Elements, element, element.Start() > DateTime::MinDateTime() 
+                                                                    and element.End() > earieststartonresource 
+                                                                    and element.End() < DateTime::MaxDateTime() );
+      if( calendarexists )
+      {
+        calendar := POACalendar::Process( poa, 'Calendar' + resource.ResourceID() );
+        calendar.Processing( 'Absolute' );
+        calendar.Cyclic( false );
+        calendar.Cycle( 10000 );
+        
+        traverse( sortedCalendars, Elements, element )
+        {
+          if( element.Start() > DateTime::MinDateTime() and element.End() > earieststartonresource and element.End() < DateTime::MaxDateTime() )
+          {
+            //Use HoursAsReal instead of MinutesAsReal
+            startreal := ( element.Start() - scheduletime ).HoursAsReal();
+            endreal := ( element.End() - scheduletime ).HoursAsReal();
+    
+            calendar.Add( startreal, endreal, element.Capacity() );
+    
+            calendar.Splitting( true );
+            if( resource.UseFitCalendarStrategy() )
+            {
+              calendar.Splitting( false );
+            }
+          }
+        }
+    
+        pathtype := poa.PathType( SuboptimizerMRSPOA::POANamePathResource( resource ), resource );
+        timePathType := pathtype.Expression( timeExpr );
+        timePathType.ParticipationCalendar( calendar )
+        timePathType.TransitionCalendar( calendar ); 
+      }
+    }
+  *]
+}

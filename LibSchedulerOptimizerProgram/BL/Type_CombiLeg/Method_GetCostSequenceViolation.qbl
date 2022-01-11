@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCostSequenceViolation (CombiLeg prev_combileg, Operation_SC prev_op, Operation_SC currentOp, 
+  Boolean onlycheckhard) declarative remote as Real
+{
+  TextBody:
+  [*
+    // yifei Aug-5-2021 (created)
+    //to check transition cost and check the rules applicable or not, 
+    //we get the rules of current 
+    value := 0.0;
+    
+    rules := this.GetSequenceRules( prev_combileg ); 
+    
+    if( not isnull( prev_op ) )
+    {
+      traverse( rules, 
+                Elements, 
+                rule, 
+                ( not onlycheckhard 
+                    or (rule.IsHardConstraintForOptimizer() or rule.IsProgramPhaseTransitionRule() ) )  // treat phase transition rule as hard rule, so it won't be used to calculate cost, 
+                                                                                                        // because normally within one combileg,  phase transition rule can't be violated.
+                and currentOp.CheckIsRuleApplicable( rule, prev_op, rule.CharacteristicMain() ) )
+      {
+        
+        deviation := rule.RuleSubType().GetDeviation( rule, prev_op, currentOp );
+        
+        if( deviation > 0.0 )
+        {
+          value := value + rule.PenaltyParameterSlope_a() * pow( ( deviation + rule.PenaltyParameterOffset_c() ), rule.PenaltyParameterPower_b() ); 
+        }
+      }
+    }  
+    
+    return value;
+  *]
+}

@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDrop (structured[PlanUnit_SC] source, SingleResourceBase droprow, Task_SC beforedroptarget) id:Response_GanttChartSchedulingCentre_OnDrop_2
+{
+  #keys: '[12142.0.43569001]'
+  Body:
+  [*
+    // OnDrop structure[PlanUnit] --> SingleResourceBase
+    operations := selectset( source, Elements.Operation_SC, op, op.Type() = droprow.Type() );
+    droprow.PlanAfter( operations, beforedroptarget.astype( SingleTaskBase ) );
+  *]
+  DefinitionID: 'Responsedef_GanttChart_OnDrop'
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey       := dropaction.IsControl();
+    ctrlshiftkey  := dropaction.IsControlShift();
+    
+    operations := selectset( source, Elements.Operation_SC, op, op.Type() = droprow.Type());
+    
+    aftertask := droprow.First();
+    
+    if( not isnull( beforedroptarget ) )
+    {
+      aftertask := beforedroptarget.astype( SingleTaskBase ).Next();
+    }
+    
+    return ApplicationScheduler.AllowedScheduling( droprow,
+                                                   operations,
+                                                   ctrlkey,
+                                                   ctrlshiftkey,
+                                                   beforedroptarget,
+                                                   aftertask,
+                                                   PlanUnit_SC::GetSelectedObjects( source ),
+                                                   feedback,
+                                                   isallowedhard );
+  *]
+  UserRequiresReadWrite: true
+}

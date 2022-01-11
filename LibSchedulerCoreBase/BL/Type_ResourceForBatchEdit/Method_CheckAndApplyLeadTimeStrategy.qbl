@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckAndApplyLeadTimeStrategy (Resource_SC resource, Resource_SC sourceresource)
+{
+  TextBody:
+  [*
+    // wkn1 Jun-1-2017 (created)
+    // Update the resource first(leading) lead time strategy to the same with source resource
+    // If the resource has second lts (i.e. has strategy after tool simulation) but new lts are not tool simulation anymore, remove the second lts
+    if( this.ApplyLeadTimeStrategy() )
+    {
+      lts := minselect( sourceresource, LeadTimeStrategy_SC, s, true, s.MinDistance() );
+      resource.FirstLeadTimeStrategy().StrategyName( lts.StrategyName() );
+      
+      if( lts.StrategyName() <> Constants::StrategyToolSimulation() and resource.LeadTimeStrategy_SC( relsize ) > 1 )
+      {
+        resource.LastLeadTimeStrategy().Delete();
+      }
+    }
+  *]
+}

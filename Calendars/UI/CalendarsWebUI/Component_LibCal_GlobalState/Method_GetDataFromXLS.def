@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetDataFromXLS () as BinaryValue id:Method_LibCal_GlobalState_GetDataFromXLS
+{
+  #keys: '[146730.0.1413910579]'
+  Body:
+  [*
+    // Import calendar data from XLS.
+    binValue := BinaryValue::Construct();
+    
+    // Let the user select a file.
+    // The contents of the XML-file is 'wrapped' in JSON.
+    fileAsJSON := Application.GetFile( "xlsx" );
+    
+    // When the user cancels the action it ends here,
+    // i.e. the code below is not executed.
+    
+    if( fileAsJSON <> "" )
+    {
+      // Make sure that the ImportExport-dataset is selected.
+      if( this.EnsureImportExportDataset() )
+      {
+        // Get the data from the file.
+        // The data-section of the JSON contains the contents of the XLS-file.
+        json := JSON::Parse( fileAsJSON );
+        data := json.Get( "data" ).GetString();
+    
+        // Convert the data to a BinaryValue.
+        binValue := BinaryValue::FromBase64EncodedString( data );
+      }
+    }
+    
+    return binValue;
+  *]
+}

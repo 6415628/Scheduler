@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericBatchWorkOrderSupply (CDSchedule cdSchedule, GenericBatchWorkOrderOperation genericBatchWorkOrderOperation)
+{
+  Description: 'Restore generic batch work order supply core data relations to planning object'
+  TextBody:
+  [*
+    cdGenericBatchWorkOrderSupplies := selectset( cdSchedule, CDEntity.astype( CDGenericBatchWorkOrderSupply ), cdGenericBatchWorkOrderSupply,
+                                                   cdGenericBatchWorkOrderSupply.WorkOrderId() = genericBatchWorkOrderOperation.WorkOrderId(),
+                                                   cdGenericBatchWorkOrderSupply.SequenceNr() = genericBatchWorkOrderOperation.SequenceNr() );
+     
+    traverse( cdGenericBatchWorkOrderSupplies, Elements, cdGenericBatchWorkOrderSupply )
+    {
+      genericBatchWorkOrderSupply := WorkOrderSupply::FindWorkOrderSupply( cdGenericBatchWorkOrderSupply.Id() );
+      
+      if( not isnull( genericBatchWorkOrderSupply ) )
+      {                                         
+        // ImportedWorkOrderSupply, 1-1
+        importedWorkOrderSupply := ImportedWorkOrderSupply::FindImportedWorkOrderSupply_SC( cdGenericBatchWorkOrderSupply.Id() );
+        genericBatchWorkOrderSupply.ImportedWorkOrderSupply( relset, importedWorkOrderSupply );
+        
+        // ProductInStockingPoint, M-1
+        productInStockingPoint := ProductInStockingPoint::FindProductInStockingPoint( cdGenericBatchWorkOrderSupply.StockingPointId(),
+                                                                                      cdGenericBatchWorkOrderSupply.ProductId()
+                                                                                     );
+       
+        genericBatchWorkOrderSupply.ProductInStockingPoint( relset, productInStockingPoint );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

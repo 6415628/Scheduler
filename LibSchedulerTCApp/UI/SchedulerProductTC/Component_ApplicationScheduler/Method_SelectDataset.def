@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectDataset (String datasetName, String datasetPath, String datasetKind) id:Method_ApplicationScheduler_SelectDataset
+{
+  #keys: '[128956.0.534075808]'
+  Body:
+  [*
+    // Select dataset logic
+    // ToDo: #9235 gyg1
+    objInfo := ExternalMDSEditor::Editor().ObjectInfo( datasetKind,
+                                                       datasetPath,
+                                                       datasetName );
+    
+    if( not isnull( objInfo ) )
+    {
+      //load dataset
+      if( not objInfo.IsLoaded() )
+      {
+        ExternalMDSEditor::Editor().LoadMDS( objInfo.MDSID(), objInfo.State());
+      }
+      //select dataset
+      comp := ComponentMDS::Create( Application );
+      componentMDSKind := select( comp, ComponentMDSKinds, mdsKind, mdsKind.Kind() = objInfo.Kind() );
+      mds := select( componentMDSKind, ComponentMDSInstances, mdsInstance, mdsInstance.MDSID().MDSKey() = objInfo.MDSID().MDSKey() );
+    
+      if( not isnull( mds ) )
+      {
+        componentMDSKind.SelectInstance( mds );
+        comp.Apply();
+      }
+    }
+  *]
+}

@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExportedCalendarRuleInRuleGroup (QuillCalendarRule rule)
+{
+  Description: 'Create exported calendar rule in rule group instances that will be exported as part of demo data interface.'
+  TextBody:
+  [*
+    if( not isnull( rule ) )
+    {
+      allRuleInRuleGroupInstances := selectset( this, ExportedCalendarRuleInRuleGroup, exportedCalendarRuleInRuleGroup, true );
+      updatedRuleInRuleGroupInstances := construct( ExportedCalendarRuleInRuleGroups );
+      
+      traverse( rule, Groups, ruleInRuleGroup )
+      {
+        exportedCalendarRuleGroup := ExportedCalendarRuleGroup::FindExportedCalendarRuleGroup( ruleInRuleGroup.RuleGroup().Name() );
+        exportedCalendarRuleInRuleGroup := select( this, ExportedCalendarRuleInRuleGroup, exportedCalendarRuleInRuleGroup,
+                                                   exportedCalendarRuleInRuleGroup.ExportedCalendarRuleGroup() = exportedCalendarRuleGroup );
+        
+        if( isnull( exportedCalendarRuleInRuleGroup ) )
+        {
+          exportedCalendarRuleInRuleGroup := ExportedCalendarRuleInRuleGroup::Create( this, exportedCalendarRuleGroup );
+        }
+        
+        updatedRuleInRuleGroupInstances.Add( exportedCalendarRuleInRuleGroup );
+      }
+      
+      //Delete old instances
+      oldRuleInRuleGroupInstances := allRuleInRuleGroupInstances.Difference( updatedRuleInRuleGroupInstances );
+      
+      traverse( oldRuleInRuleGroupInstances, Elements, calendarRuleInRuleGroup )
+      {
+        calendarRuleInRuleGroup.Remove();
+      }
+    }
+  *]
+}

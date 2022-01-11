@@ -1,0 +1,76 @@
+Quintiq file version 2.0
+#parent: #root
+Method FSPLRemoveMaterialReservationEdges
+{
+  Description: 'Remove edges that were created during material reservation that are no longer valid.'
+  TextBody:
+  [*
+    // woi1 Nov-7-2017 (created)
+    // Get all edges related to material reservation
+    all_input_edges_material_reservation := selectset( this, PrecedenceNode.Inputs, in_edge, in_edge.IsFulfillment() );                                                                                               
+    all_output_edges_material_reservation := selectset( this, PrecedenceNode.Outputs, out_edge, out_edge.IsFulfillment() ); 
+    all_edges_material_reservation := all_input_edges_material_reservation.Union( all_output_edges_material_reservation );
+    
+    current_edges := construct( PrecedenceEdges );
+    
+    // Get all subtasks related to material reservation from upstream
+    subtasks := selectset( this.Task_SC(), 
+                           FSPLOperationInTask.InputOperationMaterialFulfillment.AsOutputOperationMaterialFulfillment.AsFSPLOperationInTask.SubTask,
+                           st,
+                           true );
+    
+    // Get all VALID edges related to material reservation FROM upstream PROCESS subtask
+    traverse( subtasks, 
+              Elements.astype( ProcessSubTask ), 
+              up_process_subtask, 
+              guard( not isnull( up_process_subtask.PrecedenceNode().GetEdgeToNode( this ) ), false ) )
+    { 
+      current_edges.Add( up_process_subtask.PrecedenceNode().GetEdgeToNode( this ) );
+    }
+    
+    // Get all VALID edges related to material reservation TO upstream NOBUFFERWAIT subtask
+    traverse( subtasks, 
+              Elements.astype( NoBufferWaitSubTask ), 
+              nobufferwait, 
+              guard( not isnull( this.PrecedenceNode().GetEdgeToNode( nobufferwait ) ), false ) )
+    { 
+      current_edges.Add( this.PrecedenceNode().GetEdgeToNode( nobufferwait ) );
+    }
+    
+    // Get all VALID edges related to material reservation TO upstream NOBUFFERACTION subtask
+    traverse( subtasks, 
+              Elements.astype( NoBufferActionSubTask ), 
+              nobufferaction, 
+              guard( not isnull( this.PrecedenceNode().GetEdgeToNode( nobufferaction ) ), false ) )
+    { 
+      current_edges.Add( this.PrecedenceNode().GetEdgeToNode( nobufferaction ) );
+    }
+    
+    // Get all VALID edges related to material reservation TO upstream NOBUFFEROUTFLOW subtask
+    traverse( subtasks, 
+              Elements.astype( NoBufferOutflowSubTask ), 
+              nobufferoutflow, 
+              guard( not isnull( this.PrecedenceNode().GetEdgeToNode( nobufferoutflow ) ), false ) )
+    { 
+      current_edges.Add( this.PrecedenceNode().GetEdgeToNode( nobufferoutflow ) );
+    }
+    
+    // Get all VALID edges related to material reservation TO downstream PROCESS subtask
+    traverse( this, 
+              Task_SC.FSPLOperationInTask.OutputOperationMaterialFulfillment.AsInputOperationMaterialFulfillment.AsFSPLOperationInTask.ProcessSubTask, 
+              down_process_subtask, 
+              guard( not isnull( this.PrecedenceNode().GetEdgeToNode( down_process_subtask ) ), false ) )
+    {
+      current_edges.Add( this.PrecedenceNode().GetEdgeToNode( down_process_subtask ) );
+    }
+    
+    // Get outdated edges
+    outdated_edges := all_edges_material_reservation.Difference( current_edges );
+    
+    // Delete outdated edges
+    traverse( outdated_edges, Elements, outdated_edge )
+    {
+      PrecedenceEdge::Delete( outdated_edge );
+    }
+  *]
+}

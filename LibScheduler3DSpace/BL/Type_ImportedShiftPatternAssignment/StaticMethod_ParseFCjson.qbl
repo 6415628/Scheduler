@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ParseFCjson (Schedule owner, JSON timeCalendar, ImportedResource_SC importedResource) as ImportedShiftPatternAssignment
+{
+  Description: 'Parse the JSON input for time periods received from 3DSpace.'
+  TextBody:
+  [*
+    shiftPatternID := ImportedShiftPatternAssignment::GetShiftPatternID( timeCalendar );
+    
+    importedShiftPatternAssignment := select( owner, 
+                                              ImportedShiftPatternAssignment, 
+                                              importedShiftPatternAssignment, 
+                                              importedShiftPatternAssignment.ShiftPatternID() = shiftPatternID
+                                              and importedShiftPatternAssignment.ImportedResource_SC() = importedResource );
+    
+    if( isnull( importedShiftPatternAssignment ) )
+    {
+      importedShiftPatternAssignment := ImportedShiftPatternAssignment::Create( owner, shiftPatternID );
+    }
+    
+    importedShiftPatternAssignment.Update( timeCalendar, importedResource );
+    
+    return importedShiftPatternAssignment;
+  *]
+}

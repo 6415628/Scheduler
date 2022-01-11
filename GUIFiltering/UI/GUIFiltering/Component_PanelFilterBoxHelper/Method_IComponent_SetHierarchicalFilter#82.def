@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method IComponent_SetHierarchicalFilter (String filter, String traversepath, internal[GUIDataSetLevel] filtercomponent) id:Method_LibGUIFiltering_PanelFilterBoxHelper_IComponent_SetHierarchicalFilter_82
+{
+  #keys: '[128900.0.529265080]'
+  Body:
+  [*
+    level        := filtercomponent;
+    parentlevel  := guard( level.Parent().astype(GUIDataSetLevel), null(GUIDataSetLevel) );
+    if ( not isnull(parentlevel) )
+    {
+      traverserel  := this.IBuildPath( level.GetProperty( 'Transformation' ), traversepath );
+      parentfilter := '';
+      
+      if ( filter <> '' )
+      {
+        parentfilter := 'exists( object, ' + traverserel + ', child, ' + filter.ReplaceAll( 'object.', 'child.' ) + ' )';
+      }
+      parentlevel.SetProperty( 'Filter', parentfilter );
+      
+      if ( not isnull( parentlevel ) )
+      {
+        this.IComponent_SetHierarchicalFilter( filter, traverserel, parentlevel );
+      }
+    }
+  *]
+}

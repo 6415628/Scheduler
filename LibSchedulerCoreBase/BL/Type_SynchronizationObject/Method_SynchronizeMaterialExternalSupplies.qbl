@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeMaterialExternalSupplies
+{
+  Description: 'Synchronizing imported external materials from ERP system.'
+  TextBody:
+  [*
+    // WOI1 Aug-26-2016 (created)
+    allinstances := selectset( this, Schedule.Supply.astype( MaterialExternalSupply ), materialexternalsupplies, true );
+    updatedinstances := construct( MaterialExternalSupplys );
+    
+    // traverses all imported external supplies
+    traverse( this, Schedule.ImportedMaterial_SC, row, row.IsValidDataHard() )
+    {
+      // looking for existing external supply
+      materialexternalsupply := MaterialExternalSupply::FindMaterialExternalSupply( SupplyType::MaterialExternalSupply(), row.Id() );
+      // create external supply if it does not exist yet
+      if( isnull( materialexternalsupply ) )
+      {
+        materialexternalsupply := this.Schedule().CreateSupply( SupplyType::MaterialExternalSupply(), row.Id() ).astype( MaterialExternalSupply );
+      }
+      // update existing external supply
+      materialexternalsupply.Update( row );
+      updatedinstances.Add( materialexternalsupply );
+    }
+    
+    //Delete external supplies that do not exist in tables
+    oldinstaces := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstaces, Elements, materialexternalsupply, materialexternalsupply.CheckCanBeDeleted() )
+    {
+      materialexternalsupply.Remove();
+    }
+  *]
+}

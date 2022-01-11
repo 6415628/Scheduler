@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Operation (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    if( not this.CountOnFinalize() and ( not this.CheckAborted() or not task.IsAborted() ) )
+    {
+      this.NrOfTimesCalled( this.NrOfTimesCalled() + 1 );
+    }
+    
+    result := null( stream[JSON] );
+    if( this.Delay() <= Duration::Zero() )
+    {
+      result := this.Continue( task );
+    }
+    else
+    {
+      result := this.Delay().TotalInMillis()->LibOpt_ComponentCounter::Wait( )->|this->Continue( task );
+    }
+    return result
+  *]
+}

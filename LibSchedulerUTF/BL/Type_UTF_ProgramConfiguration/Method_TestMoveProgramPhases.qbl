@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestMoveProgramPhases (Schedule schedule)
+{
+  Description: 'Test move program phases'
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    moveprogramphaseaction := '';
+    
+    this.GetTestVariantForMoveProgramPhases( isvariantfound,
+                                             moveprogramphaseaction );
+    
+    value := true;
+    if( isvariantfound )
+    {
+      programtype := select( schedule, ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration, pt, true );
+      programphase2 := select( programtype, ProgramPhaseConfiguration, ps, ps.ProgramPhaseConfigurationID() = '2' );
+      programphase3 := select( programtype, ProgramPhaseConfiguration, ps, ps.ProgramPhaseConfigurationID() = '3' );
+      
+      // Propagate SequenceNr for checking logic
+      Transaction::Transaction().Propagate( attribute( ProgramPhaseConfiguration, SequenceNr ) );
+      
+      value := true;
+      if( moveprogramphaseaction = 'Top' or moveprogramphaseaction = 'Up' )
+      {
+        value :=  programphase2.SequenceNr()= 0
+                  and programphase3.SequenceNr() = 1;
+      }
+      else if( moveprogramphaseaction = 'Bottom' or moveprogramphaseaction = 'Down' )
+      {
+        value :=  programphase2.SequenceNr()= 2
+                  and programphase3.SequenceNr() = 3;  
+      }
+    }
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Move program phases ' + moveprogramphaseaction + ' failed.', this.Variant() ) );
+  *]
+}

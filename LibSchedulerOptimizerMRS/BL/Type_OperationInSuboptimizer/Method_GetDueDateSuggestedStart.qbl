@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetDueDateSuggestedStart () declarative as DateTime
+{
+  Description:
+  [*
+    return the due date suggested of the operation.
+    Will return this.DueDateSuggestedStart() except when this operation is planned in a batch.
+  *]
+  TextBody:
+  [*
+    // mbr23, 2019-09-18 (created), copied from legacy optimizer's Operation_SC::OptimizerIterativePOAGetDueDateSuggestedStart()
+    
+    value := guard( ifexpr( this.Operation_SC().PlannedInBatch(),
+                            this.Operation_SC().BatchSequenceElement().Batch().OptimizerPlanBatch().DueDateSuggestedStart(), // mbr23, 2019-09-18, comment: batch operations not suported by MRS
+                            this.DueDateSuggestedStart() ),
+                    this.Operation_SC().DueDate_Order_Start() );
+    
+    return value;
+  *]
+}

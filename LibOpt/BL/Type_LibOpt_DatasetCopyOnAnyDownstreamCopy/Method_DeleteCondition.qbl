@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride DeleteCondition (LibOpt_Task task) as Boolean
+{
+  Description:
+  [*
+    Conditionally deletes the dataset copy that is attached to the `snapshotcopydataset` snapshot.
+    The dataset is deleted if no dataset copy has been created on any downstream component and if no dataset copy has been created after the creation of the `snapshotcopydataset` snapshot on this component.
+    Note: All dataset copies that have been created because a `LibOpt_DatasetCopyOnAnyDownstreamCopy` is attached to a component position, are ignored. 
+    All dataset copies that have already been deleted (or that will be deleted), are also ignored. 
+    
+    Extending this method (or subclassing the `LibOpt_DatasetCopyOnAnyDownstreamCopy` type) will break the unit tests. We recommend you to create a new subclass from the `LibOpt_DatasetCopyConditional` type if you want to modify this method.
+  *]
+  TextBody:
+  [*
+    snapshotcopydataset := select( task,
+                                   SnapshotComponent.Children.astype( LibOpt_SnapshotReplannableCopyDataset ),
+                                   snapshot,
+                                   snapshot.ComponentPositionName() = this.ComponentPositionName()
+                                   );
+      
+    hascreateddownstreamsnapshot := exists( task.SnapshotComponent().Descendants(),
+                                            Elements.astype( LibOpt_SnapshotReplannableCopyDataset ),
+                                            snapshot, 
+                                            not snapshot.IsDatasetDeleted() 
+                                            and not snapshot.IsDatasetDeletedByOptimizer()
+                                            and not snapshot.HasToBeDeleted()
+                                            // Ignore all snapshots on the current component position that were created before snapshotcopydataset
+                                            and ( snapshot.GetComponent() <> task.Component() 
+                                                  or snapshot.SequenceNr() > snapshotcopydataset.SequenceNr() )
+                                            );
+    
+    return not hascreateddownstreamsnapshot;
+  *]
+}

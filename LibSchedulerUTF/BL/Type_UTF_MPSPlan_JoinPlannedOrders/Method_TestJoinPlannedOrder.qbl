@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestJoinPlannedOrder (Schedule schedule)
+{
+  Description: 'Test joining firm planned orders from MPS planned orders.'
+  TextBody:
+  [*
+    testInstance := this.GetTestInstance( this.Variant() );
+    
+    // Get existing work orders and store pre-join quantities and due date
+    internalWorkOrders := selectset( schedule, WorkOrder.astype( InternalWorkOrder ), internalWorkOrder, true );
+    quantity := sum( internalWorkOrders, Elements, internalWorkOrder, internalWorkOrder.Quantity() );
+    totalPlanUnitQuantity := sum( internalWorkOrders, Elements.Order_SC.PlanUnit_SC, pu, pu.Quantity() );
+    dueDate := min( internalWorkOrders, Elements, internalWorkOrder, internalWorkOrder.DueDate() );
+    
+    // Join planned order
+    plannedOrder := InternalWorkOrder::JoinPlannedOrders( internalWorkOrders );
+    
+    // Join planned order result check
+    totalJoinedPlanUnitQuantity := sum( plannedOrder, Order_SC.PlanUnit_SC, pu, pu.Quantity() );
+    
+    isJoinCorrect := plannedOrder.Quantity() = quantity // Sums joined order quantity
+                     and plannedOrder.DueDate() = dueDate // Takes earliest due date
+                     and totalJoinedPlanUnitQuantity = totalPlanUnitQuantity; // Ensures no plan unit quantity lost
+    
+    this.Run().AssertTrue( not testInstance.CanJoin() // Don't check if test instance can't be joined
+                           or testInstance.CanJoin() = isJoinCorrect,
+                           UTFUtility::GenerateFailedMessage( 'Join planned order failed with incorrect quantity or due date', '' ) );
+  *]
+}

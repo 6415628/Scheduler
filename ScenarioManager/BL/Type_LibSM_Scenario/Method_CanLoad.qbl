@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CanLoad (Boolean isDatasetStoreEnabled) declarative remote as Boolean
+{
+  Description: 'Returns whether loading this scenario (setting it online) is allowed.'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    dataset  := this.Dataset();
+    
+    if( not feedback.CheckHard( not this.IsDeleted() ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_CanNotDoAction_IsRecycleBin() );
+    }
+    
+    return guard( dataset.CanLoad( isDatasetStoreEnabled ), false ) 
+       and this.ScenarioManager().IsLoadedScenariosLessThanMaxAllowed( "loaded" ) // Check the number of loaded scenario allowed
+       and feedback.IsAllowed()
+       and this.CanLoadCustom( isDatasetStoreEnabled );
+  *]
+}

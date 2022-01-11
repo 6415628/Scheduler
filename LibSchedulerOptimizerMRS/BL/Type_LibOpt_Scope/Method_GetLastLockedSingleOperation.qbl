@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetLastLockedSingleOperation (SingleResourceBase resource) declarative as Operation_SC
+{
+  Description:
+  [*
+    Return operation of the latest Task that is locked in this scope.
+    Or if there are no Tasks locked in this scope, returns null.
+  *]
+  TextBody:
+  [*
+    // mbr23 Sep-18-2019 (created)
+    lastfrozenelement := maxselect( this.ScopeElements( typeof( ScopeElementOperation ) ),
+                                    Elements.astype( ScopeElementOperation ),
+                                    se,
+                                    guard( se.OnRunConstRemote( this.Run() ).IsLocked(), false ) // must be locked
+                                    and guard( se.Operation_SC().Task_SC().Resource_SC() = resource, false ),  // must be planned on `resource`
+                                    se.Operation_SC().Task_SC().SequenceNr() );  // of these, take the last one
+    
+    return guard( lastfrozenelement.Operation_SC(), null( Operation_SC ) );
+  *]
+}

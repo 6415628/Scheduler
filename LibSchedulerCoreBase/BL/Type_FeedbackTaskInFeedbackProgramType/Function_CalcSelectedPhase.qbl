@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcSelectedPhase
+{
+  TextBody:
+  [*
+    selectedphasesequencenr := 0;
+    
+    previousphasecummulativecharacteristic := guard( this.PreviousFeedbackTaskInProgram().PreviousPhaseCumulativeCharacteristic(), 
+                                                     guard( this.FeedbackProgramType().ArchivedPreviousPhaseCumulativeCharacteristic(), BinaryValue::Construct( ) ) );
+    previousphasecummulativerealvalue := guard( this.PreviousFeedbackTaskInProgram().PreviousPhaseCumulativeRealValues(), 
+                                                guard( this.FeedbackProgramType().ArchivedPreviousPhaseCumulativeRealValues(), BinaryValue::Construct( ) ) );
+    
+    // Only calculate the phase sequence number if there is program type configuration
+    if( not isnull( this.FeedbackProgramType() )
+        and not isnull( this.FeedbackProgramType().ProgramTypeConfiguration() )
+        and this.FeedbackProgramType().ProgramTypeConfiguration().HasProgramPhase() )
+    {  
+      previoustaskphasesequencenr := guard( this.PreviousFeedbackTaskInProgram().SelectedPhaseSequenceNr(), 
+                                            this.FeedbackProgramType().ArchivedPhaseSequenceNr() );
+      previoustaskcummulativecharacteristic := guard( this.PreviousFeedbackTaskInProgram().CumulativeCharacteristic(), 
+                                                      this.FeedbackProgramType().ArchivedCumulativeCharacteristic() );
+      previoustaskcummulativerealvalue := guard( this.PreviousFeedbackTaskInProgram().CumulativeRealValues(), 
+                                                 this.FeedbackProgramType().ArchivedCumulativeRealValues() );
+      
+      // Calculate the phase sequence number based on phase transition rules
+      selectedphasesequencenr := TaskInProgramSet::CalculateProgramPhaseSequenceNr( this.FeedbackProgramType().ProgramTypeConfiguration(),
+                                                                                    false,
+                                                                                    this.GetOperation(),
+                                                                                    this.CumulativeCharacteristic(),
+                                                                                    this.CumulativeRealValues(),
+                                                                                    previoustaskphasesequencenr,
+                                                                                    previoustaskcummulativecharacteristic,
+                                                                                    previoustaskcummulativerealvalue,
+                                                                                    previousphasecummulativecharacteristic,
+                                                                                    previousphasecummulativerealvalue );
+                                                                                  
+    }
+    this.PreviousPhaseCumulativeCharacteristic( previousphasecummulativecharacteristic);
+    this.PreviousPhaseCumulativeRealValues( previousphasecummulativerealvalue);
+    this.SelectedPhaseSequenceNr( selectedphasesequencenr );
+  *]
+}

@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#root
+#parent: #DomainModel
+TypeSpecialization LibOpt_Component
+{
+  #keys: '2[139164.0.139864275][139164.0.16781036]'
+  Description:
+  [*
+    A `LibOpt_Component` is a building block of the optimizer. It contains an atomic operation (in the context of an optimizer), defined in the `Operation` method.
+    Executing a single `LibOpt_Component` is usually not very interesing, but by composing multiple `LibOpt_Components` together we can create desired behavior.
+    
+    When we run the `LibOpt_Component`, we create a `LibOpt_SnapshotComponent` using the `LibOpt_SnapshotComponent::Create` method.
+    Then we call the `Operation` method.
+    Note that we expect the implementation of this method to return a stream where the `Continue` method is called.
+  *]
+  OnCreate:
+  [*
+    this.RegisterComponentPosition( LibOpt_Component::ComponentPosition_Initialize(), Translations::LibOpt_Component_ComponentPositionInitializeDescription() );
+    
+    continue_pos := this.RegisterComponentPosition( LibOpt_Component::ComponentPosition_Continue(), Translations::LibOpt_Component_ComponentPositionContinueDescription() );
+    continue_pos.SortingNr( 100 );
+    
+    finalize_pos := this.RegisterComponentPosition( LibOpt_Component::ComponentPosition_Finalize(), Translations::LibOpt_Component_ComponentPositionDoFinalizeDescription() );
+    finalize_pos.SortingNr( 200 );
+    
+    error_pos := this.RegisterComponentPosition( LibOpt_Component::ComponentPosition_Error(), Translations::LibOpt_Component_ComponentPositionErrorDescription() );
+    error_pos.SortingNr( 1000 );
+    
+    // Set the first component that is created to be the default start component
+    if( isnull( this.Run().StartComponent() )
+        and this.Run().Component( relsize ) = 1 )
+    {
+      this.Run().StartComponent( relset, this );
+    }
+  *]
+  OnDelete:
+  [*
+    traverse( this, Task, task )
+    {
+      task.Delete();
+    }
+  *]
+  Parent: LibOpt_ComponentConfiguration
+  StructuredName: 'LibOpt_Components'
+}

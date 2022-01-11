@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeDemoDataShutdownTask
+{
+  Description: 'Synchronize demo data shutdown task'
+  TextBody:
+  [*
+    
+    impshutdowntasks := selectsortedset( this, Schedule.ImportedDemoDataShutdownTask, shutdowntask, true );
+    
+    traverse( impshutdowntasks, Elements, impshutdowntask )
+    {
+      shutdowntype := ShutdownType::FindShutdownType( impshutdowntask.ShutdownTypeID() );
+      if( not isnull( shutdowntype ) )
+      {
+        shutdown := Shutdown::FindShutdown( impshutdowntask.ShutdownID() );
+      
+        if( isnull( shutdown ) )
+        {
+          resource := Resource_SC::FindResource_SC( impshutdowntask.ResourceID() );      
+          if( not isnull( resource ) )
+          {    
+            aftertask := select( resource, Task_SC, t, guard( t.GetOperation().OperationID() = impshutdowntask.AfterOperationID(), false ) );
+            shutdowntask := resource.InsertShutdownWithShutdownID( impshutdowntask.ShutdownID(),
+                                                                   aftertask,
+                                                                   shutdowntype,
+                                                                   impshutdowntask.ShutdownDurationUser(),
+                                                                   impshutdowntask.HasShutdownDurationUser(),
+                                                                   impshutdowntask.IsTargetStartEnabled(),
+                                                                   impshutdowntask.TargetStart(),
+                                                                   impshutdowntask.MaxTargetStartDeviation() );
+            
+            shutdown := shutdowntask.Shutdown();                        
+          }
+        }
+        
+        if( not isnull( shutdown ) )
+        { 
+          shutdown.Update( shutdowntype,
+                           impshutdowntask.ShutdownDurationUser(),
+                           impshutdowntask.HasShutdownDurationUser(),
+                           impshutdowntask.IsTargetStartEnabled(),
+                           impshutdowntask.TargetStart(),
+                           impshutdowntask.MaxTargetStartDeviation() );    
+          
+          // Update archived data                        
+          shutdown.ArchivedAfterShutdownCumulativeCharacteristic( Characteristic::GetNumberVectorBinaryValue( impshutdowntask.ArchivedAfterShutdownCumulativeCharacteristic() ) );
+          shutdown.ArchivedAfterShutdownCumulativeRealValues( Characteristic::GetRealVectorBinaryValue( impshutdowntask.ArchivedAfterShutdownCumulativeRealValues() ) );
+          shutdown.ArchivedLastFeedbackTaskIsInShutdownScope( impshutdowntask.ArchivedLastFeedbackTaskIsInShutdownScope() );                                        
+          
+          // Update shutdown task IsFrozenByUser
+          shutdown.Task_SC().IsFrozenByUser( impshutdowntask.IsFrozenByUser() );
+        }   
+      }
+    }
+    
+    // Update last running Shutdown ID
+    this.Schedule().ResetToLatestShutdownID();
+  *]
+}

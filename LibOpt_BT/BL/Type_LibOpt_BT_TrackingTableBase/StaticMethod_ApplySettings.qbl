@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ApplySettings (NamedValue delta_node, NamedValue settings_node) const remote
+{
+  TextBody:
+  [*
+    children := delta_node.Children();
+    if( children.Size() = 0 )
+    {
+      if( not delta_node.GetValue().istype( AtomValue ) )
+      {
+        settings_node.SetValue( delta_node.GetValue() );
+      }
+    }
+    else
+    {
+      traverse( children, Elements, child )
+      {
+        settings_child := select( settings_node.Children(), Elements, c, c.Name() = child.Name() );
+        if( not isnull( settings_child ) )
+        {
+          LibOpt_BT_TrackingTableBase::ApplySettings( child, settings_child );
+        }
+      }
+    }
+  *]
+}

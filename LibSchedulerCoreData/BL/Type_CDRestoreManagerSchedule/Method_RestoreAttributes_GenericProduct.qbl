@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericProduct (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic product core data attribute to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdSchedule, CDEntity.astype( CDGenericProduct ), cdGenericProduct )
+    {
+      genericProduct := GenericProduct::Create( schedule, cdGenericProduct.Id() );
+      CopyCorresponding::CopyFrom( cdGenericProduct ).CopyTo( genericProduct );
+      
+      // Restore ProductCompatibleDemand
+      this.RestoreAttributes_ProducDemandOnSupply( cdSchedule, genericProduct.astype( GenericProduct ) );
+      
+      // Restore ProductInStockingPoint
+      this.RestoreAttributes_ProductInStockingPoint( cdSchedule, genericProduct.astype( GenericProduct ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsNotAtFirstPosition (ProgramPhaseConfigurations programphaseconfigurations) remote as Boolean
+{
+  Description: 'Perform checking whether all selected phases are not at first position'
+  TextBody:
+  [*
+    // Perform checking whether all selected phases are not at first position
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    firstposition := select( programphaseconfigurations, Elements, e, not isnull( e.AsFirst() ) );
+    
+    value := isnull( firstposition );
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      feedbackobject.AddHard( Translations::ProgramPhaseConfiguration_AlreadyAtFirstPosition( firstposition.ProgramPhaseConfigurationID() ) );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

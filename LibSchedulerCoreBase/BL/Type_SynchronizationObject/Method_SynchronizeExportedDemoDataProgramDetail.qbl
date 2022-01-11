@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExportedDemoDataProgramDetail
+{
+  Description: 'Synchronize exported demo data for program detail'
+  TextBody:
+  [*
+    allInstances := selectset( this, Schedule.FeedbackManager.ExportedSchedule.ExportedDemoDataProgramDetail, 
+                               exporteddemodataprogramdetail, true );
+    updatedInstances := construct( ExportedDemoDataProgramDetails );
+    
+    traverse( this, Schedule.ProgramChange, programchange )
+    {
+      traverse( programchange, ProgramChangeInType.ToProgramTypeConfiguration, programtypeconfig )
+      {
+        exporteddemodataprogramdetail := ExportedDemoDataProgramDetail::FindExportedDemoDataProgramDetailTypeIndex( programchange.ProgramChangeID(),
+                                                                                                                    programtypeconfig.ProgramDefinitionConfigurationID(),
+                                                                                                                    programtypeconfig.ProgramSetConfigurationID(),
+                                                                                                                    programtypeconfig.ProgramTypeConfigurationID() );
+        
+        if( isnull( exporteddemodataprogramdetail ) )
+        {
+          exporteddemodataprogramdetail := ExportedDemoDataProgramDetail::Create( this.Schedule().FeedbackManager().ExportedSchedule(),
+                                                                                  programchange.ProgramChangeID(),
+                                                                                  programtypeconfig );
+        }
+        updatedInstances.Add( exporteddemodataprogramdetail );
+      }
+    }
+    
+    oldInstances := allInstances.Difference( updatedInstances );
+    
+    traverse( oldInstances, Elements, old )
+    {
+      old.Remove();
+    }
+  *]
+}

@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetScenarioSelectionControl () as LibSM_SelectionScenario id:Method_LibSM_GlobalState_GetScenarioSelectionControl
+{
+  #keys: '[136398.1.587826911]'
+  Body:
+  [*
+    // Returns the instance of the SelectionScenario control
+    // that is supposed to be added to the main toolbar of the
+    // consuming application.
+    
+    set := selectset( this.Application(), SubComponents, sc, true );
+    safetyCounter := 0;
+    selection := null( GUIComponent );
+    while ( set.Size() > 0 and safetyCounter < 20 and isnull( selection ) )
+    {
+      selection := select( set, Elements, p, p.istype( LibSM_SelectionScenario ) );
+      if ( isnull( selection ) )
+      {
+        set := selectset( set, Elements.SubComponents, sc, true );
+      }
+      safetyCounter++;
+    }
+    
+    // Warn the consumer of this library that the panel has not been
+    // added to the main form.
+    if ( isnull( selection ) )
+    {
+      info( "ScenarioManager: Could not find an instance of the LibSM_SelectionScenario component. Please add this component to your application's main toolbar. " );
+    }
+    
+    return selection.astype( LibSM_SelectionScenario );
+  *]
+}

@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestIsSequenceRuleEnableForShutdownRule (Schedule schedule)
+{
+  Description: "Test program set configuration setting 'Is Sequence Rule Enabled' for shutdown rule"
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    isSequenceRulesEnabled := false;
+    hasViolatedRules := false;
+    hasfeedback := false;
+    
+    this.GetTestVariant( isvariantfound,
+                         isSequenceRulesEnabled,
+                         hasViolatedRules,
+                         hasfeedback );
+    
+    violated := false;
+    if( isvariantfound )
+    {
+      Transaction::Transaction().Propagate( attribute( Task_SC, TaskID ) );
+      task4 := select( schedule, ResourceGroup_SC.Resource_SC.Task_SC, t, t.TaskID() = 'Operation_4' );
+      
+      // Check if task2 has violated the rule
+      // Propagete constraint 
+      Transaction::Transaction().Propagate( constraint( Task_SC, IsAllHighPriorityRulesOK ) );
+      Transaction::Transaction().Propagate( constraint( Task_SC, IsAllLowPriorityRulesOK ) );
+      violated := not( task4.IsAllHighPriorityRulesOK() and task4.IsAllLowPriorityRulesOK() );
+    }
+    
+    this.Run().AssertEqual( hasViolatedRules, violated,
+                            UTFUtility::GenerateFailedMessage( 'Program set configuration setting "IsSequenceRuleEnable" for shutdown rule failed.', this.Variant() ) );
+  *]
+}

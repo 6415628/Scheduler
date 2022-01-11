@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_030_Stop_OnFinalize (LibOpt_TestDataset dataset)
+{
+  Description: 'Check if all OnFinalize methods are called when stop is called.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    start := opt.IteratorUntil( run, 'Iterator' );
+    count := opt.ComponentCounter( run, 'Counter' );
+    
+    start.To( count );
+    run.SetStartComponent( start );
+    
+    execution := run->Start();
+    
+    execution->Until( Duration::Seconds( 1 ) )->|this->( t )
+    {
+      nr_tasks := run.Task( relsize );
+      this.Run().AssertGreater( 0, run.Task( relsize ), 'While running the number of tasks should be bigger than 0' );
+      run.Stop();
+      this.Run().AssertEqual( nr_tasks, run.Task( relsize ), 'Number of tasks after Run.Stop should not change.' );
+    }->Exception()->( e )
+    {
+      this.Run().RegisterFailure( 'Exception caught: ' + e.Message() );
+    }
+    
+    execution->|this->( t )
+    {
+      this.Run().AssertEqual( 0, run.Task( relsize ), 'Number of tasks is unexpected after execution finish.' );
+    }->Exception()->( e )
+    {
+      this.Run().RegisterFailure( 'Exception caught: ' + e.Message() );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

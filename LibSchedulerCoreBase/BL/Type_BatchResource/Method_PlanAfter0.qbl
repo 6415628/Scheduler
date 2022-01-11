@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride PlanAfter (Task_SCs tasks, Task_SC after)
+{
+  Description: '.Move all selected tasks after the task.'
+  TextBody:
+  [*
+    //saravanen 20130717 Overloaded this method. Previously code was in base type
+    // Replan if there exists a task with mismatching type
+    isreplan := exists( tasks, Elements, task,
+                        not this.IsTaskTypeMatching( task ) );
+    
+    if( isreplan )
+    {
+      operations := this.GetSortedOperationsFromTasks( tasks );
+    
+      traverse( operations, Elements, operation )
+      {
+        operation.Unplan();
+      }
+      
+      this.CreateBatchAssignOperationsPlanBatch( operations, after.astype( BatchTask ) );
+    }
+    else
+    {
+      batchtasks := selectset( tasks, Elements.astype( BatchTask ), bt, true, true );
+      this.PlanAfter( batchtasks, after.astype( BatchTask ) );
+    }
+  *]
+}

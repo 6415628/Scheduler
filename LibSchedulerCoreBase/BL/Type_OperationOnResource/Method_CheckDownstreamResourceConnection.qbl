@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckDownstreamResourceConnection (output Resource_SC down_resource) declarative remote as Boolean
+{
+  Description: 'Checks whether the resource connection from this operation to its downstream operation is allowed.'
+  TextBody:
+  [*
+    // WOI1 Mar-1-2017 (created)
+    resource := this.Resource_SC(); // current resource
+    operation := this.Operation_SC(); // current operation
+    
+    // CHECKS DOWNSTREAM PLANNING
+    // find all planned downstream operations :
+    downstream_ops := selectset( operation, ToOperationDependency.ToOperation, op, op.IsPlanned() )
+    downstream_res := selectset( downstream_ops, Elements.Task_SC.Resource_SC, res, true );
+    allowedresources := selectset( resource, AsAllowedFromResource.AllowedToResource, res, true );
+    
+    down_resource := select( downstream_res, Elements, r, not exists( allowedresources, 
+                                                                      Elements, 
+                                                                      ar, 
+                                                                      ar = r ) );
+    
+    return isnull( down_resource );
+  *]
+}

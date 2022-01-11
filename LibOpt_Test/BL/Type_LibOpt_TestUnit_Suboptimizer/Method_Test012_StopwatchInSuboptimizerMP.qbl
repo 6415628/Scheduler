@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test012_StopwatchInSuboptimizerMP (LibOpt_TestDataset dataset)
+{
+  Description: 'Test that the time capturing of the MP suboptimizer work correctly.'
+  TextBody:
+  [*
+    max_diff      := Duration::Millis( 30 );
+    initialize    := Duration::Millis( 50 );
+    handle_result := initialize + max_diff;
+    between_stream := handle_result + max_diff;
+    re_executes := 3;
+    component := initialize + handle_result * re_executes + between_stream;
+    
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    runcontext := LibOpt_MyRunContextForUTF::Create( run );
+    runcontext.NrExecutions( re_executes )
+    runcontext.DurationInitialize( initialize );
+    runcontext.DurationHandleResult( handle_result );
+    runcontext.DurationBetweenAdditionalStream( between_stream );
+    
+    opt.MPSuboptimizer( run, 'Subopt', runcontext );
+    
+    this.NoException( run.Start()->|
+    void->()
+    {
+      algorithm_snapshots := selectset( run, Snapshot.astype( LibOpt_SnapshotAlgorithm ), snapshot, true );
+      this.Run().AssertEqual( re_executes, algorithm_snapshots.Size(), 'algorithm_snapshots.Size()' );
+      
+      init_duration := sum( algorithm_snapshots, Elements, snapshot, true, snapshot.InitializeDuration() );
+      solve_duration := sum( algorithm_snapshots, Elements, snapshot, true, snapshot.SolveDuration() );
+      handle_result_duration := sum( algorithm_snapshots, Elements, snapshot, true, snapshot.HandleResultDuration() );
+      
+      this.Run().AssertGreaterOrEqual( initialize, init_duration, 'InitializeDuration' );
+      this.Run().AssertLess( initialize + max_diff, init_duration, 'InitializeDuration' );
+      
+      this.Run().AssertGreaterOrEqual( Duration::Zero(), solve_duration, 'SolveDuration' );
+      this.Run().AssertLess( between_stream, solve_duration, 'SolveDuration' );
+      
+      this.Run().AssertGreaterOrEqual( handle_result * re_executes, handle_result_duration, 'HandleResultDuration' );
+      this.Run().AssertLess( ( handle_result + max_diff ) * re_executes, handle_result_duration, 'HandleResultDuration' );
+        
+      component_snapshot := select( run, Snapshot.astype( LibOpt_SnapshotComponent ), snapshot, true );
+      this.Run().AssertGreaterOrEqual( component, component_snapshot.Duration(), 'Component duration' );
+      this.Run().AssertLess( component + max_diff * ( re_executes + 2 ), component_snapshot.Duration(), 'Component duration' );
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

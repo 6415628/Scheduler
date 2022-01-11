@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: ListProduct_SC1
+Response OnClick (structured[Order_SC] selection) id:Response_ListProduct_SC1_MenuDeleteWorkOrder_OnClick
+{
+  #keys: '[122574.0.612523805]'
+  Body:
+  [*
+    // Delete WorkOrders
+    workorders := selectset( selection, Elements.WorkOrder, workorder, true );
+    WorkOrder::RemoveCanBeDeletedWorkOrders( workorders );
+  *]
+  DefinitionID => /ListProduct_SC1/Responsedef_ListProduct_SC1_Menu_OnClick
+  Initiator: 'MenuDeleteWorkOrder'
+  Precondition:
+  [*
+    workorders := selectset( selection, Elements.WorkOrder, workorder, true );
+    value := guard( WorkOrder::CanDelete( workorders, feedback ), false ); // in case this isn't handled properly, there won't be a feedback text
+    feedback := Schedule::TrimFeedback( feedback );
+    
+    return value;
+  *]
+}

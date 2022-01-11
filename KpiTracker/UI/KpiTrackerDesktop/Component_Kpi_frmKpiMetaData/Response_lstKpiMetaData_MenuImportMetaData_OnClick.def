@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: lstKpiMetaData
+Response OnClick () id:Response_lstKpiMetaData_MenuImportMetaData_OnClick
+{
+  #keys: '[146450.0.1814945910]'
+  Body:
+  [*
+    // Import KpiMetaData to KpiStagingSet
+    filename := Application.GetOpenFileName( "xlsx", "Excel workbook (.xlsx)" );
+    
+    if( filename <> '' )
+    {
+      exceldata := Application.ReadBinaryFile( filename );
+      datasetname := KpiStagingSet::EnsureDatasetForImport();
+      Form.SelectImportDataset( datasetname );
+      if( not isnull( KpiStagingSet ) )
+      {
+        // send the Excel fata as binary values to the server to process.
+        KpiStagingSet.ImportKpiMetaData( exceldata.AsBinaryValue() );
+      }
+      else
+      {
+        info( " >>> No selected import dataset! " );
+      }
+      
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => /lstKpiMetaData/Responsedef_lstKpiMetaData_Menu_OnClick
+  Initiator: 'MenuImportMetaData'
+}

@@ -1,0 +1,74 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllTestVariantsForPreconditionCreateEditProgramConfiguration (output Strings objecttypes, output Booleans hasDuplicateIDs, output Strings programconfigurationIDs, 
+  output Strings programconfigurationNames, output Booleans isreasourcealreadyassigneds, output Booleans isValidForPreconCreateEdits) as owning Strings
+{
+  Description: 'Return all test variants, variant output arguments (columns) will be used in data creation logic.'
+  TextBody:
+  [*
+    variants := construct( Strings );
+    types := construct( Strings );
+    types.Add( "program definition" );
+    types.Add( "program set");
+    types.Add( "program type" );
+    types.Add( "program phase" );
+    types.Add( "program type change" );
+    
+    // --------------------- precondition checking when creatting/editing program configuration for program definition/set/type/phase/type change
+    traverse( types, Elements, type )
+    {
+      // Scenario 1: Test precondition in creating/editing program configuration with empty ID
+      variants.Add( 'Test precondition in creating/editing ' + type + ' with empty ID' );
+      objecttypes.Add( type );
+      hasDuplicateIDs.Add( false );
+      programconfigurationIDs.Add( '' );
+      programconfigurationNames.Add( 'Program Configuration Name' );
+      isreasourcealreadyassigneds.Add( false );
+      isValidForPreconCreateEdits.Add( false );
+      
+      // Scenario 2: Test precondition in creating/editing program configuration with duplicate ID
+      variants.Add( 'Test precondition in creating/editing ' + type + ' with duplicate ID' );
+      objecttypes.Add( type );
+      hasDuplicateIDs.Add( true );
+      programconfigurationIDs.Add( 'Program Configuration ID' );
+      programconfigurationNames.Add( 'Program Configuration Name' );
+      isreasourcealreadyassigneds.Add( false );
+      isValidForPreconCreateEdits.Add( false );
+      
+      if( type <> 'program type change' )
+      {
+        // Scenario 3: Test precondition in creating/editing program configuration with empty name
+        variants.Add( 'Test precondition in creating/editing ' + type + ' with empty name' );
+        objecttypes.Add( type );
+        hasDuplicateIDs.Add( false );
+        programconfigurationIDs.Add( 'Program Configuration ID' );
+        programconfigurationNames.Add( '' );
+        isreasourcealreadyassigneds.Add( false );
+        isValidForPreconCreateEdits.Add( false );
+      }
+    
+      if( type = 'program definition' )
+      {
+        // Scenario 4: Test precondition in creating/editing program configuration with resource already assigned
+        variants.Add( 'Test precondition in creating/editing ' + type + ' with resource already assigned' );
+        objecttypes.Add( type );
+        hasDuplicateIDs.Add( false );
+        programconfigurationIDs.Add( 'Program Configuration ID' );
+        programconfigurationNames.Add( 'Program Configuration Name' );
+        isreasourcealreadyassigneds.Add( true );
+        isValidForPreconCreateEdits.Add( false );
+      }
+        
+      // Scenario 5: Test precondition in creating/editing program configuration with valid data
+      variants.Add( 'Test precondition in creating/editing ' + type + ' with valid data' );
+      objecttypes.Add( type );
+      hasDuplicateIDs.Add( false );
+      programconfigurationIDs.Add( 'Program Configuration ID' );
+      programconfigurationNames.Add( 'Program Configuration Name' );
+      isreasourcealreadyassigneds.Add( false );
+      isValidForPreconCreateEdits.Add( true );
+    }
+    
+    return &variants;
+  *]
+}

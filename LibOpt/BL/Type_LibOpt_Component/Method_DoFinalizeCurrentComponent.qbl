@@ -1,0 +1,70 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoFinalizeCurrentComponent (LibOpt_Task task, output Boolean hascreatedstream_o) as stream[JSON]
+{
+  Description:
+  [*
+    Finalize the current component. 
+    This method calls the `task.Delete()` method, which calls the 'public' `OnFinalize` method if it has not been called before. Therefore, AE code in `OnFinalize` is only executed after a dataset copy is created or after a breakpoint is triggered.
+    `task.Delete()` will always be called after the task of the downstream components are deleted, but before the tasks of the upstream components are deleted. 
+    Note that this method (or `HasBreakpoint` and `LibOpt_DatasetCopyConditional::DoFinalizeDataset`) do not call any reactive methods if there are no breakpoints or dataset copies on this component.
+    This is done for performance reasons to ensure that no unneeded transactions are started.
+  *]
+  TextBody:
+  [*
+    // Conditionally create a copy of the current dataset.
+    // We always make a robust dataset copy, because AE code in OnFinalize (which is called when task.Delete() happens) might throw an error.
+    // We can probably find some cases in which we can create a quick dataset copy, but this might cause errors if any changes are made to the DoFinalize methods.
+    LibOpt_DatasetCopyConditional::CopyDatasetConditionally( LibOpt_Component::ComponentPosition_Finalize(), task, true );   
+    
+    snapshotcomponent := task.SnapshotComponent();
+    run := task.Run();
+    streamJSON := stream[JSON]::Success();
+    breakpoint_stream := null( stream[Void] );
+    // It is intentional that a breakpoint can be triggered when this method is called procedurally
+    // Because this method might be called procedurally for performance reasons. This doesn't mean that we don't want a breakpoint.
+    if( this.HasBreakpoint( LibOpt_Component::ComponentPosition_Finalize(), task, breakpoint_stream ) )
+    {
+      streamJSON := breakpoint_stream
+                    // We don't want to include the breakpoint duration in the DoFinalize snapshot timestamp, 
+                    // because we are only interested in the performance of the code, not in the pause duration.
+                    // The time required for copying the dataset is also not included, because dataset copies are also ignored by the Operation time stamp.
+                    ->|snapshotcomponent->LibOpt_SnapshotComponent::SetTimeStampDoFinalize( run )
+                    ->|streamJSON;
+      hascreatedstream_o := true;
+    }
+    else
+    {
+      LibOpt_SnapshotComponent::SetTimeStampDoFinalize( snapshotcomponent, run );
+    }
+    
+    // Finalize the datasets that were created on this component. 
+    // Note that hascreatedstream_o is an output variable of DoFinalizeDataset.
+    streamJSON := LibOpt_DatasetCopyConditional::DoFinalizeDataset( streamJSON, task, hascreatedstream_o );
+    
+    if( hascreatedstream_o )
+    {
+      // 'task' can only be deleted after breakpoints and dataset copies are handled. We use a stream to ensure that this happens.
+      streamJSON := streamJSON
+                    ->|task->( t )
+                    {
+                      // Using a reactive code block to call t.Delete() and snapshotcomponent.SetTimeStampDoFinalizeDone() in the same transaction.
+                      // This ensures that the timestamp is always set right after the deletion of the task.
+                      t.Finalize();
+                      t.Delete();
+                      LibOpt_SnapshotComponent::SetTimeStampDoFinalizeDone( snapshotcomponent, run );
+                    }
+                    ->|streamJSON;
+    }
+    else
+    {
+      // If there are no breakpoints or datasets on this component, then task.Delete() will be called procedurally. 
+      // This ensures that the optimizer does not slow down (by starting new transactions) when the AE is not debugging the optimizer.
+      task.Finalize();
+      task.Delete();
+      LibOpt_SnapshotComponent::SetTimeStampDoFinalizeDone( snapshotcomponent, run );
+    }
+    return streamJSON;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

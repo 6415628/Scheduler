@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_ToolRequirementPattern (CDSchedule cdschedule)
+{
+  Description: 'Restore tool requirement pattern core data relation to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdschedule, CDEntity.astype( CDToolRequirementPattern ), cdToolRequirementPattern )
+    {
+      toolRequirementPattern := select( schedule, ToolRequirementPattern, toolRequirementPattern, [String] toolRequirementPattern.Key() = cdToolRequirementPattern.RestoreToolRequirementPatternKey() );
+      
+      if( not isnull( toolRequirementPattern ) )
+      { 
+        // ToolGroup
+        cdToolGroup := select( cdschedule, CDEntity.astype( CDToolGroup ), cdToolGroup, cdToolGroup.BackupToolGroupKey() = cdToolRequirementPattern.BackupToolGroupKey() );
+        toolGroup := select( schedule, ToolGroup, toolGroup, [String] toolGroup.Key() = guard( cdToolGroup.RestoreToolGroupKey(), '' ) );
+        toolRequirementPattern.ToolGroup( relset, toolGroup );
+        
+        // From resource and from resource group
+        fromResource := Resource_SC::FindResource_SC( cdToolRequirementPattern.FromResourceID() );
+        fromResourceGroup := select( schedule, ResourceGroup_SC, rg, rg.Name() = cdToolRequirementPattern.FromResourceGroupID() );
+        toolRequirementPattern.FromResource_SC( relset, fromResource );
+        toolRequirementPattern.FromResourceGroup_SC( relset, fromResourceGroup );
+         
+        // To resource and to resource group
+        toResource := Resource_SC::FindResource_SC( cdToolRequirementPattern.ToResourceID() );
+        toResourceGroup := select( schedule, ResourceGroup_SC, rg, rg.Name() = cdToolRequirementPattern.ToResourceGroupID() );
+        toolRequirementPattern.ToResource_SC( relset, toResource );
+        toolRequirementPattern.ToResourceGroup_SC( relset, toResourceGroup );
+        
+        // Tool Block
+        toolRequirementPattern.ToolBlock( relset, select( schedule, ToolBlock, b, b.BlockID() = cdToolRequirementPattern.ToolBlockID() ) );
+        
+        // Subtask type on resource group
+        toolRequirementPattern.SubTaskTypeOnResourceGroup( relset, select( fromResourceGroup, SubTaskTypeOnResourceGroup, st, st.SubTaskID() = cdToolRequirementPattern.SubtaskDefinitionName() ) );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

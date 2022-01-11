@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcExpectedTime
+{
+  TextBody:
+  [*
+    value := DateTime::MaxDateTime();
+    
+    // from this output lot to next operation's input lot - normal plan unit routings
+    nextinputlotexpectedtime := min( this, OutputLotMaterial.AsInputLotMaterial, il, il.Start().IsFinite(), il.Start() )
+    
+    // from this output lot to next operation's input lot - via material reservation
+    nextinputlot_materialexpectedtime := min( this, FulfillmentLot, fl, fl.ExpectedTime().IsFinite(), fl.ExpectedTime() );
+    
+    expectedtime := minvalue( nextinputlotexpectedtime, nextinputlot_materialexpectedtime );
+    
+    value := guard( this.Task_SC().Resource_SC().ResourceCalendar().Subtract( expectedtime, this.TotalProcessDuration() ), value ); // Guarded as expected time can be infinite if both return nothing
+    
+    this.ExpectedTime( value );
+  *]
+}

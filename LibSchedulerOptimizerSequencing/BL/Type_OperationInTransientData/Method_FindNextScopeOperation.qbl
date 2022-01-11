@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method FindNextScopeOperation (LibOpt_Task task) as Operation_SC
+{
+  Description: 'Finds the next scope or span operation after this operation'
+  TextBody:
+  [*
+    // jkr8 Nov-20-2020 (created)
+    
+    operation := this.Operation();
+    nextoperation := null( Operation_SC );
+    if( operation.IsPlanned() and not isnull( operation.Task_SC().Next() ) )
+    {
+      //Select the operation in scope that is closest to the current operation
+      nextoperation := minselect( task.Scope().Operations(), 
+                                  Elements, 
+                                  op, 
+                                  op.IsPlanned() and
+                                  op.Task_SC().Resource_SC() = operation.Task_SC().Resource_SC() and
+                                  op.Task_SC().SequenceNr() > operation.Task_SC().SequenceNr(),
+                                  op.Task_SC().SequenceNr() );                                               
+    }
+    
+    return nextoperation;
+  *]
+}

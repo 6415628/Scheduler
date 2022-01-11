@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method Extend () as CombiProgramType
+{
+  Description: 'make a copy of this CombiProgramType and copy all the phases, legs,  then add one more combileg'
+  TextBody:
+  [*
+    // zyi1 Jul-28-2021 (created)
+    operations := selectset( this, CombiProgramSet.Resource_SC.OperationOnResource.Operation_SC, op, true );
+    
+    //this.UnplanTasks( operations );
+    newcpt := this.Extend(  operations );
+    
+    Transaction::Transaction().Propagate( attribute( CombiLeg, SequenceNr ) );
+    lastleg := maxselect( newcpt, CombiProgramPhase.CombiLegAsLeading, cl, true, cl.SequenceNr() );
+    
+    lastleg.SequenceByPOA( operations );
+    
+    return newcpt;
+  *]
+}

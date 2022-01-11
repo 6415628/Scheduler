@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method LibSM_ImportXML (BinaryValue xml, LibSM_Scenario scenario)
+{
+  TextBody:
+  [*
+    tempfilename := OS::TempFilename( OS::TempPath() );
+    progress( "Creating temporary xml", DateTime::ActualTime() );
+    tempfile := OSFile::Construct( tempfilename );
+    
+    if( not isnull( tempfile ) )
+    {
+      tempfile.ReadWriteMode( "ReadWrite" );
+      tempfile.Open();
+      tempfile.WriteBinary( xml );
+      tempfile.Flush();
+      tempfile.Close();
+    
+      progress( "Delete all data", DateTime::ActualTime() );
+    
+      // QC_SM MODELING HANDLE - Make sure that all current data in the scenario is deleted
+      // this.DeleteData();
+      progress( "Propagating", DateTime::ActualTime() );
+    
+      // make sure all data are deleted
+      Transaction::Transaction().Propagate();
+    
+      XMLIO::Import( tempfilename, this );
+    
+      progress( "Removing xml file", DateTime::ActualTime() );
+      OS::RemoveFile( tempfilename );
+    }
+  *]
+}

@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test024_ContinueStepOnce (LibOpt_TestDataset dataset)
+{
+  Description:
+  [*
+    Test whether we can continue one component step when a breakpoint is triggered.
+    We expect that every time we call it, one component step is executed and we will break at the next one.
+  *]
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    component1 := opt.ComponentCounter( run, 'Component1' );
+    component2 := opt.ComponentCounter( run, 'Component2' );
+    component1.To( component2 );
+    
+    breakpoint_position := select( component1, ComponentPosition, bp, bp.Name() = LibOpt_Component::ComponentPosition_Initialize() );
+    breakpoint_position.SetBreakpoint();
+    
+    run.SetStartComponent( component1 );
+    str := run->Start();
+    
+    test := this->WaitForBreakpoint( run, this.Run() )
+      ->|void->()
+      {
+        this.Run().AssertFalse( isnull( run.BreakpointEvent() ), 'No breakpoint event [1]' );
+        this.Run().AssertEqual( 0, component1.NrOfTimesCalled(), 'Component 1: Number of calls has an unexpected value [1]' );
+        this.Run().AssertEqual( 0, component2.NrOfTimesCalled(), 'Component 2: Number of calls has an unexpected value [1]' );
+        
+        run.ContinueStep();
+        
+        return this->WaitForBreakpoint( run, this.Run() )
+      }
+      ->|void->()
+      {
+        this.Run().AssertFalse( isnull( run.BreakpointEvent() ), 'No breakpoint event [2]' );
+        this.Run().AssertEqual( 1, component1.NrOfTimesCalled(), 'Component 1: Number of calls has an unexpected value [2]' );
+        this.Run().AssertEqual( 0, component2.NrOfTimesCalled(), 'Component 2: Number of calls has an unexpected value [2]' );
+        
+        run.ContinueStep();
+        
+        return this->WaitForBreakpoint( run, this.Run() )
+      }
+      ->|void->()
+      {
+        this.Run().AssertFalse( isnull( run.BreakpointEvent() ), 'No breakpoint event [3]' );
+        this.Run().AssertEqual( 1, component1.NrOfTimesCalled(), 'Component 1: Number of calls has an unexpected value [3]' );
+        this.Run().AssertEqual( 0, component2.NrOfTimesCalled(), 'Component 2: Number of calls has an unexpected value [3]' );
+        run.Stop();
+      }
+    this.NoException( str );
+    this.NoException( test );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

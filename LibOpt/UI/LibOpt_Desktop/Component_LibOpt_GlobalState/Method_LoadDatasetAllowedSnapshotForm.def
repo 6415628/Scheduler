@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method LoadDatasetAllowedSnapshotForm (LibOpt_Optimization optimization) as Boolean id:Method_LibOpt_GlobalState_LoadDatasetAllowedSnapshotForm
+{
+  #keys: '[141860.2.616002880]'
+  Body:
+  [*
+    // Precondition method for the 'Reload parent dataset' button of the 'Replannable snapshots' form. 
+    
+    feedbackobj := FeedbackObject::LocalFeedback();
+    
+    // If no dataset is selected, then the optimization object is null
+    if( not feedbackobj.CheckHard( not isnull( optimization ) ) )
+    {
+      feedbackobj.AddHard( Translations::LibOpt_OptimizationNull() );
+    }
+    // If optimization.ParentDatasetMDSKey() = Key::ZeroKey(), then the currently loaded dataset is not created from another dataset, so we cannot revert to that dataset.
+    // If optimization.IsOptimizerDatasetCopy() is false, then the current dataset is a dataset that is not created with the 'Replannable snapshots' functionality.
+    // It is confusing if the 'Reload parent dataset' button in the 'Replannable snapshots' form can also be used for datasets that are not related to the replannable snapshots functionality.
+    else if( not feedbackobj.CheckHard( optimization.MDSKeyParentDataset() <> Key::ZeroKey() and optimization.IsOptimizerDatasetCopy() ) )
+    {
+      feedbackobj.AddHard( Translations::LibOpt_SnapshotReplannable_Precondition_NoParentDataset() );  
+    }
+       
+    return feedbackobj.IsAllowed();
+  *]
+}

@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test020_FrozenHorizon_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Create an empty scenario
+    UTF_Optimizer_MRS::UnplanAll( schedule );
+    
+    // We start with three orders that are planned in a suboptimal sequence on the casing and insert bottom resources (planned in reverse order)
+    
+    // Select the three casing operation in sequence of the order number
+    casingoperations := selectsortedset( schedule, Operation_SC, operation,
+                                         operation.Type() = "Casing"
+                                         and ( operation.PlanUnit_SC().Order_SC().OrderNr() = "11"
+                                               or operation.PlanUnit_SC().Order_SC().OrderNr() = "118"
+                                               or operation.PlanUnit_SC().Order_SC().OrderNr() = "122" ),
+                                         [Number]operation.PlanUnit_SC().Order_SC().OrderNr() );
+    
+    // Select the insert operations in reverse sequence of the order number
+    insertoperations := selectsortedset( schedule, Operation_SC, operation,
+                                         operation.Type() = "InsertBottom"
+                                         and ( operation.PlanUnit_SC().Order_SC().OrderNr() = "11"
+                                               or operation.PlanUnit_SC().Order_SC().OrderNr() = "118"
+                                               or operation.PlanUnit_SC().Order_SC().OrderNr() = "122" ),
+                                         -[Number]operation.PlanUnit_SC().Order_SC().OrderNr() );
+    
+    casingresource := select( schedule, ResourceGroup_SC.Resource_SC, resource, resource.Name() = "1201" );
+    casingresource.PlanLast( casingoperations );
+    
+    insertresource := select( schedule, ResourceGroup_SC.Resource_SC, resource, resource.Name() = "1301" );
+    insertresource.PlanLast( insertoperations );
+    
+    // Freeze the horizon for 1 day
+    schedule.PlanningConfiguration().FrozenPeriod( Duration::Days( 1 ) );
+    
+    // test should be extremely quick
+    usersettings := guard( schedule.Optimization().OptimizerSequencing().UserSetting(), null( OptimizerUserSettingSequencing ) );
+    if ( not isnull( usersettings ) ) 
+    {
+      usersettings.TimeLimit( Duration::Seconds( 0.5 ) );
+    }
+    
+    Transaction::Transaction().Propagate();
+  *]
+}

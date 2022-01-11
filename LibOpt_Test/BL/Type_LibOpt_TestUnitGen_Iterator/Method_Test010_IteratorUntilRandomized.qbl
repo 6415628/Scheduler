@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test010_IteratorUntilRandomized (LibOpt_TestDataset dataset)
+{
+  Description: 'Create random iterator test cases, varying the max number of iterations and max number of parallel. Check whether the iterator does the correct number of iterations and max number of parallel.'
+  TextBody:
+  [*
+    // Run randomized test
+    nr_of_iterations := Number::Random( 0, 20 );
+    nr_of_parallel := Number::Random( 1, 10 );
+    
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    iterator := opt.IteratorUntil( run, 'Iterator' );
+    iterator.SetMaxIterations( nr_of_iterations );
+    iterator.MaxParallel( nr_of_parallel );
+    component := opt.ComponentCounter( run, 'Counter' );
+    component.Delay( Duration::Millis(  10 ) );
+    
+    run.SetStartComponent( iterator );
+    iterator.To( component );
+    
+    str := run->Start();
+    str->IgnoreException()->|this->( this )
+      {
+        this.Run().AssertEqual( nr_of_iterations, component.NrOfTimesCalled(), 'Number of calls has an unexpected value' );
+        this.CheckMaxParallel( run, nr_of_parallel );
+      }
+    str->Exception()->( e )
+    {
+      this.Run().RegisterFailure( 'Exception caught: ' + e.Message() + ', parallel = ' + [String] nr_of_parallel + ', iterations =' + [String] nr_of_iterations  );
+    };
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

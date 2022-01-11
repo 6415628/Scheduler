@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_SettingsSequencing (CDSchedule cdschedule)
+{
+  Description: 'Restore settings sequencing core data relations to planning object'
+  TextBody:
+  [*
+    // Restore SettingsSequencing relations
+    schedule := this.Schedule();
+    optimizer := guard( schedule.Optimization().OptimizerSequencing(), null( OptimizerSequencing ) );
+    
+    if( not isnull( optimizer ) )
+    {
+      traverse( cdschedule, CDEntity.astype( CDSettingsSequencing ), cdSettingsSequencing )
+      {
+        if( cdSettingsSequencing.IsActive() )
+        {
+          settingsSequencing := SettingsSequencing::FindTypeIndexSettingsSequencing( cdSettingsSequencing.Id() );
+          optimizer.ActiveSettings( relset, settingsSequencing );
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

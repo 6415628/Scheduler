@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod IsEdge (const Object o1, const Object o2) const declarative remote as Boolean
+{
+  Description: 'Returns true iff one object represents an operation and the other one of its allowed resources.'
+  TextBody:
+  [*
+    result := false;
+    // assumption: o1 is of type Operation, o2 of type Resource. If not, swap them. If still not, there's no edge.
+    if( o2.istype( Operation_SC ) )
+    {
+      // swap:
+      buf := o1;
+      o1 := o2;
+      o2 := buf;
+    }
+    if( o1.istype( Operation_SC ) and o2.istype( Resource_SC ) )
+    {
+      operation := o1.astype( Operation_SC );
+      resource := o2.astype( Resource_SC );
+      result := exists( operation, AllowedOperationOnResourceHard, oorh, oorh.Resource_SC() = resource );
+    }
+    return result;
+  *]
+}

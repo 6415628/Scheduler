@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method SaveSolution (Schedule schedule, ResourceGroup_SC resourcegroup)
+{
+  Description:
+  [*
+    Stores the current solution in object structure such that one can reconstruct the solution later.
+    Saves the plan of resources of the given resource group. If resourcegroup is null, saves the whole plan.
+  *]
+  TextBody:
+  [*
+    // mbr23, 2019-09-19 copied from legacy optimizer's OptimizerSnapshotMRSA and adapted.
+    
+    //select all resources, or if argument is given, just the argument resources
+    resources := selectset( schedule, ResourceGroup_SC.Resource_SC, resource, true );
+    if( not isnull( resourcegroup ) )
+    {
+      resources := selectset( resourcegroup, Resource_SC, res, true );
+    }
+    
+    //traverse the resource and add each operation in the solution
+    traverse( resources, Elements, resource )
+    {
+      currentsol := selectsortedset( resource,
+                                     Task_SC.astype( SingleTaskBase ).OperationAsSingleTask,
+                                     operation,
+                                     true,
+                                     operation.SingleTaskBase().SequenceNr() );
+    
+      traverse( currentsol, Elements, operation )
+      {
+        //The operation scheduled on the resource is stored in an object OptimizerPlanElementInSnapshot
+        OperationOnResourceInScheduleMRS::Create( this, operation, resource );
+      }
+    }
+  *]
+}

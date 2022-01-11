@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupStockElementInventoryTarget (const ProductInStockingPointStock productInStockingPointStock)
+{
+  Description: 'Backup stock element inventory target core data'
+  TextBody:
+  [*
+    traverse( productInStockingPointStock, ScheduleStockElement.astype( StockElementInventoryTarget ), stockelementinventorytarget )
+    {
+      cdStockElementInventoryTarget := this.CDEntity( relnew, CDStockElementInventoryTarget );
+      CopyCorresponding::CopyFrom( stockelementinventorytarget ).CopyTo( cdStockElementInventoryTarget );
+      
+      // Persist the relation to product in stocking point stock
+      cdStockElementInventoryTarget.ProductID( productInStockingPointStock.ProductID() );
+      cdStockElementInventoryTarget.StockingPointID( productInStockingPointStock.StockingPointID() );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

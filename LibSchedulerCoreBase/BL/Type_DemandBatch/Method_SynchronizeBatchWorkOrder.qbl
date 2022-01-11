@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeBatchWorkOrder () as BatchWorkOrder
+{
+  TextBody:
+  [*
+    // wkn1 Jul-27-2017 (created)
+    // Propagate to get the updated Quantity & DueDate of the DemandBatch, to be use to update WorkOrder later
+    Transaction::Transaction().Propagate( relation( DemandBatch, DemandBatchType ) );
+    Transaction::Transaction().Propagate( attribute( DemandBatch, Quantity ) );
+    Transaction::Transaction().Propagate( attribute( DemandBatch, DueDate ) );
+    Transaction::Transaction().Propagate( attribute( DemandBatch, IsProduct ) );
+    
+    workorder := this.BatchWorkOrder();
+    
+    if( isnull( workorder ) )
+    {
+      woid := this.Schedule().GetLastBatchWorkOrderID();
+      workorder := this.CreateBatchWorkOrder( woid );
+    }
+    
+    workorder.Update( this );
+    workorder.SynchronizeWorkOrderOperations();
+    workorder.SynchronizeSupplyOrMaterial();
+    workorder.SynchronizeOrder_SC();
+    
+    return workorder;
+  *]
+}

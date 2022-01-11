@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method Edit (GUIComponent parent, NamedValueTree selection, String new_defined_by) as Number id:Method_DialogSettingsEngine_Edit_425
+{
+  #keys: '[139164.3.1812409177]'
+  Body:
+  [*
+    engine := construct( shadow[LibSE_SettingsContainer] );
+    
+    Dialog.Data( engine );
+    Dialog.ValueHolderNewDefinedBy().Data( new_defined_by );
+    
+    this.GenerateSettings( selection );
+    
+    modal_result := Dialog.DoModal( parent );
+    
+    if ( modal_result > 0 )
+    {
+      //data.Commit();
+      
+      traverse( engine, Setting, setting )
+      {
+        nodes := selectsortedset( setting, SettingNode, node, true, node.SequenceNr() );
+        nv := selection.Root();
+        traverse( nodes, Elements, node )
+        {
+          nv := nv.Child( selection.GetHandle( node.Name() ) );    
+        }
+        this.WriteSetting( setting, nv );
+      }
+    }
+    
+    return modal_result;
+  *]
+}

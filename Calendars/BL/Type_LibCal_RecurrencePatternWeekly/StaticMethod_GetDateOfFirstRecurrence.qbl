@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetDateOfFirstRecurrence (Date startOfPeriod_i, Date earliestStart_i, Number recurrenceInterval_i) declarative remote as Date
+{
+  TextBody:
+  [*
+    date     := startOfPeriod_i;
+    prevDate := date;
+    
+    // For a Weekly pattern the start of the week must be used.
+    startDate := earliestStart_i.StartOfWeek();
+    
+    while( date < startDate )
+    {
+      prevDate := date;
+      date     := LibCal_RecurrencePatternWeekly::GetDateOfNextRecurrence( date, recurrenceInterval_i );
+    }
+    
+    // Use the last recurrence *before* the earliestStart as first recurrence,
+    // because the last occurrence of this recurrence can end after earliestStart, and must therefore be taken into account.
+    return prevDate;
+  *]
+}

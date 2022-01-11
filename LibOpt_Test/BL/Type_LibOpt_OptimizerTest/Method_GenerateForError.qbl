@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenerateForError (LibOpt_Run template) as owning LibOpt_Runs
+{
+  Description: 'Generate copies of the run that should be run when testing for errors.'
+  TextBody:
+  [*
+    result := construct( LibOpt_Runs );
+    result.Add( template );
+    
+    // A different component before
+    copy := template.Copy();
+    copy.Comment( ifexpr( copy.Comment() = '', '', copy.Comment() + ' - ' ) + '+ component (reactive)' )
+    c := this.ComponentCounter( copy, 'C' );
+    c.To( copy.StartComponent() );
+    copy.SetStartComponent( c );
+    result.Add( copy );
+    
+    temp := result.Copy();
+    result := construct( LibOpt_Runs );
+    traverse( temp, Elements, run )
+    {
+      result.AddInPlace( LibOpt_OptimizerTest::GenerateForErrorHelperLinks( run.StartComponent() ) );
+    }
+    temp := result.Copy();
+    result := construct( LibOpt_Runs );
+    traverse( temp, Elements, run )
+    {
+      result.AddInPlace( LibOpt_OptimizerTest::GenerateForErrorHelperSuboptimizers( run.StartComponent() ) );
+    }
+    
+    return & result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

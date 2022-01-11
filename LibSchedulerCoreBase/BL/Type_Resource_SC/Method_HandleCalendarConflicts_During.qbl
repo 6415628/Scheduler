@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleCalendarConflicts_During (ExplicitTimeInterval interval, output DateTime start, output DateTime end, 
+  Real capacity)
+{
+  Description: 'Handle conflicts where reported interval is during existing time interval'
+  TextBody:
+  [*
+    // jiex Sep-29-2016 (created)
+    // process conflict relation: During
+    // Shorten existing ( interval.Start, start )
+    // add new interval ( end, interval.End )
+    if( interval.Start() < start and interval.End() > end )
+    {
+      // External interval will take precedence over internally created interval
+      if( not interval.istype( ResourceExplicitTimeInterval ) 
+          // In the case where both intervals are external, lower capacity interval take priority
+          or interval.Capacity() > capacity )
+      {                                        
+        new_capacity := interval.Capacity();
+        new_comment := interval.Comment();
+        new_start := end;
+        new_end := interval.End();                                                              
+        // cut the existing to input start 
+        this.UpdateTimeInterval( interval, interval.Start(), start );
+        
+        if( interval.istype( ResourceExplicitTimeInterval ) )
+        {
+          rit := interval.astype( ResourceExplicitTimeInterval );
+          
+          ResourceExplicitTimeInterval::Create( rit.Calendar().astype( ResourceCalendar ).Resource_SC(), new_start, new_end, rit.TimeIntervalID(),  rit.Comment(), rit.Capacity() )
+        }
+        else
+        {
+        // create new interval base on existed interval
+          this.ResourceCalendar().AddTimeInterval( new_start, new_end, new_capacity, new_comment );
+        } 
+      }
+      else
+      {
+        //if the internal has smaller capacity, then 
+        start := interval.End() + Duration::Seconds( 1 );
+        end := interval.End() + Duration::Seconds( 1 );
+      }
+    }
+  *]
+}

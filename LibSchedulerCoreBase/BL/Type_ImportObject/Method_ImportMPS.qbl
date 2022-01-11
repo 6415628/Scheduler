@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportMPS
+{
+  Description: 'Import MPS data.'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    isMPSSourceCP := schedule.IsMPSSourceCP();
+    isMPSSourceMP := schedule.IsMPSSourceMP();
+    
+    // Using DEF
+    if( guard( this.Schedule().IntegrationConfiguration().UseDataExchangeFramework(), false ) )
+    {
+      if( isMPSSourceCP )
+      {
+        this.ImportCP_DEF();
+      }
+      else if( isMPSSourceMP ) // Placeholder for MP DEF import logic
+      {
+        this.ImportMP_DEF();
+      }
+    }
+    // Using EDI
+    else
+    {
+      if( isMPSSourceCP )
+      {
+        this.ImportCP_EDI();
+      }
+      else if( isMPSSourceMP )
+      {
+        this.ImportMP_EDI();
+      }
+      
+      if( not this.Schedule().IntegrationConfiguration().IsInventoryTargetFromERP() )
+      {
+        this.ImportInventoryTarget();
+      }
+    }
+  *]
+}

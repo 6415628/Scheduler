@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckStart
+{
+  TextBody:
+  [*
+    Transaction::Transaction().Propagate( constraint( LibOpt_Run, ComponentNamesAreUnique ) );
+    errors := construct( LibOpt_SnapshotErrors );
+    if( not this.ComponentNamesAreUnique() )
+    {
+      duplicates := selectduplicates( this, Component, component, true, component.Name() );
+      duplicate_names := selectuniquevalues( duplicates, Elements, component, true, component.Name() );
+      err := construct( LibOpt_Error, GeneralInformation := Translations::LibOpt_Run_Start_DuplicateNames( duplicate_names ) );
+      errors.Add( LibOpt_SnapshotError::Throw( this, err ) );
+    }
+    if( isnull( this.StartComponent() ) )
+    {
+      err := construct( LibOpt_Error, GeneralInformation := Translations::LibOpt_Run_Start_NoStartComponent() );
+      errors.Add( LibOpt_SnapshotError::Throw( this, err ) );
+    }
+    if( not this.StartedOn().IsMinInfinity() )
+    {
+      err := construct( LibOpt_Error, GeneralInformation := Translations::LibOpt_Run_Start_AlreadyStarted() );
+      errors.Add( LibOpt_SnapshotError::Throw( this, err ) );
+    }
+    
+    if( errors.Size() > 0 )
+    {
+      this.RollbackOneTransaction();
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

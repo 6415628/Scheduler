@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetPotentialCalendarsToSubscribeTo () remote as owning LibCal_Calendars
+{
+  Description: 'Override this method in order to return the calendars to which this calendar can subscribe (to the events of those calendars, this is).'
+  TextBody:
+  [*
+    // Can be overridden to add more calendars.
+    
+    /* Development Note: ideally the accessibility of this method would not be 'Public', but it has to be (for now) for the Parser Improvements
+     * that are introduced in Q612. Reason is that an override of this method should be able to call this method using 'super', which results
+     * in a parse error if the override is outside of the Calendar Library (i.e. in the Model).
+     * The idea is to introduce a new accessibility 'Protected' in the core Software. The current 'Protected' will then considered to be 'Module-Protected',
+     * which means that the method can only be accessed by the type and its subtypes within the same module. This is even more restrictive than 'Module',
+     * where also other types within the same module can access this method. The new 'Protected' will then be "cross-module", so that also subtype in
+     * other modules can access the method (but no other types).
+     * But for now the method must be 'Public'.
+    */
+    
+    // Initialize as LibCal_Calendars so that different subtypes can be combined.
+    calendars := construct( LibCal_Calendars );
+    
+    // It is always possible to subscribe to events of the CommonCalendar.
+    calendars.Add( this.GetCommonCalendar() );
+    
+    return &calendars;
+  *]
+}

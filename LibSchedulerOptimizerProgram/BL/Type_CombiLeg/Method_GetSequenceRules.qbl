@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetSequenceRules (CombiLeg prev_combileg) declarative remote as owning Rules
+{
+  TextBody:
+  [*
+    // yifei Aug-24-2021 (created)
+    // if prev_combileg is not null, 
+    // because no rules can work acrose programtype, so we only care about the rules belong to the CombiProgramPhase which share same CombiProgramTyp as the prev_combileg
+    cpps := selectset( this, 
+                       CombiLegOnCombiPhase.CombiProgramPhase, 
+                       cpp, 
+                       isnull( prev_combileg )
+                       or exists( prev_combileg,
+                                  CombiLegOnCombiPhase.CombiProgramPhase.CombiProgramType, 
+                                  cpt,
+                                  cpt = cpp.CombiProgramType() ) );
+    
+    rules := selectset( cpps,
+                      Elements.PPCOnResource.RuleOnPPCOnResource.Rule,
+                      rule,
+                      rule.RuleSubType().IsCheckOnPreviousOperation()
+                      and not rule.RuleSubType().IsCumulativeValueNeeded() );
+    
+    resource_rules := selectset( this, 
+                                 CombiLegOnCombiPhase.PPCOnResource.RuleOnPPCOnResource.Rule,
+                                 rule, 
+                                 rule.RuleScopeSelected() = RuleConstant::RuleScope_AllTasksOnResource() 
+                                 and rule.RuleSubType().IsCheckOnPreviousOperation()
+                                 and not rule.RuleSubType().IsCumulativeValueNeeded() );
+                                 
+    rules := rules.Union( resource_rules );                             
+    
+    return &rules;
+  *]
+}

@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCanApplyCharacteristicToResource_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    isSingleResource := false;
+    isApplicableForSingleResource := false;
+    isValid := false;
+    
+    this.GetTestVariant( isSingleResource,
+                         isApplicableForSingleResource,
+                         isValid );
+    
+    // Create resource
+    if( isSingleResource )
+    {
+      UTFMockObjectFactory::CreateSingleResource( schedule, 'Single Resource' );  
+    }
+    else
+    {
+      UTFMockObjectFactory::CreateBatchResource( schedule, 'Batch Resource' );  
+    }
+    
+    // Create characteristic
+    characteristic := Characteristic::Create( schedule, 'Characteristic', 1 );
+    characteristic.IsApplicableForSingleResource( isApplicableForSingleResource );
+    characteristic.IsApplicableForBatchResource( not isApplicableForSingleResource );
+  *]
+}

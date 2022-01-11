@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetFolderFromFile (String fileName_i) as String
+{
+  Description: 'Helper method to retrieve the folder of a file'
+  TextBody:
+  [*
+    // tgn3 Apr-15-2021 (created)
+    
+    // Need to check if forward or backslash used
+    forwardSlash := DMF_Utility::GetForwardSlash();
+    backslash    := DMF_Utility::GetBackslash();
+    
+    // Assumption: directory should NEVER have a mix of both back and forward slash.
+    // In the event it does, forward slash is assumed to be leading
+    delim := ifexpr( fileName_i.FindString( forwardSlash, 0 ) <> -1, forwardSlash, backslash );
+    parts := fileName_i.Tokenize( delim );
+    
+    parts.Delete( parts.Size() - 1 );
+    
+    folderPath := parts.ToString( delim );
+    
+    return folderPath;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

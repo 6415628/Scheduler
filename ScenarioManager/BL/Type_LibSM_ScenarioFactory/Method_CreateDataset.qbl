@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateDataset (String name, String storageState, String timezoneID) as LibSM_Dataset
+{
+  Description: 'Creates a dataset and returns a LibSM_Dataset object that acts as a wrapper.'
+  TextBody:
+  [*
+    // Make sure the given name is really unique.
+    uniqueName := this.GetUniqueDatasetName( LibSM_Scenario::ConvertScenarioNameToIdentifier( name ) );
+    
+    // Create the actual Dataset file. 
+    datasetFile := null( MDSObject );
+    if ( TimeZone::HasTimeZoneSupport() )
+    {
+      datasetFile := LibSM_ModelExtensions::CreateMDS( uniqueName, storageState, timezoneID );
+    }
+    else
+    {
+      datasetFile := LibSM_ModelExtensions::CreateMDS( uniqueName, storageState );
+    }
+    
+    
+    // Create the LibSM_Dataset 'wrapper' object.
+    mdsid   := MDSID::Create( datasetFile.MDSID() );
+    path    := guard( MDSEditor::Editor().LoadedObjectInfo( datasetFile.MDSID() ).Path(), '/root' );
+    dataset := LibSM_Dataset::Create( this.ScenarioManager(), datasetFile.Kind(), datasetFile.Name(), path, timezoneID );
+    dataset.UpdateState( mdsid );
+    
+    return dataset;
+  *]
+}

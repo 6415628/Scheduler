@@ -1,0 +1,100 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoHandleResult (Algorithm algorithm, LibOpt_Task task) as stream[JSON]
+{
+  Description:
+  [*
+    The boiler plate of calling the handle result method of the algorithm.
+    
+    - Log the timings (init, solve and handle result) in the algorithm snapshots.
+    - Execute the handle result method.
+    - Re-execute if this is configured.
+    - Execute rollback logic in `PostHandleResult`.
+  *]
+  TextBody:
+  [*
+    transaction := LibOpt_CurrentTransaction::GetCurrentTransaction( this );
+    // Register the task so that the 'RollbackCurrentTransaction' method knows which task belongs to which transaction. 
+    // Also, registering the task ensures that any LibOpt_Snapshots that are created this transaction are linked to the task. 
+    // The snapshots are also indirectly linked to the SnapshotComponent of the task. This link is required to properly handle rollbacks.
+    // Therefore, RegisterTask should be called before any new snapshots are created. 
+    istaskregistered := transaction.RegisterTask( task );
+    
+    // We break the rule here that snapshots should not be updated later.
+    // We do this so we can get the handle result duration even if the handle result throws an error.
+    // Note that we update it only in the same transaction.
+    snapshot := null( LibOpt_SnapshotAlgorithm );
+    if( task.Run().HasSnapshots() )
+    {
+      snapshot := this.CreateAlgorithmSnapshot( algorithm );
+    }
+    
+    kpi_snapshot_pre := null( LibOpt_SnapshotKPI );
+    kpi := this.PreHandleResult( task, kpi_snapshot_pre );
+    
+    scope := task.Scope();
+    
+    if( transaction.IsSafe() )
+    {
+      // The task is already registered at the beginning of this method, so the BeforeMethodCall_ExistingSafeTransaction method always returns false. 
+      transaction.BeforeMethodCall_ExistingSafeTransaction( task );
+      // A user error might occur in DoHandleResultForAlgorithmCall or in other methods called by DoHandleResultForAlgorithmCall. 
+      // However, transaction.IsSafe() is true, so we are inside a try{...} block. We have also called BeforeMethodCall_ExistingSafeTransaction. The error is therefore handled gracefully. 
+      scope := this.DoHandleResultForAlgorithmCall( algorithm, task );
+      transaction.AfterMethodCall_ExistingSafeTransaction( task, false );
+    }
+    else
+    {
+      try
+      {
+        // The task is already registered at the beginning of this method, so the BeforeMethodCall_TryBlock method always returns false. 
+        transaction.BeforeMethodCall_TryBlock( task );
+        // A user error might occur in DoHandleResultForAlgorithmCall or in other methods called by DoHandleResultForAlgorithmCall. 
+        // However, we are inside a try{...} block. We have also called BeforeMethodCall_TryBlock. The error is therefore handled gracefully. 
+        scope := this.DoHandleResultForAlgorithmCall( algorithm, task );
+        transaction.AfterMethodCall_TryBlock( task, task.Run(), false );
+      }
+      onerror
+      {
+        LibOpt_SnapshotAlgorithm::CaptureHandleResultDuration( snapshot, algorithm );
+        transaction.OnError( e );
+      }
+      onfailure
+      {
+        LibOpt_SnapshotAlgorithm::CaptureHandleResultDuration( snapshot, algorithm );
+        transaction.OnFailure( e );
+      }
+    }
+    
+    LibOpt_SnapshotAlgorithm::CaptureHandleResultDuration( snapshot, algorithm );
+    
+    result := null( stream[JSON] );
+    if( this.ShouldReExecute( algorithm ) )
+    {
+      if( not isnull( kpi_snapshot_pre ) )
+      {
+        kpi_snapshot_pre.Delete();
+      }
+      LibOpt_AlgorithmStopwatch::Reset( algorithm, LibOpt_SnapshotAlgorithm::FrameworkInitialize() );
+      LibOpt_AlgorithmStopwatch::Reset( algorithm, LibOpt_SnapshotAlgorithm::FrameworkSolve() );
+      LibOpt_AlgorithmStopwatch::Reset( algorithm, LibOpt_SnapshotAlgorithm::FrameworkHandleResult() );
+      LibOpt_AlgorithmStopwatch::Reset( algorithm, LibOpt_SnapshotAlgorithm::Initialize() );
+      LibOpt_AlgorithmStopwatch::Reset( algorithm, LibOpt_SnapshotAlgorithm::Solve() );
+      LibOpt_AlgorithmStopwatch::Reset( algorithm, LibOpt_SnapshotAlgorithm::HandleResult() );
+      result := this.DoExecute( algorithm, task );
+    }
+    else
+    {
+      this.FinalizeSnapshot( task, scope );
+      this.PostHandleResult( task, kpi );
+      result := this.ContinueWithoutFinalize( task, this.Next(), scope );
+    }
+    
+    // UnregisterTask can only be called after PostHandleResult is called, because PostHandleResult might roll back the current transaction.
+    // This rollback requires that the task is still registered. 
+    transaction.UnregisterTask( task, istaskregistered );
+    
+    return result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

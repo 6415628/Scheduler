@@ -1,0 +1,96 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintEndPathRule (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs, ProgramSetConfiguration programsetconfig, 
+  Rule rule, Boolean is_min_for_shutdown_rule)
+{
+  Description:
+  [*
+    For the min cummulative length rules, define an end path constraint (single penalty at the end of the path)
+    For the max rules, define an end node constraint since the model penalizes each node past the maximum
+  *]
+  TextBody:
+  [*
+    // Must be a mirror of POAAddConstraintEndRule (except with an EndPath constraint)since the same logic applies 
+    // (for some reason the abstract POAConstraint class does not have expressions and value sets, so I could not prevent duplicating the code)
+    if( rule.RuleSubType().IsMinimumCombinedLength()
+        or is_min_for_shutdown_rule )
+    {
+      strategy := this.GetSchedule().OptimizerStrategyInSchedule();
+      isshutdownrule := rule.RuleScopeSelected() = RuleConstant::RuleScope_Shutdown();
+      optimizer_factor := ifexpr( rule.IsHardConstraintForOptimizer() or rule.IsProgramPhaseTransitionRule() or isshutdownrule, this.Settings().PenaltyForHardConstraints(), 1 ); //In poa , make those cumulative rule to almost hard
+      defaultfactor := maxvalue( rule.PenaltyParameterSlope_a() * strategy.KPIWeightPreferenceRuleViolation() * optimizer_factor, optimizer_factor );
+      
+      //////////////// Everything in this block is specific to this method, the rest of the method should be identical to the EndRule method//////////////////////////
+      endorderconstraint := poa.NewEndPathConstraint( SuboptimizerPOACombiLeg::NamePOAConstraintEndPathRule( rule, is_min_for_shutdown_rule ) );
+      //////////////////////////////////////////////////////////////////////// End of the block //////////////////////////////////////////////////////////////////////
+      
+      valueset := POAValueSet::P( poa, SuboptimizerPOACombiLeg::NamePOAConstraintEndPathRule( rule, is_min_for_shutdown_rule ), Real::MaxReal() );
+      
+      endorderconstraint.ValueSet( valueset );
+      
+      // POA does not accept a power of 0, this would anyway disable the penalty
+      if( rule.PenaltyParameterPower_b() <> 0 )
+      {
+        endorderconstraint.Factor( defaultfactor );
+        endorderconstraint.Power( rule.PenaltyParameterPower_b() );
+        optimizer_violationoffset := ifexpr( rule.IsHardConstraintForOptimizer() or rule.IsProgramPhaseTransitionRule() or isshutdownrule, this.Settings().OffsetForHardConstraints(), rule.PenaltyParameterOffset_c() )
+        endorderconstraint.ViolationOffset( optimizer_violationoffset );
+      }
+      
+      // We should only apply this rule at the relevant combilegs.
+      // Which are the combilegs that have a phase/program to which the rule applies
+      //// and that are the last of that phase/program type that are in scope
+      // For shutdown rules it should simply be the last leg in scope that includes the shutdown rules
+      isphaserule := rule.RuleScopeSelected() = RuleConstant::RuleScope_ProgramPhase();
+      isphasetransitionrule := rule.IsProgramPhaseTransitionRule();
+      traverse( combilegs, Elements, combileg,
+                combileg.GetIsRelevantForRule( programsetconfig, rule )
+                and ( ifexpr( isshutdownrule,
+                              combileg.GetIsLastLegInScopeForShutdownRule( combilegs, programsetconfig, rule ),
+                              combileg.GetIsLastLegOfProgramTypeInScope( programsetconfig, combilegs )
+                              or ( isphaserule
+                                   and combileg.GetIsLastLegOfProgramPhaseInScope( programsetconfig, combilegs ) ) ) ) )
+      {
+        isminrule := rule.RuleSubType().IsMinimumCombinedLength() or ( ( isshutdownrule or isphasetransitionrule ) and is_min_for_shutdown_rule );
+        characteristic := rule.CharacteristicMain();
+        
+        if( isshutdownrule )
+        {
+          characteristic := rule.CharacteristicScope();
+        }
+        
+        if( isshutdownrule 
+            and characteristic.ID() = RuleConstant::Characteristic_DurationInHours()
+            and not is_min_for_shutdown_rule )   // for non shutdown rule,  not share time expression yet, because not sure about how to adjust the endvalue, should refactor based on example
+        {
+          charexpression := poa.Expression( SuboptimizerPOACombiLeg::NamePOAExpressionTime() );
+          endorderconstraint.Expression( charexpression );
+        }
+        else
+        {
+          charexpression := poa.Expression( SuboptimizerPOACombiLeg::NamePOAExpression( characteristic, isminrule, programsetconfig, isphaserule, isshutdownrule ) );
+          endorderconstraint.Expression( charexpression );
+        }
+        pathtype := poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathCombiLeg( combileg ), combileg );
+        
+        // Correct the rule value for the out of scope value (only for durations, other characteristics are handled with the reset rule )
+        endvalue := rule.RuleValue() - combileg.GetOutOfScopeCumulativeValueDurationAtEnd( characteristic, isminrule, programsetconfig, isphaserule, combilegs );
+        
+        // For minimum combined length rules, we set the end value to its negative since we want to ensure at least this many operations being scheduled
+        endvalue := ifexpr( rule.RuleSubType().IsMinimumCombinedLength(), -endvalue, endvalue );
+      
+        if( isshutdownrule )
+        {
+          ruleincombileg := select( rule, RuleInCombiLeg, ricl, ricl.CombiLeg() = combileg );
+          endvalue := ifexpr( is_min_for_shutdown_rule, ruleincombileg.MinimumConstraintEndPathValue(), ruleincombileg.MaximumConstraintEndPathValue() );
+        }
+        else if( isphasetransitionrule and isminrule )
+        {
+          endvalue := -rule.RuleValue();
+        }                      
+        
+        valueset.Set( pathtype, endvalue );
+      }
+    }
+  *]
+}

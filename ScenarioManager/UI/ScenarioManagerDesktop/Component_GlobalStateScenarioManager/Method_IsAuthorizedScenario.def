@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method IsAuthorizedScenario (LibSM_Scenario scenario) as Boolean id:Method_LibSM_GlobalState_IsAuthorizedScenario
+{
+  #keys: '[136398.1.587826926]'
+  Body:
+  [*
+    // True if scenario is not deleted and ( no authorization apply or is created by current user or system or authorized for current user )
+    scenarioManager         := this.GetScenarioManagerDataset();
+    userName                := this.GetUserName();
+    isAuthorizationApply    := scenarioManager.GlobalParameter().IsAuthorizationApplied();
+    isDeleted               := scenario.IsDeleted();
+    isCreatedByUserOrSystem := scenario.IsAuthorized( userName );
+    //isVisible               := scenario.IsVisible( dhUserGroup.Data(), true, this.GetUserName() );
+    value                   := not isDeleted and ( not isAuthorizationApply or isCreatedByUserOrSystem )
+    
+    return value;
+  *]
+}

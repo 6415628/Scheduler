@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintEarliestStartForConfigurableRules (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs, Operation_SCs operations, 
+  Characteristic characteristic, Boolean isminrule, ProgramSetConfiguration programsetconfig, 
+  Boolean isphaserule, Boolean isshutdownrule)
+{
+  Description:
+  [*
+    Set the earliest start on the nodes for the max duration expressions. This ensures the POA will see the gaps in the schedule for these rules as well.
+    
+    We cannot do the same for the min duration expressions since we track them by adding a negative participation and adding an end path rule that gives POA incentive to put sufficient operations to make the end participation less than the target.
+    We cannot account for gaps in that
+  *]
+  TextBody:
+  [*
+    // zyi1 Jul-21-2021 (created)
+    if(  characteristic.ID() = RuleConstant::Characteristic_DurationInHours()
+         and not isminrule )
+    {
+      constr := poa.NewStartConstraint( SuboptimizerPOACombiLeg::NamePOAConstraintEarliestStartCharacteristic( characteristic, isminrule, programsetconfig, isphaserule, isshutdownrule ) );
+      
+      charexpr := poa.Expression( SuboptimizerPOACombiLeg::NamePOAExpression( characteristic, isminrule, programsetconfig, isphaserule, isshutdownrule ) );
+      constr.Expression( charexpr );
+      
+      valueset := POAValueSet::N( poa, SuboptimizerPOACombiLeg::NamePOAValueSetEarliestStartCharacteristic( characteristic, isminrule, programsetconfig, isphaserule, isshutdownrule ), Real::MinReal() );
+      constr.ValueSet( valueset );
+      
+      scheduletime := this.GetSchedule().Time();
+    
+      traverse( operations, Elements, operation )
+      {
+        node := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation ), operation );
+        earlieststart := maxvalue( operation.EarliestStart(),
+                                   scheduletime ).HoursAsReal( scheduletime );
+    
+        valueset.Set( node, earlieststart );
+      }
+      
+      traverse( combilegs, Elements, combileg )
+      {
+         // The leg cannot end before its earliest end
+        dummyend := poa.Node( SuboptimizerPOACombiLeg::NamePOADummyEnd( combileg ), combileg );
+        legearliestend := combileg.GetEarliestEnd();
+        valueset.Set( dummyend, maxvalue( legearliestend, scheduletime).HoursAsReal( scheduletime ) );
+        
+        // The leg cannot start before its earliest start
+        dummystart := poa.Node( SuboptimizerPOACombiLeg::NamePOADummyStart( combileg ), combileg );
+        legearlieststart := combileg.GetEarliestStart( combilegs );
+        valueset.Set( dummystart, maxvalue(  legearlieststart, scheduletime).HoursAsReal( scheduletime ) );  
+      }
+    }
+  *]
+}

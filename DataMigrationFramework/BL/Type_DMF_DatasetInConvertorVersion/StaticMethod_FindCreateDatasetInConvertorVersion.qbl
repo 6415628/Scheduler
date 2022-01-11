@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod FindCreateDatasetInConvertorVersion (DMF_ConvertorVersion owner_i, DMF_Dataset dataset_i) as DMF_DatasetInConvertorVersion
+{
+  Description: "Find and create dataset if it doesn't exist"
+  TextBody:
+  [*
+    dicv := select( owner_i, DatasetInConvertorVersion, dicv, dicv.Dataset().DatasetMDSID() = dataset_i.DatasetMDSID()  );
+    
+    // Keep the existing dciv dataset, but do not create any extra ones if the dataset
+    // is already deemed deleted, also do not create a new one if the version is older
+    // than the current DataConvertor version
+    if( isnull( dicv )
+        and owner_i.SequenceNr() > guard( owner_i.ConvertorDataset().CurrentVersion().SequenceNr(), -1 ) )
+    {
+      dicv := DMF_DatasetInConvertorVersion::Create( owner_i, dataset_i );
+    }
+    
+    return dicv;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

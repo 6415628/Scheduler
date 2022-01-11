@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: ListFeedbackBatch
+Response OnClick (ImportedFeedbackBatch selection) id:Response_ListFeedbackBatch_MenuStartCancelBatch_OnClick
+{
+  #keys: '[129524.0.5212970]'
+  Body:
+  [*
+    // report start cancel of selected feedback batch
+    dlg := construct( DialogFeedbackBatch );
+    resource := ResourceSelection.Data();
+    dlg.ReportedResourceSelection().BoundValue( resource.Name() );
+    dlg.Title( Constants::StatusCancelled() );
+    dlg.Data( selection );
+    dlg.ReportedResourceSelection().Enabled( false );
+    dlg.EnterBatchFeedback( this, Constants::StatusCancelled() );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /ListFeedbackBatch/Responsedef_ListFeedbackBatch_Menu_OnClick
+  Initiator: 'MenuStartCancelBatch'
+  Precondition:
+  [*
+    feedback := '';
+    result := false;
+    
+    if( not isnull( ResourceSelection.Data() ) )
+    {
+      result := FormShopFloorEntryClient.IsBatchResource( ResourceSelection.Data() );
+    
+      //if( result and not( ListFeedbackBatch.HasFocus() or ButtonStart.HasFocus() or ButtonStop.HasFocus() or ButtonWork.HasFocus() ) )
+      //{
+      //  feedback := 'Feedback is only available for Feedback Batch.';
+      //}
+      //else
+      if( selection.ImportedFeedbackBatchContent( relsize ) = 0 )
+      {
+        feedback := Translations::SC_DesignerListFeedbackBatch_SelectedBatchIsEmpty();
+      }
+      else if ( not selection.HasReportedStart() or selection.HasReportedEnd() )
+      {
+        feedback := Translations::SC_Designer_ListFeedbackBatch_BatchIsNotStartOrEnded();
+      }
+    }
+    return result and feedback = '';
+  *]
+}

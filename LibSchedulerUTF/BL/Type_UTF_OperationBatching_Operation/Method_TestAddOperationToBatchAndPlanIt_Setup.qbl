@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestAddOperationToBatchAndPlanIt_Setup (Schedule schedule)
+{
+  Description: 'Setup to test the add operation to batch and plan it logic.'
+  TextBody:
+  [*
+    // Create resource
+    resource := UTFMockObjectFactory::CreateBatchResource( schedule, 'resource_01' );
+    resource.ResourceGroup_SC().HasPractice( true );
+    
+    // Create order, plan unit and operations
+    operation_1 := UTFMockObjectFactory::CreateOperation( schedule, "operation_1", 1.0 );
+    operation_1.Practice( 'practice_1' );
+    
+    operation_2 := UTFMockObjectFactory::CreateOperation( schedule, "operation_2", 1.0 );
+    operation_2.Practice( 'practice_1' );
+    
+    // Create practice
+    GenericPractice::Create( schedule, 'practice_1' );
+    
+    // Propagate relation Schedule.Operation_SC
+    Transaction::Transaction().Propagate( relation( Schedule, Operation_SC ) );
+  *]
+}

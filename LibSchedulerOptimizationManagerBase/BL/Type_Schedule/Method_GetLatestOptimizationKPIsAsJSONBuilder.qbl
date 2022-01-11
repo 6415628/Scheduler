@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetLatestOptimizationKPIsAsJSONBuilder () as owning JSONBuilder
+{
+  TextBody:
+  [*
+    // Get start time and optimization duration
+    optimizingDuration := guard( this.Optimization().LastRun().Duration(), Duration::Zero() );
+    
+    // Adding Duration and Score
+    output := JSON::Object();
+    output.Add( "duration", optimizingDuration.TotalInSeconds() );
+    output.Add( "score", this.KPITotal() );
+    
+    // Adding KPI values as an array
+    kpis := JSON::Array()
+    
+    // KPIDeliveryPerformance
+    kpi := JSON::Object();
+    kpi.Add( 'name', "deliveryPerformance" );
+    kpi.Add( 'value', this.KPIDeliveryPerformance() );
+    kpis.Add( kpi );
+    
+    // GetKPINrUnplannedOperation
+    kpi := JSON::Object();
+    kpi.Add( 'name', "nrUnplannedOperation" );
+    kpi.Add( 'value', this.KPINrUnplannedOperation() );
+    kpis.Add( kpi );
+    
+    // GetKPIProductivity
+    kpi := JSON::Object();
+    kpi.Add( 'name', "productivity" );
+    kpi.Add( 'value', this.KPIProductivity() );
+    kpis.Add( kpi );
+    
+    // Finally adding KPIs to the JSON output
+    output.Add( "KPIs", kpis );
+    
+    // Returns a JSONObject, need to return owning so that the object is usable outside of this method scope
+    // but the variable is not owned, so using .Copy() instead
+    return output.Copy();
+  *]
+}

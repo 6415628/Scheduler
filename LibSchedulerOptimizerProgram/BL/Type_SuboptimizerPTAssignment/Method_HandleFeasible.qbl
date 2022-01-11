@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride HandleFeasible (MathematicalProgram program, LibOpt_Task task) as LibOpt_Scope
+{
+  TextBody:
+  [*
+    scope := task.Scope();
+    transientData := TransientDataSuboptimizerPTAssignment::Find( this, task );
+    
+    programtypemp := program.astype( SuboptimizerMPPTAssignment_PTAssignmentMP );
+    
+    //Select the first bucket that is not fixed.
+    bucketForOutput := minselect( transientData, Bucket, bucket, not bucket.IsFixed(), bucket.SequenceNr() );
+    
+    task.Log( "Bucket for output: " + bucketForOutput.SequenceNr().AsQUILL() );
+    
+    traverse( scope.ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, programType )
+    {
+      if( programtypemp.IsProgramAssignedVariables().Get( programType, bucketForOutput ).OptimalValue() > 0.5 )
+      {
+        task.Log( "Program type to be used: " + programType.Name() );
+        programType.IsSelectedByBatchCplex( true );
+      }
+      else
+      {
+        programType.IsSelectedByBatchCplex( false );
+      }
+    }
+    
+    if( task.Run().DebugScope() )
+    {
+      programtypemp.WriteProblemFile( "ProgramTypeMP.lp" );
+    }
+    
+    return task.Scope();
+  *]
+}

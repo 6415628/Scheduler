@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedFixedProductWO2COL (CDIntegration cdintegration)
+{
+  Description: 'Restore imported fixed product WO2COL core data to staging object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    // Restore ImportedFixedProductWO2COL
+    traverse( cdintegration, CDEntity.astype( CDImportedFixedProductWO2COL ), cdfp )
+    {
+      importedFixedProductWO2COL := schedule.ImportedFixedProductWO2COL( relnew, 
+                                                                         OrderLineNr := cdfp.OrderLineNr(),
+                                                                         OrderNr := cdfp.OrderNr(),
+                                                                         WorkOrderSupplyId := cdfp.WorkOrderSupplyId()
+                                                                       );
+      CopyCorresponding::CopyFrom( cdfp ).CopyTo( importedFixedProductWO2COL );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

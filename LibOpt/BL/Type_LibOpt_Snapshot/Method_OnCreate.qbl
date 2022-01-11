@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnCreate
+{
+  TextBody:
+  [*
+    this.TimeStamp( DateTime::ActualTime() );
+    this.PrecisionTimeStamp( OS::PrecisionCounter() / OS::PrecisionCounterFrequency() );
+    
+    // Log to the correct parent
+    if( isnull( this.Parent() ) )
+    {
+      current_transaction := LibOpt_CurrentTransaction::GetCurrentTransaction( this.Run().Optimization() );
+      task := current_transaction.GetTask();
+      
+      this.Parent( relset, guard( task.SnapshotComponent(), null( LibOpt_SnapshotComponent ) ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

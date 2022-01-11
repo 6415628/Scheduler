@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcGapToPrevious
+{
+  TextBody:
+  [*
+    // jiex Nov-4-2016 (created)  
+    // get material gap from table method on ContinuousResource.
+    value :=0.0;
+    resource := this.Resource_SC().astype( ContinuousResource );
+    
+    if( not isnull( this.LastFeedbackTask() ) )
+    {
+      value := this.LastFeedbackTask().ExportedGapToPrevious();
+    }                                                                                            
+    else
+    {
+      if( not this.IsParallelWithPrevious() )
+      {
+        if( not isnull( this.Previous() ) and not this.HasSetupDuration() )
+        {                                 
+          mingaprow := resource.GetGapMaterial( this.Previous().GetOperation(), this.GetOperation() ); 
+          value := maxvalue( guard( mingaprow.MinimumGap(), 0 ), this.Resource_SC().MinimumGapLength() )
+        }
+        else if( isnull( this.Previous() )
+                 and not isnull( this.Resource_SC().LastFeedbackTaskInSchedule() )
+                 and not isnull( this.Resource_SC().LastFeedbackTaskInSchedule().OperationTaskFeedback() )
+                 and not isnull( this.Resource_SC().LastFeedbackTaskInSchedule().OperationTaskFeedback().Operation_SC() ) )
+        {
+          mingaprow := resource.GetGapMaterial( this.Resource_SC().LastFeedbackTaskInSchedule().OperationTaskFeedback().Operation_SC(), this.GetOperation() );
+          value := maxvalue( guard( mingaprow.MinimumGap(), 0 ), this.Resource_SC().MinimumGapLength() )
+        }
+      }                                              
+    }
+    
+    this.GapToPrevious( value );
+  *]
+}

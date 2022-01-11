@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanLast (Batch batch) as BatchTask
+{
+  Description: 'This method call genericplanlast to move batch to last'
+  TextBody:
+  [*
+    task := this.GenericPlanLast( batch )
+    
+    if( task.Resource_SC().ResourceGroup_SC().HasFixedSequencePlanLogic() )
+    {
+      this.FSPLRunFixCircularityMethod( task )
+    }
+    
+    batch.AutomaticMaterialReservation();
+    
+    return task;
+  *]
+}

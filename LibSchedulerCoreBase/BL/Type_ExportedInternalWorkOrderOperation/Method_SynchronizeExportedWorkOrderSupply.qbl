@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SynchronizeExportedWorkOrderSupply
+{
+  TextBody:
+  [*
+    allinstances := selectset( this, ExportedInternalWorkOrderSupply, exportedwod, true );
+    updatedinstances := construct( ExportedInternalWorkOrderSupplies );
+    
+    traverse( this, InternalWorkOrderOperation.WorkOrderSupply.astype( InternalWorkOrderSupply ), wos )
+    {
+      id := wos.Id();
+      exportedwos := ExportedInternalWorkOrderSupply::FindExportedInternalWorkOrderSupply( id );
+    
+      if( isnull( exportedwos ) )
+      {
+        exportedwos := ExportedInternalWorkOrderSupply::Create( this, id );
+      }
+    
+      exportedwos.Update( wos );
+      updatedinstances.Add( exportedwos );
+    }
+    
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, old )
+    {
+      old.Delete();
+    }
+  *]
+}

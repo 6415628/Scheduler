@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcDueDate_Batch_Start
+{
+  Description: 'For no-batchoperations the DueDate_Batch_start is the duedate start batch of the next operation + expected duration -  the leadtime'
+  TextBody:
+  [*
+    // IS201051
+    
+    // TG4AvK080508
+    // TG use ExpectedDuration even if the operation is planned and has a real duration
+    // Repository issue #3232:  check with AvK
+    value := this.DueDate_Batch()
+               - this.ExpectedDuration()
+    
+    // TG4AvK080508
+    // TG LeadTime taken into account only if the operation is not planned yet.
+    if( not this.IsPlanned() )
+    {
+      value := value - this.LeadTime()
+    }
+    
+    this.DueDate_Batch_Start( value );
+  *]
+}

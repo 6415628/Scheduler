@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_DoAction (String actionString) id:Method_LibPTF_pnlTestRunner_PTF_DoAction
+{
+  #keys: '[102890.0.1865509278]'
+  Body:
+  [*
+    // Perform the actions that is defined on the script
+    errormsg         := '';
+    issuccessful     := false;
+    isstandardaction := true;
+    duration         := 0.0;
+    response         := '';
+    
+    try
+    {
+      parameters   := construct( Strings );
+      action       := this.PTF_GetActionAndParameters( actionString, &parameters );
+      issuccessful := this.PTF_DoStandardAction( action, parameters, isstandardaction, response );
+    
+      if( not isstandardaction )
+      {
+        this.PTF_DebugInfoAction( action, "" );
+    
+        // PTF MODELING HANDLE - PLEASE IMPLEMENT YOUR TEST METHODS HERE
+    
+        // This is just a simple example, please change it to meet your test action
+        if( action = 'DisplayInfo' )
+        {
+          issuccessful := this.PTF_TestDisplayInfo( duration, response );
+        }
+        else
+        {
+          this.PTF_EndExecution();
+    
+          response := "Action : " + '"' + action + '"' + " is not found, please check your test script.";
+    
+          debuginfo( response );
+          MessageBox::Warning( this, response, "OK", 1 );
+        }
+      }
+    }
+    onerror
+    {
+      errormsg := 'Quintiq system error starts here: '
+                + e.GeneralInformation()
+                + e.DetailedInformation()
+                + e.DeveloperInformation();
+    }
+    
+    response := response + errormsg;
+    response := response.ReplaceAll( String::NewLine(), '  ' );
+    
+    this.vhDoActionInfoReturn().Value( [String]duration
+                                              + '|' + [String]issuccessful
+                                              + '|' + response
+                                              );
+  *]
+}

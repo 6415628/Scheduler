@@ -1,0 +1,95 @@
+Quintiq file version 2.0
+#parent: #root
+Method BatchEnd (String batchid, String resource_id, DateTime start, 
+  DateTime processStart, DateTime end, String remark)
+{
+  Description: 'Feedback API: BatchEnd event'
+  TextBody:
+  [*
+    //Get the existing feedback batch in schedule
+    fbbatch := FeedbackBatchInSchedule::FindFeedbackBatchInSchedule( batchid );
+    
+    isfirstreportedend := false;
+    isfirstfeedback := false;
+    
+    // FeedbackBatch for the batcch does not yet exists or it does not have reported end time
+    if( isnull( fbbatch ) or fbbatch.EndReadIn().IsInfinite() )
+    { 
+      isfirstreportedend := true;
+      
+      // FeedbackBatch for the batch does not yet exists. So create one
+      if( isnull( fbbatch ) )
+      {
+        importedfbbatch := ImportedFeedbackBatch::FindFeedbackBatchInSF( batchid );
+        content := selectset( this, 
+                              Schedule.PlanUnit_SC.Operation_SC, 
+                              op,
+                              exists( importedfbbatch, 
+                                      ImportedFeedbackBatchContent, 
+                                      fop, 
+                                      op.Match( fop.WorkOrderId(), 
+                                                fop.PlanUnitId(), 
+                                                fop.WorkOrderOperationSequenceNr() ) ) );
+                                                
+        batchTask := guard( content.Element( 0 ).Task_SC().astype( BatchTask ), null( BatchTask ) );
+        
+        fbbatch := FeedbackBatchInSchedule::Create( this, batchid, batchTask );
+    
+        // Traverse each operation in the batch
+        if( content.Size() > 0 ) // WC: to handle when the feedback is not compatible with data in Schedule, when there is no corresponding batch operation with the feedback batch content
+        {
+          traverse( content, Elements, operation )
+          {
+            // Get the existing FeedbackContext for operation in the batch
+            fbcontentinschedule := FeedbackBatchContentInSchedule::FindFeedbackBatchContentInSchedule( fbbatch.BatchID(), 
+                                                                                                       operation.WorkOrderId(),
+                                                                                                       operation.PlanUnitId(),
+                                                                                                       operation.WorkOrderSequenceNr() );
+            
+            if( isnull( fbcontentinschedule ) )
+            {
+              //FeedbackContent for operation does not yet exist. So create one
+              fbcontentinschedule := FeedbackBatchContentInSchedule::Create( fbbatch, operation );    
+              
+              // Update FeedbackContent based on batch operation attributes
+              fbcontentinschedule.UpdateFeedbackBatchContentExportedAttributes(); 
+              fbcontentinschedule.TimeStamp( DateTime::Now() );
+            }
+          }
+          // Update FeedbackBatch based on batch attributes
+          fbbatch.UpdateFeedbackBatchExportedAttributes( content.Element( 0 ).Task_SC(), content.Element( 0 ), resource_id );
+        }
+        
+        isfirstfeedback := true;
+      }  
+    }
+    
+    // Handle exceptions
+    FeedbackBatchInSchedule::HandleBatchEndExceptions( fbbatch, isfirstfeedback, isfirstreportedend, resource_id, end, remark );
+    
+    // Update start, processStart and end attribute
+    fbbatch.UpdateFeedbackEnd( end, resource_id, Constants::StatusEnd(), remark );
+    fbbatch.UpdateFeedbackStartReadIn( start );
+    fbbatch.UpdateFeedbackProcessStartReadIn( processStart );
+    
+    // Propagate responsible resource, needed for feedback batch content handling later
+    Transaction::Transaction().Propagate( relation( FeedbackBatchInSchedule, ResponsibleBatchResource ) );
+    
+    traverse( fbbatch, FeedbackBatchContentInSchedule, fbcontent )
+    {
+      operation := guard( fbcontent.OperationBatchFeedback().AsOwningOperation_SC(), null( Operation_SC ) );
+      
+      if( not isnull( operation ) )
+      { 
+        this.HandleFeedbackBatchContentInSchedule( operation, fbcontent );
+        
+        // Reset and update statuses with remarks
+        operation.UpdateFeedbackStatus( fbbatch.StatusReadIn(), '', '' ); // fbbatch.Status needs propagation, which actually does get propagated in CleanUpFeedbackedTask, but this means the first operation doesn't get the right value, so we use StatusReadIn instead
+        
+        //fbcontent.UpdateFeedbackEnd( end, resource_id, Constants::StatusEnd(), remark, fbcontent.ReportedPractice(), batchid );
+        
+        this.CleanUpFeedbackedTask( operation );
+      }
+    }
+  *]
+}

@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method ProgressTask (LibOpt_Task task) declarative remote as Real
+{
+  Description: 'Get the `Progress` of a single task'
+  TextBody:
+  [*
+    value := 0.0;
+    
+    estimate := this.IteratorScopeProvider().EstimatedNrOfScopes( task );
+    if( estimate <> 0 )
+    {
+      value := minvalue( 1.0,
+                         guard( task.TaskContext()
+                                    .astype( LibOpt_TaskContextIterator )
+                                    .NrOfIterations(), 0 )
+                         / estimate
+                         );
+    }
+    return value;
+  *]
+}

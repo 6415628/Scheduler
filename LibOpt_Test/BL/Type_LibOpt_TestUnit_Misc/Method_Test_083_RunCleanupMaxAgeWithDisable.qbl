@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_083_RunCleanupMaxAgeWithDisable (LibOpt_TestDataset dataset)
+{
+  Description: 'Test if the auto cleanup with max age works. Note that half of the runs have auto cleanup disabled.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    opt.IsAutoCleanupRunsOnRunAge( false );
+    
+    // Remove all existing runs
+    opt.Run( relflush );
+    
+    for( i := 0; i < 20; i++ )
+    {
+      run := opt.CreateRun();
+      run.AutoCleanupEnabled( i mod 2 = 1 );
+      run.FinishedOn( DateTime::Now() - Duration::Hours( i + 0.5 ) );
+    }
+    
+    // Add some running runs for distraction.
+    // These should not even be taken into account by the auto cleanup
+    for( i := 0; i < 7; i++ )
+    {
+      run := opt.CreateRun();
+      run.StartedOn( DateTime::Now() );
+    }
+    
+    opt.MaxRunAge( Duration::Hours( 12 ) );
+    opt.IsAutoCleanupRunsOnRunAge( true );
+    
+    // Propagate to make sure that the status of the run is correct.
+    Transaction::Transaction().Propagate();
+    
+    cleanup := opt.GetRunsForCleanup( 0 );
+    // Expect 20 - 12 = 8 to be deleted. However, half of that is protected, so 4
+    this.Run().AssertEqual( 4, cleanup.Size(), 'Cleanup size' );
+    
+    cleanup := opt.GetRunsForCleanup( 2 );
+    // Expect 20 - 12 = 8 to be deleted. However, half of that is protected, so 4
+    this.Run().AssertEqual( 4, cleanup.Size(), 'Cleanup size 2' );
+    this.Run().AssertEqual( 20 + 7, opt.Run( relsize ), 'Nothing changed' );
+    
+    opt.CreateRun();
+    this.Run().AssertEqual( 20 - 4 + 1 + 7, opt.Run( relsize ), 'Nr of runs after auto cleanup' );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

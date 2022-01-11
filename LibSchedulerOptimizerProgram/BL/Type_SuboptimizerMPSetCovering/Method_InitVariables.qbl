@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitVariables (SuboptimizerMPSetCovering_SelectCombis program, CombiLegs combilegs)
+{
+  TextBody:
+  [*
+    // yifei Aug-10-2021 (created)
+    traverse( combilegs, Elements, combileg1 )
+    {
+      legselectedvar := program.IsCombiLegSelectedVariables().New( combileg1 );
+        
+      if( combileg1.UseIsSelectedManual() )
+      {
+        if( combileg1.IsSelectedManual() )
+        {
+          legselectedvar.LowerBound( 0.5 );
+        }
+        else
+        {
+          legselectedvar.UpperBound( 0.5 );
+        }
+      }
+      
+      traverse( combilegs, Elements, combileg2, combileg1 <> combileg2 and combileg2.Leg() = combileg1.Leg().NextLegInProgramType()  )
+      {
+        program.IsBothCombiLegSelectedVariables().New( combileg1, combileg2 ); 
+      }
+      
+    }
+    
+    traverse( combilegs, Elements.Leg, leg )
+    {
+      var := program.LegCombiSelectionSlackVariables().New( leg );
+      var.UpperBound( 0.0 );
+    }
+  *]
+}

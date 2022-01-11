@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_OptimizerStrategySettings (CDSchedule cdschedule)
+{
+  Description: 'Restore selected optimizer strategy and user settings sequencing'
+  TextBody:
+  [*
+    // Restore selected optimizer strategy and settings
+    
+    // There will always be only 1 selected optimizer strategy in schedule
+    cdoptstrategyinschedule := select( cdschedule, CDEntity.astype( CDOptimizerStrategyInSchedule ), cdoptstrategy, true );
+    selectedoptstrategyinscheduleid := guard( cdoptstrategyinschedule.ID(), '' );
+    
+    // There will always be only 1 selected optimizer user settting sequencing
+    cdoptusersettingsequencing := select( cdschedule, CDEntity.astype( CDOptimizerUserSettingSequencing ), cdoptusersetting, true );
+    selectedoptusersettingsequencingid := guard( cdoptusersettingsequencing.ID(), '' );
+    
+    scenariomanagerinfo := MDSEditor::Editor().LoadedObjectInfo( LibSM_ScenarioManager::GetDatasetKind(),
+                                                                 LibSM_ScenarioManager::GetDatasetFolderName(),
+                                                                 LibSM_ScenarioManager::GetDatasetName() );
+    
+    if( not isnull( scenariomanagerinfo ) )
+    {
+      LibSM_ScenarioManager::JobSetOptimizerConfiguration( scenariomanagerinfo.MDSID(), 
+                                                           this.Schedule().MDSSchedule().Name(),
+                                                           selectedoptstrategyinscheduleid,
+                                                           selectedoptusersettingsequencingid );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

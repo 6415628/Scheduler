@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method ManualAssignFeedbackTaskToProgram
+{
+  TextBody:
+  [*
+    feedbackManager := this.FeedbackManager();
+    
+    if( not isnull( feedbackManager ) )
+    {
+      resources := selectset( this, Schedule.ResourceGroup_SC.Resource_SC, resource, resource.HasFeedbackProgramChange() );
+      
+      traverse( resources, Elements, resource )
+      {
+        feedbacktasksinresource := selectset( resource, FeedbackTaskInSchedule, ftis, not ftis.HasUserReportedProgram() );
+        
+        traverse( feedbacktasksinresource, Elements, feedbacktask )
+        {
+          feedbackManager.ManualAssignFeedbackTaskToProgram( resource, feedbacktask );
+        }
+      }
+    }
+  *]
+}

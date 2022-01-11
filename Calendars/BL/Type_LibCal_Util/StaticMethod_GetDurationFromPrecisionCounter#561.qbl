@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetDurationFromPrecisionCounter (Real startCounter_i, Real endCounter_i) as Duration
+{
+  TextBody:
+  [*
+    result       := Duration::MinDuration();
+    counterTicks := endCounter_i - startCounter_i;
+    
+    // Protect against overflow in conversion to number
+    
+    realMilliSecs := 1000.0 * counterTicks / OS::PrecisionCounterFrequency();
+    
+    if( realMilliSecs >= 0 and
+        realMilliSecs + 1.0 <= [Real]Number::MaxNumber() )
+    {
+      result := Duration::Millis( [Number]realMilliSecs );
+    }
+    
+    return result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

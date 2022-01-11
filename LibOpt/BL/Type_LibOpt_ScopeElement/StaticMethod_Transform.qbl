@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Transform (LibOpt_Task task, LibOpt_ScopeElements from, LibOpt_ScopeElements to)
+{
+  Description:
+  [*
+    Update the `LibOpt_Scopes` that contain all elements in the set of `from` and are the input of one of the ancestors of the supplied `LibOpt_Task`, with the set of `to`.
+    If one of the `LibOpt_Scopes` contain only a partial subset of `from`, an error will be thrown.
+    We strongly advice against using this method, as this makes the execution of the optimizer less transparent.
+    However, we realize there are good reasons to do so, for example, when an order is split or two orders are merged, the same needs to happen to the `LibOpt_ScopeElements`.
+  *]
+  TextBody:
+  [*
+    to_from := to.Difference( from );
+    from_to := from.Difference( to );
+    
+    safeguard := 5000;
+    while( not isnull( task )
+           and safeguard > 0 )
+    {
+      scope := task.Scope();
+      from_set := selectvalues( from, Elements, from_elem, true, scope.Contains( from_elem ) ).Unique();
+      if( from_set.Size() > 1 )
+      {
+        // Throw an error when a subset of the from is in the Scope.
+        set    := selectvalues( from, Elements, e, true,                       e.Identifier() ).ToString( ', ' );
+        subset := selectvalues( from, Elements, e, task.Scope().Contains( e ), e.Identifier() ).ToString( ', ' );
+        not_in_scope := selectvalues( from, Elements, e, not task.Scope().Contains( e ), e.Identifier() ).ToString( ', ' );
+        error( Translations::LibOpt_ScopeElement_Transform_ScopeContainsSubset( subset, set, not_in_scope ) );
+      }
+      else if( from_set.Size() = 0 or
+               from_set.Element( 0 ) )
+      {
+        // Add new elements
+        scope.Add( to_from );
+        
+        // Remove elements
+        scope.Remove( from_to );
+      }
+      
+      task := task.Parent();
+      safeguard--;
+    }
+  *]
+}

@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestScopePreconditionInShutdown (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    hasCharacteristicScope := false;
+    thresholdValue := 0.0;
+    isValid := false;
+    
+    this.GetTestVariant( hasCharacteristicScope,
+                         thresholdValue,
+                         isValid );
+    
+    rule := select( schedule, Rule, rule, true );
+    
+    value := Rule::IsValidRuleScope( RuleConstant::RuleScope_Shutdown(),
+                                     rule.CharacteristicScope(),
+                                     rule.RuleScopeShutdownAggregateThreshold() );
+    
+    this.Run().AssertEqual( isValid, value );
+  *]
+}

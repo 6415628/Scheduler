@@ -1,0 +1,64 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateIssues
+{
+  Description: 'Create `LibOpt_Issues` to highlight potential issues about values collected by this `LibOpt_StatisticLogEntry`.'
+  TextBody:
+  [*
+    // Variables needed for Issues creation.
+    issuetype := this.GetIssueType();
+    
+    if( this.CheckHasSpecificComponent() )
+    {
+      numbervector_logentrycounts := NumberVector::Construct( RealVector::Construct( this.ValuesAsRealVector() ) );
+      
+      booleanvector_logentrycounts_nonzero := numbervector_logentrycounts.GreaterThan( 0 );
+      indexvector_logentrycounts_nonzero := booleanvector_logentrycounts_nonzero.AsIndexVector();
+      
+      if( indexvector_logentrycounts_nonzero.Size() > 0 )
+      {
+        iterations := selectsortedset( this, Run.Iteration, iteration,
+                                       // FILTER
+                                       true,
+                                       // VALUE
+                                       iteration.IterationNr()
+                                     );
+        
+        traverse( indexvector_logentrycounts_nonzero.AsValues(), Elements, index )
+        {
+          iteration := iterations.Element( index );
+          assert( iteration.IterationNr() = index + 1,
+                  '`LibOpt_StatisticLogEntry::GenerateIssue`:',
+                  'The "iteration" retrieved using the "index" of', index, 'has an `IterationNr` of', iteration.IterationNr(),
+                  'while it is expected to be', index + 1
+                );
+          
+          // Use the 'SnapshotOwning' of the relevant iteration to set the 'Snapshot' relation for the issue to be created.
+          snapshotowningofiteration := iteration.SnapshotOwning(); // This is a workaround to link the issue to the iteration.
+                                                                   // We can't set a procedural relation for a `LibOpt_Iteration`,
+                                                                   // as it is a declaratively instantiated type.
+          
+          // Create an Issue and link it to the relevant Snapshot.
+          LibOpt_Issue::Create( this,
+                                snapshotowningofiteration,
+                                issuetype,
+                                this.Focus() + ', ' + Translations::LibOpt_IterationNr( iteration.IterationNr(), this.Run().TotalNrOfIterations() ),
+                                this.GetSeverity( iteration ),
+                                this.GetIssueDetails( numbervector_logentrycounts.Get( index ) )
+                             );
+        }
+      }
+    }
+    else
+    {
+      // Create an Issue that isn't linked to a particular Snapshot.
+      LibOpt_Issue::Create( this,
+                            null( LibOpt_Snapshot ),
+                            issuetype,
+                            this.Focus(),
+                            this.GetSeverity(),
+                            this.GetIssueDetails( this.NrElements() )
+                         );
+    }
+  *]
+}

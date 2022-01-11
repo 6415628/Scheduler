@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Remove (ProgramPhaseConfigurations programphaseconfigurations)
+{
+  Description: 'Delete program phase configurations.'
+  TextBody:
+  [*
+    // Delete program phase configurations.
+    programtypes := selectset( programphaseconfigurations, Elements.ProgramTypeConfiguration, type, true );
+    
+    traverse( programphaseconfigurations, Elements, programphaseconfiguration )
+    {
+      programphaseconfiguration.Remove();
+    }
+    
+    // Unassign transition rule for last phase
+    traverse( programtypes, Elements.Last.RuleScopeInProgramPhase, rulescope, 
+              guard( rulescope.Rule().IsProgramPhaseTransitionRule(), false ) )
+    {
+      rulescope.Remove();
+    }
+  *]
+}

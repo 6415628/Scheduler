@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupFeedbackBatchInSchedule (const FeedbackManager feedbackManager)
+{
+  Description: 'Backup feedback batch in schedule core data'
+  TextBody:
+  [*
+    traverse( feedbackManager, FeedbackBatchInSchedule, feedbackBatchInSchedule )
+    {
+      cdFeedbackBatchInSchedule := this.CDEntity( relnew, CDFeedbackBatchInSchedule );
+      CopyCorresponding::CopyFrom( feedbackBatchInSchedule ).CopyTo( cdFeedbackBatchInSchedule );  
+      
+      cdFeedbackBatchInSchedule.BackupTaskID( guard( feedbackBatchInSchedule.BatchTask().TaskID(), '' ) );
+      
+      this.BackupFeedbackBatchContentInSchedule( feedbackBatchInSchedule );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

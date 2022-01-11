@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method Filter (structured[shadow[LibOpt_UIAnalysisScopeElement]] scope_elements) id:Method_LibOpt_FormAnalysisScopeElement_Filter
+{
+  #keys: '[139164.4.455540611]'
+  Body:
+  [*
+    analysis := DataHolderAnalysis.Data();
+    
+    if( not isnull( analysis ) )
+    {
+      tags := selectvalues( DataHolderTags.Data(), Elements, tag, true, tag.Name() );
+      
+      all_seos := selectset( scope_elements, Elements.ScopeElement.ScopeElementOnScope, seos, true );
+      
+      input_snapshots := selectset( all_seos, Elements.Scope.AsInputScope, s, true );
+      output_snapshots := selectset( all_seos, Elements.Scope.AsOutputScope, s, true );
+      snapshots := input_snapshots.Union( output_snapshots );
+      
+      filtered := BooleanVector::Construct( analysis.Filtered() );
+      accepted := selectset( snapshots, Elements, snapshot,
+                             not isnull( snapshot.AnalysisSnapshot() )
+                             and snapshot.AnalysisSnapshot().SnapshotNr() <= analysis.MaxSnapshotNr()
+                             and filtered.Get( snapshot.AnalysisSnapshot().SnapshotNr() )
+                             and ( DataHolderComponents.Data().Size() = 0 or DataHolderComponents.Data().Find( snapshot.Component() ) >= 0 ) );
+      input_snapshots := input_snapshots.Intersect( accepted );
+      output_snapshots := input_snapshots.Intersect( accepted );
+      
+      traverse( scope_elements, Elements, ase )
+      {
+        ase_seos := selectset( ase, ScopeElement.ScopeElementOnScope, seos,
+                       tags.Size() = 0 or exists( tags, Elements, tag, seos.ContainsTag( tag ) ) );
+        output := selectset( ase_seos, Elements.Scope.AsInputScope , snap, true ).Intersect( input_snapshots  ).Size();
+        input  := selectset( ase_seos, Elements.Scope.AsOutputScope, snap, true ).Intersect( output_snapshots ).Size();
+    
+        ase.NrTimesInInputScopeFiltered( output );
+        ase.NrTimesInOutputScopeFiltered( input );
+        ase.NrTimesFiltered( output + input );
+        
+        scopes := selectset( ase, ScopeElement.ScopeElementOnScope.Scope, s, true );
+        output := selectset( scopes, Elements.AsInputScope, snap, true ).Intersect( input_snapshots ).Size();
+        input := selectset( scopes, Elements.AsOutputScope, snap, true ).Intersect( output_snapshots ).Size();
+        ase.NrTimesInInputScope( output );
+        ase.NrTimesInOutputScope( input );
+        ase.NrTimes( output + input );
+      }
+    }
+  *]
+}

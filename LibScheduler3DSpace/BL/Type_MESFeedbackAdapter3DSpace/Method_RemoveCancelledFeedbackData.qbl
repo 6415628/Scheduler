@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method RemoveCancelledFeedbackData
+{
+  Description: '3DSpace specific. The cancelled maturity feedback received for work orders and operations indicates they are deleted from the system.'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    // Deleting work orders with cancelled maturity
+    cancelledWorkOrders := selectset( schedule,
+                                      WorkOrder.astype( ExternalWorkOrder ), 
+                                      externalWorkOrder, 
+                                      externalWorkOrder.Maturity() = Constants::MaturityStatus_CANCELLED() );
+    
+    ExternalWorkOrder::Remove( cancelledWorkOrders );
+    
+    // Deleting work order operations with cancelled maturity, which not necessarily have external work orders with cancelled maturity
+    cancelledWorkOrderOperations := selectset( schedule, 
+                                               WorkOrder.WorkOrderOperation.astype( ExternalWorkOrderOperation ), 
+                                               externalWorkOrderOperation, 
+                                               externalWorkOrderOperation.Maturity() = Constants::MaturityStatus_CANCELLED() );
+    
+    impactedPlanUnits := selectset( cancelledWorkOrderOperations, Elements.Operation_SC.PlanUnit_SC, planUnit, true );
+    
+    ExternalWorkOrderOperation::Remove( cancelledWorkOrderOperations );
+    
+    PlanUnit_SC::CleanUpOperationMaterials( impactedPlanUnits );
+  *]
+}

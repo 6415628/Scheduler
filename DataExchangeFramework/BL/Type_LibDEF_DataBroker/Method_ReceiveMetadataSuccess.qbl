@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveMetadataSuccess (NamedValueTree nvt_i, NamedValue body_i, LibDEF_System sender_i, 
+  LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive Metadata-Success message, to be handled by the System of the sender, or the System representing local.'
+  TextBody:
+  [*
+    // Jacky CHAN May-18-2016 (created)
+    LibDEF_Util::EventLog( event_i, "Processing Metadata-Success message" );
+    
+    // retrieve type
+    type := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_TYPE() );
+    
+    if( type = LibDEF_DataAccessor::TYPE_METADATA_GETCHANNELSMETADATA() )
+    {
+      sender_i.ReceiveMetadataSuccessGetChannelsMetadata( nvt_i, body_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_METADATA_GETSETLIST() )
+    {
+      sender_i.ReceiveMetadataSuccessGetSetsForSetType( nvt_i, body_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_METADATA_SETINTERESTCREATED() )
+    {
+      sender_i.ReceiveMetadataSuccessSetInterestCreated( nvt_i, body_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_METADATA_SETINTERESTDELETED() )
+    {
+      sender_i.ReceiveMetadataSuccessSetInterestDeleted( nvt_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_METADATA_SETTYPEINTERESTCREATED() )
+    {
+      sender_i.ReceiveMetadataSuccessSetTypeInterestCreated( nvt_i, body_i, event_i );
+    }
+    else if( type = LibDEF_DataAccessor::TYPE_METADATA_SETTYPEINTERESTDELETED() )
+    {
+      sender_i.ReceiveMetadataSuccessSetTypeInterestDeleted( nvt_i, event_i );
+    }
+    else
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  "Failed to process Metadata-Success message",
+                                  "Failed to process Metadata-Success message, no handler defined for the Type '" + type + "'." );
+    }
+  *]
+}

@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateJSONFlows () as owning JSONBuilder
+{
+  Description: 'Creates flows (operation material) in JSON from the current dataset.'
+  TextBody:
+  [*
+    // Add flows array
+    flows := JSON::Array();
+    
+    traverse( this, PlanUnit_SC.OperationMaterial, operationMaterial, operationMaterial.HasFromOperation() and operationMaterial.HasToOperation() )
+    {
+      startOperation := operationMaterial.FromOperation().WorkOrderOperation().astype( ExternalWorkOrderOperation );
+      
+      startOperationId := ifexpr( startOperation.ExternalOperationID().Length() > 0, 
+                                  startOperation.ExternalOperationID(), 
+                                  startOperation.GetJSONOperationID() );
+                                  
+      endOperation := operationMaterial.ToOperation().WorkOrderOperation().astype( ExternalWorkOrderOperation );
+      
+      endOperationId := ifexpr( endOperation.ExternalOperationID().Length() > 0, 
+                                endOperation.ExternalOperationID(), 
+                                endOperation.GetJSONOperationID() );
+      
+      flow := JSON::Object();
+      flow.Add( Constants::JSON_Flow_ID(), operationMaterial.OperationMaterialID() );
+      flow.Add( Constants::JSON_Flow_StartOperationID(), startOperationId );
+      flow.Add( Constants::JSON_Flow_EndOperationID(), endOperationId );
+      flow.Add( Constants::JSON_Flow_DependencyType(), "FinishToStart" );
+      flows.Add( flow );
+    }
+    
+    return &flows;
+  *]
+}

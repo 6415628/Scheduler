@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test059_ResourceExchangability_CapabilitiesIgnoreFrozenOperations (Schedule schedule)
+{
+  Description:
+  [*
+    Input: one operation, o1.
+    Finds another operation, o2, of the same type.
+    Plans both on the same resource. Removes o2's allowedness on another resource.
+    Runs the optimizer with only o1 in scope (s.t. o2 get in span) and asserts that the optimizer correctly identifies that the resource group is exchangable.
+  *]
+  TextBody:
+  [*
+    // precondition: the UTS KT must correcly set 1 scope operation
+    unplanfirst := false;
+    
+    optimization := this->Run_Test_IsPlanned( schedule, this.GetCurrentMethodShortName(), unplanfirst );
+    
+    check_after_optimization := void->After( optimization )->() {
+      transientdata := UTF_Optimizer_Regression_Test_OptimizerSequencing::GetLastTransientData( schedule );
+      this.Run().AssertFalse( isnull( transientdata ), "Transient Data not saved by optimizer" );
+      this.Run().AssertEqual( 1, transientdata.ResourceGroup( relsize ), "Transient Data shadows more than the single necessary resource group" );
+      resourcegroup := selectobject( transientdata, ResourceGroup, rg, true );
+      this.Run().AssertEqual( 4, resourcegroup.Resource( relsize ), "The optimizer did not have all resources of the resource group in scope." );
+      this.Run().AssertTrue( resourcegroup.IsExchangable(), "The optimizer did not recognize that resource group " + resourcegroup.ResourceGroup().Name() + " is exchangable." );
+    };
+    
+    optimization->Exception()->Merge( check_after_optimization->Exception() )->(exception) {
+      this.Run().RegisterFailure( "optimization failed:\n" + exception.Message() );
+    };
+  *]
+}

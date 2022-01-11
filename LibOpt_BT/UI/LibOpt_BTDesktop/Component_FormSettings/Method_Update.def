@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update () id:Method_FormSettings_Update
+{
+  #keys: '[139544.1.1373651858]'
+  Body:
+  [*
+    if( not DataHolderOwner.HasData() )
+    {
+      owner := construct( shadow[LibOpt_UIOwner] );
+      DataHolderOwner.Data( & owner );
+    }
+    
+    owner := DataHolderOwner.Data();
+    
+    if( DataHolderCell.HasData() )
+    {
+      cell := DataHolderCell.Data();
+    
+      nvt := cell.Table().Dataset().GetSynchronizedSettings();
+    
+      set := cell.GetSettingsAncestors();
+      set.Add( cell );
+      LibOpt_BT_TrackingTableBase::ApplySettingsWithDefinedBy( set, nvt );
+    
+      existing := owner.UISetting( relget );
+      Form.CreateObjects( nvt.Root(), owner, '', nvt, existing );
+    
+      // Remove those that were not repurposed.
+      traverse( existing, Elements, elem )
+      {
+        elem.Delete();
+      }
+    }
+    else
+    {
+      owner.UISetting( relflush );
+    }
+  *]
+}

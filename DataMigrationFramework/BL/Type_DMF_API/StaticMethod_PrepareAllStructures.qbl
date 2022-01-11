@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod PrepareAllStructures (Key mdsid_i, Boolean isExport_i) as stream[Void]
+{
+  Description:
+  [*
+    Generates the necessary structures to perform an export or upgrade upon execution
+    This will always act on all available datasets
+    Note: this is utilized by the UI. The overloaded versions of this method should be used for automation
+  *]
+  TextBody:
+  [*
+    // tgn3 May-10-2021 (created)
+    
+    // DevNote: this method is intentionally private. It should not be directly invoked by the end user.
+    // The MDSID argument is required  to facilitate testing
+    ret_s := DMF_ConvertorDataset::GetDMFDataset( mdsid_i )->( dmf )
+    {
+      // Debug - do not delete
+      //logfile( ">>> PrepareAllStructures" );
+     
+      // Allow stream to be chained
+      // DevNote: we MUST use dmf->Method, or we will get an info in server that indicates
+      // "Job-id <job_id>: Requested Abort on request of Reactive Unsubscription."
+      return dmf->PrepareAllStructures( isExport_i )->AsVoid();
+    }
+    
+    ret_s->Exception()->( ex )
+    {
+      // If exception occurs, will be throw upward exception stack
+      msg := "DMF_API::PrepareAllStructures failed. Reason: ";
+      
+      DMF_Utility::LogException( msg, ex );
+    }
+    
+    return ret_s;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method ResetFeedbackTasks
+{
+  Description: 'Method to reset feedback data, this is mean for testing purposes during development only'
+  TextBody:
+  [*
+    // carmen Nov-9-2012 (created)
+    // MODELING HANDLE SC
+    // for testing purposes only. Project should never have this, which is posing high risk of deleting customer data
+    this.FeedbackManager().FeedbackTaskInSchedule( relflush );
+    this.FeedbackManager().FeedbackBatchInSchedule( relflush );
+    this.FeedbackManager().FeedbackStoppageTask( relflush );
+    
+    // Reset HasFeedbackTask
+    traverse( this, ResourceGroup_SC.Resource_SC.Task_SC.astype( SingleTaskBase ), task, task.HasFeedbackTask() )
+    {
+      task.HasFeedbackTask( false ); 
+    }
+    
+    // Remove feedback program data
+    traverse( this, ProgramChange, programchange, programchange.FeedbackProgramType( relsize ) > 0 )
+    { 
+      // Remove feedback program type 
+      programchange.FeedbackProgramType( relflush );
+        
+      // If there is planned tasks, insert first program change in resource
+      if( not isnull( programchange.Resource_SC() ) 
+          and isnull( programchange.ProgramChangeTask() )
+          and exists( programchange, ProgramType.TaskInProgramSet, tips, true ) )
+      { 
+        // Insert program change task before the selected task
+        programchangetask := programchange.Resource_SC().ConstructProgramChangeTask();
+        programchangetask := programchange.Resource_SC().AddAfter( &programchangetask, null( Task_SC ) ).astype( ProgramChangeTask );
+      
+        // Set relation between ProgramChange and ProgramChangeTask
+        programchangetask.ProgramChange( relset, programchange );
+      }
+      // If no more planned task, delete the program change
+      else if( isnull( programchange.ProgramChangeTask() ) )
+      {
+        programchange.Remove();
+      } 
+    }
+    
+    // Remove shutdown data
+    traverse( this, Shutdown, shutdown, isnull( shutdown.Task_SC() ) )
+    {  
+      shutdown.Remove();
+    }
+  *]
+}

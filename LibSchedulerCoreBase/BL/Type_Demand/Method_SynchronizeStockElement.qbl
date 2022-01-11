@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeStockElement
+{
+  Description: 'Synchronizes stock element, creates instances and update the stock settings.'
+  TextBody:
+  [*
+    // jiex Nov-28-2016 (created
+    stock := this.GetStockingPointStock();
+    
+    if( not isnull( stock ) )
+    {
+      nrofelements := 1;
+      operation := this.Operation_SC();
+      
+      if( not isnull( operation ) and this.Schedule().TechnicalConfiguration().IsLotLeadTimeLogicOn() )
+      {
+        nrofelements := operation.NumberOfInputLots(); // by default is 0 if lot lead time logic off
+      }  
+    
+      for( i := 0; i < nrofelements; i++ )
+      {
+        stockelement := select( this, StockElementDemand, stockelementdemand, stockelementdemand.LotSeqNr() = i );
+        
+        if( isnull( stockelement ) )
+        {
+          StockElementDemand::Create( stock, this, i );
+        }
+      }
+    }
+  *]
+}

@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method Setup (Schedule schedule)
+{
+  Description: 'UTF setup logic.'
+  TextBody:
+  [*
+    this.CreateRoutingAndRoutingSteps( schedule );
+    this.CreateWorkOrdersAndWorkOrderOperations( schedule );
+    
+    schedule.IntegrationConfiguration().UseDataExchangeFramework( true );
+    schedule.IntegrationConfiguration().MPSSourceName( Constants::GetMPSSourceAsMP() );
+    
+    // Propagate attributes required for synchronization of SC2CP_Operation
+    Transaction::Transaction().Propagate( attribute( Operation_SC, IsPlanned ) );
+    Transaction::Transaction().Propagate( attribute( Operation_SC, MPSRoutingStepSequenceNr ) );
+    Transaction::Transaction().Propagate( attribute( Operation_SC, RoutingID ) );
+    Transaction::Transaction().Propagate( attribute( Task_SC, IsStartInSchedulingHorizon ) );
+    Transaction::Transaction().Propagate( attribute( PlanUnit_SC, IsPartiallyPlanned ) );
+    Transaction::Transaction().Propagate( attribute( PlanUnit_SC, IsPlanned ) );
+    Transaction::Transaction().Propagate( attribute( PlanUnit_SC, HasAnyOperationWithValidRoutingStep ) );
+    
+    schedule.ExportObject().ExportMPS();
+  *]
+}

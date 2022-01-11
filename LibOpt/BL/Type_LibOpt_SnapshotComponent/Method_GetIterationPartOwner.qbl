@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetIterationPartOwner () as LibOpt_SnapshotComponent
+{
+  Description: 'Get the owner of the iterationpart this snapshotcomponent belongs to'
+  TextBody:
+  [*
+    // jps1 Jun-17-2020 (created)
+    result := this;
+    
+    //Need typecast to parent type, since snapshot.Parent is of type LibOpt_Snapshot
+    snapshot := [LibOpt_Snapshot] this;
+    
+    // This looks like a familiar check?
+    while( not snapshot.CanBeIterationPartOwner() )
+    {
+      snapshot := snapshot.Parent();
+      result := guard( snapshot.astype( LibOpt_SnapshotComponent ), result );
+    }
+    
+    return result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

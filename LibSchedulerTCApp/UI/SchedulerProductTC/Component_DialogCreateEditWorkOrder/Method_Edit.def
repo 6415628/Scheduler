@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method Edit (internal[GUIComponent] parent, InternalWorkOrder selection) id:Method_DialogCreateEditWorkOrder_Edit
+{
+  #keys: '[122574.0.593155395]'
+  Body:
+  [*
+    // Edit work order
+    data := shadow( selection );
+    
+    DataHolderExistingWorkorder.Data( selection ); // pass into data holder for use in preconditon logic
+    
+    Dialog.Data( data );
+    
+    // set correct title for dialog
+    this.Title( 'Edit work order' );
+    
+    // set default selections
+    SelectionProduct.Data( selection.ProductInStockingPoint().Product_SC() );
+    SelectionProductInStockingPoint.Data( selection.ProductInStockingPoint() );
+    
+    // disable selections
+    SelectionProduct.Enabled( false );
+    SelectionProductInStockingPoint.Enabled( false );
+    
+    if( Dialog.Data().Routing().LotSize() = 0 )
+    {
+      EditorNrOfLots.Enabled( false );
+    }
+    
+    if ( Dialog.DoModal( parent ) > 0 )
+    {
+      selection.UpdateAndSynchronizeOrder_SC( Dialog.Data().ProductInStockingPoint(),
+                                              Dialog.Data().Quantity(),
+                                              Dialog.Data().NrOfLots(),
+                                              Dialog.Data().DueDate(),
+                                              Dialog.Data().Routing(),
+                                              CheckBoxIsDummyWorkOrder.Checked() );
+    }
+  *]
+}

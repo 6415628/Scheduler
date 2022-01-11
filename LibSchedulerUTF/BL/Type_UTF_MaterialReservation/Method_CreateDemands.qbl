@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateDemands (Schedule schedule) as owning Demands
+{
+  Description: 'Create supplies based on test instance.'
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    
+    testInstanceDemands := this.GetTestInstanceDemands( variant );
+    demands := construct( Demands );
+    
+    traverse( testInstanceDemands, Elements, row )
+    {
+      demandType := row.DemandType();
+      demandID := row.ID();
+      
+      demand := Demand::FindDemand( demandType, demandID );
+      
+      if( isnull( demand ) )
+      {
+        demand := UTFMockObjectFactory::CreateDemand( schedule, demandType, demandID );
+      }
+      
+      demand.StockingPointId( row.StockingPointID() );
+      demand.Quantity( row.Quantity() );
+                                               
+      if( demand.istype( MaterialDemand ) ) // This can be updated later when we move UoM to Supply level
+      {
+        demand.astype( MaterialDemand ).UoM( row.UoM() );
+        demand.astype( MaterialDemand ).IsDiscreteImported( row.IsDiscrete() );
+      }
+      
+      if( demand.istype( ProductDemand ) )
+      {
+        demand.astype( ProductDemand ).ProductId( row.ProductID() );
+      }
+      
+      demands.Add( demand );
+    }
+    
+    return &demands;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

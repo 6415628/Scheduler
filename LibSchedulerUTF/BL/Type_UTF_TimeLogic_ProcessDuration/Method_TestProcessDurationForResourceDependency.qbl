@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestProcessDurationForResourceDependency (Schedule schedule)
+{
+  Description: 'Test process duration based on the assigned resource'
+  TextBody:
+  [*
+    // Propagate declarative attribute
+    Transaction::Transaction().Propagate( attribute( OperationOnResource, ProcessDuration ) );
+    
+    isValid := forallexists( schedule, Operation_SC.OperationOnResource, oor,
+                             oor.ProcessDuration() = oor.ProcessDurationPerQuantity() * oor.Operation_SC().PlanUnit_SC().Quantity() + oor.FixedProcessDuration() );
+    
+    this.Run().AssertTrue( isValid );
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

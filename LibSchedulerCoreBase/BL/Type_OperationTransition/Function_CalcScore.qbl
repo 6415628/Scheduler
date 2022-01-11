@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcScore
+{
+  TextBody:
+  [*
+    // Jeff May-23-2011 (created)
+    task := this.Transition().Task_SC();
+    operation := task.astype( SingleTaskBase ).OperationAsSingleTask();   // Selected operation A
+    
+    // Score for A->C
+    value := operation.GetTotalPenaltyPoints( this.Operation_SC(), false, true );
+    
+    if( not isnull( task.Next() ) )
+    {
+      // Score for C->B
+      operation := this.Operation_SC();
+      value := value + operation.GetTotalPenaltyPoints( task.Next().astype( SingleTaskBase ).OperationAsSingleTask(), true, false );
+    }
+    
+    this.Score( value );
+  *]
+}

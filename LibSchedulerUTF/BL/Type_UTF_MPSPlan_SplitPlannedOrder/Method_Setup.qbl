@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    super.Setup( schedule );
+    
+    Transaction::Transaction().Propagate( relation( MPSPlannedOrder, Routing ) ); // Need this relation propagated to create firm planned orders
+    Transaction::Transaction().Propagate( attribute( MPSPlannedOrder, QuantityOpen ) ); // Need updated open quantity to create firm planned orders
+    
+    traverse( schedule, MPSPlan.MPSPlannedOrder, mpsPlannedOrder )
+    {
+      mpsPlannedOrder.CreateFirmPlannedOrder();
+    }
+    
+    // Partial propagate this declarative relation to determine that firm planned orders were indeed created for this MPS planned order
+    Transaction::Transaction().Propagate( relation( MPSPlannedOrder, WorkOrder ) );
+    
+    splitPlannedOrderInstance := this.GetTestInstance( this.Variant() );
+    
+    if( splitPlannedOrderInstance.CreateFeedbackForOneOperation() )
+    {
+      operation := this.CreateAndPlanAnOperation( schedule );
+      UTFMockObjectFactory::CreateFeedbackTaskInSchedule( operation, operation.Task_SC().Resource_SC() );
+    }
+    else if( splitPlannedOrderInstance.CreateFulfillmentForPlannedOrderDemand() )
+    {
+      this.CreateFulfillmentForPlannedOrderDemand( schedule );
+    }
+    else if( splitPlannedOrderInstance.CreateFulfillmentForPlannedOrderSupply() )
+    {
+      this.CreateFulfillmentForPlannedOrderSupply( schedule );
+    }
+    else if( splitPlannedOrderInstance.IsMarkedForRelease() )
+    {
+      workOrders := selectset( schedule, WorkOrder, workOrder, true );
+      WorkOrder::MarkForRelease( workOrders );
+    }
+    else if( splitPlannedOrderInstance.IsMarkedForReleaseByFrozenOperation() )
+    {
+      workOrders := selectset( schedule, WorkOrder, workOrder, true );
+      this.CreateAndSetOperationToFrozen( workOrders ); 
+    }
+    
+    //Propagate Order_SC.HasFeedback which will be used in precon check
+    Transaction::Transaction().Propagate( attribute( Order_SC, HasFeedback ) );
+    Transaction::Transaction().Propagate( attribute( InternalWorkOrder, LotSize ) );
+    Transaction::Transaction().Propagate( attribute( InternalWorkOrder, IsMarkedForRelease ) );
+    Transaction::Transaction().Propagate( attribute( InternalWorkOrder, IsMarkedForReleaseAutomatically ) );
+  *]
+}

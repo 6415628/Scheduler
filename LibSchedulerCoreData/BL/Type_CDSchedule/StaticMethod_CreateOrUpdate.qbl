@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateOrUpdate (Schedule schedule) as stream[CDSchedule]
+{
+  TextBody:
+  [*
+    scheduleObjectInfo := MDSEditor::Editor().ObjectInfo( schedule.MDSID() );
+    cdScheduleObjectinfo := MDSEditor::Editor().ObjectInfo( CDSchedule::GetDatasetKind(), scheduleObjectInfo.Path(), scheduleObjectInfo.Name() );
+    cdScheduleMDSKey := guard( cdScheduleObjectinfo.MDSID().MDSKey(), Key::ZeroKey() );
+    
+    // Create CDSchedule dataset if it doesn't already exist
+    cdSchedule := ifexpr( isnull( cdScheduleObjectinfo ),
+                          CDSchedule::Create( scheduleObjectInfo ),
+                          ifexpr( cdScheduleObjectinfo.IsLoaded(),
+                                  MDSCDSchedule::Root( cdScheduleMDSKey ),
+                                  MDSCDSchedule::Load( cdScheduleMDSKey ) ) );
+    return cdSchedule;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

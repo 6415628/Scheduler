@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: SCListCampaigns
+Response OnDrop (structured[Batch] information, CampaignTask target, BatchResource resource) id:Response_SCListCampaigns_OnDrop_6
+{
+  #keys: '[109706.2.12732823]'
+  Body:
+  [*
+    // OnDrop structured[Batch] --> CampaignTask on Batch Resource
+    target.Resource_SC().astype ( BatchResource ).PlanBefore( information, target.OwningTask().astype ( BatchTask ) );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /SCListCampaigns/Responsedef_SCListCampaigns_OnDrop
+  Precondition:
+  [*
+    isallowedhard := true;
+    beforecampaigntask := guard( target.PreviousCampaignTaskOfTypeOnResource(), null( CampaignTask ) );
+    ctrlkey   := dropaction.IsControl();
+    ctrlshiftkey  := dropaction.IsControlShift();
+    identifier := Batch::GetSelectedObjects( information );
+    
+    return ApplicationScheduler.AllowedScheduling( resource, //batchresource
+                                                   information,  //structured batches
+                                                   ctrlkey, //skip soft check
+                                                   ctrlshiftkey, //ctrl shift key
+                                                   beforecampaigntask, //beforetask
+                                                   target, //aftertask
+                                                   identifier,
+                                                   feedback,
+                                                   isallowedhard );
+  *]
+}

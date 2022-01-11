@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsRuleApplicableInShutdownScope (Rule rule, Task_SC beforetask, Task_SC aftertask) declarative remote as Boolean
+{
+  Description: "Check if the rule is applicable for this operation based on rule's shutdown scope characteristic and the rule scope threshold"
+  TextBody:
+  [*
+    // Default is FALSE which is not in shutdown rule scope
+    value := false;
+                                   
+    if( guard( rule.RuleScopeSelected() = RuleConstant::RuleScope_Shutdown(), false ) )
+    {  
+      // Get the reference task which used as rule scope checking
+      rulescopetask := this.GetTask();
+      
+      // If there is beforetask/aftertask which for precondition checking, use it as reference task for shutdown scope checking
+      if( not isnull( beforetask ) or not isnull( aftertask ) )
+      {
+        rulescopetask := ifexpr( rule.IsBeforeShutdown(), beforetask, aftertask );
+      }
+      
+      if( not isnull( rulescopetask ) )
+      {
+        value := rulescopetask.CheckIsInShutdownScopeForConstraintPrecondition( rule );
+      }
+    }
+                                   
+    return value;
+  *]
+}

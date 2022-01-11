@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod M052_SuboptimizerMP_Initialize_RelativeGap_TwoGoals (LibOpt_Suboptimizer self, MathematicalProgram program, LibOpt_Task task)
+{
+  Description: 'A `Initialize` method that results in a MIP with two goals, where the second one has a relative gap warning'
+  TextBody:
+  [*
+    nr_vars := 1000;
+    nr_constrs := 100;
+    
+    goal1 := program.NewGoal( '#1' )
+    goal1.Priority( 2 );
+    
+    goal2 := program.NewGoal( '#2' )
+    goal2.Priority( 1 );
+    
+    for( i := 0; i < nr_vars; i++ )
+    {
+      var := program.NewBinaryVariable( [String] i );
+      var.UpperBound( 1 );
+      
+      goal2.NewTerm( ( Real::Random() * 2 - 1 ).Round( 2 ), var );
+    }
+    
+    fixed := program.NewVariable( 'fixed' );
+    fixed.LowerBound( 1.0 );
+    fixed.UpperBound( 1.0 );
+    goal2.NewTerm( ( Real::Random() * 2 - 1 ).Round( 1 ), fixed );
+    
+    for( j := 0; j < nr_constrs; j++ )
+    {
+      constr := program.NewConstraint( [String] j );
+      constr.Sense( MPConstraintSense::LessOrEqual().AsString() );
+      
+      for( i := 0; i < nr_vars; i++ )
+      {
+        constr.NewTerm( ( Real::Random() * 2 - 1 ).Round( 2 ), program.Variable( [String] i ) );
+      }
+      constr.RHSValue( Real::Random() );
+    }
+    goal2.Sense( ifexpr( Real::Random() < 0.5, MPGoalSense::Minimize(), MPGoalSense::Maximize() ).AsString() );
+    
+    program.TimeLimit( 0.1 );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

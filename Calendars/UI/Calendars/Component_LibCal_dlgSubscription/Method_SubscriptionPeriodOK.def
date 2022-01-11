@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method SubscriptionPeriodOK () as Boolean id:Method_LibCal_dlgSubscription_SubscriptionPeriodOK
+{
+  #keys: '[131094.1.101616699]'
+  Body:
+  [*
+    startOfSubscription := datStartOfPeriod.Date();
+    endOfSubscription   := datEndOfPeriod  .Date();
+    isWithoutEnd        := not ckbEndOfPeriod.Checked();
+    
+    ok := true;
+    
+    if( dhParticipationsToSubscribeTo.Data().Size() > 1 )
+    {
+      // Validate if the subscription period is valid for all events.
+      traverse( dhParticipationsToSubscribeTo.Data(), Elements, participation )
+      {
+        ok := participation.Event().CanSubscribe( startOfSubscription, endOfSubscription, isWithoutEnd )
+          and ok;
+      }
+    }
+    else
+    {
+      participation := this.GetParticipation();
+      ok := participation.Event().CanSubscribe( startOfSubscription, endOfSubscription, isWithoutEnd );
+    }
+    
+    return ok;
+  *]
+}

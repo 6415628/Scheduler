@@ -1,0 +1,94 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test060_MPSuboptimizer_CorrectGaps (LibOpt_TestDataset dataset)
+{
+  Description: 'Check that the absolute gap and the relative gap calculated in `LibOpt_SnapshotMP::Create` is correctly calculated.'
+  TextBody:
+  [*
+    nr_tries := 100;
+    epsilon := 0.001;
+    
+    streams := construct( structured[stream[MathematicalProgram]] );
+    
+    // Create and run the MPs
+    for( i := 0; i < nr_tries; i++ )
+    {
+      str := void->( )
+      {
+        program := construct( MathematicalProgram );
+        
+        nr_vars := 1000;
+        nr_constrs := 100;
+        for( i := 0; i < nr_vars; i++ )
+        {
+          var := program.NewBinaryVariable( [String] i );
+          var.UpperBound( 1 );
+          
+          program.Goal().NewTerm( ( Real::Random() * 2 - 1 ).Round( 2 ), var );
+        }
+        
+        fixed := program.NewVariable( 'fixed' );
+        fixed.LowerBound( 1.0 );
+        fixed.UpperBound( 1.0 );
+        program.Goal().NewTerm( ( Real::Random() * 2 - 1 ).Round( 1 ), fixed );
+        
+        for( j := 0; j < nr_constrs; j++ )
+        {
+          constr := program.NewConstraint( [String] j );
+          constr.Sense( MPConstraintSense::LessOrEqual().AsString() );
+          
+          for( i := 0; i < nr_vars; i++ )
+          {
+            constr.NewTerm( ( Real::Random() * 2 - 1 ).Round( 2 ), program.Variable( [String] i ) );
+          }
+          constr.RHSValue( Real::Random() );
+        }
+        program.GoalSense( ifexpr( Real::Random() < 0.5, MPGoalSense::Minimize(), MPGoalSense::Maximize() ) );
+        program.TimeLimit( 0.1 );
+        
+        return program->Execute()->|program;
+      }
+      this.NoException( str );
+      streams.Add( str );
+    }
+    
+    // Test that `LibOpt_SnapshotMP::Create` calculates the right gaps
+    this.NoException( stream[MathematicalProgram]::Merge( streams )->GroupAll()->( programs )
+    {
+      opt := this.Optimizer( dataset );
+      run := opt.CreateRun();
+      
+      // Check that 95% of the MPs have a gap
+      nr_with_gaps := counter( programs, Elements, program, program.AbsoluteGap() > 0 );
+      this.Run().AssertGreaterOrEqual( 0.95, nr_with_gaps / nr_tries, 'Too few MPs have a gap' )
+      
+      traverse( programs, Elements, program )
+      {
+        snapshot := LibOpt_SnapshotMP::Create( run, program );
+        
+        this.Run().AssertEqual( program.AbsoluteGap(), RealVector::Construct( snapshot.AbsoluteGaps() ).Get( 0 ), 'Absolute gap not equal' );
+        
+        // The relative gap provided by CPLEX is equal to 10000000000 * abs gap if the goal is 0.
+        // Epsilon is given, as different precision is used.
+        relative_gap := RealVector::Construct( snapshot.RelativeGaps() ).Get( 0 );
+        if( program.GoalValue() = 0.0 )
+        {
+          if( program.AbsoluteGap() = 0.0 )
+          {
+            this.Run().AssertEqual( 0.0, relative_gap, 'Relative gap not equal to 0.0, while Goal = 0.0 and Absolute gap = 0.0' );
+          }
+          else
+          {
+            // Using AssertTrue as AssertEqual does a subtraction which results in a Binary real operation error: inf - inf 
+            this.Run().AssertTrue( relative_gap = Real::MaxReal(), 'Relative gap not equal to Real::MaxReal(), while Goal = 0.0 and Absolute gap <> 0.0' );
+          }
+        }
+        else
+        {
+          this.Run().AssertEqual( program.RelativeGap(), relative_gap, epsilon, 'Relative gap not equal to program.RelativeGap()' );
+        }
+      }
+    });
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod SelectResource (Batch batch, Resource_SCs resources) as BatchResource
+{
+  Description: 'Select an earliest available resource for this batch among the given resource candidates.'
+  TextBody:
+  [*
+    resource := null( BatchResource );
+    
+    if( not isnull( batch ) )
+    {
+      operations := selectset( batch, BatchSequenceElement.Operation_SC, bo, true, true );
+      feedback := '';
+      isallowedhard := true;
+    
+      resource := minselect( batch.Schedule(),
+                             ResourceGroup_SC.Resource_SC.astype( BatchResource ),
+                             res,
+                             resources.Find( res ) >= 0 // needs to be a candidate
+                             and res.AllowedScheduling( operations, res.Last(), null( Task_SC ), false, feedback, isallowedhard ),
+                             res.EarliestAvailable() );
+    
+    }
+    
+    return resource;
+  *]
+}

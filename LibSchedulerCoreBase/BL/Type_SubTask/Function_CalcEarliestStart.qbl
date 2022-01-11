@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcEarliestStart
+{
+  Description: 'Computes the earliest start of the subtask.'
+  TextBody:
+  [*
+    // alexandern 28-May-2015 QP # 5420
+    // Kyle June 04, 2015 #5411 Use previous subtask's earliest end if it exists
+    task          := this.Task_SC();
+    earlieststart := task.Schedule().Time();
+    prevsubtask   := this.Previous();
+    
+    if( not isnull( prevsubtask ) )
+    {
+      // In default case where calendar downtime starts right on the previous subtask end,
+      // this subtask will start after downtime end.
+      earlieststart := task.Resource_SC().ResourceCalendar().NextAvailable( prevsubtask.EarliestEnd() );
+    }
+    else if( not isnull( task.Strategy_SC() ) )
+    {
+      earlieststart := task.Strategy_SC().EarliestStart();
+    }
+    
+    earlieststart := maxvalue( earlieststart, this.SimulatedEarliestStart() ); // AlexanderNg 15-Oct-2015 QP #5800
+    this.EarliestStart( earlieststart );
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

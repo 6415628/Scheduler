@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcJITLatestStart
+{
+  Description: 'Computes the value of JITLatestStart for Strategy JITASAP usage.'
+  TextBody:
+  [*
+    // khang chuen Aug-26-2015 (created)
+    
+    lateststart := DateTime::MinDateTime();
+    strategyjit := this.Task_SC().StrategyJIT();
+    
+    if( not isnull( strategyjit ) )
+    {
+      latestend := DateTime::MinDateTime();
+      nextsubtask := this.Next();
+    
+      if( isnull( nextsubtask ) )
+      {
+        latestend := strategyjit.LatestEnd();
+      }
+      else
+      {
+        latestend := nextsubtask.JITLatestStart();
+      }
+    
+      lateststart := this.Resource_SC().ResourceCalendar().Subtract( latestend, this.NetDuration() );
+    }
+    
+    this.JITLatestStart( lateststart );
+  *]
+}

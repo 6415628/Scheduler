@@ -1,0 +1,67 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update (Task_SC task, Operation_SC operation)
+{
+  Description: 'Updates attributes in ExportedTask to be communicated to shop floor. This method is shared by both exported task for batch sequence element and single task.'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // to add in attributes that will be communicate to shopfloor
+    // update the attributes
+    this.ExportedResource(                    task.Resource_SC().ResourceID() );               // resource name
+    this.ExportedStart(                       task.Start() );                                  // start
+    this.ExportedProcessStart(                task.ProcessStart() );                           // process start
+    this.ExportedEnd(                         task.End() );                                    // End
+    this.ExportedSetupDuration(               task.SetupDuration() );                          // Setup Duration
+    this.ExportedSetupDurationHoursAsReal(    this.ExportedSetupDuration().HoursAsReal() );    // Setup Duration in hours as Real type
+    this.ExportedProcessDuration(             task.ProcessDuration() );                        // Process Duration
+    this.ExportedProcessDurationHoursAsReal(  this.ExportedProcessDuration().HoursAsReal() );  // Process Duration in hours as Real type
+    this.ExportedDuration(                    task.Duration() );                               // Duration
+    this.Resource_SC(                         relset, task.Resource_SC() );                    // resource relation
+    this.IsFrozenByUser(                      task.IsFrozenByUser() );
+    
+    taskType := '';
+    if( task.IsStoppageTask() )
+    {
+      if( not task.IsProgramChangeTask() )
+      {
+        taskType := Constants::TaskType_ShutDown();
+        
+        shutdownType := task.astype( ShutdownTask ).Shutdown().ResponsibleShutdownType();
+        this.ShutdownTypeID( shutdownType.ShutdownTypeID() );
+        this.ShutdownTypeName( shutdownType.Name() );
+      }
+      else
+      {
+        taskType := Constants::TaskType_ProgramChange();
+      }
+      
+      this.StoppageTask( relset, task.astype( StoppageTask ) );
+    }
+    else
+    {
+      taskType := Constants::TaskType_Task();
+      
+      this.OperationType(                       operation.Type() );                              // operation type
+      this.OperationID(                         operation.OperationID() );                       // operation seq nr  
+      this.ExportedComment(                     operation.Comment() );                           // comment
+      this.ExportedCommentLastUpdatedTimeStamp( operation.CommentLastUpdatedTimeStamp() );       // comment last updated time stamp
+      this.ExportedCommentLastUpdatedUserName(  operation.CommentLastUpdatedUserName() );        // comment last updated user name  
+      
+      this.Operation_SC( relset, operation );
+      
+      // exported plan unit will be null when MESFeedbackAdapterApriso is not the active adapter
+      this.ExportedPlanUnit( relset, operation.PlanUnit_SC().ExportedPlanUnit() );  
+      
+      if( guard( task.istype( ContinuousTask ), false ) ) // ContinuousTask specific attributes
+      {
+        continuousTask := task.astype( ContinuousTask );
+        this.IsFirstAfterDownTime( continuousTask.IsFirstAfterDownTime() );
+        this.IsParallelWithFeedback( continuousTask.IsParallelWithFeedback() );
+      }
+    }
+    
+    this.TaskType( taskType );
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleJobFailureExecuteStrategy
+{
+  Description: 'Handle the failure of a execute strategy job.'
+  TextBody:
+  [*
+    this.JobExecuteStrategyFailed( true );
+    this.UpdateRunDuration();
+    
+    this.ConsecutiveExecuteStrategyFailures( this.ConsecutiveExecuteStrategyFailures() + 1 );
+    belownrofacceptablefailures := this.ConsecutiveExecuteStrategyFailures() <
+                                   guard( this.GetSelectedOptimizerParameter().GetMaxConsecutiveExecuteStrategyFailures(), 3 );
+    
+    warningmessage := Translations::SC_OptimizerRun_JobExecuteStrategyFailed();
+    OptimizerRun::ProcessWarning( warningmessage, this );
+    
+    rollbacksuccessful := true;
+    
+    // try reinitializing, but only a few times in a row
+    if( belownrofacceptablefailures )
+    {
+      try
+      {
+        this.RollBack( this.GetScopeForRollback() );
+        this.HasBeenRolledBack( true );
+      }
+      onerror
+      {
+        rollbacksuccessful := false;
+      } 
+      
+      if( rollbacksuccessful )
+      {
+        this.DetermineNextStep();
+      }
+    }
+    
+    // after several failures in a row, end the run
+    if ( not rollbacksuccessful or not belownrofacceptablefailures ) 
+    {
+      parent := this.Parent();
+      if( not isnull( parent ) )
+      {
+        this.IsActive( false );
+        parent.HandleChildJobFailureExecuteStrategy( this );
+      }
+      else
+      {
+        this.FinalizeRun();
+      } 
+    }
+  *]
+}

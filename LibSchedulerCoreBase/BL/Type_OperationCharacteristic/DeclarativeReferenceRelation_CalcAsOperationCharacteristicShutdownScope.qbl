@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+DeclarativeReferenceRelation CalcAsOperationCharacteristicShutdownScope
+{
+  #keys: '1[136602.1.258409896]'
+  Expression:
+  [*
+    op := null( Operation_SC );
+    
+    // Only set this relation
+    // 1. The characteristic can be used in shutdown scope
+    // 2. The operation is planned or has feedback
+    // 3. The planned resource has shutdown with shutdown type defined in rule scope and this characteristic is used in rule scope characteristic
+    if( this.Characteristic().CheckCanBeUsedInShutdownScope()
+        and ( this.Operation_SC().IsPlanned() or this.Operation_SC().HasFeedback() )
+        and exists( this, Operation_SC.PlannedResource.Shutdown.ResponsibleShutdownType.RuleScopeInShutdownType.Rule, rule,
+                    rule.IsEnabled()
+                    and rule.CharacteristicScope() = this.Characteristic() ) )
+    {
+      op := this.Operation_SC(); 
+    }
+    
+    return op;
+  *]
+  Relation: AsOperationCharacteristicShutdownScope
+}

@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method RefreshData () id:Method_FormKpiSnapshots_RefreshData
+{
+  #keys: '[136398.1.792567524]'
+  Body:
+  [*
+    // Refreshes all the data loaded on the form based on the current configuration.
+    // This method is also called when the user clicks the Refresh button.
+    
+    maxitems       := this.GetMaxResults();
+    timespanoption := this.RadioButtonGroupTimespan().BoundValue();
+    data           := null( NamedValueTree );
+    
+    if ( timespanoption = 'all' )
+    {
+      data     := KpiTracker.SnapshotRetrieval().GetLastSnapshotsNvt( maxitems );
+    }
+    else
+    {
+      from     := DateTimeSelectorFrom.DateTime();
+      to       := DateTimeSelectorTo.DateTime();
+      timetype := RadioButtonGroupTimeType.BoundValue();
+      data     := KpiTracker.SnapshotRetrieval().GetSnapshotsNvt( from, to, timetype, maxitems );
+    }
+    
+    set := GlobalStateKpiTracker.ConvertNvtToShadowSnapshotSetData( data );
+    DataHolderSnapshotSetData.Data( &set );
+    
+    // Refresh the UI timestamp
+    Form.RefreshTimeType();
+    
+    // Refresh the UI label
+    Form.RefreshSeries();
+  *]
+}

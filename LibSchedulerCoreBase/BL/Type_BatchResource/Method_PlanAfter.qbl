@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanAfter (Batches batches, BatchTask element)
+{
+  Description: 'This method call planafter to move all selected batches after batchtask'
+  TextBody:
+  [*
+    operations := selectset( batches, Elements.BatchSequenceElement.Operation_SC, op, true );
+    Operation_SC::SetIsPlanning( operations, true );
+    
+    traverse( batches, Elements, batch )
+    {
+      if( this.IsPlanRelatedOperations() )
+      {
+        ops := selectset( batch, BatchSequenceElement.Operation_SC, op, true );
+        traverse( ops, Elements, op )
+        {
+          Schedule::PlanRelatedOperationsAfter( op, this, element, false, false );
+        }
+      }
+      this.PlanAfter( batch, element );
+    }
+    
+    this.Schedule().AutomaticProductBasedMaterialReservationBySorting();
+    Operation_SC::SetIsPlanning( operations, false );
+  *]
+}

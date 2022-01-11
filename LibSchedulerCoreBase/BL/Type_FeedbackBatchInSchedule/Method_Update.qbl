@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update (String resourcereadin, DateTime startreadin, DateTime endreadin)
+{
+  Description: "Updates the attributes and the remaining/existing task despite this already being a feedback, the nobufferwait/nobufferaction that has to be around to indicate that its downstream isn't finished yet."
+  TextBody:
+  [*
+    // woi1 Dec-30-2016 (created)
+    // update attributes
+    this.ResourceReadIn( resourcereadin );
+    this.StartReadIn( startreadin );
+    this.EndReadIn( endreadin );
+    
+    // update existing task
+    batchtask := select( this, FeedbackBatchContentInSchedule.Task_SC, task, true ); // any batch operation in batch
+    
+    if( not isnull( batchtask ) ) // we do not need to do anything if there is no corresponding planned batch task
+    {
+    
+      batchresource := Resource_SC::FindResource_SC( resourcereadin ); // get the new resource to plan on
+      // grab nearest task
+      existing_feedbacktask_task := maxselect( batchresource, Task_SC, t, t.HasFeedbackTask() and t.ReportedStart() < startreadin, t.Start() ); // reported start is the feedback start time
+    
+      // plan after nearest task
+      tasks := construct( Task_SCs );
+      tasks.Add( batchtask ); // add to structured set to reuse method
+      
+      batchresource.PlanAfter( tasks, existing_feedbacktask_task );
+    }
+  *]
+}

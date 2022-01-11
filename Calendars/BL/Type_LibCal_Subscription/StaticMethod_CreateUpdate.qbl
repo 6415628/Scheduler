@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateUpdate (LibCal_Calendars subscribers_i, LibCal_Event subscribeTo_i, LibCal_Subscription subscription_i, 
+  Boolean useLeadingPeriod_i, Boolean isRecurring_i, String periodType_i, 
+  Date startOfPeriod_i, Date endOfPeriod_i)
+{
+  Description: 'Update and existing subscription if it is provided, otherwise create (a) new subscription(s).'
+  TextBody:
+  [*
+    subscription := subscription_i;
+    
+    if( not isnull( subscription ) )
+    {
+      // An existing subscription was edited.
+      subscription.UpdateSubscription( useLeadingPeriod_i, isRecurring_i, periodType_i, startOfPeriod_i, endOfPeriod_i );
+    }
+    else
+    {
+      // Create a new subscription for each subscriber.
+      traverse( subscribers_i, Elements, subscriber )
+      {
+        subscription := subscriber.SubscribeToEvent( subscribeTo_i );
+        subscription.UpdateSubscription( useLeadingPeriod_i, isRecurring_i, periodType_i, startOfPeriod_i, endOfPeriod_i );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

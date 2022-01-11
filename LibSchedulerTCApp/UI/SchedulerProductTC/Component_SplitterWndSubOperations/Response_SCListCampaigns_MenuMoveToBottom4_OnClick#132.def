@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: SCListCampaigns
+Response OnClick (structured[CampaignTask] selection) id:Response_SCListCampaigns_MenuMoveToBottom4_OnClick
+{
+  #keys: '[11790.0.12808898]'
+  Body:
+  [*
+    // MoveToBottom structured[CampaignTask]
+    
+    CampaignTask::MoveCampaignTasksToBottom( selection );
+  *]
+  DefinitionID => //FilteredList/Responsedef_FilteredList_Menu_OnClick
+  Initiator: 'MenuMoveToBottom4'
+  Precondition:
+  [*
+    lasttask := select( selection, Elements, element, isnull( element.NextCampaignTask() ) );
+    value    := isnull( lasttask );
+    
+    if( not value )
+    {
+      feedback := Translations::SC_SelectionAlreadyAtLastPosition( CampaignTask::GetIdentifier( lasttask ));
+    }
+    else
+    {
+      isallowedhard   := true;
+      operations      := selectset( selection, Elements.OperationCampaign.Operation_SC, op, true );
+      resource        := selection.Element( 0 ).Resource_SC();
+      value           := Operation_SC::CanReplan( operations, false, feedback, isallowedhard );
+    
+      if( resource.istype( SingleResourceBase ) )
+      {
+        tasks := selectset( selection, Elements.OperationCampaign.Task_SC, t, true, true );
+        value := resource.astype( SingleResourceBase).AllowedScheduling( tasks, //structured[Task]
+                                                                     resource.Last(),//beforetask
+                                                                     null( Task_SC ), //aftertask
+                                                                     false, //skipsoftcheck
+                                                                     false, //ctrlshiftkey
+                                                                     feedback,
+                                                                     isallowedhard ) and value;
+      }
+      else
+      {
+        batches := selectset( selection, Elements.OperationCampaign.Task_SC.astype( BatchTask ).Batch, batch, true, true );
+        value := resource.astype( BatchResource ).AllowedScheduling( batches,  //structured batches
+                                                                     resource.Last(), //beforetask
+                                                                     null( Task_SC ), //aftertask
+                                                                     false, //skip soft check
+                                                                     feedback,
+                                                                     isallowedhard ) and value;
+      }
+    }
+    
+    feedback := Translations::SC_CannotBeMovedToBottom( CampaignTask::GetSelectedObjects( selection ) )
+                + String::NewLine()
+                + feedback;
+    
+    return value;
+  *]
+}

@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod UpdateStoppageSubTaskTypeInResourceGroup (Schedule schedule, ShutdownTypes shutdowntypes)
+{
+  Description: 'Auto assign/ unassign stoppage subtask in resoure group based on program definition or shutdown type in resource.'
+  TextBody:
+  [*
+    // Auto assign/ unassign stoppage subtask in resoure group based on program definition or shutdown type in resource. 
+    // Called after synchronize shutdown type or oncommit program definition.
+    
+    // Get the stoppage subtask type
+    stoppagesubtasktype := select( schedule, SubTaskType, stt, stt.SubTaskID() = Constants::SubTask_Stoppage() );
+    
+    // Get the resource groups which has stoppage subtask
+    rgHasStoppageSubTaskType := selectset( stoppagesubtasktype, SubTaskTypeOnResourceGroup.ResourceGroup_SC, resgroup, true );
+    
+    // Get the resource groups which linked to selected shutdown types or program definition which need stoppage subtask type
+    rgHasShutdownType := selectset( shutdowntypes, Elements.ShutdownTypeInResource.Resource_SC.ResourceGroup_SC, rg, true );  
+    rgHasProgramDefinition := selectset( schedule, ProgramDefinitionConfiguration.Resource_SC.ResourceGroup_SC, rg, true );
+    rgNeedStoppageSubtaskType := rgHasShutdownType.Union( rgHasProgramDefinition );
+    
+    // Get the resource groups which need to assign stoppage subtask type because resource group has shutdown type/ program definition
+    rgAssignStoppageSubTaskType := rgNeedStoppageSubtaskType.Difference( rgHasStoppageSubTaskType );
+    ResourceGroup_SC::AssignUnassignSubTaskTypeInResourceGroup( rgAssignStoppageSubTaskType, stoppagesubtasktype, true );
+    
+    // Get the resource groups which need to remove stoppage subtask type because resource group does not have shutdown type/ program definition
+    rgRemoveStoppageSubTaskType := rgHasStoppageSubTaskType.Difference( rgNeedStoppageSubtaskType );
+    ResourceGroup_SC::AssignUnassignSubTaskTypeInResourceGroup( rgRemoveStoppageSubTaskType, stoppagesubtasktype, false );
+    
+    // If there is FSPL resource group which has subtask type changed, need to synchronize FSPL to update the graph
+    allrgHasSubTaskTypeChanged := rgAssignStoppageSubTaskType.Union( rgRemoveStoppageSubTaskType );
+    if( exists( allrgHasSubTaskTypeChanged, Elements, resgroup, resgroup.HasFixedSequencePlanLogic() ) )
+    {
+      schedule.SynchronizationObject().SynchronizeFSPLResourceGroups();
+    }
+  *]
+}

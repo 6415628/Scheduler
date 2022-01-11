@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetNewScore () declarative as Number
+{
+  Description: 'Calculate the new score for the Operation Transition.'
+  TextBody:
+  [*
+    // alexandern Sep-22-2015 (created) QP #5499
+    newpenaltyprevious := 0;
+    newpenaltynext := 0;
+    newbreakagepenalty := 0;
+    
+    task := this.Transition().Task_SC();
+    selectedoperation := task.astype( SingleTaskBase ).OperationAsSingleTask();
+    operation := this.Operation_SC();
+    
+    // Operation - Task
+    if( isnull( operation.SingleTaskBase() ) )
+    {
+      selectedoperation := this.Operation_SC();
+      operation := task.astype( SingleTaskBase ).OperationAsSingleTask();
+    }
+    else
+    {
+      previoustask := task.Previous();
+      nexttask := task.Next();
+      // Breakage penalty only appy to Task - Task
+      if( not ( isnull( previoustask ) or isnull( nexttask ) ) )
+      {
+        newbreakagepenalty := [Number]previoustask.astype( SingleTaskBase ).OperationAsSingleTask().GetTotalPenaltyPoints( nexttask.astype( SingleTaskBase ).OperationAsSingleTask(), false, true );
+      }
+    }
+    
+    operationtask := operation.Task_SC();
+    
+    if( not ( isnull( operationtask ) or isnull( operationtask.Previous() ) ) )
+    {
+       newpenaltyprevious := [Number]operationtask.Previous().astype( SingleTaskBase ).OperationAsSingleTask().GetTotalPenaltyPoints( selectedoperation, false, true );
+    }
+    
+    newpenaltynext := [Number]selectedoperation.GetTotalPenaltyPoints( operation, true, false );
+    return newpenaltyprevious + newpenaltynext + newbreakagepenalty;
+  *]
+}

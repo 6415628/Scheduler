@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method IAttributeRegistry_GetAttributes (shadow[LibGUIFiltering_RegisteredComponent] registeredcomponent, internal[GanttChart] ganttchart, internal[GanttChartNodesDefinition] nodesdef, 
+  String restriction) id:Method_LibGUIFiltering_PanelFilterBoxHelper_IAttributeRegistry_GetAttributes_202
+{
+  #keys: '[128900.0.373900249]'
+  Body:
+  [*
+    // TODO: we should make sure that the object type is already set correctly here
+    objecttype := registeredcomponent.ObjectType();
+    if ( objecttype <> '' )
+    {
+      configuredattributes := construct( Strings );
+      ucis                 := construct(structured[UserConfigurableInformation]);
+      inspected            := construct(structured[GUIComponent]);
+      
+      this.IComponent_GetUserConfigurableInformations( nodesdef, ganttchart, objecttype, ucis, inspected, true );
+      
+      traverse( ucis, Elements, uci )
+      {
+        if ( not isnull(uci) )
+        {
+          if ( uci.ObjectText() <> '' )
+          {
+            this.IAttributeRegistry_GetValueAttributes( uci.ObjectText(), configuredattributes );
+          }
+          if ( guard( uci.AdditionalInformations().GanttChartInfo().RightNodeText() <> '', false ) )
+          {
+            this.IAttributeRegistry_GetValueAttributes( uci.AdditionalInformations().GanttChartInfo().RightNodeText(), configuredattributes );
+          }
+        }
+      }
+       
+      traverse( configuredattributes, Elements, attr )
+      {
+        this.IAttributeRegistry_Add( objecttype, attr );
+      }
+    }
+  *]
+}

@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetPreviousOperationInCombiLegInLeadingCombiProgramSet () declarative remote as OperationInCombiLeg
+{
+  Description: 'the operations are put in leading CombiProgramSet  as tasks in resource,  get the previous OperationInCombiProgramSet in the leading CombiProgramSet'
+  TextBody:
+  [*
+    // zyi1 Jul-20-2021 (created)
+    //checkcpt: if true, then return the previous OperationInCombiLeg which belong to same CombiProgramType
+    // otherwise can return the last OperationInCombiLeg of the previous CombiProgramType
+    ret := this.PreviousOperation();
+    
+    //if it's first operaiton in the combileg,  
+    //we have to assume the sequence on leading combi programset is correct,  and get previous from there
+    // the logic from previous combileg and/or previous combiphase/combiprogramtype would be too complicated
+    if( isnull( ret ) )
+    {
+      ret := guard( this.CombiLeg().Previous().LastOperation(), null( OperationInCombiLeg ) );
+    }
+    
+    return ret;
+  *]
+}

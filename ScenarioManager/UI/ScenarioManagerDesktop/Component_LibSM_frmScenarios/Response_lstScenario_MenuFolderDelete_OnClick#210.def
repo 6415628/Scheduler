@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: lstScenario
+Response OnClick (structured[LibSM_ScenarioNode] selection) id:Response_lstScenario_MenuFolderDelete_OnClick
+{
+  #keys: '[107496.2.1625535715]'
+  Body:
+  [*
+    // Delete selected scenario nodes
+    scenarioManager  := LibSM_GlobalState.GetScenarioManagerDataset();
+    recycleBinFolder := scenarioManager.RecycleBinFolder();
+    canDelete := true;
+    
+    if( exists( selection, Elements, e, e.IsDeleted() ) )
+    {
+      message := Form.DetermineConfirmationMessageForPermanentDelete( selection );
+    
+      canDelete := MessageBox::Question( this, message, Translations::LibSM_Question_YesNo() ) = 0;
+    }
+    
+    if( canDelete )
+    {
+      LibSM_ScenarioNode::Delete( selection, recycleBinFolder );
+      LibSM_GlobalState.AutoExpandSelection( this, selection ); 
+      Application.RemoveHistory();
+    }
+  *]
+  DefinitionID => /lstScenario/Responsedef_lstScenario_Menu_OnClick
+  Initiator: 'MenuFolderDelete'
+  Precondition:
+  [*
+    return LibSM_GlobalState.CanDelete( selection );
+  *]
+}

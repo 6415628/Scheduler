@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreScenarioNodes (LibSM_ScenarioNodes scenarioNodes)
+{
+  TextBody:
+  [*
+    rootFolder := select( this, ScenarioNode, folder,
+                          folder.IsFolder(),
+                          folder.Name() = LibSM_ScenarioManager::GetFolderRoot() );
+    
+    scenarioNodesToRestore := selectset( scenarioNodes, Elements, node,
+                                         not exists( scenarioNodes, Elements, e, node.Parent() = e ) );
+                              
+    traverse( scenarioNodesToRestore, Elements, node )
+    { 
+      detachedParent := node.DetachedParent();  
+      
+      if( isnull( detachedParent )
+          or detachedParent.IsDeleted() )
+      {
+        detachedParent := rootFolder; 
+      }
+      
+      detachedParent.MoveAfter( node, null( LibSM_ScenarioNode ) );      
+      node.RelinkChildNodes(); 
+    }
+  *]
+}

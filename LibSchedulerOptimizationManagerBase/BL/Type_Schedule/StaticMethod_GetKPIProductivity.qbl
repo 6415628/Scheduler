@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetKPIProductivity (constcontent Resource_SCs resources) const declarative remote #extension
+{
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // this KPI is demo specific. Please change this for project specific KPI.
+    // By default, KPIProductivity is 0.0
+    value := 0.0;
+    
+    schedule := select( resources, Elements.ResourceGroup_SC.Schedule, schedule, true );
+    
+    bottlenecksExists := exists( resources, Elements, resource, true, resource.IsBottleneck() ); 
+    
+    // Calculate total available time of bottleneck resources
+    totalavailabletime := sum( resources,
+                               Elements,
+                               resource,
+                               // Consider non bottleneck if no bottleneck resources exist in Optimization Service mode
+                               resource.IsBottleneck() or ( schedule.IsOptimizationService() and not bottlenecksExists ), 
+                               resource.AvailableTime() );
+    
+    // if total available time of bottleneck resources is zero, calculation of productivity will be skipped
+    if( totalavailabletime > Duration::Zero() )
+    {
+      // Calculate total production time of bottle resources
+      totalproductiontime := sum( resources,
+                                  Elements,
+                                  resource,
+                                  // Consider non bottleneck if no bottleneck resources exist in Optimization Service mode
+                                  resource.IsBottleneck() or ( schedule.IsOptimizationService() and not bottlenecksExists ),
+                                  resource.TotalProcessDuration() );
+    
+      // Calculate productivity of bottle resources
+      value := ( totalproductiontime / totalavailabletime ) * 100;
+    }
+    
+    return value.Round( 2 );
+  *]
+}

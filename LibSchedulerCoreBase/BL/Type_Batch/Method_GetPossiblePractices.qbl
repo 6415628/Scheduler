@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetPossiblePractices () declarative as owning Practices
+{
+  Description: 'Get all possible practices allowed of a batch'
+  TextBody:
+  [*
+    //unfortunately the selecting of the intersection between the allowed practices of the operations
+    //is not straightforward. The intersection of the current set of practices and the practices
+    //of an operation cannot be done in a declarative loop.
+    set := construct( Practices );
+    
+    if( this.BatchSequenceElement( relsize ) > 0 )
+    {
+      operations := selectset( this, BatchSequenceElement.Operation_SC, op, true );
+    
+      set := operations.Element( 0 ).GetCommonPractices( operations );
+    }
+    else
+    {
+      //if the batch is empty, then all practices are allowed
+      set := selectsortedset( this.Schedule(),
+                              Practice,
+                              practice,
+                              true,
+                              practice.UsedPractice() );
+    }
+    
+    
+    return &set;
+  *]
+}

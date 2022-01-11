@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ImportUpgradedData (DMF_Dataset dataset_i) as stream[Object]
+{
+  Description:
+  [*
+    Used by the **execute** flow to import a core data dump back into a core dataset during the upgrade flow.  
+    This API is not expected to be invoked by the end-user, as it is a default behavior of the **UpgradePostProcessing** step.
+  *]
+  TextBody:
+  [*
+    // tgn3 May-21-2021 (created)
+    
+    // Return the core dataset, as it needs to be used to restore to planning after this
+    coreDataset_s := dataset_i.GetDataset()->( coreDataset )
+    {
+      dataset_i.ImportUpgradedData( coreDataset );
+    
+      return coreDataset;
+    }
+    
+    // Handle any exceptions
+    coreDataset_s->Exception()->( ex )
+    {
+      msg := "DMF_API.ImportUpgradedData failed. Reason: ";
+      
+      DMF_Utility::LogException( msg, ex ); 
+    }
+    
+    return coreDataset_s;
+  *]
+}

@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test041_Finalize_With_Iterator (LibOpt_TestDataset dataset)
+{
+  Description: 'Check that the finalize is called when the component is aborted, with an iterator that aborts.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    count := opt.ComponentCounter( run, 'Counter' );
+    count.CheckAborted( false );
+    count.CountOnFinalize( true );
+    iterator := opt.IteratorUntil( run, 'Iterator' );
+    iterator.SetMaxIterations( 10 );
+    abort := opt.ComponentAbort( run, 'Abort' );
+    
+    
+    count.To( iterator );
+    iterator.To( abort );
+    
+    run.SetStartComponent( count );
+    
+    str := run.Start();
+    str->|this->( this )
+        {
+          this.Run().AssertEqual( 1, count.NrOfTimesCalled(), 'Number of calls has an unexpected value' );
+        }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

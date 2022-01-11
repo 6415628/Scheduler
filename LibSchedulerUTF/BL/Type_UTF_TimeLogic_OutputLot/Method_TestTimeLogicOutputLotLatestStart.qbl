@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestTimeLogicOutputLotLatestStart (Schedule schedule)
+{
+  Description: 'Test output lot latest start for single task.'
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    
+    testinstance := this.GetTestInstanceMain( variant );
+    
+    resource := maxselect( schedule, ResourceGroup_SC.Resource_SC, r, true, r.ResourceGroup_SC().Index() )
+    
+    // Select the last task
+    task := resource.Last();
+      
+    // Assert the result
+    this.Run().AssertEqual( testinstance.OutputLotLatestStart(), task.LastOutputLot().LatestStart(), UTFUtility::GenerateFailedMessage( 'TimeLogic_OutputLot_LatestStart', variant ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

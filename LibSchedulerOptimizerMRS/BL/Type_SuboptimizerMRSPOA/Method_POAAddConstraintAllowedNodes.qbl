@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintAllowedNodes (SuboptimizerMRSPOA_POAOneResourceGroup poa, LibOpt_Task task)
+{
+  Description: 'Add the constraint which allow an operation on a resource or not. Only hard violation are considered, this is the case for instance with the input/output storage tank.'
+  TextBody:
+  [*
+    // stn4 Mar-18-2016 (created)
+    traverse( task.Scope().ResourceGroups(), Elements.Resource_SC.astype( SingleResourceBase ), resource )
+    {
+      nodepossible := POAPossible::N( poa, 'AllowedOnResource' + resource.OptimizerIdentifier(), true );
+      pathtype := poa.PathType( SuboptimizerMRSPOA::POANamePathResource( resource ), resource );
+      pathtype.NodesAllowed( nodepossible );
+    
+      //operation allowed on resource
+       traverse( task.Scope().Operations(), Elements, element, not SuboptimizerMRSPOA::IsAllowedOnResource( element, resource ) )
+      {
+        node := poa.Node( SuboptimizerMRSPOA::POANameNodeOperation( element ), element );
+        nodepossible.Set( node, false );
+      }
+    }
+  *]
+}

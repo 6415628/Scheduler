@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcQuantityNonScheduleInFrozenHorizon
+{
+  Description: 'Compute the quantity of the demand which is not already scheduled in the frozen horizon.'
+  TextBody:
+  [*
+    quantityinfrozenhorizon := sum( this, Fulfillment, fullfilment,
+                                    guard( not fullfilment.Supply().PlanUnit_SC().IsPartiallyPlannedOutsideFrozenHorizon(), false )
+                                    and fullfilment.IsActive(),
+                                    fullfilment.Quantity() );
+    
+    value := this.Quantity() - quantityinfrozenhorizon;
+    
+    this.QuantityNonScheduleInFrozenHorizon( value );
+  *]
+}

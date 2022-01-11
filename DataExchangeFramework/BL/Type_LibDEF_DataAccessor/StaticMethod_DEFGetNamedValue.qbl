@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod DEFGetNamedValue (NamedValueTree nvt_i, String definition_i, Boolean isHeader_i) as NamedValue
+{
+  Description: '[Internal] Returns the actual NamedValue from the NamedValueTree of a DEF library message.'
+  TextBody:
+  [*
+    // Jacky CHAN May-9-2016 (created)
+    value := null( NamedValue );
+    
+    // declare all required Handles
+    handleDefinition := nvt_i.GetHandle( definition_i );
+    subhandle        := ifexpr( isHeader_i, LibDEF_DataAccessor::HANDLE_HEADER(), LibDEF_DataAccessor::HANDLE_BODY() );
+    handleBody       := nvt_i.GetHandle( subhandle );
+    
+    root := nvt_i.Root();
+    if( not LibDEF_DataAccessor::HasChildNamed( nvt_i, root, definition_i ) )
+    {
+      LibDEF_Util::LogWarning( "NVT: " + definition_i + " does not exist." );
+    }
+    else
+    {
+      definition := root.Child( handleDefinition );
+    
+      if( not LibDEF_DataAccessor::HasChildNamed( nvt_i, definition, subhandle ) )
+      {
+        LibDEF_Util::LogWarning( "NVT: " + definition_i + " " + subhandle + " does not exist." );
+      }
+      else
+      {
+        value := definition.Child( handleBody );
+      }
+    }
+    
+    return value;
+  *]
+}

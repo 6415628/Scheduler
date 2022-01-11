@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateImportedFeedbackProgram (Schedule schedule, String externalprogramid, String scheduledprogramid, 
+  String externalstoppageid, ProgramTypeConfiguration programtypeconfig, Resource_SC resource, 
+  DateTime firsttaskstart, Number feedbacktaskfrom, Number feedbacktaskto, 
+  Boolean isimportrelationbetweenfeedbacktaskandprogram)
+{
+  Description: 'Create imported feedback for started program, program details and feedback task in program'
+  TextBody:
+  [*
+    taskduration := Duration::Hours( 1 );
+    
+    // Create feedback started program
+    UTFMockObjectFactory::CreateImportedFeedbackStartedProgram( schedule,
+                                                                externalprogramid,
+                                                                externalstoppageid );
+                                                                                         
+    // Create feedback program details
+    feedbackprogramdetails := UTFMockObjectFactory::CreateImportedFeedbackProgramDetail( schedule,
+                                                                                         externalprogramid );
+    feedbackprogramdetails.ProgramDefinitionID( programtypeconfig.ProgramDefinitionConfigurationID() );
+    feedbackprogramdetails.ProgramSetID( programtypeconfig.ProgramSetConfigurationID() );
+    feedbackprogramdetails.ProgramTypeID( programtypeconfig.ProgramTypeConfigurationID() );
+    feedbackprogramdetails.SchedulerProgramID( scheduledprogramid );
+    feedbackprogramdetails.ResourceID( resource.ResourceID() );
+    
+    // Create feedback tasks for first 5 single tasks                          
+    sortedtasks := selectsortedset( resource, Task_SC.astype( SingleTaskBase ), task, 
+                                    task.SequenceNr() >= feedbacktaskfrom
+                                    and task.SequenceNr() <= feedbacktaskto, 
+                                    task.SequenceNr() );
+    taskstart := firsttaskstart;
+    traverse( sortedtasks, Elements, task )
+    {
+      operation := task.GetOperation();
+      feedbacktask := UTFMockObjectFactory::CreateImportedFeedbackTask( schedule, 
+                                                                        operation.WorkOrderId(), 
+                                                                        operation.PlanUnitId(), 
+                                                                        operation.WorkOrderSequenceNr(),
+                                                                        '' );
+      feedbacktask.ReportStart( taskstart, resource, '', '' );
+      feedbacktask.ReportEnd( taskstart + taskduration, resource, '', '' );
+      feedbacktask.TaskType( Constants::TaskType_Task() );
+      taskstart := taskstart + taskduration;
+      
+      // Create feedback task in program 
+      if( isimportrelationbetweenfeedbacktaskandprogram )
+      {
+        UTFMockObjectFactory::CreateImportedFeedbackTaskInProgram( schedule,
+                                                                   externalprogramid,
+                                                                   operation.WorkOrderId(), 
+                                                                   operation.PlanUnitId(), 
+                                                                   operation.WorkOrderSequenceNr() );
+      }
+    }
+  *]
+}

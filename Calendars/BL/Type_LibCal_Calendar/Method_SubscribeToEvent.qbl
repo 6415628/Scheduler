@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method SubscribeToEvent (LibCal_Calendar calendar_i, String subject_i, Boolean useLeadingPeriod_i) as LibCal_Participation
+{
+  Description: 'Let the calendar subscribe to an event from another calendar.'
+  TextBody:
+  [*
+    subscription := null( LibCal_Participation );
+    event        := select( calendar_i, Event, evnt, true, evnt.Subject() = subject_i );
+    
+    if( not isnull( event ) )
+    {
+      subscription := this.SubscribeToEvent( event, useLeadingPeriod_i );
+    }
+    else
+    {
+      if( isnull( calendar_i ) )
+      {
+        LibCal_Util::Error( "LibCal_Calendar.SubscribeToEvent() : trying to subscribe to event '" + subject_i + "' of an UNKNOWN calendar." +
+                            " | CalendarID = '" + calendar_i.CalendarID() + "'" );
+      }
+      else
+      {
+        LibCal_Util::Warning( "LibCal_Calendar.SubscribeToEvent() : no event found with subject '" + subject_i + "' in calendar '" + calendar_i.CalendarID() + "'." +
+                              " | CalendarID = '" + calendar_i.CalendarID() + "'" );
+      }
+    }
+    
+    return subscription;
+  *]
+}

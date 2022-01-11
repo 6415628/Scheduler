@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateKnowledgeBranch (Strings knowledgeBranchStrings)
+{
+  TextBody:
+  [*
+    this.KnowledgeBranch( relflush );
+    
+    contentDelimiter := LibSM_KnowledgeBranch::KBBranchStringDelimiter();
+    
+    traverse( knowledgeBranchStrings, Elements, kbString )
+    {
+      contents := kbString.Tokenize( contentDelimiter );
+      knowledgeBranch := LibSM_KnowledgeBranch::FindTypeIndexKnowledgeBranch( contents.Element( 0 ),
+                                                                              contents.Element( 1 ),
+                                                                              contents.Element( 2 ),
+                                                                              [Number]contents.Element( 3 ) );
+    
+      if( isnull( knowledgeBranch ) )
+      {
+        knowledgeBranch := LibSM_KnowledgeBranch::Create( this,
+                                                          contents.Element( 0 ),
+                                                          contents.Element( 1 ),
+                                                          contents.Element( 2 ),
+                                                          [Number]contents.Element( 3 ) );
+      }
+    
+      knowledgeBranch.NrOfScenariosUsing( 0 );
+      knowledgeBranch.IsHighestChangeNr( [Boolean]contents.Element( 4 ) );
+    
+    }
+  *]
+}

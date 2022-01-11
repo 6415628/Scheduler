@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test001_Settings_MRSMeta (Schedule schedule)
+{
+  Description: 'Imports the default optimizer settings for MRS Meta, changes them, tests the import/export function and then exports the original settings. Asserts that all imported settings are the same as the exported ones.'
+  TextBody:
+  [*
+    // jog2 Nov-12-2020 (created)
+    mrsmetasettings := select( schedule, Optimization.Optimizer.astype( OptimizerSequencing ).Settings.astype( SettingsSequencing ).MRSMeta, mrsmeta, true );
+    
+    // Store the current MRS meta settings
+    originalsettings := construct( SettingsMRSMetaForSequencing );
+    originalsettings.UTF_StoreSettings( mrsmetasettings );
+    
+    // Change the MRS meta settings
+    mrsmetasettings.UTF_ChangeSettings();
+    
+    // Store them for comparison
+    storedsettings := construct( SettingsMRSMetaForSequencing );
+    storedsettings.UTF_StoreSettings( mrsmetasettings );
+    
+    // Export the changed settings
+    schedule.ExportObject().ExportOptimizerSettingsSequencingToDataFolder();
+    
+    // Change it again
+    mrsmetasettings.UTF_ChangeSettings();
+    
+    // Import the previous changed settings
+    schedule.ImportAndSynchronizeOptimizerSettingsSequencing();
+    
+    // Check to see if the imported settings are the same as the stored(exported) ones
+    this.Run().AssertTrue( this.CheckMRSMetaSettings( mrsmetasettings, storedsettings ), 'The imported values for the MRS Meta settings are different from the current ones.' );
+    
+    // Reset the values to the original
+    mrsmetasettings.UTF_StoreSettings( originalsettings );
+    schedule.ExportObject().ExportOptimizerSettingsSequencingToDataFolder();
+  *]
+}

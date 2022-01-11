@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride OnFinalize (LibOpt_Task task)
+{
+  TextBody:
+  [*
+    // Delete all spanoperations from runcontext such that they cannot be selected in other iterations
+    
+    dimension := select( task.Run(), RunContext.astype( RunContextSetupAddress ).Dimension.astype( OperationSetupDimension ), dim, true );
+    dimension.DeleteCoordinates( task.Scope().OperationsSpan() );
+    
+    // delete the prepared transient data if we're not in debug mode:
+    if( not task.Run().DebugScope() )
+    {
+      td := TransientDataSuboptimizerSequencing::Find( this, task );
+      if( not isnull( td ) )
+      {
+        td.Delete();
+      }
+    }
+  *]
+}

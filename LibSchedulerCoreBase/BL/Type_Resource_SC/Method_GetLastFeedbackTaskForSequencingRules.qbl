@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetLastFeedbackTaskForSequencingRules () declarative remote as FeedbackTaskInSchedule
+{
+  TextBody:
+  [*
+    // Get last feedback task for shutdown type checking
+    task := this.LastFeedbackTaskInSchedule();
+    
+    // Checks whether last feedback task is shutdown task, if yes, then need to get the last feedback task in schedule based on shutdown type configuration
+    if( guard( this.LastFeedbackTaskInResource().IsShutdownTask(), false ) )
+    {
+      // If shutdown type not allow sequence rules, then set the last feedback to NULL
+      shutdown := guard( this.LastFeedbackTaskInResource().astype( FeedbackShutdownTask ).Shutdown(), null( Shutdown ) );
+      if( not isnull( shutdown ) and 
+          guard( not shutdown.ResponsibleShutdownType().IsSequenceRulesEnabled(), false ) )
+      {
+        task := null( FeedbackTaskInSchedule );    
+      }
+    }
+    // If last feedback task is program change task and program change does not allow sequence rules, then set the last feedback to NULL
+    else if( guard( this.LastFeedbackTaskInResource().IsProgramChangeTask(), false )
+             and guard( not this.LastFeedbackTaskInResource().astype( FeedbackProgramChangeTask ).ProgramChange().IsSequenceRulesEnabled(), false ) )
+    {
+      task := null( FeedbackTaskInSchedule );    
+    }
+             
+    return task;
+  *]
+}

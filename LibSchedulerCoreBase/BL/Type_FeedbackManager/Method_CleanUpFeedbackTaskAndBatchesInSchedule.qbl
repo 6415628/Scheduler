@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method CleanUpFeedbackTaskAndBatchesInSchedule
+{
+  Description: 'Clean up feedback task and batches that already past shop floor history days'
+  TextBody:
+  [*
+    // janer Oct-18-2014 (created)
+    // Clean up feedbacktaskinschedule with end time past shop floor history days
+    // FeedbackTaskInFeedbackProgramType will be deleted when FeedbackTaskInSchedule is deleted because owning relation
+    traverse( this, FeedbackTaskInSchedule, fbtask, fbtask.CanBeDeleted() )
+    {
+      fbtask.CleanUpAndArchive();
+    }
+    
+    // Clean up feedbackbatchinschedule with end time past shop floor history days
+    traverse( this, FeedbackBatchInSchedule, fbbatch, fbbatch.CanBeDeleted() )
+    {
+      fbbatch.Delete();
+    }
+    
+    // Transaction propagate needed to calculate CanBeDeleted attributes
+    Transaction::Transaction().Propagate( attribute( ProgramChange, CanBeDeleted ) );
+    Transaction::Transaction().Propagate( attribute( Shutdown, CanBeDeleted ) );
+    
+    // Clean up program change 
+    // FeedbackProgramChangeTask will be deleted in ProgramChange.OnDelete
+    // FeedbackProgramType, FeedbackProgramPhase also will be deleted when program change is delete because owning relation
+    traverse( this, Schedule.ProgramChange, programchange, programchange.CanBeDeleted() )
+    {
+      programchange.Remove();
+    }
+    
+    // Clean up shutdown
+    // FeedbackShutdownTask will be deleted in ProgramChange.OnDelete
+    traverse( this, Schedule.Shutdown, shutdown, shutdown.CanBeDeleted() )
+    {
+      shutdown.Remove();
+    }
+  *]
+}

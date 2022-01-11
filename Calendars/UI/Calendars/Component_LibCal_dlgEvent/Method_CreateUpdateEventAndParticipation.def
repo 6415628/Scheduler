@@ -1,0 +1,115 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateUpdateEventAndParticipation () as LibCal_Event id:Method_LibCal_dlgEvent_CreateUpdateEventAndParticipation
+{
+  #keys: '[131094.1.136167643]'
+  Body:
+  [*
+    sEvent   := Dialog.Data();
+    sLeadPart:= dhLeadingParticipation.Data(); 
+    
+    // Get the values from the controls.
+    
+    // Event and LeadingParticipation
+    subject        := edtName.Text();
+    description    := edtDescription.Text();
+    type           := rbgEventType.BoundValue();
+    capacity       := this.StringToReal( edtCapacity.Text() );
+    category       := selCategory.Data();
+    isDefault      := ckbIsDefault.Checked();
+    startDate      := datStartDate.Date()
+    startTimeOfDay := durStartTimeOfDay.Duration();
+    endDate        := datEndDate.Date();
+    endTimeOfDay   := durEndTimeOfDay.Duration();
+    isAllDay       := ckbIsAllDay.Checked();
+    
+    // When running in days only mode, use the number of days to calculate the end date.
+    // Set the times to 0:00 (just to be sure), and set isAllDay.
+    if( LibCal_Event::USE_ONLY_DAYS() )
+    {
+      endDate        := startDate + vhDuration.Data().Days();
+      endTimeOfDay   := Duration::Zero();
+      startTimeOfDay := Duration::Zero();
+      isAllDay       := true;
+    }
+    
+    // RecurrencePattern
+    isRecurring := not btnNoRecurrence.Pressed();
+    
+    patternType := LibCal_RecurrencePattern::TYPE_NONE();
+    if( btnWeekly.Pressed() )
+    {
+      patternType := LibCal_RecurrencePattern::TYPE_WEEKLY();
+    }
+    else if( btnMonthly.Pressed() )
+    {
+      patternType := LibCal_RecurrencePattern::TYPE_MONTHLY();
+    }
+    else if( btnYearly.Pressed() )
+    {
+      patternType := LibCal_RecurrencePattern::TYPE_YEARLY();
+    }
+    
+    // Weekly
+    weekly_Weekdays := ifexpr( btnMonday   .Pressed(), "Mon;", "" )
+                     + ifexpr( btnTuesday  .Pressed(), "Tue;", "" )
+                     + ifexpr( btnWednesday.Pressed(), "Wed;", "" )
+                     + ifexpr( btnThursday .Pressed(), "Thu;", "" )
+                     + ifexpr( btnFriday   .Pressed(), "Fri;", "" )
+                     + ifexpr( btnSaturday .Pressed(), "Sat;", "" )
+                     + ifexpr( btnSunday   .Pressed(), "Sun;", "" );
+    
+    // Monthly
+    monthly_IsDay       := ckbMonthlyDay.Checked();
+    monthly_Day         := [Number]edtMonthlyDay.Text();
+    monthly_WeekOfMonth := ssMonthlyPatternWeekOfMonth.BoundValue();
+    monthly_DayOfWeek   := ssMonthlyPatternDayOfWeek.BoundValue();
+    
+    // Yearly
+    yearly_IsDate      := ckbYearlyDay.Checked();
+    month              := ifexpr( yearly_IsDate, ssYearlyMonth.BoundValue(), ssYearlyPatternMonth.BoundValue() );
+    yearly_Month       := this.GetNrOfMonth( month );
+    yearly_Day         := [Number]ssYearlyDayOfMonth.BoundValue();
+    yearly_WeekOfMonth := ssYearlyPatternWeekOfMonth.BoundValue();
+    yearly_DayOfWeek   := ssYearlyPatternDayOfWeek.BoundValue();
+    
+    // RecurrenceInterval
+    recurrenceInterval := 1;
+    if( patternType = LibCal_RecurrencePattern::TYPE_WEEKLY() )
+    {
+      recurrenceInterval := [Number]edtEveryNrOfWeeks.Text();
+    }
+    else if( patternType = LibCal_RecurrencePattern::TYPE_MONTHLY() )
+    {
+      recurrenceInterval := ifexpr( monthly_IsDay, [Number]edtMonthlyDayEveryNrOfMonths.Text(),
+                                                   [Number]edtMonthlyPatternEveryNrOfMonths.Text() );
+    }
+    else if( patternType = LibCal_RecurrencePattern::TYPE_YEARLY() )
+    {
+      recurrenceInterval := [Number]edtEveryNrOfYears.Text();
+    }
+    
+    // RecurrencePeriod
+    periodType := ifexpr( ckbEndOfPeriod.Checked(), LibCal_RecurrencePeriod::TYPE_WITHENDDATE(),
+                                                    LibCal_RecurrencePeriod::TYPE_WITHOUTEND() );
+    
+    timezone        := this.GetCalendarTimeZone();
+    periodStartDate := dtStartOfPeriod.DateTime().Date( timezone );
+    periodEndDate   := dtEndOfPeriod  .DateTime().Date( timezone );
+    
+    // All values are passed to the Server, only the relevant values are used there.
+    event := LibCal_Event::CreateUpdateFromUI( sEvent.Calendar(), sLeadPart.WrappedInstance(),
+                                               subject, description, type, capacity, category, isDefault,
+                                               startDate, startTimeOfDay, endDate, endTimeOfDay, isAllDay,
+                                               // RecurrencePattern
+                                               isRecurring, recurrenceInterval, patternType,
+                                               weekly_Weekdays,
+                                               monthly_IsDay, monthly_Day,  monthly_WeekOfMonth, monthly_DayOfWeek,
+                                               yearly_IsDate, yearly_Month, yearly_Day, yearly_WeekOfMonth, yearly_DayOfWeek,
+                                               // RecurrencePeriod
+                                               periodType, periodStartDate, periodEndDate,
+                                               // Subscribers
+                                               dhSubscribers.Data() );
+    return event;
+  *]
+}

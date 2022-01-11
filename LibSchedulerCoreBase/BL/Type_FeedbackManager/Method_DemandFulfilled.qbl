@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method DemandFulfilled (Operation_SC operation, String resource_id, Demand demand, 
+  Supply supply, Real quantity, DateTime time, 
+  Boolean is_accumulated, String remark)
+{
+  Description: 'Feedback API: Handle material feedback with type demand fulfilled'
+  TextBody:
+  [*
+    // jiex Oct-18-2016 (created)
+    
+    demand.UpdateReportedAttributes( quantity, is_accumulated );
+    //Set fulfillment HasFeedback to turn it into a fixed reservation
+    fulfillment := select( demand, Fulfillment, f, f.Supply() = supply );
+    if( not isnull( fulfillment ) )
+    {
+      fulfillment.HasFeedback( true );
+    }
+    
+    if( not isnull( operation.ActiveOperationFeedback() ) )
+    {
+      operation.ActiveOperationFeedback().HandleDemandFulfilledException( supply, demand, fulfillment, quantity );
+    }
+  *]
+}

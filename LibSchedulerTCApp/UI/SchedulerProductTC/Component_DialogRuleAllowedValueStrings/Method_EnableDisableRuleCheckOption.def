@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method EnableDisableRuleCheckOption () id:Method_DialogRuleAllowedValueStrings_EnableDisableRuleCheckOption
+{
+  #keys: '[136602.1.318853528]'
+  Body:
+  [*
+    // Only disable rule check options for program phase transition rule
+    isenable := RadioButtonGroupRuleScope.BoundValue() <> RuleConstant::RuleScope_ProgramPhase()
+                or not CheckBoxIsProgramPhaseTransitionRule.Checked();
+    
+    RadioButtonGroupManualPlanning.Enabled( isenable );
+    RadioButtonGroupOptimizer.Enabled( isenable );
+    
+    if( not isenable )
+    {
+      // Disable manual planning option
+      Dialog.Data().NeedManualPreconditionCheck( false );
+      RadioButtonGroupManualPlanning.BoundValue( 'false' );
+      RadioButtonGroupManualPlanning.DisableWithUserFeedback( Translations::Rule_ManualPlanningNotSupportedForPhaseTransitionRule() );
+      
+      // Disable optimizer option
+      Dialog.Data().IsHardConstraintForOptimizer( true );
+      RadioButtonGroupOptimizer.BoundValue( 'true' );
+      RadioButtonGroupOptimizer.DisableWithUserFeedback( Translations::Rule_OptimizerOptionNotSupportedForPhaseTransitionRule() );
+    }
+  *]
+}

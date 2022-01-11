@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method NextToolIndex () declarative remote as Number
+{
+  Description: 'Searches across related tools and finds the either the highest index number, or the first non-sequencial index, and returns that value.'
+  TextBody:
+  [*
+    // ele3 Sep-28-2016 (created)
+    index := 0; // Start with 0
+    
+    if( this.Tool( relsize ) > 0 )
+    {
+      tools := selectsortedset( this, Tool, t, true, t.Index() );
+      toolsaresequential := true;
+      // A loop to get unused indexes when they are not sequential
+      traverse( tools, Elements, tool, toolsaresequential )
+      {
+        currentindex := tool.Index();
+        
+        if( index = currentindex )
+        {
+          index := index + 1;
+        }
+        else if( index <> currentindex - 1 )
+        {
+          toolsaresequential := false; // To end the loop
+        }
+      }
+    }
+    
+    return index;
+  *]
+}

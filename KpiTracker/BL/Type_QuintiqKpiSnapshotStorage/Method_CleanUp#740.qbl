@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method CleanUp (Number batchsize, DssKpiSnapshot startSnapshot) as stream[DssKpiSnapshotStorage]
+{
+  Description: 'Dss-specific implementation of CleanUp that cleans up in batches of the specified size, starting from the specified Snapshot onwards. Returns a stream to allow waiting for the last batch to complete.'
+  TextBody:
+  [*
+    snapshot := startSnapshot;
+    entry    := 0;
+    while ( not isnull( snapshot ) and entry < batchsize )
+    {
+      cleansnapshot := snapshot;
+      snapshot := snapshot.PreviousSnapshot();  
+      
+      if ( cleansnapshot.HasExpired( DateTime::Now() ) )
+      {
+        DssKpiSnapshot::DeleteSnapshotAndUnusedLabels( cleansnapshot );
+      }
+      
+      entry++;
+    }
+    
+    // Setup the call to the next batch with low priority.
+    returnStream := emit( this );
+    if ( not isnull( snapshot ) )
+    {
+      returnStream := this
+        ->Annotate( ReactiveAnnotation::Priority( 0 ) )
+        ->CleanUp( batchsize, snapshot );
+    }
+    
+    return returnStream;
+  *]
+}

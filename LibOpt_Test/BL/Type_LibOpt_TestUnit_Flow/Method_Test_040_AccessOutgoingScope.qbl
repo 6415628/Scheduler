@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_040_AccessOutgoingScope (LibOpt_TestDataset dataset)
+{
+  Description: 'This tests whether the outgoing scope of a component can still be reached in the on finalize method.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    
+    outgoing := opt.ComponentParentReflection( run, 'Outgoing scope',
+                                               method( LibOpt_TestUnit_Flow, Operation_040,
+                                                       LibOpt_ComponentParent, LibOpt_Task ) );
+    count := opt.ComponentCounter( run, 'Counter' );
+    
+    outgoing.To( count );
+    
+    this.NoException( run.Start()->|void->( )
+    {
+      if( this.Run().AssertEqual( 1, outgoing.SnapshotComponent( relsize ), 'Amount of snapshots' ) )
+      {
+        snapshot := outgoing.SnapshotComponent( relget ).First();
+        log_snapshots := selectset( snapshot, Children.astype( LibOpt_SnapshotInfo ), i, true );
+        if( this.Run().AssertEqual( 1, log_snapshots.Size(), 'Amount of log snapshots' ) ) // Probably caused by the scope being removed.
+        {
+          this.Run().AssertEqual( [String] true, log_snapshots.First().Description(), 'Result' );
+        }
+      }
+      this.Run().AssertEqual( 0, run.Scope( relsize ), 'Number of scopes' );
+    } )
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

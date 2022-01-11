@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test016_StopwatchInSuboptimizerPOAError (LibOpt_TestDataset dataset)
+{
+  Description: 'Test that the time capturing of the POA suboptimizer work correctly, even if an error is thrown.'
+  TextBody:
+  [*
+    max_diff      := Duration::Millis( 30 );
+    initialize    := Duration::Millis( 50 );
+    execute       := initialize + max_diff;
+    handle_result := execute + max_diff;
+    
+    opt := this.Optimizer( dataset );
+    template := opt.CreateRun();
+    runcontext := LibOpt_MyRunContextForUTF::Create( template );
+    
+    runcontext.DurationInitialize( initialize );
+    runcontext.DurationStrategy( execute );
+    runcontext.DurationHandleResult( handle_result );
+    runcontext.ErrorAtHandleResult( true );
+    
+    opt.POASuboptimizer( template, 'Subopt', runcontext );
+    
+    runs := opt.GenerateForError( template );
+    
+    
+    // TEST
+    sequence := stream[JSON]::Success();
+    traverse( runs, Elements, run )
+    {
+      sequence := sequence->|run->Start();
+      this.NoException( sequence );
+    }
+    
+    this.NoException( sequence->|void->()
+    {
+      traverse( runs, Elements, run )
+      {
+        algorithm_snapshot := select( run, Snapshot.astype( LibOpt_SnapshotAlgorithm ), snapshot, true );
+        
+        this.Run().AssertGreaterOrEqual( initialize, algorithm_snapshot.InitializeDuration(), 'InitializeDuration' );
+        this.Run().AssertLess( initialize + max_diff, algorithm_snapshot.InitializeDuration(), 'InitializeDuration' );
+        
+        this.Run().AssertGreaterOrEqual( execute, algorithm_snapshot.SolveDuration(), 'SolveDuration' );
+        this.Run().AssertLess( execute + max_diff, algorithm_snapshot.SolveDuration(), 'SolveDuration' );
+        
+        this.Run().AssertGreaterOrEqual( handle_result, algorithm_snapshot.HandleResultDuration(), 'HandleResultDuration' );
+        this.Run().AssertLess( handle_result + max_diff, algorithm_snapshot.HandleResultDuration(), 'HandleResultDuration' );
+      }
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

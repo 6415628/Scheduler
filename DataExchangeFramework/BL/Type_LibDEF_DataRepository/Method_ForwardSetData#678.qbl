@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method ForwardSetData (Key planningDatasetMDSID_i, String planningDatasetType_i, Key planningDatasetDTD_i, 
+  String setTypeName_i, Strings setGUIDs_i, Boolean isAutoForwarding_i)
+{
+  Description: 'Add the Sets to the SetQueue, so they can be forwarded in batches.'
+  TextBody:
+  [*
+    setType := LibDEF_SetType::GetSetTypeByName( this, setTypeName_i );
+    
+    if( isnull( setType ) )
+    {
+      LibDEF_Util::LogError( "Error getting a Set from DataRepository, SetType '" + setTypeName_i + "' cannot be found." );
+    }
+    
+    traverse( setGUIDs_i, Elements, setGUID )
+    {
+      set := select( this, Channel.SetType.Set, set,
+                     set.GUID() = setGUID );
+                     
+      if( isnull( set ) )
+      {
+        LibDEF_Util::LogError( "Set with GUID '" + setGUID + "' cannot be requested, it does not exist. ");
+      }
+    
+      setType.SetQueue().AddSetToPlanningDataset( set, planningDatasetMDSID_i, planningDatasetType_i, planningDatasetDTD_i, isAutoForwarding_i );
+    }
+    
+    // Also send the last Sets that did not make a full batch anymore.
+    setType.SetQueue().ForwardSetsToPlanningDataset( planningDatasetMDSID_i, planningDatasetType_i, planningDatasetDTD_i, isAutoForwarding_i );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

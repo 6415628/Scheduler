@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetStatusMessage (String optimizationSessionID, output String feedback_o) as String
+{
+  Description: 'Responds with the current optimization status of the matching session in a JSON message back to the scheduling service.'
+  TextBody:
+  [*
+    output := ""; 
+    
+    session := select( this, OptimizationSession, optSession, true, optSession.ID() = optimizationSessionID );
+    
+    if( isnull( session ) )
+    {
+      Utility_SC::Concat( feedback_o, Translations::LibSchedulerOptMgr_UnknownSession( optimizationSessionID ) );
+    }
+    else
+    {
+      output := session.GetStatusJSON();  
+    }
+    
+    return output;
+  *]
+}

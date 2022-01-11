@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestEnableRuleConditionForProgramRule (Schedule schedule)
+{
+  Description: 'Test rule with enabled rule condition for program rule'
+  TextBody:
+  [*
+    // Get variant attributes
+    isvariantfound := false;
+    programscope := '';
+    istransitionrule := false;
+    isconditionenable := false;
+    conditionScope := '';
+    conditionValue := false;
+    previousOperationAttributeValue := false;
+    operationAttributeValue := false;
+    hasNoViolateConstraint := false;
+    
+    this.GetProgramTestVariant( isvariantfound,
+                                programscope,
+                                istransitionrule,
+                                isconditionenable,
+                                conditionScope,
+                                conditionValue,
+                                previousOperationAttributeValue,
+                                operationAttributeValue,
+                                hasNoViolateConstraint );
+    
+    isvalid := true;
+    if( isvariantfound )
+    {
+      // Get the operation 5 & 10 which will be transition/violated operations
+      transitionops := selectset( schedule, PlanUnit_SC.Operation_SC, op, op.OperationID() = 'Operation_5' or op.OperationID() = 'Operation_10' );
+      if( not istransitionrule )
+      {
+        // Check the operations constraint violation
+        isvalid := forall( transitionops, Elements.Task_SC, task,
+                           ( task.IsAllHighPriorityRulesOK() and task.IsAllLowPriorityRulesOK() ) = hasNoViolateConstraint );
+      }
+      else
+      {
+        // Check the operations transition
+        isphasetransition := not hasNoViolateConstraint;
+        isvalid := forall( transitionops, Elements.Task_SC.TaskInProgramSet, task,
+                           ( isphasetransition and task.ProgramPhase() <> task.GetPreviousTaskInProgramSet().ProgramPhase() )
+                           or ( not isphasetransition and task.ProgramPhase() = task.GetPreviousTaskInProgramSet().ProgramPhase() ) );
+      }
+    }
+    
+    this.Run().AssertTrue( isvalid, UTFUtility::GenerateFailedMessage( 'Rule condition checking for ' + programscope + ' rule.'
+                                                                       + ifexpr( istransitionrule, '(Transition)', '' ), this.Variant() ) );
+  *]
+}

@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod SubTask_GetSubTaskIDs (String rgtype_i, Schedule owner_i) const remote as String
+{
+  Description:
+  [*
+    Concatenate all SubTaskIDs for a resource group into a string
+    Usage:
+    DialogToolRequirementBase - SubTaskDefinitionName StringSelection
+  *]
+  TextBody:
+  [*
+    // James Kwapien Sep-29-2016 (created)
+    subtaskids := construct( Strings );
+    
+    rg := select( owner_i, ResourceGroup_SC, rg, rg.Type() = rgtype_i );
+    
+    if( not isnull( rg ))
+    {
+      subtasks := selectset( rg, SubTaskTypeOnResourceGroup, sttorg, true );
+    
+      // Process sub task has to be the first string in the strings object
+      traverse( subtasks, Elements, subtask )
+      {
+          subtaskid := subtask.SubTaskID();
+          subtaskids.Add( subtaskid );
+          // Process sub task needs to be the first string in the Strings object so that it can be displayed as default if present
+          if( subtaskid = Constants::SubTask_Process() )
+          {
+            subtaskids.Swap( subtaskids.Size() - 1, 0 );
+          }
+      }
+    }
+    
+    return subtaskids.Concatenate( ";" );
+  *]
+}

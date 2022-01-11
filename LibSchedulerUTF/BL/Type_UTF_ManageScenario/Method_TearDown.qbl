@@ -1,0 +1,16 @@
+Quintiq file version 2.0
+#parent: #root
+Method TearDown (LibSM_ScenarioManager scenarioManager, String datasetNameSuffix)
+{
+  Description: 'Tear down logic for manage scenario UTFs to clean up the dataset.'
+  TextBody:
+  [*
+    // Sleep to prevent ErrorCode = 27313 which is caused by the deletion of dataset being too late before the next unit test needs it
+    // Alternatively, we can also choose to not delete the scenario and leave it in the system
+    //OS::Sleep( 100 );
+    
+    nonLeadingScenarios := selectset( scenarioManager, ScenarioNode.astype( Scenario ), scenario, not scenario.IsLeadingScenario(), scenario.Name() = datasetNameSuffix )
+    
+    LibSM_ScenarioNode::DeletePermanently( nonLeadingScenarios );
+  *]
+}

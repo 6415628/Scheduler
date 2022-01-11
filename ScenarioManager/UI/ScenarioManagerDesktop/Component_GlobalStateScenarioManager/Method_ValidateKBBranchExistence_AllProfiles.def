@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValidateKBBranchExistence_AllProfiles () id:Method_LibSM_GlobalState_ValidateKBBranchExistence_AllProfiles
+{
+  #keys: '[136398.1.587826960]'
+  Body:
+  [*
+    // To validate if profile's knowledge branches have valid branch name or version nr
+    /*
+    1. Traverse all knowledge definition name
+       - Select the KBID ( KB definition ) and GetKBStructure of the KBID
+       - Then traverse all knowledge profiles,
+         - Check if there exists knowledge branch with the branch name and version of the KB definition
+    */
+    scenarioManager := this.GetScenarioManagerDataset();
+    editor := CKBEditor::Create();
+    kbids := editor.GetKBs();
+    
+    allKDDefinitionNames := this.GetKnowledgeBaseDefinitionNameStrings();
+    
+    kbDefinitionNameSet := allKDDefinitionNames.Tokenize( LibSM_ScenarioManager::KBDefinitionNameSeparator() );
+    
+    kbBranches := construct( LibSM_KnowledgeBaseBranchInProfiles );
+    messageStrings := construct( Strings );
+    
+    traverse( kbDefinitionNameSet, Elements, kbDefinitionName )
+    {
+      kbid := select( kbids, Elements, kbid, kbid.Name() = kbDefinitionName );
+    
+      kbinfos := editor.GetKBStructure( kbid );
+    
+      traverse( scenarioManager, KnowledgeProfile, knowledgeProfile )
+      {
+        errorMessage := ''
+        branch := select( knowledgeProfile, KnowledgeBaseBranchInProfile, branch,
+                          branch.KBDefinitionName() = kbDefinitionName );
+    
+        if( not isnull( branch ) )
+        {
+          kbfullid := select( kbinfos, Elements.KBFullID, k,
+                              k.Branch().ToUpper() = branch.KBBranchName().ToUpper()
+                              and k.Version() = branch.KBBranchVersion() );
+          errorMessage := "";
+          // if null kbid, that means the branch name or version is missing,hence log error message into branch
+          if( isnull( kbfullid ) )
+          {
+             errorMessage := Translations::LibSM_KnowledgeProfile_Branch_DoesNotExists( branch.KBBranchName(), branch.KBBranchVersion(), branch.KBDefinitionName() );
+          }
+    
+          // always add into branch, and set for either empty string or error message
+          kbBranches.Add( branch );
+          messageStrings.Add( errorMessage );
+        }
+      }
+    }
+    
+    
+    scenarioManager.SetKnowledgeBranchErrorMessageValue( kbBranches, messageStrings );
+  *]
+}

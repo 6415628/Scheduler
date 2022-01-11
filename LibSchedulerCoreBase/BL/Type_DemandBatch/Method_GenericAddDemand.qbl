@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenericAddDemand (Demand demand, Real quantity) as DemandInBatch
+{
+  TextBody:
+  [*
+    demandinbatch := select( demand, DemandInBatch, dib, dib.DemandBatch() = this );
+    
+    if( isnull( demandinbatch ) )
+    {
+      demandinbatch := this.AddLast( this.CreateDemandInBatch( demand ) );
+    }
+    else
+    {
+      this.MoveLast( demandinbatch );
+      quantity := quantity + demandinbatch.Quantity();
+      quantity := minvalue( quantity, demandinbatch.Demand().Quantity() );
+    }
+    
+    demandinbatch.SetQuantity( quantity );
+    
+    return demandinbatch;
+  *]
+}

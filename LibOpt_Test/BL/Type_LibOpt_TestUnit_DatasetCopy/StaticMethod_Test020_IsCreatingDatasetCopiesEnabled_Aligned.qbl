@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Test020_IsCreatingDatasetCopiesEnabled_Aligned (LibOpt_TestDataset dataset, LibOpt_TestUnit_DatasetCopy unittest, Boolean iscreatingdatasetcopiesenabled) as Stream
+{
+  Description: 'Check for all components that the `IsCreatingDatasetCopiesEnabled` attribute of a finished run is still aligned with the `IsCreatingDatasetCopiesEnabled` attribute of the optimizer.'
+  TextBody:
+  [*
+    /// evr3 Jul-6-2020 (created)
+    opt := unittest.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( iscreatingdatasetcopiesenabled );
+    
+    // Create a separate run for each component.
+    // The run.IsCreatingDatasetCopiesEnabled() attribute will be equal to the opt.IsCreatingDatasetCopiesEnabled() attribute when the run is created.
+    runs := opt.CreateAllComponents();
+    
+    se := dataset.ScopeElementMock( relnew );
+    strs := construct( structured[stream[JSON]] );
+    traverse( runs, Elements, run )
+    {
+      scope := LibOpt_ScopeFat::Create( run );
+      scope.Add( se );
+      run.SetStartScope( scope );
+      // Start a run for one of the components.
+      strs.Add( run.Start() );
+    }
+    merge := stream[JSON]::Merge( strs );
+    // After all runs are finished, compare run.IsCreatingDatasetCopiesEnabled() with opt.IsCreatingDatasetCopiesEnabled() for all runs.
+    strrun1 := merge->|void->()
+    {
+      traverse( runs, Elements, run )
+      {
+        unittest.Run().AssertTrue( run.IsCreatingDatasetCopiesEnabled() = opt.IsCreatingDatasetCopiesEnabled(),
+                                   "Expected that the 'run.IsCreatingDatasetCopiesEnabled()' attribute of a finished run is still aligned with the 'optimizer.IsCreatingDatasetCopiesEnabled()' attribute. "
+                                   + "However, the 'run.IsCreatingDatasetCopiesEnabled()' attribute is '"
+                                   + [String] run.IsCreatingDatasetCopiesEnabled()
+                                   + "', while the 'optimizer.IsCreatingDatasetCopiesEnabled()' attribute is '"
+                                   + [String] opt.IsCreatingDatasetCopiesEnabled() + "'. "
+                                   + "Please check if the '" 
+                                   + run.StartComponent().DefinitionName()
+                                   + "' component is changing the value of these attributes."
+                                   );
+      }   
+    }
+    
+    return strrun1;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

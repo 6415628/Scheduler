@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericMaterialPlannedSupply (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic material planned supply core data attributes to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdSchedule, CDEntity.astype( CDGenericMaterialPlannedSupply ), cdGenericMaterialPlannedSupply )
+    {
+      genericMaterialPlannedSupply := MaterialPlannedSupply::FindMaterialPlannedSupply( cdGenericMaterialPlannedSupply.SupplyType(),
+                                                                                        cdGenericMaterialPlannedSupply.SupplyID() );
+                                                                                        
+      if( not isnull( genericMaterialPlannedSupply ) )
+      { 
+        // DemandBatch, M-1
+        demandBatch := DemandBatch::FindDemandBatch( cdGenericMaterialPlannedSupply.BatchID() );
+        genericMaterialPlannedSupply.DemandBatch( relset, demandBatch );
+        
+        // Operation, M-1
+        operation := select( schedule, PlanUnit_SC.Operation_SC, operation, operation.OperationID() = cdGenericMaterialPlannedSupply.OperationID() );
+        genericMaterialPlannedSupply.Operation_SC( relset, operation );
+        
+        // WorkOrderOutputMaterial, M-1
+        workOrderOutputMaterial := WorkOrderOutputMaterial::FindWorkOrderOutputMaterial( cdGenericMaterialPlannedSupply.WorkOrderOutputMaterialId() );
+        genericMaterialPlannedSupply.WorkOrderOutputMaterial( relset, workOrderOutputMaterial );
+      }                                            
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

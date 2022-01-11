@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#root
+#parent: #DomainModel
+Type DemandBatch
+{
+  #keys: '5[134372.0.59974376][134372.0.59974374][0.0.0][134372.0.59974375][134372.0.59974377]'
+  BaseType: Object
+  Description:
+  [*
+    Represent a holder that holds multiple demands as a batch. 
+    Owned by Schedule, created manually by user on Demand Batches form. 
+    When DemandBatch is created, it will also generate BatchWorkOrder and its respective Order, PlanUnit, and Operation. 
+    The DemandBatch will also generate a Supply that use to fulfill the demands in the batch.
+  *]
+  OnCommit:
+  [*
+    // Propagate relation to demand batch type. This is required to retrieve correct routing.
+    Transaction::Transaction().Propagate( relation( DemandBatch, DemandBatchType ) );
+    
+    this.Synchronize();
+  *]
+  OnCreate: 'this.DoOnCreate();'
+  OnDelete: 'this.DoOnDelete();'
+  StructuredName: 'DemandBatches'
+}

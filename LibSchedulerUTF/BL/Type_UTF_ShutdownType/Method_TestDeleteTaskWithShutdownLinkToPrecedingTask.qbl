@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestDeleteTaskWithShutdownLinkToPrecedingTask (Schedule schedule)
+{
+  TextBody:
+  [*
+    task1 := select( schedule, Operation_SC.Task_SC, t, t.GetOperation().PlanUnitId() = 'Plan Unit 1' );
+    shutdownTask := select( schedule, Shutdown.Task_SC, t, true );
+    
+    // Unplan task1
+    task1.Unplan();
+    
+    // Expect the shutdown type will be deleted once task1 is unplanned
+    value := isnull( shutdownTask );
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Delete task with shutdown type setting "IsLinkToPrecedingTask" failed.', this.Variant() ) );
+  *]
+}

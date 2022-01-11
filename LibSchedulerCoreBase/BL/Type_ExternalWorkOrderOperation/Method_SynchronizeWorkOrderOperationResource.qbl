@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SynchronizeWorkOrderOperationResource
+{
+  TextBody:
+  [*
+    allWorkOrderOperationResources := selectset( this, WorkOrderOperationResource, woor, true )
+    updatedWorkOrderOperationResources := construct( WorkOrderOperationResources );
+    
+    traverse( this, ImportedExternalWorkOrderOperation.ImportedWorkOrderOperationResource, row, row.IsValidDataHard() )
+    {
+      workOrderOperationResource := WorkOrderOperationResource::FindWorkOrderOperationResource( row.WorkOrderID(),
+                                                                                                row.SequenceNr(),
+                                                                                                row.ResourceID() );
+      
+      if( isnull( workOrderOperationResource ) )
+      {
+        workOrderOperationResource := WorkOrderOperationResource::Create( this, row.ResourceID() );
+      }
+      
+      workOrderOperationResource.Update( row );
+      updatedWorkOrderOperationResources.Add( workOrderOperationResource );
+    }
+    
+    //Delete work order demands if they do not exist in KT
+    oldWorkOrderOperationResources := allWorkOrderOperationResources.Difference( updatedWorkOrderOperationResources );
+    
+    traverse( oldWorkOrderOperationResources, Elements, owoor )
+    {
+      owoor.Remove();
+    }
+  *]
+}

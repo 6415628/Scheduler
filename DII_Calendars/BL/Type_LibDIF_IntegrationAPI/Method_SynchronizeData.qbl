@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeData (String dataTransformationID_i) #extension
+{
+  TextBody:
+  [*
+    api := null( stream[LibDIF_IntegrationAPI] );
+    
+    // Use specific synchronization for calendar data, otherwise use the generic logic.
+    dataTransformation := this.GetDataTransformation( dataTransformationID_i );
+    
+    if( guard( dataTransformation.istype( LibDII_CalendarDataTransformation ), false ) )
+    {
+      api := this.SynchronizeCalendarData( dataTransformationID_i );
+    }
+    else
+    {
+      api := this.ExecuteDataSynchronization( dataTransformationID_i );
+    }
+    
+    // Return a stream that can be reacted on.
+    return api;
+  *]
+}

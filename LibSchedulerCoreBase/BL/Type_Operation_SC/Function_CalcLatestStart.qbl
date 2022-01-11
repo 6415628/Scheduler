@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcLatestStart
+{
+  TextBody:
+  [*
+    lateststart := this.LatestEnd() - this.LeadTime();
+    
+    if( this.HasFeedback() )
+    {
+      lateststart := this.FeedbackProcessStart();
+    }
+    else if( this.IsPlanned() )
+    {
+      //alexandern 18-Jun-2015 QP#5478
+      firstrespectroutingsubtask := this.Task_SC().FirstRespectRoutingSubTask();
+      
+      lateststart := guard( firstrespectroutingsubtask.Start(), this.LatestEnd() - this.ExpectedDuration() );  
+    }
+    
+    this.LatestStart ( lateststart );
+  *]
+}

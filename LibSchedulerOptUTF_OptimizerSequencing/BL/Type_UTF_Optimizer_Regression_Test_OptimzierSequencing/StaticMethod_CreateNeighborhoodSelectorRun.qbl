@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateNeighborhoodSelectorRun (OptimizerSequencing optimizer, LibOpt_ScopeElements scope, String anchor_operation_id, 
+  Number neighborhoodsize, const SettingsSequencingDistanceMetric distancemetric_template) as LibOpt_Run
+{
+  Description:
+  [*
+    creates a run of the given optimizer that only contains one components: a SelectorAnchor with a NeighrborhoodCreatorDistanceMetric and an anchor picker that always picks the operation with the given ID.
+    The run will have the given input scope and scope debugging enabled.
+  *]
+  TextBody:
+  [*
+    // mbr23 Feb-14-2020 (created)
+    
+    run := optimizer.CreateRun( scope );
+    run.DebugScope( true );
+    run.HasIterations( true );
+    
+    neighborhoodcreator := optimizer.NeighborhoodCreatorDistanceMetric( neighborhoodsize, distancemetric_template );
+    picker := optimizer.AnchorPickerFixedOperation( anchor_operation_id );
+    optimizer.SelectorAnchor( run,
+                              "selector",
+                              optimizer.AnchorSetType( typeof( ScopeElementOperation ) ),
+                              & picker,
+                              & neighborhoodcreator );
+    
+    return run;
+  *]
+}

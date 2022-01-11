@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckDatabaseConnection (String brokerID_i) as String
+{
+  Description:
+  [*
+    Check if the database that is used by the link of the EDI-broker with the provided ID can be reached.
+    Instead of raising an error here the error message is returned so that there can be decided later on how to deal with it.
+  *]
+  TextBody:
+  [*
+    // Call the method that must be overridden and implemented at the Implementation Level.
+    ediBroker := this.DoGetEDIBrokerForDB( brokerID_i );
+    errMsg    := "";
+    
+    if( not isnull( ediBroker ) )
+    {
+      if( not ediBroker.Source().Ping() or
+          not ediBroker.Destination().Ping() )
+      {
+        errMsg := "Database cannot be reached | BrokerID = '" + brokerID_i + "'" + String::NewLine() + 
+                  "Hint: make sure that the ODBC-Integrator is running.";
+        LibDIF_Util::Warning( errMsg );
+      }
+    }
+    else
+    {
+      LibDIF_Util::Error( this.DefinitionName() + ".DoGetEDIBrokerForDB() is not implemented for EDI-broker | BrokerID = '" + brokerID_i + "'" );
+    }
+    
+    return errMsg;
+  *]
+}

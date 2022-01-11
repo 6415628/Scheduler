@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcIsPartiallyPlanned
+{
+  Description: 'Calculate if order is partially planned by checking if any of operation is planned.'
+  TextBody:
+  [*
+    // Gooi: changed... ISSUE: 216, SEQ: 2;
+    // Now the order is also partially planned if the order is NOT fully planned some of its operation is planned OR is finished.
+    value := not this.IsPlanned()
+             and exists( this,
+                         PlanUnit_SC.Operation_SC,
+                         op,
+                         op.IsPlanned() or op.Finished() );
+    
+    this.IsPartiallyPlanned( value );
+  *]
+}

@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcCostSequenceViolation
+{
+  TextBody:
+  [*
+    // yifei Aug-3-2021 (created)
+    value := 0.0; //sum( this, OperationInCombiProgramSet, oicps, true, oicps.CostSequenceViolation() );
+    
+    prev_op := this.GetPreviousOperationInCombiLegInLeadingCombiProgramSet();
+    
+    prev_op_inpt := this.GetPreviousOperationInCombiLegInLeadingCombiProgramType();
+    
+    if( not isnull( prev_op ) )
+    {
+      value := this.CombiLeg().GetCostSequenceViolation( prev_op.CombiLeg(), prev_op.Operation_SC(), this.Operation_SC(), false ); 
+      value := value + [Number]( not this.IsHardTransitionRuleOk() )* OptimizerProgram::HardTransitionRuleViolationExtraFactor(); 
+    }
+     
+    //if  this is the first operation in programtype and then the transition cost only valid when ProgramSetConfiguration's IsSequenceRulesEnabled is true
+    if( isnull( prev_op_inpt ) 
+        and not this.CombiLeg().LeadingCombiProgramPhase().CombiProgramType().CombiProgramSet().ProgramSetConfiguration().IsSequenceRulesEnabled() )
+    {
+      value := 0;
+    }
+    
+    //in combi we don't model shutdown as an object, simplify it as only check the related shutdown's IsSequenceRulesEnabled
+    // if not true, then ignore the violaiton penalty
+    if( isnull( this.PreviousOperation() ) //is first in the combleg
+        and this.CombiLeg().IsFirstLegAfterShutDown()
+        and guard( not this.CombiLeg().StoppageTask().Shutdown().ResponsibleShutdownType().IsSequenceRulesEnabled(), false ) )
+    {
+      value := 0.0;
+    }
+    
+    this.CostSequenceViolation( value );
+  *]
+}

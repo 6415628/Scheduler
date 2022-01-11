@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    super.Setup( schedule );
+    
+    Transaction::Transaction().Propagate( relation( MPSPlannedOrder, Routing ) ); // Need this relation propagated to create firm planned orders
+    
+    routing := select( schedule, Routing, routing, true );
+    
+    routing.CreateWorkOrder( null( ProductInStockingPoint ), 1.0, 1, DateTime::Now(), false ); // only one work order will be created
+    
+    workOrders := selectset( schedule, WorkOrder, workOrder, true );
+    
+    editDeleteInternalWorkOrderTestInstance := this.GetEditDeleteInternalWorkOrderTestInstance( this.Variant() );
+    
+    if( editDeleteInternalWorkOrderTestInstance.IsMarkedForRelease() )
+    {
+      WorkOrder::MarkForRelease( workOrders );
+    }
+    else if( editDeleteInternalWorkOrderTestInstance.IsMarkedForReleaseByFrozenOperation() )
+    {
+      this.CreateAndSetOperationToFrozen( workOrders );
+    }
+    
+    // Propagate attribute InternalWorkOrder.IsMarkedForRelease which is required for precon check
+    Transaction::Transaction().Propagate( attribute( InternalWorkOrder, IsMarkedForRelease ) );
+    
+    // other setup are called in specialized method based on UTF scenario
+  *]
+}

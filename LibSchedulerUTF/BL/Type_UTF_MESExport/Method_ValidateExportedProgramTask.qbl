@@ -1,0 +1,92 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValidateExportedProgramTask (Schedule schedule, String taskType) as Boolean
+{
+  TextBody:
+  [*
+    // Check exported program details
+    programDefinitionConfig := select( schedule, ProgramDefinitionConfiguration, pdc, true );
+    programSetConfig1 := select( programDefinitionConfig, ProgramSetConfiguration, psc, psc.ProgramSetConfigurationID() = 'Program_Set_1' );
+    programTypeConfig1 := select( programSetConfig1, ProgramTypeConfiguration, ptc, true );
+    programPhaseConfig1 := select( programTypeConfig1, ProgramPhaseConfiguration, ppc, true );
+    
+    programSetConfig2 := select( programDefinitionConfig, ProgramSetConfiguration, psc, psc.ProgramSetConfigurationID() = 'Program_Set_2' );
+    programTypeConfig2 := select( programSetConfig2, ProgramTypeConfiguration, ptc, true );
+    programPhaseConfig2 := select( programTypeConfig2, ProgramPhaseConfiguration, ppc, true );
+    
+    exportedSchedule := schedule.FeedbackManager().ExportedSchedule();
+    
+    exportedProgramDetails1 := select( exportedSchedule, ExportedProgramDetail, epd, epd.ProgramSetID() = programSetConfig1.ProgramSetConfigurationID() );
+    exportedProgramDetails2 := select( exportedSchedule, ExportedProgramDetail, epd, epd.ProgramSetID() = programSetConfig2.ProgramSetConfigurationID() );
+    
+    programType1 := select( schedule, ProgramChange.ProgramType, pt, pt.ProgramSet().ProgramSetConfiguration() = programSetConfig1 );
+    programType2 := select( schedule, ProgramChange.ProgramType, pt, pt.ProgramSet().ProgramSetConfiguration() = programSetConfig2 );
+    
+    value := not isnull( exportedProgramDetails1 )
+             and exportedProgramDetails1.ProgramDefinitionID() = programDefinitionConfig.ProgramDefinitionConfigurationID()
+             and exportedProgramDetails1.ProgramDefinitionName() = programDefinitionConfig.Name()
+             and exportedProgramDetails1.ProgramSetID() = programSetConfig1.ProgramSetConfigurationID()
+             and exportedProgramDetails1.ProgramSetName() = programSetConfig1.Name()
+             and exportedProgramDetails1.ProgramTypeID() = programTypeConfig1.ProgramTypeConfigurationID()
+             and exportedProgramDetails1.ProgramTypeName() = programTypeConfig1.Name()
+             and exportedProgramDetails1.ScheduledProgramID() = programType1.ScheduledProgramID();
+    
+    value := not isnull( exportedProgramDetails2 )
+             and exportedProgramDetails2.ProgramDefinitionID() = programDefinitionConfig.ProgramDefinitionConfigurationID()
+             and exportedProgramDetails2.ProgramDefinitionName() = programDefinitionConfig.Name()
+             and exportedProgramDetails2.ProgramSetID() = programSetConfig2.ProgramSetConfigurationID()
+             and exportedProgramDetails2.ProgramSetName() = programSetConfig2.Name()
+             and exportedProgramDetails2.ProgramTypeID() = programTypeConfig2.ProgramTypeConfigurationID()
+             and exportedProgramDetails2.ProgramTypeName() = programTypeConfig2.Name()
+             and exportedProgramDetails2.ScheduledProgramID() = programType2.ScheduledProgramID()
+             and value;
+    
+    // Check exported task in program
+    task := select( schedule, Operation_SC.Task_SC, t, t.istype( UTFSingleTask ) );
+    
+    exportedTaskInProgram1 := select( exportedSchedule, ExportedTaskInProgram.astype( GenericExportedTaskInProgram ), getip,
+                                      getip.WorkOrderID() = task.GetOperation().WorkOrderId()
+                                      and getip.WorkOrderOperationSequenceNr() = task.GetOperation().SequenceNr()
+                                      and getip.PlanUnitID() = task.GetOperation().PlanUnitId()
+                                      and getip.ScheduledProgramID() = programType1.ScheduledProgramID() );
+                                      
+    exportedTaskInProgram2 := select( exportedSchedule, ExportedTaskInProgram, etip, 
+                                      etip.PlanUnitID() = task.GetOperation().PlanUnitId()
+                                      and etip.WorkOrderID() = task.GetOperation().WorkOrderId()
+                                      and etip.WorkOrderOperationSequenceNr() = task.GetOperation().WorkOrderSequenceNr()
+                                      and etip.ScheduledProgramID() = programType2.ScheduledProgramID() );
+                                     
+    value := not isnull( exportedTaskInProgram1 )
+             and exportedTaskInProgram1.ProgramPhaseID() = programPhaseConfig1.ProgramPhaseConfigurationID()
+             and exportedTaskInProgram1.ProgramPhaseName() = programPhaseConfig1.Name()
+             and value;
+    
+    value := not isnull( exportedTaskInProgram2 )
+             and exportedTaskInProgram2.ProgramPhaseID() = programPhaseConfig2.ProgramPhaseConfigurationID()
+             and exportedTaskInProgram2.ProgramPhaseName() = programPhaseConfig2.Name()
+             and value;
+    
+    // Check exported program change
+    exportedProgramChange1 := select( exportedSchedule, ExportedScheduledProgram, esp, 
+                                      esp.SchedulerStoppageTaskID() = programType1.ProgramChange().ProgramChangeTask().TaskID()
+                                      and esp.SuccessorScheduledProgramID() = programType1.ScheduledProgramID() );
+    
+    exportedProgramChange2 := select( exportedSchedule, ExportedScheduledProgram, esp, 
+                                      esp.SchedulerStoppageTaskID() = programType2.ProgramChange().ProgramChangeTask().TaskID()
+                                      and esp.SuccessorScheduledProgramID() = programType2.ScheduledProgramID() );
+    
+    value := not isnull( exportedProgramChange1 )
+             and not isnull( exportedProgramChange2 )
+             and value;
+                                      
+    // Check exported single task
+    exportedProgramTask := select( exportedSchedule, ExportedSingleTask, est, est.TaskType() = taskType );
+    programTask := select( schedule, ProgramChange.ProgramChangeTask, pct, true );
+    
+    value := not isnull( exportedProgramTask )
+             and exportedProgramTask.SchedulerStoppageTaskID() = programTask.TaskID()
+             and value;    
+    
+    return value;
+  *]
+}

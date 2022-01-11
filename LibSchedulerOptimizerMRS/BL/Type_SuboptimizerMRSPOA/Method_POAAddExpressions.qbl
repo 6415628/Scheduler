@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddExpressions (SuboptimizerMRSPOA_POAOneResourceGroup poa, LibOpt_Task task)
+{
+  Description: 'the path tab of the POA'
+  TextBody:
+  [*
+    //duration expression
+    debuginfo( 'Adding expressions time...' );
+    this.POAAddExpressionTime( poa, task );
+    
+    //Add the sequence penalty expression
+    debuginfo( 'Adding expressions sequence penalty...' );
+    this.POAAddExpressionSequencePenalty( poa, task );
+    
+    //Add the resource calendar to POA
+    this.POAAddCalendar( poa, task );
+    
+    //Add the expression which count the number of operation performed on a non allowed resource
+    if( guard( this.Strategy().MRS_KPIUseConstraintNotAllowedResource(), true ) )
+    {
+      debuginfo( 'Adding expressions allowed resources...' );
+      this.POAAddExpressionNonAllowedOnResource( poa, task );
+    }
+  *]
+}

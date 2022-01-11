@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetIsLastLegBeforeShutdown () declarative remote as Boolean
+{
+  Description: 'Checks whether this is the last leg before a shutdown'
+  TextBody:
+  [*
+    nextshutdown := this.NextShutdown();
+    // If there is no next shutdown, this is not the last leg before a shutdown
+    value := not isnull( nextshutdown );
+    if( value )
+    {
+      // If this leg is the last leg of the shutdowns previous legs, then this is the last leg before the shutdown
+      value := this = maxselect( nextshutdown, PreviousLegs, leg, leg.SequenceNr() );
+    }
+    
+    return value
+  *]
+}

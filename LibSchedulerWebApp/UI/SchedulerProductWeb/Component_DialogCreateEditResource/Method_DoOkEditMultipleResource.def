@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoOkEditMultipleResource () id:Method_DialogCreateEditResource_DoOkEditMultipleResource
+{
+  #keys: '[145930.1.1923151760]'
+  Body:
+  [*
+    // Only used for editing multiple resources 
+    
+    traverse( DataHolderContentMultipleResources.Data(), Elements, resource )
+    { 
+      // Update max batch size
+      if( DataHolderContentResource.Data().ResourceGroup_SC().HasBatches() )
+      {
+        DataHolderContentResource.Data().astype( shadow[BatchResource] ).MaximumBatchSize( TopNumberPickerMaxBatchSize.Number() );
+      }
+      
+      // Update lead time strategy
+      DataHolderContentResource.Data().LeadTimeStrategy_SC( relflush );
+      DataHolderContentResource.Data().LeadTimeStrategy_SC( relnew,
+                                                            ResourceID := resource.ResourceID(),
+                                                            MinDistance := Duration::Zero(),
+                                                            StrategyName := DropDownStringListLeadTimeStrategy.Text() );
+                                                            
+      // Update capacity
+      capacityName := ifexpr( RadioButtonGroupCapacityResource.BoundValue() = Translations::SC_DialogResource_CapacityOverview_UserDefined(),
+                              EditFieldCapacityResource.Text(),
+                              DropDownListNameofCapacityResource.Data().Name() );
+      
+      DataHolderContentResource.Data().CapacityResourceName( capacityName );
+      
+      resourceForBatchEdit:= DataHolderContentResource.Data().ResourceForBatchEdit( relnew, ResourceID := resource.ResourceID() );
+      this.UpdateResourceForBatchEdit( resourceForBatchEdit );
+    }
+  *]
+}

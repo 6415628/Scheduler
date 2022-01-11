@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportFromXLS (BinaryValue xlsData_i, String brokerID_i, LibDIF_DataTransformation dataTransformation_i) as LibDIF_IntegrationDataset
+{
+  Description:
+  [*
+    Trigger the import of the provided XLS-data to integration objects, using the EDI-broker with the provided ID.
+    Trigger the validation of the integration objects, based on the provided DataTransformation.
+  *]
+  TextBody:
+  [*
+    // Convert the BinaryValue that is received from the Client to BinaryData for the import broker.
+    xlsData := xlsData_i.AsBinaryData();
+    
+    // Call the method that must be overridden and implemented at the Implementation Level.
+    if( this.DoImportFromXLS( &xlsData, brokerID_i ) )
+    {
+      // Valdidate the imported integration objects.
+      this.ValidateIntegrationObjects( dataTransformation_i );
+    }
+    else
+    {
+      // Raise an error if the EDI-broker was not found.
+      LibDIF_Util::Error( this.DefinitionName() + ".DoImportFromXLS() is not implemented for EDI-broker | BrokerID = '" + brokerID_i + "'" );
+    }
+    
+    // Return a stream that can be reacted on.
+    return this;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

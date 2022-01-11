@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeFSPLResourceGroups
+{
+  TextBody:
+  [*
+    // alexandern Nov-27-2015 (created)
+    precedencegraph := this.Schedule().PrecedenceGraph();
+    
+    //Deletes all existing nodes before synchronization
+    traverse( precedencegraph, PrecedenceNode, node )
+    {
+      PrecedenceNode::Delete( node );
+    }
+    
+    has_fspl_resourcegroup := selectset( this.Schedule(), ResourceGroup_SC, resourcegroup, resourcegroup.HasFixedSequencePlanLogic() );
+    
+    //Recreates all nodes for all subtasks after synchronization
+    traverse( has_fspl_resourcegroup, Elements.Resource_SC.Task_SC.SubTask, st, isnull( st.PrecedenceNode() ) )
+    {
+        PrecedenceNode::Create( st, precedencegraph );
+    }
+    
+    //Updating relation for tasks in resources that have no FSPL
+    traverse( this.Schedule(), ResourceGroup_SC.Resource_SC.Task_SC, task, not task.Resource_SC().ResourceGroup_SC().HasFixedSequencePlanLogic() )
+    {
+      task.FSPLOperationInTask( relflush );
+    }
+    
+    //Updating relation for tasks in resource WITH FSPL, updating graph
+    traverse( this.Schedule(), ResourceGroup_SC.Resource_SC.Task_SC, task, task.Resource_SC().ResourceGroup_SC().HasFixedSequencePlanLogic() )
+    {
+      task.UpdateFSPLOperationInTask(); // AlexanderNg 28-Dec-2015 QP #6092
+      task.FSPLUpdateGraph( task.Previous(), task.Next(), null( BatchSequenceElement ) );
+    }
+  *]
+}

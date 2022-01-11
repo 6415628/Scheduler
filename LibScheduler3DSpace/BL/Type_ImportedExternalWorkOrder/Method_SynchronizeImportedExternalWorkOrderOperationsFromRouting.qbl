@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeImportedExternalWorkOrderOperationsFromRouting
+{
+  Description: "Creates 'external' work order operations based on 3DSpace process data, which is the equivalent of Scheduler's routing, specifically routing steps."
+  TextBody:
+  [*
+    allInstances := selectset( this, ImportedWorkOrderOperation.astype( ImportedExternalWorkOrderOperation ), impExtWorkOrderOp, true );
+    updatedInstances := construct( ImportedExternalWorkOrderOperations );                           
+                               
+    // The sequence doesn't matter as it is Flows that determine the operation dependency
+    traverse( this, ImportedRouting_SC.ImportedRoutingStep_SC, importedRoutingStep )
+    {
+      impExtWorkOrderOp := select( importedRoutingStep, ImportedExternalWorkOrderOperation, impExtWorkOrderOp, impExtWorkOrderOp.ImportedWorkOrder() = this );
+      
+      if( isnull( impExtWorkOrderOp ) )
+      {
+        impExtWorkOrderOp := ImportedExternalWorkOrderOperation::Create( this.Schedule(), this.Id(), importedRoutingStep.SequenceNr() );
+      }
+      
+      impExtWorkOrderOp.Update( importedRoutingStep );
+      updatedInstances.Add( impExtWorkOrderOp );
+    }
+    
+    oldInstances := allInstances.Difference( updatedInstances );
+    
+    traverse( oldInstances, Elements, old )
+    {
+      old.Delete();
+    }
+  *]
+}

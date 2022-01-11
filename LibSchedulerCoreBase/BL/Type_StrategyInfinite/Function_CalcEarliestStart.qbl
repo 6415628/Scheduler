@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcEarliestStart
+{
+  Description:
+  [*
+    Calculate the earliest possible start of the task based on its reported start if there was feedback task of this task's operation,
+    otherwise it is based on routing earliest start or machine earliest start with also the consideration of the resource calendar.
+  *]
+  TextBody:
+  [*
+    earlieststart := DateTime::MinDateTime();
+    task          := this.Task_SC();
+    
+    if( task.HasReportedStart() )
+    {
+      earlieststart := task.ReportedStart();
+    }
+    else
+    {
+      earlieststart := maxvalue( task.Schedule().Time(), task.RoutingEarliestStart() ); // alexandern 10-Jun-2015 QP # 5455
+      earlieststart := this.GetEarliestStartWithCalendar( earlieststart ); // AlexanderNg 25-Sep-2015 QP #5498
+    }
+    
+    this.EarliestStart( earlieststart )
+  *]
+}

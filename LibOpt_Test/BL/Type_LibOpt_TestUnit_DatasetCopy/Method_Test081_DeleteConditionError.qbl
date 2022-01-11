@@ -1,0 +1,82 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test081_DeleteConditionError (LibOpt_TestDataset dataset)
+{
+  Description:
+  [*
+    Check if errors in the `DeleteCondtion` method of the `LibOpt_DatasetCopyConditional` type are handled correctly.
+    The following things are checked:
+    1 The error should be caught. (If the error is not caught during the optimizer run, then the `this.NoException` method will pick this up)
+    2 The dataset should not be deleted.
+    3 An error should be created below the `LibOpt_SnapshotReplannableCopyDataset` snapshot. (This snapshot has been created when the dataset copy was created.)
+  *]
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( true );
+    run := opt.CreateRun();
+    
+    component := opt.ComponentFlow( run, 'Flow', false );
+    
+    // Set a LibOpt_DatasetCopyConditional_UnitTest_DeleteConditionError object on the 'Initialize' component position.
+    initializeposition := select( component, ComponentPosition, position, position.Name() = LibOpt_Component::ComponentPosition_Initialize() );
+    initializeposition.SetDatasetCopy( typeof( LibOpt_DatasetCopyConditional_UnitTest_DeleteConditionError ).Name() );
+    
+    streamrun := run.Start(); 
+    
+    // Wait until the run is finished.
+    str := streamrun
+    ->|stream[Void]::Wait( this.MDSEditorUpdateTime() ) // Wait some time to ensure that the dataset copies are succesfully created.
+    ->|void->()
+    {  
+      // Check that the dataset copy is not deleted due to the error.
+      snapshotreplannable := select( initializeposition,
+                                     DatasetCopyConditional.SnapshotReplannableCopyDataset,
+                                     snapshot,
+                                     true );
+      // We don't want that this unit test passes because snapshotreplannable is null.
+      // We therefore call this auxiliary assert to ensure that the test fails when snapshotreplannable is null. 
+      this.Run().AssertNotIsNull( snapshotreplannable,
+                                  "Expected to create a '" 
+                                  + typeof( LibOpt_SnapshotReplannableCopyDataset ).Name()
+                                  + "' snapshot for the '"
+                                  + initializeposition.Name()
+                                  + "' component position of the '"
+                                  + component.Name()
+                                  + "' component. However, no snapshot was created."
+                                  );                            
+                                                                                             
+      if( not isnull( snapshotreplannable ) )
+      {
+        datasetcopy := MDSEditor::Editor().ObjectInfos().Find( snapshotreplannable.DatasetName() );
+        this.Run().AssertFalse( isnull( datasetcopy ),
+                                "Expected to find a dataset copy for the '"
+                                + initializeposition.Name()
+                                + "' component position of the '"
+                                + component.Name()
+                                + "' component. However, either no dataset copy was created or the dataset has been deleted."
+                                );
+      }  
+      // Check that an error is created below the LibOpt_SnapshotReplannableCopyDataset snapshot. (This snapshot has been created when the dataset copy was created.)
+      nrofsnapshoterrors := counter( initializeposition,
+                                     DatasetCopyConditional.SnapshotReplannableCopyDataset.Children.astype( LibOpt_SnapshotError ),
+                                     snapshoterror,
+                                     true );
+      this.Run().AssertEqual( 1,
+                              nrofsnapshoterrors,
+                              "Expected to create 1 '" 
+                              + typeof( LibOpt_SnapshotError ).Name()
+                              + "' snapshot below the '"
+                              + typeof( LibOpt_SnapshotReplannableCopyDataset ).Name()
+                              + "' snapshot that belongs to the created dataset. However, "
+                              + [String] nrofsnapshoterrors 
+                              + " error snapshots were created."
+                              );
+    }
+    // The NoException method checks if the error in the DeleteCondition is caught.
+    this.NoException( str );
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

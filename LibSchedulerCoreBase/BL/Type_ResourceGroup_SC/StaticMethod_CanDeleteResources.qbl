@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CanDeleteResources (ResourceGroup_SC resource_group_i, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Checks whether all of the resources of a resource group can be deleted for a type change.'
+  TextBody:
+  [*
+    // James Kwapien Sep-6-2016 QP#7686 Precondition for changing resource group type
+    // Returns true if resource_group_i is null, which happens when the resource group type
+    // wasn't changed in dialog, hence precondition satisfied
+    is_all_deletable := forall( resource_group_i, Resource_SC, resource, resource.CanBeDeleted() );
+    
+    if( not is_all_deletable )
+    {
+      // Check if feedback is empty, if so simple assignment, otherwise concatenate with existing content
+      // Keeps correct formatting
+      Utility_SC::Concat( feedback_o, Translations::SC_ResourceGroup_ChangeType_Precondition() );
+    
+    }
+    
+    return is_all_deletable;
+  *]
+}

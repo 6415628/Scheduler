@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: Toolbar1/ButtonImportERP
+Response OnClick () id:Response_Toolbar1_ButtonImportERP_OnClick
+{
+  #keys: '[103334.1.98601630]'
+  Body:
+  [*
+    //MODELING HANDLE Demo specific
+    Schedule.ImportAndSynchronizeERP();
+    
+    // carmen, 20121017, issue #4531
+    // to ensure schedule time is visible after import data.
+    form := ApplicationScheduler.GetFormGanttChartSchedulingCentre();
+    
+    if( not isnull( form ) )
+    {
+      form.GanttChartSchedulingCentre().EnsureVisible( Schedule.Time() );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIButtonBase_OnClick'
+  Precondition:
+  [*
+    return Schedule::HasSchedule( Schedule, feedback )
+           and Schedule.CheckOptimizerNotRunning( feedback )
+           and Schedule.CheckHasOnlyValidSubtasksOnAllResourceGroups( feedback );
+  *]
+  UserRequiresReadWrite: true
+}

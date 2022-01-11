@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method AugmentColumns (DataUpgradeIO duio_i, String datasetKind_i)
+{
+  Description: 'Method to augment the default columns included in a template by the DataUpgradeIO'
+  TextBody:
+  [*
+    // tgn3 Jun-17-2021 (created)
+    
+    // Add columns (Constraints/KPIs)
+    // Mind: Columns must be wrapped by single quotes, in case
+    // The name of the column clashes with an SQL key word
+    constraints := construct( internal[structured_MdlConstraintElement] );
+    kpis        := construct( internal[structured_MdlKPIElement] );
+    
+    DMF_DBInterface::GetConstraintColumnsExtensible( constraints );
+    DMF_DBInterface::GetKPIColumnsExtensible( kpis );
+    
+    // Debug - do not delete
+    //logfile( ">>> Contraints", constraints.Size() );
+    //logfile( ">>> KPIs", kpis.Size() );
+    
+    // Construct query statement
+    // Any Constraints and KPIs that don't match the correct dataset kind are ignored
+    // One for each table
+    queryConstraint := selectvalues( constraints, Elements, e, e.Type().Name() = datasetKind_i, 
+                                     this.GetQueryAddConstraint( e ) ).ToString( String::NewLine() );
+    queryKPI        := selectvalues( kpis, Elements, e, e.Type().Name() = datasetKind_i,
+                                     this.GetQueryAddKPI( e ) ).ToString( String::NewLine() );
+    query           := ( queryConstraint + String::NewLine() + queryKPI ).TrimBoth(); // Trim required in case either query is empty
+    msg             := "";
+    
+    // Debug - do not delete
+    //logfile( ">>> query", query );
+    
+    isSuccess := this.Execute( duio_i, query, msg );
+    
+    if( not isSuccess )
+    {
+      DMF_Utility::LogWarning( msg ); 
+    }
+    
+    // Remove columns
+    // To be decided. Not sure if we'll need this yet
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

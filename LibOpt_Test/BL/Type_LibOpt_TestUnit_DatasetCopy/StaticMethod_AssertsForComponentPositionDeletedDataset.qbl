@@ -1,0 +1,76 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod AssertsForComponentPositionDeletedDataset (LibOpt_TestUnit_DatasetCopy unittest, LibOpt_BreakpointPosition componentposition)
+{
+  Description:
+  [*
+    The asserts in this method check, for some `LibOpt_DatasetCopyConditional` that is attached to a `LibOpt_BreakpointPosition`, that a dataset copy is deleted and that the `LibOpt_SnapshotReplannableCopyDataset` snapshot of the dataset copy has the correct attributes. 
+    The following things are checked:
+    1 Test if exactly 1 `LibOpt_SnapshotReplannableCopyDataset` snapshot is created for the `LibOpt_BreakpointPosition` to which we attached a `LibOpt_DatasetCopyConditional`. 
+    2 Test that the `LibOpt_SnapshotReplannableCopyDataset.HasExecutedDoFinalizeDatasetCopyDelete` attribute has been set to true for the created snapshot.
+    3 Test that the `LibOpt_SnapshotReplannableCopyDataset.IsDatasetDeletedByOptimizer` attribute has been set to true. (This is an indirect way to check if the dataset copy is deleted).
+  *]
+  TextBody:
+  [*
+    // Test if exactly 1 LibOpt_SnapshotReplannableCopyDataset snapshot is created for the LibOpt_BreakpointPosition to which we attached a LibOpt_DatasetCopyConditional. 
+    nrcreatedsnapshots := counter( componentposition,
+                                   DatasetCopyConditional.SnapshotReplannableCopyDataset,
+                                   snapshot,
+                                   true );
+    
+    componentdefinitionname := componentposition.Component().DefinitionName();  
+    componentpositionname := componentposition.Name();
+    unittest.Run().AssertEqual( 1,
+                                nrcreatedsnapshots,
+                                "Expected to create 1 '" 
+                                + typeof( LibOpt_SnapshotReplannableCopyDataset ).Name()
+                                + "' snapshot for the '"
+                                + componentpositionname
+                                + "' component position of the '"
+                                + componentdefinitionname
+                                + "' component. However, "
+                                + [String] nrcreatedsnapshots 
+                                + " snapshots were created."
+                                );
+    
+    snapshotreplannable := select( componentposition,
+                                   DatasetCopyConditional.SnapshotReplannableCopyDataset,
+                                   snapshot,
+                                   true );
+                                   
+    if( not isnull( snapshotreplannable ) )
+    {
+      // Test that the `LibOpt_SnapshotReplannableCopyDataset.HasExecutedDoFinalizeDatasetCopyDelete` attribute has been set to true for the created snapshot.
+      // This attribute implies that the LibOpt_DatasetCopyConditional.DeleteCondition method has been executed for the dataset that is attached to the snapshot.
+      unittest.Run().AssertTrue( snapshotreplannable.HasExecutedDoFinalizeDatasetCopyDelete(),
+                                 "Expected that the value of the '" 
+                                 + typeof( LibOpt_SnapshotReplannableCopyDataset ).Name() 
+                                 + '.'
+                                 + attribute( LibOpt_SnapshotReplannableCopyDataset, HasExecutedDoFinalizeDatasetCopyDelete ).Name() 
+                                 + "' attribute would be 'true'. However, the value of the attribute is 'false'. This snapshot is attached to the '"
+                                 + componentpositionname
+                                 + "' component position of the '"
+                                 + componentdefinitionname
+                                 + "' component."
+                                 );
+                             
+      // Test that the snapshot.IsDatasetDeletedByOptimizer() attribute has been set to true. 
+      // This attribute implies that the dataset is deleted (or will be deleted soon). 
+      // We would prefer to test if the dataset copy is already removed from the dataset objectinfos ( MDSEditor::Editor().ObjectInfos() ).
+      // However, we cannot check this because a dataset that is in the process of being removed still shows up in MDSEditor::Editor().ObjectInfos().
+      unittest.Run().AssertTrue( snapshotreplannable.IsDatasetDeletedByOptimizer(),
+                                 "Expected that the value of the '" 
+                                 + typeof( LibOpt_SnapshotReplannableCopyDataset ).Name() 
+                                 + '.'
+                                 + attribute( LibOpt_SnapshotReplannableCopyDataset, IsDatasetDeletedByOptimizer ).Name() 
+                                 + "' attribute would be 'true'. However, the value of the attribute is 'false'. This implies that the dataset copy is not deleted, while the dataset copy was expected to be deleted."
+                                 + " The snapshot is attached to the '"
+                                 + componentpositionname
+                                 + "' component position of the '"
+                                 + componentdefinitionname
+                                 + "' component."
+                                 );                             
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

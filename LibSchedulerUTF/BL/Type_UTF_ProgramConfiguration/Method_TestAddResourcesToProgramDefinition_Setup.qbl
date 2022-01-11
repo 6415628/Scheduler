@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestAddResourcesToProgramDefinition_Setup (Schedule schedule)
+{
+  Description: 'Test add resources to program definition - setup'
+  TextBody:
+  [*
+    programconfigurationID := 'Program Configuration ID';
+    programconfigurationName := 'Program Configuration Name';
+    
+    // Create program definition
+    programdefinition := ProgramDefinitionConfiguration::Create( schedule, programconfigurationID );
+    programdefinition.Name( programconfigurationName );
+    
+    // Create resource 1 & 2
+    resources := construct( Resource_SCs );
+    resource1 := UTFMockObjectFactory::CreateSingleResource( schedule, 'Single Resource 1' );
+    LeadTimeStrategy_SC::Create( resource1, Duration::Zero(), Constants::StrategyASAP() );
+    resources.Add( resource1 );
+    
+    resource2 := UTFMockObjectFactory::CreateSingleResource( schedule, 'Single Resource 2' );
+    LeadTimeStrategy_SC::Create( resource2, Duration::Zero(), Constants::StrategyASAP() );
+    resources.Add( resource2 );
+    
+    // Propagage strategy name before assign resources
+    Transaction::Transaction().Propagate( attribute( Resource_SC, StrategyName ) );
+    
+    // Assign resources to program definition
+    programdefinition.AssignResources( resources );
+  *]
+}

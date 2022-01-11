@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (LibCal_Calendar owner_i, DateTime startTime_i, DateTime endTime_i, 
+  Real capacity_i) as LibCal_ExplicitTimeInterval
+{
+  TextBody:
+  [*
+    interval := construct( LibCal_ExplicitTimeInterval,
+                           Start    := startTime_i,
+                           End      := endTime_i,
+                           Capacity := capacity_i );
+    
+    // Let the Calendar know that its available capacity has changed.
+    // Cannot be done from the OnCreate(), because that is apparently triggered before the relation with the Calendar is set.
+    // Do registration here and not in the On Create of Notification NotifyCalendar in order to prevent a separate
+    // reactive call (i.e. transaction) for each created TimeInterval.
+    owner_i.RegisterChangedCapacity();
+    
+    return owner_i.AddTimeInterval( &interval ).astype( LibCal_ExplicitTimeInterval );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

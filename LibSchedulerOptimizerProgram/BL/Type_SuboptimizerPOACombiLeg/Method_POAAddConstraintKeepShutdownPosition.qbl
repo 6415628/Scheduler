@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintKeepShutdownPosition (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs)
+{
+  TextBody:
+  [*
+    // yifei Aug-31-2021 (created)
+    valueset := POAValueSet::P( poa, SuboptimizerPOACombiLeg::NamePOAConstraintShutdownTo(), Real::MaxReal() );  
+    
+    // If this is a combileg right before a shutdown
+    // Then we apply an end path constraint that penalizes ending after the start of the shutdown
+    traverse( combilegs, Elements, combileg, 
+              guard( combileg.Leg().LastTaskOnLeg().Next() = combileg.Leg().NextShutdown().Task_SC(), false ) )
+    {
+      pathtype := poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathCombiLeg( combileg ), combileg );
+      valueset.Set( pathtype, combileg.Leg().NextShutdownTargetStartAllowedTo() );
+    } 
+    
+    shutdowntocnst := poa.NewEndPathConstraint( SuboptimizerPOACombiLeg::NamePOAConstraintShutdownTo() );
+    
+    shutdowntocnst.Expression( poa.Expression( SuboptimizerPOACombiLeg::NamePOAExpressionTime() ) );
+    shutdowntocnst.ValueSet( valueset );
+    
+    shutdowntocnst.Power( this.Strategy().Program_KPIPowerConstraintShutdown() );
+    
+    shutdowntocnst.Factor( this.Strategy().Program_KPIWeightConstraintShutdown() );
+  *]
+}

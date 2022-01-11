@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcFinished
+{
+  Description: 'Calculate if operation has been reported as finished by checking on Operation.HasFeedback and OperationFeedback.HasReportedEnd.'
+  TextBody:
+  [*
+    // Has feedback and last feedback has feedback end
+    // value := ( not this.IsPlanned() and this.HasFeedback() and this.HasReportedEnd() );
+    // Chris 20141202 #4951 : Implement report fail in shop floor, include in checking on is latest fb task hasreportedaborted
+    value := this.HasReportedEnd()
+             and not this.HasReportedAborted()
+             and ( not this.IsPlanned() or this.Task_SC().HasFeedbackTask() )
+    
+    // Gooi: Material fully fulfilled error
+    if( this.HasSupplyOrDemand() )
+    {
+      value := value or this.MaterialFinished();
+    }
+    
+    this.Finished( value );
+  *]
+}

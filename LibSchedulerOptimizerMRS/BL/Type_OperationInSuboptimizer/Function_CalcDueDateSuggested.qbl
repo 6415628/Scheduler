@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcDueDateSuggested
+{
+  TextBody:
+  [*
+    // mbr23 Sep-18-2019 (created), logic copied from legacy optimizer's OptimizerPlanOperation::CalcDueDateSuggested
+    
+    //This attribute is recomputed here, as the one computed on task could have a different behavior than what is expected for the optimizer (this is the case in Akzo)
+    
+    // minimum suggestion for downstream operations that are shadowed by this suboptimizer:
+    value_inscope := min( this,
+                          OutputMaterial,
+                          om,
+                          om.HasOutputOperationInSuboptimizer(),
+                          om.AsInputMaterial().GetDueDateSuggestedStart() - om.OperationMaterial().TransportCoolingDuration()
+                         );
+    // minimum suggestion for downstream operations that are not shadowed by this suboptimizer:
+    value_outscope := min( this,
+                           OutputMaterial,
+                           om,
+                           not om.HasOutputOperationInSuboptimizer() and om.OperationMaterial().HasToOperation(),
+                           om.OperationMaterial().ToOperation().DueDate_Order_Start() - om.OperationMaterial().TransportCoolingDuration()
+                          ); // the DueDateSuggestedStart for non-shadowed operations is the order start
+    
+    value := minvalue( value_inscope,
+                       value_outscope,
+                       guard( this.Operation_SC().PlanUnit_SC().DueDate(), DateTime::MaxDateTime() )
+                      );
+    
+    //If the order is late, try to plan each operation earlier
+    order := guard( this.Operation_SC().PlanUnit_SC().Order_SC(), null( Order_SC ) );
+    // Guard for cases where PlanUnit have no Order
+    orderislate := guard( order.IsPlanned() and not order.IsScheduledOntime(), false ); 
+    if( guard( not this.SuboptimizerMRSPOA().IsInConstrainedPOAMode(), false )
+        and orderislate )
+    {
+      value := value - this.SuboptimizerMRSPOA().Settings().SuggestedDueDateSlack();
+    }
+    
+    this.DueDateSuggested( value );
+  *]
+}

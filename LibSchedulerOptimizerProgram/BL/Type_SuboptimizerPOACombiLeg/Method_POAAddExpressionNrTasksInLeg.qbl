@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddExpressionNrTasksInLeg (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, Operation_SCs operations)
+{
+  Description:
+  [*
+    Add an expression that counts the nr of tasks in a leg.
+    This is a used in the constraint that forces at least one task per leg (to ensure POA doesn't cheat by emptying a leg and thus disregarding the transitions)
+  *]
+  TextBody:
+  [*
+    taskexpression := poa.NewExpression( SuboptimizerPOACombiLeg::NamePOAExpressionNrTasksInLeg() ); 
+    
+    
+    participationnrtasks := POAParticipation::N( poa, SuboptimizerPOACombiLeg::NamePOAParticipationNrTasksInLeg(), 0.0 );
+    taskexpression.Participation( participationnrtasks );
+    
+    // The participation is always -1 (1 node represents 1 task, minus because we need at least 1, so we put a max of -1 on the end path constraint)
+    traverse( operations, Elements, operation )
+    {
+      node := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation ), operation );
+      participationnrtasks.Set( node, -1.0 );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

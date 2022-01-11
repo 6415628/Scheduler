@@ -1,0 +1,62 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenerateNodes (NamedValueTree nvt, NamedValue nv, structured[NamedValue] set) id:Method_DialogSettingsEngine_GenerateNodes
+{
+  #keys: '[139164.3.1812416689]'
+  Body:
+  [*
+    handle_metadata := nvt.GetHandle( LibSE_SettingsContainer::Handle_Metadata() );
+    handle_exclude  := nvt.GetHandle( LibSE_SettingsContainer::Handle_Exclude() );
+    metadata := guard( nv.Child( handle_metadata ), null( NamedValue ) );
+    exclude  := guard( metadata.Child( handle_exclude ), null( NamedValue ) );
+    
+    if( isnull( exclude ) )
+    {
+      set.Add( nv );
+      
+      if( nv.Children().Size() = 0
+          or ( nv.Children().Size() = 1 and not isnull( metadata ) ) )
+      {
+        setting := this.ReadValue( nvt, nv );
+        
+        path := selectvalues( set, Elements, node, true, node.Name() ).ToString( '.' );
+        setting.Name( path );
+        
+        traverse( set, Elements, node )
+        {
+          setting.SettingNode( relnew,
+                               Name := node.Name(),
+                               SequenceNr := setting.SettingNode( relsize ) );
+        }
+        
+        if( not isnull( metadata ) )
+        {
+          handle_description := nvt.GetHandle( LibSE_SettingsContainer::Handle_Description() );
+          description := metadata.Child( handle_description );
+          if( not isnull( description ) )
+          {
+            setting.Description( description.GetValueAsString() );
+          }
+        
+          handle_definedby := nvt.GetHandle( LibSE_SettingsContainer::Handle_DefinedBy() );
+          definedby := metadata.Child( handle_definedby );
+          if( not isnull( definedby ) )
+          {
+            setting.DefinedBy( definedby.GetValueAsString() );
+            setting.OriginalDefinedBy( definedby.GetValueAsString() );
+          }
+        }
+        this.PropagateSettingAttributes( setting );
+      }
+      else
+      {
+        traverse( nv.Children(), Elements, child )
+        {
+          this.GenerateNodes( nvt, child, set );
+        }
+      }
+      
+      set.Remove( nv );
+    }
+  *]
+}

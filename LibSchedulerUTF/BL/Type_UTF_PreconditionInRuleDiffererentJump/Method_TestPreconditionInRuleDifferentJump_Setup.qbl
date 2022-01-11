@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionInRuleDifferentJump_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Create rule
+    rule := Rule::Create( schedule, 1 );
+    
+    // Get variant data
+    hasCharacteristic := false;
+    hasJumpRange := false;
+    hasRuleValue := false;
+    isMultipleRangesEnabled := false;
+    isValid := false;
+    
+    this.GetTestVariant( hasCharacteristic,
+                         hasJumpRange,
+                         hasRuleValue,
+                         isMultipleRangesEnabled,
+                         isValid );
+    
+    // Create characteristic
+    if( hasCharacteristic )
+    {
+      characteristic := Characteristic::Create( schedule, 'Characteristic', 1 );
+      rule.CharacteristicMain( relset, characteristic );
+    }
+    
+    // Create rule range
+    if( hasJumpRange )
+    {
+      ruleRange := rule.RuleRange( relnew );
+      ruleRange.From( 0.0 );
+      ruleRange.To( 100.0 );
+      ruleRange.RuleRangeValue( 50.0 );
+    }
+    
+    // Set isMultipleRangesEnabled
+    rule.IsMultipleRangesEnabled( isMultipleRangesEnabled );
+    
+    // Set threshold
+    if( not hasRuleValue )
+    {
+      rule.RuleValue( -1.0 ); 
+    }
+  *]
+}

@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateMaximumValueRealRule (Schedule schedule) as Rule
+{
+  Description: 'Ceate maximum value real rule'
+  TextBody:
+  [*
+    // Create rule
+    rule := Rule::Create( schedule, 1 );
+    
+    // Create rule type - Allowed Value Min Max
+    ruleType := UTFMockObjectFactory::CreateRuleType( schedule,
+                                                      RuleConstant::RuleType_AllowedValueMinMaxCheck() );
+    
+    rule.RuleType( relset, ruleType );
+    
+    // Create rule subtype - Maximum Allowed Value Real Check
+    ruleSubtype := UTFMockObjectFactory::CreateRuleSubtypeValueMinMaxCheck( ruleType,
+                                                                            RuleConstant::RuleSubType_MaximumValue(),
+                                                                            false );
+    
+    rule.RuleSubType( relset, ruleSubtype );
+    
+    // Create characteristic main - Operation Width
+    characteristicMain := UTFMockObjectFactory::CreateCharacteristic( schedule,
+                                                                      RuleConstant::Characteristic_OperationWidth(),
+                                                                      false, 
+                                                                      true, 
+                                                                      false, 
+                                                                      RuleConstant::ValueType_Real(), 
+                                                                      true, 
+                                                                      false );
+    
+    rule.CharacteristicMain( relset, characteristicMain );
+    
+    // Enable rule
+    rule.IsEnabled( true );
+    
+    // Set the maximum allowed operation width value is 10.0
+    rule.RuleValue( 10.0 );
+    
+    return rule;
+  *]
+}

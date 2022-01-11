@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedSequence (Operation_SCs operations, Task_SC beforetask, Task_SC aftertask, 
+  Boolean skipsoftcheck, output String feedback_o, output Boolean isallowedhard_o) declarative remote as Boolean
+{
+  Description: 'Checks sequencing rules'
+  TextBody:
+  [*
+    // jan er Jun-10-2014 (created)
+    
+    // Hard rules
+    value := this.AllowedSequenceHardDefault( operations,
+                                              beforetask,
+                                              aftertask,
+                                              feedback_o );    
+                                                                                      
+    value := value and this.AllowedSequenceHardCustomized( operations,
+                                                           beforetask,
+                                                           aftertask,
+                                                           feedback_o );
+    
+    isallowedhard_o := isallowedhard_o and value;
+    
+    // After task status
+    value := value and this.CheckAfterTaskStatus( aftertask,
+                                                  skipsoftcheck,
+                                                  feedback_o,
+                                                  isallowedhard_o );
+    
+    // Soft rules
+    if( value and not skipsoftcheck )
+    {
+      value := this.AllowedSequenceSoftDefault( operations,
+                                                beforetask,
+                                                aftertask,
+                                                feedback_o ) and value;
+    
+      value := this.AllowedSequenceSoftCustomized( operations,
+                                                   beforetask,
+                                                   aftertask,
+                                                   feedback_o ) and value;
+    }                                                               
+    
+    return value;
+  *]
+}

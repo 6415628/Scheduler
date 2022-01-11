@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcCostTotalOpt
+{
+  TextBody:
+  [*
+    // yifei Aug-18-2021 (created)
+    optimizerstrategy := this.CombiLeg().OptimizerStrategyInSchedule();
+    value := 0.0;
+    
+    if( not isnull( optimizerstrategy ) )
+    {
+      value := this.CostRuleViolations()
+             + ( this.CostLateness() * optimizerstrategy.KPIWeightOperationLateness()
+             + this.CostMPSAdherenceEarly() * optimizerstrategy.KPIWeightMPSAdherenceEarly()
+             + this.CostMPSAdherenceLate() * optimizerstrategy.KPIWeightMPSAdherenceLate() ) / 100.0 //Yifei TODO, lower the cost of not in time
+             - this.DuePlannedBonus() * optimizerstrategy.KPIWeightQuantityDueNotScheduled()                              // make sure plan due operations got some net bonus
+    }
+    
+    this.CostTotalOpt( value );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

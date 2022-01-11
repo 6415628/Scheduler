@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedSettingsSequencingMRSMeta (CDIntegration cdintegration, ImportedSettingsSequencing importedsettingssequencing)
+{
+  Description: 'Restore imported settings sequencing MRS meta core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedSettingsSequencingMRSMeta
+    cdimportedSettingsSequencingMRSMetas := selectset( cdintegration, CDEntity.astype( CDImportedSettingsSequencingMRSMeta ), cdismrsm, 
+                                                       cdismrsm.SettingsId() = importedsettingssequencing.Id() 
+                                                     );
+    traverse( cdimportedSettingsSequencingMRSMetas, Elements, cdismrsm )
+    {
+      importedSettingsSequencingMRSMeta := importedsettingssequencing.ImportedSettingsSequencingMRSMeta( relnew,
+                                                                                                         SettingsId := cdismrsm.SettingsId()
+                                                                                                       );
+      CopyCorresponding::CopyFrom( cdismrsm ).CopyTo( importedSettingsSequencingMRSMeta );   
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

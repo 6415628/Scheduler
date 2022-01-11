@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: ListBatchInPanelOperationBatchesList
+Response OnClick (structured[Batch] selection) id:Response_ListBatchInPanelOperationBatchesList_MenuPlanBatchToEarliestAvailableResource_OnClick
+{
+  #keys: '[154390.0.427042678]'
+  CanBindMultiple: false
+  DefinitionID => //ListBatches/Responsedef_ListBatches_WebMenu_OnClick
+  GroupServerCalls: true
+  Initiator: 'MenuPlanBatchToEarliestAvailableResource'
+  Precondition:
+  [*
+    operations := selectset( selection, Elements.BatchSequenceElement.Operation_SC, o, true );
+    isallowedhard := true;
+    
+    value := Operation_SC::CanReplan( operations, false, feedback, isallowedhard );
+    
+    return value;
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Plan batches to available resource.
+      Schedule.PlanLastBatches( selection );
+    *]
+  }
+}

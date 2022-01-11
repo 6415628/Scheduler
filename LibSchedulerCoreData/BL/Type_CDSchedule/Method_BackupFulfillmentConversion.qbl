@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupFulfillmentConversion (const PlannedSupply2Inventory plannedSupply2Inventory)
+{
+  Description: 'Backup fulfillment conversion core data'
+  TextBody:
+  [*
+    traverse( plannedSupply2Inventory, FulfillmentConversion, fulfillmentConversion )
+    {
+      cdFulfillmentConversion := this.CDEntity( relnew, CDFulfillmentConversion );
+      CopyCorresponding::CopyFrom( fulfillmentConversion ).CopyTo( cdFulfillmentConversion );  
+      
+      if( plannedSupply2Inventory.istype( GenericPlannedSupply2Material ) )
+      {
+        cdFulfillmentConversion.MaterialID( plannedSupply2Inventory.astype( GenericPlannedSupply2Material ).MaterialID() );
+        cdFulfillmentConversion.WorkOrderOutputMaterialID( plannedSupply2Inventory.astype( GenericPlannedSupply2Material ).WorkOrderOutputMaterialID() );
+      }
+      else if(  plannedSupply2Inventory.istype( GenericPlannedSupply2ExternalSupply ) )
+      {
+        cdFulfillmentConversion.ExternalSupplyID( plannedSupply2Inventory.astype( GenericPlannedSupply2ExternalSupply ).ExternalSupplyID() );
+        cdFulfillmentConversion.WorkOrderSupplyID( plannedSupply2Inventory.astype( GenericPlannedSupply2ExternalSupply ).WorkOrderSupplyID() );
+      }
+      
+      cdFulfillmentConversion.ExternalSupplyFulfillmentDemandID( guard( fulfillmentConversion.ExternalSupplyFulfillment().DemandId(), '' ));
+      cdFulfillmentConversion.ExternalSupplyFulfillmentDemandType( guard( fulfillmentConversion.ExternalSupplyFulfillment().DemandType(), '' ));
+      cdFulfillmentConversion.ExternalSupplyFulfillmentSupplyID( guard( fulfillmentConversion.ExternalSupplyFulfillment().SupplyId(), '' ));
+      cdFulfillmentConversion.ExternalSupplyFulfillmentSupplyType( guard( fulfillmentConversion.ExternalSupplyFulfillment().SupplyType(), '' ));
+      cdFulfillmentConversion.PlannedSupplyFulfillmentDemandID( guard( fulfillmentConversion.PlannedSupplyFulfillment().DemandId(), '' ));
+      cdFulfillmentConversion.PlannedSupplyFulfillmentDemandType( guard( fulfillmentConversion.PlannedSupplyFulfillment().DemandType(), '' ));
+      cdFulfillmentConversion.PlannedSupplyFulfillmentSupplyID( guard( fulfillmentConversion.PlannedSupplyFulfillment().SupplyId(), '' ));
+      cdFulfillmentConversion.PlannedSupplyFulfillmentSupplyType( guard( fulfillmentConversion.PlannedSupplyFulfillment().SupplyType(), '' ));
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

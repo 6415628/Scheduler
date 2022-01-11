@@ -1,0 +1,82 @@
+Quintiq file version 2.0
+#parent: SCListOperationsMain
+Response OnDrawElement (Operation_SC element) id:Response_SCListOperationsMain_OnDrawElement
+{
+  #keys: '[12142.0.35485632]'
+  Body:
+  [*
+    // Draw element
+    
+    image := '';
+    resource := DataHolderSelectedResource.Data();
+    
+    // Primary image to be drawn
+    // Feedback statuses that DO depend whether an operation is planned exists and DO NOT have priority (can be overriden by statuses below, aborted/cancelled actually gets reset when other feedback statuses are received)
+    if( element.HasBeenAborted() or element.HasBeenCancelled() )
+    {
+      image := 'DELETE2';
+    }
+    
+    // This will override the preceding images above if it is planned
+    if( element.IsFrozenInSchedule() )
+    {
+      image := 'SNOWFLAKE';
+    }
+    else if( element.IsPlanned() )
+    {
+      image := 'GANTTCHART';
+    }
+    
+    // Feedback statuses that DO NOT depend whether a task exists and have priority
+    if( element.Finished() ) // We allow the user to replan operations that have ended and finished
+    {
+      image := 'CHECK2';
+    }
+    else if( element.HasEnded() ) // We allow the user to replan operations that have ended
+    {
+      image := 'STOPWATCH_STOP';
+    }
+    // HasReportedProcessStart declaratively checks whether there is a value calculated for reported start, this might become inaccurate when we support ProcessStart, instead there should be a procedurally set feedback status for ProcessStart
+    else if( element.HasReportedProcessStart() )
+    {
+      image := 'GEAR_RUN';
+    }
+    else if( element.HasStarted() )
+    {
+      image := 'ALARMCLOCK_RUN';
+    }
+    
+    
+    drawinfo.Image( 0, image );
+    
+    image2 := '';
+    
+    // Secondary image to be drawn
+    if( element.IsPlanned() and resource = element.Task_SC().Resource_SC() )
+    {
+      image2 := 'ARROW_RIGHT_GREEN';
+    }
+    else if( exists( element, AllowedOperationOnResource.Resource_SC, res,
+                     res = resource ) )
+    {
+      image2 := 'ARROW_RIGHT_BLUE';
+    }
+    
+    drawinfo.Image( 1, image2 );
+    
+    // Tertiary image to be drawn - Mandatory/Optional operations for Optimizer
+    imageMandatoryOptionalOperation := '';
+    
+    if( DataHolderOptimizerMandatoryOperations.Data().Find( element ) <> -1 )
+    {
+      imageMandatoryOptionalOperation := 'GEARS_PREFERENCES'
+    }
+    else if( DataHolderOptimizerOptionalOperations.Data().Find( element ) <> -1 )
+    {
+      imageMandatoryOptionalOperation := 'GEARS'
+    }
+    
+    drawinfo.Image( 2, imageMandatoryOptionalOperation );
+  *]
+  DefinitionID: 'Responsedef_List_OnDrawElement'
+}

@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method PopulateEdgePositionsForWorkOrder () id:Method_FormTimeConstraintVisualization_PopulateEdgePositionsForWorkOrder
+{
+  #keys: '[142956.3.575347971]'
+  Body:
+  [*
+    // Populate edge positions using node positions
+    // Populate CustomDrawEdge starting and target positions
+    // Duplicated from PopulateEdgePositions
+    config := DataHolderCustomDrawConfiguration.Data();
+    rectWidth := config.RectWidth();
+    rectHeight := config.RectHeight();
+    
+    traverse( config, CustomDrawNode.CustomDrawEdge, edge )
+    { 
+      // Use OperationDependency to determine source and target
+      operationDependency := edge.astype( shadow[CustomDrawEdgeOperationDependency] ).OperationDependency();
+      sourceNode := this.GetCustomDrawNode( operationDependency.FromOperation(), false, 0 );
+      targetNode := this.GetCustomDrawNode( operationDependency.ToOperation(), false, 0 );
+      
+      adjustmentX := rectWidth; // Make it start at the 'end' of the node
+      adjustmentY := floor( rectHeight / 2 );
+    
+      edge.FromX( sourceNode.X() + adjustmentX );
+      edge.FromY( sourceNode.Y() + adjustmentY );
+      edge.ToX( targetNode.X() );
+      edge.ToY( targetNode.Y() + adjustmentY );
+    }
+  *]
+}

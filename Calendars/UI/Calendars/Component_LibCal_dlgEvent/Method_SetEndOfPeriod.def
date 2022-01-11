@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetEndOfPeriod () id:Method_LibCal_dlgEvent_SetEndOfPeriod
+{
+  #keys: '[131094.0.1731737164]'
+  Body:
+  [*
+    if( this.ValuesRecurrenceOK() )
+    {
+      if( btnNoRecurrence.Pressed() )
+      {
+        dtEndOfPeriod.DateTime( dtStartOfPeriod.DateTime() );
+      }
+      else    
+      {
+        // Set the end of the period based on the start of the period and the #occurrences
+        // IFF the end of the period is not manually set.
+        if( not ckbEndOfPeriod.Checked() )
+        {
+          nrOfOccurrences := 1;                        // By default 1 occurrence.
+          timezone        := TimeZone::UTCTimeZone();  // Use the UTC-timezone here in order to keep the same date, don't correct for a specific timezone.
+          
+          endDate := this.DetermineEndDate( dtStartOfPeriod.DateTime().Date( timezone ), nrOfOccurrences );
+          dtEndOfPeriod.DateTime( endDate.DateTime( timezone ) );
+        }
+      }
+    }
+    
+    // else keep the value as it is, setting it to MinDate looks 'strange'.
+  *]
+}

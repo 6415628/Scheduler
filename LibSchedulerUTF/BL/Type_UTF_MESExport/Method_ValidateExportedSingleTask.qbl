@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValidateExportedSingleTask (Schedule schedule, String scheduleID, String comment, 
+  DateTime commentLastUpdatedTimeStamp, String commentLastUpdatedUserName) as Boolean
+{
+  TextBody:
+  [*
+    exportedSingleTask := select( schedule, ExportedSingleTask, exportedSingleTask, true );
+    operaton := select( schedule, Operation_SC, operation, true );
+    task := operaton.Task_SC();
+      
+    // Compare value
+    value := exportedSingleTask.ScheduleID() = ''
+             and exportedSingleTask.Start() = schedule.Time()
+             and exportedSingleTask.Resource() = task.Resource_SC().ResourceID()
+             and exportedSingleTask.ProcessStart() = schedule.Time()
+             and exportedSingleTask.End() = schedule.Time()
+             and exportedSingleTask.ExportedComment() = comment
+             and exportedSingleTask.ExportedCommentLastUpdatedTimeStamp() = commentLastUpdatedTimeStamp
+             and exportedSingleTask.ExportedCommentLastUpdatedUserName() = commentLastUpdatedUserName
+             and exportedSingleTask.WorkOrderId() = operaton.WorkOrderId()
+             and exportedSingleTask.PlanUnitId() = operaton.PlanUnitId()
+             and exportedSingleTask.WorkOrderOperationSequenceNr() = operaton.WorkOrderSequenceNr()
+             and exportedSingleTask.OperationID() = operaton.OperationID()
+             and exportedSingleTask.ExportedSetupDuration() = task.SetupDuration()
+             and exportedSingleTask.ExportedProcessDuration() = task.ProcessDuration()
+             and exportedSingleTask.Duration() = task.Duration()
+             and exportedSingleTask.ScheduledPrevOperationID() = ''
+             and exportedSingleTask.TaskType() = Constants::TaskType_Task()
+             and exportedSingleTask.SchedulerStoppageTaskID() = ''
+             and exportedSingleTask.ShutdownTypeID() = ''
+             and exportedSingleTask.ShutdownTypeName() = '';
+    
+    return value;
+  *]
+}

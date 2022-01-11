@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: ListOperationsInPanelOperations
+Response OnClick (structured[Operation_SC] selection) id:Response_ListOperationsInPanelOperations_MenuRemoveFromScope902_OnClick
+{
+  #keys: '[151084.0.260434022]'
+  CanBindMultiple: false
+  DefinitionID => //ListOperations/Responsedef_ListOperations_WebMenu_OnClick
+  GroupServerCalls: true
+  Initiator: 'MenuRemoveFromScope902'
+  Precondition:
+  [*
+    Scheduler.CanRemoveFromOptimizerScope( selection );
+    feedbackObject := FeedbackObject::CurrentFeedback();
+    feedback := feedbackObject.Feedback();
+    
+    return feedbackObject.IsAllowed();
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Remove SELECTED operations from optimizer scope
+      mandatoryOperations := DataHolderOptimizerScopeOperations.Data();
+      DataHolderOptimizerScopeOperations.Data( mandatoryOperations.Difference( selection ) );
+    *]
+  }
+}

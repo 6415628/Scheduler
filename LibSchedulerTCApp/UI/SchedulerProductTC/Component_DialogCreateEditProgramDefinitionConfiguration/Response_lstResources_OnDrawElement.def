@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: lstResources
+Response OnDrawElement (Resource_SC element) id:Response_lstResources_OnDrawElement
+{
+  #keys: '[131094.0.1174425799]'
+  Body:
+  [*
+    // Show a checkbox, check it if the resource is selected
+    img := Constants::Icon_EmptyCheckbox();
+    
+    // If program scheduling cannot be applied in this resource or already has program change, show gray checkbox
+    if( not element.CheckCanApplyProgramScheduling()
+        or( element.ProgramDefinitionConfiguration() <> Dialog.Data().WrappedInstance()
+            and not element.CheckNoProgramChange() ) )
+    {
+      img := Constants::Icon_GrayCheckbox();
+    }
+    // If resource has program change and assigned to this program definition, show gray checked checkbox
+    else if( element.ProgramDefinitionConfiguration() = Dialog.Data().WrappedInstance()
+             and not element.CheckNoProgramChange() )
+    {
+      img := Constants::Icon_GrayCheckedCheckbox();
+    }
+    // If resource had been selected for this program definition, show checked checkbox
+    else if( exists( DataHolderSelectedResourcesInProgramDefinition.Data(), Elements, res, res = element ) )
+    {
+      img := Constants::Icon_CheckedCheckbox();
+    }
+    
+    drawinfo.Image( 0, img );
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_List_OnDrawElement'
+}

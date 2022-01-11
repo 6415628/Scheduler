@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetOptimizerSetting (OptimizerUserSettingGroupInScenarioManager optimizersettinggroupinscenariomanager)
+{
+  TextBody:
+  [*
+    // mbr23 Sep-23-2019 (created), copied from legacy OptimizerMRSA.
+    
+    // Update optimizer user setting id to overwrite user last selected optimizer setting for all optimizers.
+    this.OptimizerUserSettingIdDescription( optimizersettinggroupinscenariomanager.IDDescription() );
+    
+    // Get existing optimizer setting
+    optimizersetting := this.UserSetting();
+    
+    // Create new setting and replace existing setting if it does not match the setting group
+    if( isnull( optimizersetting ) or guard( optimizersetting.ID() <> optimizersettinggroupinscenariomanager.ID(), true ) )
+    {
+      optimizersetting := OptimizerUserSettingSequencing::Create( this, optimizersettinggroupinscenariomanager.ID() );
+    }
+    
+    // Updates the settings to match setting group
+    optimizersetting.Update( optimizersettinggroupinscenariomanager );
+  *]
+}

@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method Edit (GUIComponent parent, LibOpt_AnalysisFilterScopeElement selection, Boolean auto_update) id:Method_DialogLibOpt_AnalysisFilterScopeElement_Edit
+{
+  #keys: '[139164.3.2007312810]'
+  Body:
+  [*
+    data := shadow( selection );
+    
+    Dialog.Data( data );
+    if ( Dialog.DoModal( parent ) > 0 )
+    {
+      has_change := selection.UseTag() <> selection.UseTag() or
+                    ( selection.UseTag() and selection.Tag() <> data.Tag() )
+                    or selection.AsInputScope() <> data.AsInputScope()
+                    or selection.ScopeElement() <> data.ScopeElement();
+      data.IsUpdated( data.IsUpdated() or has_change );
+      data.Commit();
+      if( auto_update and has_change )
+      {
+        selection.Analysis().Analyze();
+      }
+    }
+  *]
+}

@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method CopyAndRun () as stream[LibOpt_BT_BTS]
+{
+  TextBody:
+  [*
+    retStream := stream[LibOpt_BT_BTS]::Success();
+    
+    table := this.TrackingTableCell().Table();
+    benchmarkname := table.Dataset().Name();
+    
+    Transaction::Transaction().Propagate( attribute( LibOpt_BT_RunSequenceElement, SequenceNr ) ); // Partial propagate the attribute that is used below.
+    new_dataset_name := this.TrackingTableCell().GetNewDatasetName( this.SequenceNr() );
+    optimization_copy := this.TrackingTableCell().Table().Dataset().GetCopy( new_dataset_name, DatasetState::MemoryOnly() );
+    
+    if( benchmarkname = '' or isnull( optimization_copy ) )
+    {
+      this.FailedReason( Translations::LibOpt_BT_RunSequenceElement_DatasetNotFound( benchmarkname ) );
+    }
+    else
+    {
+      this.DatasetName( new_dataset_name );
+      retStream := this -> RunOptimizer( optimization_copy )
+      retStream := retStream ->| this -> RemoveDataset( optimization_copy ) ->| retStream;
+    }
+    
+    return retStream;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

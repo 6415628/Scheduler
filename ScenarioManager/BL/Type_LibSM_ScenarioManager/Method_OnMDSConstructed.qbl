@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnMDSConstructed
+{
+  TextBody:
+  [*
+    debuginfo( '>>> OnMDSConstructed... ' );
+    // Set creation time
+    if( this.CreatedOn().IsInfinite() )
+    {
+      this.CreatedOn( DateTime::Now() );
+    }
+    
+    debuginfo( '>>> Creating root folders ' );
+    // Insert root and  recycle bin folder for scenarios
+    LibSM_ScenarioFolder::CreateRootFolder( this, false );
+    LibSM_ScenarioFolder::CreateRootFolder( this, true );
+    
+    debuginfo( '>>> Creating global parameters. Setting default storage state. ');
+    if( isnull( this.GlobalParameter() ) )
+    {
+      LibSM_GlobalParameter::Create( this );
+      this.GlobalParameter().DefaultStorageState( LibSM_Dataset::GetStorageStateMemoryOnly() );
+    }
+    
+    this.ResetDatasetsIsLoadingInProgressStatus();
+    this.LibraryUpgrade_UpdateScenarioNode();
+    
+    if( this.GlobalParameter().IsReloadScenariosOnServerStartup() )
+    {
+      LibSM_Util::LogInfo( "Reload the scenarios that were loaded when the QAE was stopped" );
+      this.ReloadScenarioDatasets();
+    }
+    
+    this.Refresh();
+    
+    debuginfo( ">>> Calling OnMDSConstructedCustom" );
+    this.OnMDSConstructedCustom();
+    
+    debuginfo( '>>> OnMDSConstructed END ' );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

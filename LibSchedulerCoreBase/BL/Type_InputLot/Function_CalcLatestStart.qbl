@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcLatestStart
+{
+  TextBody:
+  [*
+    task := this.Task_SC();
+    
+    // schedule time
+    //defaulttime := task.Resource_SC().Schedule().Time();
+    defaulttime := task.DueDate();
+    // lateststart is either:
+    // a. Before next inputlot latest start
+    // b. Next subtask latest start
+    // c. Task latest end
+    // d. The output lot expected time
+    resourcecalendar := task.Resource_SC().ResourceCalendar();
+    
+    value := guard( resourcecalendar.Subtract( this.NextInputLot().LatestStart(), this.TotalProcessDuration() ), // a. Before next inputlot latest start
+                    guard( resourcecalendar.Subtract( this.Task_SC().ProcessSubTask().Next().JITLatestStart(), this.TotalProcessDuration() ), // b. Next subtask latest start
+                           guard( resourcecalendar.Subtract( this.Task_SC().StrategyJIT().LatestEnd(), this.TotalProcessDuration() ), defaulttime ) ) ) // c. Task latest end
+    
+    
+    // the expected time of the output lot that is waiting for material from this input lot
+    firstoutputlot_expectedtime := min( this, OutputLotMaterial.AsInputLotMaterial, om, true, om.ExpectedTime() ); // d. The output lot expected time
+    
+    // take feedback time if it already has feedback
+    hasfeedback := this.Task_SC().HasFeedbackTask();
+    
+    if( hasfeedback )
+    {
+      value := task.ReportedStart();
+    }
+    else if( firstoutputlot_expectedtime.IsFinite() )
+    {
+      value := minvalue( value, firstoutputlot_expectedtime );
+    }
+    
+    this.LatestStart( value );
+  *]
+}

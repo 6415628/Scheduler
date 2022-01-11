@@ -1,0 +1,67 @@
+Quintiq file version 2.0
+#parent: ListTasks
+Response OnDrop (structured[Task_SC] source, BatchTask target, BatchResource resource) id:Response_ListTasks_OnDrop_545
+{
+  #keys: '[142956.1.1507198458]'
+  CanBindMultiple: false
+  DefinitionID => /ListTasks/Responsedef_ListTasks_OnDrop
+  GroupServerCalls: true
+  Precondition:
+  [*
+    retvalue      := true;
+    isallowedhard := true;
+    ctrlkey       := actionmodifier.IsControl();
+    ctrlshiftkey  := actionmodifier.IsControl() and actionmodifier.IsShift();
+    identifier    := Task_SC::GetSelectedObjects( source );
+    
+    if( ctrlshiftkey ) //when ctrlshiftkey = true and not isnull target, the intention is to merge all operations into the droptarget.
+    {
+      newoperations := selectset( source, Elements.OperationInTask, op, true ); //operations from the selected batch tasks
+      operations    := selectset( target, OperationInTask, op, true ); //operations from the drop target
+      operations    := operations.Union( newoperations ); //combine both
+    
+      retvalue := Scheduler.AllowedScheduling( resource,          //batchresource
+                                               operations,        //structured operations
+                                               ctrlkey,           //skip soft check
+                                               ctrlshiftkey,      //ctrl shift key
+                                               target.Previous(), //beforetask
+                                               target.Next(),     //aftertask
+                                               identifier,
+                                               feedback,
+                                               isallowedhard );
+    }
+    else //else, the intention is replan the batch tasks.
+    {
+      retvalue := Scheduler.AllowedScheduling( resource,          //batchresource
+                                               source,       //structured tasks
+                                               ctrlkey,           //skip soft check
+                                               ctrlshiftkey,      //ctrl shift key
+                                               target.Previous(), //beforetask
+                                               target,            //aftertask
+                                               identifier,
+                                               feedback,
+                                               isallowedhard );
+    }
+    
+    return retvalue;
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // OnDrop structured[Task] --> Task on Batch Resource
+      ctrlshift  := actionmodifier.IsControl() and actionmodifier.IsShift();
+      
+      batchtasks := selectset( source, Elements.astype( BatchTask ), bt, true, true );
+      
+      if( ctrlshift )//merge batches
+      {
+        target.Batch().MergeBatches( batchtasks );
+      }
+      else
+      {
+        resource.PlanBefore( batchtasks, target );
+      }
+    *]
+  }
+}

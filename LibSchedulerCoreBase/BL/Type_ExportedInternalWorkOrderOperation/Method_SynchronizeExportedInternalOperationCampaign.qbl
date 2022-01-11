@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExportedInternalOperationCampaign (WorkOrderOperation workOrderOperation)
+{
+  Description: 'Synchronize exported internal work order operation campaign.'
+  TextBody:
+  [*
+    allinstances := selectset( this, ExportedInternalOperationCampaign, exportedInternalOperationCampaign, true );
+    updatedinstances := construct( ExportedInternalOperationCampaigns );
+    
+    traverse( workOrderOperation, astype( InternalWorkOrderOperation ).RoutingStep.RoutingStepCampaign, routingStepCampaign )
+    {
+      exportedInternalOperationCampaign := ExportedOperationCampaign::FindExportedOperationCampaign( workOrderOperation.WorkOrderId(), 
+                                                                                                     routingStepCampaign.SequenceNr(),
+                                                                                                     routingStepCampaign.ResourceGroupName(),
+                                                                                                     routingStepCampaign.CampaignTypeName() ).astype( ExportedInternalOperationCampaign );
+      
+      if( isnull( exportedInternalOperationCampaign ) )
+      {
+        exportedInternalOperationCampaign := ExportedInternalOperationCampaign::Create( this, workOrderOperation.WorkOrderId(), routingStepCampaign.SequenceNr(),
+                                                                                        routingStepCampaign.ResourceGroupName(), 
+                                                                                        routingStepCampaign.CampaignTypeName() );
+      }
+      
+      if( not isnull( exportedInternalOperationCampaign ) )
+      {
+        exportedInternalOperationCampaign.Update( routingStepCampaign.CampaignName() );
+      }
+      
+      updatedinstances.Add( exportedInternalOperationCampaign );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, exportedInternalOperationCampaign )
+    {
+      exportedInternalOperationCampaign.Delete();
+    }
+  *]
+}

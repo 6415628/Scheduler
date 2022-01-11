@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestOperationAllowedInBatchPrecondition (Schedule schedule)
+{
+  Description: 'Test the precondition methods that are being used to batch operations together in a batch.'
+  TextBody:
+  [*
+    hasDifferentOperationType := false;
+    hasDifferentPractice := false;
+    isAllowedToBatchTogether := false;
+    belongToTheSamePlanUnit := false;
+    feedback_o := '';
+    isAllowedHard_o := true;
+    
+    // Propagate relation Schedule.Operation_SC
+    Transaction::Transaction().Propagate( relation( Schedule, Operation_SC ) );
+    Transaction::Transaction().Propagate( relation( Operation_SC, OperationAllowedPractice ) );
+    
+    this.GetTestVariant( hasDifferentOperationType, hasDifferentPractice, belongToTheSamePlanUnit, isAllowedToBatchTogether );
+    
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, resource, true );
+    operations := selectset( schedule, Operation_SC, operation, true );
+    
+    this.Run().AssertTrue( isAllowedToBatchTogether = Operation_SC::AllowedInBatch( operations, resource, false, feedback_o, isAllowedHard_o ), 'Test is operation allowed in batch failed' );
+  *]
+}

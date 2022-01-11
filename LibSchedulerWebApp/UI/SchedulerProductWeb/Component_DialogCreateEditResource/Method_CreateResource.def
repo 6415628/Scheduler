@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateResource (ResourceGroup_SC owner_i) id:Method_DialogCreateEditResource_CreateResource
+{
+  #keys: '[145574.0.1273509618]'
+  Body:
+  [*
+    // Create new resource
+    this.Title( Translations::SC_DialogResource_NewTitle() );
+    this.HideBatchEditComponents();
+    
+    // Resource id will be focus during creation because there's existing component on top so that resource id will be focused instead
+    EditFieldResourceID.Focus();
+    
+    if( owner_i.HasBatches() )
+    {
+      data := owner_i.Resource_SC( relshadow, GenericBatchResource, ResourceID := EditFieldResourceID.Text() );
+      DataHolderContentResource.Data( &data );
+    }
+    else
+    {   
+      if( owner_i.IsContinuous() )
+      {
+        PanelContinuous.Visible( true );
+        this.EnableContinuousTab();
+        data := owner_i.Resource_SC( relshadow, GenericContinuousResource, ResourceID := EditFieldResourceID.Text() );
+        DataHolderContentResource.Data( &data );  
+      } 
+      else
+      {          
+        data := owner_i.Resource_SC( relshadow, GenericSingleResource, ResourceID := EditFieldResourceID.Text() );
+        DataHolderContentResource.Data( &data );
+      }
+    
+      // Disabling the batch size component when it does not have batches
+      PanelBatchSize.Visible( false );
+    }
+    
+    Form.ShowModal();
+  *]
+}

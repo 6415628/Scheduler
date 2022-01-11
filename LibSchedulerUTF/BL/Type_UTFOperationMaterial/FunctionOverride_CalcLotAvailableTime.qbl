@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcLotAvailableTime
+{
+  TextBody:
+  [*
+    value := DateTime::MinDateTime();
+    
+    if( this.HasLotAvailableTimeUTF() )
+    {
+      value := this.LotAvailableTime_UTF();
+    }
+    else if( this.HasFromOperation() and not this.HasFulfillment() )
+    {
+      // Run back the original code when no UTF manipulation is required on this attribute. 
+      // this calculation here does not take into account of material reservation, which is done separately per demand
+      upstream_op := this.AsOutputOperationMaterialWOFulfillment();
+      value := upstream_op.EarliestEnd(); // upstream operation earliest end also covers for feedback
+      
+      if( upstream_op.Finished() and upstream_op.HasReportedEnd() )
+      {
+        value := upstream_op.ReportedEnd();
+      }
+      else if( not isnull( this.TransferSubTask() ) ) // AlexanderNg 18-Aug-2015 QP #5693
+      {
+        value := this.TransferSubTask().EarliestStart(); // AlexanderNg 3-Aug-2015 QP #5693
+      }
+      else if( not upstream_op.HasFeedback() and this.HasToOperation() )
+      {
+        inputlot_qty := this.AsInputOperationMaterialWOFulfillment().FirstInputLotQuantity(); // we only need the receving operation's first inputlot's quantity
+        
+        // normal operation material - get maximum earliest end for sufficient lot material
+        value := max( upstream_op, 
+                      Task_SC.OutputLot, 
+                      ol, 
+                      ( ol.CumulativeQuantity() >= inputlot_qty 
+                        and guard( ol.PreviousOutputLot().CumulativeQuantity() < inputlot_qty, true ) ) // if theres no previous, it is true
+                      or ( ol.CumulativeQuantity() < inputlot_qty ),
+                      ol.EarliestEnd() );
+      }
+    }
+    
+    this.LotAvailableTime( value );
+  *]
+}

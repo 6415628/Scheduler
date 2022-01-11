@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: ListOperationsInPanelOperations
+Response OnClick (structured[Operation_SC] selection) id:Response_ListOperationsInPanelOperations_MenuSchedule445_OnClick
+{
+  #keys: '[151084.0.260435447]'
+  CanBindMultiple: false
+  DefinitionID => //ListOperations/Responsedef_ListOperations_WebMenu_OnClick
+  GroupServerCalls: true
+  Initiator: 'MenuSchedule445'
+  Precondition:
+  [*
+    return Schedule.AllowedOptimizeOperations( selection, feedback );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Optimize SELECTED operations and the existing schedule
+      
+      // Clear scoped operations
+      DataHolderOptimizerScopeOperations.Data().Flush();
+      
+      // Scope selection
+      plannedoperations := Schedule.GetAllPlannedOperations();
+      DataHolderOptimizerScopeOperations.Data( plannedoperations.Union( selection ) );
+      
+      // Get all allowed resources
+      resources := Operation_SC::GetAllowedResources( DataHolderOptimizerScopeOperations.Data() );
+      
+      // Optimize
+      Schedule.Optimization().OptimizerSequencing().OptimizeWithDefaultSettings( DataHolderOptimizerScopeOperations.Data(), resources );
+    *]
+  }
+}

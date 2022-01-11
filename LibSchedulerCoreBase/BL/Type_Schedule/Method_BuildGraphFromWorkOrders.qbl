@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method BuildGraphFromWorkOrders (GraphProgramGraph graph) as GraphProgramGraph
+{
+  Description: 'Builds the graph with nodes and edges based on operations within the same work order. Only applicable when not using data driven time constraints mode.'
+  TextBody:
+  [*
+    // Start from any imported work order
+    traverse( this, ImportedWorkOrder, importedWorkOrder )
+    {
+      sortedWorkOrderOperations := selectsortedset( importedWorkOrder, ImportedWorkOrderOperation, operation, true, operation.SequenceNr() );
+      
+      // Intialize FromNode to use and reset in traverse loop
+      fromNode := null( GraphProgramNode );
+      
+      // Build nodes and edges from sequenced operations in same work order
+      traverse( sortedWorkOrderOperations, Elements, operation )
+      {
+        currentID := operation.WorkOrderId().Concat( '-' ).Concat( [String]operation.SequenceNr() );
+        
+        // Create CurrentNode
+        currentNode := graph.FindNode( currentID, operation );
+        
+        if( isnull( currentNode ) )
+        {
+          currentNode := graph.NewNode( currentID, operation );
+        }
+        
+        if( not isnull( fromNode ) )
+        {
+          // Create edge between FromNode and CurrentNode
+          edgeID := fromNode.Name().Concat( '--->' ).Concat( currentID );
+    
+          edge := graph.FindEdge( edgeID, fromNode, currentNode );
+          
+          if( isnull( edge ) )
+          {
+            edge := graph.NewEdge( edgeID, fromNode, currentNode );
+          }
+        }
+        
+        // Set current node as the next traverse's from node
+        fromNode := currentNode;
+      }
+    }
+    
+    return graph;
+  *]
+}

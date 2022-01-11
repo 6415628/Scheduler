@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method FilterCompatibleOperationsBasedOnSelectedBatchesAndOperationsInBatch () as String id:Method_FormOperationsAndBatches_FilterCompatibleOperationsBasedOnSelectedBatchesAndOperationsInBatch
+{
+  #keys: '[145930.3.2112779379]'
+  Body:
+  [*
+    // Filter compatible operations based on selected batches 
+    
+    filterCompatibleOperations := '';
+    
+    if( CheckboxFilterCompatibleOperations.Checked() )
+    {
+      string := construct( Strings );
+    
+      // Get all unique practices from selected batches.
+      uniquePracticesFromBatch := selectuniquevalues( DataHolderSelectedBatchesForFiltering.Data(), Elements, batch,
+                                                      true,
+                                                      batch.Practice().UsedPractice() );
+                                                      
+      // Get all unique practices from selected operations in batch.                                                
+      uniquePracticesFromOperationsInBatch := selectuniquevalues( DataHolderSelectedOperationInBatchForFiltering.Data(), Elements.BatchSequenceElement.Batch, batch,
+                                                                  true,
+                                                                  batch.Practice().UsedPractice() );                                                  
+      
+      // Combined all the unique practices from selected batches and selected operations in batch
+      uniquePractices := uniquePracticesFromBatch.Union( uniquePracticesFromOperationsInBatch );
+      
+      traverse( uniquePractices, Elements, uniquePractice )
+      {
+        string.Add( "exists( object, OperationAllowedPractice.Practice, practice, practice.UsedPractice() = '" + uniquePractice + "')" );
+      }
+      
+      // When multiple batches are selected, the operations list will be filtered to show operations which are compatible with any of the selected batches and operations in batch.
+      filterCompatibleOperations := string.Concatenate( " or " );
+      filterCompatibleOperations := "( " + filterCompatibleOperations + " )";
+    }
+    
+    return filterCompatibleOperations;
+  *]
+}

@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Initialize (const LibOpt_Suboptimizer suboptimizer, const LibOpt_MyRunContextForUTF runcontextforutf, const LibOpt_Task task) const
+{
+  Description:
+  [*
+    The body of the `Initialize` method that will be called by the mock suboptimizer that executes the initialize.
+    
+    This is used to allow easy testing on all suboptimizer subtypes, as this method is called by all.
+  *]
+  TextBody:
+  [*
+    OS::Sleep( ceil( runcontextforutf.DurationInitialize().MinutesAsReal() * 60 * 1000 ) );
+    
+    count := runcontextforutf.RetrieveNumberWithDefault( LibOpt_TestUnit_Suboptimizer::GetInitializeCounterName(), 0 );
+    runcontextforutf.StoreNumber( LibOpt_TestUnit_Suboptimizer::GetInitializeCounterName(), count + 1 );
+    
+    if( runcontextforutf.ErrorAtInitialize() )
+    {
+      error( 'Error in initialize' );
+    }
+    
+    if( runcontextforutf.DurationBetweenAdditionalStream() > Duration::Zero() )
+    {
+      // Start a new stream that will sleep for the given amount of time.
+      suboptimizer->LibOpt_TestUnit_Suboptimizer::AdditionalStream( task, runcontextforutf.DurationBetweenAdditionalStream() );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

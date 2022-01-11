@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method Import
+{
+  Description: 'Method to triggers import from MES'
+  TextBody:
+  [*
+    // Setting time
+    this.Time( DateTime::Now() );
+    
+    this.UpdateStatus( Translations::SC_ImportStarted( [String] DateTime::ActualTime() ), false );
+    
+    activeadapter := this.Schedule().ActiveFeedbackAdapter();
+    
+    if( not isnull( activeadapter ) )
+    {
+      activeadapter.Import();
+    
+      // check feedback task sequence adherence. This will be needed for ProductionPreviousAdherence KPI
+      // propagate for calculate the time logic on resources
+      Transaction::Transaction().Propagate()
+      this.CalculatePrevAdherence();
+    }
+    
+    this.UpdateStatus( Translations::SC_ImportCompleted( [String] DateTime::ActualTime() ), false );
+  *]
+}

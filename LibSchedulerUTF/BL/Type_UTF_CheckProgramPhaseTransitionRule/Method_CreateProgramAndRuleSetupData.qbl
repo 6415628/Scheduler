@@ -1,0 +1,75 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateProgramAndRuleSetupData (Schedule schedule, Number planoperationseqnrfrom)
+{
+  Description: 'Create program and rule setup data'
+  TextBody:
+  [*
+    // Get variant attribute
+    rulesubtype := '';
+    characteristicstring := '';
+    this.GetTestVariant( rulesubtype, characteristicstring );
+    chars := characteristicstring.Tokenize( Constants::SemiColon() );
+    
+    // Initialize rule framework and characteristic
+    schedule.InitializeRuleFramework();
+    schedule.InitializeCharacteristic();
+    
+    // Create program scheduling data
+    this.CreateProgramSchedulingData( schedule, planoperationseqnrfrom );
+    
+    // Set the program phase
+    ruleid := 0;
+    traverse( schedule, ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration.ProgramPhaseConfiguration, programphase, 
+              programphase.ProgramPhaseConfigurationID() = 'HEAD' or programphase.ProgramPhaseConfigurationID() = 'BODY' )
+    { 
+      traverse( chars, Elements, characteristic )
+      {
+        // Create rule for each characteristic
+        rule := this.CreateProgramPhaseTransitionRule( schedule, programphase, ruleid, rulesubtype, characteristic ); 
+    
+        // Set the Default Rule threshold value to 5, HEAD/BODY => 5 Max number of task, 5 Max cumulative length, 5 Max value, 5 Max Absolute Difference Jump Upwards
+        rule.RuleValue( 5 ); 
+          
+        // For rule MaximumValue or DifferenceJump rules, set the operation 6 & 11 width with different value as transition operation
+        if( rulesubtype = RuleConstant::RuleSubType_MaximumValue()
+            or rulesubtype = RuleConstant::RuleSubType_MaxAbsoluteDifferenceUpwards() )
+        {
+          if( programphase.ProgramPhaseConfigurationID() = 'HEAD' )
+          {
+            transitionop := select( schedule, PlanUnit_SC.Operation_SC, op, op.OperationID() = 'Operation_6' );
+            transitionop.Width( 100 );
+          }
+          // The rule threshold value for BODY will be different from HEAD
+          else if( programphase.ProgramPhaseConfigurationID() = 'BODY' )
+          {
+            transitionop := select( schedule, PlanUnit_SC.Operation_SC, op, op.OperationID() = 'Operation_11' );
+            transitionop.Width( 200 );      
+            rule.RuleValue( 100 );
+          }
+        }    
+        // For rule Not allowed value jump rule, set the operation 6 & 11 width with different value as transition operation
+        else if( rulesubtype = RuleConstant::RuleSubType_NotAllowedJumpValue() )
+        {
+          transitionops := selectset( schedule, PlanUnit_SC.Operation_SC, op, op.OperationID() = 'Operation_6' or op.OperationID() = 'Operation_11' );
+          traverse( transitionops, Elements, transitionop )
+          {
+            transitionop.Practice( 'CO' );
+          }
+        } 
+        // Test multiple characteristics for max combined length rule and set different threshold value for NumberOfTask characteristic
+        else if( rulesubtype = RuleConstant::RuleSubType_MaxCombinedLength() 
+                 and chars.Size() > 1 
+                 and  characteristic = RuleConstant::Characteristic_NumberOfTasks() )
+        {
+          rule.RuleValue( 6 );
+        }
+    
+        ruleid ++;
+      }
+    }
+    
+    // Transaction propagate is needed to propagate program/program phase instances which instantiated declaratively
+    Transaction::Transaction().Propagate();
+  *]
+}

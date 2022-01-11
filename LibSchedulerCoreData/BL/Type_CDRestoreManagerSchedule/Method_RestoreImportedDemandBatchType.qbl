@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedDemandBatchType (CDIntegration cdintegration)
+{
+  Description: 'Restore imported demand batch type core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedDemandBatchType 
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedDemandBatchType ), cddbt )
+    {
+      importedDemandBatchType := ImportedDemandBatchType::Create( schedule, cddbt.BatchType() );
+                                                                         
+      CopyCorresponding::CopyFrom( cddbt ).CopyTo( importedDemandBatchType );
+      
+      // Restore ImportedDemandBatchRoutingStep
+      this.RestoreImportedDemandBatchRoutingStep( cdintegration, importedDemandBatchType );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: ListOptimizerStrategyInScenarioManager
+Response OnClick (structured[OptimizerStrategyInScenarioManager] selection) id:Response_ListOptimizerStrategyInScenarioManager_MenuDeleteOptimizerStrategyInScenarioManager_OnClick
+{
+  #keys: '[133088.0.1013957317]'
+  Body:
+  [*
+    // Delete optimizer strategy
+    isSelected := exists( selection, 
+                          Elements, e,
+                          guard( e.ID() = Schedule.OptimizerStrategyInSchedule().ID(), false ) );
+    
+    dialogText := Translations::SM_ConfirmDeleteSelectedOptimizerStrategy() 
+                  + String::NewLine()
+                  + ifexpr( isSelected,
+                            Translations::SM_ConfirmDeleteSelectedOptimizerStrategy_SelectedWarning(),
+                            '' );
+    
+    if ( MessageBox::Question( this, dialogText, '&Yes|&No' ) = 0 )
+    {
+      OptimizerStrategyInScenarioManager::Delete( selection, Schedule );
+    }
+  *]
+  DefinitionID => /ListOptimizerStrategyInScenarioManager/Responsedef_ListOptimizerStrategyInScenarioManager_Menu_OnClick
+  Initiator: 'MenuDeleteOptimizerStrategyInScenarioManager'
+  Precondition:
+  [*
+    OptimizerStrategyInScenarioManager::CanDelete( selection, feedback );
+  *]
+}

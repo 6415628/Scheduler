@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod HashFunction (String input) declarative remote as Number
+{
+  TextBody:
+  [*
+    // zi hao May-17-2017 (created)
+    
+    // Usage:
+    // 1. Used in calculating WorkOrder.ColorSequenceNr to map each WorkOrder to different WorkOrderColorRange.
+    
+    // Compute MD5 hash value of the input string
+    md5 := BinaryData::Construct( input ).MD5()
+    
+    // Convert hash to number
+    hash := md5.GetAt( 0 ).BitShiftLeft( 24 ) + md5.GetAt( 1 ).BitShiftLeft( 16 ) + md5.GetAt( 2 ).BitShiftLeft( 8 ) + md5.GetAt( 3 )
+    
+    // In cases where the hash value cannot be handled by Quintiq (e.g. 2147483647), we make it to default 0.
+    if( hash.IsInfinite() )
+    {
+      hash := 0;
+    }
+    
+    return hash
+  *]
+}

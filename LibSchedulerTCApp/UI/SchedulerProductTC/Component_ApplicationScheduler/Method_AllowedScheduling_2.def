@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedScheduling (BatchResource resource, structured[Batch] batches, Boolean skipsoftcheck, 
+  Boolean ctrlshiftkey, Task_SC beforetask, Task_SC aftertask, 
+  String identifier, output String feedback_o, output Boolean isallowedhard_o) as Boolean id:Method_ApplicationScheduler_AllowedScheduling_2
+{
+  #keys: '[109706.1.2131021320]'
+  Body:
+  [*
+    /*
+    This precondition covers the use cases of scheduling/rescheduling Batch Tasks.
+    1. OnDrop structured[Task]/[Batch]/[CampaignTask] --> BatchResource ( Ganttchart )
+    2. OnDrop structured[Task]/[Batch]/[CampaignTask] --> BatchResource ( Resource List )
+    3. OnDrop structured[CampaignTask]/[Batch]/[Task] --> BatchTask( Task List )
+    4. OnDrop structured[CampaignTask]/[Batch]/[Task] --> BatchResource( Campaign List )
+    
+    This precondition checks whether the selection are allowed to be replanned
+    and are allowed to be planned between the before and after task.
+    */
+    batchoperations := selectset( batches, Elements.BatchSequenceElement.Operation_SC, bo, true, true );
+    
+    value := Operation_SC::CanReplan( batchoperations, 
+                                      skipsoftcheck, 
+                                      feedback_o, 
+                                      isallowedhard_o );
+                                      
+    // Checks PER batch whether its batch operations are allowed on their own batch 
+    // so that soft precondition fires everytime we replan a batch with soft violation
+    value := Batch::CanReplan( batches, 
+                               resource,
+                               skipsoftcheck, 
+                               feedback_o, 
+                               isallowedhard_o )
+             and value;
+                               
+    value := resource.AllowedScheduling( batches,
+                                         beforetask,
+                                         aftertask,
+                                         skipsoftcheck,
+                                         feedback_o,
+                                         isallowedhard_o )
+             and value;
+    
+    if( not value and feedback_o.Length() > 0 )
+    {
+      feedback_o := ApplicationScheduler.PrefixFeedbackWithGeneralActionMessage( Translations::SC_CannotBePlannedOn( identifier, Resource_SC::GetIdentifier( resource ) ), feedback_o );
+    
+      //Ctrl to override should be shown only if isallowedhard_o true and user is currently not pressing ctrlshift key
+      //because we cannot press ctrlshift key and ctrl key at the same time
+      if( isallowedhard_o and not ctrlshiftkey )
+      {
+        feedback_o := feedback_o + String::NewLine() +  Translations::SC_HoldCtrlToOverride();
+      }
+    }
+    
+    feedback_o := Schedule::TrimFeedback( feedback_o );
+    
+    return value;
+  *]
+}

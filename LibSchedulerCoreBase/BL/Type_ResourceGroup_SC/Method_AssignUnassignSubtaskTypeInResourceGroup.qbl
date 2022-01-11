@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method AssignUnassignSubtaskTypeInResourceGroup (SubTaskType subtasktype, Boolean isassign)
+{
+  Description: 'Assign or unassign subtask type in resource group based on input isassign'
+  TextBody:
+  [*
+    // Assign or unassign subtask type in resource group based on input isassign
+    subtasktypeonrg := select( this, SubTaskTypeOnResourceGroup, sttorg, sttorg.SubTaskType() = subtasktype );
+    
+    if( isassign )
+    {
+      if( isnull( subtasktypeonrg ) )
+      {
+        // Assign subtask type on resource group
+        SubTaskTypeOnResourceGroup::Create( this, subtasktype.SubTaskID() ); 
+      }
+    }
+    else
+    {
+      if( not isnull( subtasktypeonrg ) )
+      {
+        // Unassign subtask type on resource group
+        subtasktypeonrg.Remove();
+      }
+    }
+  *]
+}

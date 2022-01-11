@@ -1,0 +1,68 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnDatasetConstructed
+{
+  Description:
+  [*
+    Run this when the dataset with a `LibOpt_Optimization` inside is constructed.
+    
+    We advise to use the following snippet in the OnConstructed of the dataset:
+    
+        if( isnull( this.Optimization() ) )
+        {
+            this.Optimization( relnew );
+        }
+        this.Optimization().OnDatasetConstructed();
+  *]
+  TextBody:
+  [*
+    // Migration: Update existing datasets where `LibOpt_Optimization` does not have a `LibOpt_Beacon`.
+    LibOpt_Beacon::Update( this );
+    this.UpdateOptimizers();
+    
+    traverse( this, Optimizer.Run, run )
+    {
+      run.OnDatasetConstructed();
+    }
+    
+    // Reset the `LibOpt_Optimization.NextRunNr`
+    // When a run is deserialized it may get a `RunNr` that is higher or equal to the `NextRunNr`.
+    // While the dataset is running, the correct `NextRunNr` can be obtained from the `AlgorithmStore`, where it's backed up.
+    // After a server restart this value is no longer in the `AlgorithmStore`, hence we need to calculate it again.
+    this.NextRunNr( maxvalue( this.NextRunNr(),
+                              max( this, Optimizer.Run, run, true, run.RunNr() ) + 1 ) );
+    
+    // While the current dataset was offline, the state of the other datasets might have been changed.
+    // This means that some attributes on the replannable snapshots that are connected to these datasets are outdated.
+    // We update these outdated attributes in the below method.
+    this.UpdateReplannableSnapshots();
+    
+    // If the current dataset is a copy of some other dataset, then we set the MDSKeyParentDataset attribute.
+    // This allows us to return to the parent dataset by using the 'Reload' button in the 'Replannable snapshots' form. 
+    if( this.MDSID() <> this.MDSKeyCurrentDataset() )
+    {
+      this.MDSKeyParentDataset( this.MDSKeyCurrentDataset() );  
+    }
+    this.MDSKeyCurrentDataset( this.MDSID() );
+    
+    // Delete all LibOpt_DatasetCopyConditional that were flagged for deletion before this dataset was loaded or copied
+    LibOpt_DatasetCopyConditional::DeleteDatasetCopyConditionalWhenFlagged( this, true );
+    
+    traverse( this, Optimizer.Run, run, 
+              run.StartedOn() <> DateTime::MinDateTime() and run.StartedOnPrecision() = 0 )
+    {
+      freq := ( OS::PrecisionCounter() / OS::PrecisionCounterFrequency() );
+      diff := DateTime::Now() - run.StartedOn();
+      run.StartedOnPrecision( freq - diff.TotalInSeconds() );
+    }
+    
+    traverse( this, Optimizer.Run, run, 
+              run.FinishedOn() <> DateTime::MinDateTime() and run.FinishedOnPrecision() = 0  )
+    {
+      freq := ( OS::PrecisionCounter() / OS::PrecisionCounterFrequency() );
+      diff := DateTime::Now() - run.FinishedOn();
+      max_snapshot := max( run, Snapshot, snap, true, guard( snap.astype( LibOpt_SnapshotComponent ).PrecisionTimeStampDone(), snap.PrecisionTimeStamp() ) );
+      run.FinishedOnPrecision( maxvalue( max_snapshot, freq - diff.TotalInSeconds() ) );
+    }
+  *]
+}

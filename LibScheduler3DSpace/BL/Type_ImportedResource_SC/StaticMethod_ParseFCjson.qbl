@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ParseFCjson (Schedule schedule, JSON asset) as ImportedResource_SC
+{
+  TextBody:
+  [*
+    resourceGroupID := ImportedResource_SC::GetWorkCenterID( asset );
+    resourceID := ImportedResource_SC::GetAssetID( asset );
+    owner := select( schedule, ImportedResourceGroup_SC, resourcegroup, true, resourcegroup.ResourceGroup() = resourceGroupID );
+    
+    resultResource := select( schedule, ImportedResourceGroup_SC.ImportedResource_SC, res, true, res.ResourceID() = resourceID ); 
+    
+    // In case the Resource does exist but it has the wrong owner, we should delete and recreate. 
+    if( ( not isnull(  resultResource ) ) 
+        and resultResource.ResourceGroup() <> resourceGroupID )
+    {
+      resultResource.Delete();  
+    }
+    
+    if( isnull(  resultResource ) )
+    {
+      if( isnull( owner ) )
+      {
+        error( "Referred Workcenter (ID:", resourceGroupID , ") does not exist" ); 
+      }
+      else
+      {
+        resultResource := ImportedResource_SC::Create( owner, resourceID );
+      }                         
+    }
+                              
+    resultResource.Update( asset );
+    
+    return resultResource;
+  *]
+}

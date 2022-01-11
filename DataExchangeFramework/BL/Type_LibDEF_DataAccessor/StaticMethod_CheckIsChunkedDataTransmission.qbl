@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsChunkedDataTransmission (NamedValueTree nvt_i) as Boolean
+{
+  Description: 'Checks whether the given NVT message is a chunked data transmission (containing real data, not just a request).'
+  TextBody:
+  [*
+    value := false; // give false if the message is not about sending data.
+    
+    if( LibDEF_DataAccessor::HasChildNamed( nvt_i, nvt_i.Root(), LibDEF_DataAccessor::HANDLE_DATA() ) )
+    {
+      kind := LibDEF_DataAccessor::GetHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_KIND() );
+      type := LibDEF_DataAccessor::GetDataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_TYPE() );
+      
+      value := ( 
+                 kind = LibDEF_DataAccessor::KIND_SUCCESS() and
+                 type = LibDEF_DataAccessor::TYPE_DATA_GETSETCHUNKED() 
+               )
+               or 
+               ( 
+                 kind = LibDEF_DataAccessor::KIND_REQUEST() and 
+                ( type = LibDEF_DataAccessor::TYPE_DATA_SETUPDATEDCHUNKED() 
+               or type = LibDEF_DataAccessor::TYPE_DATA_SETCREATEDCHUNKED() 
+                )
+               );
+    }
+    
+    return value;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

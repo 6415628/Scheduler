@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestWIPMaturityWorkOrderOperation (Schedule schedule)
+{
+  Description: 'Test giving START feedback to work order operations with Work In Progress maturity based on mock 3DSpace JSON data.'
+  TextBody:
+  [*
+    wipWorkOrderOperations := selectset( schedule,
+                                         WorkOrder.WorkOrderOperation.astype( ExternalWorkOrderOperation ),
+                                         externalWorkOrderOperation,
+                                         externalWorkOrderOperation.Maturity() = Constants::MaturityStatus_WORK_IN_PROGRESS() );
+    
+    areAllWIPOperationsStarted := forall( wipWorkOrderOperations,
+                                          Elements.Operation_SC,
+                                          operation,
+                                          operation.HasStarted() );
+    
+    this.Run().AssertTrue( areAllWIPOperationsStarted, 
+                           UTFUtility::GenerateFailedMessage( 'Giving START feedback for WIP maturity work order operations based on JSON data failed', '' ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

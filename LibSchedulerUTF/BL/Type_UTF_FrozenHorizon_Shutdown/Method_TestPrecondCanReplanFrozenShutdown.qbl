@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPrecondCanReplanFrozenShutdown (Schedule schedule)
+{
+  Description: 'Test replan frozen shutdown precondition checking'
+  TextBody:
+  [*
+    // Do not allow replan frozen shutdown but allow replan not frozen shutdown
+    shutdown1 := minselect( schedule, Shutdown.Task_SC.astype( ShutdownTask ), st, st.SequenceNr() );
+    shutdown2 := maxselect( schedule, Shutdown.Task_SC.astype( ShutdownTask ), st, st.SequenceNr() );
+    
+    feedback := '';
+    isallowedhard := false;
+    value := not shutdown1.CanReplan( false, feedback, isallowedhard ) // Do not allow replan frozen shutdown 1
+             and shutdown2.CanReplan( false, feedback, isallowedhard ) // Allow replan not frozen shutdown 2
+             
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Test precondition replan frozen shutdown failed.', 
+                           this.Variant() ) );
+    
+    // Gantt chart
+    // | Task1(Frozen) | ShutdownTask1(Frozen) | Task 2(Frozen) | ShutdownTask2 | Task 3 |
+  *]
+}

@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod IsValid (output String feedback_o, Schedule schedule, Boolean maxbatch_i, 
+  Real maxbatchsize_i, ResourceGroup_SC owner_i, String new_resourceid_i, 
+  String edit_resourceid_i, String name_i, Boolean iscontinuous_i, 
+  Real continuous_length_i, Real continuous_loadwidth_i, Real continuous_loadgap_i, 
+  Real continuous_gaplength_i, Real continuous_speed_i, Boolean istoolsimulationhashorizon, 
+  Duration toolsimulationhorizonduration, Resource_SC resource, String leadtimestrategy) remote as Boolean
+{
+  Description: 'Checks whether a resource is valid, called from DialogResource in Designer.'
+  TextBody:
+  [*
+    // James Kwapien Sep-1-2016
+    
+    isvalidresourcegroup := Resource_SC::IsValidResourceGroup( owner_i, feedback_o );
+    is_valid_max_batch := Resource_SC::IsValidMaxBatch( feedback_o, maxbatch_i, maxbatchsize_i );
+    is_valid_resource_id := Resource_SC::IsValidResourceID( feedback_o, schedule, new_resourceid_i, edit_resourceid_i );
+    is_valid_name := Resource_SC::IsValidName( feedback_o, name_i );
+    is_valid_continuous := Resource_SC::IsValidContinuousInput( feedback_o,
+                                                                iscontinuous_i, 
+                                                                continuous_length_i, 
+                                                                continuous_loadwidth_i, 
+                                                                continuous_loadgap_i, 
+                                                                continuous_gaplength_i,
+                                                                continuous_speed_i ); 
+    is_tool_simulation_horizon_valid := StrategyToolSimulation::CheckIsToolSimulationHorizonValid( istoolsimulationhashorizon, toolsimulationhorizonduration, feedback_o );
+    is_valid_leadtimestrategy_stoppagetask := Resource_SC::IsValidLeadTimeStrategyForStoppageTask( feedback_o, resource, leadtimestrategy );
+    
+    return isvalidresourcegroup
+           and is_valid_max_batch
+           and is_valid_resource_id
+           and is_valid_name
+           and is_valid_continuous
+           and is_tool_simulation_horizon_valid
+           and is_valid_leadtimestrategy_stoppagetask;
+  *]
+}

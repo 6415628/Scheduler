@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcEnd
+{
+  Description: 'Calculate the End time of this ReceiveSubTask.'
+  TextBody:
+  [*
+    // AlexanderNg 31-Jul-2015 QP #5682
+    end := this.Resource_SC().ResourceCalendar().Add( this.Start(), this.NetDuration() );
+    om  := this.OperationMaterial();
+    
+    if( not isnull( om ) )
+    {
+      // For other strategies, use Operation Material's TransferEarliestEnd.
+      end := om.TransferEarliestEnd();
+        
+      if( not isnull( this.Task_SC().StrategyJIT() ) )
+      {
+        // Use OperationMaterial's TransferLatestEnd if resource strategy is JITASAP.
+        end := om.TransferLatestEnd();
+      }
+    }
+    
+    this.End( end );
+  *]
+}

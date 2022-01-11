@@ -1,0 +1,126 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateFSPLSimplePaperbag_MultipleChildPlanUnit
+{
+  Description: 'To create test data simulating child plan units for FSPL implementation and testing. For use in SimplePaperbags ONLY.'
+  TextBody:
+  [*
+    // FOR FSPL DEMO
+    // FOR USE IN SimplePaperbags ONLY
+    traverse( this, PlanUnit_SC, pu )
+    {
+      //2 downstream operation
+      for( i := 1; i <= 3; i++ )
+      {
+        //Create child plan unit
+        pu_id := pu.PlanUnitID();
+        //new_pu_id := pu_id + '-1';
+        new_pu_id := pu_id + '-' + [String]i;
+    
+        planunit := PlanUnit_SC::FindPlanUnit( new_pu_id );
+    
+        //checks if plan unit exists
+        if( isnull( planunit ) )
+        {
+          planunit := GenericPlanUnit::Create( this, new_pu_id );
+        }
+    
+        //Create downstream operation
+        puquantity := pu.Quantity();
+        order      := pu.Order_SC();
+        planunit.Update( order, puquantity, order.GetNrOfLots( puquantity ) );
+    
+        operationseqnr := pu.Operation_SC( relsize ) + i;
+    
+        operationid := Operation_SC::GenerateOperationID( new_pu_id, operationseqnr );
+    
+        operation_exist := exists( this, PlanUnit_SC.Operation_SC, operation, operation.OperationID() = operationid );
+    
+        //checks if operation exists
+        if( not operation_exist )
+        {
+          operation := planunit.CreateOperation( 'Folding' );
+          prevop := maxselect( pu, Operation_SC, op, true, op.SequenceNr() );
+          
+          iom := select( prevop, ToOperationDependency, o, isnull( o.ToOperation() )  )
+          
+          if( not isnull( iom ) )
+          {
+            operation.FromOperationDependency( relinsert, iom );        
+          }
+          else
+          {
+            prevop.CreateOutputOperationMaterial( puquantity );
+            iom := select( prevop, ToOperationDependency, o, isnull( o.ToOperation() )  )
+            operation.FromOperationDependency( relinsert, iom );
+          }
+    
+          operation.CreateOutputOperationMaterial( planunit.Quantity() );
+          operation.OperationID( operationid );
+    
+          operation.SequenceNr( operationseqnr );
+          operation.PreferredResource( '' );
+          planunit.Parent( relset, pu );
+        }
+      }
+    }
+    
+    
+    
+    /*
+    traverse( this, PlanUnit_SC, pu )
+    {
+      old_om := null( OperationMaterial );
+      //2 downstream operation
+      for( i := 1; i <= 2; i++ )
+      {
+        //Create child plan unit
+        pu_id := pu.PlanUnitID();
+        new_pu_id := pu_id + '-1';
+    
+        planunit := PlanUnit_SC::FindPlanUnit( new_pu_id );
+    
+        //checks if plan unit exists
+        if( isnull( planunit ) )
+        {
+          planunit := PlanUnit_SC::Create( this, new_pu_id );
+        }
+    
+        //Create downstream operation
+        puquantity := pu.Quantity();
+        order      := pu.Order_SC();
+        planunit.Update( order, puquantity );
+    
+        operationseqnr := pu.Operation_SC( relsize ) + i;
+    
+        operationid := new_pu_id + '-' + [String]operationseqnr;
+    
+        operation_exist := exists( this, PlanUnit_SC.Operation_SC, operation, operation.OperationID() = operationid );
+    
+        //checks if operation exists
+        if( not operation_exist )
+        {
+          operation := Operation_SC::Create( planunit, 'Folding' );
+          operation.Type( 'Folding' );
+          prevop := maxselect( pu, Operation_SC, op, true, op.SequenceNr() );
+          if( i > 1 and prevop.OutputOperationMaterial( relsize ) = 1 )
+          {
+            prevop.CreateOutputOperationMaterial( puquantity );
+          }
+          om := select( prevop, OutputOperationMaterial, o, o <> old_om, true );
+    
+          operation.InputOperationMaterial( relinsert, om )
+    
+          operation.CreateOutputOperationMaterial( planunit.Quantity() );
+          operation.OperationID( operationid );
+    
+          operation.SequenceNr( operationseqnr );
+          operation.PreferredResource( '' );
+          planunit.Parent( relset, pu );
+    
+          old_om := om;
+        }
+      }
+    }
+  *]
+}

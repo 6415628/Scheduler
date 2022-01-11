@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetBestOverallSnapshot () declarative remote as OptimizerSnapshot
+{
+  Description: 'Return the best overall snapshot (own snapshot or children snapshot) based on TotalKPI, IsValidForRollback and latest timestamp.'
+  TextBody:
+  [*
+    // take all snapshots from own run and children runs
+    ownsnapshots := selectset( this, OptimizerSnapshot, snapshot, true );
+    childrensnapshots := selectset( this, Children.astype( OptimizerRunContinuous ).OptimizerSnapshot, snapshot, true );
+    childrenchildrensnapsnots := selectset( this, Children.Children.astype( OptimizerRunContinuous ).OptimizerSnapshot, snapshot, true );
+    
+    snapshots := ownsnapshots.Union( childrensnapshots ).Union( childrenchildrensnapsnots );
+    
+    // select the best snapshot
+    bestsnapshot := minselect( snapshots, Elements, snapshot,
+                               true,
+                               not snapshot.IsValidForRollback(), // prefer a snapshot which is valid to rollback
+                               snapshot.TotalKPI() ); // best solution first
+    
+    return bestsnapshot;
+  *]
+}

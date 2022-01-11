@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidConversionQuantityForExternalSupply (output Strings feedback_o) declarative as Boolean
+{
+  Description: "Checks if the conversion quantity is lesser than the external supply quantity, because you can't convert beyond the final quantity."
+  TextBody:
+  [*
+    value := this.Quantity() <= this.ImportedExternalSupply_SC().Quantity(); 
+    
+    if( not isnull( feedback_o ) and not value )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedPlannedSupply2ExternalSupply_Instance( name ),
+                                                               Translations::SC_ImportedPlannedSupply2ExternalSupply_ViolateHasValidConversionQuantityForExternalSupply() ) );
+    }
+    
+    return value;
+  *]
+}

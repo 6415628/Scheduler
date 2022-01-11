@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcLatestEnd
+{
+  TextBody:
+  [*
+    // mbr23 Jan-21-2020 (created)
+    
+    value := DateTime::MaxDateTime();
+    if( this.IsInSpan() and not isnull( this.Operation() ) )
+    {
+      // we are bound by the not-inscope downstream operations.
+      downstream_in_total_scope_om := selectset( this, OutputDependency.OperationDependency.astype( OperationMaterial ), om, true );
+      downstream_out_of_total_scope_om := selectset( this.Operation(), ToOperationDependency.astype( OperationMaterial ), om, true ).Difference( downstream_in_total_scope_om );
+      latestendom := min( downstream_out_of_total_scope_om, Elements, oom, true, oom.OptimizerSequencing_PushoutLatestAvailableTime() );
+      // if planned and next task on same resource is out of scope, latest end is max that task's pushout start time.
+      thistask := guard( this.Operation().Task_SC(), null( Task_SC ) );
+      
+      nonexttask := isnull( this.Next() ) or guard( this.Next().Operation().Task_SC() <> this.Operation().Task_SC().Next(), true );
+      if( nonexttask and not isnull( thistask ) and not isnull( thistask.Next() ) )
+      {
+        nexttask := thistask.Next();
+        next_pushout_lateststart := min( nexttask, OperationInTask, op, op.OptimizerSequencing_PushoutLatestStart() );
+        latestendom := minvalue( latestendom, next_pushout_lateststart - nexttask.DurationBeforeProcess() - thistask.DurationAfterProcess() );
+      }
+      value := latestendom;
+      
+      downstream_in_total_scope_tcfs := selectset( this, OutputDependency.OperationDependency.astype( TimeConstraintFinishToStart ), tcfs, true );
+      downstream_out_of_total_scope_tcfs := selectset( this.Operation(), ToOperationDependency.astype( TimeConstraintFinishToStart ), tcfs, true ).Difference( downstream_in_total_scope_tcfs );
+      latestendtc := min( downstream_out_of_total_scope_tcfs, Elements, tcfs, true, tcfs.ExpectedTime() );
+      // if planned and next task on same resource is out of scope, latest end is max that task's pushout start time.
+    
+      value := minvalue( value, latestendtc );;
+    }
+    // if it is not in span, but in the regular scope, we need no restriction as POA calculates the timing correctly.
+    
+    this.LatestEnd( value );
+  *]
+}

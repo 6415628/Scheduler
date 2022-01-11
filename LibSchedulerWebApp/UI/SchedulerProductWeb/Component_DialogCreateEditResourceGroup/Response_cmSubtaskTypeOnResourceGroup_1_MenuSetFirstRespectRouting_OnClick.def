@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: cmSubtaskTypeOnResourceGroup_1/MenuSetFirstRespectRouting
+Response OnClick (shadow[SubTaskTypeOnResourceGroup] selection) id:Response_cmSubtaskTypeOnResourceGroup_1_MenuSetFirstRespectRouting_OnClick
+{
+  #keys: '[143768.1.1654083156]'
+  CanBindMultiple: false
+  DefinitionID => /cmSubtaskTypeOnResourceGroup_1/Responsedef_cmSubtaskTypeOnResourceGroup_1_MenuSetFirstRespectRouting_OnClick
+  GroupServerCalls: true
+  Precondition:
+  [*
+    return DialogCreateEditResourceGroup.SetFirstRespectRoutingPrecondition( selection, feedback );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Set first respect routing subtask
+      // Reset previous first respect routing subtask
+      resourceGroup := DialogCreateEditResourceGroup.DataHolderResourceGroup().Data();
+      
+      subTaskTypeOnResourceGroup := select( resourceGroup,
+                                            SubTaskTypeOnResourceGroup,
+                                            sttorg,
+                                            sttorg.IsFirstRespectRouting() = true );
+      
+      if( not isnull( subTaskTypeOnResourceGroup ))
+      {
+        subTaskTypeOnResourceGroup.IsFirstRespectRouting( false );
+      }
+      
+      // Set new first respect routing subtask
+      selection.IsFirstRespectRouting( true );
+    *]
+  }
+}

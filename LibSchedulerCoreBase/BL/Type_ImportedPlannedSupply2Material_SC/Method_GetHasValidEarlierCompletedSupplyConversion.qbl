@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidEarlierCompletedSupplyConversion (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Checks if there was an earlier import of completed supply conversion, IsWorkOrderCompleted=true. If so, we disallow it by violating the sanity check.'
+  TextBody:
+  [*
+    isvalid := not exists( this, 
+                           ImportedMaterial_SC.MaterialExternalSupply.PlannedSupply2Material, 
+                           plannedSupply2Material, 
+                           plannedSupply2Material.IsWorkOrderCompleted() // Not completed earlier
+                           and isnull( plannedSupply2Material.ImportedPlannedSupply2Inventory_SC() ) ); // Didn't exist earlier
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedPlannedSupply2Material_Instance( name ),
+                                                               Translations::SC_ImportedPlannedSupply2Material_ViolateHasValidEarlierCompletedSupplyConversion( this.GetPreviousSupplyConversionQuantity() ) ) );
+    }
+    
+    return isvalid;
+  *]
+}

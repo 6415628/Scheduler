@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateTestData (Schedule schedule, Boolean resource1hasconfigurablerule, Boolean resource2hasconfigurablerule, 
+  Boolean issequencingoptimizerenabled, Boolean isprogramoptimizerenabled)
+{
+  TextBody:
+  [*
+    schedule.TechnicalConfiguration().IsSequencingOptimizerEnabled( issequencingoptimizerenabled );
+    schedule.TechnicalConfiguration().IsProgramOptimizerEnabled( isprogramoptimizerenabled );
+    
+    // Create rule
+    rule := Rule::Create( schedule, 1 );
+    
+    // Create rule scope in resource
+    rule.RuleScopeSelected( RuleConstant::RuleScope_AllTasksOnResource() );
+    resourcegroup := UTFMockObjectFactory::CreateResourceGroup( schedule, 'resourcegroup' );
+    resource1 := UTFMockObjectFactory::CreateSingleResource( resourcegroup, 'resource1' );
+    resource2 := UTFMockObjectFactory::CreateSingleResource( resourcegroup, 'resource2' );
+    
+    if( resource1hasconfigurablerule )
+    {
+      UTFMockObjectFactory::CreateRuleScopeInSingleResource( schedule, rule, resource1.ResourceID() );
+    }
+    
+    if( resource2hasconfigurablerule )
+    {
+      UTFMockObjectFactory::CreateRuleScopeInSingleResource( schedule, rule, resource2.ResourceID() );
+    }
+    
+    // Create operation 1
+    order := UTFMockObjectFactory::CreateOrder( schedule, 'Order1' );
+    planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'Plan Unit 1', 1.0 );
+    operation1 := UTFMockObjectFactory::CreateOperation( planUnit );
+    operation1.OperationID( 'Operation1' );
+    
+    // Create operation 2
+    order := UTFMockObjectFactory::CreateOrder( schedule, 'Order2' );
+    planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'Plan Unit 2', 1.0 );
+    operation2 := UTFMockObjectFactory::CreateOperation( planUnit );
+    operation2.OperationID( 'Operation2' );
+    
+    // Transaction propagate needed to propagate operation on resource
+    Transaction::Transaction().Propagate();
+    
+    // Make sure operation 1 allowed on resource 1 only and operation 2 allowed on resource 2 only
+    traverse( schedule, PlanUnit_SC.Operation_SC.OperationOnResource.astype( UTFOperationOnResource ), oor )
+    {
+       oor.HasAllowedProduct_UTF( true );
+       if( ( oor.Operation_SC() = operation1 and oor.Resource_SC() = resource1 )
+           or ( oor.Operation_SC() = operation2 and oor.Resource_SC() = resource2 ) )
+       {
+          oor.AllowedProduct_UTF( true ); 
+       }
+       else
+       {
+          oor.AllowedProduct_UTF( false );  
+       }
+    }
+  *]
+}

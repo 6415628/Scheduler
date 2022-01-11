@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method WriteToFile (String exportID_i) id:Method_LibDIF_pnlButtonExportToJSON_WriteToFile
+{
+  #keys: '[146730.0.581585050]'
+  Body:
+  [*
+    // See if the current Client initiated export; if so, then get the data and write it to a file.
+    api := dhIntegrationAPI.Data();
+    if( not isnull( api ) )
+    {
+      // Only do something if the current Client 'recognizes' ExportID,
+      // which means that it has triggered the export.
+      if( lblMyExportID.Text() <> "" and
+          exportID_i = lblMyExportID.Text() )
+      {
+        // Get the ExportData right away to prevent that it might be overwritten by next export-action
+        // while the user is selecting a file.
+        json := api.GetExportDataJSON();
+    
+        // Ask the user for the filename. Use the DataTransformationID as default name.
+        dataTransformationID := this.GetDataTransformationID();
+        fileName := Application.GetSaveFileName( dataTransformationID, "json", "JSON-files" );
+    
+        if( fileName <> "" )
+        {
+          // Write the data to a file on the Client-machine.
+          Application.WriteTextFile( fileName, json );
+    
+          // Check if the file has been written succesfully.
+          if( not Application.ClientFileExists( fileName ) )
+          {
+            LibDIF_Util::Info( "something went wrong while writing file '" + fileName + "'." );
+          }
+        }
+    
+        // Reset
+        lblMyExportID.Text( "" );
+      }
+    }
+  *]
+}

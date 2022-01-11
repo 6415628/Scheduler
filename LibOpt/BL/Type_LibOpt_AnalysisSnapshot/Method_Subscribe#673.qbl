@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method Subscribe (String name, String path, Real value, 
+  Type val_type, Boolean to_analyze) as LibOpt_AnalysisSnapshotAttribute
+{
+  TextBody:
+  [*
+    component := this.SnapshotComponent().Component();
+    type := select( component, AnalysisSnapshotType, type,
+                    type.Name() = name
+                    and type.Path() = path
+                    and type.ValueType() = val_type.Name() );
+    if( isnull( type ) )
+    {
+      type := component.AnalysisSnapshotType( relnew,
+                                              Path := path,
+                                              Name := name,
+                                              ValueType := val_type.Name() );
+    }
+    result := this.AnalysisSnapshotAttribute( relnew,
+                                       AnalysisAttribute := type,
+                                       Value := value,
+                                       ToAnalyze := to_analyze );
+    
+    return result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

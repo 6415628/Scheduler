@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcProcessDuration
+{
+  TextBody:
+  [*
+    // uses OperationOnResource structure to get ProcessDuration
+    processduration := Duration::Zero();
+    
+    // Saravanen 20130613 FSPL for keep task upon feedback
+    // She Ven 20130904 Need to check for both HasReportedStart and HasReportedProcessStart in case no ReportedProcessStart being entered.
+    //if( not ( not this.Schedule().GlobalParameters_SC().KeepTaskAfterFeedback() and ( this.HasReportedProcessStart() ) ) )
+    if( not this.HasFeedbackTask() )
+    {
+      processduration := this.MinProcessDuration() + this.DischargeDuration();
+    }
+    
+    this.ProcessDuration( processduration );
+  *]
+}

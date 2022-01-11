@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateBatchTaskExportedData
+{
+  Description: 'create exported data for batch tasks'
+  TextBody:
+  [*
+    exportedschedule := this.FeedbackManager().GetSchedule();
+    // find all batch tasks in scheduling horizon( to be exported ) 
+    tasks := selectset( this, FeedbackManager.TaskInSchedulingHorizon.astype( BatchTask ), t, not t.HasFeedbackTask() );
+    
+    traverse( tasks, Elements.Batch, batch )
+    {
+      batchID := batch.BatchID();
+      exportedbatch := GenericExportedOperationBatch::FindGenericExportedOperationBatch( batchID );  
+      
+      if( isnull( exportedbatch ) )
+      {
+        exportedbatch := GenericExportedOperationBatch::Create( exportedschedule, batchID );
+      }
+      
+      exportedbatch.Update( batch );
+      exportedbatch.CreateExportedOperationBatchContents();
+    }
+  *]
+}

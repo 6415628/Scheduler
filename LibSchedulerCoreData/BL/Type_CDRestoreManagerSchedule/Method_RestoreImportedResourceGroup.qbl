@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedResourceGroup (CDIntegration cdintegration)
+{
+  Description: 'Restore imported resource group core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedResourceGroup
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedResourceGroup ), cdrg )
+    {
+      importedResourceGroup := ImportedResourceGroup_SC::Create( schedule, cdrg.ResourceGroup(), cdrg.EquipmentClassID() );
+      CopyCorresponding::CopyFrom( cdrg ).CopyTo( importedResourceGroup );
+      
+      // Restore ImportedCampaignType_SC
+      this.RestoreImportedCampaignType( cdintegration, importedResourceGroup );
+      
+      // Restore ImportedResource_SC
+      this.RestoreImportedResource( cdintegration, importedResourceGroup );
+      
+      // Restore ImportedSubTaskTypeOnRG_SC
+      this.RestoreImportedSubTaskTypeOnRG( cdintegration, importedResourceGroup );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

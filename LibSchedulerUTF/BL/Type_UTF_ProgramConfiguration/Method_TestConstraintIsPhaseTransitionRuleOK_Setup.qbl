@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestConstraintIsPhaseTransitionRuleOK_Setup (Schedule schedule)
+{
+  Description: 'Test constraint IsPhaseTransitionRuleOK - setup'
+  TextBody:
+  [*
+    programconfigurationID := 'Program configuration ID';
+    programconfigurationName := 'Name';
+    
+    // Create program definition
+    programdefinition := ProgramDefinitionConfiguration::Create( schedule, programconfigurationID );
+    programdefinition.Name( programconfigurationName );
+    
+    // Create program set
+    programset := ProgramSetConfiguration::Create( programdefinition, programconfigurationID );
+    programset.Name( programconfigurationName );
+    
+    // Create program type
+    programtype := ProgramTypeConfiguration::Create( programset, programconfigurationID );
+    programtype.Name( programconfigurationName );
+    
+    // Create program phase
+    headprogramphase := ProgramPhaseConfiguration::Create( programtype, 'HEAD' );
+    headprogramphase.Name( programconfigurationName );
+    
+    // Create program phase
+    bodyprogramphase := ProgramPhaseConfiguration::Create( programtype, 'BODY' );
+    bodyprogramphase.Name( programconfigurationName );
+    
+    // Create program phase
+    tailprogramphase := ProgramPhaseConfiguration::Create( programtype, 'TAIL' );
+    tailprogramphase.Name( programconfigurationName );
+    
+    // Initialize rule framework and characteristic
+    schedule.InitializeRuleFramework();
+    schedule.InitializeCharacteristic();
+    
+    // Create rule
+    rule := Rule::Create( schedule, 1 );
+    rule.Name( programconfigurationID );
+    
+    // Set rule type/ rule subtype
+    rulesubtype := select( schedule, RuleType.RuleSubType, rst, rst.Name() = RuleConstant::RuleSubType_MaxCombinedLength() );
+    rule.RuleType( relset, rulesubtype.RuleType() );
+    rule.RuleSubType( relset, rulesubtype );
+    
+    // Create characteristic main 
+    characteristicMain := select( schedule, Characteristic, char, char.ID() = RuleConstant::Characteristic_NumberOfTasks() );
+    rule.CharacteristicMain( relset, characteristicMain );
+    
+    // Create normal attribute in rule and set as transition rules
+    rule.IsEnabled( true );
+    rule.RuleScopeSelected( RuleConstant::RuleScope_ProgramPhase() );
+    rule.IsProgramPhaseTransitionRule( true );
+    
+    // Create rule scope for HEAD program phase
+    UTFMockObjectFactory::CreateRuleScopeInProgramPhase( rule, headprogramphase );
+  *]
+}

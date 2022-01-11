@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod PlanningDatasetOnConstructed (MDSObject mdsObject_i, String datasetType_i)
+{
+  Description:
+  [*
+    A collection of API methods that should be implemented on the planning dataset's OnConstructed body.
+    This is a wrapper API method for easier implementation by the QSes.
+  *]
+  TextBody:
+  [*
+    // Job: When loading a dataset, update the dataset-interests for the dataset in the DataBroker and update Set's owner/System if required  
+    datasetPath := LibDEF_Util::GetDatasetPath( mdsObject_i.FolderID() );
+    dbDataset := LibDEF_DataBroker::GetDataset(); 
+    
+    dbDataset->Exception()
+             ->( e ){
+                  // Possible consequences of failure:
+                  // - The DataBroker will not be aware that the particular planning dataset is online, DatasetInterest will remain invalid.
+                  // Secondary solution:
+                  // - The DataBroker will notice that the planning dataset is online when it's back online.
+                  LibDEF_Util::LogWarning( "LibDEF_API::PlanningDatasetOnConstructed() fails due to unavailable LibDEF_DataBroker." );             
+             }
+    
+    dbDataset->DatasetLoad( mdsObject_i.MDSID(), 
+                            mdsObject_i.Kind(),
+                            datasetPath,
+                            mdsObject_i.Name(),
+                            datasetType_i );
+  *]
+}

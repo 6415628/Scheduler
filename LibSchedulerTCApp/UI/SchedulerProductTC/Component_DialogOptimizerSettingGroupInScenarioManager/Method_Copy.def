@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method Copy (internal[GUIComponent] parent, OptimizerUserSettingGroupInScenarioManager selection, LibSM_ScenarioManager owner) as OptimizerUserSettingGroupInScenarioManager id:Method_DialogOptimizerSettingGroupInScenarioManager_Copy
+{
+  #keys: '[137186.0.147294935]'
+  Body:
+  [*
+    // Copies the selected optimizer strategy's information and allows the user to make changes to it, creating a new strategy instance
+    id := [String]LibSM_ScenarioManager.GenerateOptimizerUserSettingId();
+    data := owner.OptimizerUserSettingGroupInScenarioManager( relshadow, ID := id );
+    data.OptimizerUserSettingSequencingInScenarioManager( relnew, ID := id );
+    
+    Dialog.Data( data );
+    // Copies the information into the shadow object EXCEPT ID, the user must input another UNIQUE ID
+    // The information here needs to be extended (for other attributes) for other layer's optimizers
+    Dialog.CopyDataToShadow( selection );
+    
+    if( Dialog.DoModal( parent ) > 0 )
+    {
+      data.Commit();
+    }
+    
+    return data.WrappedInstance();
+  *]
+}

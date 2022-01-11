@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericBatchWorkOrderOutputMaterial (CDSchedule cdSchedule, GenericBatchWorkOrderOperation genericBatchWorkOrderOperation)
+{
+  Description: 'Restore generic batch work order output material core data relations to planning object'
+  TextBody:
+  [*
+    cdDGenericBatchWorkOrderOutputMaterials := selectset( cdSchedule, CDEntity.astype( CDGenericBatchWorkOrderOutputMaterial ), cdGenericBatchWorkOrderOutputMaterial,
+                                                          cdGenericBatchWorkOrderOutputMaterial.WorkOrderId() = genericBatchWorkOrderOperation.WorkOrderId(),
+                                                          cdGenericBatchWorkOrderOutputMaterial.SequenceNr() = genericBatchWorkOrderOperation.SequenceNr() );
+     
+    traverse( cdDGenericBatchWorkOrderOutputMaterials, Elements, cdDGenericBatchWorkOrderOutputMaterial )
+    {
+      genericBatchWorkOrderOutputMaterial := WorkOrderOutputMaterial::FindWorkOrderOutputMaterial( cdDGenericBatchWorkOrderOutputMaterial.Id() );
+      
+      if( not isnull( genericBatchWorkOrderOutputMaterial ) )
+      {
+        // ImportedWorkOrderOutputMaterial
+        importedWorkOrderOutputMaterial := ImportedWorkOrderOutputMaterial::FindImportedWorkOrderOutputMaterial_SC( cdDGenericBatchWorkOrderOutputMaterial.Id() );
+        genericBatchWorkOrderOutputMaterial.ImportedWorkOrderOutputMaterial( relset, importedWorkOrderOutputMaterial );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

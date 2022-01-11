@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetValueByKey (Strings keyValues_i, String key_i) as String
+{
+  Description: 'Attempt to retrieve the value of a specific column (key) from a single record of a result of a DB query'
+  TextBody:
+  [*
+    // tgn3 Apr-13-2021 (created)
+    
+    value := "";
+    
+    // Search for the key + '=' delimiter
+    // Guard required, as quill throws error if it can't find a value
+    searchString := key_i + DMF_DBInterface::GetKeyValueDelimiter();
+    keyValue     := guard( select( keyValues_i, Elements, keyValue, keyValue.FindString( searchString, 0 ) <> -1 ), "" );  
+    
+    // Debug - do not delete
+    //logfile( ">>> keyValue", keyValue );
+    
+    if( keyValue <> "" )
+    {
+      value := keyValue.ReplaceAll( searchString, "" );
+    }
+    else
+    {
+      msg := "Failed to locate value for key [" + key_i + "]";
+      
+      DMF_Utility::LogWarning( msg );
+    }
+    
+    return value;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

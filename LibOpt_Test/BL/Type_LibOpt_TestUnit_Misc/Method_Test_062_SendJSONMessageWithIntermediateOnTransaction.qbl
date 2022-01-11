@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_062_SendJSONMessageWithIntermediateOnTransaction (LibOpt_TestDataset dataset)
+{
+  Description: 'Check whether a JSON message can be obtained outside of the run with an intermediate component that is called in the same transaction.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    json := JSON::Object();
+    count := opt.ComponentCounter( run, 'Counter' );
+    message := opt.ComponentSendMessage( run, 'Message', json.Build() );
+    
+    count.To( message ).AsOneTransaction( false );
+    
+    this.NoException( run.Start()->GroupAll()->( jsons )
+    {
+      this.Run().AssertEqual( 1, jsons.Size(), 'Incorrect amount of JSONs received' );
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

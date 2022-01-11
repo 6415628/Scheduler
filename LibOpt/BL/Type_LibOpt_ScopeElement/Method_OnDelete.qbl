@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnDelete
+{
+  Description: 'Do some post-processing upon deletion of this `LibOpt_ScopeElement`.'
+  TextBody:
+  [*
+    details := this.Details();
+    identifier := this.Identifier();
+    
+    replacement := null( LibOpt_ScopeElementDeleted );
+    
+    // Use the scope element with the same Identifier and Details
+    traverse( this, ScopeElementOnScope, seos )
+    {
+      run := seos.Scope().Run();
+      // If DebugScope is enabled, create a ScopeElementDeleted
+      if( run.DebugScope() )
+      {
+        optimization := run.Optimization();
+        if( isnull( replacement ) )
+        {
+          replacement := LibOpt_ScopeElementDeleted::Create( optimization, this.InternalIdentifier(), details, identifier, false );
+        }
+        replacement.ScopeElementOnScope( relmove, seos );
+        
+        // Link the `LibOpt_SuboptimizerScopeElement` of this `LibOpt_ScopeElement` to its replacement.
+        traverse( this, SuboptimizerScopeElement, suboptimizerscopeelement )
+        {
+          suboptimizerscopeelement.ScopeElement( relset, replacement );
+        }
+        
+        seos.ScopeAsActiveScopeElements( relflush );
+        seos.ScopeAsDeletedScopeElements( relset, seos.Scope() );
+      }
+      // Otherwise clean up
+      else
+      {
+        seos.Delete();
+      }
+    }
+  *]
+}

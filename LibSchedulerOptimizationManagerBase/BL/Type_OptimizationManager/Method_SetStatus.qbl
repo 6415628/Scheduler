@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetStatus (String datasetName, String status, String statusInfo)
+{
+  TextBody:
+  [*
+    session := select( this, OptimizationSession, optSession, true, optSession.DatasetName() = datasetName );
+    
+    if( not isnull( session ) )
+    {
+      session.StatusReceivedTime( DateTime::ActualTime() );  
+      session.LatestStatusJSON( statusInfo );
+      
+      // Set stop time when first received STOP status
+      if( status = Constants::OptimizationSession_Stopped() and session.Status() <> Constants::OptimizationSession_Stopped() )
+      {
+        session.StopTime( DateTime::ActualTime() );
+      }
+      
+      session.Status( status );
+      
+      
+    }
+    else
+    {
+      debuginfo( Translations::LibSchedulerOptMgr_UnknownSession( datasetName ) ); 
+    }
+  *]
+}

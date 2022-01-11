@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestFeedbackPlannedProgramChange_Setup (Schedule schedule)
+{
+  Description: 'Test feedback planned program change - setup'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    isimportrelationbetweenfeedbacktaskandprogram := false;
+    hasprogramphase := false;
+    
+    this.GetTestVariantForFeedbackProgramChange( isvariantfound,
+                                                 isimportrelationbetweenfeedbacktaskandprogram,
+                                                 hasprogramphase );
+    if( isvariantfound )
+    {
+      // Set IsImportRelationBetweenFeedbackTaskAndProgram based on variant
+      schedule.TechnicalConfiguration().IsImportRelationBetweenFeedbackTaskAndProgram( isimportrelationbetweenfeedbacktaskandprogram );
+      
+      // Setup program and rule data with following inputs
+      this.CreateProgramAndRuleSetupData( schedule, 6, hasprogramphase, 15 )
+    
+      // Transaction propagate is needed to propagate program/program phase instances which instantiated declaratively
+      Transaction::Transaction().Propagate();
+    
+      // Setup feedback data
+      this.CreatePlannedProgramChangeImportedFeedbackData( schedule, isimportrelationbetweenfeedbacktaskandprogram );
+      
+      // Interpret feedback data
+      this.InterpretFeedbackData( schedule );
+    }
+    
+    // Default phase transition rule is 5 tasks for each phase
+    // Gantt chart
+    // |                           | Feedback HEAD        |   BODY      |    TAIL      |
+    // | FeedbackProgramChangeTask | Feedback Task1-Task5 | Task 6 - 10 | Task 11 - 15 |
+  *]
+}

@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestSynchronizeTechnicalConfiguration (Schedule schedule)
+{
+  Description: 'Tests synchronization of technical configuration instance.'
+  TextBody:
+  [*
+    importedTechnicalConfiguration := schedule.ImportedTechnicalConfiguration();
+    isTechnicalConfigurationSynchronized := not isnull( schedule.TechnicalConfiguration() );
+    
+    if( isTechnicalConfigurationSynchronized )
+    {
+      // Updating imported data
+      isDemoMode := true;
+      isLotLeadTimeLogicOn := false;
+      isResourceConnectionEnabled := true;
+      isToolSimulationOn := true;
+      isTaskHeightBasedOnOperationWidth := true;
+      isSequencingOptimizerEnabled := true;
+      isProgramOptimizerEnabled := false; // IsProgramOptimizerEnabled always disabled for beta program optimizer
+      
+      importedTechnicalConfiguration.IsDemoMode( isDemoMode );
+      importedTechnicalConfiguration.IsLotLeadTimeLogicOn( isLotLeadTimeLogicOn );
+      importedTechnicalConfiguration.IsResourceConnectionEnabled( isResourceConnectionEnabled );
+      importedTechnicalConfiguration.IsToolSimulationOn( isToolSimulationOn );
+      importedTechnicalConfiguration.IsTaskHeightBasedOnOperationWidth( isTaskHeightBasedOnOperationWidth );
+      importedTechnicalConfiguration.IsSequencingOptimizerEnabled( isSequencingOptimizerEnabled );
+      importedTechnicalConfiguration.IsProgramOptimizerEnabled( isProgramOptimizerEnabled ); // IsProgramOptimizerEnabled always disabled for beta program optimizer
+      
+      // Synchronize data
+      Transaction::Transaction().Propagate( attribute( ImportedData_SC, IsValidDataHard ) );
+      schedule.SynchronizationObject().SynchronizeTechnicalConfigurations();
+      
+      isTechnicalConfigurationSynchronized := not isnull( schedule.TechnicalConfiguration() )
+                                              and schedule.TechnicalConfiguration().IsDemoMode() = isDemoMode
+                                              and schedule.TechnicalConfiguration().IsLotLeadTimeLogicOn() = isLotLeadTimeLogicOn
+                                              and schedule.TechnicalConfiguration().IsResourceConnectionEnabled() = isResourceConnectionEnabled
+                                              and schedule.TechnicalConfiguration().IsToolSimulationOn() = isToolSimulationOn
+                                              and schedule.TechnicalConfiguration().IsTaskHeightBasedOnOperationWidth() = isTaskHeightBasedOnOperationWidth
+                                              and schedule.TechnicalConfiguration().IsSequencingOptimizerEnabled() = isSequencingOptimizerEnabled;
+                                              // and schedule.TechnicalConfiguration().IsProgramOptimizerEnabled() = isProgramOptimizerEnabled; // IsProgramOptimizerEnabled always disabled for beta program optimizer                                      
+    }
+    
+    this.Run().AssertTrue( isTechnicalConfigurationSynchronized, UTFUtility::GenerateFailedMessage( 'SynchronizeTechnicalConfiguration', '' ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

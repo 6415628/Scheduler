@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method RemoveWorkCenters (JSON jsonTree)
+{
+  Description: 'Remove imported work centers (resource group) data based on JSON input.'
+  TextBody:
+  [*
+    workCentersJSON := guard( jsonTree.Get( Constants::JSON_Remove_WorkCenters() ), null( JSON, owning ) );
+    
+    if( not isnull( workCentersJSON ) )
+    {
+      for( i := 0; i < workCentersJSON.Size(); i++ )
+      {
+        workCenterID := workCentersJSON.Get( i ).GetString();
+        importedResourceGroup := ImportedResourceGroup_SC::FindImportedResourceGroupTypeIndex( workCenterID );
+        
+        if( not isnull( importedResourceGroup ) )
+        {
+          importedResourceGroup.Remove();
+        }
+        else
+        {
+          logfile( Translations::LibSchedulerOptMgr_Remove_WorkCenter_NotFound( workCenterID ) );
+        }
+      }
+    }
+  *]
+}

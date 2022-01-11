@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method Export (LibCal_Calendars calendars_i, Boolean forUI_i) as BinaryValue
+{
+  Description: 'This method should be called from a subtype of ImportExport so that a temporary dataset will be used for exporting the data.'
+  TextBody:
+  [*
+    // Create the staging objects.
+    traverse( calendars_i, Elements, calendar )
+    {
+      calendar.Export( this );
+    }
+    
+    binValue := BinaryValue::Construct();
+    
+    if( forUI_i )
+    {
+      // Export the staging objects to a BinaryValue that can be written to XLS.
+      binValue := this.ExportToXLS();
+    }
+    else
+    {
+      // Export directly using the Broker.
+      this.Broker_LibCal_ExportCalendars().Execute();
+    }
+    
+    return binValue;
+  *]
+}

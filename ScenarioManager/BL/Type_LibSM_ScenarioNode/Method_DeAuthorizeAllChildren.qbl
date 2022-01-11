@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method DeAuthorizeAllChildren (Strings groupNames, String userName, Boolean isAdministrator)
+{
+  Description: 'Not Apply to all children'
+  TextBody:
+  [*
+    traverse( this, ScenarioAuthorization, authorization,
+              exists( groupNames, Elements, groupName, groupName = authorization.Name() ) )
+    {
+      authorization.Delete();
+    }
+    
+    traverse( this, Children, ch, ch.CanModify( userName, isAdministrator ) )
+    {
+      ch.DeAuthorizeAllChildren( groupNames, userName, isAdministrator );
+    }
+  *]
+}

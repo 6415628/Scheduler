@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestHasScopeSelectionConstraint_Setup (Schedule schedule)
+{
+  Description: "Test rule constraint 'HasScopeSelection' - setup"
+  TextBody:
+  [*
+    // Create rule
+    rule := Rule::Create( schedule, 1 );
+    
+    // Get variant data
+    scopeSelection := '';
+    hasScopeSelection := false;
+    hasConstraintViolation := true;
+    
+    this.GetTestVariant( scopeSelection,
+                         hasScopeSelection,
+                         hasConstraintViolation );
+    
+    rule.RuleScopeSelected( scopeSelection );
+    
+    if( hasScopeSelection )
+    {
+      if( scopeSelection = RuleConstant::RuleScope_Shutdown() )
+      {
+        shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, 'ShutdownTypeID' );
+        rsist := rule.RuleScopeInShutdownType( relnew );
+        rsist.ShutdownType( relset, shutdownType );
+    
+      }
+      else if( scopeSelection = RuleConstant::RuleScope_AllTasksOnResource() )
+      {
+        resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'ResourceID' );
+        rsir := rule.RuleScopeInResource( relnew );
+        rsir.Resource_SC( relset, resource );
+      }
+      else
+      {
+        programDefConfig := ProgramDefinitionConfiguration::Create( schedule, 'ProgramDefConfig' );
+        programSetConfig := ProgramSetConfiguration::Create( programDefConfig, 'ProgramSetConfig' );
+        programTypeConfig := ProgramTypeConfiguration::Create( programSetConfig, 'ProgramTypeConfig' );
+        
+        if( scopeSelection = RuleConstant::RuleScope_Program() )
+        {
+          rsipt := rule.RuleScopeInProgramType( relnew );
+          rsipt.ProgramTypeConfiguration( relset, programTypeConfig );
+        }
+        else if( scopeSelection = RuleConstant::RuleScope_ProgramPhase() )
+        {
+          programPhaseConfig := ProgramPhaseConfiguration::Create( programTypeConfig, 'ProgramPhaseConfig' );
+          rsipp := rule.RuleScopeInProgramPhase( relnew );
+          rsipp.ProgramPhaseConfiguration( relset, programPhaseConfig );
+        }
+      }
+    }
+    
+    // Propogate the constraint
+    Transaction::Transaction().Propagate( constraint( Rule, HasScopeSelection ) );
+  *]
+}

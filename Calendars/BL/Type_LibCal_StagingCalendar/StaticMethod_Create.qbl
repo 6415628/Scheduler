@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (LibCal_ImportExportDataset owner_i, LibCal_Calendar calendar_i) as LibCal_StagingCalendar
+{
+  Description: 'Create a staging object for export.'
+  TextBody:
+  [*
+    // See if the Calendar is "Always available".
+    isAlwaysAvailable := exists( calendar_i, Participation, participation, true,
+                                 participation.Event().IsAlwaysAvailableEvent() );
+    
+    // Create a staging Calendar.
+    stagCal := owner_i.StagingCalendar( relnew,
+                                        CalendarType      := calendar_i.CalendarType(),
+                                        StagingCalendarID := calendar_i.CalendarID(),
+                                        OwnerID           := calendar_i.GetOwnerID(),
+                                        IsAlwaysAvailable := isAlwaysAvailable,
+                                        Base              := calendar_i.Base(),
+                                        UpdateInterval    := calendar_i.UpdateInterval(),
+                                        Window            := calendar_i.Window(),
+                                        History           := calendar_i.History() );
+    
+    // Create staging Events for the Calendar.
+    // Don't export the "Always available" event.
+    traverse( calendar_i, Event, event, not event.IsAlwaysAvailableEvent() )
+    {
+      LibCal_StagingEvent::Create( stagCal, event );
+    }
+    
+    // Create staging Participations for the Calendar.
+    // Don't export the Participations in event "Always available".
+    traverse( calendar_i, Participation, participation, 
+              not participation.Event().IsAlwaysAvailableEvent() )
+    {
+      LibCal_StagingParticipation::Create( stagCal, participation );
+    }
+    
+    return stagCal;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

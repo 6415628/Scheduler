@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod PropagateToFindPropagationErrors (LibOpt_Run run)
+{
+  Description:
+  [*
+    Propagation errors (like a circularity error) only occur after a propagate (or after a transaction finishes). These propagates might happen after the current task is unregistered or the next task is registered (see `this.RegisterTask` and `this.UnregisterTask`)
+    This implies that the 'Handle error' component position of the current component is not reached. Hence no dataset copy can be created for the propagation error. Also, the `LibOpt_SnapshotError` might show up on the wrong component.
+    By setting `LibOpt_Run.HasToPropagateAfterUserCode` to true, it is ensured that any propagation error occurs in the component that caused the propagation error.
+    This method should only be called from within a `try{...}` block. When `this.IsSafe()` is `true`, then we are in a `try{...}` block.
+  *]
+  TextBody:
+  [*
+    // evr3 May-15-2020 (created)
+    if( run.HasToPropagateAfterUserCode() )
+    {
+      Transaction::Transaction().Propagate();  
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

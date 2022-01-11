@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeLinkWO2DD (output Fulfillments updatedinstances)
+{
+  Description: 'Synchronizing characteristic based external fulfillments between work order supplies and dependent demands.'
+  TextBody:
+  [*
+    traverse( this, Schedule.ImportedFixedMaterialWO2DD, row, row.IsValidDataHard() )
+    {
+      workorderoutputmaterial := WorkOrderOutputMaterial::FindWorkOrderOutputMaterial( row.WorkOrderOutputMaterialId() );
+      dependentdemand := MaterialDependentDemand::FindMaterialDependentDemand( DemandType::MaterialDependentDemand(), row.DependentDemandId() );
+    
+      supplies := selectsortedset( workorderoutputmaterial, MaterialPlannedSupply, supply, true, supply.AvailableFrom(), supply.Quantity(), supply.SupplyID() );
+      demands := construct( MaterialDemands ); 
+      
+      if( not isnull( dependentdemand ) )
+      {
+        demands.Add( dependentdemand );
+      }
+    
+      this.SynchronizeExternalFulfillments( demands, supplies, row, updatedinstances );
+    }
+  *]
+}

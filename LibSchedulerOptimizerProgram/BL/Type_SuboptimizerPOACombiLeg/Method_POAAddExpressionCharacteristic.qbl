@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddExpressionCharacteristic (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs, Operation_SCs operations, 
+  Characteristic characteristic, Boolean isminrule, ProgramSetConfiguration programsetconfig, 
+  Boolean isphaserule, Boolean isshutdownrule)
+{
+  TextBody:
+  [*
+    // zyi1 Jul-21-2021 (created)
+    charexpression := poa.NewExpression( SuboptimizerPOACombiLeg::NamePOAExpression( characteristic, isminrule, programsetconfig, isphaserule, isshutdownrule ) );
+    
+    charparticipation := POAParticipation::PN( poa, SuboptimizerPOACombiLeg::NamePOAParticipationCharacteristic( characteristic, isminrule, programsetconfig, isphaserule, isshutdownrule ), 0.0 );
+    
+    charexpression.Participation( charparticipation );
+    
+    traverse( combilegs, Elements, combileg )
+    {
+      legpathtype := poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathCombiLeg( combileg ), combileg )
+      
+      res := combileg.GetResource();
+      
+      traverse( operations, Elements, op, combileg.GetIsOperationAllowedHard( op ) )
+      {
+        charvalue := OptimizerProgram::GetCharacteristicRealValue( op, res, characteristic ); 
+        // If this is a min cummulative value rule, then the value should be negative
+        charvalue := ifexpr( isminrule, -charvalue, charvalue );
+        
+        node := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( op ), op );
+        charparticipation.Set( legpathtype, node, charvalue )
+      }
+      
+      // Add the shutdown duration to the duration based rules
+      if( isshutdownrule
+          and ( characteristic.ID() = RuleConstant::Characteristic_DurationInHours() ) 
+          and guard( combileg.Leg().GetIsLastLegBeforeShutdown(), false ) )
+      {
+        nextshutdown := combileg.Leg().NextShutdown();
+        shutdownnode := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeShutdown( combileg ), combileg );
+        resourcepath := poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathResource( res ), res );
+        charparticipation.Set( resourcepath, shutdownnode, nextshutdown.ShutdownDuration().HoursAsReal() );
+      }
+    }
+  *]
+}

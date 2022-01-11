@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod FindCreateTopic (DMF_ConvertorDataset owner_i, Boolean isExport_i) as DMF_Topic
+{
+  TextBody:
+  [*
+    // tgn3 Apr-22-2021 (created)
+    
+    expectedType := ifexpr( isExport_i,
+                            typeof( DMF_TopicExport ).Name(),
+                            typeof( DMF_TopicUpgrade ).Name() );
+    
+    topic := select( owner_i, Topic, topic, topic.DefinitionName() = expectedType );
+    
+    if( isnull( topic ) )
+    {
+      // Flush existing topics
+      owner_i.Topic( relflush ); 
+      
+      description := "Topics to be executed for dataset " + ifexpr( isExport_i, "exports", "upgrades" );
+      
+      topic := DMF_Topic::Create( owner_i, expectedType, description );
+    }
+    
+    return topic;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

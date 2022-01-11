@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method POA_MatrixFilling (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLeg combileg, Operation_SCs operations, 
+  Rule rule, Boolean isforsoftrulepenalty)
+{
+  TextBody:
+  [*
+    //Default code where we check all combinations of two operations, for subtypes where value based checking is faster overrides have been created.
+    poapossible := guard( poa.Possible( SuboptimizerPOACombiLeg::NamePOAPossibleTransitionAllowed( combileg )), null( POAPossible ) );
+    
+    penaltytransition := guard( poa.Transition( SuboptimizerPOACombiLeg::NamePOATransitionSoftRulePenalty() ), null( POATransition ) );
+    pathtype := guard( poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathCombiLeg( combileg ), combileg ), null( POAPathType ) );
+    
+    traverse( operations, Elements, operation1 )
+    {
+      node1 := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation1 ), operation1 );
+    
+      traverse( operations, Elements, operation2 )
+      {
+        if( isforsoftrulepenalty )
+        { 
+          costviolation := combileg.GetCostSequenceViolationByRule( rule, operation1, operation2 );
+          if( costviolation > 0.0 )
+          {
+            node2 := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation2 ), operation2 );
+           
+            totalcost := penaltytransition.Get( pathtype, node1, node2 ) + costviolation * operation2.PlanUnit_SC().Quantity();
+            penaltytransition.Set( pathtype, node1, node2, totalcost );
+          }
+        }
+        else
+        {
+          node2 := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation2 ), operation2 );
+          currentval := poapossible.Get( node1, node2 );
+          
+          //Only check the condition and rule if the combination is not set to false yet.
+          if( currentval 
+              and operation2.CheckIsRuleApplicableCurrent( rule, operation1, rule.CharacteristicMain() ) 
+              and not rule.RuleSubType().ValidateCurrent( rule, operation1, operation2 ) )
+          {
+            poapossible.Set( node1, node2, false );
+          }
+        }
+      }
+    }
+  *]
+}

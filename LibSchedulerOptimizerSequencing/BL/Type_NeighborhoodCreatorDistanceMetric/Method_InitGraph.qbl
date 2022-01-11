@@ -1,0 +1,61 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitGraph (LibOpt_Scope scope, NeighborhoodCreatorDistanceMetric_GraphProgramNeighborhoodCreatorDistanceMetric program) as NeighborhoodCreatorDistanceMetric_GraphProgramNeighborhoodCreatorDistanceMetricGraph
+{
+  Description:
+  [*
+    Creates the graph and the edge weight value set inside the given program.
+    Returns the created graph.
+  *]
+  TextBody:
+  [*
+    // mbr23 Feb-7-2020 (created)
+    graph := program.NewDirectedGraph( NeighborhoodCreatorDistanceMetric::NameGraph() ); // the Shortest Path algorithm only works on directed graphs.
+    
+    // define the nodes
+    // Only consider the not fixed operations
+    operations := selectset( scope.ScopeElementsNotLockedConst(), Elements.astype( ScopeElementOperation ).Operation_SC, operation, true );
+    traverse( operations, Elements, operation )
+    {
+      graph.OperationNodes().New( operation.ScopeElementOperation() );
+    }
+    traverse( scope.ResourcesConst(), Elements, resource )
+    {
+      graph.ResourceNodes().New( resource.ScopeElementResource() );
+    }
+    traverse( scope.ResourcesConst(), Elements.ResourceGroup_SC, resourcegroup )
+    {
+      graph.ResourceGroupNodes().New( resourcegroup );
+    }
+    traverse( operations, Elements.PlanUnit_SC.Order_SC.Product_SC, product )
+    {
+      graph.ProductNodes().New( product );
+    }
+    traverse( operations, Elements.OperationAllowedPractice.Practice, practice )
+    {
+      graph.PracticeNodes().New( practice );
+    }
+    setupgroups := selectuniquevalues( scope.OperationsConst(), Elements, op, true, op.SetupGroup() );
+    traverse( setupgroups, Elements, setupgroup )
+    {
+      graph.SetupGroupNodes().New( setupgroup );
+    }
+    producttypes := selectuniquevalues( scope.OperationsConst(), Elements.PlanUnit_SC.Order_SC.Product_SC, product, true, product.Type() );
+    traverse( producttypes, Elements, producttype )
+    {
+      graph.ProductTypeNodes().New( producttype );
+    }
+    traverse( operations, Elements.Task_SC, task )
+    {
+      graph.ResourceTimeIntervalNodes().New( task );
+    }
+    
+    // define the edges with weights
+    edgeweigths := program.NewEdgeValueSet( NeighborhoodCreatorDistanceMetric::NameEdgeWeights(), 0.0 );
+    this.Metric().PopulateGraphWithEdges( graph, edgeweigths );
+    
+    // Note: For efficiency, the GraphProgramGraph could be stored and reused across selector executions.
+    
+    return graph;
+  *]
+}

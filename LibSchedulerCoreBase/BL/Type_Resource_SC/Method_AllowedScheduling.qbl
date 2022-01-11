@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedScheduling (StoppageTasks stoppagetasks, Task_SC beforetask, Task_SC aftertask, 
+  Boolean skipsoftcheck, Boolean ctrlshiftkey, output String feedback_o, 
+  output Boolean isallowedhard_o) declarative remote as Boolean
+{
+  Description: 'Check if all selected stoppage tasks are allowed on resource.'
+  TextBody:
+  [*
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    // Stores the original feedback message
+    originalfeedback := feedback_o;
+    
+    // Traverse all stoppage tasks to get all feedback messages
+    traverse( stoppagetasks, Elements, stoppagetask )
+    {
+      stoppagetask.CheckIsAllowedOnResource( this, isallowedhard_o );
+      stoppagetask.CanReplan( skipsoftcheck, feedback_o, isallowedhard_o );
+    }
+    
+    // Get unique feedback to remove duplicated feedback messages and append the original feedback message
+    feedback_o := originalfeedback + String::NewLine() + Utility_SC::GetUniqueFeedback( feedbackobject );
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

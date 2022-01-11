@@ -1,0 +1,93 @@
+Quintiq file version 2.0
+#root
+#parent: #DomainModel
+Dataset Schedule
+{
+  #keys: '2[100134.0.39852928][100134.0.39852925]'
+  DefaultMDSName: 'Schedule'
+  Description: 'Auto Generated from Global Instance'
+  InstanceType: Schedule
+  OnMDSConstructedText:
+  [*
+    LibSM_ScenarioManager::Refresh();
+    
+    // Create and promote "Schedule" scenario
+    libsm_ScenarioManagerMDSInfo := MDSEditor::Editor().LoadedObjectInfo( LibSM_ScenarioManager::GetDatasetKind(),
+                                                                                                                                       LibSM_ScenarioManager::GetDatasetFolderName(),
+                                                                                                                                       LibSM_ScenarioManager::GetDatasetName() );
+    
+    if( not isnull( libsm_ScenarioManagerMDSInfo ) )
+    {
+      libsm_ScenarioManager := MDSLibSM_ScenarioManager::Root( libsm_ScenarioManagerMDSInfo.MDSID().MDSKey() );
+      libsm_ScenarioManager->CreateAndPromoteScheduleScenario();
+    }
+    else
+    {
+      infodebug(  "Error: No Schedule scenario is created due to LibSM_ScenarioManger is instantiated faster than Schedule dataset." )  
+    }
+    
+    if( guard( this.IntegrationConfiguration().UseDataExchangeFramework(), false ) )
+    {
+      schedule := MDSEditor::Editor().LoadedObjectInfo(  this.MDSSchedule().Name(),
+                                                                                                Constants::DatasetFolder(),
+                                                                                                Constants::ScheduleDataset() );
+      // Data Exchange Framework
+      Schedule::JobExecutePlanningDatasetOnConstructed( schedule.MDSID() );
+    }
+    
+    // Initialize command line parameters
+    this.InitializeFromCommandLine();
+    // If in optimization service mode, we don't use default strategy and setting
+    // We will get it from 3DSpace
+    // If the specific part is in the dataset name, we also skip default strategy and settings copying.
+    if( not this.IsOptimizationService() and not this.MDSSchedule().Name() ~ Schedule::DatasetNamePartSkipOnDatasetConstructedDefaultOptimizerJobs() )
+    {
+      // Select default optimizer strategy
+      this.SetDefaultOptimizerStrategy();
+      // Select default optimizer strategy
+      this.SetDefaultOptimizerSetting();
+    }
+    
+    this.OnDatasetConstructedOptimizer();
+    
+    // Create default configuration objects
+    this.CreateDefaultConfigurations();
+    
+    // Update data directory
+    this.UpdateDataDirectory();
+    
+    objectFactory := this.ObjectFactory();
+    
+    // Instantiate custom draw configuration
+    objectFactory.CreateCustomDrawConfiguration();
+    
+    // Instantiate demo manager
+    objectFactory.CreateDemoManager();
+    
+    // Synchronize demo scenarios
+    this.SynchronizationObject().SynchronizeDemoCategoriesAndScenarios();
+    
+    // Initialize rule framework
+    this.InitializeRuleFramework();
+  *]
+  OnMDSDestructText:
+  [*
+    // Data Exchange Framework
+    mdsid := LibDEF_DataBroker::GetMDSID();
+    if(  not isnull(  mdsid ) )
+    {
+      LibDEF_API::PlanningDatasetOnDestruct( this.MDSSchedule() );
+    }
+  *]
+  OnMDSDestructedText:
+  [*
+    LibSM_ScenarioManager::Refresh();
+    
+    // Data Exchange Framework
+    mdsid := LibDEF_DataBroker::GetMDSID();
+    if(  not isnull(  mdsid ) )
+    {
+      LibDEF_API::PlanningDatasetOnDestructed();
+    }
+  *]
+}

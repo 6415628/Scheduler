@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateStatisticsAndIssuesPrecondition (Boolean isfailfastcheck) const remote as Boolean
+{
+  Description: 'Check whether the action to "create statistics and issues" is allowed for this run. If not, provide feedback.'
+  TextBody:
+  [*
+    feedbackobj := FeedbackObject::LocalFeedback();
+    
+    // Check #1: Precondition_IsCompleted
+    isallowed := this.Precondition_IsCompleted();
+    
+    // Check #2: Precondition_HasSnapshots
+    if( isfailfastcheck )
+    {
+      isallowed := isallowed and this.Precondition_HasSnapshots();
+    }
+    else
+    {
+      this.Precondition_HasSnapshots();
+    }
+    
+    return feedbackobj.IsAllowed();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

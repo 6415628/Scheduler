@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectCombis (CombiProgramTypes cpts) as owning SuboptimizerMPSetCovering_SelectCombis
+{
+  TextBody:
+  [*
+    // yifei Aug-10-2021 (created)
+    combilegs := selectset( cpts, Elements.WorkerCombiProgramType.CombiProgramPhase.CombiLegAsLeading, cl, not isnull( cl.Leg() ) and cl.OperationInCombiLeg( relsize )>0 );
+    program := this.Initialize( combilegs );
+    program.Execute();
+    program.WriteProblemFile( 'setcovering.lp' );
+    this.HandleFeasible( program, combilegs );
+    
+    this.HandleFeasiblePlanSelectedCombiLegs( combilegs );
+    return &program;
+  *]
+}

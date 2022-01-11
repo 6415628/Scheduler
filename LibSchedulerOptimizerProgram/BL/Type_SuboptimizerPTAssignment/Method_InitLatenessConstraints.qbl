@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitLatenessConstraints (LibOpt_Task task, SuboptimizerMPPTAssignment_PTAssignmentMP program, TransientDataSuboptimizerPTAssignment transientData) as SuboptimizerMPPTAssignment_PTAssignmentMP
+{
+  TextBody:
+  [*
+    // jkr8 Jul-16-2021 (created)
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Lateness_(o,b) >= (MeanTime_b - AverageDueDate_b) * NrOpsAssigned_(o,b), forall o in OperationGroups, b in Buckets //
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // The lateness of an operation group is equal to mean time of a bucket minus the average due date multiplied with the number of operations assigned on the bucket.
+    
+    traverse( transientData, OperationGroup, operationGroup, true )
+    {
+      traverse( transientData, Bucket, bucket, true )
+      {
+        constr := program.LatenessConstraints().New( operationGroup, bucket );
+      
+        constr.NewTerm( 1.0, program.LatenessVariables().Get( operationGroup, bucket ) );
+        
+        coefficient := bucket.AverageOperationEndTime() - operationGroup.AggregatedDuedate();
+        constr.NewTerm( -coefficient.HoursAsReal(), program.NrOpsAssignedVariables().Get( operationGroup, bucket ) ); 
+        
+        constr.RHSValue( 0.0 );
+      }
+    }
+    
+    return program;
+  *]
+}

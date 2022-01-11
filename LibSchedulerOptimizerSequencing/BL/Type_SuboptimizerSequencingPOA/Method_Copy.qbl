@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Copy (ObjectCopyComponent copier, LibOpt_Run newrun)
+{
+  TextBody:
+  [*
+    // mbr23, 2020-01-30 (overridden) this component owns custom type-indexed objects (transient data and below), so no total deep copy is available.
+    
+    withclosure := false;
+    copier.AddRoot( this, newrun, withclosure );
+    
+    // recursively add everything this component owns except the transient data:
+    withclosure := true;
+    traverse( this, AnalysisSnapshotType, child )
+    {
+      copier.AddChild( child, withclosure );
+    }
+    traverse( this, ComponentPosition, child )
+    {
+      copier.AddChild( child, withclosure );
+    }
+    if( not isnull( this.Next() ) )
+    {
+      copier.AddChild( this.Next(), withclosure );
+    }
+    if( not isnull( this.RollbackKPI() ) )
+    {
+      copier.AddChild( this.RollbackKPI(), withclosure );
+    }
+    if( not isnull( this.Settings() ) )
+    {
+      copier.AddChild( this.Settings(), withclosure );
+    }
+    if( not isnull( this.Strategy() ) )
+    {
+      copier.AddChild( this.Strategy(), withclosure );
+    }
+    
+    // we'll ignore and not copy the transient data (if it still exists). It will get newly created when the new run runs.
+  *]
+}

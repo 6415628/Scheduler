@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method FormatConfigurableColumn (String format) declarative remote as String
+{
+  Description: 'Format the KPI value with the correct color'
+  TextBody:
+  [*
+    result := '';
+    if( this.BTS().BenchmarkTrackingDataset().ColorConfigurableColumns() )
+    {
+      color := '#FF4136';
+      if( LibOpt_BT_KPI::IsGreen( this ) )
+      {
+        color := '#2ECC40';
+      }
+      else if( LibOpt_BT_KPI::IsYellow( this ) )
+      {
+        color := '#FFDC00';
+      }
+      
+      value := this.Format( format );
+      
+      order := LibOpt_Utility::FormatStringOrdering( this.Value() );
+    
+      result := '<div data-order="' + order + '" style="width: 250px; background-color: ' + color + '">' + value + '</div>'
+    }
+    else
+    {
+      result := [String] this.Value();
+    }
+    
+    return result;
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

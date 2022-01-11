@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateSingleTaskExportedData
+{
+  Description: 'create exported data for single tasks'
+  TextBody:
+  [*
+    // jiex Dec-26-2016 (created)
+    // Implement in base class
+    exportedSchedule := this.FeedbackManager().ExportedSchedule();
+    
+    // find all batch tasks in scheduling horizon( to be exported ) 
+    tasks := selectset( this, FeedbackManager.TaskInSchedulingHorizon.astype( SingleTaskBase ), t, true, not t.HasFeedbackTask() );
+    
+    traverse( tasks, Elements, t)
+    {
+      operation := t.OperationAsSingleTask();
+    
+      // get exported task
+      extask := this.FeedbackManager().GetExportedGenericSingleTask( operation );
+      
+      // update the attributes in FeedbackTaskInSF
+      extask.Update( t );
+      
+      // Export program for task
+      traverse( t, TaskInProgramSet, tips, tips.IsInProgramType() )
+      {
+        getip := GenericExportedTaskInProgram::Create( exportedSchedule, tips );
+        getip.Update( tips );  
+      }
+    }
+  *]
+}

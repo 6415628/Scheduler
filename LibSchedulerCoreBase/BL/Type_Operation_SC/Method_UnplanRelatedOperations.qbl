@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method UnplanRelatedOperations
+{
+  Description: 'Unplans all related operations.'
+  TextBody:
+  [*
+    // WOI1 Feb-28-2017 (created)
+    upstream_ops := this.GetUpstreamOperations();
+    downstream_ops := this.GetDownstreamOperations();
+    all_ops := upstream_ops.Union( downstream_ops );
+    all_ops.Remove( this ); // we don't want to unplan this here, only related operations
+    
+    traverse( all_ops, Elements, op,
+              op.CanUnplan() and op.PlannedResourceGroup().IsPlanRelatedOperations() )
+    {
+      op.Unplan();
+    }
+  *]
+}

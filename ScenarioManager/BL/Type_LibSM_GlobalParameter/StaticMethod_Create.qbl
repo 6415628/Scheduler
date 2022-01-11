@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (LibSM_ScenarioManager owner) as LibSM_GlobalParameter
+{
+  TextBody:
+  [*
+    globalParameter := owner.GlobalParameter();
+    
+    if( isnull( globalParameter ) )
+    {
+      datasetTimeZone := TimeZone::DeductedDatasetTimezone();
+      
+      globalParameter := owner.GlobalParameter( relnew );
+        
+      globalParameter.DaemonDeleteScenarioStartTime( DateTime::Now().StartOfDay( datasetTimeZone ) );
+      globalParameter.DaemonDeleteScenarioFrequency( LibSM_GlobalParameter::DefaultFrequencyDaemonDeleteScenario() );
+    
+      globalParameter.DaemonCleanStartTime( DateTime::Now().StartOfDay( datasetTimeZone ) );
+      globalParameter.DaemonCleanFrequency( LibSM_GlobalParameter::DefaultFrequencyDaemonClean() );
+                
+      globalParameter.DaemonRefreshScenariosStatusStartTime( DateTime::Now().StartOfDay( datasetTimeZone ) );
+      globalParameter.DaemonRefreshScenariosStatusFrequency( LibSM_GlobalParameter::DefaultFrequencyDaemonRefresh() );
+      
+      globalParameter.DefaultStorageState( MDSInterface::MemoryOnlyState() );
+      
+      // Call extensible method so the implementer can inject
+      // initialization code here (e.g. setting defaults).
+      globalParameter.InitializeCustom();
+    }
+    
+    return globalParameter;
+  *]
+}

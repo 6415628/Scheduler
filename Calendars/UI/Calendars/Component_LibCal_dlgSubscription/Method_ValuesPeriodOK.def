@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValuesPeriodOK () as Boolean id:Method_LibCal_dlgSubscription_ValuesPeriodOK
+{
+  #keys: '[131094.1.101616702]'
+  Body:
+  [*
+    feedback   := FeedbackObject::LocalFeedback();
+    periodKind := "subscription";
+    
+    // StartOfPeriod must have a value.
+    if( datStartOfPeriod.Date().IsInfinite() )
+    {
+      feedback.AddHard( Translations::Period_InvalidStartOfPeriod( periodKind ) );
+    }
+    
+    // EndOfPeriod must have a value.
+    if( ckbEndOfPeriod.Checked() and
+        datEndOfPeriod.Date().IsInfinite() )
+    {
+      feedback.AddHard( Translations::Period_InvalidEndOfPeriod( periodKind ) );
+    }
+    
+    if( feedback.IsAllowed() )
+    {
+      // EndOfPeriod must be greater than StartOfPeriod.
+      startOfPeriod := datStartOfPeriod.Date();
+      endOfPeriod   := datEndOfPeriod  .Date();
+      
+      if( ckbEndOfPeriod.Checked() and
+          endOfPeriod < startOfPeriod )
+      {
+        feedback.AddHard( Translations::Period_EndMustBeGreaterThanStartOfPeriod( periodKind,
+                                                                                  startOfPeriod.Format( Translations::DateFormat() ),
+                                                                                  endOfPeriod  .Format( Translations::DateFormat() ) ) );
+      }
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

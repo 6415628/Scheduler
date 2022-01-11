@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenerateFilterFromLabelSelection (structured[KpiLabelValue] selectedLabels) as String id:Method_FormKpiSnapshots_GenerateFilterFromLabelSelection
+{
+  #keys: '[136398.1.845714338]'
+  Body:
+  [*
+    // Filters the datasource for the graphs based on the selected
+    // labels in the Labels panel (and whether the 'filter by label' 
+    // checkbox is checked.
+    
+    filter := '';
+    
+    if ( CheckboxEnableLabelFiltering.Checked() )
+    {
+      filters := construct( structured[String] );                        
+    
+      traverse( selectedLabels, Elements.Label, label )
+      {
+        values := construct( structured[String] );
+        traverse( label, Value, value, 
+                  exists( selectedLabels, Elements, selected, selected = value) )
+        {
+          values.Add( 'exists( object, Label, l, l.Name() = "' 
+                       + label.Name() 
+                       + '" and l.Value() = "' 
+                       + value.Value() 
+                       + '") ' );
+          
+        }
+        filters.Add( '(' + values.ToString( ' or ' ) + ')' );
+      }
+      filter := filters.ToString( ' and ' );
+    }
+    
+    
+    return filter;
+  *]
+}

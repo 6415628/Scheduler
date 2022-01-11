@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method RefreshData () id:Method_FormKpiMatrix_RefreshData
+{
+  #keys: '[146450.0.591381725]'
+  Body:
+  [*
+    // Queries the Kpi Tracker for the Kpi compare data
+    compareLabel := DropDownListKpiMatrix.Data();
+    compareLabels := selectset( DataHolderSelectedCompareLabelValues.Data(), Elements, val,
+                                val.Label() = compareLabel );
+    
+    fixedLabels := selectset( DataHolderSelectedFilterLabelValues.Data(), Elements, val,
+                              val.Label() <> compareLabel );
+    
+    data := KpiTracker.SnapshotRetrieval().GetLastSnapshotsForCompareLabelWithLabelFilterNvt( compareLabels, fixedLabels );
+    
+    set := GlobalStateKpiTracker.ConvertNvtToShadowSnapshotSetData( data );
+    GlobalStateKpiTracker.PropagateLabel( set, compareLabel.Name() );
+    GlobalStateKpiTracker.PropagateTimeStamp( set, RadioButtonGroupSelectionList.BoundValue() );
+    
+    // Set relations
+    traverse( set, SnapshotData.Value, v )
+    {
+      v.UI_CompareLabel( relset, select( compareLabels, Elements, s, s.Value() = v.UI_LabelValue() ) );
+      v.UI_Kpi( relset, select( KpiTracker, MetaData, k, k.Name() = v.Name() ) );
+    }
+    
+    DataHolderSnapshotData.Data( &set );
+  *]
+}

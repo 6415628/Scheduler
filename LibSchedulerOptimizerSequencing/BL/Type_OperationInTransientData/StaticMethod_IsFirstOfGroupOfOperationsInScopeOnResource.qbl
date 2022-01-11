@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod IsFirstOfGroupOfOperationsInScopeOnResource (LibOpt_Scope scope, Operation_SC operation) as Boolean
+{
+  Description: 'Returns whether the given operation is planned and is the first planned in a group of operations on the resource it is planned on of all the operations in the given scope.'
+  TextBody:
+  [*
+    // mbr23 Jan-22-2020 (created)
+    value := false;
+    if( operation.IsPlanned() )
+    {
+      task := operation.Task_SC();
+      prevtask := task.Previous();
+      
+      // check: there is no other operation's task that is planned before 'task'
+      isfirsttask := isnull( prevtask );
+      
+      // check: if the previous task is in scope
+      isprevtaskinscope := false;
+      if( not isfirsttask )
+      {
+        isprevtaskinscope := exists( scope.Operations(), Elements.Task_SC, t,
+                                     t.Resource_SC() = prevtask.Resource_SC()
+                                     and t = prevtask );
+      }
+      
+      value := isfirsttask or not isprevtaskinscope;
+    }
+    
+    return value;
+  *]
+}

@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateFeedbackForOperations (Schedule schedule, Boolean isfeedbackstarted, Boolean isalloperations)
+{
+  Description: 'Create feedback for operations based on input whether is start/end feedback'
+  TextBody:
+  [*
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, res, true );
+    operations := selectsortedset( schedule, Operation_SC, operation, 
+                                   isalloperations
+                                   or operation.OperationID() = 'Operation_0'
+                                   or operation.OperationID() = 'Operation_1',
+                                   operation.OperationID() );
+    
+    feedbackstart := schedule.Time() - Duration::Hours( operations.Size() );  
+    traverse( operations, Elements, operation )
+    {
+      schedule.FeedbackManager().TaskStart( operation, resource.ResourceID(), feedbackstart, feedbackstart, 'UTF' );
+      if( operation.OperationID() = 'Operation_0' or not isfeedbackstarted )
+      {
+        schedule.FeedbackManager().TaskEnd( operation, resource.ResourceID(), feedbackstart, feedbackstart, feedbackstart + Duration::Hours( 1 ), 'UTF' );
+      }  
+      feedbackstart := feedbackstart + Duration::Hours( 1 );  
+    }
+      
+    // Create feedback in program type ( Last operation does not linked to any feedback program )
+    feedbackprogramtype := select( schedule, ProgramChange.FeedbackProgramType, pt, true );
+    traverse( schedule, FeedbackManager.FeedbackTaskInSchedule, taskfb, taskfb.OperationID() <> 'Operation_3'  )
+    {
+      FeedbackTaskInFeedbackProgramType::CreateUpdate( taskfb, feedbackprogramtype, false );
+    }
+  *]
+}

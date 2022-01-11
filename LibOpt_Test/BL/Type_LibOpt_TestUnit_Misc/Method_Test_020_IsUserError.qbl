@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_020_IsUserError (LibOpt_TestDataset dataset)
+{
+  Description: 'Check that the IsUserError correctly identifies a user error.'
+  TextBody:
+  [*
+    error_message := 'A random error, thrown for testing purposes'
+    
+    this->( t )
+    {
+      error( error_message );
+    }->Exception()->( ex )
+    {
+      err := LibOpt_SnapshotError::Read( ex );
+      this.Run().AssertFalse( LibOpt_SnapshotError::IsUserError( error_message, err ), 'User error is not marked as one' );
+      this.Run().AssertFalse( LibOpt_SnapshotError::IsUserError( error_message + 'X', err ), 'User error is incorrectly marked as one' );
+    }
+    
+    this->( t )
+    {
+      Transaction::Rollback( error_message );
+    }->Exception()->( ex )
+    {
+      err := LibOpt_SnapshotError::Read( ex );
+      this.Run().AssertTrue( LibOpt_SnapshotError::IsUserError( error_message, err ), 'User error is not marked as one' );
+    }
+    
+    // Check a non user error
+    div_by_zero_error := '"Division By Zero';
+    
+    this->( t )
+    {
+      // Division by zero
+      x := 0 / 0;
+      return x;
+    }->Exception()->( ex )
+    {
+      err := LibOpt_SnapshotError::Read( ex );
+      this.Run().AssertFalse( LibOpt_SnapshotError::IsUserError( div_by_zero_error, err ), 'Division by zero incorrectly marked as user error' );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

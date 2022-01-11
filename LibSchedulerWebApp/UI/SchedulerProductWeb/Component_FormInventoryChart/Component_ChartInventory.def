@@ -1,0 +1,279 @@
+Quintiq file version 2.0
+Component ChartInventory
+{
+  #keys: '[143768.1.327400274]'
+  BaseType: 'WebChart'
+  Children:
+  [
+    Component ChartLevelInventory
+    {
+      #keys: '[143768.1.327400275]'
+      BaseType: 'WebChartLevel'
+      Children:
+      [
+        Component DataExtractorInventory
+        {
+          #keys: '[143768.1.327400276]'
+          BaseType: 'WebDataExtractor'
+          Properties:
+          [
+            DataType: 'structured[ProductInStockingPoint]'
+            FixedFilter: 'object.Moment() <> object.NextMoment() and object.Moment() >= object.Stock().Schedule().Time()'
+            Source: 'Scheduler.DataHolderSelectedProductInStockingPoints'
+            Taborder: 0
+            Transformation: 'Elements.ProductInStockingPointStock.Events'
+          ]
+        }
+        Component ChartSeriesInventoryAboveMaximumArea
+        {
+          #keys: '[143768.1.327400277]'
+          BaseType: 'WebChartSeries'
+          Properties:
+          [
+            Label: 'Stock Above Maximum'
+            Subtotal: 'max'
+            Taborder: 1
+            YScaleDataPath: 'object.Amount()'
+          ]
+        }
+        Component ChartSeriesInventoryMinimumThreshold
+        {
+          #keys: '[145574.0.34842607]'
+          BaseType: 'WebChartSeries'
+          Properties:
+          [
+            Label: 'Minimum Quantity'
+            Subtotal: 'max'
+            Taborder: 4
+            YScaleDataPath:
+            [*
+              guard(maxselect( object, 
+                                         Stock.astype( ProductInStockingPointStock ).ProductInStockingPoint.InventoryTarget, target,
+                                         ifexpr( object.Moment() = object.NextMoment(), target.TargetDate() < object.Moment(), target.TargetDate() <= object.Moment() ),
+                                         target.TargetDate() 
+                                        ).MinimumStockLevel(),
+                         0.0
+                       )
+            *]
+          ]
+        }
+        Component ChartSeriesInventoryMaximumThreshold
+        {
+          #keys: '[145574.0.34855014]'
+          BaseType: 'WebChartSeries'
+          Properties:
+          [
+            Label: 'Maximum Quantity'
+            Subtotal: 'max'
+            Taborder: 5
+            YScaleDataPath:
+            [*
+              guard(maxselect( object,
+                                         Stock.astype( ProductInStockingPointStock ).ProductInStockingPoint.InventoryTarget, target,
+                                         ifexpr( object.Moment() = object.NextMoment(), target.TargetDate() < object.Moment(), target.TargetDate() <= object.Moment() ),
+                                         target.TargetDate() 
+                                       ).MaximumStockLevel(),
+                         0.0
+                       )
+            *]
+          ]
+        }
+        Component ChartSeriesInventoryTargetThreshold
+        {
+          #keys: '[145574.0.35946312]'
+          BaseType: 'WebChartSeries'
+          Properties:
+          [
+            Label: 'Target Quantity'
+            Subtotal: 'max'
+            Taborder: 6
+            YScaleDataPath:
+            [*
+              guard(maxselect( object, 
+                                         Stock.astype( ProductInStockingPointStock ).ProductInStockingPoint.InventoryTarget, target,
+                                         ifexpr( object.Moment() = object.NextMoment(), target.TargetDate() < object.Moment(), target.TargetDate() <= object.Moment() ),
+                                         target.TargetDate() 
+                                       ).TargetStockLevel(),
+                         0.0
+                       )
+            *]
+          ]
+        }
+        Component ChartSeriesInventoryMinimumArea
+        {
+          #keys: '[145574.0.86513071]'
+          BaseType: 'WebChartSeries'
+          Properties:
+          [
+            Label: 'Stock Below Minimum'
+            Subtotal: 'max'
+            Taborder: 3
+            YScaleDataPath:
+            [*
+              ifexpr( object.Amount() >= guard(maxselect( object, 
+                                                                                   Stock.astype( ProductInStockingPointStock ).ProductInStockingPoint.InventoryTarget, 
+                                                                                   target,
+                                                                                   ifexpr( object.Moment() = object.NextMoment(), target.TargetDate() < object.Moment(), target.TargetDate() <= object.Moment() ),
+                                                                                   target.TargetDate() ).MinimumStockLevel(),
+                                                                  0.0
+                                                                 ),
+                         0.0,
+                         object.Amount() 
+                      )
+            *]
+          ]
+        }
+        Component ChartSeriesInventoryWithinMinMaxArea
+        {
+          #keys: '[145574.0.86473601]'
+          BaseType: 'WebChartSeries'
+          Properties:
+          [
+            Label: 'Stock Within Target Min Max'
+            Subtotal: 'min'
+            Taborder: 2
+            YScaleDataPath:
+            [*
+              ifexpr( object.Amount() >= guard(maxselect( object, 
+                                                                                  Stock.astype( ProductInStockingPointStock ).ProductInStockingPoint.InventoryTarget,
+                                                                                  target,
+                                                                                  ifexpr( object.Moment() = object.NextMoment(), target.TargetDate() < object.Moment(), target.TargetDate() <= object.Moment() ),
+                                                                                  target.TargetDate() ).MaximumStockLevel(),
+                                                                  0.0
+                                                                 ),
+                         0.0, 
+                         object.Amount()
+                      )
+            *]
+          ]
+        }
+      ]
+      Properties:
+      [
+        ChartColorString:
+        [*
+          WebChartColor
+          {
+            WebChartConfigGroup
+            {
+              Label: 'Series'
+            }
+            WebChartColorEntry
+            {
+              Label: 'Minimum Quantity'
+              Color: '$CA0631'
+              Shape: 'Square'
+              Size: 3
+              Pattern: 'Dashed'
+            }
+            WebChartColorEntry
+            {
+              Label: 'Target Quantity'
+              Color: '$002693'
+              Shape: 'Square'
+              Size: 3
+              Pattern: 'Dashed'
+            }
+            WebChartColorEntry
+            {
+              Label: 'Maximum Quantity'
+              Color: '$FDDE2E'
+              Shape: 'Square'
+              Size: 3
+              Pattern: 'Dashed'
+            }
+            WebChartColorEntry
+            {
+              Label: 'Stock Below Minimum'
+              Color: '$CA0631'
+              Shape: 'Square'
+              Size: 0
+              Pattern: 'Solid'
+            }
+            WebChartColorEntry
+            {
+              Label: 'Stock Above Maximum'
+              Color: '$FAA824'
+              Shape: 'Square'
+              Size: 0
+              Pattern: 'Solid'
+            }
+            WebChartColorEntry
+            {
+              Label: 'Stock Within Target Min Max'
+              Color: '$19AA86'
+              Shape: 'Square'
+              Size: 0
+              Pattern: 'Solid'
+            }
+          }
+        *]
+        ChartTypeString:
+        [*
+          WebChartType
+          {
+            WebChartConfigGroup
+            {
+              Label: 'Series'
+            }
+            WebChartTypeEntry
+            {
+              Label: 'Target Quantity'
+              ChartType: 'Line'
+              Stepped: 'Left'
+            }
+            WebChartTypeEntry
+            {
+              Label: 'Minimum Quantity'
+              ChartType: 'Line'
+              Stepped: 'Left'
+            }
+            WebChartTypeEntry
+            {
+              Label: 'Maximum Quantity'
+              ChartType: 'Line'
+              Stepped: 'Left'
+            }
+            WebChartTypeEntry
+            {
+              Label: 'Stock Below Minimum'
+              ChartType: 'Area'
+              Stepped: 'Left'
+            }
+            WebChartTypeEntry
+            {
+              Label: 'Stock Above Maximum'
+              ChartType: 'Area'
+              Stepped: 'Left'
+            }
+            WebChartTypeEntry
+            {
+              Label: 'Stock Within Target Min Max'
+              ChartType: 'Area'
+              Stepped: 'Left'
+            }
+            Default: 'Area'
+            DefaultStepped: 'Left'
+          }
+        *]
+        Groups: 'Moment'
+        Taborder: 0
+      ]
+    }
+    #child: chartContextMenuInventory
+    #child: chartActionBarPageInventory
+  ]
+  Properties:
+  [
+    ContextMenu: 'chartContextMenuInventory'
+    ContinuousAxis: true
+    SynchronizationGroup: 'GanttChartandInventoryChartSynchronize'
+    Taborder: 0
+    Title: 'Inventory Chart'
+    TitleXAxis: 'Date'
+    TitleYAxis: 'Quantity'
+    UseDataXAxisMax: true
+    UseDataXAxisMin: true
+    UseDataYAxisMax: true
+  ]
+}

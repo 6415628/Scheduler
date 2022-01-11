@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Operation (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    snapshot := SnapshotSelectorOperations::Create( task.Run() );
+    
+    target_num_unplanned := ceil( this.RatioNewOperations() * this.NumOperations() );
+    target_num_planned := this.NumOperations() - target_num_unplanned;
+    
+    // select unplanned and not locked:
+    selected_unplanned := this.SelectUnplanned( task, target_num_unplanned );
+    
+    allowed_resources := selectset( selected_unplanned,
+                                    Elements.Operation_SC.AllowedOperationOnResourceHard.Resource_SC.ScopeElementResource,
+                                    se,
+                                    task.Scope().Contains( se ) );
+    
+    // select planned and not locked:
+    planned_sorted := selectsortedset( task.Scope().ScopeElementsNotLocked(),
+                                       Elements.astype( ScopeElementOperation ),
+                                       se,
+                                       se.Operation_SC().IsPlanned() 
+                                       and guard( allowed_resources.Find( se.Operation_SC().Task_SC().Resource_SC().ScopeElementResource() ) >= 0, false ),
+                                       // guarding because the resource may not have a ScopeElement (e.g. because operation is locked)
+                                       se.Operation_SC().End() );
+    
+    // select the `target_num_planned` latest ones:
+    selected_planned := null( ScopeElementOperations );
+    if( planned_sorted.Size() <= target_num_planned )
+    {
+      selected_planned := & planned_sorted;
+    }
+    else
+    {
+      selected_planned := planned_sorted.SelectLast( target_num_planned );
+    }
+    
+    scopeelements := construct( LibOpt_ScopeElements );
+    scopeelements := scopeelements.Add( selected_planned );
+    scopeelements := scopeelements.Add( selected_unplanned );
+    scopeelements := scopeelements.Add( allowed_resources );
+    scope := LibOpt_Scope::Create( task.Run(), scopeelements );
+    
+    // report:
+    snapshot.NrOfOperationsSelected( scope.Operations().Size() );
+    snapshot.RecordScope( scopeelements );
+    
+    return this.Continue( task, scope );
+  *]
+}

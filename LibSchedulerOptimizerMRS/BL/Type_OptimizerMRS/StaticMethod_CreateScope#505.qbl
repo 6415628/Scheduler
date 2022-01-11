@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateScope (ResourceGroup_SCs resourcegroups, Operation_SCs operations, ResourceGroup_SCs focusresourcegroups) as owning LibOpt_ScopeElements
+{
+  Description:
+  [*
+    creates and returns a scope consisting of the given objects.
+    Does not set the frozen and mandatory flags on the operations in the scope. They will default to frozen=false and mandatory=true.
+  *]
+  TextBody:
+  [*
+    // mbr23 Aug-28-2019 (created)
+    
+    scope := OptimizerMRS::CreateScope( resourcegroups, operations );
+    
+    traverse( focusresourcegroups, Elements, resourcegroup )
+    {
+      element := resourcegroup.ScopeElementFocusResourceGroup();
+      if( isnull( element ) )
+      {
+        element := resourcegroup.ScopeElementFocusResourceGroup( relnew );
+      }
+      scope.Add( element );
+    }
+    
+    return & scope;
+  *]
+}

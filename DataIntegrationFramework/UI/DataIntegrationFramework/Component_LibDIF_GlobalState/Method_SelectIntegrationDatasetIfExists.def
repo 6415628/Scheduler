@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectIntegrationDatasetIfExists () id:Method_LibDIF_GlobalState_SelectIntegrationDatasetIfExists
+{
+  #keys: '[146730.0.571963926]'
+  Body:
+  [*
+    // Get the name of the ImportExport-dataset based on the name of planning-dataset.
+    componentMDS := null( ComponentMDSBase, owning );
+    mdsInstance  := null( ComponentMDSInstance );
+    api          := dhIntegrationAPI.Data();
+    
+    if( not isnull( api ) )
+    {
+      // Get the full name of the dataset.
+      datasetName := LibDIF_IntegrationDataset::GetFullName( api.GetDatasetName() );
+    
+      // Find the Integration-dataset.
+      // Create a handle to the componentMDS, refresh it and get the LoadedMDSes again.
+      // An explicit refresh is required to see the Integration-dataset when it was just loaded by GetIntegrationDataset().
+      componentMDS := ComponentMDS::CreateForLoadedMDSsOnly( Application );
+    
+      componentMDS.Refresh();
+      componentMDS := ComponentMDS::CreateForLoadedMDSsOnly( Application );
+    
+      mdsInstance  := select( componentMDS, ComponentMDSKinds.ComponentMDSInstances, instance,
+                              instance.ComponentMDSKind().Kind() = LibDIF_IntegrationDataset::DATASETKIND()   and
+                              instance.Parent().Name()           = LibDIF_IntegrationDataset::DATASETFOLDER() and
+                              instance.Name()                    = datasetName );
+    }
+    
+    // Select the dataset if it exists...
+    if( not isnull( mdsInstance ) )
+    {
+      mdsInstance.ComponentMDSKind().SelectInstance( mdsInstance );
+      componentMDS.Apply();
+    }
+    else
+    {
+      // ... deselect the currenly selected Integration-dataset otherwise, because it belongs to a different planning-dataset.
+      mdsInstance := select( componentMDS, ComponentMDSKinds.ComponentMDSInstances, instance,
+                             instance.ComponentMDSKind().Kind() = LibDIF_IntegrationDataset::DATASETKIND() and
+                             instance.IsSelected() );
+      if( not isnull( mdsInstance ) )
+      {
+        mdsInstance.ComponentMDSKind().DeselectAll();
+        componentMDS.Apply();
+      }
+    }
+  *]
+}

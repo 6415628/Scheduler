@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetDataset (String datasetName_i) as stream[LibDIF_IntegrationDataset]
+{
+  Description:
+  [*
+    Get the Integration-dataset of the planning-dataset of which the name is provided.
+    The Integration-dataset is expected to be loaded.
+  *]
+  TextBody:
+  [*
+    includeOffline := false;
+    datasetKey     := LibDIF_IntegrationDataset::FindDatasetKey( datasetName_i, includeOffline );
+    dataset        := null( stream[LibDIF_IntegrationDataset] );
+    
+    if( datasetKey <> Key::ZeroKey() )
+    {
+      dataset := LibDIF_IntegrationDataset::GetRoot( datasetKey );
+    }
+    else
+    {
+      LibDIF_Util::Error( "Integration-dataset '" + LibDIF_IntegrationDataset::GetFullName( datasetName_i ) + "' of " +
+                          "planning-dataset '" + datasetName_i + "' is not loaded" ); 
+    }
+    
+    return dataset;
+  *]
+}

@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method CanAddToOptimizerScope (structured[Operation_SC] operations) as Boolean id:Method_Scheduler_CanAddToOptimizerScope
+{
+  #keys: '[142956.2.308775091]'
+  Body:
+  [*
+    // Precondition logic to check whether operations can be added to optimizer scope
+    
+    // First check whether any of the operations are NOT in scope
+    value := exists( operations, Elements, op, DataHolderOptimizerScopeOperations.Data().Find( op ) < 0 );
+    
+    feedbackObject := FeedbackObject::LocalFeedback();
+    feedbackObject.AddHard( value, Translations::Operation_CannotAddToScope_AlreadyInScope() );
+    
+    // If there are operations NOT in scope, then check whether they CAN be added to scope
+    if( value )
+    {
+      feedback := '';
+      value := Operation_SC::CheckCanAddToOptimizerScope( operations, feedback );
+      feedbackObject.AddHard( value, feedback );
+    }
+    
+    return value;
+  *]
+}

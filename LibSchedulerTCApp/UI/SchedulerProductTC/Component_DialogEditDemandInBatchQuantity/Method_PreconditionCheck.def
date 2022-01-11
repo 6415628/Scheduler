@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method PreconditionCheck (output String feedback) as Boolean id:Method_DialogEditDemandInBatchQuantity_PreconditionCheck
+{
+  #keys: '[141590.0.217923336]'
+  Body:
+  [*
+    overrideenable   := false;
+    checkboxfeedback := '';
+    demandinbatch    := guard( Dialog.Data().WrappedInstance(), null( DemandInBatch ) );
+    demand           := DataHolderDemand.Data();
+    caneditquantity  := ApplicationScheduler.CanEditDemandInBatchQuantity( demand, demandinbatch, EditorQuantity.Text(), false );
+    
+    if( not caneditquantity and not FeedbackObject::HasHardFeedback() )
+    {
+      overrideenable := true;
+      // Workaround to show feedback in the old way until all responses are converted to use FeedbackObject.
+      checkboxfeedback := FeedbackObject::CurrentFeedback().Feedback().ReplaceAll( Translations::SC_HoldCtrlToOverrideForFeedbackObject(), Translations::SC_CheckBoxToOverride() ); 
+      CheckBoxOverride.SetProperty( 'Tooltip', checkboxfeedback  );
+    }
+    
+    FeedbackObject::Clear();
+    
+    CheckBoxOverride.Enabled( overrideenable );
+    
+    caneditquantity := ApplicationScheduler.CanEditDemandInBatchQuantity( demand, demandinbatch, EditorQuantity.Text(), CheckBoxOverride.Checked() );
+    
+    // Workaround to show feedback in the old way until all responses are converted to use FeedbackObject.
+    feedback := FeedbackObject::CurrentFeedback().Feedback().ReplaceAll( Translations::SC_HoldCtrlToOverrideForFeedbackObject(), Translations::SC_CheckBoxToOverride() ); 
+    
+    return caneditquantity;
+  *]
+}

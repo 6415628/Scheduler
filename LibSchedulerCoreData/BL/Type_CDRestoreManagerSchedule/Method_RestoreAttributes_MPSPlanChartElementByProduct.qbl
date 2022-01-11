@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_MPSPlanChartElementByProduct (CDSchedule cdSchedule, MPSPlan mpsPlan)
+{
+  Description: 'Restore mps plan chart element by product core data attributes to planning object'
+  TextBody:
+  [*
+    cdMPSPlanChartElementByProducts := selectset( cdSchedule, CDEntity.astype( CDMPSPlanChartElementByProduct ), cdMPSPlanChartElementByProduct, cdMPSPlanChartElementByProduct.MPSPlanID() = mpsPlan.MPSPlanID() );
+    
+    traverse( cdMPSPlanChartElementByProducts, Elements, cdMPSPlanChartElementByProduct )
+    {
+      mpsPlanChartElementByProduct := MPSPlanChartElementByProduct::Create( mpsPlan,
+                                                                            cdMPSPlanChartElementByProduct.ProductID(),
+                                                                            cdMPSPlanChartElementByProduct.DueDate() );
+                                                    
+      CopyCorresponding::CopyFrom( cdMPSPlanChartElementByProduct ).CopyTo( mpsPlanChartElementByProduct );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

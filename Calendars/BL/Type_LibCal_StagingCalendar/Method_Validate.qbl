@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Validate
+{
+  TextBody:
+  [*
+    // First reset.
+    this.ResetValidation();
+    
+    calendar := "'" + this.CalendarType() + "'.'" + this.StagingCalendarID() + "'";
+    
+    // Execute the validation.
+    feedback := LibCal_Validate::Calendar_Settings( calendar, this.Base(), this.UpdateInterval(), this.Window(), this.History() );
+    
+    // Process the feedback that has been registered by the validation (if any).
+    this.ProcessFeedbackObject( feedback );
+    
+    // Also validate the StagingEvents...
+    traverse( this, StagingEvent, stagEvent )
+    {
+      stagEvent.Validate();
+    }
+    
+    // ...and the StagingParticipations.
+    traverse( this, StagingParticipation, stagPart )
+    {
+      stagPart.Validate();
+    }
+  *]
+}

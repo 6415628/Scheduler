@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method RecoverLastFailedRun () as LibOpt_Run
+{
+  TextBody:
+  [*
+    algorithm := AlgorithmStore::TryRetrieve( LibOpt_Run::AlgorithmStore_OnException_Identifier( this ) );
+    result := null( LibOpt_Run );
+    
+    if( not isnull( algorithm ) and algorithm.IsStringStored( LibOpt_Suboptimizer::RollbackStorage_Run() ) )
+    {
+      // retrieve and store algorithm again, such that it is still there after using undo.
+      json_string := algorithm.RetrieveString( LibOpt_Suboptimizer::RollbackStorage_Run() );
+      AlgorithmStore::Store( LibOpt_Run::AlgorithmStore_OnException_Identifier( this ), &algorithm );
+      
+      json := JSON::Parse( json_string );
+      result := LibOpt_Run::Deserialize( json, this );
+    }
+    else
+    {
+      error( Translations::LibOpt_Run_NothingToRecover() );
+    }
+    
+    return result;
+  *]
+}

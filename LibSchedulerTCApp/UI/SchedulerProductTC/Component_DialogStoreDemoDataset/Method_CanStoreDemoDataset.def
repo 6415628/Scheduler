@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method CanStoreDemoDataset (output String feedback_o) as Boolean id:Method_DialogStoreDemoDataset_CanStoreDemoDataset
+{
+  #keys: '[125460.0.432017598]'
+  Body:
+  [*
+    // #9510
+    value := true;
+    isnew := CheckBoxStoreNew.Checked();
+    demoname := ifexpr( isnew, EditorDemoName.Text(), StringSelectionDemoDataset.BoundValue() );
+    demos := StringSelectionDemoDataset.Strings().Tokenize( StringSelectionDemoDataset.RowSeparator() );
+    
+    if( demoname.Length() = 0 )
+    {
+      feedback_o := Translations::SC_DemoNameRequired();
+      value := false;
+    }
+    else if( isnew and demos.Find( demoname ) > -1 )
+    {
+      feedback_o := Translations::SC_DemoNameExistsUsingOverwrite() ;
+      value := false;
+    }
+    
+    return value;
+  *]
+}

@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method InterpretFeedbackProgram
+{
+  Description: 'Convert feedback program into relevant feedback objects'
+  TextBody:
+  [*
+    IsImportRelationBetweenFeedbackTaskAndProgram := this.Schedule().TechnicalConfiguration().IsImportRelationBetweenFeedbackTaskAndProgram();
+    
+    this.InterpretFeedbackStartedProgram();
+    this.InterpretFeedbackProgramDetail();
+    this.InterpretFeedbackStoppageTask();
+    
+    // If relation between feedback task and program are imported, we will assign them accordingly.
+    // If not, we will assign based on the start / end of task and program change
+    if( IsImportRelationBetweenFeedbackTaskAndProgram )
+    {
+      this.InterpretFeedbackTaskInProgram();
+    }
+    else
+    {
+      // Propagate to make sure all resource is updated with the new feedback program change task
+      // Propagate FeedbackTask.Start/End which will be used in ManualAssignFeedbackTaskToProgram
+      Transaction::Transaction().Propagate( attribute( FeedbackTask, Start ) );
+      Transaction::Transaction().Propagate( attribute( FeedbackTask, End ) );
+      Transaction::Transaction().Propagate( attribute( Resource_SC, HasFeedbackProgramChange ) );
+      
+      this.ManualAssignFeedbackTaskToProgram();
+    }
+  *]
+}

@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride PopulateGraphWithEdges (NeighborhoodCreatorDistanceMetric_GraphProgramNeighborhoodCreatorDistanceMetricGraph graph, GraphProgramEdgeValueSet edgeweights)
+{
+  TextBody:
+  [*
+    traverse( graph.OperationNodes(), Elements, opnode1 )
+    {
+      // we only need to traverse in one direction (chronologously), as the edges are symmetrical and opnode1's predecessor operation will also be traversed top-level.
+      task1 := opnode1.Operation( this ).Operation_SC().Task_SC();
+      if( not isnull( task1 ) )
+      {
+        traverse( task1.Next(), OperationInTask, op2 )
+        {
+          opnode2 := graph.OperationNodes().Find( op2.ScopeElementOperation() );
+          if( not isnull( opnode2 ) )
+          {
+            this.CreateOrUpdateEdgeSymmetric( graph, edgeweights, opnode1, opnode2 );
+          }
+        }
+      }
+    }
+  *]
+}

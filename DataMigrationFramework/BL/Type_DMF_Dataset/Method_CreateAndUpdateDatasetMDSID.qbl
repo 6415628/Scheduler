@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateAndUpdateDatasetMDSID () as stream[Object]
+{
+  Description: 'Get the dataset or create the dataset if not found'
+  TextBody:
+  [*
+    // tgn3 Apr-13-2021 (created)
+    
+    // Check if dataset folder exists, otherwise throw an error
+    // DevNote: we expect the folder should exist, as dataset folders are stored as part of model
+    // If for some reason folder was deleted or renamed, this would be a problem during migration
+    folderDefs := DomainModel::Domain().MDSFolderDefinitions();
+    
+    folder := folderDefs.FindFolder( this.Folder() );
+    
+    if( isnull( folder ) )
+    {
+      msg := "Could not find folder [" + this.Folder() + 
+             "] for dataset creation. Please ensure the folder exists in the dataset management form.";
+      
+      error( msg );
+    }
+    
+    datasetFindOptions := DatasetFindOptions::Construct( this.Name() ).Kind( this.DatasetKind() ).Path( this.Folder() );
+    datasetKeys        := DatasetController::Find( datasetFindOptions );
+    
+    if( datasetKeys.Size() > 0 )
+    {
+      this.DatasetMDSID( datasetKeys.Element( 0 ) );
+    }
+    
+    // Mind: if "CreateDataset" is called, DatasetMDSID will also be updated
+    // It must be set above, as "GetDataset" requires it to locate the target dataset
+    ds_s := ifexpr( datasetKeys.Size() > 0, this.GetDataset(), this.CreateDataset() );
+    
+    return ds_s;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

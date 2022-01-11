@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetLatestEndWithCalendar (DateTime latestend, Task_SC task, Resource_SC resource) declarative as DateTime
+{
+  Description: 'Determine the LatestEnd of the Strategy based on their calendar strategy.'
+  TextBody:
+  [*
+    // wkn1 Apr-21-2017 (created)
+    if( resource.UseFitCalendarStrategy() )
+    {
+      // No subtask is allowed to overlap with any resource downtime.
+      latestend := resource.ResourceCalendar().PreviousFit( latestend, task.NetDuration() );
+    }
+    else
+    {
+      // only process subtask is not allowed to overlap with any resource downtime
+      if( resource.UseFitProcessCalendarStrategy() )
+      {
+       /* 1. we need to know how much time will be needed for the task to complete after process.
+          2. based on the info we had, we will calculate where is the earliest possible end of process subtask.
+          3. based on process end, we know when is process start.
+          4. if process start before routing, then it is wrong. we will take next fit.
+          5. based on process start, we calculate when setup should start.
+          6. based on setup start, we will make sure it will NOT overlap with previous task,
+          7. based on setup start, we know when is our latest end. */
+    
+        postprocesslateststart := resource.ResourceCalendar().Subtract( latestend, task.DurationAfterProcess() );
+        processend := resource.ResourceCalendar().PreviousFit( postprocesslateststart, task.ProcessDuration() );
+        processstart := resource.ResourceCalendar().Subtract( processend, task.ProcessDuration() );
+        jittaskstart := resource.ResourceCalendar().Subtract( processstart, task.DurationBeforeProcess() );
+        latestend := resource.ResourceCalendar().Add( jittaskstart, task.NetDuration() );
+      }
+      else
+      {
+        // default - all subtask is allowed to overlap with resource downtime
+        latestend := resource.ResourceCalendar().PreviousAvailable( latestend );
+      }
+    }
+    
+    return latestend;
+  *]
+}

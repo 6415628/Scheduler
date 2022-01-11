@@ -1,0 +1,81 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ExportResultsJSON_Settings (NamedValueTree nvt, NamedValue nv, String prefix, 
+  JSONBuilder array)
+{
+  Description: 'Export the settings provided in the `NamedValue` to JSON'
+  TextBody:
+  [*
+    if( LibOpt_Utility::IsSettingsNode( nv ) )
+    {
+      json_param := JSON::Object();
+      json_param.Add( 'name', prefix + nv.Name() );
+      
+      description := guard( nv.Child( nvt.GetHandle( LibSE_SettingsContainer::Handle_Metadata() ) )
+                              .Child( nvt.GetHandle( LibSE_SettingsContainer::Handle_Description() ) )
+                              , null( NamedValue ) );
+      if( not isnull( description ) )
+      {
+        json_param.Add( 'description', description.GetValueAsString() );
+      }
+      value := nv.GetValue();
+      
+      if( value.istype( BinaryValue ) )
+      {
+        json_param.Add( 'value', value.astype( BinaryValue ).AsHexString() );
+        json_param.Add( 'unit', 'binaryvalue hex' );
+      }
+      else if( value.istype( Boolean ) )
+      {
+        json_param.Add( 'value', value.astype( Boolean ) );
+      }
+      else if( value.istype( Char ) )
+      {
+        json_param.Add( 'value', CharToString::ISOConverter().Convert( value.astype( Char ) ) );
+      }
+      else if( value.istype( Date ) )
+      {
+        json_param.Add( 'value', DateToString::ISOConverter().Convert( value.astype( Date ) ) );
+      }
+      else if( value.istype( DateTime ) )
+      {
+        json_param.Add( 'value', DateTimeToString::ISOConverter().Convert( value.astype( DateTime ) ) );
+      }
+      else if( value.istype( Duration ) )
+      {
+        json_param.Add( 'value', value.astype( Duration ).MinutesAsReal() );
+        json_param.Add( 'unit', 'minutes' );
+      }
+      else if( value.istype( Key ) )
+      {
+        json_param.Add( 'value', KeyToString::ISOConverter().Convert( value.astype( Key ) ) );
+      }
+      else if( value.istype( Number ) )
+      {
+        json_param.Add( 'value', JSON::Number( value.astype( Number ) ) );
+      }
+      else if( value.istype( Real ) )
+      {
+        json_param.Add( 'value', JSON::Real( value.astype( Real ) ) );
+      }
+      else if( value.istype( String ) )
+      {
+        json_param.Add( 'value', JSON::String( value.astype( String ) ) );
+      }
+      else
+      {
+        json_param.Add( 'value', 'Unexpected: ' + nv.ValueToString() );
+      }
+      
+      array.Add( json_param );
+    }
+    else
+    {
+      traverse( nv.Children(), Elements, child )
+      {
+        LibOpt_BT_BTS::ExportResultsJSON_Settings( nvt, child, prefix + ifexpr( nv.Name() = '', '', nv.Name() + '.' ), array );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

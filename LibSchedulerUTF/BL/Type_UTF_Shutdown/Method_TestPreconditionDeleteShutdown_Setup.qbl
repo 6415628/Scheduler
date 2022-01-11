@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionDeleteShutdown_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    resourceType := '';
+    leadTimeStrategy := '';
+    hasShutdownTypeInResource := false;
+    isValidForPreconInsert := false;
+    hasShutdown := false;
+    hasFeedback := false;
+    isValidForPreconDelete := false;
+    hasShutdownType := false;
+    duration := Duration::MaxDuration();
+    isValidForPreconCreateEdit := false;
+    
+    this.GetTestVariantForPreconditionChecking( isvariantfound,
+                                                resourceType,
+                                                leadTimeStrategy,
+                                                hasShutdownTypeInResource,
+                                                isValidForPreconInsert,
+                                                hasShutdown,
+                                                hasFeedback,
+                                                isValidForPreconDelete,
+                                                hasShutdownType,
+                                                duration,
+                                                isValidForPreconCreateEdit );
+    
+    if( isvariantfound )
+    {
+      // Create resource
+      resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Single Resource' );
+      
+      // Create shutdown type
+      shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, 'Shutdown Type' );
+      UTFMockObjectFactory::CreateShutdownTypeInResource( shutdownType, resource );
+      
+      // Create normal task and plan it
+      order := UTFMockObjectFactory::CreateOrder( schedule, 'Order ID' );
+      planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'Plan Unit ID', 1.0 );
+      operation := UTFMockObjectFactory::CreateOperation( planUnit );
+      Transaction::Transaction().Propagate( relation( Operation_SC, AllowedOperationOnResource ) );
+      task := resource.PlanLast( operation );
+      
+      // Create and schedule shutdown and shutdown task
+      this.InsertShutdown( resource, task, shutdownType );
+      
+      /*
+      // Feedback shutdown task is not implemented yet, will be done as part of https://jira.delmia.dsone.3ds.com/browse/ADSC-24203
+      if( hasFeedback )
+      {
+          
+      }
+      */
+    }
+  *]
+}

@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedDemandBatchRoutingStep (CDIntegration cdintegration, ImportedDemandBatchType importeddemandbatchtype)
+{
+  Description: 'Restore imported demand batch routing step core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedDemandBatchRoutingStep
+    cdImportedDemandBatchRoutingSteps := selectset( cdintegration, CDEntity.astype( CDImportedDemandBatchRoutingStep ), cddbrs, 
+                                                    cddbrs.BatchType() = importeddemandbatchtype.BatchType()
+                                                  );
+    
+    traverse( cdImportedDemandBatchRoutingSteps, Elements, cddbrs )
+    {
+      importedDemandBatchRoutingStep := ImportedDemandBatchRoutingStep::Create( importeddemandbatchtype,
+                                                                                cddbrs.BatchType(),
+                                                                                cddbrs.SequenceNr()
+                                                                               );
+      CopyCorresponding::CopyFrom( cddbrs ).CopyTo( importedDemandBatchRoutingStep );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

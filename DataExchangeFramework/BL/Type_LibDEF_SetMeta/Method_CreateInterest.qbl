@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateInterest (Key datasetMDSID_i, String datasetKind_i, String datasetPath_i, 
+  String datasetName_i, String datasetType_i, Key dataTransformationDefinition_i, 
+  Boolean isDatasetEvent_i)
+{
+  TextBody:
+  [*
+    // Set belongs to current System, there is no need to send a message to local System
+    if( this.GetSystem().IsLocalSystem() )
+    {
+      if( not this.HasOtherOnlineDatasetInterest( datasetMDSID_i ) )
+      {
+        LibDEF_SetInterestFromSystem::FindCreate( this, this.GetSystem() );
+      }
+    
+      // Creates the local SetInterest immediately (as the 'approval' can be done locally)
+      // When dataset is loaded, do not create the dataset-level interest
+      if( not isDatasetEvent_i )
+      {
+        LibDEF_SetInterestOfDataset::FindCreate( this, datasetMDSID_i, datasetKind_i, datasetPath_i, datasetName_i, datasetType_i, dataTransformationDefinition_i );
+      }
+    }
+    // Set belongs to other System, we need to send a message to the System
+    else
+    {
+      if( isDatasetEvent_i
+          or not this.HasOtherOnlineDatasetInterest( datasetMDSID_i ) )
+      {
+        // Construct a temporary Dataset-level SetInterest to be used when approval is received from Set owner.
+        datasetInterest := LibDEF_SetInterestOfDataset::Construct( datasetMDSID_i, datasetKind_i, datasetPath_i, datasetName_i, datasetType_i, dataTransformationDefinition_i );
+    
+        // Send a 'SetInterest-Created' message to the Set owner
+        this.GetSystem().SendMetadataRequestSetInterestCreated( datasetInterest, this );
+      }
+      // 1. There is already an existing System-level SetInterest in the System of the Set (owner), the DatasetInterest can thus immediately be created.
+      // 2. When dataset is loaded, do not create the dataset-level interest
+      else
+      {
+        LibDEF_SetInterestOfDataset::FindCreate( this, datasetMDSID_i, datasetKind_i, datasetPath_i, datasetName_i, datasetType_i, dataTransformationDefinition_i );
+      }
+    }
+  *]
+}

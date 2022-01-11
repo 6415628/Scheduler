@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_010_BasicCorrelation (LibOpt_TestDataset dataset)
+{
+  Description: 'Check if the correlation is correctly calculated. It checks the amount of correlations and the amount of data in a single correlation.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    iterator := opt.IteratorUntil( run, 'Iterator' );
+    iterator.SetMaxIterations( 10 );
+    component := opt.ComponentParentReflection( run, 'Component',
+                                                method( LibOpt_TestUnit_Analysis, Component_NrOfTimesCalledInSnapshot,
+                                                        LibOpt_ComponentParent, LibOpt_Task ) );
+    
+    iterator.To( component );
+    
+    run.ConfigureForOneTransaction();
+    
+    run.Start();
+    
+    // Propagate after the run has finished.
+    Transaction::Transaction().Propagate();
+    
+    this.Run().AssertEqual( LibOpt_RunStatus::Finished(), run.Status(), 'Run status' );
+    
+    runs := construct( LibOpt_Runs );
+    runs.Add( run );
+    LibOpt_Analysis::Create( runs );
+    
+    // Propagate after the analysis has been created.
+    Transaction::Transaction().Propagate();
+    
+    analysis := select( run, Analysis, analysis, true );
+    this.Run().AssertEqual( 3, counter( analysis, AnalysisCorrelation, ac, ac.Count() > 0 ), 'Amount of analysis correlations' );
+    
+    duration_corr := select( analysis, AnalysisCorrelation, corr,
+                             corr.Y().Component() = component
+                             and corr.Y().Name() = attribute( LibOpt_MockSnapshot, Value ).Name()
+                             and corr.Y().Path() = component.Name() + '.' + LibOpt_MockSnapshot::TypeName() );
+    
+    if( this.Run().AssertNotIsNull( duration_corr ) )
+    {
+      this.Run().AssertEqual( 10, duration_corr.Count(), 'Correlation "Value" count' );
+      
+      values := construct( Reals );
+      for( i := 1; i <= 10; i++ )
+      {
+        values.Add( [Real] i );
+      }
+      this.Run().AssertFalse( duration_corr.FiltersInfiniteValues(), 'Correlation "Value" contains no infinite values' );
+      this.Run().AssertEqual( average( values, Elements, v, true, v ), duration_corr.Average(), 'Correlation "Value" average' );
+      this.Run().AssertEqual( max( values, Elements, v, true, v ), duration_corr.Max(), 'Correlation "Value" max' );
+      this.Run().AssertEqual( min( values, Elements, v, true, v ), duration_corr.Min(), 'Correlation "Value" min' );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

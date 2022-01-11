@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (LibCal_Calendar owner_i, LibCal_Event event_i, Date startDate_i, 
+  Date endDate_i) as LibCal_Participation
+{
+  TextBody:
+  [*
+    participation := owner_i.Participation( relnew, LibCal_LeadingParticipation,
+                                            ParticipationID := [String]Key::NextPersistentKey(),
+                                            Event           := event_i,
+                                            StartDate       := startDate_i,
+                                            EndDate         := endDate_i,
+                                            IsChanged       := true );
+    
+    // Set the Participation as the LeadingParticipation of the Event.
+    event_i.LeadingParticipation( relset, participation );
+    
+    // Directly calculate the StartTime and EndTime of the Participation.
+    participation.CalcStartTime();
+    participation.CalcEndTime();
+    
+    return participation;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

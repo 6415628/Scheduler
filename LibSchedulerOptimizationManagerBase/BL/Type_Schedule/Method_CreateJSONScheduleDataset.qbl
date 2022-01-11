@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateJSONScheduleDataset () as owning JSONBuilder
+{
+  Description: 'Converts the current dataset into a JSON format.'
+  TextBody:
+  [*
+    // Create ROOT JSON object
+    output := JSON::Object();
+    
+    // 1. Add standard planning parameters that is part of root
+    output.Add( Constants::JSON_PlanningParameter_HorizonStart(), DateTimeToString::ISOConverter().Convert( this.Time() ) );
+    output.Add( Constants::JSON_PlanningParameter_Timezone(), TimeZone::UTCTimeZone().DisplayName() );
+    
+    // 2. Add Calendars
+    calendars := this.CreateJSONCalendars();
+    output.Add( Constants::JSON_Calendars(), calendars ); // Finally adding calendars to root JSON object
+    
+    // 3. Add Resources
+    resources := this.CreateJSONResources();
+    output.Add( Constants::JSON_Resources(), resources ); // Finally adding resources to root JSON object
+    
+    // 4. Add Processes (Routing)
+    processes := this.CreateJSONProcesses();
+    output.Add( Constants::JSON_Processes(), processes ); // Finally adding processes to root JSON object
+    
+    // 5. Add Work Orders
+    workOrders := this.CreateJSONWorkOrders();
+    output.Add( Constants::JSON_WorkOrders(), workOrders ); // Finally adding workOrders to root JSON object
+    
+    return &output;
+  *]
+}

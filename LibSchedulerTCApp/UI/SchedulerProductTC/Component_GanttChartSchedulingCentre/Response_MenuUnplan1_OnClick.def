@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[Task_SC] selection) id:Response_GanttChartSchedulingCentre_MenuUnplan1_OnClick
+{
+  #keys: '[11532.0.98097601]'
+  Body:
+  [*
+    // Unplan structured[Task]
+    value := true;
+    feedback_o := '';
+    hasNoSoftViolation := Task_SC::CanUnplanSoft( selection, feedback_o );
+    
+    if( not hasNoSoftViolation )
+    {
+      value := MessageBox::Question( this, feedback_o, '&Yes|&No' ) = 0
+    }
+    
+    if( value )
+    {
+      Schedule.UnplanTasks( selection );
+    }
+  *]
+  DefinitionID => /Responsedef_GanttChartSchedulingCentre_Menu_OnClick
+  Initiator: 'MenuUnplan1'
+  Precondition:
+  [*
+    return ApplicationScheduler.AllowedUnplanTasks( selection, feedback );
+  *]
+}

@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test011_StopsAtBreakpointOneBreakpointContinue (LibOpt_TestDataset dataset)
+{
+  Description: 'Check if we stop executing as we hit a breakpoint. One breakpoint is set at the "Continue" position of component 1.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    component1 := opt.ComponentCounter( run, 'Component1' );
+    component2 := opt.ComponentCounter( run, 'Component2' );
+    component1.To( component2 );
+    component_position := select( component1, ComponentPosition, bp, bp.Name() = LibOpt_Component::ComponentPosition_Continue() );
+    component_position.SetBreakpoint();
+    
+    run.SetStartComponent( component1 );
+    str := run->Start();
+    this->WaitForBreakpoint( run, this.Run() )->|this->( this )
+    {
+      run.Stop();
+      this.Run().AssertEqual( 1, component1.NrOfTimesCalled(), 'Component 1: Number of calls has an unexpected value' );
+      this.Run().AssertEqual( 0, component2.NrOfTimesCalled(), 'Component 2: Number of calls has an unexpected value' );
+    }
+    str->Exception()->LibOpt_TestUnit_TestDataset::CheckNoException( this );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

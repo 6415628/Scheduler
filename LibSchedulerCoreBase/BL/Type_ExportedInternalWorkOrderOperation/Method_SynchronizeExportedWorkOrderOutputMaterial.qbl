@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SynchronizeExportedWorkOrderOutputMaterial
+{
+  TextBody:
+  [*
+    allinstances := selectset( this, ExportedInternalWorkOrderOutputMaterial, exportedwoom, true );
+    updatedinstances := construct( ExportedInternalWorkOrderOutputMaterials );
+    
+    traverse( this, InternalWorkOrderOperation.WorkOrderOutputMaterial.astype( InternalWorkOrderOutputMaterial ), woom )
+    {
+      id := woom.Id();
+      exportedwoom := ExportedInternalWorkOrderOutputMaterial::FindExportedInternalWorkOrderOutputMaterial( id );
+    
+      if( isnull( exportedwoom ) )
+      {
+        exportedwoom := ExportedInternalWorkOrderOutputMaterial::Create( this, id );
+      }
+    
+      exportedwoom.Update( woom );
+      updatedinstances.Add( exportedwoom );
+    }
+    
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, old )
+    {
+      old.Delete();
+    }
+  *]
+}

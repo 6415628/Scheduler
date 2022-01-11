@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_FeedbackProgramPhase (CDSchedule cdschedule, FeedbackProgramType feedbackProgramType)
+{
+  Description: 'Restore feedback program phase core data attributes to planning object'
+  TextBody:
+  [*
+    // Restore feedback program phase
+    cdfeedbackprogramphases := selectset( cdschedule, CDEntity.astype( CDFeedbackProgramPhase ), fbpp, 
+                                          fbpp.ProgramDefinitionConfigurationID()= feedbackProgramType.ProgramDefinitionConfigurationID()
+                                          and fbpp.ProgramSetConfigurationID()= feedbackProgramType.ProgramSetConfigurationID()
+                                          and fbpp.ProgramTypeConfigurationID()= feedbackProgramType.ProgramTypeConfigurationID()
+                                          and fbpp.ExternalProgramID()= feedbackProgramType.ExternalProgramID() );
+    
+    traverse( cdfeedbackprogramphases, Elements, cdfeedbackprogramphase )
+    {
+      fpp := FeedbackProgramPhase::Create( feedbackProgramType,
+                                           cdfeedbackprogramphase.ProgramDefinitionConfigurationID(),
+                                           cdfeedbackprogramphase.ProgramSetConfigurationID(),
+                                           cdfeedbackprogramphase.ProgramTypeConfigurationID(),
+                                           cdfeedbackprogramphase.ProgramPhaseConfigurationID(),
+                                           cdfeedbackprogramphase.ExternalProgramID() );
+                                           
+      CopyCorresponding::CopyFrom( cdfeedbackprogramphase ).CopyTo( fpp );   
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

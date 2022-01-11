@@ -1,0 +1,75 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateComponents (LibOpt_Run run)
+{
+  TextBody:
+  [*
+    //ZYI1, 2021-07-01 (overridden )
+    
+    schedule := this.Optimization().astype( Optimization ).Schedule();
+    
+    res := select( run.StartScope().Resources(), Elements, res, true );
+    res.IsSelectedForProgramOptimizer( true );
+    settings := this.ActiveSettings().astype( SettingsProgram );
+    strategy := schedule.OptimizerStrategyInSchedule();
+    
+    iterator := this.IteratorUntil( run, "iterator" );
+    iterator.SetMaxIterations( settings.MaxIterations() );
+    
+    run.SetStartComponent( iterator );
+    
+    switch_construction := SwitchConstructionProgram::Create( run, "construction needed?" );
+    iterator.To( switch_construction );
+    
+    //construction branch 
+    //components creation
+    
+    iterationtypeswitchconstruction := this.SwitchProbability( run, 'iteration type switch cnstr' );
+    selector_leg_cnstr_poa := this.SelectorLegsConstruction( run, 
+                                                             'selector leg construction POA',
+                                                             SettingsProgramSelectorLegForSelectorCnstr::ConstructFrom( settings.SelectorLeg() ) );
+    selector_leg_cnstr_combi := this.SelectorLegsConstruction( run, 
+                                                               'selector leg construction combi',
+                                                               SettingsProgramSelectorLegForSelectorCnstr::ConstructFrom( settings.SelectorLeg() ) );
+    cnstr_sequencer := this.SequencerComponentsBlock( run, settings, strategy, 'construction', true ); // is construction phase
+    //plumbing
+    //bypass batch cplex for non-program resource
+    if( res.HasProgramSettings() )
+    {
+      ptassignment := SuboptimizerMPPTAssignment::Create( run, 
+                                                          'PT Assignment', 
+                                                          SettingsProgramPTAssignmentForPTAssignment::ConstructFrom( settings.PTAssignment() ) );
+      switch_construction.BranchConstruction( ptassignment );
+      ptassignment.To( iterationtypeswitchconstruction );
+    }
+    else
+    {
+      switch_construction.BranchConstruction( iterationtypeswitchconstruction );
+    }
+    iterationtypeswitchconstruction.Branch( 0.0, selector_leg_cnstr_poa );
+    iterationtypeswitchconstruction.Branch( 1.0, selector_leg_cnstr_combi );
+    selector_leg_cnstr_combi.To( cnstr_sequencer );
+    //improvement branch
+    //components creation
+    iterationtypeswitchimprovement := this.SwitchProbability( run, 'iteration type switch impr' );
+    
+    selector_leg_impr_combi := this.SelectorLegsImprovement( run, 
+                                                             'selector leg improvement combi',
+                                                             SettingsProgramSelectorLegForSelectorImpr::ConstructFrom( settings.SelectorLeg() ) );
+    impr_sequencer := this.SequencerComponentsBlock( run, settings, strategy, 'improvement', false );// is not construction phase
+    //plumbing
+    switch_construction.BranchElse( iterationtypeswitchimprovement );
+    probabilitypoa := settings.ProbabilityOfUsingPurePOAImprovementPhase();
+    iterationtypeswitchimprovement.Branch( 1.0-probabilitypoa, selector_leg_impr_combi );
+    selector_leg_impr_combi.To( impr_sequencer );
+    // Create the improvement phase POA branch
+    this.CreateComponentsImprovementPhasePOA( run, settings, strategy, iterationtypeswitchimprovement, probabilitypoa );
+    
+    // top-level we need the locking resetter:
+    startcomponent := run.Component( relnew,
+                                     OperationsUnlockerOnFinalizeProgram,
+                                     Name := "Cleanup locks on finalize" );
+    startcomponent.To( run.StartComponent() );
+    run.SetStartComponent( startcomponent );
+  *]
+}

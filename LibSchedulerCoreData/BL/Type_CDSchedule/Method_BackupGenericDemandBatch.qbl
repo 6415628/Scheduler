@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericDemandBatch (const Schedule schedule)
+{
+  Description: 'Backup generic demand batch core data'
+  TextBody:
+  [*
+    traverse( schedule, DemandBatch.astype( GenericDemandBatch ), genericDemandBatch )
+    {
+      cdGenericDemandBatch := this.CDEntity( relnew, CDGenericDemandBatch );
+      CopyCorresponding::CopyFrom( genericDemandBatch ).CopyTo( cdGenericDemandBatch );
+      
+      cdGenericDemandBatch.BatchWorkOrderID( guard( genericDemandBatch.BatchWorkOrder().Id(), '' ) );
+      
+      // Backup GenericDemandInBatch
+      this.BackupGenericDemandInBatch( genericDemandBatch );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,67 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Operation (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    snapshot := SnapshotSelectorSpan::Create( task.Run() );
+    
+    maxspanelements := guard( this.Settings().MaxSpanElements(), 1000000 );
+    
+    span := SelectorSpan::GetSpan( task.Scope(), maxspanelements );
+    
+    // report to snapshot:
+    snapshot.RecordSpan( span );
+    
+    resources_inscope := task.Scope().ResourcesExSpan();
+    operations_inscope := task.Scope().OperationsExSpan();
+    
+    // lock the span scope elements as `in span`:
+    traverse( span, Elements, seor )
+    {
+      // first, find out whether to set IsAllowedToPlanAfter flag: if the operation is the last on an in-scope resource or if it is planned directly before an in-scope operation:  
+      allow_plan_after := false;
+      if( seor.ScopeElement().istype( ScopeElementOperation ) )
+      {
+        operation := seor.ScopeElement().astype( ScopeElementOperation ).Operation_SC();
+        if( operation.IsPlanned() )
+        {
+          op_task := operation.Task_SC();
+          if( resources_inscope.Find( op_task.Resource_SC() ) >= 0 ) // planned on an inscope resource
+          {
+            if( isnull( op_task.Next() ) ) // Last task on that resource
+            {
+              allow_plan_after := true;
+            }
+          }
+          if( operations_inscope.ContainsAll( selectset( op_task.Next(), OperationInTask, nextop, true ) ) ) // planned directly before an in-scope operation
+          {
+            allow_plan_after := true
+          }
+        }
+      }
+      // lock to be in span:
+      ScopeElementInSpanLock::Create( task, seor, allow_plan_after );
+    
+    }
+    // lock the non-span scope elements as `out of span`:
+    traverse( task.Scope().ScopeElements(), Elements, se )
+    {
+      seor := se.OnRunOrCreate( this.Run() );
+      task.ScopeElementOutSpanLock( relnew ).ScopeElementOnRun( relset, seor );
+    }
+    
+    // propagate the hard SpanningLockExclusive constraint s.t. the task errors if another task has already locked a scope element any other way:
+    Transaction::Transaction().Propagate( constraint( LibOpt_ScopeElementOnRun, SpanningLockExclusive ) );
+    
+    // keep input scope...
+    scope := LibOpt_Scope::Create( task.Run(), task.Scope().ScopeElements() );
+    // ... and extend it with the span:
+    scope.Add( selectset( span, Elements.ScopeElement, se, true ), "#span" );
+    
+    // sets the flag to mark the operations in the active run
+    this.SetFlagActiveInOptRun( scope );
+    
+    return this.Continue( task, scope );
+  *]
+}

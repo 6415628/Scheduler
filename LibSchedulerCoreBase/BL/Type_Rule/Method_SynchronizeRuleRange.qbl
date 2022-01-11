@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeRuleRange (ImportedRule importedrule)
+{
+  Description: 'Create and update rule range.'
+  TextBody:
+  [*
+    allinstances := selectset( this, RuleRange, rulerange, true );
+    updatedinstances := construct( RuleRanges );
+    
+    traverse( importedrule, ImportedRuleRange, importedrulerange )
+    {
+      rulerange := select( this, RuleRange, rr, 
+                           rr.From() = importedrulerange.FromReal()
+                           and rr.To() = importedrulerange.ToReal() );
+      
+      if( isnull( rulerange ) )
+      {
+        rulerange := RuleRange::Create( this, importedrulerange );
+      }
+      rulerange.Update( importedrulerange );
+      updatedinstances.Add( rulerange );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, rulerange )
+    {
+      rulerange.Remove();
+    }
+  *]
+}

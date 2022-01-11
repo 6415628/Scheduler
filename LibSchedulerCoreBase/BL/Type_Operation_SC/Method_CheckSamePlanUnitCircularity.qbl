@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckSamePlanUnitCircularity (Operation_SCs operations, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Checks whether there is more than 1 operation belonging to the same plan unit'
+  TextBody:
+  [*
+    // jan er Jun-20-2014 (created)
+    /*
+    Operation belonging to the same plan unit is not allowed to be batched together
+    */
+    planunits := selectset( operations, Elements.PlanUnit_SC, pu, true, true );
+    value := planunits.Size() = operations.Size()
+    
+    if( not value )
+    {
+      feedback_o := feedback_o
+                    + String::NewLine()
+                    + Translations::SC_NotAllowedToAddBatchOperationFromSamePlanUnit();
+    }
+    
+    return value;
+  *]
+}

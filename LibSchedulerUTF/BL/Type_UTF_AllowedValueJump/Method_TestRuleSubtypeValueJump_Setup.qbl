@@ -1,0 +1,83 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRuleSubtypeValueJump_Setup (Schedule schedule)
+{
+  Description: 'Test rule subtype ( not ) allowed value jump - setup'
+  TextBody:
+  [*
+    // Get variant attribute
+    allowedValueJump := false;
+    ruleChangeoverFrom := '';
+    ruleChangeoverTo := '';
+    isValid := false;
+    
+    this.GetTestVariant( allowedValueJump,
+                         ruleChangeoverFrom,
+                         ruleChangeoverTo,
+                         isValid );
+    
+    // Create rule
+    rule := Rule::Create( schedule, 1 );
+    
+    // Create rule type
+    ruleType := UTFMockObjectFactory::CreateRuleType( schedule,
+                                                      RuleConstant::RuleType_AllowedValueJump() );
+    rule.RuleType( relset, ruleType );
+    
+    // Create rule subtype
+    ruleSubtypeName := ifexpr( allowedValueJump,
+                               RuleConstant::RuleSubType_AllowedJumpValue(),
+                               RuleConstant::RuleSubType_NotAllowedJumpValue() );
+    
+    ruleSubtype := UTFMockObjectFactory::CreateRuleSubtypeValueJump( ruleType,
+                                                                     ruleSubtypeName,
+                                                                     allowedValueJump );
+    
+    rule.RuleSubType( relset, ruleSubtype );
+    
+    // Create characteristic main - Operation Practice
+    characteristicMain := UTFMockObjectFactory::CreateCharacteristic( schedule,
+                                                                      RuleConstant::Characteristic_OperationPractice(),
+                                                                      false, 
+                                                                      true, 
+                                                                      false, 
+                                                                      RuleConstant::ValueType_String(), 
+                                                                      true, 
+                                                                      false );
+    
+    rule.CharacteristicMain( relset, characteristicMain );
+    
+    // Create a resource and apply rule scope to rule
+    UTFMockObjectFactory::CreateRuleScopeInSingleResource( schedule, rule, 'Single Resource' );
+    
+    // Create normal attribute in rule
+    rule.IsEnabled( true );
+    rule.RuleScopeSelected( RuleConstant::RuleScope_AllTasksOnResource() );
+    
+    // Create and assign rule changeover value based on variant
+    rule.RuleChangeOver( relnew,
+                         From := ruleChangeoverFrom,
+                         To := ruleChangeoverTo );
+    
+    // Create first operation and plan it
+    order1 := UTFMockObjectFactory::CreateOrder( schedule, 'Order1' );
+    planUnit1 := UTFMockObjectFactory::CreatePlanUnit( order1, 'Plan Unit 1', 1.0 );
+    operation1 := UTFMockObjectFactory::CreateOperation( planUnit1 );
+    operation1.OperationID( 'Operation1' );
+    
+    // Create second operation and plan it
+    order2 := UTFMockObjectFactory::CreateOrder( schedule, 'Order2' );
+    planUnit2 := UTFMockObjectFactory::CreatePlanUnit( order2, 'Plan Unit 2', 1.0 );
+    operation2 := UTFMockObjectFactory::CreateOperation( planUnit2 );
+    operation2.OperationID( 'Operation2' );
+    
+    // Define practice for operation1 and operation2
+    operation1.Practice( 'A' );
+    operation2.Practice( 'A' );
+    
+    // Schedule operation1 and operation2
+    Transaction::Transaction().Propagate( relation( Operation_SC, AllowedOperationOnResource ) );
+    operation1.Plan();
+    operation2.Plan();
+  *]
+}

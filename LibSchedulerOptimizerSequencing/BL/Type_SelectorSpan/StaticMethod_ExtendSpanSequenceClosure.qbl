@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ExtendSpanSequenceClosure (output owning LibOpt_ScopeElementOnRuns span, LibOpt_Scope scope) as Boolean
+{
+  Description:
+  [*
+    Extends the given span by the following rule:
+    If operations o_1 and o_2 are both in the total scope and planned on the same resource r, and operation o is planned on r somewhere between o_1 and o_2 and o is not in scope, then o is in the span (“spanning sequence closure”).
+    Returns whether the span has been extended.
+  *]
+  TextBody:
+  [*
+    // mbr23 Jan-10-2020 (created)
+    scope_operations := scope.OperationsExSpan();
+    has_changed := false;
+    total_scope_operations := scope.Operations().Union( selectset( span, Elements.ScopeElement.astype( ScopeElementOperation ).Operation_SC, op, true ) );
+    traverse( total_scope_operations,
+              Elements.Task_SC.Resource_SC,
+              r )
+    {
+      // find first and last total scope operation that are planned on r:
+      first_task := minselect( total_scope_operations, Elements.Task_SC, t, t.Resource_SC() = r, t.SequenceNr() );
+      last_task := maxselect( total_scope_operations, Elements.Task_SC, t, t.Resource_SC() = r, t.SequenceNr() );
+      
+      inbetween_operations := selectset( r,
+                                         Task_SC.OperationInTask,
+                                         op,
+                                         op.Task_SC().SequenceNr() >= first_task.SequenceNr() and op.Task_SC().SequenceNr() <= last_task.SequenceNr()
+                                         ).Difference( scope_operations ); // already remove those that are in scope
+      traverse( inbetween_operations, Elements, op )
+      {
+        scopeelement := op.GetOrCreateScopeElement();
+        seor := scopeelement.OnRunOrCreate( scope.Run() );
+        if( span.Find( seor ) < 0 )
+        {
+          // not yet in the span. add it:
+          op.OptimizerSequencing_IsFiller( true );
+          span.Add( seor );
+          has_changed := true;
+        }
+      }
+    }
+    
+    return has_changed;
+  *]
+}

@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method Edit (GUIComponent parent) id:Method_LibDEF_DialogEditIntegrationEventCleanupDaemon_Edit
+{
+  #keys: '[116086.0.427277469]'
+  Body:
+  [*
+    // Edit cleanup integration event daemon properties
+    daemonName := LibDEF_DataBroker::DAEMONNAME_CleanupIntegrationEvent();
+    daemon     := select( LibDEF_DataBroker.MDSLibDEF_DataBroker(), MDSObjectDaemons, daemon,
+                          daemon.Name() = daemonName );
+    
+    if( not isnull( daemon ) )
+    {
+      // the daemon is enabled if the frequency is not zero
+      if( daemon.LocalFrequency() <> Duration::Zero() )
+      {
+        chkEnableDaemon.Checked             ( daemon.LocalFrequency() <> Duration::Zero() );
+        Dialog.durDaemonFrequency().Duration( daemon.LocalFrequency() );
+        if( TimeZone::HasTimeZoneSupport() )
+        {
+          // For timezone-aware, GMT time is needed for the selector.
+          Dialog.dtDaemonStartTime().DateTime( daemon.LocalStartGMTTime() );
+        }
+        else
+        {
+          // For legacy mode, the correct datetime is constructed from StartDate and StartTimeOfDay.
+          timezone  := TimeZone::Construct( this.GetUserTimeZoneID() );
+          startTime := daemon.LocalStartDate().Add( timezone, daemon.LocalStartTimeOfDay() );
+          Dialog.dtDaemonStartTime().DateTime( startTime );
+        }
+      }
+      else
+      {
+        // set the default values
+        Dialog.durDaemonFrequency().Duration( LibDEF_DataBroker::DAEMONDEFAULTFREQUENCY_CleanupIntegrationEvent() );
+        Dialog.dtDaemonStartTime().DateTime ( this.GetLastSundayOfDataBroker() );
+      }
+    
+      Dialog.Data( LibDEF_DataBroker );
+    
+      result := this.DoModal( parent );
+    
+      if( result > 0 )
+      {
+        LibDEF_DataBroker.EditDaemonProperties( daemonName,
+                                                chkEnableDaemon.Checked(),
+                                                durDaemonFrequency.Duration(),
+                                                dtDaemonStartTime.DateTime() );
+      }
+    }
+    else
+    {
+      MessageBox::Warning( parent,
+                           "Daemon '" + daemonName + "' is not found in LibDMF_DataBroker dataset." + String::NewLine() +
+                           "Please make sure it is created.",
+                           "&OK" );
+    }
+  *]
+}

@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeCapacityResources
+{
+  Description: 'Synchronize the CapacityResources with the Resources.'
+  TextBody:
+  [*
+    traverse( this, CapacityResource, cr )
+    {
+      crs := exists( cr, Resource_SC, rs, rs.CapacityResourceName() = cr.Name() );
+    
+      if( not( crs ) )
+      {
+        cr.Delete(); // Delete the CapacityResource that doesn't have the resources
+      }
+    }
+    
+    traverse( this.GetResourceGroup(), Resource_SC, rs )
+    {
+      capacityresource := CapacityResource::FindCapacityResource( rs.CapacityResourceName() );
+    
+      if( isnull( capacityresource ) )
+      {
+        capacityresource := this.CreateCapacityResource( rs.CapacityResourceName() );
+      }
+    
+      all_instances := selectset( capacityresource, CapacityResourcePeriod, period, true );
+      updated_instances := construct( CapacityResourcePeriods );
+      
+      for( i := 0; i < guard( this.Schedule().PlanningConfiguration().CapacityPlanningNumberOfBuckets(), 0 ); i++ )
+      {
+        crp := select( capacityresource, CapacityResourcePeriod, crp, crp.SequenceNr() = i );
+    
+        if( isnull( crp ) )
+        {
+          /*
+            Create the CapacityResourcePeriod to the last sequence of CapacityResource
+            when the CapacityResourcePeriod is first created (synchronized)
+            or when the number of buckets for capacity planning is increased
+          */
+          crp := capacityresource.AddLast( construct( CapacityResourcePeriod ) );
+        }
+    
+        updated_instances.Add( crp );
+      }
+    
+      old_instances := all_instances.Difference( updated_instances );
+    
+      traverse( old_instances, Elements, old )
+      {
+        old.Delete();
+      }
+    }
+  *]
+}

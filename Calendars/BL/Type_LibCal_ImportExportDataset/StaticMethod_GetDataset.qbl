@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetDataset (String datasetName_i, Boolean loadIfOffline_i, Boolean createIfNotExists_i, 
+  String storageState_i) as stream[LibCal_ImportExportDataset]
+{
+  Description: 'Find, load or create (if applicable) the ImportExport-dataset.'
+  TextBody:
+  [*
+    dataset := declare( stream[LibCal_ImportExportDataset] );
+    
+    // First see if the dataset is already loaded.
+    includeOffline := false;
+    datasetKey     := LibCal_ImportExportDataset::FindDatasetKey( datasetName_i, includeOffline );
+    
+    if( datasetKey <> Key::ZeroKey() )
+    {
+      dataset := MDSLibCal_ImportExportDataset::Root( datasetKey ); 
+    }
+    else
+    {
+      // See if the dataset exists but is not loaded.
+      includeOffline := true;
+      datasetKey     := LibCal_ImportExportDataset::FindDatasetKey( datasetName_i, includeOffline );
+    
+      if( datasetKey <> Key::ZeroKey() )
+      {
+        // Dataset exists, load it if applicable.
+        if( loadIfOffline_i )
+        {
+          dataset := MDSLibCal_ImportExportDataset::Load( datasetKey );
+        }
+      }
+      else
+      {  
+        // Dataset does not exist, create a new one if applicable.
+        if( createIfNotExists_i )
+        {
+          // Create a dataset using the 'complete' name.
+          datasetName   := LibCal_ImportExportDataset::GetFullName( datasetName_i );      
+          createOptions := DatasetCreateOptions::Construct( datasetName )
+                                                .Path( LibCal_ImportExportDataset::DATASETFOLDER() )
+                                                .State( DatasetState::FromString( storageState_i ) );
+          dataset       := MDSLibCal_ImportExportDataset::Create( createOptions );
+        }
+      }
+    }
+    
+    // Return the dataset (as stream).
+    return dataset;
+  *]
+}

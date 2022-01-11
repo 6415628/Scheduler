@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CopyDataset (LibOpt_Task task, String componentpositionname, Boolean hastocreaterobustcopy) as LibOpt_SnapshotReplannableCopyDataset
+{
+  Description:
+  [*
+    Create a copy of the current dataset.
+    If `hastocreaterobustcopy` is `true`, then a memory only copy of the current dataset is created by using the `MDSObject.Copy` method. 
+    If an error or rollback can occur in the same transaction as the current transaction, then it is required to use `hastocreaterobustcopy = true`, otherwise the dataset copy will fail.
+    If `hastocreaterobustcopy` is `false`, then a standalone storage copy is created by using the `MDSObject::Create` method.
+  *]
+  TextBody:
+  [*
+    // evr3 Feb-27-2020 (created)
+    snapshot := null( LibOpt_SnapshotReplannableCopyDataset );
+    component := task.Component();
+     
+    mdsid := component.MDSID();
+    datasetinfo := MDSEditor::Editor().LoadedObjectInfo( mdsid );
+    
+    namenewdataset := LibOpt_DatasetCopyConditional::GetNameCopyDataset( component, 
+                                                                         datasetinfo.Name(),
+                                                                         componentpositionname
+                                                                         );
+    // namenewdataset cannot contain most special characters, because this breaks mdsobject.Copy(). We therefore remove the special characters.
+    namenewdataset := LibOpt_Utility::RemoveSpecialCharacters( namenewdataset );                 
+    // Check if the new dataset name already exists.
+    // If another dataset was created very recently, then MDSEditor::Editor().ObjectInfos() might not yet know about this dataset.
+    // However, we did create a SnapshotReplannableCopyDataset snapshot for this dataset. 
+    // We use this snapshot to check if our new dataset name is not already being used by that dataset.  
+    objectinfos := MDSEditor::Editor().ObjectInfos();
+    suffix := 1;    
+    namewithoutsuffix := namenewdataset;
+    while( exists( component.Run(), Snapshot.Children.astype( LibOpt_SnapshotReplannableCopyDataset ), replannablesnapshot, replannablesnapshot.DatasetName() = namenewdataset )
+           or exists( objectinfos, Elements, objectinfo, objectinfo.Name() = namenewdataset ) )
+    {    
+      namenewdataset := namewithoutsuffix + "_" + [String] suffix;
+      suffix++;
+    }
+    
+    if( hastocreaterobustcopy )
+    {
+      snapshot := LibOpt_DatasetCopyConditional::CopyDatasetRobust( task,
+                                                                    namenewdataset,
+                                                                    componentpositionname,
+                                                                    mdsid );
+    }
+    else
+    {
+      snapshot := LibOpt_DatasetCopyConditional::CopyDatasetQuick( task,
+                                                                   datasetinfo.Kind(),
+                                                                   namenewdataset,
+                                                                   componentpositionname,
+                                                                   mdsid );
+    }
+    
+    return snapshot;
+  *]
+}

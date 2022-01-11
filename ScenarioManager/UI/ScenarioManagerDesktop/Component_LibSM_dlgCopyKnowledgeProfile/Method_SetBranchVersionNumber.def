@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetBranchVersionNumber (shadow[LibSM_KnowledgeBaseBranchInProfile] newBranchInKnowledgeProfile, LibSM_KnowledgeProfile originalKnowledgeProfile) id:Method_LibSM_dlgCopyKnowledgeProfile_SetBranchVersionNumber
+{
+  #keys: '[107496.2.1672447187]'
+  Body:
+  [*
+    // QP 1375, change new branch version number to 1.0.0.0 if new branch name is different from the original one
+    // or reset to original if there is not different
+    branchInOriginalKnowledgeProfile := select( originalKnowledgeProfile, KnowledgeBaseBranchInProfile, branch,
+                                                branch.KBDefinitionName() = newBranchInKnowledgeProfile.KBDefinitionName() );
+    
+    // for any reason, the branchInOriginalKnowledgeProfile could be null
+    if( not isnull( branchInOriginalKnowledgeProfile ) )
+    {
+      if( newBranchInKnowledgeProfile.KBBranchName() <> branchInOriginalKnowledgeProfile.KBBranchName() )
+      {
+        newBranchInKnowledgeProfile.KBBranchVersion( '1.0.0.0' );
+      }
+      else
+      {
+        newBranchInKnowledgeProfile.KBBranchVersion( branchInOriginalKnowledgeProfile.KBBranchVersion() );
+      }
+    }
+  *]
+}

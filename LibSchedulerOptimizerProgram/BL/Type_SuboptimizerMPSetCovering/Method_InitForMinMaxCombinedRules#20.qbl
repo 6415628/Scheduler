@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitForMinMaxCombinedRules (SuboptimizerMPSetCovering_SelectCombis program, Rule rule, CombiProgramType cpt, 
+  CombiLegs combilegs)
+{
+  TextBody:
+  [*
+    // yifei Aug-13-2021 (created)
+    //  sum( combileg values ) + slack = rule value + surplus
+    // min rule, minimze slack
+    // max rule, minimize surplus
+    cnst := program.RuleBalanceConstraints().New( rule, cpt );
+    
+    slackvar := program.RuleSlackVariables().New( rule, cpt );
+    cnst.NewTerm( 1.0, slackvar );
+    
+    surplusvar := program.RuleSurplusVariables().New( rule, cpt );
+    cnst.NewTerm( -1.0, surplusvar );
+    
+    traverse( combilegs, Elements, combileg )
+    {
+      charvalue := combileg.GetCharacteristicValue( rule.CharacteristicMain() );
+      var := program.IsCombiLegSelectedVariables().Get( combileg );
+     
+      cnst.NewTerm( charvalue, var );
+    }
+    
+    //goal
+    goal := program.Goal();
+    if( rule.RuleSubType().astype( RuleSubTypeMinMaxCombinedLength ).IsMinimum())
+    {
+      goal.NewTerm( this.Settings().WeightMinMaxCombinedRules(), slackvar ); 
+    }
+    else
+    {
+      goal.NewTerm( this.Settings().WeightMinMaxCombinedRules(), surplusvar );
+    }
+  *]
+}

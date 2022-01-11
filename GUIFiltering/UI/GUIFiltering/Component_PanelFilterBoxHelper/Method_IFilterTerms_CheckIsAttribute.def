@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method IFilterTerms_CheckIsAttribute (String token) as String id:Method_LibGUIFiltering_PanelFilterBoxHelper_IFilterTerms_CheckIsAttribute
+{
+  #keys: '[128900.0.376148134]'
+  Body:
+  [*
+    specificattributes := construct( Strings );
+    found              := false;
+    attributeregistry  := this.IAttributeRegistry_Get();            
+    token              := token.ToLowerServerSystemLocale();
+    
+    traverse( attributeregistry, LibGUIFiltering_RegisteredAttribute, attr )
+    {
+      if ( attr.Path().ToLowerServerSystemLocale().StartsWith( token )
+        or attr.Name().ToLowerServerSystemLocale().StartsWith( token ) )
+      {                 
+        specificattributes.Add( attr.Name() );
+        found := true;
+      }
+      else if ( attr.Path().Length() > token.Length() + 1
+            and attr.Path().RestString( attr.Path().Length() - token.Length() - 1 ).ToLowerServerSystemLocale().StartsWith( '.' + token.ToLower() ) )
+      {
+        specificattributes.Add( attr.Name() );
+        found := true;
+      }
+    }
+    
+    if ( not found
+     and this.IOptions_Get( LibGUIFiltering_Options::O03_AllowAdditionalAttributes() ) )
+    {                                                                                 
+      componentregistry := this.IComponentRegistry_Get();
+      
+      traverse( componentregistry, LibGUIFiltering_RegisteredComponent, component, component.ObjectType() <> '' )
+      {
+        path     := '';
+        synonym  := '';
+        datatype := '';
+        
+        if ( this.IAttribute_Resolve( component.ObjectType(), token, path, synonym, datatype ) )
+        {
+          specificattributes.Add( token );
+        }
+      }
+    }
+    
+    return specificattributes.ToString( ';' );
+  *]
+}

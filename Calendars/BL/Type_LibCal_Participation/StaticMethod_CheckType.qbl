@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckType (LibCal_Participations selection_i, Boolean isEvent_i) remote as Boolean
+{
+  TextBody:
+  [*
+    ok := false;
+    
+    if( selection_i.Size() = 1 )
+    {
+      // Give more accurate feedback when there is only one element selected.
+      ok := LibCal_Participation::CheckType( selection_i.Element( 0 ), isEvent_i );
+    }
+    else
+    {
+      feedback := FeedbackObject::LocalFeedback();
+      
+      // All selected elements must be of correct type (i.e. all Event (i.e. LeadingParticipation) or all Subscription). 
+      isAllowed := ifexpr( isEvent_i, forall( selection_i, Elements, participation, true, participation.IsLeading() ),
+                                      forall( selection_i, Elements, participation, true, participation.IsSubscription() ) );
+      
+      if( not feedback.CheckHard( isAllowed ) )
+      {
+        subject := ifexpr( isEvent_i, "an event", "a subscription" );
+        feedback.AddHard( Translations::Participation_NotAllTheSame( subject ) );
+      }
+      
+      ok := feedback.IsAllowed();
+    }
+    
+    return ok;
+  *]
+}

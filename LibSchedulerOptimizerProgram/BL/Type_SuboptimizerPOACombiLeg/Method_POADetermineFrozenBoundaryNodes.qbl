@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method POADetermineFrozenBoundaryNodes (CombiLegs combilegs)
+{
+  Description:
+  [*
+    If two consecutive legs are in scope of POA, either the last node of the first leg or the first node of the second leg needs to be frozen since POA cannot see transitions across plan paths. We can then set the transitions based on the dummy start / end nodes of the path.
+    This method randomly decides which of the two nodes will be frozen
+  *]
+  TextBody:
+  [*
+    // First reset the frozen status
+    traverse( combilegs, Elements, combileg )
+    {
+      combileg.IsFreezeFirstNodeInPOA( false );
+      combileg.IsFreezeLastNodeInPOA( false );
+    }
+    
+    // Go over all the combilegs to identify relevant consecutive legs and determine which operation to freeze
+    traverse( combilegs, Elements, firstleg )
+    {
+      // Select the consecutive leg to the first leg (if any is in scope)
+      secondleg := firstleg.GetNextCombiLegIfInScopeAndRelevantForSequence( combilegs )
+                           
+      // If the consecutive leg exists,
+      if( not isnull (secondleg ) )
+      {
+        // Randomly determine if the last operation of the first leg or the first operation of the second leg should be frozen
+        random := Number::Random( 1, 2 );
+        if( random = 1 )
+        {
+          firstleg.IsFreezeLastNodeInPOA( true );
+        }
+        else
+        {
+          secondleg.IsFreezeFirstNodeInPOA( true );
+        }
+      }
+      //if the last task of the leg is linked to a shutdown,  then that task should be frozen
+      if( not isnull( firstleg.Leg() ) and not isnull( firstleg.Leg().ShutdownAnchorOperation() ) )
+      {
+        firstleg.IsFreezeLastNodeInPOA( true );
+      }
+    }
+  *]
+}

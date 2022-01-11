@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddExpressionNonAllowedTransition (SuboptimizerMRSPOA_POAOneResourceGroup poa, LibOpt_Task task)
+{
+  Description: 'Add the expression duration to POA'
+  TextBody:
+  [*
+    // stn4 Mar-18-2016 (created)
+    //This method is commented for now as it contains code specific to Akzo, and it is not used in the aluminium melt cast
+    
+    ///////////////////////////////////////////////////////////////////////////
+    // DURATION EXPRESSION
+    ///////////////////////////////////////////////////////////////////////////
+    
+    nonallowedtransitionexpression := poa.NewExpression( SuboptimizerMRSPOA::NamePOAMinimizeNonAllowedTransitionExpression() );
+    ///////////////////////////////////////////////////////////////////////////
+    // DurationTransition : Setup Duration
+    ///////////////////////////////////////////////////////////////////////////
+    nonallowedtransition := POATransition::PNN( poa, 'NonAllowedTransition', 0.0 );
+    nonallowedtransition.Symmetric( false );
+    nonallowedtransitionexpression.Transition( nonallowedtransition );
+    
+    traverse( task.Scope().ResourceGroups(), Elements.Resource_SC.astype( SingleResourceBase ), resource )
+    {
+          pathtype := poa.PathType( SuboptimizerMRSPOA::POANamePathResource( resource ), resource );
+    
+          traversedelement := this.GetAllowedElement( resource, task.Scope() );
+    
+          traverse( traversedelement, Elements, element1 )
+          {
+            node1 := poa.Node( SuboptimizerMRSPOA::POANameNodeOperation( element1 ), element1 );
+    
+            traverse( traversedelement, Elements, element2,
+                      element2 <> element1  )
+            {
+              node2 := poa.Node( SuboptimizerMRSPOA::POANameNodeOperation( element2 ), element2 );
+    
+                if( not resource.OptimizerIterativePOATransitionAllowed( element1, element2 ) )
+                {
+                   nonallowedtransition.Set( pathtype, node1, node2, 1.0 );
+                }
+            }
+          }
+    }
+  *]
+}

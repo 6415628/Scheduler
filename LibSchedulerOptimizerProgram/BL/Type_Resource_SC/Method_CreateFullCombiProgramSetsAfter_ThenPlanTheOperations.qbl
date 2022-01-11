@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateFullCombiProgramSetsAfter_ThenPlanTheOperations (Task_SC task, ProgramDefinitionConfiguration programdefinitionconf, Operation_SCs operations) as CombiProgramType
+{
+  Description: 'create a programtype combis,  randomly add operations into them,  execute one poa, plan the operations and synchronize the legs'
+  TextBody:
+  [*
+    // zyi1 Jul-12-2021 (created)
+    leadingcombipt := this.CreateEmptyCombiProgramSetsAfter( task, programdefinitionconf );
+    
+    firstcombileg := leadingcombipt.FirstPhase().FirstLegAsLeading();
+    
+    Transaction::Transaction().Propagate( attribute( OperationInCombiLeg, SequenceNr ) );
+    Transaction::Transaction().Propagate( attribute( OperationInCombiLeg, IsPhaseChanged ) );
+    Transaction::Transaction().Propagate( attribute( OperationInCombiLeg, IsLeadingPhaseChanged ) );
+    
+    leadingcombipt.SequenceByPOA( firstcombileg, operations );
+    
+    //previously when fill the first leg with operations,  it only check the allow or not by rules of first phase, so it's possible the operations allowed for phase 2 
+    // are not allowed in phase 2, this will leave the phase 2 empty ( without combileg ), so we use the following method to add combileg for phase 2 and later phases
+    leadingcombipt.FillEmptyCombiPhases( operations );
+    
+    leadingcombipt.PlanToResource( operations );
+    
+    return leadingcombipt;
+  *]
+}

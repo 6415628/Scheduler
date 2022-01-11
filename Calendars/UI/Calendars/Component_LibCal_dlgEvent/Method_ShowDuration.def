@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method ShowDuration (Duration duration_i) id:Method_LibCal_dlgEvent_ShowDuration
+{
+  #keys: '[146730.0.1285792180]'
+  Body:
+  [*
+    // Update the labels that show the duration. The spacing is a little different for recurring and not recurring.
+    // When the duration is one or more full days, the time should not be shown.
+    duration := duration_i;
+    hideTime := LibCal_Event::USE_ONLY_DAYS() or
+                ( duration.HourOfDay() = 0 and duration.MinuteOfHour() = 0 );
+    
+    // pnlRecurring
+    mask   := ifexpr( hideTime, "", "  h:m" );
+    indent := ifexpr( duration < Duration::Hours( 10 ), "    ", "  " );
+    
+    if( abs( duration ) >= Duration::Days( 1 ) )
+    {
+      mask := "d 'day" + ifexpr( duration >= abs( Duration::Days( 2 ) ), "s'", "'" ) + mask;
+    }
+    
+    valDurationRecurring.Text( indent + duration.Format( mask ) );
+    
+    // pnlNotRecurring
+    mask := ifexpr( hideTime, "", "h:m" );
+     
+    if( abs( duration ) >= Duration::Days( 1 ) )
+    {
+      mask := "d 'day" + ifexpr( abs( duration ) >= Duration::Days( 2 ) , "s'", "'" ) + "  " + mask;
+    }
+    
+    valDuration.Text( indent + duration.Format( mask ) );
+  *]
+}

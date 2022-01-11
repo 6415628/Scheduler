@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ImportJsonString (KpiTracker owner, JSON kpivalue)
+{
+  Description: 'Import a JSON string and add into the KpiTracker dataset'
+  TextBody:
+  [*
+    plandatetime    := kpivalue.Get( "plan_datetime").GetString();
+    serverdatetime  := kpivalue.Get( "server_datetime" ).GetString();
+    retentionID     := kpivalue.Get( "retentionpolicyid" ).GetString();
+    
+    toString        := StringToDateTime::ISOConverter();
+    
+    // insert snapshots value
+    snapshot := construct( KpiSnapshotData );
+    snapshot.ServerDateTime( toString.Convert( serverdatetime ) );
+    snapshot.PlanDateTime( toString.Convert( plandatetime ) );
+    snapshot.RetentionPolicyIdentification( retentionID );
+    
+    // --Label
+    label := kpivalue.Get( "label" );
+    for( i := 0; i < label.Size() ; i++ )
+    {
+      key   := label.Get( i );  
+      //info( key.Get( "name" ).GetString(), key.Get( "value" ).GetString() );
+      snapshot.CreateLabel( key.Get( "name" ).GetString(), key.Get( "value" ).GetString()  );
+    }
+    
+    // --Value
+    value := kpivalue.Get( "kpi" );
+    for( i := 0; i < value.Size() ; i++ )
+    {
+      key   := value.Get( i );
+      //info( key.Get( "kpi_name" ).GetString(), key.Get( "kpi_value" ).GetReal() );
+      snapshot.CreateValue( key.Get( "kpi_name" ).GetString(), key.Get( "kpi_value" ).GetReal() );
+    }
+    
+    owner.SnapshotStorage().StoreSnapshot( snapshot );
+  *]
+}

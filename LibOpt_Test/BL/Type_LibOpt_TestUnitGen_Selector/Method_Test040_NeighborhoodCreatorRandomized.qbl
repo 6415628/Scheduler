@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test040_NeighborhoodCreatorRandomized (LibOpt_TestDataset dataset)
+{
+  Description: 'Checks if the neighborhood creators create scope that is a subset of the original scope and of the requested size.'
+  TextBody:
+  [*
+    // Run randomized test
+    
+    // Construct
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    selector := opt.SelectorAnchor( run, 'Selector', null( LibOpt_AnchorSet, owning ), null( LibOpt_AnchorPicker, owning ), null( LibOpt_NeighborhoodCreator, owning ) );
+    selector.NeighborhoodCreator( relnew, LibOpt_NeighborhoodCreatorTest );
+    
+    Transaction::Transaction().Propagate();
+    
+    // Test
+    run := selector.Run();
+    scope := LibOpt_ScopeFat::Create( run, this.CreateScopeElements( dataset, Number::Random( 20, 40 ) ) );
+    
+    anchor_se := maxselect( scope.ScopeElements(), Elements, anchor, true, Real::Random() );
+    
+    new_scope := selector.NeighborhoodCreator().CreateNeighborhood( anchor_se, scope );
+    this.Run().AssertTrue( new_scope.IsSubsetOf( scope ), 'The scope returned from the selector is not a subset of the original scope' );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

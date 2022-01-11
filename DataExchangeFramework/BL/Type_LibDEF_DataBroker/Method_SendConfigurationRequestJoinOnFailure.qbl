@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendConfigurationRequestJoinOnFailure (NamedValueTree nvt_i, String destinationSystemGUID_i)
+{
+  Description: 'OnFailure of Send a request to a System for requesting to join a Domain.'
+  TextBody:
+  [*
+    // Retry only when failed by sending to BootNode (and only if the BootNode already set).
+    // If BootNode not yet set, this means the system has not join any domain yet, so there will be no peers.
+    // The not isnull check is also to prevent null error when getting BootNode GUID.
+    if( not isnull( this.BootNode() )
+        and destinationSystemGUID_i = this.BootNode().GUID() )
+    {
+      // try to ping other known Systems
+      traverse( this.GetOtherPeers( false ), Elements, system )
+      {
+        this.SendConfigurationRequestPing( system );
+      }
+    }
+  *]
+}

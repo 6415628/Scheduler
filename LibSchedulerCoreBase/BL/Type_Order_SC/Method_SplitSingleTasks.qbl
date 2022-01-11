@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method SplitSingleTasks (SingleTaskBases singletasks, PlanUnit_SC newplanunit)
+{
+  Description: 'After splitting the plan unit, plans the tasks of the new plan unit after the tasks of the old plan unit on their respective resources.'
+  TextBody:
+  [*
+    // WOI1 Nov-8-2016 (created)
+    traverse( singletasks, Elements, singletask )
+    {
+      same_operation := select( newplanunit, Operation_SC, op, op.SequenceNr() = singletask.GetOperation().SequenceNr() );
+      
+      if( not isnull( same_operation ) )
+      {
+        singletask.Resource_SC().astype( SingleResourceBase ).PlanAfter( same_operation, singletask );
+      }
+    }
+  *]
+}

@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateRunDuration
+{
+  Description: 'Set the run duration to the difference between the actual time and the start of the run.'
+  TextBody:
+  [*
+    iterationend := DateTime::ActualTime();
+    
+    this.RunDuration( iterationend - this.StartTime() );
+    
+    // Also update run duration of ancestors
+    if( not isnull( this.Parent() ) 
+        and this.Parent().istype( OptimizerRunContinuous ) )
+    {
+      parent := this.Parent().astype( OptimizerRunContinuous );
+      parent.UpdateRunDuration();
+    }
+  *]
+}

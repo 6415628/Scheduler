@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveMetadataRequestSetTypeInterestDeleted (owning NamedValueTree nvt_i, LibDEF_System requestor_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive a Metadata message for requesting a SetTypeInterest to be deleted for certain SetType.'
+  TextBody:
+  [*
+    LibDEF_Util::EventLog( event_i, "Receiving SetTypeInterest deleted request" );
+    
+    setTypeGUID := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SETTYPEGUID() );
+    
+    setGUIDsExcludedFromDeletion := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SETGUIDSEXCLUDEDFROMDELETION() );
+    setGUIDs := setGUIDsExcludedFromDeletion.Tokenize( "," );
+    
+    actionFeedbackText := "SetTypeInterest cannot be deleted. ";
+    
+    setTypeMeta := this.FindSetTypeMeta( setTypeGUID, actionFeedbackText, event_i );
+    
+    if( not isnull( setTypeMeta ) )
+    {
+      // Get the interested System's System-level SetTypeInterest
+      setTypeInterestFromSystem := select( setTypeMeta, SetTypeInterestFromSystem, systemInt, systemInt.SystemInterestedIn() = requestor_i );
+      
+      if( not isnull( setTypeInterestFromSystem ) )
+      { 
+        traverse( setTypeInterestFromSystem, SetInterestFromSystem, setInterestFromSystem )
+        {
+          if( not exists( setGUIDs, Elements, setGUID, setGUID = setInterestFromSystem.SetMeta().GUID() ) )
+          {
+            setInterestFromSystem.Delete(); 
+          }
+        }
+        
+        setTypeInterestFromSystem.Delete();
+      }
+    
+      // Inform the requestor about the successful deletion of interest subscription
+      this.SendMetadataSuccessSetTypeInterestDeleted( &nvt_i, requestor_i, event_i );
+    }
+    else
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  actionFeedbackText,
+                                  actionFeedbackText + "SetType with GUID '" + setTypeGUID + "' is not found in the DataBroker." );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

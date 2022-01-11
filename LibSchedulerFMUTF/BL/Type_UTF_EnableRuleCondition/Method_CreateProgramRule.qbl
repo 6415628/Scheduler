@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateProgramRule (Schedule schedule, ProgramPhaseConfiguration programphaseconfiguration, Number ruleid, 
+  String rulesubtype, String characteristic, String programscope, 
+  Boolean isprogramphasetransitionrule) as Rule
+{
+  Description: 'Create program rule test data'
+  TextBody:
+  [*
+    // Create rule
+    rule := Rule::Create( schedule, ruleid );
+    rule.Name( programphaseconfiguration.ProgramPhaseConfigurationID() );
+    
+    // Set rule type/ rule subtype
+    subtype := select( schedule, RuleType.RuleSubType, rst, rst.Name() = rulesubtype );
+    rule.RuleType( relset, subtype.RuleType() );
+    rule.RuleSubType( relset, subtype );
+    
+    // Create characteristic main 
+    characteristicMain := select( schedule, Characteristic, char, char.ID() = characteristic );
+    rule.CharacteristicMain( relset, characteristicMain );
+    
+    // Create normal attribute in rule and set as transition rules
+    rule.IsEnabled( true );
+    rule.IsProgramPhaseTransitionRule( isprogramphasetransitionrule );
+    rule.RuleScopeSelected( programscope );  
+    
+    if( programscope = RuleConstant::RuleScope_ProgramPhase() )
+    {
+      // Create rule scope in program phase
+      UTFMockObjectFactory::CreateRuleScopeInProgramPhase( rule, programphaseconfiguration );  
+    }
+    else
+    { 
+      // Create rule scope in program type
+      RuleScopeInProgramType::Create( rule, programphaseconfiguration.ProgramTypeConfiguration() );
+    } 
+    if( rulesubtype = RuleConstant::RuleSubType_NotAllowedJumpValue() )
+    {
+      // Create and assign rule changeover value based on variant
+      rule.RuleChangeOver( relnew,
+                           From := 'SH',
+                           To := 'CO' ); 
+    }   
+    return rule
+  *]
+}

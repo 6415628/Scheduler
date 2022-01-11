@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeDemandBatchTypes
+{
+  Description: 'Synchronize demand batch types from their imported counterpart.'
+  TextBody:
+  [*
+    allinstances := selectset( this, Schedule.DemandBatchType , alldbt, true );
+    updatedinstances := construct( DemandBatchTypes );
+    
+    traverse( this, Schedule.ImportedDemandBatchType, row, row.IsValidDataHard() )
+    {
+      demandbatchtype := DemandBatchType::FindDemandBatchType( row.BatchType() );
+      
+      if( isnull( demandbatchtype ) )
+      {
+        demandbatchtype := GenericDemandBatchType::Create( this.Schedule(), row.BatchType() );
+      }
+      
+      demandbatchtype.Update( row );
+      demandbatchtype.SynchronizeDemandBatchRouting();
+      demandbatchtype.SynchronizeExistingDemandBatch();
+      
+      updatedinstances.Add( demandbatchtype );
+    }
+    
+    // Delete obsoleted data
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, old, old.CheckCanBeDeleted() )
+    {
+      old.Remove();
+    }
+  *]
+}

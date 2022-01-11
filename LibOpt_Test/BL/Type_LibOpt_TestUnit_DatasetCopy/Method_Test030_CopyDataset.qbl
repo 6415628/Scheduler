@@ -1,0 +1,75 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test030_CopyDataset (LibOpt_TestDataset dataset)
+{
+  Description: 'Check, for all components, that the `component.CopyDataset()` method creates exactly 1 dataset copy and exactly 1 `LibOpt_SnapshotReplannableCopyDataset` snapshot.'
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( true );
+    
+    // For each component in 'CreateAllComponents', a run is created that only contains that component.
+    runs := opt.CreateAllComponents();
+    se := dataset.ScopeElementMock( relnew );
+    
+    strs := construct( structured[stream[JSON]] );
+    nrofdatasetcopies_previousrun := 0;
+    traverse( runs, Elements, run )
+    {
+      scope := LibOpt_ScopeFat::Create( run );
+      scope.Add( se );
+      run.SetStartScope( scope );
+      strs.Add( run.Start() );
+      
+      // Each run contains exactly 1 component. We will now create a dataset copy by using the task of this component.
+      // When creating the dataset copy, also a LibOpt_SnapshotReplannableCopyDataset snapshot is created. 
+      startcomponent := run.StartComponent();
+      firsttask := select( startcomponent, Task, task, task.Component() = startcomponent );
+      firsttask.CopyDataset();
+     
+      // Check that exactly 1 'LibOpt_SnapshotReplannableCopyDataset' snapshot is created by the startcomponent.CopyDataset() method.
+      nrcreatedsnapshots := counter( startcomponent, 
+                                     SnapshotComponent.Children.astype( LibOpt_SnapshotReplannableCopyDataset ),
+                                     snapshot,
+                                     true );
+      componentdefinitionname := startcomponent.DefinitionName();                                 
+      this.Run().AssertEqual( 1,
+                              nrcreatedsnapshots,
+                              "Expected to create 1 '" 
+                              + typeof( LibOpt_SnapshotReplannableCopyDataset ).Name()
+                              + "' snapshot for the '"
+                              + componentdefinitionname
+                              + "' component. However, "
+                              + [String] nrcreatedsnapshots 
+                              + " snapshots were created."
+                              );
+    
+      // Check that exactly 1 dataset copy is created by the startcomponent.CopyDataset() method. 
+      // To do this, we check that the number of elements in MDSEditor::Editor().ObjectInfos() increased by 1 compared to the previous run.
+      objectinfos := MDSEditor::Editor().ObjectInfos();                        
+      nrofdatasetcopies := counter( objectinfos,
+                                    Elements,
+                                    objectinfo,
+                                    LibOpt_TestUnit_DatasetCopy::IsDatasetChildOfUnitTestDataset( objectinfo, dataset )
+                                    );
+      
+      nrofnewdatasetcopies := nrofdatasetcopies - nrofdatasetcopies_previousrun;
+      this.Run().AssertEqual( 1,
+                              nrofnewdatasetcopies,
+                              "Expected to create 1 dataset copy for the '" 
+                              + componentdefinitionname
+                              + "' component. However, "
+                              + [String] nrofnewdatasetcopies 
+                              + " dataset copies were created."
+                              );
+                              
+      nrofdatasetcopies_previousrun := nrofdatasetcopies;  
+    }
+    
+    str := stream[JSON]::Merge( strs );
+    this.NoException( str );
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

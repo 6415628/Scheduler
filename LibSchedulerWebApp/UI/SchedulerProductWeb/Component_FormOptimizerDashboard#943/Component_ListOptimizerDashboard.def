@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+Component ListOptimizerDashboard
+{
+  #keys: '[143768.1.1916137966]'
+  BaseType: 'WebList'
+  Children:
+  [
+    Component DataExtractorOptimizerDashboard
+    {
+      #keys: '[143768.1.1916137967]'
+      BaseType: 'WebDataExtractor'
+      Properties:
+      [
+        DataType: 'Schedule'
+        FixedFilter:
+        [*
+          RealVector::Construct( object.RollbackKPI() ).Size() > 0
+          and not exists( object.Run(),
+            Snapshot.astype( LibOpt_SnapshotKPI ),
+            other,
+            other.SequenceNr() < object.SequenceNr() and
+            RealVector::Construct( other.RollbackKPI() ).Size() > 0 and
+            ( RealVector::Construct( other.RollbackKPI() ).Get( 0 ) < RealVector::Construct( object.RollbackKPI() ).Get( 0 )
+               or ( RealVector::Construct( other.RollbackKPI() ).Get( 0 ) = RealVector::Construct( object.RollbackKPI() ).Get( 0 )
+                      and other.TimeStamp() = object.TimeStamp()
+                     )
+             )
+          )
+        *]
+        Source: 'Schedule'
+        Taborder: 0
+        Transformation: 'Optimization.LastRun.Snapshot.astype(LibOpt_SnapshotKPI)'
+      ]
+    }
+    #child: listActionBarPageOptimizerDashboard
+    Component DataSetLevelOptimizerDashboard
+    {
+      #keys: '[143768.1.1916137972]'
+      BaseType: 'WebDataSetLevel'
+      Children:
+      [
+        #child: listContextMenuOptimizerDashboard
+      ]
+      Properties:
+      [
+        Columns: '[{"attribute":{"classtype":"WebApiDefinitionAttributeAllConstraint","columnid":"All constraints","title":"All constraints","subtotals":"","tooltip":"","width":-1,"display":"shown"}},{"attribute":{"classtype":"WebApiDefinitionAttributeDataMember","columnid":"TimeSince","title":"Runtime","subtotals":"","tooltip":"","width":-1,"display":"shown","attribute":"TimeSince"}},{"attribute":{"classtype":"WebApiDefinitionAttributeExpression","columnid":"_Expr1","title":"Total KPI","subtotals":"","tooltip":"","width":-1,"display":"shown","expressionbody":"RealVector::Construct( object.RollbackKPI() ).Get( 1 )"}}]'
+        ContextMenu: 'listContextMenuOptimizerDashboard'
+        SortCriteria: 'desc:TimeSince'
+        Taborder: 2
+      ]
+    }
+  ]
+  Properties:
+  [
+    Taborder: 0
+  ]
+}

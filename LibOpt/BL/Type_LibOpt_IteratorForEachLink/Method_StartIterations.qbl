@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride StartIterations (LibOpt_Task task, LibOpt_TaskContextIterator context) as stream[JSON]
+{
+  Description: 'Loop through the links in order from the point we left off the last time this method was called.'
+  TextBody:
+  [*
+    result := stream[JSON]::Success();
+    unexecuted_links := selectsortedset( this, LinkForEach, link, link.SequenceNr() > context.CurrentIteration(), link.SequenceNr() );
+    traverse( unexecuted_links, Elements, link,
+              this.CanStartIteration( context ) )
+    {
+      result := result->Merge( this.StartIteration( task, context, link ) );
+    }
+    
+    return result;
+  *]
+}

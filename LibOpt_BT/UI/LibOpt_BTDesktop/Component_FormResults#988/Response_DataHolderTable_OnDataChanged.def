@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: DataHolderTable
+Response OnDataChanged () id:Response_FormResults_DataHolderTable_OnDataChanged
+{
+  #keys: '[139544.0.1153360017]'
+  Body:
+  [*
+    if( isnull( DataHolderOwner.Data() ) )
+    {
+      DataHolderOwner.Data( construct( shadow[LibOpt_UIOwner] ) );
+    }
+    
+    owner := DataHolderOwner.Data();
+    
+    traverse( owner, UICellResult, res, isnull( res.TrackingTableCell() ) )
+    {
+      res.Delete();
+    }
+    
+    created := selectset( owner, UICellResult.TrackingTableCell, cell, true );
+    
+    traverse( this.Data().Difference( created ), Elements, cell )
+    {
+      owner.UICellResult( relnew, TrackingTableCell := cell );
+    }
+    
+    Form.UpdateValues();
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIComponent_OnDataChanged'
+}

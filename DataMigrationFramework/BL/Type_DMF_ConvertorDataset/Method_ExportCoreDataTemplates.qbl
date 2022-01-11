@@ -1,0 +1,68 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExportCoreDataTemplates (DMF_DatasetTypes datasetTypes_i) as stream[Void]
+{
+  Description: 'Traverse datasets across all types and export their core data templates'
+  TextBody:
+  [*
+    // Murugaiya Mar-23-2021 (created)
+    exported_s := stream[Object]::Success();
+    
+    traverse( datasetTypes_i, Elements , datasetType )
+    {  
+      // Attempt to locate a dataset to be used for template export
+      dataset := select( datasetType, Dataset, dataset, true );
+      ds_s    := stream[Object]::Exception( 'No dataset found.' );
+      
+      if( not isnull( dataset ) )
+      {
+        // Mind: if dataset key is a 'ZeroKey' this will stop abruptly with a server warning 
+        ds_s := dataset->GetDataset();
+      }
+      
+      // DevNote: this isn't working right. Temp dataset still created even though dataset is found. CTQC-3323
+      // if exception, in the case of dataset type without any dataset, or dataset for some reason no longer retrievable, DMF will create temporary dataset in order to allow template to be exported
+      dsException_s := ds_s->Exception();
+      
+      ds_s := void->After( dsException_s )->()
+      {    
+        //logfile( 'this block should only trigger when exception happen in dataset.GetDataset for ', datasetType.Name() );
+        return datasetType->CreateTemporaryDataset();
+      }
+      
+      //if anything happen to the create temporary dataset
+      hasException := ds_s->Exception();
+      
+      hasException->Exception()->( ex )
+      {
+        
+        msg := "Failed to export template for dataset type [" + datasetType.Name() + 
+               "]. Reason: there is no dataset created for the specific object to work with." + String::NewLine() +
+               " In order to get metadata information, core template export requires at least one online dataset a " +
+               typeof( DMF_UpgradeabilityMetaData ).Name() + " instance in that dataset." + String::NewLine() +
+               ex.Message();
+        
+        DMF_Utility::LogWarning( msg );
+      }
+      
+      track_s := void->( ds_s )
+      {     
+        typeOfDataset := typeofexpression( ds_s );
+        rootObject    := DMF_ConvertorDataset::GetRootObjectExtensible( ds_s );
+        
+        this.ExportCoreDataTemplate( typeOfDataset, datasetType.Name(), rootObject );
+        return ds_s;
+      }
+      
+      track_s->Exception()->( ex )
+      {
+        DMF_Utility::LogWarning( ex.Message() );
+      }
+      
+      exported_s->Merge( track_s );
+    }
+    
+    return void->After( exported_s->GroupAll() );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

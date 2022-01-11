@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride DoExecute (Algorithm algorithm, LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    result := null( stream[JSON] );
+    
+    if( this.InOneTransaction() )
+    {
+      program := algorithm.astype( MathematicalProgram );
+      
+      // Register type descriptors if the program hasn't been executed before.
+      if( this.AutoRegisterTypeDescriptors() and program.ExecutionCounter() = 0 )
+      {
+        this.RegisterTypeDescriptors( program );
+      }
+    
+      LibOpt_SuboptimizerMP::ExecuteMP( program );
+      result := this.DoHandleResultCall( program, task );
+    }
+    else
+    {
+      result := this.DoExecuteReactive( emit( algorithm ), task );
+    }
+    
+    return result;
+  *]
+}

@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method InstantiateNewKnowledgeBranch (String kbDefinitionName, String kbBranchName) id:Method_LibSM_GlobalState_InstantiateNewKnowledgeBranch
+{
+  #keys: '[136402.0.1246521580]'
+  Body:
+  [*
+    // Instantiate a knowledge branch with branch name = KB Branch selection name
+    
+    Domain.PublishKnowledge();
+    editor             := CKBEditor::Create();
+    scenarioManagerMDS := LibSM_ScenarioManager.MDSLibSM_ScenarioManager();
+    kbs                := editor.GetKBs();
+    
+    kbfullid := maxselect( scenarioManagerMDS,
+                           MDSKBs,
+                           mdsKB,
+                           mdsKB.Name() = kbDefinitionName,
+                           mdsKB.ChangeNr() );
+    
+    mid := selectobject( kbs, Elements, kb,
+                         true,
+                         kb.Domain() = kbfullid.Domain()
+                     and kb.Name() = kbfullid.Name() );
+    
+    modelkb := editor.GetModelKB( mid );
+    
+    //get a copy so we could edit
+    saveid := KBFullID::Create( kbfullid.Domain(), kbfullid.Name(), kbfullid.Branch(), kbfullid.Version() );
+    
+    saveid.Version( "1.0.0.0" );
+    saveid.Branch( kbBranchName );
+    
+    //Perform the actual saveAs action
+    editor.SaveKBAs( modelkb, saveid, 'New branch' );
+    saveid.ChangeNr( 1 );
+  *]
+}

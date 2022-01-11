@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetSnapshots (const LibOpt_Issue issue) remote as constcontent owning LibOpt_Snapshots
+{
+  Description: 'Return the set of `LibOpt_Snapshots` which the given `LibOpt_Issue` (issue) is about.'
+  TextBody:
+  [*
+    snapshots := construct( LibOpt_Snapshots, constcontent );
+    
+    if( this.IsType() )
+    {
+      childcomponents := selectset( issue.Statistic().astype( LibOpt_StatisticTime ), Child.Component, component, true );
+      
+      snapshots := selectset( this.GetIterations( issue ), Elements.IterationPartNM.IterationPart.SnapshotComponent, snapshotcomponent,
+                              // FILTER
+                              childcomponents.Find( snapshotcomponent.Component() ) >= 0
+                            );
+    }
+    else if( not this.IsRoot() ) // A "root" time statistic is not related to Snapshots.
+    {
+      // For some reason the Quill parser thinks that super.GetSnapshots( issue ) returns a const structured.
+      // The workaround is to move the elements from the strucutred into an empty set.
+      super_snapshots := super.GetSnapshots( issue );
+      snapshots.AddInPlace( super_snapshots );
+    }
+    
+    return &snapshots;
+  *]
+}

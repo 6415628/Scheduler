@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcRunningOptimizerName #extension
+{
+  TextBody:
+  [*
+    // mbr23, 2019-09-16: modified: no optimizer type if-else needed anymore; use abstract Run.GetType().
+    // mbr23, 2019-09-24 (extended): also consider componentized optimizers.
+    
+    value := '';
+    
+    optimizerrun := select( this, Roots, optimizerrun, optimizerrun.IsActive() );
+    if( not isnull( optimizerrun ) )
+    {
+      value := optimizerrun.GetOptimizerType().ID();
+    }
+    
+    optimization := this.Schedule().Optimization();
+    if( not isnull( optimization ) )
+    {
+      libopt_run := select( optimization.GetRunningRuns(), Elements, run, true );
+      if( not isnull( libopt_run ) )
+      {
+        value := libopt_run.OptimizerName();
+      }
+    }
+    
+    this.RunningOptimizerName( value );
+  *]
+}

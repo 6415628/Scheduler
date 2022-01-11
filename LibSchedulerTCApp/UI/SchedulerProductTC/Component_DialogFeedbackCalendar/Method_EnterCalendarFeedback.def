@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method EnterCalendarFeedback (internal[GUIComponent] parent, Resource_SC resource) id:Method_DialogFeedbackCalendar_EnterCalendarFeedback
+{
+  #keys: '[118288.0.242390553]'
+  Body:
+  [*
+    intervalid := resource.Schedule().GetCalendarIntervalInSFID();
+    
+    data := Schedule.ImportedCalendarInterval_SC( relshadow,
+                                                  CalendarIntervalID := [String]intervalid,
+                                                  ReportedResource := resource.Name(),
+                                                  ReportedStart := Schedule.Time(),
+                                                  ReportedEnd := Schedule.Time() + resource.ResourceGroup_SC().SchedulingHorizon(),
+                                                  ReportedCapacity := 0.0,
+                                                  ReportedRemark := '',
+                                                  IsShopFloorClient := true );
+    Dialog.Data( data );
+    
+    if( this.DoModal( parent ) > 0 )
+    {
+      data.Commit();
+    }
+  *]
+}

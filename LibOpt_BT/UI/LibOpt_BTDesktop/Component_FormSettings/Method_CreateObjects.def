@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateObjects (NamedValue nv, shadow[LibOpt_UIOwner] owner, String prefix, 
+  NamedValueTree nvt, structured[shadow[LibOpt_BT_UISetting]] existing) id:Method_FormSettings_CreateObjects
+{
+  #keys: '[139544.1.1263142282]'
+  Body:
+  [*
+    children := nv.Children();
+    
+    name := nv.Name();
+    if( prefix <> '' )
+    {
+      name := prefix + '.' + name;
+    }
+    
+    if( name <> '' and LibOpt_Utility::IsSettingsNode( nv ) )
+    {
+      // Try repurposing an exinsting setting object.
+      setting := select( existing, Elements, elem, elem.Path() = name );
+      if( isnull( setting ) )
+      {
+        setting := owner.UISetting( relnew, Path := name );
+      }
+      else
+      {
+        existing.Remove( setting );
+      }
+      setting.ValueRepresentation( this.GetValueRepresentation( nv ) );
+      definedby_node := guard( nv.Child( nvt.GetHandle( LibSE_SettingsContainer::Handle_Metadata() ) )
+                                 .Child( nvt.GetHandle( LibSE_SettingsContainer::Handle_DefinedBy() ) ),
+                               null( NamedValue ) );
+      if( not isnull( definedby_node ) )
+      {
+        setting.DefinedBy( definedby_node.GetValueAsString() );
+      }
+    }
+    else
+    {
+      traverse( children, Elements, child )
+      {
+        this.CreateObjects( child, owner, name, nvt, existing );
+      }
+    }
+  *]
+}

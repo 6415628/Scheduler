@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeToolRequirementPatterns
+{
+  TextBody:
+  [*
+    traverse( this.Schedule(), ToolRequirementPattern, p )
+    {
+      p.IsChecked( false );
+    }
+    
+    traverse( this.Schedule(), ImportedToolRequirementPattern_SC, importedpattern )
+    {
+      // Identify if the pattern already exists
+      pattern := select( this.Schedule(), ToolRequirementPattern, p, 
+                         p.FromResourceGroupID() = importedpattern.FromResourceGroupID()
+                         and p.FromResourceID() = importedpattern.FromResourceID()
+                         and p.ToResourceGroupID() = importedpattern.ToResourceGroupID()
+                         and p.ToResourceID() = importedpattern.ToResourceID()
+                         and p.SubtaskDefinitionName() = importedpattern.SubTaskDefinitionName() );              
+      patternExists := not isnull( pattern );
+    
+      // Create new pattern
+      if( not patternExists )
+      {
+        resource := Resource_SC::FindResource_SC( importedpattern.FromResourceID() );
+        toolgroup := select( this.Schedule(), ToolGroup, g, g.Type() = importedpattern.ToolGroupID() );
+        pattern := ToolRequirementPattern::CreatePathIndependantTR( this.Schedule(), resource, toolgroup );
+      }
+    
+      // Flag that the pattern exists in external data
+      pattern.IsChecked( true );
+      pattern.Update( importedpattern.ConfiguredDuration(), 
+                      importedpattern.IsPathDependent(), 
+                      importedpattern.NrOfTools(), 
+                      importedpattern.Offset(), 
+                      importedpattern.UseConfiguredDuration(),
+                      importedpattern.FromResourceGroupID(),
+                      importedpattern.SubTaskDefinitionName(),
+                      importedpattern.ToResourceID(),
+                      importedpattern.ToResourceGroupID(),
+                      importedpattern.BlockID() );
+    
+    }
+    
+    // Remove patterns that are removed from external data
+    traverse( this.Schedule(), ToolRequirementPattern, p, not p.IsChecked() )
+    {
+      p.Delete();
+    }
+  *]
+}

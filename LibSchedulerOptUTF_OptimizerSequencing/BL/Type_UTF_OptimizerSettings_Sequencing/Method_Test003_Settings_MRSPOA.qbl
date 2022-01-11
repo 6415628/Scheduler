@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test003_Settings_MRSPOA (Schedule schedule)
+{
+  Description: 'Imports the default optimizer settings for MRS POA, changes them, tests the import/export function and then exports the original settings. Asserts that all imported settings are the same as the exported ones.'
+  TextBody:
+  [*
+    // jog2 Nov-12-2020 (created)
+    
+    mrspoasettings := select( schedule, Optimization.Optimizer.astype( OptimizerSequencing ).Settings.astype( SettingsSequencing ).MRSPOA, mrspoa, true );
+    
+    // Store the current MRS POA settings
+    originalsettings := construct( SettingsMRSPOAForSequencing );
+    originalsettings.UTF_StoreSettings( mrspoasettings );
+    
+    // Change the MRS POA settings
+    mrspoasettings.UTF_ChangeSettings();
+    
+    // Store them for comparison
+    storedsettings := construct( SettingsMRSPOAForSequencing );
+    storedsettings.UTF_StoreSettings( mrspoasettings );
+    
+    // Export the changed settings
+    schedule.ExportObject().ExportOptimizerSettingsSequencingToDataFolder();
+    
+    // Change it again
+    mrspoasettings.UTF_ChangeSettings();
+    
+    // Import the previous changed settings
+    schedule.ImportAndSynchronizeOptimizerSettingsSequencing();
+    
+    // Check to see if the imported settings are the same as the stored ones
+    this.Run().AssertTrue( this.CheckMRSPOASettings( mrspoasettings, storedsettings ), 'The imported values for the MRS POA settings are different from the current ones.');
+    
+    // Reset the values to the original
+    mrspoasettings.UTF_StoreSettings( originalsettings );
+    schedule.ExportObject().ExportOptimizerSettingsSequencingToDataFolder();
+  *]
+}

@@ -1,0 +1,68 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitVariables (LibOpt_Task task, SuboptimizerMPPTAssignment_PTAssignmentMP program, TransientDataSuboptimizerPTAssignment transientData)
+{
+  TextBody:
+  [*
+    // jkr8 Jul-20-2021 (created)
+    
+    program.SetupDurationVariables().New();
+    debuginfo( ' in scope ptc number: ', counter( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, ptc, true ) )
+    traverse( transientData, Bucket, bucket )
+    {
+      program.IsUsedVariables().New( bucket );
+      
+      traverse( transientData, OperationGroup, operationGroup )
+      {
+        program.NrOpsAssignedVariables().New( operationGroup, bucket );
+        
+        program.PreferenceVariables().New( operationGroup, bucket );
+        
+        program.LatenessVariables().New( operationGroup, bucket );
+        
+        traverse( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, programType )
+        {
+          program.NrOpsAssignedToTypeVariables().New( operationGroup, bucket, programType );
+        }
+      }
+      
+      traverse( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, programType )
+      {
+        program.IsNewProgramVariables().New( programType, bucket );
+        
+        program.IsProgramAssignedVariables().New( programType, bucket );
+        
+        traverse( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, otherProgamType, otherProgamType.Name() <> programType.Name() )
+        {
+          program.IsSetupVariables().New( programType, bucket, otherProgamType );
+        }
+        
+        traverse( programType, RuleScopeInProgramType.Rule, rule, rule.RuleSubType().istype( RuleSubTypeMinMaxCombinedLength ) )
+        {
+          program.CapacitySlackHardVariables().New( programType, bucket, rule );
+          program.CapacitySlackSoftVariables().New( programType, bucket, rule );
+        }
+        
+        traverse( programType.First(), RuleScopeInProgramPhase.Rule, rule, rule.RuleSubType().istype( RuleSubTypeMinMaxCombinedLength ) )
+        { 
+          program.CapacitySlackHardVariables().New( programType, bucket, rule );
+          program.CapacitySlackSoftVariables().New( programType, bucket, rule );
+        }
+        traverse( programType, ProgramPhaseConfiguration.RuleScopeInProgramPhase.Rule, rule, rule.RuleSubType().istype( RuleSubTypeMinMaxCombinedLength ) )
+        {
+          program.PhaseCapacitySlackHardVariables().New( programType, bucket, rule );
+          program.PhaseCapacitySlackSoftVariables().New( programType, bucket, rule );
+        }
+      }
+    }
+    
+    traverse( transientData, Bucket, bucket, bucket.IsFixed() )
+    {
+      traverse( transientData, OperationGroup, operationGroup )
+      {
+        program.OperationGroupOnFixedBucketDecreaseVariables().New( bucket, operationGroup );
+        program.OperationGroupOnFixedBucketIncreaseVariables().New( bucket, operationGroup );
+      }   
+    }
+  *]
+}

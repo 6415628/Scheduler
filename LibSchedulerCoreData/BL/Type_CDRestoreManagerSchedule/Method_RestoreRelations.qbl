@@ -1,0 +1,117 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations (CDSchedule cdschedule)
+{
+  Description: 'Main method for restoring core data relations into planning objects'
+  TextBody:
+  [*
+    // Restore generic planning configuration
+    this.RestoreRelations_GenericPlanningConfiguration( cdschedule );
+    
+    // Restore program definition configuration, program set, program type, program phase, program type change
+    this.RestoreRelations_ProgramDefinitionConfiguration( cdschedule );
+    
+    // Restore demand batch type, demand batch routing step
+    this.RestoreRelations_GenericDemandBatchType( cdschedule );
+    
+    // Restore product, followed by product in stocking point, product demand on supply, inventory target
+    this.RestoreRelations_GenericProduct( cdschedule );
+    
+    // Restore routing, followed by the corresponding routing step, routing step input, routing step output. 
+    this.RestoreRelations_GenericRouting( cdschedule );
+    
+    // Restore generic external work order
+    this.RestoreRelations_GenericExternalWorkOrder( cdschedule );
+    
+    // Restore generic internal work order, internal work order operation, internal work order output material, internal work order input material, internal work order supply, internal work order demand
+    this.RestoreRelations_GenericInternalWorkOrder( cdschedule );
+    
+    // Restore work order operation precedence
+    this.RestoreRelations_WorkOrderOperationPrecedence( cdschedule );
+    
+    // Restore batch work order, batch work order operation, batch work order output material, batch work order supply
+    this.RestoreRelations_GenericBatchWorkOrder( cdschedule );
+    
+    // Restore order
+    this.RestoreRelations_GenericOrder( cdschedule );
+    
+    // Restore plan unit, followed by operation and operation material
+    this.RestoreRelations_GenericPlanUnit( cdschedule );
+    
+    // Restore stocking point, stocking point stock, stock element demand, stock element inventory target, stock element supply 
+    this.RestoreRelations_StockingPoint( cdschedule );
+    
+    // Restore resource group
+    this.RestoreRelations_GenericResourceGroup( cdschedule );
+    
+    // Restore operation batch, followed by batch sequence element
+    this.RestoreRelations_GenericOperationBatch( cdschedule );
+    
+    // Restore demand batch, demand in batch
+    this.RestoreRelations_GenericDemandBatch( cdschedule );
+    
+    // Restore shutdowntypeinresoruce
+    this.RestoreRelations_ShutdownTypeInResource( cdschedule );
+    
+    // Restore rule framework
+    this.RestoreRelations_RuleFramework( cdschedule );
+    
+    // Restore program change, program change in type
+    this.RestoreRelations_ProgramChange( cdschedule );
+    
+    // Restore shutdown
+    this.RestoreRelations_Shutdown( cdschedule );
+    
+    // Restore resource node
+    this.RestoreRelations_ResourceNode( cdschedule );    
+    
+    // Restore MPSPlan and MPSPlannedOrder
+    this.RestoreRelations_MPSPlan( cdschedule );
+    
+    // Restore feedbacks
+    this.RestoreRelations_FeedbackManagement( cdschedule );
+    
+    // Restore tools
+    this.RestoreRelations_ToolRequirementPattern( cdschedule );
+    
+    // Propagate to allow restore of fulfillment
+    Transaction::Transaction().Propagate( attribute( ImportedFulfillment, BackupImportedID ) );
+    
+    // Restore relations for demand, fulfillment, fulfillment conversion
+    this.RestoreRelations_GenericMaterialCustomerOrderLine( cdschedule );
+    this.RestoreRelations_GenericMaterialDependentDemand( cdschedule );
+    this.RestoreRelations_GenericMaterialPlannedDemand( cdschedule );
+    this.RestoreRelations_GenericProductCustomerOrderLine( cdschedule );
+    this.RestoreRelations_GenericProductDependentDemand( cdschedule );
+    this.RestoreRelations_GenericProductPlannedDemand( cdschedule );
+    
+    // Restore relations for supply, plannedsupply2material, plannedsupply2externalmaterial
+    this.RestoreRelations_GenericMaterialExternalSupply( cdschedule );
+    this.RestoreRelations_GenericMaterialPlannedSupply( cdschedule );
+    this.RestoreRelations_GenericProductExternalSupply( cdschedule );
+    this.RestoreRelations_GenericProductPlannedSupply( cdschedule );
+    
+    // Restore fulfillment
+    this.RestoreRelations_GenericProductPlannedFulfillment( cdschedule )
+    this.RestoreRelations_GenericProductExternalFulfillment( cdschedule );
+    this.RestoreRelations_GenericMaterialPlannedFulfillment( cdschedule );
+    this.RestoreRelations_GenericMaterialExternalFulfillment( cdschedule );
+    
+    // Restore optimizer
+    this.RestoreRelations_SettingsSequencing( cdschedule )
+    
+    // Restore precedence graph, precedence node, precedence edge
+    // Need to be placed after restoration of resource group, demand batch and plan unit
+    this.RestorePrecedenceGraph();
+    
+    // Restore MES feedback adapter
+    this.RestoreMESFeedbackAdapter();
+    
+    // Restore selected optimizer strategy and settings
+    this.RestoreRelations_OptimizerStrategySettings( cdschedule );
+    
+    // Project-specific restore
+    this.RestoreRelationsProject( cdschedule );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

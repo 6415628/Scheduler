@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateIssues
+{
+  Description: 'Create `LibOpt_Issues` to highlight potential issues about values collected by this `LibOpt_StatisticSuboptimizerMP`.'
+  TextBody:
+  [*
+    // Variables needed for Issues creation.
+    issuetype := this.GetIssueType();
+    severityscaleentries_lowerthresholdviolation := LibOpt_Statistic::GetSeverityScaleEntriesSortedByThreshold( this.GetSeverityScaleForLowerThresholdViolation() );
+    severityscaleentries_upperthresholdviolation := LibOpt_Statistic::GetSeverityScaleEntriesSortedByThreshold( this.GetSeverityScaleForUpperThresholdViolation() );
+    
+    traverse( this.SuboptimizerMP(), SnapshotMP, snapshotmp,
+              this.CheckIsApplicable( snapshotmp )
+            )
+    {
+      this.CreateIssue( snapshotmp,
+                        issuetype,
+                        severityscaleentries_lowerthresholdviolation,
+                        severityscaleentries_upperthresholdviolation
+                      );
+    }
+  *]
+}

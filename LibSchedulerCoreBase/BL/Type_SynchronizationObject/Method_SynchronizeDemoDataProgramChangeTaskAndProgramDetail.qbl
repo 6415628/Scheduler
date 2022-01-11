@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeDemoDataProgramChangeTaskAndProgramDetail
+{
+  Description: 'Synchronize demo data program change task and program detail'
+  TextBody:
+  [*
+    
+    impprogramchangetasks := selectsortedset( this, Schedule.ImportedDemoDataProgramChangeTask, programchangetask, true );
+    
+    traverse( impprogramchangetasks, Elements, impprogramchangetask )
+    {
+      // Get the program change's program type configurations
+      programtypeconfigs := construct( ProgramTypeConfigurations );
+      traverse( impprogramchangetask, ImportedDemoDataProgramDetail, impprogramdetail )
+      {
+        programtypeconfig := ProgramTypeConfiguration::FindProgramTypeConfiguration( impprogramdetail.ProgramDefinitionConfigurationID(),
+                                                                                     impprogramdetail.ProgramSetConfigurationID(),
+                                                                                     impprogramdetail.ProgramTypeConfigurationID() );
+        programtypeconfigs.Add( programtypeconfig ); 
+      }
+      
+      // Create/Update program change
+      programchange := ProgramChange::FindProgramChange( impprogramchangetask.ProgramChangeID() );
+      programchangetask := null( ProgramChangeTask );
+      if( isnull( programchange ) )
+      {
+        resource := Resource_SC::FindResource_SC( impprogramchangetask.ResourceID() );    
+        if( not isnull( resource ) )
+        {    
+          beforetask := select( resource, Task_SC, t, guard( t.GetOperation().OperationID() = impprogramchangetask.BeforeOperationID(), false ) );
+          programchangetask := resource.InsertProgramChangeWithProgramChangeID( impprogramchangetask.ProgramChangeID(),
+                                                                                beforetask,
+                                                                                programtypeconfigs,
+                                                                                impprogramchangetask.HasProgramChangeDurationUser(),
+                                                                                impprogramchangetask.ProgramChangeDurationUser() );                         
+        }
+      }
+      else
+      {
+        programchangetask := programchange.ProgramChangeTask();
+        programchange.Update( programtypeconfigs,
+                              impprogramchangetask.HasProgramChangeDurationUser(),
+                              impprogramchangetask.ProgramChangeDurationUser() );
+      }
+      
+      if( not isnull( programchangetask ) )
+      {
+        // Update program change task attributes
+        programchangetask.IsFrozenByUser( impprogramchangetask.IsFrozenByUser() );  
+      }
+    }
+    
+    // Update last running ProgramChange ID
+    this.Schedule().ResetToLatestProgramChangeID();
+  *]
+}

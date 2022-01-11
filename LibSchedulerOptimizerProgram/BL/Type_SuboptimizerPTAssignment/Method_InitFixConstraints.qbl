@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitFixConstraints (SuboptimizerMPPTAssignment_PTAssignmentMP program, LibOpt_Task task, TransientDataSuboptimizerPTAssignment transientData) as SuboptimizerMPPTAssignment_PTAssignmentMP
+{
+  TextBody:
+  [*
+    // jkr8 Sep-6-2021 (created)
+    
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // NrOpsAssigned_(o,b) + DecreaseSlack_(o,b) - IncreaseSlack_(o,b) = NumberOfOperationsAssignedToFixedBucket_(o,b), forall b in Fixed buckets, o in OperationGroups //
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // For Fixed buckets, add slack variables to the existing assignment. Deviating from the already existing assignment is allowed, 
+    // but a certain extra cost is taken into account for this.
+    
+    traverse( transientData, Bucket, bucket, bucket.IsFixed() )
+    {
+      traverse( transientData, OperationGroup, operationGroup )
+      {
+        constr := program.OperationGroupFixConstraints().New( bucket, operationGroup );
+        
+        constr.NewTerm( 1.0, program.NrOpsAssignedVariables().Get( operationGroup, bucket ) );
+        
+        constr.NewTerm( 1.0, program.OperationGroupOnFixedBucketDecreaseVariables().Get( bucket, operationGroup ) );
+        
+        constr.NewTerm( -1.0, program.OperationGroupOnFixedBucketIncreaseVariables().Get( bucket, operationGroup ) );
+        
+        //If the operation group in bucket does not exist, it has never been created, meaning that the number of operations assigned to the bucket is equal to zero. 
+        if( exists( operationGroup, OperationGroupInBucket, ogib, true, ogib.Bucket().SequenceNr() = bucket.SequenceNr() ) )
+        {
+          operationGroupInBucket := select( operationGroup, OperationGroupInBucket, ogib, true, ogib.Bucket().SequenceNr() = bucket.SequenceNr() );
+          constr.RHSValue( operationGroupInBucket.NumberOperationsAssigned() );
+        }
+      }
+    }
+    
+    return program;
+  *]
+}

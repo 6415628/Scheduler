@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method RefreshUIIsLastAttribute () id:Method_Kpi_frmKpiSnapshots_RefreshUIIsLastAttribute
+{
+  #keys: '[136398.1.939843120]'
+  Body:
+  [*
+    // Updates the UI_IsLast attribute of the KpiValues to match the selected series / kpi.
+    // Call this method after updating the 'UI_LabelValue' attribute.
+    
+    // First clean previously set flags.
+    traverse( selectset( dhQueryResult.Data(), SnapshotData.Value, v, v.UI_IsLast() ), Elements, val )
+    {
+      val.UI_IsLast( false );
+    }
+    
+    // Now, if the checkbox is checked and a Series has been selected,
+    // determine which KpiValue objects represent the LAST snapshot of their 
+    // KPI & LabelValue of the selected Series (= Label)
+    if ( cbOnlyLastSnapshot.Checked() and not isnull( selSeries.Data() ) ) 
+    {
+      traverse( dhSelectedSeries.Data(), Value, serieValue )
+      {
+        traverse( dhSelectedKpis.Data(), Elements, kpi ) 
+        {
+          lastValue := maxselect( dhQueryResult.Data(), SnapshotData.Value, v, 
+                          v.UI_LabelValue() = serieValue.Value() and
+                          v.Name() = kpi.Name(),
+                          v.UI_DateTime() );
+          if ( not isnull( lastValue ) )
+          {
+            lastValue.UI_IsLast( true )                  
+          }         
+        } 
+      }
+    }
+  *]
+}

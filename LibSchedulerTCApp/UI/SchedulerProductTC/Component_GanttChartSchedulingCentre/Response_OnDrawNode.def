@@ -1,0 +1,175 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDrawNode (SingleTaskBase element, Resource_SC row) id:Response_GanttChartSchedulingCentre_OnDrawNode
+{
+  #keys: '[11532.0.78831957]'
+  Body:
+  [*
+    // OnDrawNode SingleTaskBase
+    // Kyle 12-05-2015 #5365 Update Gantt Chart Node color according to subtask type
+    subtasks := selectsortedset( element, SubTask, subtask, true, subtask.SequenceNr() );
+    
+    traverse( subtasks, Elements, subtask )
+    {
+      if( subtask.istype( SetupSubTask ) )
+      {
+        drawinfo.AddCompartment( ColorScheme.Setup(), subtask.Duration() );
+      }
+      else if( subtask.istype( TransferSubTask ) )
+      {
+        st := subtask.astype( TransferSubTask );
+    
+        drawinfo.AddCompartment( ColorScheme.IdleDuration(), st.IdleDuration() );
+        drawinfo.AddCompartment( ColorScheme.Transfer(), st.TransferDuration() );
+      }
+      else if( subtask.istype( ReceiveSubTask ) )
+      {
+        st := subtask.astype( ReceiveSubTask );
+    
+        drawinfo.AddCompartment( ColorScheme.IdleDuration(), st.IdleDuration() );
+        drawinfo.AddCompartment( ColorScheme.Receive(), st.TransferDuration() );
+      }
+      else if( not element.HasConstraintViolations() )
+      {
+        color := ColorScheme.Scheduled();
+        workorder := element.OperationAsSingleTask().PlanUnit_SC().Order_SC().WorkOrder();
+        
+        if( subtask.istype( ProcessSubTask ) )
+        {
+          if( not element.OperationAsSingleTask().OptimizerSequencing_IsInSnapshotScope()
+              and not element.OperationAsSingleTask().OptimizerSequencing_IsInSnapshotSpan() )
+          {
+            // Show dummy work order
+            if( element.IsDummyWorkOrder() )
+            {
+              color := ColorScheme.DummyWorkOrder();
+            }
+            // Show order color
+            else if( not isnull( workorder )
+                and MenuShowOrderColor.Checked() 
+                and not isnull( workorder.WorkOrderColorRange() ) )
+            {
+              color := Color::Color( workorder.WorkOrderColorRange().ColorCode() );
+            }
+            // Highlight selected product
+            else if( not isnull( workorder )
+                     and MenuHighlightSelectedProduct.Checked()
+                     and exists( DataHolderHighlightSelectedProduct.Data(), 
+                                 Elements,
+                                 product,
+                                 workorder.Order_SC().Product_SC() = product ) )
+            {
+              color := ColorScheme.HighlightProduct();
+            }
+            else if( element.Started() )
+            {
+              color := ColorScheme.Started()
+            }
+            else if( element.IsFrozenInSchedule() )
+            {
+              color := ColorScheme.IsFrozenInSchedule()
+            }
+            else if( element.IsLocked() )
+            {
+              color := ColorScheme.IsLockedByOptimizer();
+            }
+            else if( element.IsStartInSchedulingHorizon() )
+            {
+              color := ColorScheme.IsStartInSchedulingHorizon()
+            }
+          }
+          // Highlighting scope/span for optimizer debugging
+          else if( element.OperationAsSingleTask().OptimizerSequencing_IsInSnapshotScope() )
+          {
+            color := ColorScheme.OptInputScope();
+          }
+          else if( element.OperationAsSingleTask().OptimizerSequencing_IsInSnapshotSpan() )
+          {
+            color := ColorScheme.OptIsInSpan();
+          }
+        }
+        else if( subtask.istype ( NoBufferWaitSubTask ) )
+        {
+          color := ColorScheme.NoBufferWait();
+        }
+        else if( subtask.istype ( NoBufferActionSubTask ) )
+        {
+          color := ColorScheme.NoBufferAction();
+        }
+        else if( subtask.istype ( NoBufferOutflowSubTask ) )
+        {
+          color := ColorScheme.NoBufferOutflow();
+        }
+        else if( subtask.istype ( CleanUpSubTask ) )
+        {
+          color := ColorScheme.CleanUp();
+        }
+        else if( subtask.istype ( NoBufferActionInputSubTask ) )
+        {
+          color := ColorScheme.NoBufferActionInput();
+        }
+        // separate drawing for process subtask with more than one lot
+        if( subtask.istype( ProcessSubTask ) and guard( Schedule.TechnicalConfiguration().IsLotLeadTimeLogicOn(), false ) and not element.IsFrozenInSchedule() and not element.IsLocked() )
+        {
+          inputlots := selectsortedset( element, InputLot, inputlot, true, inputlot.SeqNr() );
+          
+          // Using a number to alternate the lot color if needed
+          i := 1;
+          
+          traverse( inputlots, Elements, inputlot )
+          {
+            current_start := inputlot.Start();
+            current_end := inputlot.End();
+            current_duration := current_end - current_start;
+                   
+            // Draw idle duration
+            // checks if there is a previous lot, meaning that this is not the first lot that's being processed
+            prev_end := guard( inputlot.PreviousInputLot().End(), current_start );
+            idleduration := current_start - prev_end;
+            drawinfo.AddCompartment( ColorScheme.IdleDuration(), idleduration ); // duration will be zero if there is no previous inputlot or if there is no idle time
+            
+            // Draw normal lot durations with alternating lot color if work order color and product highlighting color is not enabled
+            if( not MenuShowOrderColor.Checked() and not MenuHighlightSelectedProduct.Checked() )
+            {
+              // color variable cannot be set in a loop here, therefore we directly use AddCompartment
+              if( i mod 2 = 0 )
+              {
+                drawinfo.AddCompartment( ColorScheme.Lot_Process_1(), current_duration );
+              }
+              else
+              {
+                drawinfo.AddCompartment( ColorScheme.Lot_Process_2(), current_duration );
+              }
+              // so that the color changes for next lot
+              i++;
+            }
+            else
+            {
+              // Draw normal lot durations with preset colors
+              drawinfo.AddCompartment( color, current_duration );
+            }
+          }
+        }
+        // drawing for normal subtasks
+        else
+        {
+          drawinfo.AddCompartment( color, subtask.Duration() )
+        }
+      }
+      else
+      {
+        drawinfo.AddCompartment( drawinfo.BackgroundColor(), subtask.Duration() );
+      }
+    
+      //Draw the idle time compartments between subtasks
+      nextsubtask := subtask.Next();
+    
+      if( not isnull( nextsubtask ) )
+      {
+        idleduration := nextsubtask.Start() - subtask.End();
+        drawinfo.AddCompartment( ColorScheme.IdleDuration(), idleduration );
+      }
+    }
+  *]
+  DefinitionID: 'Responsedef_GanttChart_OnDrawNode'
+}

@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: ListLibOpt_AnalysisScopeElement/DataHolderAnalysis
+Response OnDataChanged () id:Response_ListLibOpt_AnalysisScopeElement_DataHolderAnalysis_OnDataChanged
+{
+  #keys: '[139164.4.455543782]'
+  Body:
+  [*
+    selected := selectset( DataHolderSelected.Data(), Elements.ScopeElement, se, true );
+    
+    DataHolderShadowAnalysis.Data( shadow( this.Data() ) );
+    
+    Form.UpdateScopeElements();
+    
+    // Re-select the same scope elements (after we created new ones)
+    if( selected.Size() > 0 )
+    {
+      set := selectset( DataHolderShadowAnalysis.Data(), AnalysisScopeElement, ase,
+                        selected.Find( ase.ScopeElement() ) >= 0 );
+      if( set.Size() > 0 )
+      {
+        ListLibOpt_AnalysisScopeElement.SelectByKey( set.First().Key() );
+        traverse( set.SelectLast( set.Size() - 1 ), Elements, elem )
+        {
+          ListLibOpt_AnalysisScopeElement.ExtendSelectByKey( elem.Key() );
+        }
+      }
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIComponent_OnDataChanged'
+}

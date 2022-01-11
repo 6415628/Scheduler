@@ -1,0 +1,84 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod NamedValueToJSON (NamedValue nv) const remote as owning JSONBuilder
+{
+  TextBody:
+  [*
+    value := nv.GetValue();
+    
+    type := null( Type );
+    
+    payload := '';
+    if( value.istype( BinaryValue ) )
+    {
+      payload := value.astype( BinaryValue ).AsHexString();
+      type := typeof( BinaryValue );
+    }
+    else if( value.istype( Boolean ) )
+    {
+      payload := BooleanToString::ISOConverter().Convert( value.astype( Boolean ) );
+      type := typeof( Boolean );
+    }
+    else if( value.istype( Char ) )
+    {
+      payload := CharToString::ISOConverter().Convert( value.astype( Char ) );
+      type := typeof( Char );
+    }
+    else if( value.istype( Date ) )
+    {
+      payload := DateToString::ISOConverter().Convert( value.astype( Date ) );
+      type := typeof( Date );
+    }
+    else if( value.istype( DateTime ) )
+    {
+      payload := DateTimeToString::ISOConverter().Convert( value.astype( DateTime ) );
+      type := typeof( DateTime );
+    }
+    else if( value.istype( Duration ) )
+    {
+      payload := DurationToString::ISOConverter().Convert( value.astype( Duration ) );
+      type := typeof( Duration );
+    }
+    else if( value.istype( Key ) )
+    {
+      payload := KeyToString::ISOConverter().Convert( value.astype( Key ) );
+      type := typeof( Key );
+    }
+    else if( value.istype( Number ) )
+    {
+      payload := NumberToString::ISOConverter().Convert( value.astype( Number ) );
+      type := typeof( Number );
+    }
+    else if( value.istype( Real ) )
+    {
+      payload := RealToString::ISOConverter().Convert( value.astype( Real ) );
+      type := typeof( Real );
+    }
+    else if( value.istype( String ) )
+    {
+      payload := value.astype( String );
+      type := typeof( String );
+    }
+    
+    // Create result
+    result := JSON::Object();
+    
+    result.Add( attribute( NamedValue, Name ).Name(), nv.Name() );
+    if( not isnull( type ) )
+    {
+      json_value := JSON::Object();
+      json_value.Add( typeof( Type ).Name(), type.Name() );
+      json_value.Add( typeof( Value ).Name(), payload );
+      result.Add( typeof( Value ).Name(), json_value );
+    }
+    
+    json_children := JSON::Array();
+    traverse( nv.Children(), Elements, child )
+    {
+      json_children.Add( LibOpt_Utility::NamedValueToJSON( child ) );
+    }
+    result.Add( method( NamedValue, Children ).Name(), json_children );
+    
+    return & result;
+  *]
+}

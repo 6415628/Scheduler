@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test010_SwitchRoundRobin (LibOpt_TestDataset dataset)
+{
+  Description: 'Randomly check that the randomize round robin switch sends does a round robin.'
+  TextBody:
+  [*
+    // Run randomized test
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    nr_of_tasks := Number::Random( 0, 100 );
+    
+    iterator := opt.IteratorUntil( run, 'Iterator' );
+    iterator.SetMaxIterations( nr_of_tasks );
+    switch := opt.SwitchRoundRobin( run, 'Switch' );
+    iterator.To( switch );
+    
+    nr_of_components := Number::Random( 1, 10 );
+    
+    components := construct( LibOpt_ComponentCounters );
+    for( j := 0; j < nr_of_components; j++ )
+    {
+      c := opt.ComponentCounter( run, 'Counter' + [String] j );
+      switch.Branch( c )
+      components.Add( c );
+    }
+    
+    // Propagate all, to start in one transaction
+    Transaction::Transaction().Propagate();
+    opt.ConfigureForOneTransaction( run );
+    
+    run.Start();
+    
+    all := floor( nr_of_tasks / nr_of_components );
+    rest := nr_of_tasks - all * nr_of_components;
+    
+    traverse( components, Elements, component )
+    {
+      this.Run().AssertEqual( all + ifexpr( rest > 0, 1, 0 ), component.NrOfTimesCalled(), 'Number of calls has an unexpected value' );
+      rest--;
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

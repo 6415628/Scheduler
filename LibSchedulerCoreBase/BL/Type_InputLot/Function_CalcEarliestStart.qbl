@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcEarliestStart
+{
+  TextBody:
+  [*
+    task := this.Task_SC();
+    
+    // schedule time
+    defaulttime := task.Resource_SC().Schedule().Time();
+    
+    // previous input lot's end of processing time without lead time
+    previousinputlot_processend := guard( this.PreviousInputLot().EarliestEnd(), defaulttime );
+    
+    // input lot should only start after process subtask earliest start
+    processsubtask_earlieststart := guard( task.ProcessEarliestStart(), defaulttime );
+    
+    value := maxvalue( this.LastTaskLotMaterialAvailableTime(), // last upstream output lot's end time to transfer to this input lot
+                       this.LastFulfillmentLotMaterialAvailableTime(), // last fulfillment lot's available time
+                       previousinputlot_processend,
+                       processsubtask_earlieststart );
+                       
+    // if this task has feedback, the start time is fixed by the task.ReportedStart
+    hasfeedback := this.Task_SC().HasFeedbackTask();
+    
+    if( hasfeedback )
+    {
+      value := task.ReportedStart();
+    }                   
+    
+    this.EarliestStart( value );
+  *]
+}

@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionInsertShutdown (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    resourceType := '';
+    leadTimeStrategy := '';
+    hasShutdownTypeInResource := false;
+    isValidForPreconInsert := false;
+    hasShutdown := false;
+    hasFeedback := false;
+    isValidForPreconDelete := false;
+    hasShutdownType := false;
+    duration := Duration::MaxDuration();
+    isValidForPreconCreateEdit := false;
+    
+    this.GetTestVariantForPreconditionChecking( isvariantfound,
+                                                resourceType,
+                                                leadTimeStrategy,
+                                                hasShutdownTypeInResource,
+                                                isValidForPreconInsert,
+                                                hasShutdown,
+                                                hasFeedback,
+                                                isValidForPreconDelete,
+                                                hasShutdownType,
+                                                duration,
+                                                isValidForPreconCreateEdit );
+    
+    value := false;
+    if( isvariantfound )
+    {
+      resource := select( schedule, ResourceGroup_SC.Resource_SC, r, true );
+      
+      value := resource.CheckCanApplyShutdownScheduling()
+               and resource.CheckIsShutdownTypeAvailable();
+    }
+    
+    this.Run().AssertEqual( isValidForPreconInsert, value,
+                            UTFUtility::GenerateFailedMessage( 'Precondition in inserting shutdown failed.', this.Variant() ) );
+  *]
+}

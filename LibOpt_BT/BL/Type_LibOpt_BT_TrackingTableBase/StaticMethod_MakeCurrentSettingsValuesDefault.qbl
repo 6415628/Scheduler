@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod MakeCurrentSettingsValuesDefault (NamedValueTree nvt, NamedValue nv) remote
+{
+  TextBody:
+  [*
+    children := nv.Children();
+    
+    if( children.Size() = 1 and children.Element( 0 ).Name() = LibSE_SettingsContainer::Handle_Metadata() )
+    {
+      metadata := children.Element( 0 );
+      
+      def_val := select( metadata.Children(), Elements, def_val, def_val.Name() = LibSE_SettingsContainer::Handle_DefaultValue() );
+      if( isnull( def_val ) )
+      {
+        metadata.AddChild( nvt.GetHandle( LibSE_SettingsContainer::Handle_DefaultValue() ), nv.GetValue() );
+      }
+      else
+      {
+        def_val.SetValue( nv.GetValue() );
+      }
+    }
+    else if( children.Size() = 0 )
+    {
+      metadata := nv.AddChild( nvt.GetHandle( LibSE_SettingsContainer::Handle_Metadata() ) );
+      metadata.AddChild( nvt.GetHandle( LibSE_SettingsContainer::Handle_DefaultValue() ), nv.GetValue() );
+    }
+    else
+    {
+      traverse( children, Elements, child )
+      {
+        LibOpt_BT_TrackingTableBase::MakeCurrentSettingsValuesDefault( nvt, child );
+      }
+    }
+  *]
+}

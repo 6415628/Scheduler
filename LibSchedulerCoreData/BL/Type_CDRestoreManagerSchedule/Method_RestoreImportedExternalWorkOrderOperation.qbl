@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedExternalWorkOrderOperation (CDIntegration cdintegration)
+{
+  Description: 'Restore imported external work order operation core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedWorkOrderOperation
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedExternalWorkOrderOperation ), cdwop )
+    {
+      importedExWorkOrderOp := ImportedExternalWorkOrderOperation::Create( schedule, cdwop.WorkOrderId(), cdwop.SequenceNr() );
+      CopyCorresponding::CopyFrom( cdwop ).CopyTo( importedExWorkOrderOp );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

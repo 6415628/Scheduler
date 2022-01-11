@@ -1,0 +1,72 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeSubscriptions (LibCal_Calendar calendar_i, LibCIM_CalendarBase integrationCalendar_i, Boolean doDelete_i, 
+  Boolean keepIfNotCreatedByIntegration_i)
+{
+  Description:
+  [*
+    Synchronize the integration objects. The deletion behavior is determined by the arguments:
+    doDelete_i = TRUE deletes instances that do not exist in staging (anymore). When FALSE, no instances are deleted.
+    keepIfNotCreatedByIntegration_i = TRUE does not delete instances that do not exist in staging if they were not created by integration previously (i.e. have been created manually or by the application).
+  *]
+  TextBody:
+  [*
+    // Consider all existing subscriptions to be soft-deleted.
+    // Ignore the subscription to Event "Always available", that is already synchronized as part of synchronizing the Calendar.
+    softDeletedSubscriptions := selectset( calendar_i.Subscriptions(), Elements, subscription, true,
+                                           not subscription.Event().IsAlwaysAvailableEvent() )
+    
+    // Only synchronize the Subscriptions. The LeadingParticipation has already been synchronized as part of synchronizing the Event.
+    traverse( integrationCalendar_i, CIM_Participation, cimPart, cimPart.IsSubscription() )
+    {
+      subscription := null( LibCal_Subscription );
+      
+      // Synchronize the participation / subscription if there are no errors.
+      //if( cimPart.CanSynchronize() )
+      //{
+        // Check if the integration event is also present.
+        cimEvent := cimPart.CIM_Event();
+        if( not isnull( cimEvent ) )
+        {
+          subscription := calendar_i.SynchronizeSubscription( cimPart.ParticipationID(),
+                                                              cimPart.EventID(),
+                                                              cimPart.CalendarType(),
+                                                              cimPart.CalendarID(),
+                                                              cimEvent.IsRecurring(),
+                                                              cimEvent.IsAllDay(),
+                                                              cimEvent.StartTimeOfDay(),
+                                                              cimEvent.Duration(),
+                                                              cimPart.StartDate(),
+                                                              cimPart.HasSpecificPeriod(),
+                                                              cimPart.PeriodType(),
+                                                              cimPart.PeriodStartDate(),
+                                                              cimPart.PeriodEndDate() );
+        }
+        else
+        {
+          LibCal_Util::Warning( "LibCal_Calendar.SynchronizeSubscriptions() : IntegrationEvent with ID '" + cimPart.EventID() + "' not found for IntegrationParticipation with ID '" + cimPart.ParticipationID() + "'." );
+        }                                     
+      //}
+    
+      if( not isnull( subscription ) )
+      {
+        // Remove the subscription from the set of soft-deleted subscriptions.
+        softDeletedSubscriptions.Remove( subscription );
+      }
+    }
+    
+    // If applicable, delete the subscriptions that are soft-deleted, i.e. that are not present in staging.
+    if( doDelete_i )
+    {
+      traverse( softDeletedSubscriptions, Elements, subscription )
+      {
+        // Only the subscriptions that are created by an integration action should be deleted, unless indicated otherwise.
+        if( subscription.IsCreatedByImport() or not keepIfNotCreatedByIntegration_i )
+        {
+          subscription.Delete();
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

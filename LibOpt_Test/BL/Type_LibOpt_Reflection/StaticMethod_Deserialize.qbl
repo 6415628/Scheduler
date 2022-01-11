@@ -1,0 +1,106 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Deserialize (String string) as owning ReflectionMethod
+{
+  Description:
+  [*
+    Convert a serialized method into a reflection method.
+    
+    This should only be used in unit tests.
+  *]
+  TextBody:
+  [*
+    json := guard( JSON::Parse( string ), null( JSON, owning ) );
+    
+    result := null( ReflectionMethod, owning );
+    if( not isnull( json ) )
+    {
+      type := Type::Resolve( json.Get( LibOpt_Reflection::JSON_Type() ).GetString() );
+      method_name := json.Get( LibOpt_Reflection::JSON_MethodName() ).GetString();
+      
+      argument_types := construct( structured_Type );
+      json_arguments := json.Get( LibOpt_Reflection::JSON_Arguments() );
+      for( i := 0; i < json_arguments.Size(); i++ )
+      {
+        argument_types.Add( Type::Resolve( json_arguments.Get( i ).GetString() ) );
+      }
+      
+      // Find the correct method
+      if( argument_types.Size() = 0 )
+      {
+        result := Reflection::FindStaticMethodBySignature( type,
+                                                           method_name );
+      }
+      else if( argument_types.Size() = 1 )
+      {
+        result := Reflection::FindStaticMethodBySignature( type,
+                                                           method_name,
+                                                           argument_types.Element( 0 ) );
+      }
+      else if( argument_types.Size() = 2 )
+      {
+        result := Reflection::FindStaticMethodBySignature( type,
+                                                           method_name,
+                                                           argument_types.Element( 0 ),
+                                                           argument_types.Element( 1 ) );
+      }
+      else if( argument_types.Size() = 3 )
+      {
+        result := Reflection::FindStaticMethodBySignature( type,
+                                                           method_name,
+                                                           argument_types.Element( 0 ),
+                                                           argument_types.Element( 1 ),
+                                                           argument_types.Element( 2 ) );
+      }
+      else if( argument_types.Size() = 4 )
+      {
+        result := Reflection::FindStaticMethodBySignature( type,
+                                                           method_name,
+                                                           argument_types.Element( 0 ),
+                                                           argument_types.Element( 1 ),
+                                                           argument_types.Element( 2 ),
+                                                           argument_types.Element( 3 ) );
+      }
+      else if( argument_types.Size() = 5 )
+      {
+        result := Reflection::FindStaticMethodBySignature( type,
+                                                           method_name,
+                                                           argument_types.Element( 0 ),
+                                                           argument_types.Element( 1 ),
+                                                           argument_types.Element( 2 ),
+                                                           argument_types.Element( 3 ),
+                                                           argument_types.Element( 4 ) );
+      }
+      else if( argument_types.Size() = 6 )
+      {
+        result := Reflection::FindStaticMethodBySignature( type,
+                                                           method_name,
+                                                           argument_types.Element( 0 ),
+                                                           argument_types.Element( 1 ),
+                                                           argument_types.Element( 2 ),
+                                                           argument_types.Element( 3 ),
+                                                           argument_types.Element( 4 ),
+                                                           argument_types.Element( 5 ) );
+      }
+      else if( argument_types.Size() = 7 )
+      {
+        result := Reflection::FindStaticMethodBySignature( type,
+                                                           method_name,
+                                                           argument_types.Element( 0 ),
+                                                           argument_types.Element( 1 ),
+                                                           argument_types.Element( 2 ),
+                                                           argument_types.Element( 3 ),
+                                                           argument_types.Element( 4 ),
+                                                           argument_types.Element( 5 ),
+                                                           argument_types.Element( 6 ) );
+      }
+      else
+      {
+        error( 'Cannot find method' );
+      }
+    }
+    
+    return & result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnDrop_CanAddSubTaskType (shadow[ResourceGroup_SC] resourcegroup, SubTaskType subtasktype, output String feedback_o) as Boolean id:Method_DialogResourceGroup_SC_OnDrop_CanAddSubTaskType
+{
+  #keys: '[125460.0.247496985]'
+  Body:
+  [*
+    // violated when add shutdown subtask type because stoppage subtask type will be maintained in shutdown type/ program definition configuration
+    value := subtasktype.SubTaskID() <> Constants::SubTask_Stoppage()
+    
+    if( not value )
+    {
+      feedback_o := Translations::StoppageSubTask_NotAllowedManualAssignment();
+    }
+    else
+    {
+      hasnobufferaction := exists( resourcegroup, SubTaskTypeOnResourceGroup.SubTaskType, type, type.SubTaskID() = Constants::SubTask_NoBufferAction() );
+      hasnobufferoutflow := exists( resourcegroup, SubTaskTypeOnResourceGroup.SubTaskType, type, type.SubTaskID() = Constants::SubTask_NoBufferOutflow() );
+      
+      // violated when resource group has NoBufferAction and adding NoBufferOverflow
+      value := not hasnobufferaction or subtasktype.SubTaskID() <> Constants::SubTask_NoBufferOutflow();
+      
+      // violated when resource group has NoBufferOverflow and adding NoBufferAction
+      value := value and ( not hasnobufferoutflow or subtasktype.SubTaskID() <> Constants::SubTask_NoBufferAction() );
+      
+      if( not value )
+      {
+        feedback_o := Translations::SC_CannotUseNoBufferActionAndNoBufferOutflow();
+      }
+    }
+    
+    
+    return value;
+  *]
+}

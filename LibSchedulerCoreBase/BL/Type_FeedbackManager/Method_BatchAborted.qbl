@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method BatchAborted (String batchid, String resource_id, DateTime time, 
+  String remark)
+{
+  Description: 'Feedback API: handle feedback batch with feedback type Aborted'
+  TextBody:
+  [*
+    // jiex Aug-25-2016 (created)
+    
+    fbbatch := FeedbackBatchInSchedule::FindFeedbackBatchInSchedule( batchid )
+    
+    if( not isnull( fbbatch ) )
+    {
+      fbbatch.UpdateFeedbackEnd( time, resource_id, Constants::StatusAborted(), remark );
+      fbbatch.HasReportedAborted( true );
+    
+      traverse( fbbatch, FeedbackBatchContentInSchedule, fbcontent)
+      {   
+        operation := guard( fbcontent.OperationBatchFeedback().AsOwningOperation_SC(), null( Operation_SC ) );
+        
+        if( not isnull( operation ) )
+        {
+          // Reset and update statuses with remarks
+          operation.UpdateFeedbackStatus( fbbatch.StatusReadIn(), remark, resource_id ); // fbbatch.Status needs propagation, which actually does get propagated in CleanUpFeedbackedTask, but this means the first operation doesn't get the right value, so we use StatusReadIn instead
+          this.CleanUpFeedbackedTask( operation );
+        }
+      }  
+    }
+  *]
+}

@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method Finalize
+{
+  Description: 'Before removing the task, the component needs to be finalized.'
+  TextBody:
+  [*
+    if( not this.IsFinalized() )
+    {
+      transaction := LibOpt_CurrentTransaction::GetCurrentTransaction( this.Component() );
+      registered := transaction.RegisterTask( this );
+      
+      cache := this.Run().IsFinalizingTask();
+      this.Run().IsFinalizingTask( true );
+      traverse( this, Children, task )
+      {
+        task.Finalize();
+      }
+      
+      component := this.Component();
+      if( not isnull( component ) )
+      {
+        component.OnFinalize( this );
+      }
+      this.IsFinalized( true );
+      this.Run().IsFinalizingTask( cache );
+      
+      transaction.UnregisterTask( this, registered );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

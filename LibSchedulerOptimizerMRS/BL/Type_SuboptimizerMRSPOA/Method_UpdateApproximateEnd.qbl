@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateApproximateEnd (ResourceGroup_SC resourcegroup)
+{
+  Description: "Updates the given resource group's end time approximation (stored on the run context) to the average of the actual resources' ends."
+  TextBody:
+  [*
+    // mbr23 Sep-16-2019 (created), copied from legacy optimizer's OptimizerRunMRSAPOA::UpdateApproximateEnd.
+    schedule := resourcegroup.Schedule();
+    
+    averageduration := average( resourcegroup, Resource_SC, resource,
+                                true,
+                                guard( resource.Last().End().HoursAsReal( schedule.Time() ), 0.0 ) );
+    
+    this.RunContextEndTimeApproximation().Get( resourcegroup ).ApproximatedEndPath( schedule.Time() + Duration::Hours( averageduration ) );
+  *]
+}

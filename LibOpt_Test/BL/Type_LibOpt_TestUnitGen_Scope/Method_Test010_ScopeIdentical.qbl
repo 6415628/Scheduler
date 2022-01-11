@@ -1,0 +1,221 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test010_ScopeIdentical (LibOpt_TestDataset dataset)
+{
+  Description: 'Create random scope test cases, varying the scope elements added to the scopes, and scopes removed. Check whether the `LibOpt_ScopeThin` behaves the same as the `LibOpt_ScopeFat`.'
+  TextBody:
+  [*
+    // Run randomized test
+    
+    create_reproduction := false;
+    nr_of_scopes := Number::Random( 1, 10 );
+    nr_of_scopes_offset := maxvalue( 0, 32 - floor( nr_of_scopes / 2 ) );
+    nr_of_t1_scope_elements := Number::Random( 5, 30 );
+    nr_of_t2_scope_elements := Number::Random( 5, 30 );
+    nr_of_actions := Number::Random( 200, 500 );
+    
+    // Delete existing scopes, as this affects the LibOpt_ScopeThin.
+    traverse( dataset, Optimization.Optimizer.Run.Scope, scope )
+    {
+      scope.Delete(); 
+    }
+    
+    dataset.Optimization().OptimizeScopeThinQueue();
+    
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    // Create scopes
+    scopes_fat  := construct( LibOpt_ScopeFats );
+    scopes_thin := construct( LibOpt_ScopeThins );
+    
+    for( i := 0; i < nr_of_scopes_offset; i++ )
+    {
+      LibOpt_ScopeThin::Create( run );
+    }
+    for( i := 0; i < nr_of_scopes; i++ )
+    {
+      scopes_fat .Add(  LibOpt_ScopeFat::Create( run ) );
+      scopes_thin.Add( LibOpt_ScopeThin::Create( run ) );
+    }
+    
+    // Create scope elements
+    scope_elements := construct( LibOpt_ScopeElements );
+    for( i := 0; i < nr_of_t1_scope_elements; i++ )
+    {
+      scope_elements.Add( dataset.ScopeElementMock( relnew ) );
+    }
+    for( i := 0; i < nr_of_t2_scope_elements; i++ )
+    {
+      scope_elements.Add( dataset.ScopeElementMock2( relnew ) );
+    }
+    
+    this.Run().AssertEqual( nr_of_scopes_offset, scopes_thin.Element( 0 ).ID(), 'ScopeThinID is not correctly reset' );
+    
+    if( create_reproduction )
+    {
+      info( 'nr_of_scopes := ' + [String] nr_of_scopes );
+      info( 'nr_of_t1_scope_elements := ' + [String] nr_of_t1_scope_elements );
+      info( 'nr_of_t2_scope_elements := ' + [String] nr_of_t2_scope_elements );
+      info( 'nr_of_actions := ' + [String] nr_of_actions );
+    }
+    
+    // Update the scopes
+    for( i := 0; i < nr_of_actions and not exists( this.Run().LastTestResult(), LibUTF_AssertResult, ass, true, ass.ReasonFailed() <> "" ); i++ )
+    {
+      rand := Real::Random();
+      if( rand < 0.75 )
+      {
+        scope_index := Number::Random( 0, nr_of_scopes - 1 );
+        scope_element_index := Number::Random( 0, scope_elements.Size() - 1 );
+        scope_element := scope_elements.Element( scope_element_index );
+        fat_ret  := scopes_fat.Element( scope_index ).Add( scope_element );
+        thin_ret := scopes_thin.Element( scope_index ).Add( scope_element );
+        if( fat_ret <> thin_ret )
+        {
+          this.Run().RegisterFailure( 'Incorrect return value of Add. Fat = ' + [String] fat_ret + ' Thin = ' + [String] thin_ret );
+        }
+        if( create_reproduction )
+        {
+          info( 'scopes.Element( ' + [String] scope_index + ' ).Add( scope_elements.Element( ' + [String] scope_element_index + ' ) );' );
+        }
+      }
+      else if( rand < 0.9 )
+      {
+        scope_index := Number::Random( 0, nr_of_scopes - 1 );
+        temp := scopes_fat.Element( scope_index ).ScopeElements();
+        if( temp.Size() = 0 )
+        {
+          i--;
+        }
+        else
+        {
+          scope_element := temp.Element( Number::Random( 0, temp.Size() - 1 ) );
+          if( create_reproduction )
+          {
+            info( 'scopes.Element( ' + [String] scope_index + ' ).Remove( scope_elements.Element( ' + [String] scope_elements.Find( scope_element ) + ' )' );
+          }
+        }
+      }
+      else if( rand < 0.95 and nr_of_scopes > 1 )
+      {
+        scope_index_delete := Number::Random( 0, nr_of_scopes - 1 );
+        scope_index_copy := Number::Random( 0, nr_of_scopes - 2 );
+        if( scope_index_copy >= scope_index_delete )
+        {
+          scope_index_copy++;
+        }
+        scopes_fat.Element( scope_index_delete ).Delete();
+        run.DebugScope( true );
+        scopes_fat.Add( scopes_fat.Element( scope_index_copy ).Copy().astype( LibOpt_ScopeFat ) );
+        scopes_fat.Swap( scope_index_delete, scopes_fat.Size() - 1 );
+        
+        scopes_thin.Element( scope_index_delete ).Delete();
+        run.DebugScope( false );
+        scopes_thin.Add( scopes_thin.Element( scope_index_copy ).Copy().astype( LibOpt_ScopeThin ) );
+        scopes_thin.Swap( scope_index_delete, scopes_thin.Size() - 1 );
+        if( create_reproduction )
+        {
+          info( 'scopes.Element( ' + [String] scope_index_delete + ' ).Delete()' );
+          info( 'scopes.Add( scopes.Element( ' + [String] scope_index_copy + ' ).Copy().astype( LibOpt_ScopeThin ) )' );
+          info( 'scopes.Swap( ' + [String] scope_index_delete + ', scopes.Size() - 1 )' );
+        }
+      }
+      else
+      {
+        scope_index := Number::Random( 0, nr_of_scopes - 1 );
+        scopes_fat.Element( scope_index ).Delete();
+        scopes_fat.Add( LibOpt_ScopeFat::Create( run ) );
+        scopes_fat.Swap( scope_index, scopes_fat.Size() - 1 );
+        
+        scopes_thin.Element( scope_index ).Delete();
+        scopes_thin.Add( LibOpt_ScopeThin::Create( run ) );
+        scopes_thin.Swap( scope_index, scopes_fat.Size() - 1 );
+        if( create_reproduction )
+        {
+          info( 'scopes.Element( ' + [String] scope_index + ' ).Delete()' );
+          info( 'scopes.Add( LibOpt_ScopeFat::Create( run ) )' );
+          info( 'scopes.Swap( ' + [String] scope_index + ', scopes.Size() - 1 )' );
+        }
+      }
+      
+      traverse( scopes_thin, Elements.ScopeSharedOwned, shared )
+      {
+        scopes := selectset( shared, ScopeSharedOnScope.ScopeThin, thin, true );
+        if( shared.istype( LibOpt_ScopeShared32 ) )
+        {
+          if( not this.Run().AssertEqual( LibOpt_ScopeShared32::GetSetID( scopes ), shared.astype( LibOpt_ScopeShared32 ).Set(), 'LibOpt_ScopeShared32.Set incorrect' ) )
+          {
+            nr_of_actions := i;
+          }
+        }
+        else if( shared.istype( LibOpt_ScopeSharedVector ) )
+        {
+          if( not this.Run().AssertEqual( LibOpt_ScopeSharedVector::GetSetID( scopes ), shared.astype( LibOpt_ScopeSharedVector ).Set(), 'LibOpt_ScopeSharedVector.Set incorrect' ) )
+          {
+            nr_of_actions := i;
+          }
+        }
+      }
+    }
+    // Test the scopes
+    ids := selectuniquevalues( scopes_thin, Elements, scope, true, scope.ID() );
+    this.Run().AssertEqual( nr_of_scopes, scopes_thin.Unique().Size(), 'Incorrect amount of LibOpt_ScopeThins' );
+    this.Run().AssertEqual( nr_of_scopes, ids.Size(), 'Incorrect amount of unique IDs' );
+    traverse( run, Scope.astype( LibOpt_ScopeThin ), scope )
+    {
+      this.Run().AssertGreaterOrEqual( 0, scope.ID(), 'LibOpt_ScopeThin.ID < 0' );
+      this.Run().AssertLess( nr_of_scopes + nr_of_scopes_offset, scope.ID(), 'LibOpt_ScopeThin.ID >= ' + [String] ( nr_of_scopes + nr_of_scopes_offset ) );
+    }
+    
+    groups := construct( structured_Type );
+    groups.Add( typeof( LibOpt_ScopeElementMock ) );
+    groups.Add( typeof( LibOpt_ScopeElementMock2 ) );
+    groups.Add( typeof( LibOpt_ScopeElement ) );
+    groups.Add( typeof( LibOpt_Run ) );
+    
+    for( k := 0; k < nr_of_scopes; k++ )
+    {
+      // Check full scope elements
+      fat_ses := selectsortedset( scopes_fat.Element( k ).ScopeElements(), Elements, se, true, se.Key() );
+      thin_ses := selectsortedset( scopes_thin.Element( k ).ScopeElements(), Elements, se, true, se.Key() );
+      this.Run().AssertEqual( fat_ses.Size(), thin_ses.Size(), 'Scope ' + [String] k + '.ScopeElements does not return the same size' );
+      for( j := 0; j < maxvalue( fat_ses.Size(), thin_ses.Size() ); j++ )
+      {
+        this.Run().AssertEqual( guard( scope_elements.Find( fat_ses.Element( j ) ), -2 ), guard( scope_elements.Find( thin_ses.Element( j ) ), -2 ),
+                                'Scope ' + [String] k + '.ScopeElements( ' + [String] j + ' ) is not the same element' );
+      }
+      
+      // Check partial scope elements
+      traverse( groups, Elements, group )
+      {
+        fat_ses := selectsortedset( scopes_fat.Element( k ).ScopeElements( group ), Elements, se, true, se.Key() );
+        thin_ses := selectsortedset( scopes_thin.Element( k ).ScopeElements( group ), Elements, se, true, se.Key() );
+        this.Run().AssertEqual( fat_ses.Size(), thin_ses.Size(), 'Scope ' + [String] k + '.ScopeElements(' + group.Name() + ') does not return the same size' );
+        for( j := 0; j < maxvalue( fat_ses.Size(), thin_ses.Size() ); j++ )
+        {
+          this.Run().AssertTrue( fat_ses.Element( j ) = thin_ses.Element( j ),
+                                  'Scope ' + [String] k + '.ScopeElements(' + group.Name() + ')[ ' + [String] j + ' ] is not the same element' );
+        }
+      }
+      
+      // Check contains
+      for( j := 0; j < scope_elements.Size(); j++ )
+      {
+        fat_ret  := scopes_fat.Element( k ).Contains( scope_elements.Element( j ) );
+        thin_ret := scopes_thin.Element( k ).Contains( scope_elements.Element( j ) );
+        if( fat_ret <> thin_ret )
+        {
+          this.Run().RegisterFailure( 'Scope ' + [String] k + '.Contains( scope_elements.Element( ' + [String] j + ' ) ) returns differen values. Fat = ' + [String] fat_ret + ' Thin = ' + [String] thin_ret );
+        }
+      }
+    }
+    
+    // Delete all scopes again.
+    traverse( dataset, Optimization.Optimizer.Run.Scope, scope )
+    {
+      scope.Delete(); 
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionInCreateEditShutdown (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    resourceType := '';
+    leadTimeStrategy := '';
+    hasShutdownTypeInResource := false;
+    isValidForPreconInsert := false;
+    hasShutdown := false;
+    hasFeedback := false;
+    isValidForPreconDelete := false;
+    hasShutdownType := false;
+    duration := Duration::MaxDuration();
+    isValidForPreconCreateEdit := false;
+    
+    this.GetTestVariantForPreconditionChecking( isvariantfound,
+                                                resourceType,
+                                                leadTimeStrategy,
+                                                hasShutdownTypeInResource,
+                                                isValidForPreconInsert,
+                                                hasShutdown,
+                                                hasFeedback,
+                                                isValidForPreconDelete,
+                                                hasShutdownType,
+                                                duration,
+                                                isValidForPreconCreateEdit );
+    
+    value := false;
+    if( isvariantfound )
+    {
+      shutdown := select( schedule, Shutdown, s, true );
+      
+      value := Shutdown::CheckIsValid( shutdown.ResponsibleShutdownType(), 
+                                       shutdown.ShutdownDuration(),
+                                       shutdown,
+                                       true );
+    }
+    
+    this.Run().AssertEqual( isValidForPreconCreateEdit, value, 
+                            UTFUtility::GenerateFailedMessage( 'Precondition in creating shutdown failed.', this.Variant() ) );
+  *]
+}

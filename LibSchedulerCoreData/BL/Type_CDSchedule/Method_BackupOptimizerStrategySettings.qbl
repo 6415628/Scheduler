@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupOptimizerStrategySettings (const Schedule schedule)
+{
+  Description: 'Backup optimizer strategy in schedule, optimizer user setting sequencing, selected optimizer'
+  TextBody:
+  [*
+    // Backup selected optimizer strategy in schedule
+    optimizerstrategyinschedule := schedule.OptimizerStrategyInSchedule();
+    if( not isnull( optimizerstrategyinschedule ) )
+    {
+      cdoptimizerstrategyinschedule := this.CDEntity( relnew, CDOptimizerStrategyInSchedule );
+      CopyCorresponding::CopyFrom( optimizerstrategyinschedule ).CopyTo( cdoptimizerstrategyinschedule);  
+    }
+    
+    // Backup seleccted optimizer user settings sequencing
+    optimizerusersettingsequencing := guard( schedule.Optimization().OptimizerSequencing().UserSetting(), null( OptimizerUserSettingSequencing ) );
+    
+    if( not isnull( optimizerusersettingsequencing ) )
+    {
+      cdoptimizerusersettingsequencing := this.CDEntity( relnew, CDOptimizerUserSettingSequencing );
+      CopyCorresponding::CopyFrom( optimizerusersettingsequencing ).CopyTo( cdoptimizerusersettingsequencing );  
+    }
+    
+    // Backup selected optimizer
+    optimizer := schedule.Optimizer();
+    
+    if( not isnull( optimizer ) )
+    {
+      cdoptimizer := this.CDEntity( relnew, CDOptimizer );
+      CopyCorresponding::CopyFrom( optimizer ).CopyTo( cdoptimizer );  
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetSeverityScaleForLowerThresholdViolation () as owning LibOpt_StatisticSeverityScale
+{
+  Description: 'Return the `LibOpt_StatisticSeverityScale` which holds `LibOpt_StatisticSeverityScaleEntrys` of (`LibOpt_StatisticSeverityScaleEntry.Threshold`, `LibOpt_StatisticSeverityScaleEntry.Severity`) values, which determines what `LibOpt_Issue.Severity` to set for a `LibOpt_Issue` that violates the `LowerThreshold` of this `LibOpt_Statistic`.'
+  TextBody:
+  [*
+    severityscale := construct( LibOpt_StatisticSeverityScale );
+    
+    severityscale.Entry( relnew,
+                         Threshold := this.LowerThreshold(),
+                         Severity := LibOpt_Issue::Severity_3_Medium()
+                       );
+    
+    severityscale.Entry( relnew,
+                         Threshold := this.Summary().GetLowerThresholdCorrespondingWithMaxSeverityBasedOnOutlierThreshold(),
+                         Severity := LibOpt_Issue::Severity_5_Max()
+                       );
+    
+    return &severityscale;
+  *]
+}

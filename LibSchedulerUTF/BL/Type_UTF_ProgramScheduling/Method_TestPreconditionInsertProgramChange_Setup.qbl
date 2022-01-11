@@ -1,0 +1,74 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionInsertProgramChange_Setup (Schedule schedule)
+{
+  Description: 'Test precondition insert program change - setup'
+  TextBody:
+  [*
+    // Get variant data
+    resourceType := '';
+    leadTimeStrategy := '';
+    hasResourceProgramDefinition := false;
+    isaftertaskprogramchange := false;
+    isValidForPreconInsert := false;
+    hasProgramChange := false;
+    hasFeedback := false;
+    isValidForPreconDelete := false;
+    hasProgramType := false;
+    isValidForPreconCreateEdit := false;
+    isallowedtypechangeonprogramtypelevel := false;
+    isallowedtypechangeonprogramtypechangelevel := false;
+    isValidForConstraintProgramTypeChange := false;
+    
+    this.GetTestVariant( resourceType,
+                         leadTimeStrategy,
+                         hasResourceProgramDefinition,
+                         isaftertaskprogramchange,
+                         isValidForPreconInsert,
+                         hasProgramChange,
+                         hasFeedback,
+                         isValidForPreconDelete,
+                         hasProgramType,
+                         isValidForPreconCreateEdit,
+                         isallowedtypechangeonprogramtypelevel,
+                         isallowedtypechangeonprogramtypechangelevel,
+                         isValidForConstraintProgramTypeChange );
+    
+    // Create resource group and resource based on variant
+    resourceGroup := GenericResourceGroup::Create( schedule,
+                                                   resourceType,
+                                                   resourceType );
+    
+    // Create resource
+    if( resourceType = Constants::Resource_BatchResource() )
+    {
+      resourceGroup.HasBatches( true );
+    }
+    else if( resourceType = Constants::Resource_ContinuousResource() )
+    {
+      resourceGroup.IsContinuous( true );
+    }
+    
+    resource := resourceGroup.CreateResource( resourceType );
+    
+    // Create lead time strategy based on variant
+    LeadTimeStrategy_SC::Create( resource, Duration::Zero(), leadTimeStrategy );
+    Transaction::Transaction().Propagate( attribute( Resource_SC, StrategyName ) );
+    
+    // Create program definition data
+    programdefinition := UTFMockObjectFactory::CreateProgramDefinitionData( schedule, 'Program definition id', false );
+    programtype := selectset( programdefinition, ProgramSetConfiguration.ProgramTypeConfiguration, pt, true );
+    
+    // Assign program definition to resource
+    if( hasResourceProgramDefinition )
+    {
+      resource.AssignProgramDefinitionConfiguration( programdefinition );
+    }
+    
+    // Insert program change
+    if( isaftertaskprogramchange )
+    {
+      resource.InsertProgramChange( null( Task_SC ), programtype, false, Duration::Zero() );
+    }
+  *]
+}

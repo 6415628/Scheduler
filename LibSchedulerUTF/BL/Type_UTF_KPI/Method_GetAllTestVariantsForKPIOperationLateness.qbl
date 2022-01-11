@@ -1,0 +1,86 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllTestVariantsForKPIOperationLateness (output Booleans isdummy, output Booleans hasfeedback, output Booleans hasfinished, 
+  output Booleans isplanned, output Booleans islate, output Reals kpioperationlateness) as owning Strings
+{
+  Description: 'Return all test variants, variant output arguments (columns) will be used in data creation logic for constraint checking.'
+  TextBody:
+  [*
+    variants := construct( Strings );
+    // Default nr of dayslate = 2.
+    nrofdayslate := 2;
+    kpiincreamentforoneoperation := pow( nrofdayslate, 2 ) * 100.0;
+    // Kpi from 4 main operations, with same quantity 100
+    kpifrommainoperations := kpiincreamentforoneoperation*4;
+    
+    //Default value for argument used in KPI, but kept as similar in all variant
+    isdummy_arg := false;
+    
+    // Scenario 1.1: Test KPI OperationLateness with no feedback, has not finished, is planned and is late ( increase KPI )
+    kpi := kpiincreamentforoneoperation + kpifrommainoperations;
+    this.SetTestVariant( 'Test KPI OperationLateness with no feedback, has not finished, is planned and is late ( increase KPI )',
+                          isdummy_arg,
+                          false, //hasfeedback
+                          false, //hasfinished
+                          true,  //isplanned
+                          kpi,
+                          //output arg
+                          isdummy, hasfeedback, hasfinished, isplanned, kpioperationlateness, &variants );
+    
+    islate.Add( true );
+    
+    // Scenario 1.2: Test KPI OperationLateness with feedback, has not finished, is planned and is late ( no change KPI )
+    kpi := kpifrommainoperations;
+    this.SetTestVariant( 'Test KPI OperationLateness with feedback, has not finished, is planned and is late ( no change KPI )',
+                          isdummy_arg,
+                          true, //hasfeedback//
+                          false, //hasfinished
+                          true,  //isplanned
+                          kpi,
+                          //output arg
+                          isdummy, hasfeedback, hasfinished, isplanned, kpioperationlateness, &variants );
+    
+    islate.Add( true );
+    
+    // Scenario 1.3: Test KPI OperationLateness with no feedback, has finished, is planned and is late ( no change KPI )
+    kpi := kpifrommainoperations;
+    this.SetTestVariant( 'Test KPI OperationLateness with no feedback, has finished, is planned and is late ( no change KPI )',
+                          isdummy_arg,
+                          false, //hasfeedback
+                          true,  //hasfinished//
+                          true,  //isplanned
+                          kpi,
+                          //output arg
+                          isdummy, hasfeedback, hasfinished, isplanned, kpioperationlateness, &variants );
+    
+    islate.Add( true );
+    
+    // Scenario 1.4: Test KPI OperationLateness with no feedback, has not finished, is not planned and is late ( no change KPI )
+    kpi := kpifrommainoperations;
+    this.SetTestVariant( 'Test KPI OperationLateness with no feedback, has not finished, is not planned and is late ( no change KPI )',
+                          isdummy_arg,
+                          false, //hasfeedback
+                          false, //hasfinished
+                          false,  //isplanned//
+                          kpi,
+                          //output arg
+                          isdummy, hasfeedback, hasfinished, isplanned, kpioperationlateness, &variants );
+    
+    islate.Add( true );
+    
+    // Scenario 1.5: Test KPI OperationLateness with no feedback, has not finished, is planned and is not late ( no change KPI )
+    kpi := kpifrommainoperations;
+    this.SetTestVariant( 'Test KPI OperationLateness with no feedback, has not finished, is planned and is not late ( no change KPI )',
+                          isdummy_arg,
+                          false, //hasfeedback
+                          false, //hasfinished
+                          true,  //isplanned
+                          kpi,
+                          //output arg
+                          isdummy, hasfeedback, hasfinished, isplanned, kpioperationlateness, &variants );
+    
+    islate.Add( false );//
+    
+    return &variants;
+  *]
+}

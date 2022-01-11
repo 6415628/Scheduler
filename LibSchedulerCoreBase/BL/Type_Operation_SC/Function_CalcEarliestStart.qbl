@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcEarliestStart
+{
+  Description: 'Calculate earliest possible start of operation based on the available time of its operation material(s)'
+  TextBody:
+  [*
+    scheduletime  := this.PlanUnit_SC().Schedule().Time();
+    
+    // Take the latest available time from its input operation material(s)
+    earlieststart := max( this, FromOperationDependency, iom, iom.AvailableTime().IsFinite(), iom.AvailableTime() );
+    
+    if( this.PlanUnit_SC().IsLotLeadTimeLogicOn() and this.IsPlanned() )
+    {
+      firstrespectroutingsubtask := this.GetTask().FirstRespectRoutingSubTask();
+      
+      if( not isnull( firstrespectroutingsubtask ) and firstrespectroutingsubtask.IsProcess() )
+      {
+        earlieststart := this.FirstInputLotEarliestStart();
+      }
+    }
+    // AlexanderNg 16-Jan-2016 QP #5841
+    if( earlieststart.IsInfinite() or earlieststart < scheduletime )
+    {
+      earlieststart := scheduletime;
+    }
+    
+    this.EarliestStart( earlieststart )
+  *]
+}

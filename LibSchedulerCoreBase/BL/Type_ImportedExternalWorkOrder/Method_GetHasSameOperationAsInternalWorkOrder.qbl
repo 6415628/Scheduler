@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasSameOperationAsInternalWorkOrder (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if external work order share the same operation list as the internal work order it is going to replace.'
+  TextBody:
+  [*
+    isvalid := true;
+    internalWorkOrderPlanUnit := select( this, InternalWorkOrder.Order_SC.PlanUnit_SC, planUnit, true );
+    
+    isvalid := guard( this.ImportedWorkOrderOperation( relsize ) = internalWorkOrderPlanUnit.Operation_SC( relsize ), false );
+    
+    // Continue to check operation type if number of operations matches
+    if( isvalid )
+    {
+      sortedExternalWorkOrderOperations := selectsortedset( this, ImportedWorkOrderOperation, importedWorkOrderOperation, true, importedWorkOrderOperation.SequenceNr() );
+      sortedInternalWorkOrderOperations := selectsortedset( internalWorkOrderPlanUnit, Operation_SC, operation, true, operation.WorkOrderSequenceNr() );
+      externalWorkOrderOperationTypes := selectvalues( sortedExternalWorkOrderOperations, Elements, workOrderOperation, true, workOrderOperation.OperationType() );
+      internalWorkOrderOperationTypes := selectvalues( sortedInternalWorkOrderOperations, Elements, workOrderOperation, true, workOrderOperation.Type() );
+      
+      isvalid := externalWorkOrderOperationTypes.ToString( ',' ) = internalWorkOrderOperationTypes.ToString( ',' )
+    }
+      
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedWorkOrder_Instance( name ),
+                                                               Translations::ImportedWorkOrder_HaveDifferentOperationListAsInternalWorkOrder() ) );
+    }
+    
+    return isvalid;
+  *]
+}

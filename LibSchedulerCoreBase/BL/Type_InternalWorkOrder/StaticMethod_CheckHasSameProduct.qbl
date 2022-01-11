@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckHasSameProduct (InternalWorkOrders plannedOrders) declarative remote
+{
+  Description: 'Check if selected planned orders have the same product.'
+  TextBody:
+  [*
+    value := true;
+    firstPlannedOrder := plannedOrders.First();
+    remainingPlannedOrders := plannedOrders.Difference( firstPlannedOrder );
+    
+    firstPlannedOrderLastOperation := select( firstPlannedOrder, Order_SC.PlanUnit_SC.Last, op, true );
+    
+    if( not isnull( firstPlannedOrderLastOperation ) )
+    {
+      traverse( remainingPlannedOrders, Elements, remainingplannedorder, value )
+      {
+        remainingPlannedOrderLastOperation := select( remainingplannedorder, Order_SC.PlanUnit_SC.Last, op, true );
+        
+        value := firstPlannedOrderLastOperation.CheckIsProducingSameProducts( remainingPlannedOrderLastOperation ); 
+      }
+    }
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    feedbackobject.AddHard( value, Translations::InternalWorkOrder_CannotJoinPlannedOrdersOfDifferentProduct() );
+  *]
+}

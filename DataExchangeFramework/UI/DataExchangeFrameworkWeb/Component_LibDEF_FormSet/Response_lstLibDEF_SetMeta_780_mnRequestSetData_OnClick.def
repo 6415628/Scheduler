@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: lstLibDEF_SetMeta_780
+Response OnClick (LibDEF_SetMeta selection) id:Response_lstLibDEF_SetMeta_780_mnRequestSetData_OnClick
+{
+  #keys: '[143398.0.680038805]'
+  CanBindMultiple: false
+  DefinitionID => /lstLibDEF_SetMeta_780/Responsedef_lstLibDEF_SetMeta_780_WebMenu_OnClick
+  GroupServerCalls: true
+  Initiator: 'mnRequestSetData'
+  Precondition:
+  [*
+    return Form.RequestSetDataAllowed( selection );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Request set data
+      prompt := Translations::LibDEF_ConfirmationReplaceSetData();
+      if ( WebMessageBox::Question( this, prompt, Translations::LibDEF_YesNo() ) = 0 )
+      {
+        dtd := GlobalStateDataExchangeFramework.GetDataTransformationDefinition();
+        if( selection.SetTypeMeta().System().IsLocalSystem() )
+        {
+          dtd.RequestSetDataLocally( selection.ChannelName(), selection.GUID() );
+        }
+        else
+        {
+          dtd.RequestSetDataExternally( selection.ChannelName(), selection.GUID() );
+        }
+      }
+    *]
+  }
+}

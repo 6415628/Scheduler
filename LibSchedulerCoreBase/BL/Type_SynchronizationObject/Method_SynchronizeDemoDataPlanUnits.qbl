@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeDemoDataPlanUnits
+{
+  Description: 'Synchronize plan units based on imported planning data.'
+  TextBody:
+  [*
+    traverse( this, Schedule.ImportedWorkOrder, importedWorkOrder, importedWorkOrder.IsValidDataHard() 
+                                                                   and importedWorkOrder.ImportedPlanUnit( relsize ) > 0 ) // Demo data plan units
+    {
+      order := guard( importedWorkOrder.WorkOrder().Order_SC(), null( Order_SC ) );
+      
+      if( not isnull( order ) )
+      {
+        // Assume that order only has 1 initial plan unit after import ERP during import demo data
+        firstPlanUnit := select( order, PlanUnit_SC, pu, true );
+        isFirstPlanUnitUsed := exists( importedWorkOrder, ImportedPlanUnit, importedPlanUnit, importedPlanUnit.IsValidDataHard()
+                                                                                              // Guard to true to allow creation of 'first plan unit' for internal work order
+                                                                                              and guard( importedPlanUnit.PlanUnitID() = firstPlanUnit.PlanUnitID(), true ) );
+        // Creation/Splitting of plan units
+        traverse( importedWorkOrder, ImportedPlanUnit, importedPlanUnit, importedPlanUnit.IsValidDataHard()
+                                                                         // Guard to true to allow creation of 'first plan unit' for internal work order
+                                                                         and guard( importedPlanUnit.PlanUnitID() <> firstPlanUnit.PlanUnitID(), true ) )
+        {
+          planUnitID := importedPlanUnit.PlanUnitID();
+          planUnit := PlanUnit_SC::FindPlanUnit( planUnitID );
+          puQuantity := importedPlanUnit.Quantity();
+          nrOfLots := order.GetNrOfLots( puQuantity );
+          
+          if( isnull( planUnit ) )
+          { 
+            planUnit := order.CreatePlanUnit( planUnitID, puQuantity, nrOfLots );
+          }
+    
+          planUnit.ImportedPlanUnit( relset, importedPlanUnit );
+          
+          if( not isnull( firstPlanUnit ) ) // Only if there is an EXISTING plan unit
+          {
+            order.SplitPlanUnit( firstPlanUnit, planUnit, puQuantity, nrOfLots );
+          }
+          
+        }
+        
+        if( not isnull( firstPlanUnit ) and not isFirstPlanUnitUsed )
+        {
+          firstPlanUnit.Remove();
+        }
+        
+        order.ResetToLatestRunningPlanUnitNr();
+      }
+    }
+  *]
+}

@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeRoutingStepCampaigns
+{
+  TextBody:
+  [*
+    // ele3 Feb-15-2017 (created)
+    allinstances := selectset( this, RoutingStepCampaign, routingstepcampaign, true );
+    updatedinstances := construct( RoutingStepCampaigns );
+    
+    traverse( this, ImportedRoutingStep_SC.ImportedRoutingStepCampaign_SC, row, row.IsValidDataHard() )
+    {
+      routingid := row.RoutingId();
+      sequencenr := row.SequenceNr();
+      campaign := row.Campaign();
+      campaigntype := row.CampaignType();
+      resourcegroup := row.ResourceGroup();
+      
+      routingstepcampaign := RoutingStepCampaign::FindRoutingStepCampaignTypeIndex( routingid, sequencenr, resourcegroup, campaigntype, campaign );
+    
+      if( isnull( routingstepcampaign ) )
+      {
+        routingstepcampaign := RoutingStepCampaign::Create( this, routingid, sequencenr, resourcegroup, campaigntype, campaign );
+      }
+    
+      // No update method called due to all attributes being read only
+      
+      updatedinstances.Add( routingstepcampaign );
+    }
+    
+    // Delete routing step inputs if they do not exist in ERP
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, routingstepcampaign )
+    {
+      routingstepcampaign.Delete();
+    }
+  *]
+}

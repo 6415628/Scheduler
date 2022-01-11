@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method WaitForBreakpoint (LibOpt_Run run, LibUTF_IterationRun utf_run) as stream[Void]
+{
+  Description:
+  [*
+    Return a stream that will finish once the run is in a breakpoint state.
+    If the run is finished, the resulting stream will also be finished.
+    If you provide the `LibUTF_IterationRun`, we will trigger a UTF failure if the run is not running anymore.
+  *]
+  TextBody:
+  [*
+    result := stream[Void]::Success();
+    
+    if( not LibOpt_RunStatus::IsRunning( run ) )
+    {
+      if( not isnull( utf_run ) )
+      {
+        utf_run.RegisterFailure( 'Breakpoint not triggered. Run status is ' + run.Status() );
+      }
+    }
+    else if( isnull( run.BreakpointEvent() )
+             or run.BreakpointEvent().AllowedComponents() > 0
+             or run.BreakpointEvent().AllowedSteps() > 0 )
+    {
+      result := this->WaitForBreakpoint( run, utf_run );
+    }
+    
+    return result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

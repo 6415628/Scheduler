@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method IsNotCircularDependent (DMF_DatasetType parent_i) remote as Boolean
+{
+  Description: 'Is not circular dependent - the parent that input is not depend on dependent'
+  TextBody:
+  [*
+    feedback            := FeedbackObject::LocalFeedback();
+    //get all the parents from parent_i, ensure that dependent is not part of the parent_i's parent
+    allParents          := parent_i.GetAllParents();
+    
+    isParentNotCircular := allParents.Find( this ) < 0;
+    if( not feedback.CheckHard( isParentNotCircular ) )
+    {
+      feedback.AddHard( Translations::DMF_DatasetType_DependentCircular( this.Name(), parent_i.Name() ) );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

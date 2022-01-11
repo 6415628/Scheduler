@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericExternalWorkOrder (const Schedule schedule)
+{
+  Description: 'Backup generic external work order core data'
+  TextBody:
+  [*
+    traverse( schedule, WorkOrder.astype( GenericExternalWorkOrder ), genericExternalWorkOrder )
+    {
+      cdGenericExternalWorkOrder := this.CDEntity( relnew, CDGenericExternalWorkOrder );
+      CopyCorresponding::CopyFrom( genericExternalWorkOrder ).CopyTo( cdGenericExternalWorkOrder );
+      
+      // Additional attrbute in core data to persist the relation to internal work order to replace
+      cdGenericExternalWorkOrder.InternalWorkOrderToReplace( guard( genericExternalWorkOrder.InternalWorkOrderToReplace().Id(), '' ) );
+      
+      // Backup external work order operation
+      this.BackupGenericExternalWorkOrderOperation( genericExternalWorkOrder );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

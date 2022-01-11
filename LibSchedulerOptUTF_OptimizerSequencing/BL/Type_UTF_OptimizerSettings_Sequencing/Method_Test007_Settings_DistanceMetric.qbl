@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test007_Settings_DistanceMetric (Schedule schedule)
+{
+  Description: 'Imports the default optimizer settings for Distance Metric, changes them, tests the import/export function and then exports the original settings. Asserts that all imported settings are the same as the exported ones.'
+  TextBody:
+  [*
+    // jog2 Nov-12-2020 (created)
+    
+    distancemetricsettings := select( schedule, Optimization.Optimizer.astype( OptimizerSequencing ).Settings.astype( SettingsSequencing ).DistanceMetric, distancemetric, true );
+    
+    // Store the current Distance Metric settings
+    originalsettings := construct( SettingsSequencingDistanceMetricForSequencing );
+    originalsettings.UTF_StoreSettings( distancemetricsettings );
+    
+    // Change the Distance Metric settings
+    distancemetricsettings.UTF_ChangeSettings();
+    
+    // Store them for comparison
+    storedsettings := construct( SettingsSequencingDistanceMetricForSequencing );
+    storedsettings.UTF_StoreSettings( distancemetricsettings );
+    
+    // Export the changed settings
+    schedule.ExportObject().ExportOptimizerSettingsSequencingToDataFolder();
+    
+    // Change it again
+    distancemetricsettings.UTF_ChangeSettings();
+    
+    // Import the previous changed settings
+    schedule.ImportAndSynchronizeOptimizerSettingsSequencing();
+    
+    // Check to see if the imported settings are the same as the stored ones
+    this.Run().AssertTrue( this.CheckDistanceMetricSettings( distancemetricsettings, storedsettings ),
+                           'The imported values for the Distance Metric settings are different from the current ones.' );
+    
+    // Reset the values to the original
+    distancemetricsettings.UTF_StoreSettings( originalsettings );
+    schedule.ExportObject().ExportOptimizerSettingsSequencingToDataFolder();
+  *]
+}

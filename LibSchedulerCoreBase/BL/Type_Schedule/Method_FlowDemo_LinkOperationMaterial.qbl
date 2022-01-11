@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method FlowDemo_LinkOperationMaterial
+{
+  TextBody:
+  [*
+    // AlexanderNg Jul-24-2015 (created)
+    
+    traverse( this, ImportedFlowDemo_OperationMaterialLink_SC, oml, not oml.IsLinked() )
+    {
+      sourceorder := select( this, Order_SC, order,
+                             order.OrderNr() = oml.MaterialSourceOrderNr() )
+    
+      //get last operation of the source order
+      sourcelastoperation := maxselect( sourceorder,
+                                        PlanUnit_SC.Operation_SC,
+                                        operation,
+                                        true,
+                                        operation.SequenceNr() );
+    
+      destinationorder := select( this, Order_SC, order,
+                                  order.OrderNr() = oml.MaterialDestinationOrderNr() );
+    
+      // get the first operation of the destination order
+      destinationfirstoperation := minselect( destinationorder,
+                                              PlanUnit_SC.Operation_SC,
+                                              operation,
+                                              true,
+                                              operation.SequenceNr() );
+    
+      if( not isnull( sourcelastoperation ) and not isnull( destinationfirstoperation ) )
+      {
+          // remove the OOM of the source last operation when it doesn't have Downstream Operation
+          sourceplanunit := sourcelastoperation.PlanUnit_SC();
+    
+          traverse( sourcelastoperation, ToOperationDependency, oom, isnull( oom.ToOperation() ) )
+          {
+            oom.Delete(); // AlexanderNg 4-Aug-2015 QP #5697
+          }
+    
+          // remove the IOM of the destination first operation when it doesn't have the Upstream Operation
+          destinationplanunit := destinationfirstoperation.PlanUnit_SC();
+    
+          traverse( destinationfirstoperation, FromOperationDependency, iom, isnull( iom.FromOperation() ) )
+          {
+            iom.Delete();
+          }
+    
+          // create new and link the operation material
+          quantity := minvalue( sourceplanunit.Quantity(), destinationplanunit.Quantity() ); // AlexanderNg 2-Aug-2015 QP #5681
+          destinationfirstoperation.CreateInputOperationMaterial( sourcelastoperation, quantity );
+          oml.IsLinked( true );
+      }
+    }
+  *]
+}

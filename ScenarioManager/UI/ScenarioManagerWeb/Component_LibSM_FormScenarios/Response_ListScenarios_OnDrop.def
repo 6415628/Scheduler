@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: ListScenarios
+Response OnDrop (structured[LibSM_ScenarioNode] source, LibSM_ScenarioFolder target) id:Response_ListScenarios_OnDrop
+{
+  #keys: '[136398.0.2043365783]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebList_OnDrop'
+  InheritSecurity: false
+  Precondition:
+  [*
+    username := LibSM_GlobalState.GetUserName();
+    isAdmin  := LibSM_GlobalState.IsAdministrator();
+    return LibSM_ScenarioNode::CanMove( target, source, username, isAdmin );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Move selected scenario nodes to a target folder
+      if( target.IsDeleted()
+          or target.IsRecycleBin() )
+      {
+        LibSM_ScenarioNode::Delete( source, target );
+        //Application.RemoveHistory();
+      }
+      else
+      {
+        target.Move( source );
+      }
+      
+      //Form.GetPanel().AutoExpandSelection( this, source );
+    *]
+    GroupServerCalls: false
+  }
+}

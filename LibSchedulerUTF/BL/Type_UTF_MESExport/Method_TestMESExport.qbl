@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestMESExport (Schedule schedule)
+{
+  Description: 'Unit test for checking the attribute of normal task before and after value upon exporting MES'
+  TextBody:
+  [*
+    // Get variant value
+    isVariantFound := true;
+    scheduleID := '';
+    comment := '';
+    commentLastUpdatedTimeStamp := DateTime::MinDateTime();
+    commentLastUpdatedUserName := '';
+    
+    this.GetNormalTaskTestVariant( isVariantFound,
+                                   scheduleID,
+                                   comment,
+                                   commentLastUpdatedTimeStamp,
+                                   commentLastUpdatedUserName );
+    
+    value := true;
+    
+    if( isVariantFound )
+    {
+      if( this.Variant() = 'Test with exporting single task' )
+      {
+        value := this.ValidateExportedSingleTask( schedule, scheduleID, comment, commentLastUpdatedTimeStamp, commentLastUpdatedUserName );
+      }
+      else if( this.Variant() = 'Test with exporting planned batch' )
+      {
+        value := this.ValidateExportedBatchTask( schedule, scheduleID, comment, commentLastUpdatedTimeStamp, commentLastUpdatedUserName );
+      }
+    }
+    
+    this.Run().AssertTrue( value, this.Variant() + ' failed' );
+  *]
+}

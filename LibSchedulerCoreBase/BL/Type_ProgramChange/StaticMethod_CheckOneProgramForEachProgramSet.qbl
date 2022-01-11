@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckOneProgramForEachProgramSet (ProgramTypeConfigurations programtypeconfigurations) declarative remote as Boolean
+{
+  Description: 'Check only one program for each program set'
+  TextBody:
+  [*
+    // Check only one program for each program set
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    // Only true if selected program types has unique program set ID to prevent user select multiple program types for same program set
+    value := unique( programtypeconfigurations, Elements, programtype, true, programtype.ProgramSetConfigurationID() );
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      feedbackobject.AddHard( Translations::ProgramChange_OneProgramForEachProgramSet() );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

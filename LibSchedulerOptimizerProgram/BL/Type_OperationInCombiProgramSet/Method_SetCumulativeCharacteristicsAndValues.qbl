@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetCumulativeCharacteristicsAndValues
+{
+  TextBody:
+  [*
+    // zyi1 Jul-13-2021 (created)
+    // Construct vectors 
+    cumulativecharacteristic := BinaryValue::Construct();
+    cumulativerealvalue := BinaryValue::Construct();
+    //info( ' cpt: ', this.CombiProgramType().ID(), ' config: ', this.CombiProgramType().ProgramTypeConfiguration().Name() );
+    // Only calculate the phase sequence number if there is program type
+    if( not isnull( this.CombiProgramType() ) 
+        and not isnull( this.CombiProgramType().ProgramTypeConfiguration() ) )
+    {
+      previoustaskinprogramtype := this.GetPreviousOperationInCombiProgramType();
+      previoustaskcummulativecharacteristic := guard( previoustaskinprogramtype.CumulativeCharacteristic(), BinaryValue::Construct( ) );
+      previoustaskcummulativerealvalue := guard( previoustaskinprogramtype.CumulativeRealValues(), BinaryValue::Construct( ) );
+    
+      rulesneedcumulative := TaskInProgramSet::GetRulesForCumulativeProgramRules( this.CombiProgramType().ProgramTypeConfiguration(), this.Operation_SC() );
+      cumulativecharacteristics := selectset( rulesneedcumulative, Elements.CharacteristicMain, char, true );
+      
+      // Calculate cumulative characteristic binary value
+      Characteristic::GetCharacteristicBinaryValueOpt( cumulativecharacteristics, 
+                                                this.OperationInCombiLeg(),
+                                                previoustaskcummulativecharacteristic,
+                                                previoustaskcummulativerealvalue,
+                                                cumulativecharacteristic,
+                                                cumulativerealvalue );
+    }
+                                                                
+    this.CumulativeCharacteristic( cumulativecharacteristic );
+    this.CumulativeRealValues( cumulativerealvalue );
+  *]
+}

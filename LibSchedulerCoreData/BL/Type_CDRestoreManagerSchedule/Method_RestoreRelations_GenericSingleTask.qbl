@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericSingleTask (CDSchedule cdschedule)
+{
+  Description: 'Restore attributes for generic single task core data to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdschedule, CDEntity.astype( CDGenericSingleTask ), cdSingleTask )
+    {
+      resource := Resource_SC::FindResource_SC( cdSingleTask.ResourceID() );
+      singletask := select( resource, Task_SC.astype( GenericSingleTask ), task, task.BackupTaskID() = cdSingleTask.BackupTaskID() )
+      
+      if( not isnull( singletask ) )
+      {
+        // Restore relation to the corresponding operation
+        operation := select( schedule, PlanUnit_SC.Operation_SC, op, op.PlanUnit_SC().PlanUnitID() = cdSingleTask.PlanUnitID() and op.OperationID() = cdSingleTask.OperationID() );
+        singletask.OperationAsSingleTask( relset, operation ); 
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

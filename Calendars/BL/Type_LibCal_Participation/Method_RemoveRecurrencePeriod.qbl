@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RemoveRecurrencePeriod
+{
+  Description:
+  [*
+    Remove the specific recurrence period of the participation, in case it is a participation in another event.
+    As a result, the recurrence period of the participated event will be used from now on.
+  *]
+  TextBody:
+  [*
+    if( not isnull( this.RecurrencePeriod() ) )
+    {
+      this.RecurrencePeriod().Delete();
+      
+      // Explicitly delete the existing occurrences.
+      occurrences := this.ExplicitTimeInterval( relget );
+      LibCal_ExplicitTimeInterval::Delete( occurrences, false );
+      
+      this.HasChangedRecurrencePeriod( true );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

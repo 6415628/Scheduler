@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitOperationGroupToOperationGroupTypeConstraints (LibOpt_Task task, SuboptimizerMPPTAssignment_PTAssignmentMP program, TransientDataSuboptimizerPTAssignment transientData) as SuboptimizerMPPTAssignment_PTAssignmentMP
+{
+  TextBody:
+  [*
+    // jkr8 Jul-16-2021 (created)
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // sum_t( NrOpsAssignedToType_(o,t,b) = NrOpsAssigned_(o,b), forall o in Operationgroups, all programsets, b = 1,...,B//
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // equalizing constraint to set the nuber of operations assigned constraints equal to the sum over all types.
+    
+    traverse( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration.ProgramSetConfiguration, programSet, true )
+    {
+      traverse( transientData, OperationGroup, operationGroup, true ) 
+      {
+        traverse( transientData, Bucket, bucket, true )
+        {
+          constr := program.OperationGroupToOperationGroupTypeConstraints().New( operationGroup, programSet, bucket );
+          
+          traverse( programSet, ProgramTypeConfiguration, programType, true ) 
+          {
+            constr.NewTerm( 1.0, program.NrOpsAssignedToTypeVariables().Get( operationGroup, bucket, programType ) );
+          }
+          
+          constr.NewTerm( -1.0, program.NrOpsAssignedVariables().Get( operationGroup, bucket ) );
+          
+          constr.RHSValue( 0 );
+        }
+      }
+    }
+    
+    return program;
+  *]
+}

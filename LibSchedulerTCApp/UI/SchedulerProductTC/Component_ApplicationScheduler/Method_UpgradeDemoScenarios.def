@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpgradeDemoScenarios () id:Method_ApplicationScheduler_UpgradeDemoScenarios
+{
+  #keys: '[142956.1.1922051905]'
+  Body:
+  [*
+    // Traverses through all demo scenarios in demo scenario folder and upgrade them by importing and reexporting them
+    // Essentially refreshing all the excel files
+    // This 'Upgrade' will only work if the imported excel file is already in the expected excel file format
+    
+    demoCategories := Schedule::GetAllFoldersInDemoScenarioFolder();
+    
+    traverse( demoCategories.Tokenize( ';' ), Elements, demoCategory )
+    {
+      demoScenarioFolders := Schedule::GetAllFoldersInDemoScenarioCategoryFolder( demoCategory );
+      
+      traverse( demoScenarioFolders.Tokenize( ';' ), Elements, demoScenario )
+      {
+        // First import the data
+        Schedule.DemoManager().ResetToDemoData( demoCategory, 
+                                                demoScenario, 
+                                                false );
+                                                
+        ApplicationScheduler.ImportAllKnowledgeFromExcel( demoCategory, 
+                                                          demoScenario );
+                                                          
+        Schedule.SynchronizationObject().SynchronizeKTWithMaterialReservation();
+        
+        // Then reexport it to refresh the excel data
+        ApplicationScheduler.ExportAllKnowledgeToExcel();
+        Schedule.DemoManager().ExportDemoAndERPData( demoCategory, demoScenario );
+      }
+    }
+  *]
+}

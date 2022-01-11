@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenericTest_01X (LibOpt_TestDataset dataset, String position, Boolean has_error) as stream[LibOpt_Run]
+{
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    start := opt.ComponentError( run, 'Error', position );
+    
+    run.SetStartComponent( start );
+    
+    return run->Start()->|void->()
+    {
+      this.Run().AssertEqual( ifexpr( has_error, 2, 1 ), run.Snapshot( relsize ) );
+      snapshot := select( run, Snapshot.astype( LibOpt_SnapshotComponent ), c, true );
+      this.Run().AssertFalse( isnull( snapshot ), 'No snapshot is found' );
+      if( not isnull( snapshot ) )
+      {
+        if( has_error )
+        {
+          this.Run().AssertEqual( 1, snapshot.Children( relsize ), 'Not enough children' );
+          child := select( snapshot, Children, child, true );
+          this.Run().AssertTrue( child.istype( LibOpt_SnapshotError ), 'Child snapshot is not of type SnapshotError' );
+        }
+      }
+    }->Exception()->( e )
+    {
+      this.Run().RegisterFailure( 'Exception caught: ' + e.Message() );
+    }->|emit( run );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

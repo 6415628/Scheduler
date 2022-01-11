@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetLastOperationPreviousLegIfFrozenAndRelevant (CombiLeg combileg, CombiLegs combilegs) as OperationInCombiLeg
+{
+  Description:
+  [*
+    Returns the last operation of the previous leg if
+    > This operation is frozen for the POA
+    > And this operation is relevant for sequence constraints
+  *]
+  TextBody:
+  [*
+    prevlegendop := null( OperationInCombiLeg );
+    
+    // Select the previous leg end operation if it exists and is relevant for sequencing rules
+    if( not isnull( combileg.Previous() )
+        and combileg.GetIsPreviousAndRelevantForSeqRules( combileg.Previous() ) )
+    {
+      prevlegendop := combileg.Previous().LastOperation();
+    }
+    
+    // However, if this is a pure POA iteration
+    if( not this.IsCombiGeneration() )
+    {
+      // And if the previous leg is in scope and relevant for the sequence rules
+      previousleg := combileg.GetPreviousCombiLegIfInScopeAndRelevantForSequence( combilegs );
+      if( not isnull( previousleg ) )
+      {
+        // Then select the relevant node if it is frozen
+        if( previousleg.IsFreezeLastNodeInPOA() )
+        {
+          prevlegendop := previousleg.LastOperation();
+        }
+        // and select a null node if it is not frozen
+        else
+        {
+          prevlegendop := null( OperationInCombiLeg );
+        }
+      }
+    }
+    
+    return prevlegendop;
+  *]
+}

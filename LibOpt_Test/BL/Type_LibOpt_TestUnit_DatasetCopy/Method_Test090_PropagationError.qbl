@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test090_PropagationError (LibOpt_TestDataset dataset)
+{
+  Description: 'Check if a propagation error results in a snapshot and a dataset copy on the correct component when `LibOpt_Optimizer.HasToPropagateAfterUserCode` is set to `true`.'
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( true );
+    opt.HasToPropagateAfterUserCode( true );
+    run := opt.CreateRun();
+    // The HasToPropagateAfterUserCode attribute has been copied to the run when opt.CreateRun() was called.
+    // We should disable HasToPropagateAfterUserCode to ensure that the attribute does not cause issues in other unit tests.
+    opt.HasToPropagateAfterUserCode( false );
+    
+    // Create a component that throws a propagation error in the Operation method. 
+    firstcomponent := opt.ComponentFlow( run, 'Flow 1', false );
+    errorcomponent := opt.ComponentError( run, 'Propagation error', LibOpt_ComponentErrorPosition::OperationPropagationError() );
+    errorposition := select( errorcomponent, ComponentPosition, position, position.Name() = LibOpt_Component::ComponentPosition_Error() );
+    errorposition.SetDatasetCopy();
+    
+    // If we don't run the 'Propagation error' component in one transaction, then the propagation error will always trigger on the 'Propagation error' component. 
+    firstcomponent.To( errorcomponent ).AsOneTransaction( false );
+    
+    streamrun := run.Start(); 
+    
+    // Wait until the run is finished. 
+    // Then check if the LibOpt_SnapshotError is created on the 'Propagation error' component. Also check if the dataset is created. 
+    str := streamrun
+    ->|stream[Void]::Wait( this.MDSEditorUpdateTime() ) // Wait some time to ensure that the dataset copy is succesfully created.
+    ->|void->()
+    {
+      LibOpt_TestUnit_DatasetCopy::AssertsForComponentPositionCreatedDataset( this, errorposition );    
+    
+      nrcreatedsnapshots := counter( errorcomponent,
+                                     SnapshotComponent.Children.astype( LibOpt_SnapshotError ),
+                                     errorsnapshot,
+                                     true
+                                     );
+                                        
+      this.Run().AssertEqual( 1,
+                              nrcreatedsnapshots,
+                              "Expected to create 1 '" 
+                              + typeof( LibOpt_SnapshotError ).Name()
+                              + "' snapshot for the '"
+                              + errorposition.Name()
+                              + "' component position of the '"
+                              + errorcomponent.Name()
+                              + "' component. However, "
+                              + [String] nrcreatedsnapshots 
+                              + " snapshots were created."
+                              );
+    }
+    this.NoException( str );
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method Synchronize (LibCal_StagingEvent stagingEvent_i)
+{
+  TextBody:
+  [*
+    // Calculate EndTimeOfDay. It is not imported because this is error prone
+    // (Duration and EndTimeOfDay can easily get out of sync by manual editing).
+    endTimeOfDay := ( stagingEvent_i.StartTimeOfDay() + stagingEvent_i.Duration() ) mod Duration::Hours( 24 );
+    isFromUI     := false;
+    
+    this.Update( stagingEvent_i.Subject(), stagingEvent_i.Description(), stagingEvent_i.Type(), stagingEvent_i.PartialCapacity(), stagingEvent_i.IsDefault(), 
+                 stagingEvent_i.StartTimeOfDay(), endTimeOfDay, stagingEvent_i.Duration(), stagingEvent_i.IsAllDay(), isFromUI );
+    
+    // When the category is not found, the event is assigned to the general category.
+    this.SetCategory( stagingEvent_i.Category() );
+    
+    // Also synchronize the RecurrencePattern.
+    this.SynchronizeRecurrencePattern( stagingEvent_i );
+  *]
+}

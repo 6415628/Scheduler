@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update (WorkOrder workorder)
+{
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // FOR DEMO
+    // carmen Sep-12-2012 (created)
+    // calculate the nrofplanunits for this order.
+    importedproductid := workorder.ProductId();
+    product           := Product_SC::FindProductId( importedproductid ); 
+    
+    // update order attributes
+    this.Quantity( workorder.Quantity() );
+    this.DueDate( workorder.DueDate() );
+    this.NrOfLots( workorder.NrOfLots() );
+    this.IsDummyWorkOrder( workorder.IsDummy() );
+    this.LotSize( workorder.LotSize() );
+    
+    // update attributes and relation if the product exists
+    if( not isnull( product ) )
+    {  
+      // set relation between Order_SC and Product_SC
+      if( importedproductid <> this.ProductId() )
+      {
+        this.ProductId( importedproductid );
+        this.Product_SC( relset, product );
+      }
+    }
+    // set relation between Order_SC and WorkOrder
+    this.WorkOrder( relset, workorder );
+    this.IsCreatedInScheduler( workorder.IsCreatedInScheduler() );
+  *]
+}

@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetDateOfFirstRecurrence (Date startOfPeriod_i) as Date id:Method_LibCal_dlgEvent_GetDateOfFirstRecurrence
+{
+  #keys: '[131094.0.1242728886]'
+  Body:
+  [*
+    date          := Date::MinDate();
+    earliestStart := startOfPeriod_i;
+    timezone      := this.GetCalendarTimeZone();
+    
+    if( btnWeekly.Pressed() )
+    {
+      date := LibCal_RecurrencePatternWeekly::GetDateOfFirstRecurrence( startOfPeriod_i, earliestStart, [Number]edtEveryNrOfWeeks.Text() );  
+    }
+    
+    else if( btnMonthly.Pressed() )
+    {
+      // Make sure that the entered day of the month is valid.
+      day := guard( [Number]edtMonthlyDay.Text(), 0 );
+      
+      if( day > 0 )
+      {
+        everyNrOfMonths := ifexpr( ckbMonthlyDay.Checked(), edtMonthlyDayEveryNrOfMonths.Text(),
+                                                            edtMonthlyPatternEveryNrOfMonths.Text() );
+                                                            
+        date := LibCal_RecurrencePatternMonthly::GetDateOfFirstRecurrence( timezone, startOfPeriod_i, durStartTimeOfDay.Duration(), durEndTimeOfDay.Duration(), vhDuration.Data(), 
+                                                                           earliestStart, [Number]everyNrOfMonths,
+                                                                           ckbMonthlyDay.Checked(), day,
+                                                                           ssMonthlyPatternWeekOfMonth.BoundValue(), ssMonthlyPatternDayOfWeek.BoundValue() );
+      }                                                                    
+    }
+    
+    else if( btnYearly.Pressed() )
+    {
+      month     := ifexpr( ckbYearlyDay.Checked(), ssYearlyMonth.BoundValue(), ssYearlyPatternMonth.BoundValue() );  
+      nrOfMonth := this.GetNrOfMonth( month );
+      
+      date := LibCal_RecurrencePatternYearly::GetDateOfFirstRecurrence( timezone, startOfPeriod_i, durStartTimeOfDay.Duration(), durEndTimeOfDay.Duration(), vhDuration.Data(), 
+                                                                        earliestStart, [Number]edtEveryNrOfYears.Text(),
+                                                                        nrOfMonth, ckbYearlyDay.Checked(), [Number]ssYearlyDayOfMonth.BoundValue(),
+                                                                        ssYearlyPatternWeekOfMonth.BoundValue(), ssYearlyPatternDayOfWeek.BoundValue() );
+    }
+    
+    return date;
+  *]
+}

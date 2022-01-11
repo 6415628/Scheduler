@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method OptimizeWithDefaultSettings (Operation_SCs operations, Resource_SCs resources)
+{
+  Description: 'Run the optimizer with default settings.'
+  TextBody:
+  [*
+    // mbr23, 2019-09-23: moved to OptimizerMRS from legacy OptimizerMRSA
+    // mbr23, 2020-03-30: moved to OptimizerSequencing from legacy OptimizerMRS
+    
+    options := DatasetFindOptions::Construct( LibSM_ScenarioManager::GetDatasetName() );
+    sm := MDSLibSM_ScenarioManager::Find( options );
+    
+    // Update selected optimizer
+    if( not isnull( this.AsOptimizerSequencingForOptimization() ) )
+    {
+      this.AsOptimizerSequencingForOptimization().Schedule().Optimizer().SelectedOptimizer( Constants::OptimizerSequencing() );
+    }
+    
+    if( not isnull( sm ) )
+    {
+      // Get default strategy and settings
+      defaultsetting := sm->GetDefaultOptimizerSetting();
+      defaultstrategy := sm->GetDefaultOptimizerStrategy();
+    
+      this->SetOptimizerSetting( defaultsetting ); // Set default settings
+      this.AsOptimizerSequencingForOptimization().Schedule()->SetOptimizerStrategy( defaultstrategy ); // Set default strategy
+      this.Optimize( operations, resources ); // Run optimizer
+    }
+  *]
+}

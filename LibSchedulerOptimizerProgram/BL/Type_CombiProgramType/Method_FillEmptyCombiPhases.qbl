@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method FillEmptyCombiPhases (Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // yifei Sep-1-2021 (created)
+    res := this.GetResource();
+    maxiter := ifexpr( res.HasProgramSettings(),
+                       counter( this, ProgramTypeConfiguration.ProgramPhaseConfiguration, ppc, true ),
+                       OptimizerProgram::MaxLegsNumInPhaseOnNonProgramResource() );
+    iter := 0;
+    notfullcreterial := ifexpr( res.HasProgramSettings(),
+                                1,
+                                OptimizerProgram::MaxLegsNumInPhaseOnNonProgramResource() );
+    while( exists( this, 
+                   CombiProgramPhase, 
+                   cph, 
+                   cph.CombiLegAsLeading( relsize ) < notfullcreterial and iter < maxiter ) )
+    {
+      firstempty_cph := minselect( this, CombiProgramPhase, cph, cph.CombiLegAsLeading( relsize ) < notfullcreterial, cph.SequenceNr() );
+      combileg := firstempty_cph.CreateEmptyCombiLegAtEnd(); 
+      Transaction::Transaction().Propagate( attribute( CombiLeg, SequenceNr ) );
+      
+      Transaction::Transaction().Propagate( attribute( OperationInCombiLeg, SequenceNr ) );
+      Transaction::Transaction().Propagate( attribute( OperationInCombiLeg, IsPhaseChanged ) );
+      Transaction::Transaction().Propagate( attribute( OperationInCombiLeg, IsLeadingPhaseChanged ) );
+      
+      //combileg.Split();
+      Transaction::Transaction().Propagate( attribute( CombiLeg, SequenceNr ) );
+      this.SequenceByPOA( combileg, operations );
+      iter ++;
+    }
+  *]
+}

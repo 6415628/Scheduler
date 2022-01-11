@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetPotentialSubscribers () remote as owning LibCal_Calendars
+{
+  Description: 'Get the calendars that can subscribe to (events of) this calendar.'
+  TextBody:
+  [*
+    subscribers := construct( LibCal_Calendars );
+    calendars   := this.GetCalendarRegistry().GetAllCalendars();
+    
+    traverse( calendars, Elements, calendar, calendar <> this )
+    {
+      if( calendar.GetPotentialCalendarsToSubscribeTo().Find( this ) >= 0 )
+      {
+        subscribers.Add( calendar );
+      }
+    }
+    
+    return &subscribers;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

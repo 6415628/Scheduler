@@ -1,0 +1,105 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CheckFeedbackSequenceAdherence
+{
+  TextBody:
+  [*
+    // jx #4790 Aug-29-2016
+    // Find out all exported batch sequence in current FeedbackBatches
+    exbatchelements := selectsortedset( this, FeedbackBatchInSchedule.FeedbackBatchContentInSchedule, batchelement,
+                                        not batchelement.IsDummyWorkOrder(),
+                                        batchelement.FeedbackBatchInSchedule().ExportedStart(),
+                                        batchelement.ExportedBatchID());
+    
+    exbatches := selectuniquevalues( exbatchelements, Elements, bse, true, bse.ExportedBatchID() ); 
+    
+    fbbatch := minselect( this, FeedbackBatchInSchedule, fbbis, 
+                          not fbbis.IsDummyWorkOrder(), 
+                          fbbis.Start() );
+    
+    // Traverse exported batch and feedbackbatch at same time, to check out how many task is adherence.
+    traverse( exbatches, Elements, exbatch, not isnull( fbbatch ) )
+    {
+      // exported batch size
+      exportsize := select( this, FeedbackBatchInSchedule.FeedbackBatchContentInSchedule, fbt,
+                            not fbt.IsDummyWorkOrder(),
+                            fbt.ExportedBatchID() = exbatch ).ExportedBatchSize();
+      
+      // Adherence quantity
+      quantity := counter( fbbatch, FeedbackBatchContentInSchedule, fbt,
+                           not fbt.IsDummyWorkOrder(),
+                           fbt.ExportedBatchID() = exbatch );
+      
+      // feedback batch size
+      fbsize := counter( fbbatch, FeedbackBatchContentInSchedule, fbt, 
+                         not fbt.IsDummyWorkOrder() );  
+    
+      // record in FeedbackBatchInSchedule.InconsistenceQuantity instead of on FeedbackTaskInSchedule to reduce complication 
+      fbbatch.InconsistenceQuantity( fbsize - quantity );
+    
+      fbbatch.AdherenceRate( guard( quantity / ( fbsize + exportsize - quantity ), 0.0 ) );
+      
+      // select next feedback batch.
+      fbbatch := minselect( this, FeedbackBatchInSchedule, fbb, 
+                            not fbb.IsDummyWorkOrder() 
+                            and fbb.Start() > fbbatch.Start(), 
+                            fbb.Start() );
+    }
+    /*
+    // Keeping it simple, we will check only the batch element sequence adherence until we have a good solution for the batch adherence
+    batchelements := selectsortedset( this, FeedbackBatchInSchedule.FeedbackTaskInSchedule, batchelement,
+                                      true,
+                                      batchelement.ReportedStart(),
+                                      batchelement.ReportedBatchID(),
+                                      batchelement.BatchElemSeqNr() );
+    
+    previousfeedbacktask := null( FeedbackTaskInSchedule );
+    
+    traverse( batchelements, Elements, batchelement )
+    {
+      if( not isnull( previousfeedbacktask ) )
+      {
+        // batch element sequence is the same
+        iselementsequenceadhere := batchelement.ScheduledPrevOperationID() = previousfeedbacktask.OperationID();
+        // batch scheduled in the same batch, reportd in the same batch
+        issamebatchandadhere := batchelement.ExportedBatchID() = previousfeedbacktask.ExportedBatchID()
+                                and batchelement.ReportedBatchID() = previousfeedbacktask.ReportedBatchID()
+        // not scheduled in the same batch, not reported in same batch
+        isdifferentbatchandadhere := batchelement.ExportedBatchID() <> previousfeedbacktask.ExportedBatchID()
+                                     and batchelement.ReportedBatchID() <> previousfeedbacktask.ReportedBatchID();
+    
+        batchelement.IsPreviousAdherence( iselementsequenceadhere                                      // batch element sequence same as scheduled
+                                          and ( issamebatchandadhere or isdifferentbatchandadhere ) ); // batching same as scheduled
+      }
+      previousfeedbacktask := batchelement;
+    }*/
+    
+    
+    /*// There is challenge in tracing the reported batch ID and the scheduled batch ID as reported batch can be completely different from the scheduled batch
+    // iterate all feedbackbatches to check if feedbackbatches sequence is according to scheduled sequence
+    // and iterate all element in feedbackbatches to check batch sequence element is according to scheduled sequence
+    // ignore accuracy of the first feedbacktask when its previous is out of feedback history horizon and is deleted.
+    
+    feedbackbatches := selectsortedset( this, FeedbackBatchInSchedule, feedbackbatch,
+                                        true, feedbackbatch.Start(), feedbackbatch.End(), feedbackbatch.BatchID() );
+    previousfeedbackbatchid := '';
+    
+    traverse( feedbackbatches, Elements, feedbackbatch )
+    {
+      // Check feedbackbatch sequence adherence
+      feedbackbatch.IsPreviousAdherence( feedbackbatch.ScheduledPreviousBatchID() = previousfeedbackbatchid );
+    
+      previousfeedbackbatchid := feedbackbatch.BatchID();
+    
+      // Check batch sequence element sequence adherence
+      batchelements := selectsortedset( feedbackbatch, FeedbackTaskInSchedule, batchelement, true, batchelement.BatchElemSeqNr() );
+      previousfeedbacktaskid := '';
+      traverse( batchelements, Elements, batchelement )
+      {
+        batchelement.IsPreviousAdherence( batchelement.ScheduledPrevOperationID() = previousfeedbacktaskid );
+    
+        previousfeedbacktaskid := batchelement.OperationID();
+      }
+    }
+  *]
+}

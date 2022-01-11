@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateDialog () id:Method_LibWiz_DialogInitProcess_UpdateDialog
+{
+  #keys: '[121114.1.2065112131]'
+  Body:
+  [*
+    // Activate panel corresponding to manual step or choice based on current init element
+    if( not isnull( DataHolderCurrentInitManualStep.Data() ) )
+    {
+      LayeredPanel.ActivatePanel( PanelInitManualStep );
+      
+      manualstep := DataHolderCurrentInitManualStep.Data();
+      if( manualstep.IsImage() )
+      {
+        LayeredPanelDescription.ActivatePanel( PanelImageExplanationManualStep );
+        ImageManualStep.Image( manualstep.Description() );
+      }
+      else
+      {
+        LayeredPanelDescription.ActivatePanel( PanelEditorExplanation );
+      }
+    }
+    else if( not isnull( DataHolderCurrentInitChoice.Data() ) )
+    {
+      LayeredPanel.ActivatePanel( PanelInitChoice );
+    }
+    else
+    {
+      LayeredPanel.ActivatePanel( PanelEmpty );
+    }
+    
+    // Make sure that current init element remains visible in the list
+    key := guard( Dialog.Data().Current().Key(), Key::ZeroKey() );
+    if( key <> Key::ZeroKey() )
+    {
+      ListInitElement.EnsureVisible( Dialog.Data().Current().Key() );
+    }
+    
+    //Update buttons
+    Dialog.UpdateButtons();
+  *]
+}

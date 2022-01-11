@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ChangeIndex (Tool informationtool, Tool targettool)
+{
+  Description: 'Change the index for the desired (information) tool to the target tool, then increment the target tool and any related ones as a result.'
+  TextBody:
+  [*
+    // ele3 Sep-29-2016 (created)
+    targetindex := targettool.Index();
+    informationindex := informationtool.Index();
+    
+    // Prevent changing the index if the indices are already in order.
+    if( informationindex + 1 <> targetindex )
+    {
+      if( targetindex < informationindex )
+      {
+        informationtool.Index( targetindex );
+        
+        nexttools := selectsortedset( targettool, 
+                                      ToolGroup.Tool, 
+                                      t, 
+                                      ( t.Index() > targetindex and t <> informationtool ) or t = targettool, 
+                                      t.Index() );
+        
+        traverse( nexttools, Elements, t )
+        {
+          targetindex := targetindex + 1;
+          t.Index( targetindex );
+        }
+      }
+      else
+      {
+        informationtool.Index( targetindex - 1 );
+        
+        nexttools := selectsortedset( targettool, 
+                                      ToolGroup.Tool, 
+                                      t, 
+                                      t.Index() < targetindex and t <> informationtool, 
+                                      t.Index() );
+    
+        nexttools.Reverse();
+        targetindex := targetindex - 1;
+        
+        traverse( nexttools, Elements, t )
+        {
+          targetindex := targetindex - 1;
+          t.Index( targetindex );
+        }
+      }
+    }
+  *]
+}

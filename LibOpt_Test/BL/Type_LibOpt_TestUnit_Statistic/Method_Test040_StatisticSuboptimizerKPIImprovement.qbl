@@ -1,0 +1,96 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test040_StatisticSuboptimizerKPIImprovement (LibOpt_TestDataset dataset)
+{
+  Description: 'Test that we get the right amount of issues for `LibOpt_StatisticSuboptimizerKPIImprovement`'
+  TextBody:
+  [*
+    nr_iterations := 100;
+    nr_kpis := 5;
+    nr_lower_outliers := 3;
+    nr_upper_outliers := 3;
+    
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    scope := LibOpt_Scope::Create( run );
+    run.SetStartScope( scope );
+    
+    iterator := opt.Iterator( run, 'Iterator' );
+    iterator.SetMaxIterations( nr_iterations );
+    
+    rollback_kpi := opt.RollbackKPIScripted( nr_kpis );
+    
+    iterations := construct( Numbers );
+    for( i := 0; i < nr_iterations; i++ )
+    {
+      iterations.Add( i );
+    }
+    
+    expected_nr_issues := NumberVector::Zeroes( nr_iterations );
+    
+    // Define the KPI changes for every iteration and every KPI level
+    change := RealMatrix::Ones( nr_iterations, nr_kpis );
+    for( i := 0; i < nr_kpis; i++ )
+    {
+      value := Real::Random() * 1000 + 1000;
+      column := change.GetColumn( i ).Times( value );
+      random_sorted := selectsortedset( iterations, Elements, iteration, true, Real::Random() );
+      for( j := 0; j < nr_lower_outliers; j++ )
+      {
+        index := random_sorted.Element( j );
+        column.Set( index, value / 10 * Real::Random() )
+        expected_nr_issues.Set( index, expected_nr_issues.Get( index ) + 1 );
+      }
+      for( j := 0; j < nr_upper_outliers; j++ )
+      {
+        index := random_sorted.Element( nr_lower_outliers + j );
+        column.Set( index, value * ( ( 1 + Real::Random() ) * 10 ) );
+        expected_nr_issues.Set( index, expected_nr_issues.Get( index ) + 1 );
+      }
+      change.SetColumn( i, column );
+    }
+    
+    kpis := RealVector::Construct( nr_kpis, 10000000.0 );
+    rollback_kpi.Enqueue( kpis );
+    for( i := 0; i < nr_iterations; i++ )
+    {
+      for( j := 0; j < nr_kpis; j++ )
+      {
+        kpis.Set( j, kpis.Get( j ) - change.Get( i, j ) );
+      }
+      rollback_kpi.Enqueue( kpis );
+    }
+    
+    suboptimizer := opt.SuboptimizerMPReflection( run, 'Suboptimizer', & rollback_kpi,
+                                                  method( LibOpt_RollbackKPIScripted, MP_HandleResult, LibOpt_Suboptimizer,
+                                                          MathematicalProgram, LibOpt_Task, Boolean ) );
+    
+    iterator.To( suboptimizer );
+    run.ConfigureForOneTransaction();
+    
+    this.NoException( run->Start()->|void->( )
+    {
+      statistics := selectset( run, Statistic.astype( LibOpt_StatisticSuboptimizerKPIImprovement ), statistic, true );
+      
+      if( this.Run().AssertEqual( nr_kpis, statistics.Size(), 'Incorrect amount of statistics' ) )
+      {
+        traverse( statistics, Elements, statistic )
+        {
+          this.Run().AssertEqual( nr_lower_outliers + nr_upper_outliers, statistic.Issue( relsize ), 'Unexpected amount of issues' );
+        }
+        
+        traverse( suboptimizer, SnapshotComponent, snapshot )
+        {
+          traverse( snapshot, IterationPart.IterationPartNM.Iteration, iteration )
+          {
+            expected := expected_nr_issues.Get( iteration.IterationNr() - 1 )
+            actual := counter( snapshot, IterationPart.Snapshot.Issue, issue, issue.Statistic().istype( LibOpt_StatisticSuboptimizerKPIImprovement ) )
+            this.Run().AssertEqual( expected, actual, 'Unexpected amount of issues on iteration ' + [String] iteration.IterationNr() );
+          }
+        }
+      }
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

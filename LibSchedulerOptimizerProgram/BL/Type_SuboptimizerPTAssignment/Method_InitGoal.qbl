@@ -1,0 +1,85 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitGoal (LibOpt_Task task, SuboptimizerMPPTAssignment_PTAssignmentMP program, TransientDataSuboptimizerPTAssignment transientData)
+{
+  TextBody:
+  [*
+    // jkr8 Jul-20-2021 (created)
+    
+    goal := program.Goal();
+    
+    goal.Sense( MPGoalSense::Minimize().AsString() );
+    
+    //Lateness
+    traverse( transientData, OperationGroup, operationGroup )
+    {
+      traverse( transientData, Bucket, bucket )
+      {
+        goal.NewTerm( this.Settings().KPIWeightLateness(), program.LatenessVariables().Get( operationGroup, bucket ) );
+      }
+    }
+    
+    //NewProgram - Supporting Programs
+    traverse( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, programType )
+    {
+      traverse( transientData, Bucket, bucket )
+      {
+        goal.NewTerm( this.Settings().KPIWeightNewProgram(), program.IsNewProgramVariables().Get( programType, bucket ) ); 
+      }
+    }
+    
+    //New Program - Leading Programs
+    traverse( transientData, Bucket, bucket )
+    {
+      goal.NewTerm( this.Settings().KPIWeightNewProgram(), program.IsUsedVariables().Get( bucket ) );
+    }
+    
+    //Preference 
+    traverse( transientData, OperationGroup, operationGroup )
+    {
+      traverse( transientData, Bucket, bucket )
+      {
+        goal.NewTerm( this.Settings().KPIWeightPreference(), program.PreferenceVariables().Get( operationGroup, bucket ) );
+      }
+    }
+    
+    //Transition
+    goal.NewTerm( this.Settings().KPIWeightTransition(), program.SetupDurationVariables().Get() );
+    
+    //Capacity Slack
+    slackCoefficient := this.Settings().WeightSlack();
+    traverse( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, programType )
+    {
+      traverse( transientData, Bucket, bucket )
+      {
+        traverse( programType, RuleScopeInProgramType.Rule, rule, rule.RuleSubType().istype( RuleSubTypeMinMaxCombinedLength ) )
+        {
+          goal.NewTerm( slackCoefficient, program.CapacitySlackHardVariables().Get( programType, bucket, rule ) );
+          goal.NewTerm( slackCoefficient, program.CapacitySlackSoftVariables().Get( programType, bucket, rule ) );  
+        }
+        
+        traverse( programType.First(), RuleScopeInProgramPhase.Rule, rule, rule.RuleSubType().istype( RuleSubTypeMinMaxCombinedLength ) )
+        {
+          goal.NewTerm( slackCoefficient, program.CapacitySlackHardVariables().Get( programType, bucket, rule ) );
+          goal.NewTerm( slackCoefficient, program.CapacitySlackSoftVariables().Get( programType, bucket, rule ) ); 
+        }
+        
+        traverse( programType, ProgramPhaseConfiguration.RuleScopeInProgramPhase.Rule, rule, rule.RuleSubType().istype( RuleSubTypeMinMaxCombinedLength ) )
+        {
+          goal.NewTerm( slackCoefficient, program.PhaseCapacitySlackHardVariables().Get( programType, bucket, rule ) );
+          goal.NewTerm( slackCoefficient, program.PhaseCapacitySlackSoftVariables().Get( programType, bucket, rule ) );
+        }
+      }
+    }
+    
+    //Fixed slack variables
+    traverse( transientData, Bucket, bucket, bucket.IsFixed() )
+    {
+      traverse( transientData, OperationGroup, operationGroup )
+      {
+        goal.NewTerm( slackCoefficient, program.OperationGroupOnFixedBucketDecreaseVariables().Get( bucket, operationGroup ) );
+        goal.NewTerm( slackCoefficient, program.OperationGroupOnFixedBucketIncreaseVariables().Get( bucket, operationGroup ) );
+      }   
+    }
+  *]
+}

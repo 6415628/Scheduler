@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: ListLibDEF_SetMeta
+Response OnClick (LibDEF_SetMeta selection) id:Response_ListLibDEF_SetMeta_MenuRequestSetData_OnClick
+{
+  #keys: '[122752.0.424736514]'
+  Body:
+  [*
+    // Request set data
+    prompt := Translations::LibDEF_ConfirmationReplaceSetData();
+    if ( MessageBox::Question( this, prompt, Translations::LibDEF_YesNo() ) = 0 )
+    {
+      dtd := Form.GetDataTransformationDefinition();
+      if( selection.SetTypeMeta().System().IsLocalSystem() )
+      {
+        dtd.RequestSetDataLocally( selection.ChannelName(), selection.GUID() );
+      }
+      else
+      {
+        dtd.RequestSetDataExternally( selection.ChannelName(), selection.GUID() );
+      }
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => /ListLibDEF_SetMeta/Responsedef_ListLibDEF_SetMeta_Menu_OnClick
+  Initiator: 'MenuRequestSetData'
+  Precondition:
+  [*
+    return Form.RequestSetDataAllowed( selection );
+  *]
+}

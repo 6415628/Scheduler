@@ -1,0 +1,58 @@
+Quintiq file version 2.0
+#parent: #root
+Method MoveOperationBasedOnJSON (String jsonString, output String feedback_o) as String
+{
+  Description: 'Move operation based on JSON string.'
+  TextBody:
+  [*
+    status := '';
+    operationToMoveJSON := JSON::Parse( jsonString );
+    
+    operationID := ExternalWorkOrderOperation::GetMoveOperationID( operationToMoveJSON );
+    assetId := ExternalWorkOrderOperation::GetMoveOperationResourseID( operationToMoveJSON );
+    insertionDateTime := ExternalWorkOrderOperation::GetMoveOperationInsertionTime( operationToMoveJSON );
+    
+    operation := select( this, Operation_SC, operation, operation.WorkOrderOperation().astype( ExternalWorkOrderOperation ).ExternalOperationID() = operationID );
+    resource := select( this, ResourceGroup_SC.Resource_SC, resource, resource.ResourceID() = assetId );
+    
+    // Check if operation, resource and insertion time provided is valid
+    if( not isnull( operation ) and not isnull( resource ) and insertionDateTime.IsFinite()
+        and not operation.HasFeedback() and guard( insertionDateTime > resource.LastFeedback().End(), true ) )
+    {
+      resource.PlanBefore( operation, insertionDateTime );
+      
+      status := Constants::OptimizationServiceStatus_OK();
+      feedback_o := Translations::LibSchedulerOptMgr_MoveOperationSuccess( this.MDSSchedule().Name() );
+    }
+    else
+    {
+      status := Constants::OptimizationServiceStatus_Error();
+      
+      if( isnull( resource ) )
+      {
+        Utility_SC::Concat( feedback_o, Translations::Lib3DSpace_MoveOperation_ResourceNotFound() );
+      }
+      if( isnull( operation ) )
+      {
+        Utility_SC::Concat( feedback_o, Translations::Lib3DSpace_MoveOperation_OperationNotFound() );
+      }
+      if( insertionDateTime.IsInfinite() )
+      {
+        Utility_SC::Concat( feedback_o, Translations::Lib3DSpace_MoveOperation_InsertionTimeInfinite() );
+      }
+      if( guard( operation.HasFeedback(), false ) )
+      {
+        Utility_SC::Concat( feedback_o, Translations::Lib3DSpace_MoveOperation_OperationHasFeedback() );
+      }
+      if( guard( insertionDateTime < resource.LastFeedback().End(), false ) )
+      {
+        Utility_SC::Concat( feedback_o, Translations::Lib3DSpace_MoveOperation_CannotMoveOperationBeforeFeedbackTask() );
+      }
+    }
+    
+    // Logging the result.
+    logfile( status + String::NewLine() + feedback_o );
+    
+    return status;
+  *]
+}

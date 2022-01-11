@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOAPaths (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata)
+{
+  Description: 'initializes all path types and paths into the POA.'
+  TextBody:
+  [*
+    //add a path type for each resource in scope, except when the whole resource group is exchangable, in whcich case we have onlny one path type for the whole group:
+    traverse( transientdata.GetPOAPathTypeResources(), Elements, resource )
+    {
+      pathtype := poa.NewPathType( this.GetPathTypeName( resource ) );
+      if( this.Run().DebugScope() )
+      {
+        pathtype.CacheId( pathtype.Role() );
+      }
+    
+      resourcegroup := resource.AsUnifiedResource();
+      if( not isnull( resourcegroup ) )
+      {
+        nr_resources := resourcegroup.Resource( relsize );
+        pathtype.MinCount( nr_resources );
+        pathtype.MaxCount( nr_resources );
+      }
+      else
+      {
+      pathtype.MinCount( 1 );
+      pathtype.MaxCount( 1 );
+      }
+    }
+    
+    
+    
+    // if makespan KPI is active, create the extra path for the makespan end node:
+    if( this.Settings().IsRespectMakespanKPI() )
+    {
+      pathtype := poa.NewPathType( SuboptimizerSequencingPOA::NamePOAPathMakespan() );
+      pathtype.MinCount( 1 );
+      pathtype.MaxCount( 1 );
+    }
+    
+    // The model can be extended in the following method
+    this.InitPOAPathsCustom( poa, transientdata );
+  *]
+}

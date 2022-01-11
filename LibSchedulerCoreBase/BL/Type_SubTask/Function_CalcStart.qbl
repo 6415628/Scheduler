@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcStart
+{
+  Description: 'Computes the start time of this subtask.'
+  TextBody:
+  [*
+    // alexandern 28-May-2015 QP # 5420
+    // Kyle June 04, 2015 #5411 Use previous subtask's earliest end if it exists
+    task  := this.Task_SC();
+    start := task.Schedule().Time();
+    prevsubtask := this.Previous();
+    
+    lastimpfbtask := guard( this.Task_SC().GetOperation().LastImportedFeedbackTask(),
+                            null( ImportedFeedbackTask ) );
+    feedbackstart := DateTime::MinDateTime();
+    if( not isnull( lastimpfbtask ) and lastimpfbtask.IsProcessedFeedbackFromShopFloorClient() and task.Resource_SC().IsContinuous() )
+    {
+      feedbackstart := lastimpfbtask.Start();
+    }
+    
+    if( not isnull( prevsubtask ) )
+    {
+      // In default case where calendar downtime starts right on the previous subtask end,
+      // this subtask will start after downtime end.
+      start := task.Resource_SC().ResourceCalendar().NextAvailable( prevsubtask.End() );
+    }
+    else if( not isnull( task.Strategy_SC() ) )
+    {
+      start := task.Strategy_SC().Start();
+    }
+    
+    start := maxvalue( start, this.SimulatedEarliestStart(), feedbackstart ); // AlexanderNg 15-Oct-2015 QP #5800
+    this.Start( start );
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

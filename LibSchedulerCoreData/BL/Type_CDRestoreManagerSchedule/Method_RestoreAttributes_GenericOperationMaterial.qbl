@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericOperationMaterial (CDSchedule cdschedule)
+{
+  Description: 'Restore attributes for operation material core data to planning object'
+  TextBody:
+  [*
+    traverse( cdschedule, CDEntity.astype( CDGenericOperationMaterial ), cdopmat )
+    {
+      planunit := PlanUnit_SC::FindPlanUnit( cdopmat.PlanUnitID() );
+      
+      if( not isnull( planunit ) )
+      {
+        om := GenericOperationMaterial::Create( planunit, cdopmat.OperationMaterialID() );
+        CopyCorresponding::CopyFrom( cdopmat ).CopyTo( om );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

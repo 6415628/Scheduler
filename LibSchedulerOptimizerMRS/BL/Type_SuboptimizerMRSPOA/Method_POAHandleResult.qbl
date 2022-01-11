@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAHandleResult (SuboptimizerMRSPOA_POAOneResourceGroup poa, LibOpt_Task task)
+{
+  Description: 'Plan the solution of poa back to the model'
+  TextBody:
+  [*
+    score := poa.Solution().Score();
+    
+    //print scores to server output
+    if( this.Settings().PrintInfo() )
+    {
+      info( 'TotalConstraintScore:', score.TotalConstraintScore() );
+      info( 'TotalGoalScore      :', score.TotalGoalScore() );
+      info( 'TotalResourceScore  :', score.TotalResourceScore() );
+      info( 'UnplannedNodeCosts  :', score.UnplannedNodeCosts() );
+      info( 'TotalScore          :', score.TotalScore() );
+      info( DateTime::ActualTime(), 'Handling results...' );
+    
+      traverse( score, Run.Constraints, const )
+      {
+        info( 'Score for constraint: ', const.Constraint().Role(), const.Distance() );
+      }
+      traverse( score, Run.Goals, goal )
+      {
+        info( 'Score for goal: ', goal.Goal().Role(), goal.Distance() );
+      }
+    }
+    
+    //unplan all planned tasks first
+    if( this.IsInConstrainedPOAMode() or not this.Settings().RemoveAllOperationAfterOptimization() )
+    {
+      traverse( task.Scope().ResourceGroups(), Elements, mrsresourcegroup )
+      {
+        mrsresourcegroup.UnplanOperations( task.Run() );
+      }
+    }
+    else
+    {
+      this.RemoveAllUnlockedOperation();
+    }
+    /*Propagate to consider that the no tasks are planned*/
+    Transaction::Transaction().Propagate();
+    
+    this.POAPlanSolution( poa, task );
+  *]
+}

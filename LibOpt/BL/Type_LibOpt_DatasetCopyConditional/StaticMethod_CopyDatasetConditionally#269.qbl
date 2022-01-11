@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CopyDatasetConditionally (String componentpositionname, LibOpt_Task task, Boolean hastocreaterobustcopy)
+{
+  Description:
+  [*
+    This method checks if a `LibOpt_DatasetCopyConditional` is attached to the `componentpositionname` component position of `task.Component()`.
+    If this `LibOpt_DatasetCopyConditional` object can be found, then a dataset copy is created if:
+    1: `LibOpt_Run.IsCreatingDatasetCopiesEnabled` is `true`. (This attribute can be set in the 'Toggles' context menu item in the 'Runs' form.)
+    2: And the `CreateCondition` method returns `true`. This method is extensible.
+    3: And the `LibOpt_DatasetCopyConditional.IsEnabled()` attribute is `true`.
+  *]
+  TextBody:
+  [*
+    component := task.Component();
+    componentposition := select( component,
+                                 ComponentPosition,
+                                 componentposition,
+                                 componentposition.Name() = componentpositionname );
+    
+    if( not isnull( componentposition ) )
+    {  
+      datasetcopyconditional := componentposition.DatasetCopyConditional();
+      
+      // The AE can modify the CreateCondition method himself. This means that a user error might occur there. 
+      // Any error that occurs here will result in a rollback of the current component.
+      // It would be nice if the rollback can be avoided.
+      if( not isnull( datasetcopyconditional ) 
+          and datasetcopyconditional.IsEnabled() 
+          and component.Run().IsCreatingDatasetCopiesEnabled()
+          and datasetcopyconditional.CreateCondition( task )      
+          )
+      {
+        snapshot := LibOpt_DatasetCopyConditional::CopyDataset( task,
+                                                                componentpositionname,
+                                                                hastocreaterobustcopy
+                                                                );
+        snapshot.DatasetCopyConditional( relset, datasetcopyconditional );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method RefreshUIIsLastAttribute () id:Method_FormKpiSnapshots_RefreshUIIsLastAttribute
+{
+  #keys: '[146450.0.646141715]'
+  Body:
+  [*
+    // Updates the UI_IsLast attribute of the KpiValues to match the selected series / kpi.
+    // Call this method after updating the 'UI_LabelValue' attribute.
+    
+    // First clean previously set flags.
+    traverse( selectset( DataHolderLabelFilteredSnapshots.Data(), Elements.Value, v, v.UI_IsLast() ), Elements, val )
+    {
+      val.UI_IsLast( false );
+    }
+    
+    // Now, if the checkbox is checked and a Series has been selected,
+    // determine which KpiValue objects represent the LAST snapshot of their 
+    // KPI & LabelValue of the selected Series (= Label)
+    if( CheckboxLastSnapshots.Checked() and not isnull( DropDownSeries.Data() ) )
+    {
+      traverse( DropDownSeries.Data(), Value, serieValue )
+      {
+        traverse( DataHolderKpiSelection.Data(), Elements, kpi )
+        {
+            lastValue := maxselect( DataHolderSnapshotSetData.Data(), SnapshotData.Value, v,
+                                    v.UI_LabelValue() = serieValue.Value() and
+                                    v.Name() = kpi.Name(),
+                                    v.UI_DateTime() );
+            if( not isnull( lastValue ) )
+            {
+              lastValue.UI_IsLast( true );
+              lastSnapshot := select( DataHolderLabelFilteredSnapshots.Data(), Elements.Value, v, v.Value() = lastValue.Value() and v.UI_DateTime() = lastValue.UI_DateTime() );
+              lastSnapshot.UI_IsLast( true );
+            }
+            
+            
+        }
+      }
+    }
+    
+    traverse( DataHolderLabelFilteredSnapshots.Data(), Elements.Value, v, v.UI_IsLast() = false)
+    {
+      v.Delete();
+    }
+  *]
+}

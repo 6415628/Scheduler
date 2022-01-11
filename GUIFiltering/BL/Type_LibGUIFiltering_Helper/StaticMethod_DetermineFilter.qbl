@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod DetermineFilter (Strings attributes, Strings attributetypes, LibGUIFiltering_Terms terms, 
+  output String warnings) remote as String
+{
+  TextBody:
+  [*
+    // per Oct-4-2016 (created)
+    filter := '';
+    
+    traverse( terms, LibGUIFiltering_TermGroup, group, group.LibGUIFiltering_Term(relsize) > 0 )
+    {
+      groupfilter := LibGUIFiltering_Helper::DetermineFilter( attributes, attributetypes, group, warnings );
+    
+      if ( groupfilter <> '' )
+      {
+        if ( filter <> '' )
+        {
+          filter := filter + ' or ';
+        }
+        
+        filter := filter + '( ' + groupfilter + ' )';
+      }
+    }
+    
+    return filter;
+  *]
+  InterfaceProperties { Visibility: 'BusinessModel' }
+}

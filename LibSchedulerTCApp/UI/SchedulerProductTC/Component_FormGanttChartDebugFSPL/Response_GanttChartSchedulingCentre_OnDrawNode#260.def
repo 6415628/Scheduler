@@ -1,0 +1,76 @@
+Quintiq file version 2.0
+#parent: GanttChartSchedulingCentre
+Response OnDrawNode (SubTask element, Resource_SC row) id:Response_GanttChartSchedulingCentre_OnDrawNode_260
+{
+  #keys: '[122574.0.425235959]'
+  Body:
+  [*
+    if( element.istype( SetupSubTask ) )
+    {
+      drawinfo.AddCompartment( ColorScheme.Setup(), element.Duration() );
+    }
+    else if( element.istype( TransferSubTask ) )
+    {
+      st := element.astype( TransferSubTask );
+    
+      drawinfo.AddCompartment( ColorScheme.IdleDuration(), st.IdleDuration() );
+      drawinfo.AddCompartment( ColorScheme.Transfer(), st.TransferDuration() );
+    }
+    else if( element.istype( ReceiveSubTask ) )
+    {
+      st := element.astype( ReceiveSubTask );
+    
+      drawinfo.AddCompartment( ColorScheme.IdleDuration(), st.IdleDuration() );
+      drawinfo.AddCompartment( ColorScheme.Receive(), st.TransferDuration() );
+    }
+    else if( not element.HasConstraintViolations() )
+    {
+      color := ColorScheme.Scheduled();
+    
+      if( element.istype( ProcessSubTask ) )
+      {
+        if( element.Task_SC().Started() )
+        {
+          color := ColorScheme.Started()
+        }
+        else if( element.Task_SC().IsFrozenInSchedule() )
+        {
+          color := ColorScheme.IsFrozenInSchedule()
+        }
+        else if( element.Task_SC().IsStartInSchedulingHorizon() )
+        {
+          color := ColorScheme.IsStartInSchedulingHorizon()
+        }
+      }
+      else if( element.istype ( NoBufferWaitSubTask ) )
+      {
+        color := ColorScheme.NoBufferWait();
+      }
+      else if( element.istype ( NoBufferActionSubTask ) )
+      {
+        color := ColorScheme.NoBufferAction();
+      }
+      else if( element.istype ( CleanUpSubTask ) )
+      {
+        color := ColorScheme.CleanUp();
+      }
+    
+      drawinfo.AddCompartment( color, element.Duration() );
+    }
+    else
+    {
+      drawinfo.AddCompartment( drawinfo.BackgroundColor(), element.Duration() );
+    }
+    
+    //Draw the idle time compartments between subtasks
+    nextsubtask := element.Next();
+    
+    if( not isnull( nextsubtask ) )
+    {
+      idleduration := nextsubtask.Start() - element.End();
+      drawinfo.AddCompartment( ColorScheme.IdleDuration(), idleduration );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GanttChart_OnDrawNode'
+}

@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (OperationDependencyInSuboptimizerSequencing head, PrecedencePathInSuboptimizerSequencing tail) as PrecedencePathInSuboptimizerSequencing
+{
+  Description:
+  [*
+    Also creates the PrecedenceDependency object the new path is a witness for, if that doesn't already exist.
+    The given tail may be null, in which case the new path has length 1.
+  *]
+  TextBody:
+  [*
+    // mbr23 Jan-24-2020 (created)
+    start := head.AsOutputDependency();
+    end := head.AsInputDependency();
+    length := 1;
+    if( not isnull( tail ) )
+    {
+      end := tail.End();
+      length := 1 + tail.Length();
+      assert( head.AsInputDependency() = tail.FirstEdge().AsOutputDependency() );
+    }
+    dependency := PrecedenceDependencyInSuboptimizerSequencing::FindOrCreate( start, end );
+    object := head.AsFirstEdgeInPrecedencePath( relnew,
+                                                Tail := tail,
+                                                Dependency := dependency,
+                                                End := end,
+                                                Length := length );
+    return object;
+  *]
+}

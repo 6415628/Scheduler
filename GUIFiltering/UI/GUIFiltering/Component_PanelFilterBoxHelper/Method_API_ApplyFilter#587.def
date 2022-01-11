@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method API_ApplyFilter (Boolean updatedropdown) id:Method_LibGUIFiltering_PanelFilterBoxHelper_API_ApplyFilter_587
+{
+  #keys: '[128900.0.375566606]'
+  Body:
+  [*
+    filterbox    := this.IPanelFilterBox_Get();
+    filtereditor := filterbox.EditorFilterBox();
+    filtertext   := filtereditor.Text();
+    
+    if ( filtertext = this.IGetSeparator()
+      or this.IComponentRegistry_Get().LibGUIFiltering_RegisteredComponent(relsize) = 0 )
+    {
+      this.IWarnings_Set( '' );
+    }
+    else
+    {
+      strings := filtereditor.Strings().Tokenize( filtereditor.RowSeparator() );
+      pos     := strings.Find( filtertext );
+      seppos  := strings.Find( this.IGetSeparator() );
+    
+      if ( seppos >= 0
+       and pos > seppos )
+      {
+        this.IFilter_Set( '' );
+        this.IWarnings_Set( '' );
+        this.IStoredFilter_Set( filtertext );
+      }
+      else
+      {
+        this.IStoredFilter_Set( '' );
+        this.IFilter_Set( filtertext );
+    
+        if ( updatedropdown )
+        {
+          this.API_UpdateDropDown( filtertext );
+        }
+      }
+    }
+  *]
+}

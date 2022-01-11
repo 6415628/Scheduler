@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Export (LibCal_StagingEvent stagingEvent_i)
+{
+  TextBody:
+  [*
+    // Export generic attributes.
+    super.Export( stagingEvent_i );
+    
+    // Export specific attributes.
+    // Concatenate the short names of the selected weekdays.
+    separator := ';';
+    daysShort := Translations::Pattern_DaysShort().Tokenize( separator );
+    dummy     := "???";
+                                                             
+    weekdays := ifexpr( this.Monday(),    guard( daysShort.Element( 0 ), dummy ) + separator, "" )
+              + ifexpr( this.Tuesday(),   guard( daysShort.Element( 1 ), dummy ) + separator, "" )
+              + ifexpr( this.Wednesday(), guard( daysShort.Element( 2 ), dummy ) + separator, "" )
+              + ifexpr( this.Thursday(),  guard( daysShort.Element( 3 ), dummy ) + separator, "" )
+              + ifexpr( this.Friday(),    guard( daysShort.Element( 4 ), dummy ) + separator, "" )
+              + ifexpr( this.Saturday(),  guard( daysShort.Element( 5 ), dummy ) + separator, "" )
+              + ifexpr( this.Sunday(),    guard( daysShort.Element( 6 ), dummy ) + separator, "" );
+    
+    stagingEvent_i.PatternWeekly_Weekdays( weekdays );
+  *]
+}

@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method ToggleSelectedResources (structured[Resource_SC] resources) id:Method_TabPageResourceScope_ToggleSelectedResources
+{
+  #keys: '[136602.0.2141502767]'
+  Body:
+  [*
+    traverse( resources, Elements, resource )
+    {
+      res := select( DataHolderSelectedResourcesInResourceScope.Data(), Elements, e, e = resource );
+      if( not isnull( res ) )
+      {
+        // Only remove the resource from shutdown type if shutdwotn type is not used in resource schedule
+        if( res.CheckIsShutdownTypeNotUsedInResourceSchedule( DataHolderShutdownType.Data() ) )
+        {
+          DataHolderSelectedResourcesInResourceScope.Data().Remove( res );
+        }
+      }
+      else if( resource.CheckCanApplyShutdownScheduling() )
+      {
+        DataHolderSelectedResourcesInResourceScope.Data().Add( resource );
+      }
+    }
+  *]
+}

@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod SynchronizeCombilegs (LibOpt_Task task)
+{
+  Description: 'Delete and recreate the combilegs to ensure the structure is up-to-date with the current schedule'
+  TextBody:
+  [*
+    // Before starting the new iteration, synchronize the combi structure
+    traverse( task.Scope().Resources(), Elements, resource )
+    {
+      traverse( resource, CombiProgramSet, cps )
+      {
+        cps.Delete();
+      }
+      Transaction::Transaction().Propagate();
+      resource.SynchronizeCombis();
+    }
+    // Propagate the new combis
+    Transaction::Transaction().Propagate();
+    
+    // Add the newly (re)created combilegs (back) to scope
+    combilegs := selectset( task.Scope().Operations(), Elements.OperationInCombiLeg.CombiLeg, combileg, true );
+    traverse( combilegs, Elements, combileg )
+    {
+      task.Scope().Add( combileg.GetOrCreateScopeElement() );
+    }
+  *]
+}

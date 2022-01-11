@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestResequenceTaskInFSPL (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Expected outcome in Gantt chart
+    // Resource1 : | Task2_10 | Task1_10 |
+    // Resource2 : | Task2_20 | Task1_20 |  
+    
+    resource1 := select( schedule, ResourceGroup_SC.Resource_SC, r, r.ResourceID() = 'resource1' );
+    resource2 := select( schedule, ResourceGroup_SC.Resource_SC, r, r.ResourceID() = 'resource2' );
+    task1_10 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'operation1_10' );
+    task1_20 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'operation1_20' );
+    task2_10 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'operation2_10' );
+    task2_20 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'operation2_20' );
+    
+    value := resource1.First() = task2_10 and resource1.Last() = task1_10
+             and resource2.First() = task2_20 and resource2.Last() = task1_20;
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Resequence task in FSPL failed.', this.Variant() ) );
+  *]
+}

@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method MultiplyOrders (Number multiplynr)
+{
+  Description: 'Multiplies the imported orders by the user input factor.'
+  TextBody:
+  [*
+    // woi1 Apr-14-2017 (created)
+    // ONLY FOR DEVELOPMENT PURPOSES ONLY
+    // ONLY USED WITH DATA MULTIPLIER ONLY
+    schedule := this.Schedule();
+    
+    // Propagate IsValidDataHard so that only valid data will be multiplied
+    Transaction::Transaction().Propagate( attribute( ImportedWorkOrder, IsValidDataHard ) )
+    
+    traverse( schedule, ImportedWorkOrder, imported_wo, imported_wo.IsValidDataHard() )
+    { 
+      for( i := 1; i < multiplynr; i++ ) // start with 1, because we don't want to multiply if multiplynr = 1
+      {
+        id := DataMultiplier::GetOrderID( imported_wo.Id(), i );
+        new_imp_wo := ImportedWorkOrder::FindImportedWorkOrder_SC( id );
+        
+        if( isnull( new_imp_wo ) )
+        {
+          new_imp_wo := ImportedExternalWorkOrder::Create( schedule, id );
+        }
+        
+        new_imp_wo.Update( imported_wo );
+    
+        importedwoos := selectset( imported_wo, ImportedWorkOrderOperation, importedwoo, importedwoo.IsValidDataHard() );
+        new_imp_wo.MultiplyOperations( importedwoos, i );
+      }
+    }
+  *]
+}

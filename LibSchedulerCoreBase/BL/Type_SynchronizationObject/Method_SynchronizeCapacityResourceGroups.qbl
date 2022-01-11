@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeCapacityResourceGroups
+{
+  Description: 'Synchronize the CapacityResourceGroups with the ResourceGroups and resources.'
+  TextBody:
+  [*
+    // James Kwapien 20160831 KT references removed, functionality now in dialogs
+    
+    // delete capacityresourcegroups that are not needed anymore
+    traverse( this.Schedule(), CapacityResourceGroup, crg, isnull( crg.ResourceGroup_SC() ) )
+    {
+      crg.Delete();
+    }
+    
+    //create new capacityresourcegroups and synchronize the capacityresources for the existing ones
+    traverse( this.Schedule(), ResourceGroup_SC, rg )
+    {
+      capacityresourcegroup := select( this.Schedule(),
+                                       CapacityResourceGroup,
+                                       crg,
+                                       crg.Name() = rg.Name() )
+    
+    
+      if( isnull( capacityresourcegroup ) )
+      {
+        capacityresourcegroup := this.Schedule().CreateCapacityResourceGroup( rg.Name() );
+      }
+    
+      capacityresourcegroup.SynchronizeCapacityResources();
+    }
+  *]
+}

@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method EnableStorageStateUI () id:Method_LibSM_dlgCreateEditScenario_EnableStorageStateUI
+{
+  #keys: '[131464.0.1901295917]'
+  Body:
+  [*
+    // Set storage state value + (dis)enable Radio button group storage state
+    
+    // To reduce another ScenarioManager.MDSScenarioManager() call later in Enabled() line below
+    scenarioManagerMDS            := LibSM_GlobalState.GetScenarioManagerMDS();
+    scenarioManagerState          := scenarioManagerMDS.State(); 
+    isCreatingScenarioFromDataset := not isnull( dhShadowDataset.Data() );
+    
+    state := scenarioManagerState;
+    
+    if( not isnull( LibSM_dlgCreateEditScenario.Data() ) )
+    {                             
+      state := this.Data().Dataset().StorageState();
+    }                                         
+    // when creating scenario from existing dataset
+    else if( isCreatingScenarioFromDataset and dhShadowDataset.Data().StorageState() <> '' )
+    {           
+      state := dhShadowDataset.Data().StorageState();
+    }
+    else
+    {           
+      state := LibSM_ScenarioManager.GlobalParameter().DefaultStorageState(); 
+    }
+    
+    sselStorageState.BoundValue( state );
+    
+    // Enable if scenario manager is not Memory-Only
+    // and not creating scenario from existing dataset   
+    enableSelection := scenarioManagerState <> MDSInterface::MemoryOnlyState()
+                         and not isCreatingScenarioFromDataset; 
+                  
+    sselStorageState.Enabled( enableSelection );
+  *]
+}

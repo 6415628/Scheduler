@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod M03X_Selector_SelectProbabilityGroup (LibOpt_ComponentParent self, LibOpt_Task task) as stream[JSON]
+{
+  Description:
+  [*
+    Select a single probability form the scope elements of type `LibOpt_ScopeElementProbability`
+    Return a new scope with all `LibOpt_ScopeElementProbability` with the selected probability
+  *]
+  TextBody:
+  [*
+    scope_elements := LibOpt_TestUnit_Statistic::GetScopeElementProbability( task.Scope() );
+    probabilties := selectuniquevalues( scope_elements,
+                                        Elements,
+                                        se,
+                                        true,
+                                        se.Probability() );
+    probability := probabilties.Element( Number::Random( 0, probabilties.Size() - 1 ) );
+    selected := selectset( scope_elements, Elements, se, true, se.Probability() = probability );
+    
+    scope := LibOpt_Scope::Create( task.Run(), selected );
+    
+    return self.Continue( task, scope );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestResequenceTaskWithProgramChangeInFSPL_Setup (Schedule schedule)
+{
+  Description: 'Resequence task with program change task in FSPL resource - setup'
+  TextBody:
+  [*
+    // Create resource1 and resource2
+    resource1 := this.CreateFSPLSingleResource( schedule, 'resource1' );
+    resource2 := this.CreateFSPLSingleResource( schedule, 'resource2' );
+    
+    // Create task1_10 and task1_20 with operation material
+    order1 := UTFMockObjectFactory::CreateOrder( schedule, 'Order 1' );
+    planUnit1 := UTFMockObjectFactory::CreatePlanUnit( order1, 'Plan Unit 1', 1.0 );
+    operation1_10 := UTFMockObjectFactory::CreateOperation( planUnit1 );
+    operation1_10.OperationID( 'operation1_10' );
+    operation1_20 := UTFMockObjectFactory::CreateOperation( planUnit1 );
+    operation1_20.OperationID( 'operation1_20' );
+    UTFMockObjectFactory::CreateOutputOperationMaterial( operation1_10, 'operation1', operation1_20 );
+    Transaction::Transaction().Propagate( relation( Operation_SC, AllowedOperationOnResource ) );
+    task1_10 := resource1.PlanLast( operation1_10 );
+    resource2.PlanLast( operation1_20 );
+    
+    // Create task2_10 and task2_20 with operation material
+    order2 := UTFMockObjectFactory::CreateOrder( schedule, 'Order 2' );
+    planUnit2 := UTFMockObjectFactory::CreatePlanUnit( order2, 'Plan Unit 2', 1.0 );
+    operation2_10 := UTFMockObjectFactory::CreateOperation( planUnit2 );
+    operation2_10.OperationID( 'operation2_10' );
+    operation2_20 := UTFMockObjectFactory::CreateOperation( planUnit2 );
+    operation2_20.OperationID( 'operation2_20' );
+    UTFMockObjectFactory::CreateOutputOperationMaterial( operation2_10, 'operation2', operation2_20 );
+    Transaction::Transaction().Propagate( relation( Operation_SC, AllowedOperationOnResource ) );
+    task2_10 := resource1.PlanLast( operation2_10 );
+    resource2.PlanLast( operation2_20 );
+    
+    // Create program definition
+    programdefinition := UTFMockObjectFactory::CreateProgramDefinitionData( schedule, 'Program definition id', false );
+    
+    // Assign program definition to resources
+    resource1.AssignProgramDefinitionConfiguration( programdefinition ); 
+    
+    // Insert program change
+    programtypes := selectset( programdefinition, ProgramSetConfiguration.ProgramTypeConfiguration, pt, true );                                    
+    resource1.InsertProgramChange( task2_10, programtypes, false, Duration::Zero() );
+    
+    // Now the Gantt chart should look like this
+    // Resource1 : | Task1_10 | Program Change Task | Task2_10 |
+    // Resource2 : | Task1_20 | Task2_20 |
+    
+    Transaction::Transaction().Propagate();
+    // Resequence task2_10 to in fornt of task1_10
+    source := construct( Task_SCs );
+    source.Add( task2_10 );
+    resource1.PlanBefore( source, task1_10 );
+  *]
+}

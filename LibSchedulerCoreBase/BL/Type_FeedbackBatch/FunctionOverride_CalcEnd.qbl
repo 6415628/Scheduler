@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcEnd
+{
+  TextBody:
+  [*
+    //
+    // End is the concluded time of EstimatedEnd and EndReadIn.
+    // Case 1: The default value will be estimated end time calculated from start time.
+    // Case 2: When there is value reading in procedurally, this will be the value used as End.
+    // Case 3: When no procedurally read in value from FeedbackBatchInSF,
+    //         Note: For now it looks like End of FeedbackTaskInSF will always have value.
+    //         If otherwise, Case 4 with EndEstimated calculated from ProcessStart + ProcessDuration
+    //         or Start + Duration can be added.
+    //
+    
+    // Case 1: When no procedural End
+    value := this.EstimatedEnd();
+    
+    // Case 2: Has Procedurally set End, in this case value from feedback( User/External System )
+    if( this.HasReportedEnd() )
+    {
+      value := this.EndReadIn();
+    }
+    
+    this.End( value );
+  *]
+}

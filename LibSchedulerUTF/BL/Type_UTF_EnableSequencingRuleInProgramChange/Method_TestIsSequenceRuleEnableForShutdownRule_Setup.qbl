@@ -1,0 +1,71 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestIsSequenceRuleEnableForShutdownRule_Setup (Schedule schedule)
+{
+  Description: "Test program set configuration setting 'Is Sequence Rule Enabled' for shutdown rule - setup"
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    isSequenceRulesEnabled := false;
+    hasViolatedRules := false;
+    hasfeedback := false;
+    
+    this.GetTestVariant( isvariantfound,
+                         isSequenceRulesEnabled,
+                         hasViolatedRules,
+                         hasfeedback );
+    
+    if( isvariantfound )
+    {
+      // Initialize rule framework and characteristic
+      schedule.InitializeRuleFramework();
+      schedule.InitializeCharacteristic();
+      
+      // Create program scheduling data
+      // Plan all operations
+      programDefConfig := this.CreateProgramSchedulingData( schedule );
+      programsetconfig := select( programDefConfig, ProgramSetConfiguration, set, true );
+      programsetconfig.IsSequenceRulesEnabled( isSequenceRulesEnabled );
+      
+      // Create transition rule
+      this.CreateProgramPhaseTransitionRule( schedule );
+      
+      // Create shutdown scheduling data
+      this.CreateShutdownSchedulingData( schedule );
+      
+      if( hasfeedback )
+      {
+        // Transaction propagate on newly created operations needed before create feedback
+        Transaction::Transaction().Propagate();
+        
+        // Create program feedback
+        this.CreateProgramSchedulingFeedbackData( schedule );
+        
+        // Create operation feedback
+        this.CreateFeedbackForOperations( schedule );
+        
+        // Create shutdown feedback
+        shutdown := select( schedule, Shutdown, s, true );
+        resource := select( schedule, ResourceGroup_SC.Resource_SC, res, true );
+        feedbackshutdowntask := UTFMockObjectFactory::CreateFeedbackShutdownTask( schedule.FeedbackManager(),
+                                                                                  shutdown );
+        shutdowstart := schedule.Time() - Duration::Hours( 3 );
+        feedbackshutdowntask.Update( shutdown.ShutdownID(),
+                                     shutdowstart,
+                                     shutdowstart + Duration::Hours( 1 ),
+                                     Constants::TaskType_ShutDown(),
+                                     resource.ResourceID(),
+                                     null( ShutdownTask ),
+                                     Constants::StatusEnd() ); 
+      }
+      
+      // Create rule based on variant
+      this.CreateRule( schedule, 
+                       RuleConstant::RuleScope_Shutdown(), 
+                       RuleConstant::RuleSubType_NotAllowedValue(), 
+                       RuleConstant::Characteristic_ProductType(), 
+                       programsetconfig );
+    }
+  *]
+}

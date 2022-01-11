@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetSelectedPlanningDatasetKey () as Key id:Method_LibSM_GlobalState_GetSelectedPlanningDatasetKey
+{
+  #keys: '[136398.1.587826912]'
+  Body:
+  [*
+    // Returns the MDSID (key) for the selected dataset.
+    componentMDS    := ComponentMDS::CreateForLoadedMDSsOnly( Application );
+    planningMDSKind := LibSM_ModelExtensions::GetPlanningDatasetKind();
+    instance        := select( componentMDS, ComponentMDSKinds.ComponentMDSInstances, instance,
+                              instance.ComponentMDSKind().Kind() = planningMDSKind
+                          and instance.IsSelected() );
+    
+    key := Key::ZeroKey();
+    if ( not isnull( instance ) )
+    {
+      key := instance.GetMDSHandle().MDSID().MDSKey();
+    }
+    return key;
+  *]
+}

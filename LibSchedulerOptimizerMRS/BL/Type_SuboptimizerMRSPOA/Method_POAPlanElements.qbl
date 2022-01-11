@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAPlanElements (OptimizerMRSRunOperations elementstoplan)
+{
+  Description: 'Plans the operation associated with the run plan element on the corresponding resource'
+  TextBody:
+  [*
+    // Disable FSPL while planning. It is set back at the end of the method.
+    schedule := this.GetSchedule();
+    legacyoptimizer := schedule.Optimizer();
+    requirefspl := legacyoptimizer.IsOptimizerRequireNoFSPL();
+    legacyoptimizer.IsOptimizerRequireNoFSPL( true );
+    
+    i := 0;
+    elementstoplan.Sort( attribute( OptimizerMRSRunOperation, EndInPOAIteration ), true );
+    traverse( elementstoplan, Elements, planoperation )
+    {
+      printinfo :=  NumberToString::StandardConverter().Convert( i )
+                    + " Plan:"
+                    + planoperation.Operation().OperationID()
+                    + " On: "
+                    + planoperation.PlanOnResource_SC().Name();
+    
+      planoperation.PlanAtEnd();
+      debuginfo( printinfo );
+      i := i + 1;
+      //  Transaction::Transaction().Propagate();
+    }
+    
+    // Set back FSPL flag after planning. FSPL is disabled at the start of the method.
+    legacyoptimizer.IsOptimizerRequireNoFSPL( requirefspl );
+  *]
+}

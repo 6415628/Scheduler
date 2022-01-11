@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeDemoDataBatchTaskFromPlanning
+{
+  Description: 'Synchronize demo data batch tasks from normal planning data.'
+  TextBody:
+  [*
+    rows := selectsortedset( this, Schedule.ImportedDemoDataOperationBatch, row, true, row.SequenceNr(), row.BatchID() );
+    
+    traverse( rows, Elements, row )
+    {
+      operations := selectsortedset( row, ImportedDemoDataOperationBatchContent.Operation_SC, op, true, 
+                                     op.ImportedDemoDataOperationBatchContent().BatchSequenceElementNr() );
+    
+      batch := Batch::CreateBatchAssignOperations( operations, this.Schedule(), row.BatchID() );
+      batch.Update( row );
+      batchResource := BatchResource::FindBatchResource( row.Resource() );
+      
+      if( not isnull( batch ) and not isnull( batchResource ) )
+      {
+        task := batchResource.PlanLast( batch );
+        // Update BatchTask.IsFrozenByUser attribute
+        task.IsFrozenByUser( row.IsFrozenByUser() );
+      }
+    }
+  *]
+}

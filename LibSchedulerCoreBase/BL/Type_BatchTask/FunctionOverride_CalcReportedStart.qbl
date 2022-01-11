@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcReportedStart
+{
+  TextBody:
+  [*
+    //
+    // This calculation is generic for both single task and batch task,
+    // hence will select a set of latest feedbacktask and get the earliest start of them.
+    //
+    value := DateTime::MaxDateTime();
+    latestfbtasks := maxset( this, FeedbackBatchContentInSchedule, fbtask, fbtask.TimeStamp() );
+    
+    if( latestfbtasks.Size() > 0 )
+    {
+        value := max( latestfbtasks, Elements, t, true, t.FeedbackBatchInSchedule().StartReadIn() );
+    }
+    this.ReportedStart( value );
+  *]
+}

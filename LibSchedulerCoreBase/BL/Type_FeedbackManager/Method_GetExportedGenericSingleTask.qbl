@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetExportedGenericSingleTask (Operation_SC operation) as GenericExportedSingleTask
+{
+  Description: 'Get exported generic single task based on the given operation. If not found, create one.'
+  TextBody:
+  [*
+    // janer Oct-29-2014 (created)
+    // Get exported task
+    extask := guard( operation.ExportedSingleTask().astype( GenericExportedSingleTask ), null( GenericExportedSingleTask ) );
+    
+    exschedule := this.GetSchedule();
+    
+    if( isnull( extask ) )
+    {
+      // Create one if not exist or is deleted due to different FeedbackID
+      extask := GenericExportedSingleTask::Create( exschedule, operation );
+    }
+    
+    return extask;
+  *]
+}

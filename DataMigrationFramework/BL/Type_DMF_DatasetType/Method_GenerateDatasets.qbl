@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenerateDatasets () as stream[Void]
+{
+  Description: "Generate 'Dataset' instance for datasets matching 'this' type"
+  TextBody:
+  [*
+    // DevNote: this doesn't seem to pick up temporary datasets
+    allDatasets    := MDSEditor::Editor().LoadedObjectInfos( this.Name() );
+    datasetSuccess := stream[Void]::Success();
+     
+    traverse( allDatasets, Elements, datasetInfo )
+    {
+      // Mind: datasetInfo.Path() is the dataset folder
+      dataset     := DMF_Dataset::Create( this, datasetInfo.MDSID().MDSKey(), datasetInfo.Name(), datasetInfo.Path() );
+      datasetName := dataset.Name();
+      
+      // Update the metadata info, then propagate the version information
+      // DevNote: there is no exception handling for this 'GetDataset()' call
+      // Because we expect it never to be missing here
+      ret_s := dataset.GetDataset()->( ds )
+      { 
+        isSuccess := false;
+        metadata  := DMF_UpgradeabilityMetaData::GetMetadataObjectExtensible( ds );
+        
+        if( not isnull( metadata ) )
+        {
+          // Detail information is a dump of metadata from metadata object
+          dataset.UpdateDetailsForExport( metadata );
+          
+          isSuccess := true;
+        }
+        else
+        {
+          dataset.Delete(); // This will fail if it's called out of DMF scope 
+        }
+        
+        return isSuccess;
+      }->( isSuccess )
+      {
+        // Display an error if the above failed
+        // This is done reactively to prevent 'dataset.Delete()' from being rolled back in the previous block
+        if( not isSuccess )
+        {
+          message := "Please extend static method " + method( DMF_UpgradeabilityMetaData, GetMetadataObjectExtensible, Object ).Name() +
+                     " in " + typeof( DMF_UpgradeabilityMetaData ).Name() +
+                     " to allow meta data to be retrieved and export detail to be recorded properly. Impacted dataset: " + datasetName;
+    
+          // A LogError here will only result in this reactive block being rolled back        
+          DMF_Utility::LogError( message );
+        }
+      }
+      
+      // Combine result into the merge stream
+      datasetSuccess->Merge( ret_s );
+    }
+    return void->After( datasetSuccess->GroupAll() );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

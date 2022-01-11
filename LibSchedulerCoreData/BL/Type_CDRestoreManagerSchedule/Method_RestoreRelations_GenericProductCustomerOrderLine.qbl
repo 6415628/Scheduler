@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericProductCustomerOrderLine (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic product customer order line core data attributes to planning object'
+  TextBody:
+  [*
+    traverse( cdSchedule, CDEntity.astype( CDGenericProductCustomerOrderLine ), cdGenericProductCustomerOrderLine )
+    {
+      genericProductCustomerOrderLine := ProductCustomerOrderLine::FindProductCustomerOrderLine( cdGenericProductCustomerOrderLine.DemandType(),
+                                                                                                 cdGenericProductCustomerOrderLine.DemandID() 
+                                                                                               );
+      
+      if( not isnull( genericProductCustomerOrderLine ) )
+      {
+        // PlanUnit, M-1
+        planUnit := PlanUnit_SC::FindPlanUnit( cdGenericProductCustomerOrderLine.PlanUnitID() );
+        genericProductCustomerOrderLine.PlanUnit_SC( relset, planUnit );
+        
+        // Operation, M-1
+        operation := select( planUnit, Operation_SC, operation, operation.OperationID() = cdGenericProductCustomerOrderLine.OperationID() );
+        genericProductCustomerOrderLine.Operation_SC( relset, operation );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeAlternativeProducts
+{
+  Description: 'Synchronizes the alternative products of the AlternativeProduct_SC KT into ProductDemandOnSupply instances.'
+  TextBody:
+  [*
+    // vmpm Oct-12-2017 (created)
+    // Only synchronize ProductDemandOnSupply instances that have different demand/supply products
+    allinstances := selectset( this, Schedule.Product_SC.ProductCompatibleDemand, alternativedemand, alternativedemand.DemandProduct() <> alternativedemand.SupplyProduct() );
+    updatedinstances := construct( ProductDemandOnSupplys );
+    
+    traverse( AlternativeProduct_SCTable::Table(), Rows, row )
+    {
+      demandproductid := row.DemandProduct();
+      supplyproductid := row.SupplyProduct();
+      
+      demandproduct := Product_SC::FindProductId( demandproductid );
+      supplyproduct := Product_SC::FindProductId( supplyproductid );
+      
+      // Only create ProductDemandOnSupply if both Demand and Supply product exists
+      if(  not isnull( supplyproduct ) and not isnull( demandproduct ) )
+      {
+        proddemandonsupply := ProductDemandOnSupply::FindProductDemandOnSupply( demandproductid, supplyproductid );
+        
+        if( isnull( proddemandonsupply ) )
+        {                                                         
+          proddemandonsupply := ProductDemandOnSupply::Create( demandproduct,
+                                                               demandproductid,
+                                                               supplyproductid,
+                                                               supplyproduct );
+        }
+        
+        updatedinstances.Add(  proddemandonsupply );
+      }
+    }
+    
+    deletedinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( deletedinstances, Elements, rc )
+    {
+      rc.Delete();
+    }
+  *]
+}

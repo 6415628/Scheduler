@@ -1,0 +1,61 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionInCreateEditProgramConfiguration_Setup (Schedule schedule)
+{
+  Description: 'Test precondition in create edit program configuration data - setup'
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    objectype := '';
+    hasDuplicateID := false;
+    programconfigurationID := '';
+    programconfigurationName := '';
+    isresourcealreadyassigned := false;
+    isValidForPreconCreateEdit := false;
+    
+    this.GetTestVariantForPreconditionCreateEditProgramConfiguration( isvariantfound,
+                                                                      objectype,
+                                                                      hasDuplicateID,
+                                                                      programconfigurationID,
+                                                                      programconfigurationName,
+                                                                      isresourcealreadyassigned,
+                                                                      isValidForPreconCreateEdit );
+    if( isvariantfound )
+    {
+      // Create program definition
+      programdefinition := ProgramDefinitionConfiguration::Create( schedule, programconfigurationID );
+      programdefinition.Name( programconfigurationName );
+      
+      // Create program set
+      programset := ProgramSetConfiguration::Create( programdefinition, programconfigurationID );
+      programset.Name( programconfigurationName );
+      
+      // Create program type
+      programtype := ProgramTypeConfiguration::Create( programset, programconfigurationID );
+      programtype.Name( programconfigurationName );
+      
+      // Create program phase
+      programphase := ProgramPhaseConfiguration::Create( programtype, programconfigurationID );
+      programphase.Name( programconfigurationName );
+      
+      // Create program type change
+      ProgramTypeChangeConfiguration::Create( programset, programconfigurationID, programconfigurationID );
+      
+      if( isresourcealreadyassigned )
+      {
+        // Create resource
+        resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Resource' );
+        LeadTimeStrategy_SC::Create( resource, Duration::Zero(), Constants::StrategyASAP() );
+        resources := selectset( schedule, ResourceGroup_SC.Resource_SC, res, true );
+        
+        // Need to propagate so that we can assign program to resource due to declarative attributes checking.
+        Transaction::Transaction().Propagate( method( ProgramDefinitionConfiguration, AssignResources ) );
+        // Create program definition 2
+        programdefinition2 := ProgramDefinitionConfiguration::Create( schedule, 'Program definition 2' );
+        programdefinition2.Name( 'Program definition 2' );
+        programdefinition2.AssignResources( resources );
+      }
+    }
+  *]
+}

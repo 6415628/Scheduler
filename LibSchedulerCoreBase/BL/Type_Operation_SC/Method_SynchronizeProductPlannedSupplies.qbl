@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeProductPlannedSupplies
+{
+  TextBody:
+  [*
+    // WOI1 Jul-28-2016 (created)
+    allinstances     := selectset( this, PlannedSupply.astype( ProductPlannedSupply ), plannedsupplies, true )
+    updatedinstances := construct( ProductPlannedSupplys );
+    
+    traverse( this, WorkOrderOperation.WorkOrderSupply, workordersupply )
+    {
+      productplannedsupply := workordersupply.GetProductPlannedSupply( this );
+      updatedinstances.Add( productplannedsupply );
+      
+      // Propagate Operation.NumberOfOutputLots which is used in synchronization of stock elements.
+      Transaction::Transaction().Propagate( attribute( Operation_SC, NumberOfOutputLots ) );
+      
+      // Synchronize stock elements
+      productplannedsupply.SynchronizeStockElement();
+    }
+    
+    //Delete product planned supplies if they do not exist in KT
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, productplannedsupply, productplannedsupply.CheckCanBeDeleted() )
+    {
+      productplannedsupply.Remove();
+    }
+  *]
+}

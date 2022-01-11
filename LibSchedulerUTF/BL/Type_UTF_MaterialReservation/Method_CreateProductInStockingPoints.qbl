@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateProductInStockingPoints (Schedule schedule) as owning ProductInStockingPoints
+{
+  Description: 'Create product in stocking points based on test instance.'
+  TextBody:
+  [*
+    products := this.CreateProducts( schedule );
+    stockingPoints := this.CreateStockingPoints( schedule );
+    
+    productInStockingPoints := construct( ProductInStockingPoints );
+    
+    // Create comboination for each product and stocking point
+    traverse( stockingPoints, Elements, stockingPoint )
+    {
+      stockingPointID := stockingPoint.Id();
+      
+      traverse( products, Elements, product )
+      {
+        productID := product.Id();
+        
+        productInStockingPoint := ProductInStockingPoint::FindProductInStockingPoint( stockingPointID, productID );
+        
+        if( isnull( productInStockingPoint ) )
+        {
+          productInStockingPoint := ProductInStockingPoint::Create( product, productID, stockingPointID );
+        }
+        
+        productInStockingPoints.Add( productInStockingPoint );
+      }
+    }
+    
+    return &productInStockingPoints;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

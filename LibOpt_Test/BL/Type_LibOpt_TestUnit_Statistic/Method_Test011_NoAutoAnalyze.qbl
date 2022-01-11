@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test011_NoAutoAnalyze (LibOpt_TestDataset dataset)
+{
+  Description: 'Test that when `AutoAnalysis` is disabled that the run will not be automatically analyzed.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    opt.AutoAnalysisEnabled( false );
+    
+    se := dataset.ScopeElementMock( relnew );
+    ses := construct( LibOpt_ScopeElements );
+    ses.Add( se );
+    
+    run := opt.CreateRun( ses );
+    
+    opt.ComponentCounter( run, 'Counter' );
+    
+    run.ConfigureForOneTransaction();
+    run.Start();
+    
+    // Check results
+    Transaction::Transaction().Propagate();
+    
+    this.Run().AssertEqual( 0, run.Statistic( relsize ), 'There should not be any statistic' );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

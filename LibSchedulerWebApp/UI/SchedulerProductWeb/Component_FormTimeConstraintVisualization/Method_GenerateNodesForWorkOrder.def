@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenerateNodesForWorkOrder (shadow[CustomDrawNodeOperation] startingNode, Boolean isUpstream) id:Method_FormTimeConstraintVisualization_GenerateNodesForWorkOrder
+{
+  #keys: '[142956.3.552937617]'
+  Body:
+  [*
+    // Create nodes for the direct upstream and downstream of the starting node
+    
+    // Get upstream or downstream Operations for node creation and edge linkage
+    startingOperation := startingNode.Operation_SC();
+    nextOperations := this.GetInputOutputs( startingOperation, isUpstream );
+    
+    // Decide whether to proceed to next depth
+    selectedWorkOrder := DataHolderDisplayWorkOrder.Data();
+    
+    depth := ifexpr( isUpstream,
+                     ifexpr( startingOperation.WorkOrderOperation().WorkOrder() = selectedWorkOrder // Same work order, continue recursive
+                             or exists( nextOperations, Elements.ToOperationDependency.ToOperation, toOp, 
+                                        toOp.WorkOrderOperation().WorkOrder() = selectedWorkOrder ), // Directly linked to operation of selected work order
+                             1,
+                             0 ),
+                     ifexpr( startingOperation.WorkOrderOperation().WorkOrder() = selectedWorkOrder // Same work order, continue recursive
+                             or exists( nextOperations, Elements.FromOperationDependency.FromOperation, fromOp, 
+                                        fromOp.WorkOrderOperation().WorkOrder() = selectedWorkOrder ), // Directly linked to operation of selected work order
+                             1,
+                             0 ) );
+                             
+    
+    if( depth > 0 and not startingNode.IsDepthLimitMet() )
+    {
+      owner := DataHolderCustomDrawConfiguration.Data(); // DataHolder is set in GenerateTree
+      
+      traverse( nextOperations, Elements, operation,
+                owner.CustomDrawNode( relsize ) <= owner.NodeLimit() )
+      {
+        node := this.FindCreateOperationNodeAndEdge( startingNode, operation, isUpstream, depth );
+        node.IsRoot( operation.WorkOrderOperation().WorkOrder() = selectedWorkOrder );
+     
+        if( depth > 0 and not node.IsDepthLimitMet() )
+        { 
+          // Continue upstream/downstream, pass in the newly created node to start generating the next level of nodes
+          this.GenerateNodesForWorkOrder( node, isUpstream );
+        }
+      }
+    }
+  *]
+}

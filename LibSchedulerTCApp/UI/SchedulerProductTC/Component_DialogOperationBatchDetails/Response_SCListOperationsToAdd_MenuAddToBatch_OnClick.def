@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: SCListOperationsToAdd
+Response OnClick (structured[Operation_SC] selection) id:Response_SCListOperationsToAdd_MenuAddToBatch_OnClick
+{
+  #keys: '[12142.0.24317601]'
+  Body:
+  [*
+    //Add operation in batch
+    DialogOperationBatchDetails.Data().AddOperations( selection );
+  *]
+  DefinitionID => //FilteredList/Responsedef_FilteredList_Menu_OnClick
+  Initiator: 'MenuAddToBatch'
+  Precondition:
+  [*
+    isallowedhard := true;
+    batch         := DialogOperationBatchDetails.Data();
+    
+    operations    := selectset( batch, BatchSequenceElement.Operation_SC, bo, true, true );
+    operations    := operations.Union( selection );
+    
+    result        := true;
+    
+    if( batch.IsPlanned() )
+    {
+      batchtask := batch.BatchTask();
+      result := ApplicationScheduler.AllowedScheduling( batchtask.BatchResource(), //batchresource
+                                                        operations,             //structured operations
+                                                        false,                  //skip soft check
+                                                        false,                  //ctrl shift key
+                                                        batchtask.Previous(), //before task
+                                                        batchtask.Next(),     //afterbatch
+                                                        Operation_SC::GetSelectedObjects( selection ),
+                                                        feedback,
+                                                        isallowedhard )
+    }
+    else
+    {
+      result := ApplicationScheduler.AllowedInBatch( operations, not batch.IsPlanned(), false, false, feedback, isallowedhard );
+    }
+    
+    //Should not show msg Ctrl key to override
+    feedback := ApplicationScheduler.RemoveMessage( feedback, String::NewLine() +  Translations::SC_HoldCtrlToOverride() );
+    
+    return result;
+  *]
+}

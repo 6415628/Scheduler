@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoRollbackTest (LibOpt_Run run, LibOpt_Suboptimizer subopt, String start_value_str, 
+  String end_value_str, Number nr_of_exceptions)
+{
+  TextBody:
+  [*
+    task := LibOpt_Task::Create( run, subopt, null( LibOpt_Scope ) );
+    task.SnapshotComponent( relset, run.Snapshot( relnew, LibOpt_SnapshotComponent ) );
+    
+    exec := this->DoRollbackTest( task, subopt, start_value_str, end_value_str )
+    exec->Exception()
+        ->GroupAll()
+        ->LibOpt_TestUnit_TestDataset::CheckNrOfException( this, nr_of_exceptions );
+    
+    exec->Exception()->( e ) {
+      err := LibOpt_SnapshotError::Read( e );
+      this.Run().AssertTrue( subopt.IsRollback( err ), 'Non-rollback exception caught: ' + e.Message() );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

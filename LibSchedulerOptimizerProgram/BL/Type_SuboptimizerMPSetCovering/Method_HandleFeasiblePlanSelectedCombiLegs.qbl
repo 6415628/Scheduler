@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleFeasiblePlanSelectedCombiLegs (CombiLegs combilegs)
+{
+  TextBody:
+  [*
+    // yifei Aug-10-2021 (created)
+    
+    cpts := selectset( combilegs, Elements.LeadingCombiProgramPhase.CombiProgramType.MasterCombiProgramType, cpt, cpt.IsActive() );
+    
+    traverse( cpts, Elements, cpt )
+    {
+      selectedcombis := selectsortedset( cpt,
+                                         WorkerCombiProgramType.CombiProgramPhase.CombiLegAsLeading,
+                                         cl,
+                                         cl.IsSelected()
+                                         and exists( combilegs, Elements, cl1, cl1 = cl ),
+                                         cl.SequenceNr() ); 
+      
+       
+      if( selectedcombis.Size() > 0 )
+      {
+        // Select all in scope operations
+        operations := construct( Operation_SCs );
+        traverse( selectedcombis, Elements, combileg )
+        {
+          operations := operations.Merge( combileg.GetOperationsInCLInScope( null( LibOpt_Task ) ) );
+          // Refactor this method to take a LibOpt_Task as input and give that task to the line above and remove the line below
+          operations := operations.Merge( selectset( combileg, OperationInCombiLeg.Operation_SC, op, true ) );
+        }
+      
+        // must add operations of the master combi to operations set,  because otherwise, some tasks might left unplanned at the beginning of the PlanToResource method
+        traverse( cpt, MasterCombiProgramType.CombiProgramPhase.CombiLegAsLeading, combileg )
+        {
+          operations := operations.Merge( combileg.GetOperationsInCLInScope( null( LibOpt_Task ) ) );
+          operations := operations.Merge( selectset( combileg, OperationInCombiLeg.Operation_SC, op, true ) );
+        }
+        cpt.PlanToResource( selectedcombis, operations );
+      
+        Transaction::Transaction().Propagate( attribute( CombiProgramSet, IsActive ) );
+        Transaction::Transaction().Propagate( attribute( CombiProgramType, IsActive ) );
+      }
+    
+      cpt.DeleteNotActiveCombis();
+    }
+  *]
+}

@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method DemandFulfilled (ImportedFeedbackTask task, internal[GUIComponent] parent) id:Method_DialogFeedbackMaterial_DemandFulfilled
+{
+  #keys: '[118288.0.251901266]'
+  Body:
+  [*
+    // generate imported material base exported task.
+    exportedtask := task.ExportedSingleTask();
+    
+    id := ImportedFeedbackMaterial_SC::GetIdentifierInSF( task.Resource(), exportedtask.Operation_SC() );
+    
+    demand := select( exportedtask, ExportedDemand, s, true );
+    
+    timestamp := this.GetFeedbackTime( task );
+    
+    DataHolderSelectedFeedbackOperation.Data( exportedtask.Operation_SC() ); 
+    
+    data := Schedule.ImportedFeedbackMaterial_SC( relshadow,
+                                                  ID := id,
+                                                  DemandMaterialID := guard( demand.ID(), '' ),
+                                                  OperationId := task.OperationID(),
+                                                  ResourceId := task.Resource(),
+                                                  Quantity := guard( demand.Quantity(), 0.0 ),
+                                                  Operation_SC := exportedtask.Operation_SC(),
+                                                  Status := Constants::MaterialStatus_DemandFulfilled(),
+                                                  TimeStamp := timestamp
+                                                  );
+    Dialog.Data( data );
+    
+    this.InitDialog( false, data.DemandMaterialID() );
+    
+    if( this.DoModal( parent ) > 0 )
+    {
+      data.DemandMaterialID( SelectionDemandId.Text() );
+      data.SupplyMaterialID( SelectionSupplyId.Text() );
+      data.SupplyMaterialID_Type( SelectionSupplyId.Data().SupplyType() );
+      data.Commit();                                
+    }
+  *]
+}

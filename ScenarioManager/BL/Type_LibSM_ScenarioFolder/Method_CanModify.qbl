@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CanModify (String userName, Boolean isAdministrator) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    feedback_o := "";
+    
+    if( this.IsRecycleBin() )
+    {
+      feedback_o := Translations::LibSM_ScenarioFolder_CanModify_IsRecycleBin();
+    }
+    else if( this.IsRootFolder() )
+    {
+      feedback_o := Translations::LibSM_ScenarioFolder_CanModify_IsRootFolder();
+    }
+    // A user is allowed to modify his own folders, and folders that have been created by the System.
+    else if( not this.IsAuthorized( userName ) )
+    {
+      feedback_o := Translations::LibSM_ScenarioFolder_CanModify_IsNotCreatedByUser( this.Name(),
+                                                                                     this.CreatedBy() );
+    }
+    
+    return feedback_o = "";
+  *]
+}

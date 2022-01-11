@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (LibCal_StagingCalendar owner_i, LibCal_Event event_i) as LibCal_StagingEvent
+{
+  Description: 'Create a staging object for export.'
+  TextBody:
+  [*
+    stagEvent := owner_i.StagingEvent( relnew,
+                                       CalendarType    := owner_i.CalendarType(),
+                                       CalendarID      := owner_i.StagingCalendarID(),
+                                       StagingEventID  := event_i.EventID(),
+                                       Subject         := event_i.Subject(),
+                                       Description     := event_i.Description(), 
+                                       Type            := event_i.Type(),
+                                       PartialCapacity := event_i.PartialCapacity(),
+                                       Category        := event_i.EventCategory().Name(),
+                                       IsDefault       := event_i.IsDefault(),
+                                       StartTimeOfDay  := event_i.StartTimeOfDay(),
+                                       Duration        := event_i.Duration(),
+                                       IsAllDay        := event_i.IsAllDay() );
+    
+    // EndTimeOfDay it is not imported because this is error prone
+    // (Duration and EndTimeOfDay can easily get out of sync by manual editing).
+    
+    // Fill the appropriate attributes for the RecurrencePattern.
+    pattern     := event_i.RecurrencePattern();
+    isRecurring := not isnull( pattern );
+    stagEvent.IsRecurring( isRecurring );
+    
+    if( isRecurring )
+    {
+      pattern.Export( stagEvent );
+    }
+    
+    return stagEvent;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod HandleResult (LibOpt_Suboptimizer suboptimizer, LibOpt_MyRunContextForUTF runcontextforutf, Algorithm algorithm, 
+  LibOpt_Task task) as LibOpt_Scope
+{
+  Description:
+  [*
+    The body of the `HandleResult` method that will be called by the mock suboptimizer that executes the handle result.
+    
+    This is used to allow easy testing on all suboptimizer subtypes, as this method is called by all.
+  *]
+  TextBody:
+  [*
+    OS::Sleep( ceil( runcontextforutf.DurationHandleResult().MinutesAsReal() * 60 * 1000 ) );
+    
+    count := runcontextforutf.RetrieveNumberWithDefault( LibOpt_TestUnit_Suboptimizer::GetHandleResultCounterName(), 0 );
+    runcontextforutf.StoreNumber( LibOpt_TestUnit_Suboptimizer::GetHandleResultCounterName(), count + 1 );
+    
+    if( runcontextforutf.ErrorAtHandleResult() )
+    {
+      error( 'Expected error at handle result' );
+    }
+    
+    if( runcontextforutf.NrExecutions() > algorithm.ExecutionCounter() )
+    {
+      task.Log( LibOpt_OptimizerTest::ReExecuteString() );
+      suboptimizer.ReExecute( algorithm );
+    }
+    
+    if( suboptimizer.RollbackKPI().istype( LibOpt_RollbackKPIScripted ) )
+    {
+      suboptimizer.RollbackKPI().astype( LibOpt_RollbackKPIScripted ).NextStep();
+    }
+    
+    result := runcontextforutf.Scope();
+    if( isnull( result ) )
+    {
+      result := task.Scope();
+    }
+    
+    return result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

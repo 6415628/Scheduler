@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method QueryDataFromServer (Number top) id:Method_Kpi_frmKpiSnapshots_QueryDataFromServer
+{
+  #keys: '[136398.1.499869571]'
+  Body:
+  [*
+    // Queries the KpiTracker dataset for the last <top> snapshots.
+    
+    timespanoption := rbgTimespan.BoundValue();
+    data           := null( NamedValueTree );
+    if ( timespanoption = "all" )
+    {
+      data := KpiTracker.SnapshotRetrieval().GetLastSnapshotsNvt( top );
+    }
+    else
+    {
+      from := dtFrom.DateTime();
+      to   := dtTo.DateTime();
+      data := KpiTracker.SnapshotRetrieval().GetSnapshotsNvt( from, to, rbgTimeType.BoundValue(), top ); 
+    }
+    
+    set  := Kpi_GlobalState.ConvertNvtToShadowSnapshotSetData( data );
+    this.dhQueryResult().Data( &set );
+    Form.RefreshUITimeStampAttribute();
+    Form.RefreshUILabelAttribute();
+    Form.RefreshUIIsLastAttribute();
+    Form.SetAutoSelectTimer();
+  *]
+}

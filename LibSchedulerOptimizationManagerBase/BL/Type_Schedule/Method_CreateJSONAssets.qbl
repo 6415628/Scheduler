@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateJSONAssets () as owning JSONBuilder
+{
+  Description: 'Creates assets (resources) in JSON from the current dataset.'
+  TextBody:
+  [*
+    assets := JSON::Array();
+    
+    // Add asset to assets, assets are NOT under each individual workCenter
+    traverse( this, ResourceGroup_SC.Resource_SC, resource )
+    {
+      id := resource.ResourceID();
+      genericID := resource.GenericID();
+      workCenterID := resource.ResourceGroupName();
+      
+      asset := JSON::Object();
+      asset.Add( Constants::JSON_Asset_ID(), id );
+      asset.Add( Constants::JSON_Asset_GenericID(), ifexpr( genericID.Length() > 0 , genericID, workCenterID ) );
+      asset.Add( Constants::JSON_Asset_WorkCenterID(), workCenterID );
+      
+      // Add timeCalendars to asset
+      asset.Add( Constants::JSON_TimeCalendars(), resource.CreateJSONTimeCalendars() );
+      
+      // Add asset to assets
+      assets.Add( asset );
+    }
+    
+    return &assets;
+  *]
+}

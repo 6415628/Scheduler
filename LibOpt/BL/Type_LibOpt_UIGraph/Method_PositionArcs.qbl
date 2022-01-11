@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method PositionArcs
+{
+  Description: 'Change the X coordinate of the arc point from relative to absolute.'
+  TextBody:
+  [*
+    
+    // Move arcs according to the new X
+    traverse( this, UIGraphNode, node )
+    {
+      sorted := selectsortedset( node, Incoming, arc, true, arc.Origin().X() );
+      i := 0;
+      traverse( sorted, Elements, arc )
+      {
+        arc.Last().X( arc.Destination().X() + arc.Last().X() );
+        i++;
+      }
+      
+      sorted := selectsortedset( node, Outgoing, arc, true, arc.Destination().X() );
+      i := 0;
+      traverse( sorted, Elements, arc )
+      {
+        arc.First().X( arc.Origin().X() + arc.First().X() );
+        i++;
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

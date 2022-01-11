@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleCalendarConflicts_Cut (ExplicitTimeInterval interval, output DateTime start, output DateTime end, 
+  Real capacity)
+{
+  Description: 'Handle conflicts where the exising interval has overlap with reported interval'
+  TextBody:
+  [*
+    // jiex Sep-29-2016 (created) 
+    // process conflict relation: overlaps, starts
+    // shorten existing interval( end, interval.End )
+    if( interval.Start() >= start and interval.Start() < end )
+    {
+      // External interval will take precedence over internally created interval
+      if( not interval.istype( ResourceExplicitTimeInterval ) 
+          // In the case where both intervals are external, lower capacity interval take priority
+          or interval.Capacity() > capacity )
+      {                                                   
+        // cut the existing to input end 
+        this.UpdateTimeInterval( interval, end, interval.End() );
+      }
+      else
+      {
+        end := interval.Start();
+      }
+    }                                                   
+    // process conflict relation: overlaped by, finishs
+    // shorten existing interval( interval.Start, start )
+    else if( interval.End() > start and interval.End() <= end )
+    {
+      // External interval will take precedence over internally created interval
+      if( not interval.istype( ResourceExplicitTimeInterval ) 
+          // In the case where both intervals are external, lower capacity interval take priority
+          or interval.Capacity() > capacity )
+      {
+        this.UpdateTimeInterval( interval, interval.Start(), start );
+      }
+      else
+      {
+        start := interval.End();
+      }
+    }
+  *]
+}

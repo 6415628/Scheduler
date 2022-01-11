@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendConfigurationSuccessCopyRoutingTable (LibDEF_Systems targets_i)
+{
+  Description: 'Send a successful message to the other systems with the routing table.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-25-2016 (created)
+    nvt := LibDEF_DataAccessor::CreateMessageConfiguration();
+    
+    LibDEF_DataAccessor::SetConfigurationHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_TYPE(), LibDEF_DataAccessor::TYPE_CONFIGURATION_COPYROUTINGTABLE() );
+    
+    // attach routing table
+    nvt := this.AttachRoutingTableInNVT( &nvt );
+    
+    traverse( targets_i, Elements, system )
+    {
+      event := this.EventCreate( system, false );
+      LibDEF_Util::EventLog( event, "Sending routing table to " + system.Name() + " with GUID '" + system.GUID() + "'" );
+    
+      this.SendMessage( system, nvt, LibDEF_DataAccessor::KIND_SUCCESS(), event );
+    }
+  *]
+}

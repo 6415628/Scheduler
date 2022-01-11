@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionInRemoveResourceHasProgramScheduled_Setup (Schedule schedule)
+{
+  Description: 'Test precondition in remove resource that has program scheduled from the scope of program definition - setup'
+  TextBody:
+  [*
+    // Create program definition
+    programdefinition := UTFMockObjectFactory::CreateProgramDefinitionData( schedule, 'Program definition ID', false );
+    
+    // Create resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Resource' );
+    LeadTimeStrategy_SC::Create( resource, Duration::Zero(), Constants::StrategyASAP() );
+    
+    // Assign program definition to resources
+    resource.AssignProgramDefinitionConfiguration( programdefinition ); 
+    
+    // Insert program change
+    programtypes := selectset( programdefinition, ProgramSetConfiguration.ProgramTypeConfiguration, pt, true );                                    
+    resource.InsertProgramChange( null( Task_SC ), programtypes, false, Duration::Zero() );
+  *]
+}

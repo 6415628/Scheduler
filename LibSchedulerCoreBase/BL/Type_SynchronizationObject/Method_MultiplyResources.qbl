@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method MultiplyResources (Number multiplynr)
+{
+  Description: 'Multiplies the imported resources by the user input factor.'
+  TextBody:
+  [*
+    // WOI1 Apr-6-2017 (created)
+    traverse( this, Schedule.ImportedResourceGroup_SC, imported_res_group )
+    {
+      index := max( imported_res_group, ImportedResource_SC, imported_res, imported_res.IsValidDataHard(), imported_res.Index() );
+      
+      for( i := 1; i < multiplynr; i++ ) // start with 1, because we don't want to multiply if multiplynr = 1
+      {
+        traverse( imported_res_group, ImportedResource_SC, imported_res, imported_res.IsValidDataHard() )
+        {
+          index := index + i;
+          id := DataMultiplier::GetResourceName( imported_res.ResourceID(), i );
+          new_imp_res := ImportedResource_SC::FindImportedResourceTypeIndex( id );
+          
+          if( isnull( new_imp_res ) )
+          {
+            new_imp_res := ImportedResource_SC::Create( imported_res_group, id )
+          }
+          
+          new_imp_res.Update( imported_res, index );
+        }
+      }
+    }
+  *]
+}

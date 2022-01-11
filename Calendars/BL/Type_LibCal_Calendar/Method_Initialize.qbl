@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method Initialize
+{
+  Description:
+  [*
+    Initialize the calendar.
+    Is automatically called when a calendar is created, can be explicitly called to initialize an already existing calendar for the Calendar Library.
+  *]
+  TextBody:
+  [*
+    // Set the CalendarType.
+    this.SetCalendarType();
+    
+    // Set the CalendarID if it has not already been set (by the import-mechanism).
+    if( this.CalendarID() = "" )
+    {
+      this.SetCalendarID();
+    }
+    
+    // Initialize the settings.
+    this.InitializeSettings();
+    
+    // Explicitly calculate End.
+    Transaction::Transaction().Propagate( attribute( LibCal_Calendar, End ) );
+    
+    // Let the calendar start closed.
+    this.StartClosed();
+    
+    // Initialize the attributes that are used for detecting that the calendar window has been moved.
+    this.CalcStartDate();
+    this.CalcEndDate();
+    this.PreviousStartDate( this.StartDate() );
+    this.PreviousEndDate(   this.EndDate()   );
+    
+    // Let the calendar subscribe to default events.
+    this.SubscribeToDefaultEvents();
+    
+    // Initialize the events of the calendar.
+    // InitializeEvents() can be be overridden to implement specific events for the calendar,
+    // either by creating them or by subscribing to events from other calendars.
+    this.InitializeEvents();
+  *]
+}

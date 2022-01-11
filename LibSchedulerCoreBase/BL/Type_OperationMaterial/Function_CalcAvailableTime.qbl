@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcAvailableTime
+{
+  Description: 'Calculate available time when material is available for use in the next operation, including total offset duration of the previous operation.'
+  TextBody:
+  [*
+    // mbr23, 2020-01-30: similar logic in CalcOptimistic... (LibSchedulerOptimizerSequencing). Changes to the logic should happen in both places.
+    
+    value := DateTime::MinDateTime();
+    
+    fulfillment_time := DateTime::MinDateTime();
+    operation_end := DateTime::MinDateTime();
+    
+    if( this.HasFromOperation() )
+    {
+      operation_end := this.GetInputOperationEnd();
+    }
+    
+    if( this.HasFulfillment() and this.Fulfillment().IsActive() ) // fulfillment quantity is zero during automatic material reservation, we don't want the existing reservation to affect Operation.Start
+    {
+      fulfillment_time := this.MaterialAvailableTime();
+    }
+    
+    // TG added TransportCoolingDuration here
+    // TransportCoolingDuration is also applicable for materials
+    // If it is not applicable, it can be set to Duration::Zero()
+    // Kyle 06-05-2015 #5344 use TotalOffsetDuration instead of TransportCoolingDuration
+    value := maxvalue( fulfillment_time + this.TotalOffsetDuration(), operation_end + this.TotalOffsetDuration(), this.PlanUnit_SC().Schedule().Time() );
+    
+    this.AvailableTime( value );
+  *]
+}

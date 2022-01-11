@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCleanUpFeedbackTaskProgramPhaseTransitionRule_Setup (Schedule schedule)
+{
+  Description: 'Test clean up feedback task program phase transition rule - setup'
+  TextBody:
+  [*
+    // Setup program and rule data which plan operation from 6th operations onwards
+    this.CreateProgramAndRuleSetupData( schedule, 1 )
+    
+    // Setup feedback data
+    this.CreateProgramSchedulingFeedbackData( schedule, true, false );
+    
+    // Transaction propagate for attributes CanBeDeleted and Cumulative attributes
+    Transaction::Transaction().Propagate( attribute( FeedbackTask, CanBeDeleted ) );
+    Transaction::Transaction().Propagate( attribute( FeedbackTaskInFeedbackProgramType, CumulativeCharacteristic ) );  
+    Transaction::Transaction().Propagate( attribute( FeedbackTaskInFeedbackProgramType, CumulativeRealValues ) );   
+    
+    // Clean up feedback for shopfloor history
+    schedule.FeedbackManager().CleanUpFeedbackTaskAndBatchesInSchedule();
+    
+    // Gantt chart
+    // |                           | Feedback HEAD                                                  |   BODY      |    TAIL      |
+    // | FeedbackProgramChangeTask | Feedback Task1-Task4 ( CleanUp ) | Feedback Task 5 ( Remains ) | Task 6 - 10 | Task 11 - 15 |
+  *]
+}

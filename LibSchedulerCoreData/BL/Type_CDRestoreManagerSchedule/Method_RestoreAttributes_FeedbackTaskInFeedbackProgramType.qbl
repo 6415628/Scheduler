@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_FeedbackTaskInFeedbackProgramType (CDSchedule cdschedule, FeedbackTaskInSchedule feedbackTaskInSchedule)
+{
+  Description: 'Restore feedback task in feedback program type core data attributes to planning object'
+  TextBody:
+  [*
+    // Restore feedback task in feedback program type
+    cdfeedbacktaskinfeedbackprogramtypes := selectset( cdschedule, CDEntity.astype( CDFeedbackTaskInFeedbackProgramType ), fbtifpt,
+                                                       fbtifpt.WorkOrderId() = feedbackTaskInSchedule.WorkOrderId()
+                                                       and fbtifpt.PlanUnitId() = feedbackTaskInSchedule.PlanUnitId()
+                                                       and fbtifpt.WorkOrderOperationSequenceNr() = feedbackTaskInSchedule.WorkOrderOperationSequenceNr()
+                                                      );
+    traverse( cdfeedbacktaskinfeedbackprogramtypes, Elements, cdfeedbacktaskinfeedbackprogramtype )
+    {
+      fbtifpt := FeedbackTaskInFeedbackProgramType::Create( feedbackTaskInSchedule );
+                                           
+      CopyCorresponding::CopyFrom( cdfeedbacktaskinfeedbackprogramtype ).CopyTo( fbtifpt );   
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

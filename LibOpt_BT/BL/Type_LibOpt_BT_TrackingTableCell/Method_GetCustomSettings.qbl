@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCustomSettings () as owning LibOpt_BT_CustomSettings
+{
+  TextBody:
+  [*
+    set := this.CustomSetting( relget )
+               .Union( this.Row().CustomSetting( relget ) )
+               .Union( this.Column().CustomSetting( relget ) )
+               .Union( this.Table().CustomSetting( relget ) );
+    
+    // Remove duplicate methods.
+    already_in := construct( Strings );
+    duplicates := selectduplicates( set, Elements, elem, true, elem.MethodName(), elem.ArgumentType() );
+    traverse( duplicates, Elements, elem )
+    {
+      str := elem.MethodName() + '(' + elem.ArgumentType() + ')';
+      if( already_in.Find( str ) >= 0 )
+      {
+        set.Remove( elem );
+      }
+      else
+      {
+        already_in.Add( str );
+      }
+    }
+    
+    return selectsortedset( set, Elements, elem, true, elem.TrackingTableBase().Priority() );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

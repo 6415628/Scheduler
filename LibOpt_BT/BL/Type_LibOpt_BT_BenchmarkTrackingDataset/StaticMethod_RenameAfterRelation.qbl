@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod RenameAfterRelation (Type type, NamedValueTree nvt, NamedValue nv)
+{
+  TextBody:
+  [*
+    // afn3 Sep-30-2019 (created)
+    traverse( nv.Children(), Elements, child )
+    { 
+      if( child.GetValue().istype( Key ) )
+      {
+        rel := select( type, MdlRelSideElements.astype( MdlModeledRelSideElement ), rel,
+                       rel.OtherSide().FromType().Name() = child.Name()
+                       and guard( rel.RelationSide().OwningSideBool(), false ) );
+        if( not isnull( rel ) )
+        {
+          if( rel.Name() <> child.Name() )
+          {
+            new_child := nv.AddChild( nvt.GetHandle( rel.Name() ) );
+            new_child.SetValue( child.GetValue() );
+            child.Move( new_child, true );
+            child.Delete( false );
+            child := new_child;
+          }
+          LibOpt_BT_BenchmarkTrackingDataset::RenameAfterRelation( rel.OtherSide().FromType(), nvt, child );
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

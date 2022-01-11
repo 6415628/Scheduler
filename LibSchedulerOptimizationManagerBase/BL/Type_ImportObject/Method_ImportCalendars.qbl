@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportCalendars (String jsonString) #extension
+{
+  TextBody:
+  [*
+    jsonTree := JSON::Parse( jsonString );
+    schedule := this.Schedule();
+    
+    // Calendars
+    calendarsJson := guard( jsonTree.Get( Constants::JSON_Calendars() ), null( JSON, owning ) );
+    
+    if( not isnull( calendarsJson ) )
+    {
+      // Create closed periods in closedDays array
+      closedDaysJSON := guard( calendarsJson.Get( Constants::JSON_ClosedDays() ), null( JSON, owning ) );
+      
+      if( not isnull( closedDaysJSON ) )
+      {
+        for( i := 0; i < closedDaysJSON.Size(); i++ )
+        {
+          closedPeriod := closedDaysJSON.Get( i );
+          ImportedClosedPeriod::ParseFCjson( schedule, closedPeriod );
+        }
+      }
+      
+      // Create shift patterns
+      shiftPatternsJSON := guard( calendarsJson.Get( Constants::JSON_ShiftPatterns() ), null( JSON, owning ) );
+      
+      if( not isnull( shiftPatternsJSON ) )
+      {
+        for( i := 0; i < shiftPatternsJSON.Size(); i++ )
+        {
+          shiftPattern := shiftPatternsJSON.Get( i );
+          importedShiftPattern := ImportedShiftPattern::ParseFCjson( schedule, shiftPattern );
+          
+          // Create time period per shift pattern
+          periodsJSON := guard( shiftPattern.Get( Constants::JSON_Periods() ), null( JSON, owning ) );
+          
+          if( not isnull( periodsJSON ) )
+          {
+            for( j := 0; j < periodsJSON.Size(); j++ )
+            {
+              timePeriod := periodsJSON.Get( j );
+              ImportedTimePeriod::ParseFCjson( schedule, timePeriod, importedShiftPattern );
+            }
+          }
+        }
+      }
+    }
+    else
+    {
+      logfile( Translations::Lib3DSpace_NoCalendar() ); 
+    }
+  *]
+}

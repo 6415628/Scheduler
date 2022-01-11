@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: SCListTask
+Response OnDrop (structured[Operation_SC] information, BatchTask target, BatchResource resource) id:Response_SCListTask_OnDrop_6
+{
+  #keys: '[12910.0.1180256408]'
+  Body:
+  [*
+    // OnDrop structured[Operation] --> BatchTask on BatchResource
+    
+    ctrlshift := dropaction.IsControlShift();
+    
+    if( not isnull( target ) and not ctrlshift )
+    {
+      // (Add operation to batch)
+      target.Batch().AddOperations( information );
+    }
+    else
+    {
+      resource.CreateBatchAssignOperationsPlanBatch( information, target.Previous().astype( BatchTask ) );
+    }
+  *]
+  DefinitionID => /SCListTask/Responsedef_SCListTask_OnDrop
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey       := dropaction.IsControl();
+    ctrlshiftkey  := dropaction.IsControlShift();
+    
+    operations := construct( Operation_SCs );
+    aftertask := target;
+    
+    if( not ctrlshiftkey ) //when ctrlshiftkey = false and not isnull droptarget, the intention is to merge all operations into the droptarget
+    {
+      operations  := selectset( target, OperationInTask, op, true, true ); //operations from the drop target
+      aftertask := target.Next().astype( BatchTask );
+    }
+    
+    information := information.Union( operations );
+    
+    return ApplicationScheduler.AllowedScheduling( resource,           //batchresource
+                                                   information,        //structured operations
+                                                   ctrlkey,            //skip soft check
+                                                   ctrlshiftkey,       //ctrl shift key
+                                                   target.Previous(),  //before task
+                                                   aftertask,          //afterbatch
+                                                   Operation_SC::GetSelectedObjects( information ),
+                                                   feedback,
+                                                   isallowedhard )
+  *]
+  UserRequiresReadWrite: true
+}

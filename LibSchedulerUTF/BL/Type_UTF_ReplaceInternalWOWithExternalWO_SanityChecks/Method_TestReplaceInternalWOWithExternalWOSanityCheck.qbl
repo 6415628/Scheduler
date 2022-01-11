@@ -1,0 +1,15 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestReplaceInternalWOWithExternalWOSanityCheck (Schedule schedule)
+{
+  Description: 'Test replace internal work order with external work order sanity check.'
+  TextBody:
+  [*
+    replaceInternalWOWithExternalWOInstance := this.GetReplaceInternalWOWithExternalWOTestInstances( this.Variant() );
+    
+    importedExternalWorkOrder := select( schedule, ImportedWorkOrder.astype( ImportedExternalWorkOrder ), importedExternalWorkOrder, true );
+    
+    this.Run().AssertTrue( replaceInternalWOWithExternalWOInstance.HasSoftSanityCheckViolation() <> importedExternalWorkOrder.IsValidDataSoft(),
+                           UTFUtility::GenerateFailedMessage( 'Sanity check for replace internal work order with external work order failed', '' ) );
+  *]
+}

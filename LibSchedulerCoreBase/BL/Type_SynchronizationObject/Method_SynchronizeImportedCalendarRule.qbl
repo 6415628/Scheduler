@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeImportedCalendarRule
+{
+  Description: 'Synchronize imported calendar rules and translate them to calendar KT instances.'
+  TextBody:
+  [*
+    kb := KBID::Create( Constants::GetCalendarsKnowledgeBaseID() );
+    calendar := QuillCalendar::Calendar( kb)
+    
+    allRuleInstances := selectset( calendar, Rules, rule, true );
+    updatedRuleInstances := construct( structured_QuillCalendarRule );
+    
+    traverse( this, Schedule.ImportedCalendarRule, importedCalendarRule )
+    {
+      calendarRule := select( calendar, Rules, rule, rule.Name() = importedCalendarRule.Name() );
+      
+      if( isnull( calendarRule ) )
+      {
+        calendarRule := calendar.Rules( relnew, Name := importedCalendarRule.Name() );
+      }
+      
+      if( not isnull( calendarRule ) )
+      {
+        calendarRule.Description( importedCalendarRule.Description() );
+        calendarRule.IntervalType( importedCalendarRule.IntervalType() );
+        calendarRule.RepeatType( importedCalendarRule.RepeatType() );
+        calendarRule.RepetitionInterval( importedCalendarRule.RepetitionInterval() );
+        calendarRule.SeedDate( importedCalendarRule.SeedDate() );
+        
+        this.SynchronizeImportedCalendarRuleTimeInterval( importedCalendarRule, calendarRule );
+      }
+      
+      updatedRuleInstances.Add( calendarRule );
+    }
+    
+    
+    //Delete old instances
+    oldRuleInstances := allRuleInstances.Difference( updatedRuleInstances );
+    
+    traverse( oldRuleInstances, Elements, calendarRule )
+    {
+      calendarRule.Delete();
+    }
+    
+    calendar.Apply();
+  *]
+}

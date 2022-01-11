@@ -1,0 +1,83 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestImportRuleConfiguration (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    ruleScope := '';
+    
+    this.GetTestVariant( ruleScope );
+    
+    // Select imported object
+    importedRule := select( schedule, ImportedRule, importedRule, true );
+    importedRuleRange := select( importedRule, ImportedRuleRange, importedRuleRange, true );
+    importedRuleScopeInResource := select( importedRule, ImportedRuleScopeInResource, importedRuleScopeInResource, true );
+    importedRuleScopeInShutdownType := select( importedRule, ImportedRuleScopeInShutdownType, importedRuleScopeInShutdownType, true );
+    importedRuleScopeInProgramType := select( importedRule, ImportedRuleScopeInProgramType, importedRuleScopeInProgramType, true );
+    importedRuleScopeInProgramPhase := select( importedRule, ImportedRuleScopeInProgramPhase, importedRuleScopeInProgramPhase, true );
+    
+    // Select planning object
+    rule := select( schedule, Rule, rule, true );
+    ruleRange := select( rule, RuleRange, ruleRange, true );
+    ruleScopeInResource := select( rule, RuleScopeInResource, ruleScopeInResource, true );
+    ruleScopeInShutdownType := select( rule, RuleScopeInShutdownType, ruleScopeInShutdownType, true );
+    ruleScopeInProgramType := select( rule, RuleScopeInProgramType, ruleScopeInProgramType, true );
+    ruleScopeInProgramPhase := select( rule, RuleScopeInProgramPhase, ruleScopeInProgramPhase, true );
+    
+    isRuleCreated := rule.ConditionValue() = importedRule.ConditionValue()
+                   and rule.IsConditionEnabled() = importedRule.IsConditionEnabled()
+                   and rule.IsEnabled() = importedRule.IsEnabled()
+                   and rule.IsHardConstraintForOptimizer() = importedRule.IsHardConstraintForOptimizer()
+                   and rule.Name() = importedRule.Name() 
+                   and rule.NeedManualPreconditionCheck() = importedRule.NeedManualPreconditionCheck()
+                   and rule.CharacteristicMain().ID() = importedRule.CharacteristicMainID()
+                   and rule.CharacteristicCondition().ID() = importedRule.CharacteristicConditionID()
+                   and rule.IsBeforeShutdown() = importedRule.ImportedRuleScope().IsBeforeShutdown()
+                   and rule.RuleScopeSelected() = importedRule.ImportedRuleScope().RuleScopeSelected()
+                   and rule.RuleScopeShutdownAggregateThreshold() = importedRule.ImportedRuleScope().RuleScopeShutdownAggregateThreshold()
+                   and rule.CharacteristicScope().ID() = importedRule.ImportedRuleScope().CharacteristicScopeID()
+                   and rule.IsProgramPhaseTransitionRule() = importedRule.IsProgramPhaseTransitionRule()
+                   and rule.ConditionScope() = importedRule.ConditionScope()
+                   and rule.PenaltyParameterSlope_a() = importedRule.PenaltyParameterSlope_a()
+                   and rule.PenaltyParameterPower_b() = importedRule.PenaltyParameterPower_b()
+                   and rule.PenaltyParameterOffset_c() = importedRule.PenaltyParameterOffset_c()
+                   and rule.StrategyMultipleRange() = importedRule.StrategyMultipleRange();
+    
+    isRuleRangeCreated := ruleRange.From() = importedRuleRange.FromReal()
+                          and ruleRange.To() = importedRuleRange.ToReal()
+                          and ruleRange.RuleRangeValue() = importedRuleRange.RuleRangeValue();
+    
+    // Compare result based on variant
+    isRuleScopeCreated := false;
+    if( ruleScope = RuleConstant::RuleScope_AllTasksOnResource() )
+    {
+      isRuleScopeCreated := not isnull( ruleScopeInResource )
+                            and ruleScopeInResource.Resource_SC().ResourceID() = importedRuleScopeInResource.ResourceID();
+    }
+    else if( ruleScope = RuleConstant::RuleScope_Shutdown() )
+    {
+      isRuleScopeCreated := not isnull( ruleScopeInShutdownType )
+                            and ruleScopeInShutdownType.ShutdownType().ShutdownTypeID() = importedRuleScopeInShutdownType.ShutdownTypeID();
+    }
+    else if( ruleScope = RuleConstant::RuleScope_Program() )
+    {
+      isRuleScopeCreated := not isnull( ruleScopeInProgramType )
+                            and ruleScopeInProgramType.ProgramTypeConfiguration().ProgramDefinitionConfigurationID() = importedRuleScopeInProgramType.ProgramDefinitionConfigurationID()
+                            and ruleScopeInProgramType.ProgramTypeConfiguration().ProgramSetConfigurationID() = importedRuleScopeInProgramType.ProgramSetConfigurationID()
+                            and ruleScopeInProgramType.ProgramTypeConfiguration().ProgramTypeConfigurationID() = importedRuleScopeInProgramType.ProgramTypeConfigurationID();
+    }
+    else if( ruleScope = RuleConstant::RuleScope_ProgramPhase() )
+    {
+      isRuleScopeCreated := not isnull( ruleScopeInProgramPhase )
+                            and ruleScopeInProgramPhase.ProgramPhaseConfiguration().ProgramDefinitionConfigurationID() = importedRuleScopeInProgramPhase.ProgramDefinitionConfigurationID()
+                            and ruleScopeInProgramPhase.ProgramPhaseConfiguration().ProgramSetConfigurationID() = importedRuleScopeInProgramPhase.ProgramSetConfigurationID()
+                            and ruleScopeInProgramPhase.ProgramPhaseConfiguration().ProgramTypeConfigurationID() = importedRuleScopeInProgramPhase.ProgramTypeConfigurationID()
+                            and ruleScopeInProgramPhase.ProgramPhaseConfiguration().ProgramPhaseConfigurationID() = importedRuleScopeInProgramPhase.ProgramPhaseConfigurationID();
+    }
+             
+    this.Run().AssertTrue( isRuleCreated 
+                           and isRuleRangeCreated
+                           and isRuleScopeCreated );
+  *]
+}

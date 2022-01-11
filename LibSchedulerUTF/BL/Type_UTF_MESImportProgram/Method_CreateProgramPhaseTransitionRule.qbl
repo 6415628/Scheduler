@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateProgramPhaseTransitionRule (Schedule schedule)
+{
+  Description: 'Create program phase transition rule test data'
+  TextBody:
+  [*
+    // Set rule attributes
+    rulesubtype := RuleConstant::RuleSubType_MaxCombinedLength();
+    characteristic := RuleConstant::Characteristic_NumberOfTasks();
+    
+    ruleid := 0;
+    traverse( schedule, ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration.ProgramPhaseConfiguration, programphaseconfiguration, 
+              programphaseconfiguration.ProgramPhaseConfigurationID() = 'HEAD' 
+              or programphaseconfiguration.ProgramPhaseConfigurationID() = 'BODY' )
+    { 
+      // Create rule
+      rule := Rule::Create( schedule, ruleid );
+      rule.Name( programphaseconfiguration.ProgramPhaseConfigurationID() );
+      
+      // Set rule type/ rule subtype
+      subtype := select( schedule, RuleType.RuleSubType, rst, rst.Name() = rulesubtype );
+      rule.RuleType( relset, subtype.RuleType() );
+      rule.RuleSubType( relset, subtype );
+      
+      // Create characteristic main 
+      characteristicMain := select( schedule, Characteristic, char, char.ID() = characteristic );
+      rule.CharacteristicMain( relset, characteristicMain );
+      
+      // Create normal attribute in rule and set as transition rules
+      rule.IsEnabled( true );
+      rule.RuleScopeSelected( RuleConstant::RuleScope_ProgramPhase() );
+      rule.IsProgramPhaseTransitionRule( true );
+      
+      // Create rule scope in program phase
+      UTFMockObjectFactory::CreateRuleScopeInProgramPhase( rule, programphaseconfiguration );  
+    
+      // Set the Default Rule threshold value to 5, HEAD/BODY => 5 Max number of task, 5 Max cumulative length, 5 Max value, 5 Max Absolute Difference Jump Upwards
+      rule.RuleValue( 5 ); 
+    
+      ruleid ++;
+    }
+  *]
+}

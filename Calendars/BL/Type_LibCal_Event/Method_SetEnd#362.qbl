@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetEnd (Date endDate_i, Duration endTimeOfDay_i) as LibCal_Event
+{
+  Description: 'Set the end of the event.'
+  TextBody:
+  [*
+    // Ignore seconds.
+    endTimeOfDay := endTimeOfDay_i.Round( Duration::Minutes( 1 ) );
+    
+    // Use a FeedbackObject the collect the validation feedback.
+    feedback := LibCal_Validate::FeedbackObject();
+    
+    moreInfo := this.GetEventInfo() + ", EndTimeOfDay = " + endTimeOfDay.Format( Translations::DurationFormat() );
+    LibCal_Validate::RegisterError( LibCal_Validate::Event_EndTimeOfDay( endTimeOfDay ), moreInfo );
+    
+    // Process the feedback that has been registered by the validation (if any).
+    LibCal_Util::ProcessFeedbackObject( feedback );
+    
+    // The below is only executed when no validation errors were encountered.
+    if( not isnull( this.LeadingParticipation() ) )
+    {
+      // Set the End by setting the Duration.
+      // Timezone and Daylight Saving should NOT be taken into account here.
+      timezone  := TimeZone::UTCTimeZone();
+      startTime := this.LeadingParticipation().StartDate().Add( timezone, this.StartTimeOfDay() );
+      endTime   := endDate_i.Add( timezone, endTimeOfDay_i );
+      duration  := endTime - startTime;
+      
+      this.SetDuration( duration );
+    }
+    
+    // Make the API fluent.
+    return this;
+  *]
+}

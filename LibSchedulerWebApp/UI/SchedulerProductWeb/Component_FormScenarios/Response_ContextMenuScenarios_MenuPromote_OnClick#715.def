@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: ContextMenuScenarios/MenuPromote
+Response OnClick (Scenario promotedScenario) id:Response_ContextMenuScenarios_MenuPromote_OnClick_715
+{
+  #keys: '[145930.3.101316103]'
+  CanBindMultiple: false
+  DefinitionID => /ContextMenuScenarios/Responsedef_ContextMenuScenarios_MenuPromote_WebMenu_OnClick_473
+  GroupServerCalls: true
+  Initiator: 'MenuPromote'
+  Precondition:
+  [*
+    return promotedScenario.CanPromote();
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      demotedScenario := select( LibSM_ScenarioManager, ScenarioNode.astype( Scenario ), scenario,
+                                 scenario.IsLeadingScenario() );
+      
+      value := WebMessageBox::Question( Translations::Scenario_PromoteMessage( promotedScenario.Name() ) , 
+                                        "Yes|No", 
+                                        Translations::Scenario_PromoteTItle() ) = 0;
+      
+      if( value )
+      {
+        Scenario::PromoteLeadingScenario( demotedScenario, promotedScenario );
+      }
+    *]
+  }
+}

@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCreateFirmPlannedOrderFromZeroOpenQuantity (Schedule schedule)
+{
+  Description: 'Test the creation of firm planned orders from MPS planned orders from their zeroed open quantity.'
+  TextBody:
+  [*
+    testInstance := this.GetTestInstance( this.Variant() );
+    
+    Transaction::Transaction().Propagate( relation( MPSPlannedOrder, Routing ) ); // Need this relation propagated to create firm planned orders
+    Transaction::Transaction().Propagate( attribute( MPSPlannedOrder, QuantityOpen ) ); // Need updated open quantity to create firm planned orders
+    
+    newOpenQuantity := 3.5;
+    
+    traverse( schedule, MPSPlan.MPSPlannedOrder, mpsPlannedOrder, mpsPlannedOrder.CanCreateFirmPlannedOrder() )
+    {
+      // Create a single firm planned order for each MPSPlannedOrder first
+      mpsPlannedOrder.CreateFirmPlannedOrder();
+      // Then decrease its quantity
+      mpsPlannedOrder.Quantity( mpsPlannedOrder.Quantity() - newOpenQuantity );
+    }
+    
+    // Partial propagate this attribute (which propagates MPSPlannedOrder.WorkOrder relation) for updated open quantity calculation
+    Transaction::Transaction().Propagate( attribute( MPSPlannedOrder, QuantityOpen ) );
+    
+    // Get newly created work orders
+    newWorkOrders := selectset( schedule, MPSPlan.MPSPlannedOrder.WorkOrder, workOrder, true );
+    
+    // Now try to create new firm planned orders based on the open quantity
+    traverse( schedule, MPSPlan.MPSPlannedOrder, mpsPlannedOrder, mpsPlannedOrder.CanCreateFirmPlannedOrder() )
+    {
+      mpsPlannedOrder.CreateFirmPlannedOrder();
+    }
+    
+    // Need this relation propagated to find newly created firm planned orders
+    Transaction::Transaction().Propagate( relation( MPSPlannedOrder, WorkOrder ) );
+    
+    // Get all newly created work orders (if any, expected none)
+    postNewWorkOrders := selectset( schedule, MPSPlan.MPSPlannedOrder.WorkOrder, workOrder, true );
+    
+    // Expected NO new work orders created
+    hasNoNewWorkOrdersCreatedFromZeroOpenQuantity := newWorkOrders.Difference( postNewWorkOrders ).Size() = 0;
+    
+    // Don't need to check firm planned order creation if no mps planned orders were synchronized
+    this.Run().AssertTrue( not testInstance.IsSyncMPSPlannedOrder() or hasNoNewWorkOrdersCreatedFromZeroOpenQuantity,
+                           UTFUtility::GenerateFailedMessage( 'Non-creation of additional firm planned order from zero open quantity failed', '' ) );
+  *]
+}

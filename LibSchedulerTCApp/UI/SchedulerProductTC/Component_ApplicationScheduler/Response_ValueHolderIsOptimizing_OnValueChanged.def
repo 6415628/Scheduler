@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: ValueHolderIsOptimizing
+Response OnValueChanged () id:Response_ApplicationScheduler_ValueHolderIsOptimizing_OnValueChanged
+{
+  #keys: '[137186.0.151875404]'
+  Body:
+  [*
+    //Change the optimization button if the optimizer is runn
+    // guard added when the selected dataset is deleted, hits null error when the selected scenario is selected permanently
+    if( guard( Schedule.Optimizer().IsOptimizing(), false ) ) 
+    {
+      ImageOptimizerRunning.Visible( true );
+      formOptimizerDashboard := Application.Frame().FindChildObject( 'FormOptimizerDashboard' ).astype( FormOptimizerDashboard );
+      if( not isnull( formOptimizerDashboard ) )
+      {
+        formOptimizerDashboard.StringSelectionOptimizer().Enabled( false );
+        formOptimizerDashboard.SelectionOptimizerSetting().Enabled( false );
+        formOptimizerDashboard.SelectionOptimizerStrategy().Enabled( false );
+        formOptimizerDashboard.ButtonStartOptimizer().SetProperty( 'Image', "GEAR_STOP" );
+        formOptimizerDashboard.ButtonStartOptimizer().SetProperty( 'Tooltip', 'Stop the optimizer' );
+      }
+    }
+    else
+    {
+      ImageOptimizerRunning.Visible( false );
+      formOptimizerDashboard := Application.Frame().FindChildObject( 'FormOptimizerDashboard' ).astype( FormOptimizerDashboard );
+      if( not isnull( formOptimizerDashboard ) )
+      {
+        formOptimizerDashboard.StringSelectionOptimizer().Enabled( true );
+        formOptimizerDashboard.SelectionOptimizerSetting().Enabled( true );
+        formOptimizerDashboard.SelectionOptimizerStrategy().Enabled( true );
+        formOptimizerDashboard.ButtonStartOptimizer().SetProperty( 'Image', "GEAR_RUN" );
+        formOptimizerDashboard.ButtonStartOptimizer().SetProperty( 'Tooltip', 'Start the optimizer' );
+      }
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_ValueHolder_OnValueChanged'
+}

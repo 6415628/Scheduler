@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeImportedCalendarRuleGroup
+{
+  Description: 'Synchronize imported calendar rule groups and translate them to calendar KT instances.'
+  TextBody:
+  [*
+    kb := KBID::Create( Constants::GetCalendarsKnowledgeBaseID() );
+    calendar := QuillCalendar::Calendar( kb)
+    
+    allRuleGroupInstances := selectset( calendar, RuleGroups, rule, true );
+    updatedRuleGroupInstances := construct( structured_QuillCalendarRuleGroup );
+    
+    traverse( this, Schedule.ImportedCalendarRuleGroup, importedCalendarRuleGroup )
+    {
+      calendarRuleGroup := select( calendar, RuleGroups, ruleGroup, ruleGroup.Name() = importedCalendarRuleGroup.Name() );
+      
+      if( isnull( calendarRuleGroup ) )
+      {
+        calendarRuleGroup := calendar.RuleGroups( relnew, Name := importedCalendarRuleGroup.Name() );
+      }
+      
+      if( not isnull( calendarRuleGroup ) )
+      {
+        calendarRuleGroup.Description( importedCalendarRuleGroup.Description() );
+      }
+      
+      updatedRuleGroupInstances.Add( calendarRuleGroup );
+    }
+    
+    //Delete old instances
+    oldRuleInstances := allRuleGroupInstances.Difference( updatedRuleGroupInstances );
+    
+    traverse( oldRuleInstances, Elements, calendarRuleGroup )
+    {
+      calendarRuleGroup.Delete();
+    }
+    
+    calendar.Apply();
+  *]
+}

@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Test005_Preprocess (Schedule schedule)
+{
+  TextBody:
+  [*
+    super.Test005_Preprocess( schedule );
+    
+    value := guard( schedule.Optimization().OptimizerSequencing().UserSetting().TimeLimit(), Duration::Minutes( 5 ) );
+    
+    schedule.Optimization().OptimizerSequencing().ActiveSettings().astype( SettingsSequencing ).Mode( SettingsSequencing::ModeMRSOnly() );
+    
+    this.Run().AssertEqual( SettingsSequencing::ModeMRSOnly(),
+                            schedule.Optimization().OptimizerSequencing().ActiveSettings().astype( SettingsSequencing ).Mode(),
+                            "For this MRS test, the Sequencing optimizer must be set to MRS mode, but it is not." );
+    
+    this.OriginalMRSTimeLimit( value );
+  *]
+}

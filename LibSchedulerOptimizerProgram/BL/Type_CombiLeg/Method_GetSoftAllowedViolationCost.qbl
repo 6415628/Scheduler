@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetSoftAllowedViolationCost (Operation_SC op) declarative remote as Real
+{
+  TextBody:
+  [*
+    // zyi1 Jul-22-2021 (created)
+    value := 0.0;
+    
+    candidaterules := selectset( this, CombiLegOnCombiPhase.PPCOnResource.RuleOnPPCOnResource.Rule, rule, true );
+    
+    //add shutdown rules   
+    shutdownrules := selectset( this, Leg.RuleInLeg.Rule, rule, true );  
+    candidaterules := candidaterules.Union( shutdownrules );
+                            
+    traverse( candidaterules,
+              Elements,
+              rule,
+              not rule.IsHardConstraintForOptimizer()
+              and not rule.RuleSubType().IsCumulativeValueNeeded()
+              and not rule.RuleSubType().IsCheckOnPreviousOperation() )
+    {
+      ruledeviation := rule.RuleSubType().GetDeviation( rule, null( Operation_SC), op );
+      if( ruledeviation > 0.0 )
+      {
+        value := value + rule.PenaltyParameterSlope_a() * pow( ( ruledeviation + rule.PenaltyParameterOffset_c() ), rule.PenaltyParameterPower_b() );
+      }
+    }
+    
+    return value;
+  *]
+}

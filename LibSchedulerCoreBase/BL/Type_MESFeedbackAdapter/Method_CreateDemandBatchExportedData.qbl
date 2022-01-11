@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateDemandBatchExportedData
+{
+  Description: 'create exported data for demand batches'
+  TextBody:
+  [*
+    exportedschedule := this.FeedbackManager().GetSchedule();
+    
+    traverse( this, Schedule.DemandBatch, demandbatch )
+    {
+      exporteddemandbatch := this.GetExportedDemandBatch( exportedschedule, demandbatch.BatchID() );
+      exporteddemandbatch.Update( demandbatch );
+      
+      traverse( demandbatch, DemandInBatch, demandinbatch )
+      {
+        exporteddemandinbatch := exporteddemandbatch.GetExportedDemandBatchContent( demandinbatch );
+        exporteddemandinbatch.Update( demandinbatch );
+      }
+    }
+  *]
+}

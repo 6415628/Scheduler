@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestDeleteBatch (Schedule schedule)
+{
+  Description: 'Test delete batch.'
+  TextBody:
+  [*
+    // Verify that Batch 1 exists
+    batchexist := exists( schedule, Batch, batch, batch.BatchID() = "Batch 1" );
+    this.Run().AssertTrue( batchexist, "Failed asserting batch exist before delete" );
+    
+    // Delete Batch 1
+    batch_1 := selectset( schedule, Batch, b, b.BatchID() = "Batch 1" );
+    Batch::Delete( batch_1 );
+    
+    // Verify that Batch 1 is deleted
+    isBatchDeleted := not exists( schedule, Batch, batch, batch.BatchID() = "Batch 1" );
+    this.Run().AssertTrue( isBatchDeleted, "Failed to delete Batch 1" );
+  *]
+}

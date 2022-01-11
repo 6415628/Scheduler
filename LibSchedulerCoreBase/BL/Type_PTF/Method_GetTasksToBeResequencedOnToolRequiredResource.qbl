@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetTasksToBeResequencedOnToolRequiredResource (Number nroftask, output Resource_SC firsttoolresource) as owning Task_SCs
+{
+  Description: 'Get task(s) to be resequenced on tool required resource'
+  TextBody:
+  [*
+    // janer Jan-22-2015 (created)
+    // Get the first resource of tool required resource group
+    firsttoolresource := this.GetFirstToolRequiredResource();
+    selectedtasks := construct( Task_SCs );
+    
+    if( not isnull( firsttoolresource ) )
+    {
+      // Get middle task position
+      fromtaskseq := ceil( ( firsttoolresource.Task_SC( relsize ) - nroftask ) / 2 ) - 1;
+    
+      totaskseq := fromtaskseq + nroftask;
+    
+      selectedtasks := selectset( firsttoolresource, Task_SC, task,
+                                  true,
+                                  task.SequenceNr() >= fromtaskseq
+                                  and task.SequenceNr() < totaskseq )
+    }
+    
+    return &selectedtasks;
+  *]
+}

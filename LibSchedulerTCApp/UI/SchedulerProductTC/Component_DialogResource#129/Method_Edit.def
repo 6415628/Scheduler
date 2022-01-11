@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method Edit (internal[GUIComponent] parent_i, Resource_SC resource_i) id:Method_DialogResource_Edit
+{
+  #keys: '[129856.0.30575782]'
+  Body:
+  [*
+    // James Kwapien 20160829 #7632 Edit Resource Dialog
+    // Show instance specific title for Edit
+    this.Title( Translations::SC_DialogResource_EditTitle() );
+    
+    // Disable SelectionResourceGroup - Jian Giang 2017-07-20
+    SelectionResourceGroup.Enabled( false );
+    
+    owner := resource_i.ResourceGroup_SC();    
+    
+    // Disable MaximumBatchSize Editor if SingleResourceBase
+    if( not owner.HasBatches() )
+    {
+      EditorMaxBatchSize.Enabled( false );
+    }
+    
+    data := shadow( resource_i );                                        
+    Dialog.Data( &data );
+    
+    nextLeadTimeStrategy := maxselect( resource_i, LeadTimeStrategy_SC, lts, 
+                                       lts.MinDistance() > Duration::Zero(), 
+                                       lts.MinDistance() );
+                                       
+    // Set DataHolderStrategyAfterToolSimulation to prevent extra creation of lead time strategy                                   
+    data_NextLeadTimeStrategy := shadow( nextLeadTimeStrategy );
+    DataHolderStrategyAfterToolSimulation.Data( data_NextLeadTimeStrategy );
+    
+    // Disable read only attribute ResourceID in editor
+    EditorResourceID.Enabled( false );
+    DialogResource.SetMaxBatchSizeTooltip();
+    
+    // Set image of resource
+    this.SetImage();
+       
+    this.InitializeNonBatchEdit();
+    
+    TabPageContinuous.Enabled( owner.IsContinuous() );
+    
+    if( Dialog.DoModal( parent_i ) > 0 )
+    {
+      Dialog.Data().Image( LabelImageString.Text() );
+      Dialog.Data().Commit();
+    }
+  *]
+}

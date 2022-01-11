@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateSelectorSpanAndSuboptimzierPOARun (OptimizerSequencing optimizer, LibOpt_ScopeElements scope) as LibOpt_Run
+{
+  Description:
+  [*
+    creates a run of the given optimizer that only contains two components: a SelectorSpan and after it a SuboptimizerSequencingPOA.
+    The run will have the given input scope and scope debugging enabled.
+    The suboptimizer will be created with default settings and a copy of the schedule's optimizer strategy.
+  *]
+  TextBody:
+  [*
+    // mbr23 Jan-28-2020 (created)
+    
+    run := optimizer.CreateRun( scope );
+    run.DebugScope( true );
+    
+    selector := SelectorSpan::Create( run, "selector span", null( SettingsSequencingNeighborhoodCreatorForSpanCreator, owning ) );
+    /*
+    settings := construct( SettingsSequencingPOAForSuboptimizer );
+    strategy := construct( StrategyForSuboptimizerSequencingPOA );
+    strategy.CopyFrom( optimizer.Optimization().astype( Optimization ).Schedule().OptimizerStrategyInSchedule() );
+    */
+    runcontext_setupaddress := RunContextSetupAddress::CreateAndInitialize( run, "setup addresses" );
+    suboptimizer := SuboptimizerSequencingPOA::Create( run, "sequencing suboptimizer", runcontext_setupaddress, null( SettingsSequencingPOAForSuboptimizer, owning ), null( StrategyForSuboptimizerSequencingPOA, owning ) );
+    /*/settings :=*/ suboptimizer.Settings( relnew );
+    
+    fromstrategy := optimizer.Optimization().astype( Optimization ).Schedule().OptimizerStrategyInSchedule();
+    strategy := suboptimizer.Strategy( relnew, ID := fromstrategy.ID() );
+    strategy.Update( fromstrategy );
+    selector.To( suboptimizer );
+    return run;
+  *]
+}

@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCleanUpFeedbackShutdownRuleCheckOnRuleScope_Setup (Schedule schedule)
+{
+  Description: 'Test clean up feedback shutdown rule scope in rule - setup'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    measure := ''
+    threshold := 0.0;
+    isfeedbackstarted := false;
+    isTask2Valid := false;
+    
+    this.GetTestVariantForFeedbackShutdown( isvariantfound,
+                                            measure,
+                                            threshold,
+                                            isfeedbackstarted,
+                                            isTask2Valid );
+    
+    // Only setup when variant found
+    if( isvariantfound )
+    {
+      schedule.IntegrationConfiguration().ShopFloorHistory( Duration::Zero() );
+      
+      // Create feedback shutdown data
+      threshold := 1; // operation1 and operation2 would not be in shutdown scope
+      this.CreateFeedbackShutdownData( schedule, threshold, measure );
+      
+      // Transaction propagate needed for newly created operations/tasks before create feedbacks
+      Transaction::Transaction().Propagate()
+      
+      // Create feedback for operations
+      this.CreateFeedbackForOperations( schedule, false );
+    
+      // Transaction propagate for attributes CanBeDeleted and Cumulative attributes
+      Transaction::Transaction().Propagate( attribute( FeedbackTask, CanBeDeleted ) );
+      Transaction::Transaction().Propagate( attribute( FeedbackTaskInSchedule, AfterShutdownCumulativeCharacteristic ) );
+      Transaction::Transaction().Propagate( attribute( FeedbackTaskInSchedule, AfterShutdownCumulativeRealValues ) );
+    
+      // Clean up feedback for shopfloor history
+      schedule.FeedbackManager().CleanUpFeedbackTaskAndBatchesInSchedule();
+    }
+    // Gantt chart
+    // | Feedback Shutdown Task ( CleanUp ) | Feedback Task0 ( CleanUp ) | Feedback Task1 ( Remains ) | Task2 |
+  *]
+}

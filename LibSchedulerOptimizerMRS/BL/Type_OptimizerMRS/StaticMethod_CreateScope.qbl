@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateScope (ResourceGroup_SCs resourcegroups, Operation_SCs operations) as owning LibOpt_ScopeElements
+{
+  Description: 'creates and returns a scope consisting of the given objects. Does not create ScopeElementFocusResourceGroup objects.'
+  TextBody:
+  [*
+    // mbr23 Aug-28-2019 (created)
+    
+    scope := construct( structured[LibOpt_ScopeElement] );
+    
+    traverse( resourcegroups, Elements, resourcegroup )
+    {
+      element := resourcegroup.ScopeElementResourceGroup();
+      if( isnull( element ) )
+      {
+        element := resourcegroup.ScopeElementResourceGroup( relnew );
+      }
+      scope.Add( element );
+    }
+    
+    traverse( operations, Elements, operation )
+    {
+      element := operation.GetOrCreateScopeElement();
+      scope.Add( element );
+    }
+    
+    return & scope;
+  *]
+}

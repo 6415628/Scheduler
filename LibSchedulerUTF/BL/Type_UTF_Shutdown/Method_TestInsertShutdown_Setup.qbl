@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestInsertShutdown_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Create resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Single Resource' );
+    
+    // Create shutdown type
+    shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, 'Shutdown Type' );
+    UTFMockObjectFactory::CreateShutdownTypeInResource( shutdownType, resource );
+    
+    // Create normal task and plan it
+    order := UTFMockObjectFactory::CreateOrder( schedule, 'Order ID' );
+    planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'Plan Unit ID', 1.0 );
+    operation := UTFMockObjectFactory::CreateOperation( planUnit );
+    Transaction::Transaction().Propagate( relation( Operation_SC, AllowedOperationOnResource ) );
+    task := resource.PlanLast( operation );
+    
+    // Create and schedule shutdown and shutdown task
+    this.InsertShutdown( resource, task, shutdownType );
+  *]
+}

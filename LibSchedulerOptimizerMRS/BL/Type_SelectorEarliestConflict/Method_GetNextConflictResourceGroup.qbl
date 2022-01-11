@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetNextConflictResourceGroup (const LibOpt_Scope scope) as ScopeElementResourceGroup
+{
+  Description:
+  [*
+    Returns the resource group in the given scope that has the least often been executed on for constraint solving (as determined by the run context). When tied, prefers the resource group with the lowest index number.
+    If possible, always prefers a resource group with an index number below the resource group with the lowest index nuber that has already been executed on for constraint solving.
+    Has non-deterministic elements.
+  *]
+  TextBody:
+  [*
+    // mbr23 Sep-2-2019 (created), logic copied form legacy optimizer.
+    
+    // find the resource group to keep:
+    rgs_in_context := selectset( this.RunContextSolvedConflicts(), ResourceGroupInRunContextSolvedConflicts, rg, scope.Contains( rg.ResourceGroup_SC().ScopeElementResourceGroup() ) );
+    rg_count := rgs_in_context.Size();
+    debuginfo( this.DefinitionName(), 'SelectNextResourceScope found', rg_count, 'RGs' );
+    
+    earliestconflictsolve := minselect( rgs_in_context, Elements, rg, rg.ConflictSolved(), rg.ResourceGroup_SC().Index() )
+    debuginfo( this.DefinitionName(), 'SelectNextResourceScope selected earliest conflict RG:', not isnull( earliestconflictsolve ) );
+    result := maxselect( rgs_in_context,
+                         Elements,
+                         rg,
+                         rg.ResourceGroup_SC().Index() < earliestconflictsolve.ResourceGroup_SC().Index(),
+                         //1. nr of times POA tried to improve rg (lowest first)
+                         - rg.MRSNumberOfConflictSolve(),
+                         rg.ResourceGroup_SC().Index(),
+                         Real::Random() );
+    debuginfo( this.DefinitionName(), 'SelectNextResourceScope selected ', not isnull( result ) );
+    if( isnull( result ) )    
+    {                      
+       result := minselect( rgs_in_context,
+                            Elements,
+                            rg,
+                            true,
+                             //1. nr of times POA tried to improve rg (lowest first)
+                            rg.MRSNumberOfConflictSolve(),
+                            rg.ResourceGroup_SC().Index(),
+                            Real::Random() );
+    }
+    debuginfo( this.DefinitionName(), 'SelectNextResourceScope selected ', not isnull( result ) );
+    
+    return result.ResourceGroup_SC().ScopeElementResourceGroup();
+    
+    // Comment, mbr23, 2019-09-10:
+    // The logic of the code is pre-2016, the intuition of the selection of the resource group is not documented.
+    // This is an attempt to reverse-engineer the intuition of the choice:
+    // Example: we have 5 resource groups indexed 1 thru 5.
+    // Our MRS iteration selects RG 4 as focus resource group. The first POA executes optimizing RG4.
+    // In the next subiteration, this selector chooses RG 3 to solve conflicts on. (first quantor, maxselect)
+    // In the next subiteration, this selector chooses RG 2 to solve conflicts on. (first quantor, maxselect)
+    // In the next subiteration, this selector chooses RG 1 to solve conflicts on. (first quantor, maxselect)
+    // In the next subiteration, this selector chooses RG 5 to solve conflicts on. (second quantor, minselect)
+    // now, all RGs have MRSANumberOfConflictSolve=1 and ConflictSolved=true.
+    // In the next subiteration, this selector chooses RG 1 to solve conflicts on. (second quantor, minselect)
+    // In the next subiteration, this selector chooses RG 2 to solve conflicts on. (second quantor, minselect)
+    // and so on: 3, 4, 5, ( 1, 2, 3, 4, 5 )* (all by second quantor, maxselect)
+  *]
+}

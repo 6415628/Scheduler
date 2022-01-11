@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateComponents (LibOpt_Run run)
+{
+  TextBody:
+  [*
+    // Enable iterations
+    run.HasIterations( true ) 
+    
+    schedule := this.GetSchedule();
+    strategy := schedule.OptimizerStrategyInSchedule();
+    settings := this.ActiveSettings().astype( SettingsSequencing );
+    
+    // Until the 'combined' mode is implemented, the decision is static to a run, so no switch is needed.
+    // We later want the combined mode to intertwine between MRS iterations and SequencingMeta iterations.
+    // SO then, the MRS iterator and the SequencingMeta iterator should be pulled out and put above the switch unit.
+    // But for now:
+    // based on the optimizer mode, select either of the two optimizers:
+    if( settings.Mode() = SettingsSequencing::ModeMRSOnly() )
+    {
+      // create MRS optimizer components:
+      optimizermrs := select( this, Optimization.Optimizer.astype( OptimizerMRS ), optmrs, true );
+      mrs_startcomponent := optimizermrs.CreateComponents( run, settings.MRSMeta(), settings.MRSIteration(), settings.MRSPOA(), strategy, this.UserSetting().TimeLimit() );
+      run.SetStartComponent( mrs_startcomponent );
+    }
+    else if( settings.Mode() = SettingsSequencing::ModeSequencingMetaOnly() )
+    {
+      // create SequencingMeta optimizer:
+      sequencingmeta_startcomponent := this.CreateComponentsSequencingMeta( run, settings.Meta(), settings.Construction(), settings.NeighborhoodCreator(), settings.DistanceMetric(), settings.POA(), strategy, this.UserSetting().TimeLimit() );
+      run.SetStartComponent( sequencingmeta_startcomponent );
+    }
+    else if( settings.Mode() = SettingsSequencing::ModeCombined() )
+    {
+      error( "The", settings.Mode(), "mode of the sequencing optimizer is not implemented yet." );
+    }
+    
+    // top-level we need the locking resetter:
+    startcomponent := run.Component( relnew,
+                                     OperationsUnlockerOnFinalize,
+                                     Name := "Cleanup locks on finalize" );
+    startcomponent.To( run.StartComponent() );
+    run.SetStartComponent( startcomponent );
+    
+    // if an extension to this module wants to modify the components graph, it may do so:
+    this.CreateComponentsCustom( run );
+  *]
+}

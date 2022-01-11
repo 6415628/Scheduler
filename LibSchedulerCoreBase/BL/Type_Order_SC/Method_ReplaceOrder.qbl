@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReplaceOrder (Order_SC oldorder)
+{
+  Description: "Replaces the old order by setting the relation of the old order's plan units to itself."
+  TextBody:
+  [*
+    //Cleanup existing plan units
+    planUnitsToRemove := selectset( this, PlanUnit_SC, planUnit, true );
+    PlanUnit_SC::Remove( planUnitsToRemove );
+    
+    planunits := selectset( oldorder, PlanUnit_SC, pu, true );
+    
+    traverse( planunits, Elements, pu )
+    {
+      pu.Order_SC( relset, this );
+      pu.IsCreatedInScheduler( this.IsCreatedInScheduler() );
+    }
+    
+    this.SynchronizePlanUnit_SC();
+    
+    oldorder.Delete();
+  *]
+}

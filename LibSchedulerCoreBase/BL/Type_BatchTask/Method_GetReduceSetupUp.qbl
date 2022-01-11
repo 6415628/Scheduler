@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetReduceSetupUp () declarative as Boolean
+{
+  Description: 'Calculate the ReduceSetupUp.'
+  TextBody:
+  [*
+    //VARIABLE
+    originalsetupduration   := Duration::Zero();
+    newsetupduration        := Duration::Zero();
+    previoustask            := this.Previous();
+    previousofprevioustask  := null( Task_SC );
+    nexttask                := this.Next();
+    
+    if( not isnull( previoustask ) )
+    {
+      originalsetupduration := originalsetupduration + this.GetSetupDuration( previoustask, this );
+      newsetupduration := newsetupduration + this.GetSetupDuration( this, previoustask );
+    
+      previousofprevioustask := previoustask.Previous();
+    
+      if( not isnull( previousofprevioustask ) )
+      {
+        originalsetupduration := originalsetupduration + this.GetSetupDuration( previousofprevioustask, previoustask );
+        newsetupduration := newsetupduration + this.GetSetupDuration( previousofprevioustask, this );
+      }
+    }
+    
+    if( not isnull( nexttask ) )
+    {
+      originalsetupduration := originalsetupduration + this.GetSetupDuration( this, nexttask );
+    
+      if( not isnull( previoustask ) )
+      {
+        newsetupduration := newsetupduration + this.GetSetupDuration( previoustask, nexttask );
+      }
+    }
+    
+    return newsetupduration < originalsetupduration and not isnull( previoustask );
+  *]
+}

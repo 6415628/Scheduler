@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (TransientDataSuboptimizerSequencing transientdata, LibOpt_ScopeElementOnRun resource) as ResourceInSuboptimizerSequencing
+{
+  Description:
+  [*
+    If the given transient data does not yet contain a shadow resource group for the given resource's resource group, creates one.
+    Also creates the linked ResourceConnection shadow objects for any linked resource that is already shadowed by the given transient data.
+    Precondition: the given ScopeElementOnRun must represent a resource.
+  *]
+  TextBody:
+  [*
+    // mbr23 Jan-27-2020 (created)
+    assert( resource.ScopeElement().istype( ScopeElementResource ) );
+    resource_sc := resource.ScopeElement().astype( ScopeElementResource ).Resource_SC();
+    rg := ResourceGroupInSuboptimizerSequencing::FindOrCreate( transientdata, resource_sc.ResourceGroup_SC() );
+    object := ResourceInSuboptimizerSequencing::Create( rg, resource );
+    return object;
+  *]
+}

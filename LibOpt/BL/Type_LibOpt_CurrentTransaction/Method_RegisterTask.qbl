@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method RegisterTask (LibOpt_Task task) as Boolean
+{
+  Description:
+  [*
+    This method links a `LibOpt_Task` to a `LibOpt_CurrentTransaction`. This only happens when either the `LibOpt_Task` or the `LibOpt_CurrentTransaction` is new.
+    Registering a task sets the (procedurally sorted) `LibOpt_CurrentTransaction.Task` relation. This has multiple purposes, for example:
+    	The `LibOpt_Task.PreviousTaskOnCurrentTransaction` relation is used in the `HandleQuillError` method to gracefully handle errors for transactions that have multple tasks.
+    	The `LibOpt_CurrentTransaction.LastTask` relation (= `LibOpt_CurrentTransaction.GetTask` method) is used to connect `LibOpt_Snapshots` to the `LibOpt_Task`.
+  *]
+  TextBody:
+  [*
+    // This task is about to be used in a 'dangerous' method. This dangerous method will execute some user code. An error might occur in this method.
+    // To properly handle an error like this, we need to know which tasks are used in the current transaction.
+    // Therefore, we link the task to the transaction if the two weren't linked already.
+    // After the dangerous method is finished, no errors should occur, because we are only executing code from the Optimizer Components library.
+    // Therefore, we can then safely delete the task.CurrentTransaction relation in UnregisterTask. 
+    // We use the 'hastoregistertask' variable in UnregisterTask to check if we can delete the task.CurrentTransaction relation.
+    
+    hastoregistertask := isnull( task.CurrentTransaction() );
+    
+    if( hastoregistertask )
+    {
+      this.Task( relinsert, task );
+    }
+    
+    return hastoregistertask;
+  *]
+}

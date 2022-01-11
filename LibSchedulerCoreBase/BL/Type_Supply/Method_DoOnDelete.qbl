@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoOnDelete
+{
+  Description: 'Method that executes OnDelete for Supply'
+  TextBody:
+  [*
+    // Clean up the SupplyInScope objects that are related to this supply
+    traverse( this, SupplyInScope, supplyinscope )
+    {
+      supplyinscope.Delete();
+    }
+    
+    // It is safe to remove fulfillments on supply delete because each fulfillment only has 1 supply, it is not shared by other supplies, it is not in danger of accidental removal
+    this.RemoveAllFulfillments();
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

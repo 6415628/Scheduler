@@ -1,0 +1,143 @@
+Quintiq file version 2.0
+#parent: #root
+Method IFilter_Determine (shadow[LibGUIFiltering_TermGroup] group, String objecttype) as String id:Method_LibGUIFiltering_PanelFilterBoxHelper_IFilter_Determine
+{
+  #keys: '[128900.0.373900185]'
+  Body:
+  [*
+    filter            := '';
+    attributeregistry := this.IAttributeRegistry_Get();
+    
+    traverse( group, LibGUIFiltering_Term, term )
+    {
+      valuetype    := term.ValueType();
+      attrmodifier := term.AttributeModifier().Tokenize( ';' );
+      tokenfilter  := '';
+      tokenused    := false;
+      singleterm   := false;
+      
+      traverse( attributeregistry, LibGUIFiltering_RegisteredAttribute, registeredattr, not singleterm )
+      {
+        // Token and operand are assigned inside the loop since they may get changed to account for differences in type
+        token    := term.Token();
+        operand  := term.Operand();
+        attr     := registeredattr.Name();
+        path     := registeredattr.Path();
+        attrtype := registeredattr.DataType();
+        modifier := term.Modifier();
+        useterm  := not registeredattr.IsAllAttributes() 
+                and (    term.AttributeModifier() = ''
+                      or attrmodifier.Find( attr ) >= 0 );
+                 
+        if ( not useterm
+         and term.AttributeModifier() <> ''
+         and this.IOptions_Get( LibGUIFiltering_Options::O03_AllowAdditionalAttributes() )
+         and this.IAttribute_Resolve( objecttype, term.AttributeModifier(), path, attr, attrtype ) )
+        {
+          useterm    := true;
+          singleterm := true;
+        }
+                                                                                                                 
+        if ( useterm
+         and this.IAttribute_Resolve( objecttype, attr, path, attr, attrtype ) )
+        {
+          colfilter := attrtype = valuetype;
+    
+          if ( not colfilter )
+          {
+            if ( attrtype  = 'DateTime'
+             and valuetype = 'Date' )
+            {
+              modifier  := '.Date()' + modifier;
+              colfilter := true;
+            }
+            else if ( attrtype  = 'Real'
+                  and valuetype = 'Number' )
+            {
+              colfilter := true;
+            }
+            else if ( attrtype  = 'DateTime'
+                  and valuetype = 'Duration' )
+            {
+              colfilter := true;
+              modifier  := '.TimeOfDay()';
+            }
+            else if ( attrtype = 'String'
+                  and not term.IsRange()
+                  and ( valuetype = 'Number' or valuetype = 'Real' ) )
+            {
+              if ( operand = '~'
+               and this.IOptions_Get( LibGUIFiltering_Options::O02_FilterNumericAsPartial() ) )
+              {
+                colfilter := true;
+                token     := LibGUIFiltering_Helper::AddQuotes( token );
+              }
+              else if ( operand = '=' )
+              {
+                colfilter := true;
+                token     := LibGUIFiltering_Helper::AddQuotes( token );
+              }
+            }
+          }
+    
+          if ( attrtype <> 'String' )
+          {
+            if ( operand = '~' )
+            {
+              operand := '=';
+            }
+          }
+    
+          if ( colfilter )
+          {
+            if ( tokenfilter.Length() > 0 )
+            {
+              tokenfilter := tokenfilter + ' or ';
+            }
+    
+            quillpath := LibGUIFiltering_Helper::CreateQuillPath( path );
+            
+            if ( term.IsRange() )
+            {
+              tokenfilter := tokenfilter + '(#guardstart#object.' + quillpath + modifier + ' >= ' + ifexpr( attrtype = 'String', LibGUIFiltering_Helper::AddQuotes( term.RangeStart() ), term.RangeStart() ) + ' and ' +
+                                            'object.' + quillpath + modifier + ' <= ' + ifexpr( attrtype = 'String', LibGUIFiltering_Helper::AddQuotes( term.RangeEnd()   ), term.RangeEnd()   ) + '#guardend#)';
+            }
+            else
+            {
+              tokenfilter := tokenfilter + '#guardstart#object.' + quillpath + modifier + ' ' + operand + ' ' + ifexpr( attrtype = 'String', LibGUIFiltering_Helper::AddQuotes( token ), token ) + '#guardend#';
+            }
+            
+            if ( modifier <> ''
+              or path.FindString( '.', 0 ) >= 0 )
+            {
+              tokenfilter := tokenfilter.ReplaceAll( '#guardstart#', 'guard( ' ).ReplaceAll( '#guardend#', ', false )' );
+            }
+            else
+            {
+              tokenfilter := tokenfilter.ReplaceAll( '#guardstart#', '' ).ReplaceAll( '#guardend#', '' );
+            }
+          }
+    
+          tokenused := tokenused or colfilter;
+        }
+      }
+    
+      if ( tokenused )
+      {                            
+        term.IsUsed( true );
+      }
+    
+      if ( tokenfilter <> '' )
+      {
+        if ( filter <> '' )
+        {
+          filter := filter + ' and ';
+        }
+    
+        filter := filter + '( ' + tokenfilter + ' )';
+      }
+    }
+    
+    return filter;
+  *]
+}

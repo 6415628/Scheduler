@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Send (LibOpt_Task task, Boolean require_finalized) as stream[JSON]
+{
+  TextBody:
+  [*
+    component := task.Component();
+    
+    reactive_calls := LibOpt_CurrentTransaction::GetSpawnedReactiveCalls();
+    result := task.Send();
+    
+    // Call DoFinalize if no reactive call has been made. 
+    // If there are also no breakpoints or dataset copies on this component, then 'task' is deleted in DoFinalize, without calling any reactive quill. This improves performance. 
+    if( reactive_calls = LibOpt_CurrentTransaction::GetSpawnedReactiveCalls() or task.Run().InOneTransaction() )
+    {
+      // When a breakpoint is set on the finalize position of this component or when a dataset copy is set on any position in this component, 
+      // then a reactive call will be made (if task.Run().InOneTransaction() = false).
+      // This reactive call implies that reactive_calls = LibOpt_CurrentTransaction::GetSpawnedReactiveCalls() will be false for the component upstream. 
+      // The component upstream will therefore not enter this if-block (but instead the else if block will be entered).
+      // That upstream component will therefore wait until the stream of this component has been executed. 
+      result := result->Merge( component.DoFinalize( task ) ); // Note: result->Merge() is not actually a reactive call, so it is fine to use it if task.Run().InOneTransaction() = true.
+    }
+    // If there are reactive calls, call DoFinalize only if it is required, so we use fewer transactions.
+    else if( require_finalized )
+    {
+      result := LibOpt_TaskTransporterReactive::AppendFinalize( task, result );
+    }
+    
+    return result;
+  *]
+}

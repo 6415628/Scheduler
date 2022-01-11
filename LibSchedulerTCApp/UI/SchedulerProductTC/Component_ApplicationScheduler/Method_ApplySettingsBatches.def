@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method ApplySettingsBatches () id:Method_ApplicationScheduler_ApplySettingsBatches
+{
+  #keys: '[127864.0.499903982]'
+  Body:
+  [*
+    // Enable or disable functionality for batches
+    isenabled := guard( Schedule.Functionality().IsEnableOperationBatches(), true );
+    
+    // Hide items on Application
+    menuFormBatches.Visible( isenabled );
+    
+    // Hide entire MenuBatching if both demand batches and batches are disabled
+    MenuBatching.Visible( isenabled or guard( Schedule.Functionality().IsEnableDemandBatches(), true ) );
+    
+    // Hide items on other forms if they're open
+    // FormOperations
+    formoperation := select( Application.Frame(), SubComponents.astype( FormOperations ), formoperation, true );
+    
+    if( not isenabled )
+    {
+      formbatch := select( Application.Frame(), SubComponents.astype( FormBatches ), formabcth, true );
+      
+      if( not isnull( formbatch ) )
+      {
+        formbatch.Close();
+      }
+    }
+    if( not isnull( formoperation ) )
+    {
+      formoperation.ApplySettingsBatches();
+    }
+    // FormGanttChartSchedulingCentre
+    ganttchart := select( Application.Frame(), SubComponents.astype( FormGanttChartSchedulingCentre ), ganttchart, true );
+    
+    if( not isnull( ganttchart ) )
+    {
+      ganttchart.ApplySettingsBatches();
+    }
+    // FormFlowSchedulePlanUnitRouting
+    formflowschedule := select( Application.Frame(), SubComponents.astype( FormFlowSchedulePlanUnitRouting ), formflowschedule, true );
+    
+    if( not isnull( formflowschedule ) )
+    {
+      formflowschedule.ApplySettingsBatches();
+    }
+    // FormWorkOrders
+    formworkorders := select( Application.Frame(), SubComponents.astype( FormWorkOrders ), formworkorders, true );
+    
+    if( not isnull( formworkorders ) )
+    {
+     formworkorders.ApplySettingsBatches();
+    }
+  *]
+}

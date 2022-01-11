@@ -1,0 +1,156 @@
+Quintiq file version 2.0
+#parent: CustomDrawTimeConstraintVisualization_384/CustomDrawDataLayerOperationDependency
+Response OnDrawObject (shadow[CustomDrawEdgeOperationDependency] object) id:Response_CustomDrawTimeConstraintVisualization_384_CustomDrawDataLayerOperationDependency_OnDrawObject
+{
+  #keys: '[142956.3.530777513]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebCustomDrawDataLayer_OnDrawObject'
+  QuillAction
+  {
+    Body:
+    [*
+      // Draw CustomDrawEdgeOperationDependency
+      config := Schedule.CustomDrawConfiguration();
+      
+      if( not isnull( config ) )
+      {
+        // Adjust line based on its orientations
+        topdown := object.ToY() > object.FromY();
+        leftright := object.ToX() > object.FromX();
+        
+        padding := 6;
+        
+        fromY := region.BoundingRect().Top() + padding;
+        toY := region.BoundingRect().Height() - padding;
+        
+        if( topdown )
+        {
+          if( not leftright )
+          {
+            fromY := region.BoundingRect().Top() + padding;
+            toY := region.BoundingRect().Height() - padding;
+          }
+        }
+        else
+        {
+          if( leftright )
+          {
+            fromY := region.BoundingRect().Height() - padding;
+            toY := region.BoundingRect().Top() + padding;
+          }
+        }
+        
+        fromX := region.BoundingRect().Left();
+        toX := region.BoundingRect().Width();
+        
+        // DEFAULT line color
+        lineColor := ColorScheme.TimeConstraintVisualization_Edge();
+        
+        if( object.OperationDependency().istype( TimeConstraint ) )
+        {
+          // Draw circles representing time constraint
+          nodeSize := config.NodeSize();
+          precedence := object.OperationDependency().astype( TimeConstraint ).WorkOrderOperationPrecedence();
+          
+          if( precedence.DependencyType() = Constants::TimeConstraint_DependencyType_StartToStart() )
+          {
+            lineColor := ColorScheme.TimeConstraintVisualization_StartToStart();
+          }
+          else if( precedence.DependencyType() = Constants::TimeConstraint_DependencyType_FinishToFinish() )
+          {
+            lineColor := ColorScheme.TimeConstraintVisualization_FinishToFinish();
+          }
+          else if( precedence.DependencyType() = Constants::TimeConstraint_DependencyType_FinishToStart() )
+          {
+            lineColor := ColorScheme.TimeConstraintVisualization_FinishToStart();
+          }
+          
+          // Draw image representing offset relation at the middle and top of the line
+          imageX := floor( fromX + ( toX - fromX ) / 2 // Center of line
+                           - nodeSize / 2 ); // Center image
+                           
+          imageY := floor( fromY + ( toY - fromY ) / 2 // Center of line
+                           - nodeSize / 2 // Center image
+                           - nodeSize ); // Draw above line
+          image := '';
+          
+          if( precedence.OffsetRelation() = Constants::TimeConstraint_OffsetRelation_Synch() )
+          {
+            image := 'EQUALS';
+          }
+          if( precedence.OffsetRelation() = Constants::TimeConstraint_OffsetRelation_Max() )
+          {
+            image := 'LESSTHANOREQUAL';
+          }
+          if( precedence.OffsetRelation() = Constants::TimeConstraint_OffsetRelation_Min() )
+          {
+            image := 'GREATERTHANOREQUAL';
+          }
+          
+          surface.Image( imageX, imageY, nodeSize, nodeSize, image );
+          
+          // Draw image representing Material Flow
+          if( precedence.HasMaterialFlow() )
+          {
+            image := 'BOX';
+            
+            imageX := floor( fromX + ( toX - fromX ) * 0.75 // Towards end of line
+                             - nodeSize / 2 ); // Center image
+                           
+            imageY := floor( fromY + ( toY - fromY ) * 0.75 // Towards end of line
+                             - nodeSize / 2 // Center image
+                             - nodeSize ); // Draw above line
+          
+            surface.Image( imageX, imageY, nodeSize, nodeSize, image );
+          }
+        }
+        
+        // Initialize drawing parameters
+        // Color line
+        surface.TextColor( lineColor ); 
+        surface.Pen().Color( lineColor )
+                     .Width( 2 );
+        surface.Brush().Color( lineColor );
+        
+        // Draw line
+        line := GraphicalLine::LineTo( fromX, fromY, toX, toY );
+        line.ArrowPos( GraphicalLine::ArrowPosMiddle() );
+        surface.Draw( line );
+        
+        // Webclient doesn't support negative degree rotation
+        // Get rotation angle to rotate text and image to the same angle as the line
+        gradient := ( toY - fromY ) / ( region.BoundingRect().Width() - region.BoundingRect().Left() );
+        degree := atan( -gradient ) * 180 / pi;
+        surface.Font().Name( config.FontName() )
+                      .Size( config.FontSize() )
+                      .Angle( [Number]degree );
+        
+        textformat := TextFormat::Construct( TextFormat::AlignCenter() );
+        
+        // Get line label
+        lineLabel := object.Label();
+        
+        // Rotate the text to 
+        if( object.FromY() = object.ToY() )
+        {
+          surface.TextZoom( region.BoundingRect().Left(), region.BoundingRect().Top() - config.FontSize(),
+                            region.BoundingRect().Width(), config.FontSize() * 2,
+                            lineLabel, textformat );
+        }
+        else
+        {
+          // If targetnode and sourcenode have different Y positions,
+          // it means there is a gradient and we need to rotate the 
+          // text. The hardcoded offsets below are the sweet numbers
+          // that we found that allows the text to have even distance to line
+          // for any angle of rotation
+          textformat := TextFormat::Construct( TextFormat::AlignCentered() );
+          surface.TextZoom( region.BoundingRect().Left(), region.BoundingRect().Top() + ifexpr( gradient > 0, -14, -4 ),
+                            region.BoundingRect().Width(), region.BoundingRect().Height(),
+                            [String]lineLabel, textformat );    
+        }
+      }
+    *]
+    GroupServerCalls: false
+  }
+}

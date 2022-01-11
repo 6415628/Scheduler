@@ -1,0 +1,66 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRuleSubtypeMinMaxValue_Setup (Schedule schedule)
+{
+  Description: 'Test rule subtype min max value - setup'
+  TextBody:
+  [*
+    // Get variant attribute
+    characteristicType := '';
+    isMinimum := false;
+    ruleValue := 0.0;
+    operationAttributeValue := 0.0;
+    hasNoConstraintViolation := false;
+    
+    this.GetTestVariant( characteristicType,
+                         ruleValue,
+                         isMinimum,
+                         operationAttributeValue,
+                         hasNoConstraintViolation );
+    
+    // Create rule
+    rule := Rule::Create( schedule, 1 );
+    
+    // Create rule type - Allowed Value Min Max
+    ruleType := UTFMockObjectFactory::CreateRuleType( schedule,
+                                                      RuleConstant::RuleType_AllowedValueMinMaxCheck() );
+    
+    rule.RuleType( relset, ruleType );
+    
+    // Create rule subtype based on variant
+    ruleSubtypeName := ifexpr( isMinimum, 
+                               RuleConstant::RuleSubType_MinimumValue(),
+                               RuleConstant::RuleSubType_MaximumValue() );
+    
+    ruleSubtype := UTFMockObjectFactory::CreateRuleSubtypeValueMinMaxCheck( ruleType,
+                                                                            ruleSubtypeName,
+                                                                            isMinimum );
+    
+    rule.RuleSubType( relset, ruleSubtype );
+    
+    // Create characteristic main based on variant
+    this.CreateCharacteristicMain( schedule, rule );
+    
+    // Create rule scope in resource
+    rule.RuleScopeSelected( RuleConstant::RuleScope_AllTasksOnResource() );
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource' );
+    UTFMockObjectFactory::CreateRuleScopeInSingleResource( schedule, rule, resource.ResourceID() );
+    
+    // Enable rule
+    rule.IsEnabled( true );
+    
+    // Set rule value based on variant
+    rule.RuleValue( ruleValue );
+    
+    // Create operation
+    order := UTFMockObjectFactory::CreateOrder( schedule, 'Order' );
+    planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'Plan Unit ', 1.0 );
+    operation := UTFMockObjectFactory::CreateOperation( planUnit );
+    operation.OperationID( 'Operation' );
+    resource.PlanLast( operation );
+    
+    // Assign operation attribute value based on variant
+    this.AssignOperationAttributeValueBase( operation );
+    this.AssignOperationAttributeValueLayer( operation );
+  *]
+}

@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcEnd
+{
+  TextBody:
+  [*
+    // jiex Nov-17-2016, only count DischargeDuration while not isparallelwithprevious
+    value := this.Schedule().Time();   
+    
+    if( not isnull( this.LastFeedbackTask() ) )
+    {
+      value := this.LastFeedbackTask().End();
+    }   
+    else
+    {
+      end := this.Schedule().Time();   
+      subtask := this.Last()
+      lastfeedbacktask := this.Resource_SC().LastFeedbackTaskInSchedule();
+      if( not isnull( subtask ) )
+      {
+        value := subtask.End(); 
+        discharge := this.DischargeDuration();
+      
+        if( not isnull( this.Previous() ) )
+        {
+          end := this.Previous().End();
+        }                              
+        else if( not isnull( lastfeedbacktask ) )
+        {
+          end := lastfeedbacktask.End();
+        }
+        value := maxvalue( value,
+                           end + ifexpr( this.IsParallelWithPrevious(), Duration::Zero(), discharge ) );
+      }
+    }
+    this.End( value );
+  *]
+}

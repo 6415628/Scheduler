@@ -1,0 +1,68 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateNVT (LibOpt_Run run) as owning NamedValueTree
+{
+  TextBody:
+  [*
+    nvt := NamedValueTreeIO::Export( run );
+    
+    // Remove specific run information that should be unique
+    nvt_run := nvt.Root().Child( nvt.GetHandle( typeof( LibOpt_Run ).Name() ) );
+    nvt_run.DeleteChildren( nvt.GetHandle( attribute( LibOpt_Run, CreatedOn  ).Name() ) );
+    nvt_run.DeleteChildren( nvt.GetHandle( attribute( LibOpt_Run, Duration   ).Name() ) );
+    nvt_run.DeleteChildren( nvt.GetHandle( attribute( LibOpt_Run, FinishedOn ).Name() ) );
+    nvt_run.DeleteChildren( nvt.GetHandle( attribute( LibOpt_Run, FinishedOnPrecision ).Name() ) );
+    nvt_run.DeleteChildren( nvt.GetHandle( attribute( LibOpt_Run, HasIterations ).Name() ) );
+    nvt_run.DeleteChildren( nvt.GetHandle( attribute( LibOpt_Run, ParallelismNumber ).Name() ) );
+    nvt_run.DeleteChildren( nvt.GetHandle( attribute( LibOpt_Run, ParallelismNumberWithoutWaiting ).Name() ) );
+    nvt_run.DeleteChildren( nvt.GetHandle( attribute( LibOpt_Run, RunNr      ).Name() ) );
+    nvt_run.DeleteChildren( nvt.GetHandle( attribute( LibOpt_Run, StartedOn  ).Name() ) );
+    nvt_run.DeleteChildren( nvt.GetHandle( attribute( LibOpt_Run, StartedOnPrecision ).Name() ) );
+    nvt_run.DeleteChildren( nvt.GetHandle( attribute( LibOpt_Run, Status     ).Name() ) );
+    
+    
+    traverse( run, Component, component )
+    {
+      child := select( nvt_run.Children( nvt.GetHandle( component.DefinitionName() ) ), Elements, child, child.GetValueAsKey() = component.Key() );
+      child.DeleteChildren( nvt.GetHandle( attribute( LibOpt_Component, TotalDuration ).Name() ) );
+      snapshots :=          child.Children( nvt.GetHandle( relation( LibOpt_Component, FirstSnapshot ).Name() ) );
+      snapshots.AddInPlace( child.Children( nvt.GetHandle( relation( LibOpt_Component, LastSnapshot  ).Name() ) ) );
+    
+      traverse( snapshots, Elements, snap )
+      {
+        snap.Delete( true );
+      }
+    }
+    
+    // Remove snapshots
+    nvt_run.DeleteChildren( nvt.GetHandle(  relation( LibOpt_Run, FirstSnapshot ).Name() ) );
+    nvt_run.DeleteChildren( nvt.GetHandle(  relation( LibOpt_Run, LastSnapshot ).Name() ) );
+    traverse( run, Snapshot, snapshot )
+    {
+      nvt_run.DeleteChildren( nvt.GetHandle( snapshot.DefinitionName() ) );
+    }
+    nvt_run.DeleteChildren( nvt.GetHandle( typeof( LibOpt_SnapshotCapacity ).Name() ) );
+    
+    // Remove iteration threads
+    nvt_run.DeleteChildren( nvt.GetHandle( typeof( LibOpt_IterationThread ).Name() ) );
+    
+    // Remove iterations
+    nvt_run.DeleteChildren( nvt.GetHandle( relation( LibOpt_Run, First ).Name() ) );
+    nvt_run.DeleteChildren( nvt.GetHandle( relation( LibOpt_Run, Last ).Name() ) );
+    nvt_run.DeleteChildren( nvt.GetHandle( attribute( LibOpt_Run, TotalNrOfIterations ).Name() ) );
+    
+    // Remove statistics
+    traverse( run, Statistic, statistic )
+    {
+      nvt_run.DeleteChildren( nvt.GetHandle( statistic.DefinitionName() ) );
+    }
+    nvt_run.DeleteChildren( nvt.GetHandle( relation( LibOpt_Run, StatisticTimeTotalRun ).Name() ) );
+    nvt_run.DeleteChildren( nvt.GetHandle( attribute( LibOpt_Run, Severity ).Name() ) );
+    
+    keys := construct( Keys );
+    this.NVT_ReplaceKeys( nvt.Root(), keys );
+    
+    return & nvt;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

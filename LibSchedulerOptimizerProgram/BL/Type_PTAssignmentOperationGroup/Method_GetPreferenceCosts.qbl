@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetPreferenceCosts (ProgramTypeConfiguration programType) as Real
+{
+  Description: 'Get the preference costs related to assigning the operation group to the programtype.'
+  TextBody:
+  [*
+    // jkr8 Sep-3-2021 (created)
+    
+    rules := selectset( programType, 
+                        RuleScopeInProgramType.Rule, 
+                        rule, 
+                        ( rule.RuleSubType().istype( RuleSubTypeValueMinMaxCheck ) 
+                        or rule.RuleSubType().istype( RuleSubTypeValueStringsCheck ) )
+                        and not rule.IsHardConstraintForOptimizer() );
+    
+    totRuleViolation := 0.0;
+    
+    traverse( rules, Elements, rule )
+    {
+      traverse( this, OperationInOptimizerProgram.Operation_SC, operation )
+      {
+        operationCharacteristic := select( operation, OperationCharacteristic, oc, oc.Characteristic().ID() = rule.CharacteristicMain().ID() );
+        totRuleViolation := totRuleViolation + rule.RuleSubType().GetPenaltyForPreferenceRuleViolation( rule, null( Operation_SC ), operation, operationCharacteristic.GetRuleDataObject() );
+      }
+    }
+    
+    if( this.NrOperationsInGroup() > 0 )
+    {
+      totRuleViolation := totRuleViolation / this.NrOperationsInGroup();
+    }
+    
+    return totRuleViolation;
+  *]
+}

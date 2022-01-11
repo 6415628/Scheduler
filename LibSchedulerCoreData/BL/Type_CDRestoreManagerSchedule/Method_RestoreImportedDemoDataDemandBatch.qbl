@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedDemoDataDemandBatch (CDIntegration cdintegration)
+{
+  Description: 'Restore imported demo data demand batch core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedDemoDataDemandBatch
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedDemoDataDemandBatch ), cddddb )
+    {
+      importedDemoDataDemandBatch := schedule.ImportedDemandBatch( relnew, 
+                                                                   ImportedDemoDataDemandBatch,
+                                                                   DemandBatchID := cddddb.DemandBatchID()
+                                                                  );
+      CopyCorresponding::CopyFrom( cddddb ).CopyTo( importedDemoDataDemandBatch );
+      
+      // Restore ImportedDemoDataDemandBatchContent
+      this.RestoreImportedDemoDataDemandBatchContent( cdintegration, importedDemoDataDemandBatch );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

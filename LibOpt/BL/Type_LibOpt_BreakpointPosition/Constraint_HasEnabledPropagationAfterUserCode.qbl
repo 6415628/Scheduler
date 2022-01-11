@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Constraint HasEnabledPropagationAfterUserCode
+{
+  #keys: '2[141860.2.1019584517][141860.2.1019584518]'
+  ConstraintCondition:
+  [*
+    run := this.Component().Run();
+    
+    value := isnull( this.DatasetCopyConditional() )
+                   or this.Name() <> LibOpt_Component::ComponentPosition_Error() 
+                   or ifexpr( LibOpt_RunStatus::IsRunning( run ),
+                                    run.HasToPropagateAfterUserCode(),
+                                    run.HasToPropagateAfterUserCodeOnOptimizer()
+                                    ); 
+    
+    return value;
+  *]
+  ConstraintKind: 'Soft'
+  ConstraintText:
+  [*
+    @ifexpr( LibOpt_RunStatus::IsRunning( this.Component().Run() ),
+             Translations::LibOpt_BreakpointPosition_HasEnabledPropagationAfterUserCodeRun( this.Component().Run(), this.Component() ),
+             Translations::LibOpt_BreakpointPosition_HasEnabledPropagationAfterUserCodeOptimizer( this.Component().Run(), this.Component() )
+             );@
+  *]
+  Description:
+  [*
+    Used in the UI to set the 'Debugging propagation errors is disabled' image icon in the 'Component Positions' form.
+    The constraint text is used to explain to the AE that enabling the 'Debugging propagation errors' toggle in the 'Runs' and 'Optimizers' forms will help when debugging propagation errors.
+        
+    An icon will be shown (and the constraint will trigger) when:
+    1: There is a dataset copy on this component position 
+    2: This component position is the 'Handle error' component position
+    and either 
+    3a: The optimizer run is ongoing and `LibOpt_Run.HasToPropagateAfterUserCode` is set to `false` on the related `LibOpt_Run` object.
+    3b: The optimizer run has finished and `LibOpt_Optimizer.HasToPropagateAfterUserCode` is set to `false` on the related `LibOpt_Optimizer` object.
+  *]
+  Priority: 9
+}

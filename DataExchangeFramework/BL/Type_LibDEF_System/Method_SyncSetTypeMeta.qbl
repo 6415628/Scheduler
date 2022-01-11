@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method SyncSetTypeMeta (NamedValueTree nvt_i, NamedValue body_i, LibDEF_ChannelMeta channel_i, 
+  LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Synchronize SetTypeMeta from NVT.'
+  TextBody:
+  [*
+    // Jacky CHAN May-16-2016 (created)
+    traverse( body_i.Children(), Elements, setTypeMeta,
+              setTypeMeta.Name() = typeof( LibDEF_SetTypeMeta ).Name() )
+    {
+      syncSTM := NamedValueTreeIO::ImportObject( nvt_i, setTypeMeta, typeof( LibDEF_SetTypeMeta ) ).astype( LibDEF_SetTypeMeta );
+    
+      // find if already exists
+      matchedSTM := LibDEF_SetTypeMeta::FindSetTypeMeta( this.DataBroker(), this.GUID(),
+                                                         syncSTM.ChannelName(), syncSTM.Name() );
+    
+      // check the GUID
+      if( not isnull( matchedSTM ) and
+          matchedSTM.GUID() <> syncSTM.GUID() )
+      {
+        matchedSTM.Delete();
+        matchedSTM := null( LibDEF_SetTypeMeta );
+      }
+    
+      if( isnull( matchedSTM ) )
+      {
+        channel := ifexpr( not isnull( channel_i ), channel_i,
+                                                    LibDEF_ChannelMeta::FindChannelMeta( this.DataBroker(), this.GUID(), syncSTM.ChannelName() ) );
+        if( isnull( channel ) )
+        {
+          LibDEF_Util::EventLogError( event_i,
+                                      "Failed to synchronize SetTypeMeta",
+                                      "Error synchronizing SetTypeMeta, ChannelMeta " +
+                                      LibDEF_ChannelMeta::GetInstanceKeyAsString( this.GUID(), syncSTM.ChannelName() ) +
+                                      " cannot be found." );
+        }
+        else
+        {
+          matchedSTM := LibDEF_SetTypeMeta::Create( this,
+                                                    channel,
+                                                    syncSTM.Name(),
+                                                    syncSTM.GUID() );
+        }
+      }
+    
+      matchedSTM.IsSoftDeleted( false );
+    }
+  *]
+}

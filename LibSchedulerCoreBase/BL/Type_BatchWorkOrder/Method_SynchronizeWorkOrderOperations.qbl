@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SynchronizeWorkOrderOperations
+{
+  TextBody:
+  [*
+    // wkn1 Aug-10-2017 (created)
+    allinstances := selectset( this, WorkOrderOperation, workorderoperation, true )
+    updatedinstances := construct( WorkOrderOperations );
+    dbrss := selectsortedset( this, DemandBatch.DemandBatchType.DemandBatchRoutingStep, woo, true, woo.SequenceNr() );
+    
+    traverse( dbrss, Elements, dbrs )
+    {
+      workorderoperation := guard( WorkOrderOperation::FindWorkOrderOperation( this.Id(), dbrs.SequenceNr() ).astype( BatchWorkOrderOperation ),
+                                   null( BatchWorkOrderOperation ) );
+      
+      if( isnull( workorderoperation ) )
+      {
+        workorderoperation := GenericBatchWorkOrderOperation::Create( this, dbrs.SequenceNr() );
+      }
+      
+      workorderoperation.Update( dbrs );
+    
+      updatedinstances.Add( workorderoperation );  
+    }
+    
+    //Delete work order operations if they do not exist in KT
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, workorderoperation )
+    {
+      workorderoperation.Delete();
+    }
+  *]
+}

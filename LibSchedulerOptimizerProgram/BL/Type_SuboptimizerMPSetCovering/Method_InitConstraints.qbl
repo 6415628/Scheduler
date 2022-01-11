@@ -1,0 +1,76 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitConstraints (SuboptimizerMPSetCovering_SelectCombis program, CombiLegs combilegs)
+{
+  TextBody:
+  [*
+    // yifei Aug-10-2021 (created)
+    //each operation selected at most once
+    //constraint defined and termes will be added later
+    existingtasks := selectset( combilegs,
+                                Elements.Leg.LegOnProgramPhase.ProgramPhase.ProgramType.TaskInProgramSet.Task_SC.astype( SingleTaskBase ),
+                                t, 
+                                true );
+    traverse( combilegs, Elements.OperationInCombiLeg.Operation_SC, op )
+    {
+      opcnst := program.OperationAssignedOnceConstraints().New( op );
+      
+      if( op.IsPlanned() and not exists( existingtasks, Elements.OperationAsSingleTask, op1, op1 = op ) ) //if op is planned out of the current programtype,  then don't select it here
+      {
+        opcnst.RHSValue( 0.0 );
+      }
+    }
+    
+    
+    //each leg only has at most one combileg selected
+    //constraint defined and terms will be added later 
+    traverse( combilegs, Elements.Leg, leg )
+    {
+      legcnst := program.LegSelectedOneCombiConstraints().New( leg );
+    
+      legslackvar := program.LegCombiSelectionSlackVariables().Get( leg );
+      legcnst.NewTerm( 1.0, legslackvar );
+    }
+    
+    
+    //add terms for both constraints
+    traverse( combilegs, Elements, combileg1 )
+    {
+      combilegvar1 := program.IsCombiLegSelectedVariables().Get( combileg1 );
+      
+      legcnst := program.LegSelectedOneCombiConstraints().Get( combileg1.Leg() );
+      legcnst.NewTerm( 1.0, combilegvar1 );
+      
+      traverse( combileg1, OperationInCombiLeg.Operation_SC, op )
+      {
+        opcnst := program.OperationAssignedOnceConstraints().Get( op );
+        opcnst.NewTerm( 1.0, combilegvar1 );
+      }
+      
+      //transition constraints
+      //∑_(b ϵ B)( IsBothCombiLegSelected(a,b)≥IsCombiLegSelected(a)
+      if( not isnull( combileg1.Leg().NextLegInProgramType() ) )
+      {
+        torightcnst := program.TransitionConstraintToRightConstraints().New( combileg1 );
+        torightcnst.NewTerm( 1.0, combilegvar1 );
+        traverse( combilegs, Elements, combileg2, combileg1 <> combileg2 and combileg2.Leg() = combileg1.Leg().NextLegInProgramType() )
+        {
+          bothselectedvar := program.IsBothCombiLegSelectedVariables().Get( combileg1, combileg2 );
+          torightcnst.NewTerm( -1.0, bothselectedvar );
+        }
+      }
+      //∑_(a ϵ A)(IsBothCombiLegSelected(a,b)≥IsCombiLegSelected(b)
+      if( not isnull( combileg1.Leg().PrevLegInProgramType() ) )
+      {
+        toleftcnst := program.TransitionConstraintToLeftConstraints().New( combileg1 );
+        toleftcnst.NewTerm( -1.0, combilegvar1 );
+        traverse( combilegs, Elements, combileg0, combileg0 <> combileg1 and combileg0.Leg() = combileg1.Leg().PrevLegInProgramType() )
+        {
+          bothselectedvar := program.IsBothCombiLegSelectedVariables().Get( combileg0, combileg1 );
+          toleftcnst.NewTerm( 1.0, bothselectedvar );
+        }
+      }
+      
+    }
+  *]
+}

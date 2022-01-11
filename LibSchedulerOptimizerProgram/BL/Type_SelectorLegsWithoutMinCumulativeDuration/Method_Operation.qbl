@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Operation (LibOpt_Task task) as stream[JSON]
+{
+  Description:
+  [*
+    Only selects legs that do not have the minimum cumulative duration. Or select a single leg with a minimum cumulative duration.
+    We can freely swap operations between these legs without running into POA search inefficiencies.
+    (If we select a leg without the requirement and one with,
+     then POA will unplan 5 nodes from each and it will be forced to schedule the first 5 nodes on the path with a minimum cumulative duration, 
+     which basically means that the search is only succesful if it happens to select the right 5 operations first )
+  *]
+  TextBody:
+  [*
+    // Before starting the new iteration, synchronize the combi structure
+    SelectorLegsPerProgram::SynchronizeCombilegs( task );
+    
+    combilegs := task.Scope().CombiLegs();
+    
+    // Select a random combileg
+    selectedcombileg := minselect( combilegs, Elements, combileg, Real::Random() );
+    combilegs.Remove( selectedcombileg );
+    
+    // Get all compatible combilegs 
+    combilegs := this.UpdateAvailableCombilegs( combilegs, selectedcombileg );
+    
+    selectedcombilegs := construct( CombiLegs );
+    selectedcombilegs.Add( selectedcombileg );
+    selectedoperations := construct( Operation_SCs );
+    selectedoperations := SelectorLegsPerProgram::SelectScopeOperationsFromCombileg( selectedcombileg, task );
+    
+    desirednrops := this.SettingsSelector().TargetNrOperations();
+    /// While the number of operations is less than the desired number, keep adding combilegs
+    while( selectedoperations.Size() < desirednrops and combilegs.Size() > 0 )
+    {
+      // Otherwise select a random combileg that has not yet been selected
+      combileg := minselect( combilegs, Elements, othercombileg, true, Real::Random() ); 
+      combilegs.Remove( combileg );
+      selectedcombilegs.Add( combileg );
+      selectedoperations := selectedoperations.Merge( SelectorLegsPerProgram::SelectScopeOperationsFromCombileg( combileg, task ) )
+    }
+    
+    // Select additional suitable unplanned operations
+    // These can be used to resolve constraint violations (or fill up programs) 
+    selectedunplannedoperations := SelectorLegsPerProgram::SelectorSuitableUnplannedOperations( task, selectedcombilegs, this );
+    
+    // Create the scope
+    scope := LibOpt_Scope::Create( task.Run() );
+    SelectorLegsPerProgram::AddElementsToScope( scope, selectedcombilegs, selectedoperations, selectedunplannedoperations );
+    
+    return this.Continue( task, scope );
+  *]
+}

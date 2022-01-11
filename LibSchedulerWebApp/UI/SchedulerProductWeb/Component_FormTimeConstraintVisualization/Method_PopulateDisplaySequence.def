@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method PopulateDisplaySequence (Boolean isUpstream, shadow[CustomDrawNode] node) id:Method_FormTimeConstraintVisualization_PopulateDisplaySequence
+{
+  #keys: '[132894.0.964050708]'
+  Body:
+  [*
+    // With this method, we go to all the nodes
+    // that doesn't spread out anymore, and position
+    // their Ys OffsetY apart
+    config := DataHolderCustomDrawConfiguration.Data();
+    
+    inputnodes := selectsortedset( config, CustomDrawNode, n,
+                                   n.Depth() = node.Depth() + 1
+                                   and n.IsUpstream() = isUpstream
+                                   and n.OwnerNodeKey() = node.Key().AsQUILL(),
+                                   n.SortSequence() );
+    
+    if( inputnodes.Size() < 1 )
+    { 
+      node.Y( config.BorderOffsetY() + config.OffsetY() * ( config.DisplaySequence() ) );
+      config.DisplaySequence( config.DisplaySequence() + 1 );
+    }
+    else
+    {
+      traverse( inputnodes, Elements, e )
+      {
+        this.PopulateDisplaySequence( isUpstream, e );
+      }
+    }
+  *]
+}

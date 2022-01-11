@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCampaignTask () declarative as CampaignTask
+{
+  TextBody:
+  [*
+    ct := null( CampaignTask );
+    
+    if( this.IsFirstInCT() )
+    {
+      // Task_SCs may have multiple owned CampaignTasks, but its CampaignTypes must be unique
+      ct := select( this, Operation_SC.OwnedCampaign, oc, oc.CampaignType() = this.CampaignType() );
+    }
+    else if( not isnull( this.Previous() ) )
+    {
+      // If this TaskForCT is not the first in its CampaignTask, then it is in the same CampaignTask as its previous
+      ct := this.Previous().CampaignTask();
+    }
+    
+    return ct;
+  *]
+}

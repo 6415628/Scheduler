@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcOperationEarliestEnd
+{
+  TextBody:
+  [*
+    value := DateTime::MaxDateTime();
+    operation := this.GetOperation();
+    
+    if( not isnull( operation ) )
+    {
+      value := operation.EarliestStart() + operation.ExpectedDuration();
+      
+      // When there is a last respect routing subtask,
+      // the operation's earliest end is the last respect routing subtask's earliest end.
+      value := guard( this.LastRespectRoutingSubTask().EarliestEnd(),
+                      value );
+    }
+    
+    this.OperationEarliestEnd( value );
+  *]
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReAlignCombiLegsBoundary
+{
+  TextBody:
+  [*
+    // yifei Oct-13-2021 (created)
+    this.CombiProgramSet().SynchronizeElements();
+    
+    traverse( this, CombiProgramPhase.CombiLegAsLeading, cl, not isnull( cl.FirstOperation() ) )
+    {
+      firstop := cl.FirstOperation();
+      
+      if( firstop.LeadingOperationInCombiProgramSet().SelectedPhaseSequenceNr() < cl.LeadingCombiProgramPhase().SequenceNr())
+      {
+        prevcl := cl.PrevCombiLegInLeadingCPT();
+        oicpss := selectset( firstop, OperationInCombiProgramSet, oicps, true );
+        op := firstop.Operation_SC();
+        firstop.Delete();
+        newoicl := prevcl.AddCandidateAtEnd( op, false );
+        traverse( oicpss, Elements, oicps )
+        {
+          oicps.OperationInCombiLeg( relset, newoicl );
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

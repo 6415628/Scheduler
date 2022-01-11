@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method InterpretFeedbackStoppageTask
+{
+  Description: 'Convert feedback stoppage into relevant feedback objects'
+  TextBody:
+  [*
+    importedfbstoppagetasks := selectsortedset( this.Schedule(),
+                                                ImportedFeedbackTask,
+                                                fbtask,
+                                                fbtask.IsStoppageTask()
+                                                and fbtask.IsValidDataHard() 
+                                                and fbtask.HasFeedback(),
+                                                fbtask.Start() );
+    
+    feedbackmanager := this.FeedbackManager();
+    
+    if( not isnull( feedbackmanager ) )
+    {                        
+      traverse( importedfbstoppagetasks, Elements, importedfbstoppagetask )
+      {
+        stoppageTask := select( importedfbstoppagetask, Resource_SC.Task_SC.astype( StoppageTask ), st, 
+                                st.TaskID() = importedfbstoppagetask.SchedulerStoppageTaskID()
+                                or st.TaskID() = importedfbstoppagetask.ExternalStoppageTaskID() );
+        
+        if( importedfbstoppagetask.TaskType() = Constants::TaskType_ProgramChange() )
+        {
+          fpct := FeedbackProgramChangeTask::Create( feedbackmanager, importedfbstoppagetask );      
+          fpct.Update( importedfbstoppagetask, stoppageTask );
+        }
+        else if( importedfbstoppagetask.TaskType() = Constants::TaskType_ShutDown() )
+        { 
+          fst := FeedbackShutdownTask::Create( feedbackmanager, importedfbstoppagetask );      
+          fst.Update( importedfbstoppagetask, stoppageTask );      
+        }
+      }
+    }
+  *]
+}

@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+DeclarativeReferenceRelation CalcProgramType
+{
+  #keys: '1[143388.0.1950012616]'
+  Expression:
+  [*
+    // Get program type that linked to current task in program set
+    programtype := this.Task_SC().GetProgramType( this.ProgramSet() );
+    
+    if( isnull( programtype ) )
+    {
+      programtype := guard( this.GetPreviousTaskInProgramSet().ProgramType(), null( ProgramType ) ); 
+      
+      // If it is first planned task in program set
+      if( isnull( this.GetPreviousTaskInProgramSet() ) )
+      {
+        // Check the program set's last feedback program type's linked planned program type
+        programtype := guard( this.ProgramSet().LastFeedbackProgramType().ProgramType(), null( ProgramType ) );
+      }
+    }
+    
+    return programtype;
+  *]
+  Relation: ProgramType
+}

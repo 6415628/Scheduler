@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetDMFDataset () as stream[DMF_ConvertorDataset]
+{
+  TextBody:
+  [*
+    // Timothy Guan Jul-21-2019 (created)
+    
+    dsFindOption := DatasetFindOptions::Construct( DMF_ConvertorDataset::GetDatasetName() )
+                                            .Kind( DMF_ConvertorDataset::GetDatasetKind() )
+                                            .Path( DMF_ConvertorDataset::GetDatasetFolder() );
+    
+    dsKey := DatasetController::FindUnique( dsFindOption );
+    
+    // Assume DMF stream with no emissions
+    // This will result in the chain terminating in the event no dataset is found
+    dmf_s := stream[DMF_ConvertorDataset]::Success();
+    
+    // Resolve dataset stream if key is valid
+    if( dsKey <> Key::ZeroKey() )
+    {  
+      dmf_s := MDSDMF_ConvertorDataset::Find( dsFindOption );
+    }
+    else
+    { 
+      msg := "ConvertorDataset.GetDMFDataset: Failed to resolve DMF dataset";
+      
+      dmf_s := stream[DMF_ConvertorDataset]::Exception( msg );
+    }
+    
+    return dmf_s;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: lstScenario
+Response OnClick (LibSM_Scenario selection) id:Response_lstScenario_MenuImportDataset_OnClick
+{
+  #keys: '[107496.2.1625544764]'
+  Body:
+  [*
+    // Import dataset for current scenario
+    tcFile := Application.GetOpenFileName();
+       
+    if( tcFile.TrimBoth() <> "" )
+    {  
+      // Stream the contents of the file to a temporary file on the QAE-machine.
+      serverFile := Application.StreamFromClient( tcFile );  
+    
+      // Trigger the import of the temporary file.
+      key := LibSM_GlobalState.GetSelectedPlanningDatasetKey();
+      LibSM_ModelExtensions::ImportDataXML( key, serverFile );
+    }
+  *]
+  DefinitionID => /lstScenario/Responsedef_lstScenario_Menu_OnClick
+  Initiator: 'MenuImportDataset'
+  Precondition:
+  [*
+    planningDatasetKey := LibSM_GlobalState.GetSelectedPlanningDatasetKey()
+    return selection.IsActive( planningDatasetKey, selection );
+  *]
+}

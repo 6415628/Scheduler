@@ -1,0 +1,70 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test080_NoBufferWaitSubtasks (Schedule schedule)
+{
+  Description: 'Tests whether the optimizer properly handles NoBufferWait subtasks.'
+  TextBody:
+  [*
+    // Select the NoBufferWait subtasktype and add it to the first two resource groups
+    subtasktype_nobufferwait := select( schedule, SubTaskType, subtask,
+                                        subtask.SubTaskName() = Constants::SubTask_NoBufferWait_Name() );
+    
+    traverse( schedule, ResourceGroup_SC, rg, rg.Index() <= 1 )
+    {
+      subtask := rg.SubTaskTypeOnResourceGroup( relnew,
+                                                SubTaskID := subtasktype_nobufferwait.SubTaskID(),
+                                                SubTaskType := subtasktype_nobufferwait );
+    
+      subtask.CalcSubTaskName();
+    }
+    
+    // Set the optimizer duration to 15s, the POA duration to 2s and the neighborhood size to 20 operations
+    optimizersequencing := select( schedule, Optimization.Optimizer.astype( OptimizerSequencing ), optimizer, true );
+    oldduration := optimizersequencing.UserSetting().TimeLimit();
+    optimizersequencing.UserSetting().TimeLimit( Duration::Seconds( 15 ) );
+    oldpoatimelimit := optimizersequencing.ActiveSettings().astype( SettingsSequencing ).POA().TimeLimit();
+    optimizersequencing.ActiveSettings().astype( SettingsSequencing ).POA().TimeLimit( Duration::Seconds( 2 ) );     
+    oldnroperations := optimizersequencing.ActiveSettings().astype( SettingsSequencing ).NeighborhoodCreator().NumOperations();
+    optimizersequencing.ActiveSettings().astype( SettingsSequencing ).NeighborhoodCreator().NumOperations( 15 );
+    oldweightproductivity := schedule.OptimizerStrategyInSchedule().MRS_KPIWeightProductivity();
+    schedule.OptimizerStrategyInSchedule().MRS_KPIWeightProductivity( 0.0 );
+                                           
+    // Select all operations from 10 random Plan Units
+    planunits := this.GetRandomPUs( schedule, 10 );
+    operations := selectset( planunits, Elements.Operation_SC, operation, true );
+    
+    // Run the optimizer
+    resources := selectset( schedule, ResourceGroup_SC.Resource_SC, resource, true );
+    // Split the optimizer run in two so that we enter the construction phase twice, thereby increasing the chance of planning everything
+    result1 := optimizersequencing->Optimize( operations, resources );
+    result2 := result1->|optimizersequencing->Optimize( operations, resources );
+    // Verify that all iterations were succesfull and that all operations have been planned
+    result3 := void->After( result2 )->() 
+    {
+      this.Asserts_LastRunTerminatedStatus( schedule );
+      this.Asserts_RunWithoutWarningsAndErrors( schedule );
+      this.Asserts_Test_IsPlanned( schedule, operations, resources );
+      // Mark the last run by the name of this method:
+      optimizersequencing.LastRun().Comment( 'Test080_NoBufferWaitSubtasks' );
+    }
+    
+    // Reset the settings
+    // Disable NoBufferWait subtasks on the Printing and Casing resource groups
+    void->After( result3 )->() 
+    {
+      traverse( schedule, ResourceGroup_SC, rg, rg.Index() <= 1 )
+      {
+        traverse( rg, SubTaskTypeOnResourceGroup, subtask_nobufferwait,
+                  subtask_nobufferwait.SubTaskName() = Constants::SubTask_NoBufferWait_Name() )
+        {
+          subtask_nobufferwait.Delete();
+        }
+      }
+      // Reset the timelimit and the number of operations in the neighborhood
+      optimizersequencing.UserSetting().TimeLimit( oldduration );
+      optimizersequencing.ActiveSettings().astype( SettingsSequencing ).POA().TimeLimit( oldpoatimelimit ); 
+      optimizersequencing.ActiveSettings().astype( SettingsSequencing ).NeighborhoodCreator().NumOperations( oldnroperations ); 
+      schedule.OptimizerStrategyInSchedule().MRS_KPIWeightProductivity( oldweightproductivity );  
+    }
+  *]
+}

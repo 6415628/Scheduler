@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcVersionInfo
+{
+  TextBody:
+  [*
+    // tgn3 Apr-14-2021 (created)
+    
+    detailInfos := this.DetailInformation().Tokenize( String::NewLine() );
+    
+    versionInfos := construct( Strings );
+    
+    traverse( detailInfos, Elements, detailInfo, 
+              detailInfo.StartsWith( "CoreData" ) )
+    {
+      pair  := detailInfo.Tokenize( ": " );
+      value := guard( pair.Element( 1 ), "" );
+      
+      // Ignore values set to -1
+      if( value <> '-1' )
+      {
+        versionInfos.Add( value );
+      }  
+    }
+    
+    versionInfo := versionInfos.ToString( "." );
+    
+    this.VersionInfo( versionInfo );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

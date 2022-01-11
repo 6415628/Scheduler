@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedInternalWorkOrderOutputMaterial (CDIntegration cdintegration)
+{
+  Description: 'Restore imported internal work order output material core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedInternalWorkOrderOutputMaterial
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedInternalWorkOrderOutputMaterial ), cdewoom )
+    {
+      importedInternalWorkOrderOutputMaterial := schedule.ImportedWorkOrderOutputMaterial( relnew, 
+                                                                                           ImportedInternalWorkOrderOutputMaterial,
+                                                                                           Id := cdewoom.Id() 
+                                                                                         );
+                                                                                                 
+      CopyCorresponding::CopyFrom( cdewoom ).CopyTo( importedInternalWorkOrderOutputMaterial );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

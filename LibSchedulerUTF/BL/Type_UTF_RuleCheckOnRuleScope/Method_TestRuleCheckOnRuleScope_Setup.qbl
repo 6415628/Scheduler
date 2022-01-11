@@ -1,0 +1,136 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRuleCheckOnRuleScope_Setup (Schedule schedule)
+{
+  Description: 'Test shutdown rule scope in rule - setup'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    isBeforeShutdown := false;
+    measure := ''
+    threshold := 0.0;
+    isTask1Valid := false;
+    isTask2Valid := false;
+    isTask3Valid := false;
+    isTask4Valid := false;
+    
+    this.GetTestVariantForPlannedShutdown( isvariantfound,
+                                           isBeforeShutdown,
+                                           measure,
+                                           threshold,
+                                           isTask1Valid,
+                                           isTask2Valid,
+                                           isTask3Valid,
+                                           isTask4Valid );
+    
+    // Only setup when variant found
+    if( isvariantfound )
+    {
+      schedule.InitializeRuleFramework();
+      
+      // Create Allowed Maximum Value Check rule
+      rule := this.CreateMaximumValueRealRule( schedule );
+      
+      // Create shutdown type and assign to resource
+      resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource' );
+      shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, 'shutdown type' );
+      UTFMockObjectFactory::CreateShutdownTypeInResource( shutdownType, resource );
+    
+      // Create shutdown scope in rule
+      rule.RuleScopeSelected( RuleConstant::RuleScope_Shutdown() );
+      UTFMockObjectFactory::CreateRuleScopeInShutdownType( rule, shutdownType );
+      
+      // Assign rule scope based on variant
+      rule.IsBeforeShutdown( isBeforeShutdown );
+      rule.RuleScopeShutdownAggregateThreshold( threshold );
+      
+      // Create characteristic scope based on variant
+      characteristicScope := null( Characteristic );
+      
+      if( measure = RuleConstant::Characteristic_NumberOfTasks() )
+      {
+        // Create characteristic scope - Nr of tasks
+        characteristicScope := UTFMockObjectFactory::CreateCharacteristic( schedule, 
+                                                                           RuleConstant::Characteristic_NumberOfTasks(),
+                                                                           true, false, false, RuleConstant::ValueType_Number(), true, false );
+      }
+      else if( measure = RuleConstant::Characteristic_OperationLength() )
+      {
+        // Create characteristic scope - Operation length
+        characteristicScope := UTFMockObjectFactory::CreateCharacteristic( schedule, 
+                                                                           RuleConstant::Characteristic_OperationLength(),
+                                                                           true, true, false, RuleConstant::ValueType_Real(), true, false );
+      }
+      else if( measure = RuleConstant::Characteristic_PlanUnitQuantity() )
+      {
+        // Create characteristic scope - Plan unit quantity
+        characteristicScope := UTFMockObjectFactory::CreateCharacteristic( schedule, 
+                                                                           RuleConstant::Characteristic_PlanUnitQuantity(),
+                                                                           true, true, false, RuleConstant::ValueType_Real(), true, false );
+      }
+      else if( measure = RuleConstant::Characteristic_DurationInHours() )
+      {
+        // Create characteristic scope - Duration in hour
+        characteristicScope := UTFMockObjectFactory::CreateCharacteristic( schedule, 
+                                                                           RuleConstant::Characteristic_DurationInHours(),
+                                                                           true, false, false, RuleConstant::ValueType_Real(), true, false );
+      }
+      
+      rule.CharacteristicScope( relset, characteristicScope );
+      
+      // Create operation1 and plan it
+      operation1 := this.CreateOperation( schedule, 10.0, 'operation1' );
+      operation1.Length( 10.0 );
+      task1 := resource.PlanLast( operation1 );
+      task1.astype( UTFSingleTask ).HasStartUTF( true );
+      task1.astype( UTFSingleTask ).HasEndUTF( true );
+      task1.astype( UTFSingleTask ).Start_UTF( DateTime::Construct( 2000, 1, 5, 0, 0, 0 ) );
+      task1.astype( UTFSingleTask ).End_UTF( DateTime::Construct( 2000, 1, 5, 1, 0, 0 ) );
+      
+      // Create operation2 and plan it
+      operation2 := this.CreateOperation( schedule, 10.0, 'operation2' );
+      operation2.Length( 10.0 );
+      task2 := resource.PlanLast( operation2 );
+      task2.astype( UTFSingleTask ).HasStartUTF( true );
+      task2.astype( UTFSingleTask ).HasEndUTF( true );
+      task2.astype( UTFSingleTask ).Start_UTF( DateTime::Construct( 2000, 1, 5, 1, 0, 0 ) );
+      task2.astype( UTFSingleTask ).End_UTF( DateTime::Construct( 2000, 1, 5, 2, 0, 0 ) );
+      
+      // Assign a shutdown at operation2  
+      shutdownTask := resource.InsertShutdown( task2, shutdownType, Duration::Hours( 1 ), true, false, DateTime::MinDateTime(), Duration::Zero() );
+      shutdownTask.astype( UTFShutdownTask ).HasStartUTF( true );
+      shutdownTask.astype( UTFShutdownTask ).HasEndUTF( true );
+      shutdownTask.astype( UTFShutdownTask ).Start_UTF( DateTime::Construct( 2000, 1, 5, 2, 0, 0 ) );
+      shutdownTask.astype( UTFShutdownTask ).End_UTF( DateTime::Construct( 2000, 1, 5, 3, 0, 0 ) );
+      shutdownTask.astype( UTFShutdownTask ).ShutdownStart_UTF( DateTime::Construct( 2000, 1, 5, 2, 0, 0 ) );
+      shutdownTask.astype( UTFShutdownTask ).ShutdownEnd_UTF( DateTime::Construct( 2000, 1, 5, 3, 0, 0 ) );
+        
+      // Create operation3 and plan it
+      operation3 := this.CreateOperation( schedule, 10.0, 'operation3' );
+      operation3.Length( 10.0 );
+      task3 := resource.PlanLast( operation3 );
+      task3.astype( UTFSingleTask ).HasStartUTF( true );
+      task3.astype( UTFSingleTask ).HasEndUTF( true );
+      task3.astype( UTFSingleTask ).Start_UTF( DateTime::Construct( 2000, 1, 5, 3, 0, 0 ) );
+      task3.astype( UTFSingleTask ).End_UTF( DateTime::Construct( 2000, 1, 5, 4, 0, 0 ) );
+      
+      // Create operation4 and plan it
+      operation4 := this.CreateOperation( schedule, 10.0, 'operation4' );
+      operation4.Length( 10.0 );
+      task4 := resource.PlanLast( operation4 );
+      task4.astype( UTFSingleTask ).HasStartUTF( true );
+      task4.astype( UTFSingleTask ).HasEndUTF( true );
+      task4.astype( UTFSingleTask ).Start_UTF( DateTime::Construct( 2000, 1, 5, 4, 0, 0 ) );
+      task4.astype( UTFSingleTask ).End_UTF( DateTime::Construct( 2000, 1, 5, 5, 0, 0 ) );
+      
+      // Assign operation width that will violate the rule
+      operation1.Width( 100.0 );
+      operation2.Width( 100.0 );
+      operation3.Width( 100.0 );
+      operation4.Width( 100.0 );
+    }
+    // Gantt chart
+    // | Task1 | Task2 | Shutdown Task | Task3 | Task4 |
+  *]
+}

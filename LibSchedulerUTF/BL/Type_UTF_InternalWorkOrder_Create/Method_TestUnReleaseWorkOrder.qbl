@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestUnReleaseWorkOrder (Schedule schedule)
+{
+  Description: 'Test unrelease work order precondition and logic.'
+  TextBody:
+  [*
+    markForReleaseInstance := this.GetMarkForReleaseInstance( this.Variant() );
+    workOrders := selectset( schedule, WorkOrder, workOrder, true );
+    
+    // Do precon check
+    WorkOrder::CheckCanUnReleaseAndUnMarkForRelease( workOrders );
+    preconCheckValue := FeedbackObject::CurrentFeedback().IsAllowed();
+    
+    this.Run().AssertTrue( preconCheckValue = markForReleaseInstance.CanUnMarkForReleaseAndUnRelease(),
+                           UTFUtility::GenerateFailedMessage( 'Precondition check for unrelease work order failed', '' ) );
+    
+    if( preconCheckValue )
+    {
+      internalWorkOrder := select( workOrders, Elements.astype( InternalWorkOrder ), internalWorkOrder, true );
+      
+      WorkOrder::UnRelease( workOrders );
+      
+      this.Run().AssertTrue( not internalWorkOrder.IsReleased(),
+                             UTFUtility::GenerateFailedMessage( 'Unrelease work order failed', '' ) );
+    }
+  *]
+}

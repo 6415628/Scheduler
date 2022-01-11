@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetRulesForOperation (Resource_SC resource, Operation_SC previousoperation, Characteristic characteristic, 
+  Task_SC beforetask, Task_SC aftertask) declarative remote as owning Rules
+{
+  Description: 'Get all rules related for current operation'
+  TextBody:
+  [*
+    // Get all rules related for current operation
+    rules := construct( Rules );
+    
+    // Get all the rules related to resource scope
+    ruleswithresourcescope := selectset( resource, RuleScopeInResource.Rule, rule,
+                                         this.CheckIsRuleApplicable( rule, previousoperation, characteristic ) );
+    
+    // Get all the rules related to shutdown scope
+    ruleswithshutdownscope := selectset( resource, Shutdown.ResponsibleShutdownType.RuleScopeInShutdownType.Rule, rule,
+                                         this.CheckIsRuleApplicable( rule, previousoperation, characteristic )
+                                         and this.CheckIsRuleApplicableInShutdownScope( rule, beforetask, aftertask ) );
+    
+    rules := ruleswithresourcescope.Union( ruleswithshutdownscope );
+    
+    return &rules;
+  *]
+}

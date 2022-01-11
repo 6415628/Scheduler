@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method StopOptimization (String optimizationSessionID, output String feedback_o)
+{
+  Description:
+  [*
+    Stops the optimization running on the dataset corresponding to the optimization session. 
+    The optimization session will be deleted when a separate delete request comes in or after certain time interval has passed.
+    Returns a feedback message if the session doesn't exist.
+  *]
+  TextBody:
+  [*
+    session := select( this, OptimizationSession, optSession, true, optSession.ID() = optimizationSessionID );
+    
+    if( isnull( session ) )
+    {
+      Utility_SC::Concat( feedback_o, Translations::LibSchedulerOptMgr_UnknownSession( optimizationSessionID ) );
+    }
+    else
+    {
+      session.StopOptimization();
+    }
+  *]
+}

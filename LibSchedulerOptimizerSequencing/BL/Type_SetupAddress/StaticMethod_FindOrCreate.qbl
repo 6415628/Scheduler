@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod FindOrCreate (RunContextSetupAddress owner, const Operation_SC operation) as SetupAddress
+{
+  Description:
+  [*
+    Returns the address object of the given run context for the given operation. If no such address exists, creates one.
+    Precondition: the given run context must already contain all its dimensions and coordinates.
+  *]
+  TextBody:
+  [*
+    // mbr23 Mar-19-2020 (created)
+    address_id := "";
+    coordinates := SetupAddress::GetAddressId( owner, operation, address_id );
+    address := SetupAddress::Find( owner, address_id );
+    if( isnull( address ) )
+    {
+      address := owner.Address( relnew,
+                                Id := address_id,
+                                KeyRunContext := owner.Key() );
+      traverse( coordinates, Elements, coordinate )
+      {
+        SetupCoordinateInAddress::Create( address, coordinate );
+      }
+    }
+    return address;
+  *]
+}

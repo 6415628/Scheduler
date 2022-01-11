@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: ListProduct_SC1
+Response OnClick (Order_SC selection) id:Response_ListProduct_SC1_MenuEditWorkOrder_OnClick
+{
+  #keys: '[122574.0.612523210]'
+  Body:
+  [*
+    // Edit a WorkOrder
+    workorder := selection.WorkOrder(); // no guard needed here, because it's already guarded in the precondition
+    dlg := construct( DialogCreateEditWorkOrder );
+    dlg.Edit( this, workorder.astype( InternalWorkOrder ) );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /ListProduct_SC1/Responsedef_ListProduct_SC1_Menu_OnClick
+  Initiator: 'MenuEditWorkOrder'
+  Precondition:
+  [*
+    workorder := selection.WorkOrder();
+    value := true;
+    
+    if( not isnull( workorder ) )
+    {
+      workorder.CheckCanEdit();
+      currentFeedback := FeedbackObject::CurrentFeedback();
+      value := currentFeedback.IsAllowed();
+      feedback := currentFeedback.Feedback();
+    }
+    
+    return value;
+  *]
+}

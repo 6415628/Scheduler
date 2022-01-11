@@ -1,0 +1,66 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetSeverity (Real valueofissue, Boolean isupperthresholdviolation, const constcontent LibOpt_StatisticSeverityScaleEntrys severityscaleentries) as Real
+{
+  Description: 'Return the `Severity` to set for a `LibOpt_Issue` with the given <value of issue> and nature (<whether it is an upper-threshold violation>).'
+  TextBody:
+  [*
+    // Verify that we have a valid *severity scale*.
+    verify( severityscaleentries.Size() > 0,
+            "`LibOpt_Statistic` with type", this.DefinitionName(),
+            "has an undefined *severity scale for",
+            ifexpr( isupperthresholdviolation, "upper", "lower" ) + "-threshold violation*."
+          );
+    
+    thresholds := construct( Reals );
+    severities := construct( Reals );
+    traverse( severityscaleentries, Elements, entry )
+    {
+      thresholds.Add( entry.Threshold() );
+      severities.Add( entry.Severity() );
+    }
+    
+    threshold_range_left := thresholds.Element( 0 );
+    threshold_range_right := thresholds.Element( thresholds.Size() - 1 );
+    
+    severity_range_left := severities.Element( 0 );
+    severity_range_right := severities.Element( severities.Size() - 1 );
+    severity := ifexpr( isupperthresholdviolation, severity_range_right, severity_range_left );
+    
+    if( ifexpr( isupperthresholdviolation,
+                valueofissue < threshold_range_right,
+                valueofissue > threshold_range_left
+              )
+      )
+    {
+      severity_found := false;
+      
+      for( index := 0;
+           not severity_found
+           and index < thresholds.Size();
+           index++
+         )
+      {
+        threshold_range_left := thresholds.Element( index );
+        threshold_range_right := guard( thresholds.Element( index + 1 ), threshold_range_right );
+        
+        severity_found := valueofissue < threshold_range_right;
+        
+        if( severity_found )
+        {
+          severity_range_left := severities.Element( index );
+          severity_range_right := guard( severities.Element( index + 1 ), severity_range_right );
+        }
+      }
+      
+      if( threshold_range_right > threshold_range_left )
+      {
+        severity := severity_range_left
+                    + ( severity_range_right - severity_range_left ) * ( valueofissue - threshold_range_left ) / ( threshold_range_right - threshold_range_left );
+      }
+    }
+    
+    return severity;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

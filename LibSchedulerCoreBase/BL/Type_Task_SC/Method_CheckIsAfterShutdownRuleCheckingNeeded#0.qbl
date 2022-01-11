@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsAfterShutdownRuleCheckingNeeded () declarative remote as Boolean
+{
+  Description: 'Check whether after shutdown rule checking needed'
+  TextBody:
+  [*
+    // Check whether after shutdown rule checking needed
+    // 1. If there is previous shutdown
+    // 2. Current task is not shutdown task
+    // 3. Current task is not program change task OR ProgramChange.IsSequenceRulesEnabled = TRUE
+    // 4. Either the following conditions meet
+    //    4(a). Previous task is shutdown task and within after shutdown scope
+    //    4(b). Last feedback task in the resource is normal task and is within after shutdown scope with same previous shutdown
+    //    4(c). Last feedback task in the resource is program change task and ProgramChange.IsSequenceRulesEnabled = true
+    //    4(d). Previous shutdown archived last feedback task is within shutdown scope
+    
+    value := not isnull( this.PreviousShutdown() ) 
+             and not this.IsShutdownTask()
+             and ( not this.IsProgramChangeTask()
+                   or guard( this.GetProgramChange().IsSequenceRulesEnabled(), false ) );
+    
+    if( value )
+    {
+      if( not isnull( this.Previous() ) )
+      {
+        value := this.Previous().IsShutdownTask()
+                 or this.Previous().IsWithinAfterShutdownScope();
+      }
+      else if( guard( not this.Resource_SC().LastFeedbackTaskInResource().IsStoppageTask(), false ) )
+      {
+        value := this.Resource_SC().LastFeedbackTaskInSchedule().PreviousShutdown() = this.PreviousShutdown()
+                 and this.Resource_SC().LastFeedbackTaskInSchedule().IsWithinAfterShutdownScope();                
+      }
+      else if( guard( this.Resource_SC().LastFeedbackTaskInResource().IsProgramChangeTask(), false ) )
+      {
+        value := guard( this.Resource_SC().LastFeedbackTaskInResource().astype( FeedbackProgramChangeTask ).ProgramChange().IsSequenceRulesEnabled(), false );
+      }
+      else
+      {
+        value := not this.PreviousShutdown().HasArchivedData()
+                 or this.PreviousShutdown().ArchivedLastFeedbackTaskIsInShutdownScope(); 
+      }
+    }
+    
+    return value;
+  *]
+}

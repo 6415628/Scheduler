@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValidateKBBranchExistence_withOutput (LibSM_KnowledgeProfile knowledgeProfile) as String id:Method_LibSM_GlobalState_ValidateKBBranchExistence_withOutput
+{
+  #keys: '[136398.1.587826963]'
+  Body:
+  [*
+    // This is called for precondition when create/edit scenario
+    branchErrorMesageStrings := construct( Strings );
+    
+    editor := CKBEditor::Create();
+    kbids := editor.GetKBs();
+    
+    traverse( knowledgeProfile, KnowledgeBaseBranchInProfile, branch )
+    {
+      kbid := select( kbids, Elements, kbid, kbid.Name() = branch.KBDefinitionName() );
+    
+      if ( not isnull( kbid ) ) 
+      {
+        kbinfos := editor.GetKBStructure( kbid );
+      
+        kbfullid := select( kbinfos, Elements.KBFullID, k,
+                            k.Branch().ToUpper() = branch.KBBranchName().ToUpper()
+                            and k.Version() = branch.KBBranchVersion() );
+      
+        if( isnull( kbfullid ) )
+        {
+            message := Translations::LibSM_KnowledgeProfile_Branch_DoesNotExists( branch.KBBranchName(),
+                                                                                  branch.KBBranchVersion(),
+                                                                                  branch.KBDefinitionName() );
+            branchErrorMesageStrings.Add( message );
+        }
+      }
+    }
+    
+    return branchErrorMesageStrings.ToString( String::NewLine() );
+  *]
+}

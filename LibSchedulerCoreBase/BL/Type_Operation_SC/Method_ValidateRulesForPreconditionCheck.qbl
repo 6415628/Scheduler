@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValidateRulesForPreconditionCheck (Resource_SC resource, Operation_SC previousoperation, Task_SC beforetask, 
+  Task_SC aftertask) declarative remote as Boolean
+{
+  Description: 'Rule validation on previous and current operation for precondition check'
+  TextBody:
+  [*
+    // Rule validation based on previous and current operation for precondition check
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    // Validate non program/phase rules
+    rules := this.GetRulesForOperation( resource, previousoperation, null( Characteristic ), beforetask, aftertask );
+    traverse( rules, Elements, rule,
+              rule.NeedManualPreconditionCheck()
+              and not isnull( rule.RuleSubType() ) )
+    {
+      rule.RuleSubType().Validate( rule, previousoperation, this ); 
+    }
+    
+    // Get the reference task for precondition checking, when there is aftertask, use aftertask, else just use beforetask
+    referencetask := ifexpr( not isnull( aftertask ), aftertask, beforetask );
+    
+    // Validate program and phase non cumulative rules ( Min/Max value, Allowed/Not Allowed value, Difference Jump, Value Jump, Overlapping Range )
+    traverse( referencetask, TaskInProgramSet, tips )
+    {
+      // Pass in previous task in program set based on previousoperation
+      previoustaskinprogramset := select( previousoperation, Task_SC.TaskInProgramSet, t, t.ProgramSet() = tips.ProgramSet() );
+      programrules := tips.GetNonCumulativeRules( previoustaskinprogramset, previousoperation );
+      traverse( programrules, Elements, rule, 
+                this.CheckIsRuleApplicable( rule, previousoperation, null( Characteristic ) ) 
+                and rule.NeedManualPreconditionCheck()
+                and not isnull( rule.RuleSubType() ) )
+      {
+        rule.RuleSubType().Validate( rule, previousoperation, this ); 
+      }  
+    }
+    
+    // Validate program and phase cumulative rules ( Min/Max combined length rules )
+    traverse( referencetask, TaskInProgramSet, tips )
+    {
+      // Only do validation if task in program set linked to program phase
+      if( not isnull( tips.ProgramPhase() ) )
+      {
+        tips.ProgramPhase().ValidateCumulativeProgramPhaseRulesForPrecondition( this );
+      }
+      
+      // Only do validation if task in program set linked to program type
+      if( not isnull( tips.ProgramType() ) )
+      {    
+        tips.ProgramType().ValidateCumulativeProgramRulesForPrecondition( this );
+      }
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

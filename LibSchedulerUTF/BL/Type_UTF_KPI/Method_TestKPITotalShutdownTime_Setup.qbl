@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestKPITotalShutdownTime_Setup (Schedule schedule)
+{
+  Description: 'Test KPI TotalShutdownTime - setup'
+  TextBody:
+  [*
+    isvariantfound := false;
+    hasshutdown := false;
+    
+    this.GetTestVariantForKPITotalAvailableAndShutdownTime( isvariantfound,
+                                                            hasshutdown );
+    
+    if( isvariantfound )
+    {  
+      // Set scheduling window to 1 day
+      schedule.PlanningConfiguration().SchedulingWindow( Duration::Days( 1 ) );
+      
+      // Create resource
+      resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource' );
+      resource.ResourceGroup_SC().IsBottleneck( true );
+      
+      // Create operations and plan operations
+      this.CreateOperations( schedule, resource, true, schedule.Time() );
+      
+      // Insert shutdown
+      if( hasshutdown )
+      {
+        shutdownstart := schedule.Time() + Duration::Hours( 5 );
+        task := select( resource, Task_SC, t, t.GetOperation().SequenceNr() = 5 );
+        shutdowntask := this.InsertShutdown( schedule, resource, task );
+        utfshutdowntask := shutdowntask.astype( UTFShutdownTask );
+        utfshutdowntask.HasStartUTF( true );
+        utfshutdowntask.Start_UTF( shutdownstart );
+        utfshutdowntask.HasEndUTF( true );
+        utfshutdowntask.End_UTF( shutdownstart + Duration::Hours( 1 ) );
+      }
+    }
+  *]
+}

@@ -1,0 +1,62 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValidateInformation () as owning FeedbackObject
+{
+  TextBody:
+  [*
+    /* WARNINGS */
+    // The warnings below are specific for imported StagingParticipations;
+    // therefore they are implemented here and not as methods of LibCal_Validate (they are not used by the API-methods).
+    
+    // Use a FeedbackObject to collect the validation feedback.
+    feedback := LibCal_Validate::FeedbackObject();
+    
+    if( not isnull( this.StagingEvent() ) )
+    {
+      // IsSubscription
+      // Wether the participation is a subscription is determined by the calendars of the particiaption and the event:
+      // if they are different it concerns a subscription. IsSubscription should comply with that.
+      if( this.IsSubscription() and
+          ( this.CalendarType() = this.StagingEvent().CalendarType() and
+            this.CalendarID()   = this.StagingEvent().CalendarID() ) )
+      {
+        // Only a warning because this field is only informational;
+        // during synchronization the calendars are use anyway to determine if a subscription is concerned.
+        LibCal_Validate::RegisterWarning( "IsSubscription should be FALSE, because the event is from the same calendar. A subscription is a participation in an event from a different calendar." );
+      }
+      else if( not this.IsSubscription() and 
+               ( this.CalendarType() <> this.StagingEvent().CalendarType() or
+                 this.CalendarID()   <> this.StagingEvent().CalendarID() ) )
+      {
+        LibCal_Validate::RegisterWarning( "IsSubscription should be TRUE, because the event is from a different calendar." );
+      }
+    
+      // EventIsRecurring
+      // Should comply to the value of the event.
+      if( this.EventIsRecurring() <> this.StagingEvent().IsRecurring() )
+      {
+        action := ifexpr( this.IsLeading(), "in which is participated", "to which is subscribed" );
+        msg    := ifexpr( this.EventIsRecurring(), "EventIsRecurring should be FALSE, because the event " + action + " is not a recurring event.",
+                                                   "EventIsRecurring should be TRUE, because the event "  + action + " is a recurring event." );
+        // Only a warning because this field is only informational;
+        // during synchronization the value of the event is used anyway.
+        this.RegisterWarning( msg );
+      }
+    
+      // HasSpecificPeriod
+      // Can be ignored for non-recurring events.
+      // Should always be TRUE for a LeadingParticipation (i.e. when IsSubscription = FALSE).
+      if( this.StagingEvent().IsRecurring() and
+          this.IsLeading()                  and
+          not this.HasSpecificPeriod() )
+      {
+        // Only a warning;
+        // during synchronization value FALSE will be overruled with TRUE in this case.
+        LibCal_Validate::RegisterWarning( "HasSpecificPeriod should be TRUE, because IsSubscription is FALSE." );
+      }
+    }
+    
+    return &feedback;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

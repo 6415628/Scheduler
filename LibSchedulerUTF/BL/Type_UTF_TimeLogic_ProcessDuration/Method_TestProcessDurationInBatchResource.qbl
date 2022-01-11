@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestProcessDurationInBatchResource (Schedule schedule)
+{
+  Description: 'Test process duration based on the all the operations in a batch'
+  TextBody:
+  [*
+    batchOnResource := select( schedule, Batch.BatchOnResource, bor, true );
+    
+    // Operation1: FixedProcessDuration( 1 hours ), ProcessDurationPerQuantity( 1 hours ) hence process duration = 2 hours
+    // Operation2: FixedProcessDuration( 2 hours ), ProcessDurationPerQuantity( 2 hours ) hence process duration = 4 hours
+    // Operation3: FixedProcessDuration( 3 hours ), ProcessDurationPerQuantity( 3 hours ) hence process duration = 6 hours
+    
+    // The process duration of a batch task should be calculated based on the operation with longest process duration, hence 6 hours.
+    Transaction::Transaction().Propagate( attribute( BatchOnResource, ProcessDuration ) );
+    isValid := batchOnResource.ProcessDuration() = Duration::Construct( 0, 6, 0, 0 );
+    
+    this.Run().AssertTrue( isValid );
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

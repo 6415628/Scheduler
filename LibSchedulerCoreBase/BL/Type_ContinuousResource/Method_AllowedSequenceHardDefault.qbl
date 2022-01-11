@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride AllowedSequenceHardDefault (Operation_SC operation, Task_SC beforetask, Task_SC aftertask, 
+  output String feedback_o) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    value := true;
+    
+    // continuous resource cannot plan operation between feedback and which aftertask is parallel with feedback
+    if( guard( aftertask.astype( ContinuousTask ).IsParallelWithFeedback(), false ) )
+    {
+      value := false;
+     
+      Utility_SC::Concat( feedback_o, 
+                          Translations::SC_ContinuousResource_PlanBeforeParallelWithFeedback( aftertask.TaskID() ) );
+    }        
+    else if( guard( operation.Task_SC().astype( ContinuousTask ).IsParallelWithFeedback(), false ) )
+    {
+      value := false;
+     
+      Utility_SC::Concat( feedback_o, 
+                          Translations::SC_ContinuousResource_PlanBeforeParallelWithFeedback( operation.Task_SC().TaskID() ) );
+    }          
+    return value;
+  *]
+}

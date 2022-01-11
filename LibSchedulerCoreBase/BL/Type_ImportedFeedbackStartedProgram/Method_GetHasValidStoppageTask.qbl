@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidStoppageTask (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if the imported started program has a valid stoppage task'
+  TextBody:
+  [*
+    feedbacktask := this.ImportedFeedbackTask();
+    
+    isvalid := not isnull( feedbacktask )             // Feedback task must exists  
+               and feedbacktask.IsStoppageTask()      // Feedback task must be stoppage task
+                
+    
+    if( not isvalid and not isnull(  feedback_o ) )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedFeedbackStartedProgram_Instance( name ),
+                                                               Translations::SC_ImportedFeedbackStartedProgram_ViolateHasValidStoppageTask() ) );  
+    }
+    
+    return isvalid;
+  *]
+}

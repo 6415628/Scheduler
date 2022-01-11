@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenericTest_02X (LibOpt_TestDataset dataset, String position, Boolean is_reactive, 
+  Boolean is_seq, Boolean has_error)
+{
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    start := opt.ComponentFlow( run, 'Flow', is_reactive );
+    err := opt.ComponentError( run, 'Error', position );
+    
+    link := start.To( err );
+    
+    if( is_seq )
+    {
+      link.AsOneTransaction( false );
+    }
+    else
+    {
+      link.AsReactive();
+    }
+    
+    run.SetStartComponent( start );
+    
+    case_identifier := ' [component 1 has reactive operation = ' + [String] is_reactive + ', link between components is sequential = ' + [String] is_seq + ']';
+    
+    run->Start()->GroupAll()->( js )
+    {
+      this.Run().AssertEqual( ifexpr( has_error, 3, 2 ), run.Snapshot( relsize ), 'Number of snapshots' + case_identifier );
+      this.Run().AssertEqual( 1, start.SnapshotComponent( relsize ), 'Start component snapshots' + case_identifier );
+      this.Run().AssertEqual( 1, err.SnapshotComponent( relsize ), 'Error component snapshots' + case_identifier );
+      snapshot_start := select( start, SnapshotComponent, c, true );
+      snapshot_error := select( err, SnapshotComponent, c, true );
+      this.Run().AssertFalse( isnull( snapshot_start ), 'No Start snapshot is found' + case_identifier );
+      this.Run().AssertFalse( isnull( snapshot_error ), 'No Error snapshot is found' + case_identifier );
+      if( not isnull( snapshot_start ) and not isnull( snapshot_error ) )
+      {
+        this.Run().AssertEqual( 1, snapshot_start.Children( relsize ), 'Not enough children on snapshot Start' + case_identifier );
+        this.Run().AssertEqual( ifexpr( has_error, 1, 0 ), snapshot_error.Children( relsize ), 'Not enough children on snapshot Error' + case_identifier );
+        if( has_error )
+        {
+          child := select( snapshot_error, Children, child, true );
+          this.Run().AssertTrue( child.istype( LibOpt_SnapshotError ), 'Child snapshot is not of type SnapshotError' + case_identifier );
+        }
+      }
+      this.Run().AssertEqual( 0, run.Task( relsize ), 'Number of tasks is unexpected' + case_identifier );
+    }->Exception()->( e )
+    {
+      this.Run().RegisterFailure( 'Exception caught: ' + e.Message() + case_identifier );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

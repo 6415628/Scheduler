@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedShutdownTypeInResource (CDIntegration cdintegration)
+{
+  Description: 'Restore imported shutdown type in resource core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedShutdownTypeInResource
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedShutdownTypeInResource ), cdstir )
+    {
+      importedshutdowntypeinresource := schedule.ImportedShutdownTypeInResource( relnew, 
+                                                                                 ShutdownTypeID := cdstir.ShutdownTypeID(),
+                                                                                 ResourceID := cdstir.ResourceID()
+                                                                               );
+      CopyCorresponding::CopyFrom( cdstir ).CopyTo( importedshutdowntypeinresource );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

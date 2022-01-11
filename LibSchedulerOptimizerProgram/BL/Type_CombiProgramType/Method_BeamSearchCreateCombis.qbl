@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method BeamSearchCreateCombis
+{
+  TextBody:
+  [*
+    // yifei Aug-6-2021 (created)
+    //create combis according to beam search logic
+    //Yifei TODO: add following two parameters to setting object
+    beamwidth := OptimizerProgram::BeamWidth();  
+    bestnumber := OptimizerProgram::NumBestCombiToKeepPerLeg();
+    legsnum := counter( this, CombiProgramPhase.CombiLegAsLeading, cl, true );
+    mastercombi := this;
+    this.MasterCombiProgramType( relset, this );
+    ops := this.GetResource().ProgramOptimizerGetNotPlannedOperations();
+    info( 'ops: ', ops.Size() );
+    for( legitr := 0; legitr < legsnum; legitr ++ )
+    {
+      Transaction::Transaction().Propagate( attribute( CombiProgramType, CostTotal ) );
+      sortedcombis := selectsortedset( mastercombi, 
+                                       WorkerCombiProgramType, 
+                                       cpt, 
+                                       ifexpr( legitr = 0, 
+                                               not isnull( cpt.ProgramTypeAsActiveCombi() ),
+                                               counter( cpt, CombiProgramPhase.CombiLegAsLeading, cl, true ) = legitr), cpt.CostTotal() );
+      debuginfo( '------------------------------------ level: ', legitr );
+      debuginfo( ' >>>>>>>>>>>>>>> combi number: ',sortedcombis.Size() );
+      debuginfo( '------------------------------------' );
+      
+      for( combiitr := 0; combiitr < sortedcombis.Size() and combiitr < bestnumber; combiitr ++ )
+      {
+        cpt := sortedcombis.Element( combiitr );
+       
+        for( i := 0; i < beamwidth; i++ )
+        {
+          info( 'leg itr: ', legitr );
+          newcpt := cpt.Extend( ops, legitr ); 
+          
+          if( counter( newcpt, CombiProgramPhase.CombiLegAsLeading, cl, true ) <> legitr + 1 )
+          {
+            //info( ' newcpt size: ', counter( newcpt, CombiProgramPhase.CombiLegAsLeading, cl, true ) );
+            //error();
+          }
+          debuginfo( '------------------------------------' );
+          debuginfo( ' >>>>>>>>>>>>>>> combi number: ', mastercombi.WorkerCombiProgramType( relsize ) );
+          debuginfo( '------------------------------------' );
+        }
+      }
+    }
+  *]
+}

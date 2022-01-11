@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod M020_Operation_ProbabilityError (LibOpt_ComponentParent self, LibOpt_Task task) as stream[JSON]
+{
+  Description: 'Simple component `Operation` that has a 50% probability of throwing errors'
+  TextBody:
+  [*
+    nr_errors := 0;
+    
+    while( Real::Random() < 0.5 ) {
+      nr_errors++;
+    }
+    
+    strs := construct( structured[stream[Exception]] );
+    for( i := 0; i < nr_errors; i++ ) {
+      strs.Add( void->( ) {
+        if( Real::Random() < 0.5 )
+        {
+          error( 'ErrorMessage A' );
+        }
+        else 
+        {
+          error( 'ErrorMessage B' );
+        }
+      }->Exception() );
+    }
+    
+    return self->HandleException( stream[Exception]::Merge( strs ), task )->|self->Continue( task );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetSnapshot () as stream[NamedValueTree]
+{
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    snapshot := this.CreateSnapshotData( DateTime::Now(), schedule.Time() );
+    
+    this.GetSnapshotBase( snapshot, schedule );
+    this.GetSnapshotIndustryLayer( snapshot, schedule );
+    this.GetSnapshotProject( snapshot, schedule );
+    
+    // Add labels for context.
+    snapshot.CreateLabel( "Type", "Scenario" );
+    snapshot.CreateLabel( "Dataset", schedule.MDSSchedule().Name() );
+    
+    // Convert the constructured structure into an NVT and return it.
+    nvt := KpiSnapshotGenerator::ConvertSnapshotDataObjectToTransportFormatNvt( snapshot );
+    return emit( nvt );
+  *]
+}

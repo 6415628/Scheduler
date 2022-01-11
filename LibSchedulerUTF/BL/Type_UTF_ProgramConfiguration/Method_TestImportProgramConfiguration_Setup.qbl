@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestImportProgramConfiguration_Setup (Schedule schedule)
+{
+  Description: 'Test import program configuration - setup'
+  TextBody:
+  [*
+    // Create resource
+    UTFMockObjectFactory::CreateSingleResource( schedule, 'Single Resource' );
+    
+    // Create imported program definition
+    importedprogramdefinition := UTFMockObjectFactory::CreateImportedProgramDefinitionConfiguration( schedule, 'Program Definition' );
+    importedprogramdefinition.Name( 'Program Definition Name' );
+    
+    // Create imported program set definition
+    importedprogramset := UTFMockObjectFactory::CreateImportedProgramSetConfiguration( schedule, importedprogramdefinition, 'Program Set' );
+    importedprogramset.Name( 'Program Set Name' );
+    importedprogramset.IsProgramTypeChangeAllowed( true );
+    importedprogramset.ProgramTypeChangeDuration( Duration::Hours( 1 ) );
+    importedprogramset.IsSequenceRulesEnabled( true );
+    importedprogramset.IsFreezeScheduleByProgram( true );
+    
+    // Create imported program type
+    importedprogramtype := UTFMockObjectFactory::CreateImportedProgramTypeConfiguration( schedule, importedprogramset, 'Program Type' );
+    importedprogramtype.Name( 'Program Type Name' );
+    importedprogramtype.ColorCode( 'Color Code' );
+    importedprogramtype.IsProgramTypeChangeSettingOverruled( true );
+    importedprogramtype.IsProgramTypeChangeAllowedOverruled( true );
+    importedprogramtype.ProgramTypeChangeDurationOverruled( Duration::Hours( 1 ) );
+    
+    // Create imported program phase 1
+    importedprogramphase := UTFMockObjectFactory::CreateImportedProgramPhaseConfiguration( schedule, importedprogramtype, 'Program Phase 1' );
+    importedprogramphase.Name( 'Program Phase Name' );
+    importedprogramphase.ColorCodeOverruled( 'Color Code' );
+    importedprogramphase.IsColorCodeOverruled( true );
+    importedprogramphase.SequenceNr( 0 );
+    
+    // Create imported program phase 2
+    importedprogramphase := UTFMockObjectFactory::CreateImportedProgramPhaseConfiguration( schedule, importedprogramtype, 'Program Phase 2' );
+    importedprogramphase.Name( 'Program Phase Name 2' );
+    importedprogramphase.ColorCodeOverruled( 'Color Code 2' );
+    importedprogramphase.IsColorCodeOverruled( true );
+    importedprogramphase.SequenceNr( 1 );
+    
+    // Create imported program type change
+    importedprogramtypechange := UTFMockObjectFactory::CreateImportedProgramTypeChangeConfiguration( schedule, importedprogramset, 'Program Type', 'Program Type' );
+    importedprogramtypechange.IsAllowed( true );
+    importedprogramtypechange.ProgramTypeChangeDuration( Duration::Hours( 1 ) );
+    
+    // Create imported resource program definition
+    UTFMockObjectFactory::CreateImportedResourceProgramDefinition( schedule, 'Single Resource', 'Program Definition' ); 
+    
+    // Synchronize program configuration
+    Transaction::Transaction().Propagate( method( SynchronizationObject, SynchronizeProgramConfigurations ) );
+    schedule.SynchronizationObject().SynchronizeProgramConfigurations();
+  *]
+}

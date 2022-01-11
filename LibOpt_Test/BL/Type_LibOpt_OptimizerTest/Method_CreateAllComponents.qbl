@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateAllComponents () as owning LibOpt_Runs
+{
+  TextBody:
+  [*
+    original := this.Run( relget );
+    
+    // Iterator
+    it := this.IteratorUntil( this.CreateRun(), 'Iterator1' );
+    it.SetMaxLocalDuration( Duration::Seconds( 1 ) );
+    it := this.IteratorUntil( this.CreateRun(), 'Iterator2' );
+    it.SetMaxIterations( 10 );
+    it := this.IteratorUntil( this.CreateRun(), 'Iterator3' );
+    it.SetMaxIterations( 10 );
+    it.SetMaxLocalDuration( Duration::Seconds( 1 ) );
+    this.IteratorForEachLink( this.CreateRun(), 'IteratorForeach' );
+    
+    // Switches
+    this.SwitchPriority( this.CreateRun(), 'SwitchPriority' );
+    this.SwitchProbability( this.CreateRun(), 'SwitchProbability' );
+    this.SwitchRoundRobin( this.CreateRun(), 'SwitchRoundRobin' );
+    
+    // Selectors
+    neighborhood := construct( LibOpt_NeighborhoodCreatorTest );
+    this.SelectorAnchor( this.CreateRun(), 'SelectorAnchor', this.AnchorSetAll(), this.AnchorPickerRandom(), & neighborhood );
+    
+    // Suboptimizers
+    run := this.CreateRun();
+    runcontextforutf := LibOpt_MyRunContextForUTF::Create( run );
+    this.MPSuboptimizer( run, 'MP', runcontextforutf );
+    
+    run := this.CreateRun();
+    runcontextforutf := LibOpt_MyRunContextForUTF::Create( run );
+    this.POASuboptimizer( run, 'POA', runcontextforutf );
+    
+    return this.Run( relget ).Difference( original );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

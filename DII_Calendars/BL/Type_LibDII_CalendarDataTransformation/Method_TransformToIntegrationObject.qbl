@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride TransformToIntegrationObject (Object object_i, LibDIO_IntegrationObject integrationObject_i)
+{
+  TextBody:
+  [*
+    // Cast the arguments to the applicable types.
+    calendar            := object_i.astype( LibCal_Calendar );
+    integrationCalendar := integrationObject_i.astype( LibCIM_CalendarBase );
+    
+    // Fill the data structure of the integration object,
+    // i.e. transform the Calendar and its related types to integration objects.
+    this.CalendarToIntegrationObject( calendar, integrationCalendar );
+    
+    // Don't export the "Always available" event.
+    traverse( calendar, Event, event, not event.IsAlwaysAvailableEvent() )
+    {
+      this.EventToIntegrationObject( integrationCalendar, event );
+    }
+    
+    // Don't export the Participations in event "Always available".
+    traverse( calendar, Participation, participation, 
+              not participation.Event().IsAlwaysAvailableEvent() )
+    {
+      this.ParticipationToIntegrationObject( integrationCalendar, participation );
+    }
+  *]
+}

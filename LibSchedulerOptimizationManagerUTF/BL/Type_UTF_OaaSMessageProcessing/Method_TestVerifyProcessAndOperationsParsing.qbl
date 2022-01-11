@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestVerifyProcessAndOperationsParsing (Schedule schedule)
+{
+  Description: 'Simulate test of parsing processes and operations for given initialization request.'
+  TextBody:
+  [*
+    // -- Processes --
+    processJSON := this.GetJSONInputData_ProcessesArray().Build().Get( 0 ); // Get to grab array's first instance
+    process := ImportedRouting_SC::ParseFCjson( schedule, processJSON );
+    
+    this.Run().AssertEqual( ImportedRouting_SC::GetProcessID( processJSON ), process.RoutingId() );
+    this.Run().AssertEqual( ImportedRouting_SC::GetName( processJSON ), process.Name() );
+    this.Run().AssertEqual( ImportedRouting_SC::GetLabel( processJSON ), process.Label() );
+    
+    // -- Process Operations -- 
+    operationJSON := this.GetJSONInputData_ProcessOperationsArray().Build().Get( 0 ); // Get to grab array's first instance
+    operation := ImportedRoutingStep_SC::ParseFCjson( schedule, process.RoutingId(), 0, operationJSON );
+    
+    this.Run().AssertEqual( ImportedRoutingStep_SC::GetProcessOperationID( operationJSON ), operation.ID() );
+    this.Run().AssertTrue( ImportedRoutingStep_SC::GetProportionalToQty( operationJSON ) = operation.ProportionalToQty() );
+    this.Run().AssertEqual( ImportedRoutingStep_SC::GetPreparationTime( operationJSON ), operation.PreparationTime() );
+    this.Run().AssertEqual( ImportedRoutingStep_SC::GetTomBefore( operationJSON ), operation.TomBefore() );
+    this.Run().AssertEqual( ImportedRoutingStep_SC::GetTomAfter( operationJSON ), operation.TomAfter() );
+    this.Run().AssertTrue( ImportedRoutingStep_SC::GetInterruptible( operationJSON ) = operation.Interruptible() );
+    
+    // -- Capable Resource --
+    capableResourceJSON := this.GetJSONInputData_CapableResourcesArray().Build().Get( 0 ); // Get to grab array's first instance
+    capableResource := ImportedCapableResource::ParseFCjson( schedule, capableResourceJSON, operation );
+    
+    this.Run().AssertEqual( ImportedCapableResource::GetAssetID( capableResourceJSON ), capableResource.AssetID() );
+    this.Run().AssertEqual( ImportedCapableResource::GetDurationRuc( capableResourceJSON ), capableResource.DurationRuc() );
+    this.Run().AssertEqual( ImportedCapableResource::GetRuc( capableResourceJSON ), capableResource.Ruc() );
+    
+    process.Delete(); 
+    operation.Delete();
+    capableResource.Delete();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateComponentsSequencingMeta (LibOpt_Run run, const SettingsSequencingMeta settings_sequencingmeta, const SettingsSequencingConstruction settings_construction, 
+  const SettingsSequencingNeighborhoodCreator settings_neighborhoodcreator, const SettingsSequencingDistanceMetric settings_distancemetric, const SettingsSequencingPOA settings_poa, 
+  const OptimizerStrategy strategy, Duration timelimit_global) as LibOpt_Component
+{
+  Description:
+  [*
+    Creates the components of a SequencingMeta instance in the given run and links them accordingly.
+    Does not set the run's root component. Instead, returns the root component of the created graph.
+    Does not use the settings or strategy of this optimizer, but the ones given.
+  *]
+  TextBody:
+  [*
+    // optimization part:
+    optimization := this.CreateComponentsSequencingMetaOptimization( run, settings_sequencingmeta, settings_neighborhoodcreator, settings_distancemetric, settings_poa, strategy, timelimit_global );
+    rootcomponent := optimization;
+    if( settings_construction.IsEnabledAutoplan() )
+    {
+      // autoplan construction:
+      construction := this.CreateComponentsSequencingConstructionAutoplan( run );
+      
+      // plumbing:
+      sequencer_children := construct( LibOpt_Components );
+      sequencer_children.Add( construction );
+      sequencer_children.Add( optimization );
+      sequencer_prefix := "phasing sequencer";
+      sequencer := this.Sequencer( sequencer_children, sequencer_prefix );
+      rootcomponent := sequencer;
+    }
+    
+    return rootcomponent;
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

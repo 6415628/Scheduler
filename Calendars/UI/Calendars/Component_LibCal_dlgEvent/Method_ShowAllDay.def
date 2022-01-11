@@ -1,0 +1,66 @@
+Quintiq file version 2.0
+#parent: #root
+Method ShowAllDay () id:Method_LibCal_dlgEvent_ShowAllDay
+{
+  #keys: '[131094.0.1104130545]'
+  Body:
+  [*
+    // Show the controls on both pnlIsRecurring and pnlIsNotRecurring according to the state of ckbAllDay.
+    if( ckbIsAllDay.Checked() )
+    {
+      // Update the EndDate before updating the StartTime, otherwise setting the StartTime can already have influenced the EndDate.
+      if( durEndTimeOfDay.Duration() <> Duration::Zero() )
+      {
+        durEndTimeOfDay         .Duration( Duration::Zero() );
+        durEndTimeOfDayRecurring.Duration( Duration::Zero() );
+        
+        datEndDate.Date( datEndDate.Date() + 1 );
+      }
+    
+      // Set to whole day if this is not yet the case.
+      if( durStartTimeOfDay.Duration() <> Duration::Zero() )
+      {
+        durStartTimeOfDay         .Duration( Duration::Zero() );
+        durStartTimeOfDayRecurring.Duration( Duration::Zero() );
+      }
+      
+      durStartTimeOfDay         .Enabled( false );
+      durStartTimeOfDayRecurring.Enabled( false );
+      durEndTimeOfDay           .Enabled( false );
+      durEndTimeOfDayRecurring  .Enabled( false );
+    }
+    else
+    {
+      // Restore original values. These have been captured when they were changed.
+      if( durStartTimeOfDay.Duration() <> vhStartTimeOfDay.Data() )
+      {
+        durStartTimeOfDay         .Duration( vhStartTimeOfDay.Data() );
+        durStartTimeOfDayRecurring.Duration( vhStartTimeOfDay.Data() );
+      }
+      
+      if( durEndTimeOfDay.Duration() <> vhEndTimeOfDay.Data() )
+      {
+        durEndTimeOfDay         .Duration( vhEndTimeOfDay.Data() );
+        durEndTimeOfDayRecurring.Duration( vhEndTimeOfDay.Data() );
+        
+        // During initialization, just take over the value from the DataHolder.
+        endDate := datEndDate.Date();
+        if( endDate.IsInfinite() )
+        {
+          endDate := vhEndDate.Data();
+        }
+        // See if the EndDate must be corrected.
+        else if( vhEndTimeOfDay.Data() <> Duration::Zero() )
+        {
+          endDate := endDate - 1;
+        }
+        datEndDate.Date( endDate );
+      }
+    
+      durStartTimeOfDay         .Enabled( true );
+      durStartTimeOfDayRecurring.Enabled( true );
+      durEndTimeOfDay           .Enabled( true );
+      durEndTimeOfDayRecurring  .Enabled( true );
+    }
+  *]
+}

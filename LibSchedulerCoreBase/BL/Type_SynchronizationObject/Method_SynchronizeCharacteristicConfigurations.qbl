@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeCharacteristicConfigurations
+{
+  Description: 'Synchronizes integration configurations.'
+  TextBody:
+  [*
+    traverse( this, Schedule.ImportedCharacteristicConfiguration, row, row.IsValidDataHard() )
+    {
+      characteristic := Characteristic::FindCharacteristic( row.ID() );
+    
+      if( not isnull( characteristic ) )
+      {
+        characteristic.Update( row );
+      }
+      
+      /*
+      if( isnull( characteristic ) )
+      {
+        // The requirement is Characteristic will only be instantiated duing onConstructed of Scheduler dataset,
+        // and a planner is not allowed to create new characteristic.
+        // Hence, nothing will happen when there is a row of new characteristic exists in Excel.
+      }
+      */
+      
+    }
+  *]
+}

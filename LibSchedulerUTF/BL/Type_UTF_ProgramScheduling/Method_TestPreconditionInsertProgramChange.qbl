@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionInsertProgramChange (Schedule schedule)
+{
+  Description: 'Test precondition insert program change'
+  TextBody:
+  [*
+    // Get variant data
+    resourceType := '';
+    leadTimeStrategy := '';
+    hasResourceProgramDefinition := false;
+    isaftertaskprogramchange := false;
+    isValidForPreconInsert := false;
+    hasProgramChange := false;
+    hasFeedback := false;
+    isValidForPreconDelete := false;
+    hasProgramType := false;
+    isValidForPreconCreateEdit := false;
+    isallowedtypechangeonprogramtypelevel := false;
+    isallowedtypechangeonprogramtypechangelevel := false;
+    isValidForConstraintProgramTypeChange := false;
+    
+    this.GetTestVariant( resourceType,
+                         leadTimeStrategy,
+                         hasResourceProgramDefinition,
+                         isaftertaskprogramchange,
+                         isValidForPreconInsert,
+                         hasProgramChange,
+                         hasFeedback,
+                         isValidForPreconDelete,
+                         hasProgramType,
+                         isValidForPreconCreateEdit,
+                         isallowedtypechangeonprogramtypelevel,
+                         isallowedtypechangeonprogramtypechangelevel,
+                         isValidForConstraintProgramTypeChange );
+    
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, r, true );
+    aftertask := select( resource, Task_SC, t, true );
+    
+    value := resource.CheckCanInsertProgramChange( aftertask );
+    
+    this.Run().AssertEqual( isValidForPreconInsert, value,
+                            UTFUtility::GenerateFailedMessage( 'Precondition in inserting program change failed.', this.Variant() ) );
+  *]
+}

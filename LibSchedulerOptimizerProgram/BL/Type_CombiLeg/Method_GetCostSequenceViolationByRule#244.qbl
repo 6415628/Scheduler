@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCostSequenceViolationByRule (Rule rule, Operation_SC prev_op, Operation_SC currentOp) declarative remote as Real
+{
+  TextBody:
+  [*
+    // yifei Aug-5-2021 (created)
+    //to check transition cost and check the rules applicable or not, 
+    //we get the rules of current 
+    
+    value := 0.0;
+    
+    if( not isnull( prev_op ) 
+        and currentOp.CheckIsRuleApplicableCurrent( rule, prev_op, rule.CharacteristicMain() ) )
+    {
+      deviation := rule.RuleSubType().GetDeviationCurrent( rule, prev_op, currentOp );
+        
+      if( deviation > 0.0 )
+      {
+        value := rule.PenaltyParameterSlope_a() * pow( ( deviation + rule.PenaltyParameterOffset_c() ), rule.PenaltyParameterPower_b() ); 
+      }
+    }  
+    
+    return value;
+  *]
+}

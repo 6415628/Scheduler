@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestMaterialReservationIsDiscrete (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    
+    testinstance := this.GetTestInstanceMain( variant );
+    
+    // Right now Demand and Supply object structure doesn't support easy UTF modeling, UoM and IsDiscrete needs to be moved to Demand and Supply level
+    demand := select( schedule, Demand.astype( MaterialDemand ), d, true ); 
+    supply := select( schedule, Supply, s, true );
+    
+    feedback := '';
+    this.Run().AssertEqual( [Number] guard( demand.CheckIsDiscrete( supply, false, feedback ), true ),
+                            [Number] testinstance.CheckIsDiscrete(),
+                            UTFUtility::GenerateFailedMessage( 'MaterialReservation_CheckUoM failed', '' ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

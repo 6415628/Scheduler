@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method CalculateStartTimeForSchedulingBatch (String status, ExportedOperationBatch exportedbatch) id:Method_DialogFeedbackBatch_CalculateStartTimeForSchedulingBatch
+{
+  #keys: '[118288.0.259825698]'
+  Body:
+  [*
+    // if its 'reporting start', maxvalue( lasttask.end(), scheduled start() )
+    // if already has reported start, reported start
+    // if its 'reporting end', estimated end.
+    datetime := exportedbatch.End();
+    
+    if( status = Constants::StatusStart() )
+    {
+      // Carmen, 20121018, issue #4613
+      // Batch suggested start date will be company time when it has not started yet.
+      // Usually when feedback is to be send, the datetime will be right then, which is company time, or it will not be far from company time.
+      datetime := Schedule.Time();// Dialog.Data().Start();
+    
+      lasttask := maxselect( Schedule, FeedbackManager.ImportedFeedbackTask, fbt, fbt.HasReportedStart(), fbt.End() );
+      if( not isnull( lasttask ) )
+      {
+        datetime := lasttask.End();
+      }
+    
+    }
+    
+    GUIDateTimeSelector.DateTime( datetime );
+  *]
+}

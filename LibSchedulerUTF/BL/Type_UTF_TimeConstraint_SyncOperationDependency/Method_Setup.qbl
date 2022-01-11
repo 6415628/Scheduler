@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method Setup (Schedule schedule)
+{
+  Description: 'Setup logic for all tests related to synchronizing work order operation precedence.'
+  TextBody:
+  [*
+    schedule.Time( DateTime::Construct( 2020, 1, 1, 0, 0, 0 ) );
+    
+    // Retrieve test variant data controller columns
+    isDataDrivenTimeConstraintMode := false;
+    hasProductFlow := false;
+    this.GetTestVariant( isDataDrivenTimeConstraintMode, hasProductFlow );
+    
+    // Create technical configuration and set IsDataDrivenTimeContraintsMode to true
+    schedule.TechnicalConfiguration( relnew, GenericTechnicalConfiguration, ID :=  'TechnicalConfig_01', IsDataDrivenTimeConstraintsMode := isDataDrivenTimeConstraintMode );
+    
+    // Create resource group and UTF resource
+    resource1 := UTFMockObjectFactory::CreateSingleResource( schedule, 'Resource_01' );
+    LeadTimeStrategy_SC::Create( resource1, Duration::Zero(), Constants::StrategyASAP() )
+    resource2 := UTFMockObjectFactory::CreateSingleResource( schedule, 'Resource_02' );
+    LeadTimeStrategy_SC::Create( resource2, Duration::Zero(), Constants::StrategyASAP() )
+    
+    // Create subtasks
+    subtaskTypes := Constants::SubTask_SetupProcessCleanUp();
+    UTFMockObjectFactory::CreateSubtaskTypeOnResourceGroup( resource1.ResourceGroup_SC(), subtaskTypes, Constants::SubTask_Process(), Constants::SubTask_Process() );
+    UTFMockObjectFactory::CreateSubtaskTypeOnResourceGroup( resource2.ResourceGroup_SC(), subtaskTypes, Constants::SubTask_Process(), Constants::SubTask_Process() );
+    
+    // Create work orders
+    workOrder1 := UTFMockObjectFactory::CreateGenericExternalWorkOrder( schedule, 'WorkOrder_01', '' );
+    workOrder2 := UTFMockObjectFactory::CreateGenericExternalWorkOrder( schedule, 'WorkOrder_02', '' );
+    
+    // Create work order operations
+    workOrderOperation1 := UTFMockObjectFactory::CreateGenericExternalWorkOrderOperation( workOrder1, 10 );
+    workOrderOperation2 := UTFMockObjectFactory::CreateGenericExternalWorkOrderOperation( workOrder2, 10 );
+    
+    // Create work order operation dependency
+    UTFMockObjectFactory::CreateWorkOrderOperationPrecedence( schedule, 'WorkOrderOperationPrecedence_01', workOrder1, workOrderOperation1, 
+                                                              workOrder2, workOrderOperation2, hasProductFlow );
+    
+    // Synchronization
+    schedule.SynchronizationObject().SynchronizeOrders();
+    schedule.SynchronizationObject().SynchronizePlanUnits();
+    schedule.SynchronizationObject().SynchronizeOperationDependencies();
+    
+    traverse( schedule, PlanUnit_SC, planUnit )
+    {
+      planUnit.SynchronizeOperationMaterials();
+    }
+  *]
+}

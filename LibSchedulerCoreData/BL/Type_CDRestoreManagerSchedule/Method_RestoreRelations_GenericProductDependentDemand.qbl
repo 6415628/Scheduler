@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericProductDependentDemand (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic product dependent demand core data attributes to planning object'
+  TextBody:
+  [*
+    traverse( cdSchedule, CDEntity.astype( CDGenericProductDependentDemand ), cdGenericProductDependentDemand )
+    {
+      genericProductDependentDemand := ProductDependentDemand::FindProductDependentDemand( cdGenericProductDependentDemand.DemandType(),
+                                                                                           cdGenericProductDependentDemand.DemandID() );
+      
+      if( not isnull( genericProductDependentDemand ) )
+      {
+        // PlanUnit, M-1
+        planUnit := PlanUnit_SC::FindPlanUnit( cdGenericProductDependentDemand.PlanUnitID() );
+        genericProductDependentDemand.PlanUnit_SC( relset, planUnit );
+        
+        // Operation, M-1
+        operation := select( planUnit, Operation_SC, operation, operation.OperationID() = cdGenericProductDependentDemand.OperationID() );
+        genericProductDependentDemand.Operation_SC( relset, operation );    
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

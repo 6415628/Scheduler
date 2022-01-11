@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: tbImportData/btnSynchronize
+Response OnClick () id:Response_tbImportData_btnSynchronize_OnClick
+{
+  #keys: '[131094.0.1595688522]'
+  Body:
+  [*
+    // Synchronize the imported data to the planning-dataset.
+    // Ask if the user want to continue when the are errors.
+    continue := true;
+    
+    if( guard( [Number]lblNrOfErrors.Text(), 0 ) > 0 )
+    {
+      continue :=  MessageBox::Warning( Form,
+                                        "The imported data contains errors. Only data without errors will be synchronized." +
+                                        String::NewLine() + String::NewLine() +
+                                        "Do you want to continue?" + String::NewLine(), 
+                                        Translations::MessageBox_YesNo() ) = 0 
+    }
+    
+    if( continue )
+    {
+      // Call SynchronizeData in the planning-dataset.
+      Form.SynchronizeData();
+      
+      // Disable the Undo-button, because clicking it after this action results in an error.
+      Application.RemoveHistory();
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIButtonBase_OnClick'
+  Precondition:
+  [*
+    return Form.DatasetsOK();
+  *]
+}

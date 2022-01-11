@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericResourceGroup (CDSchedule cdschedule)
+{
+  Description: 'Restore relations for generic resource group core data to planning object'
+  TextBody:
+  [*
+    // Restrore resource group
+    schedule := this.Schedule();
+    
+    traverse( cdschedule, CDEntity.astype( CDGenericResourceGroup ), cdrg )
+    {
+      resourcegroup := select( schedule, ResourceGroup_SC, rg, 
+                               rg.Name() = cdrg.Name()
+                             );
+                             
+      if( not isnull( resourcegroup ) )
+      { 
+        // Restore relation on resource group
+        importedresourcegroup := ImportedResourceGroup_SC::FindImportedResourceGroupTypeIndex( cdrg.Name() );
+        resourcegroup.ImportedResourceGroup_SC( relset, importedresourcegroup );
+      }    
+    }
+    
+    // Restore subtask type on resource group
+    this.RestoreRelations_SubTaskTypeOnResourceGroup( cdschedule );
+    
+    // Restore resources that belongs to this resource group
+    this.RestoreRelations_GenericSingleResource( cdschedule );
+    
+    // Restore resource connection
+    this.RestoreRelations_ResourceConnection( cdschedule );         
+    
+    // Restore tasks that belongs to this resource
+    this.RestoreRelations_GenericSingleTask( cdschedule );  
+    
+    // Restore program change tasks that belongs to this resource
+    this.RestoreRelations_GenericProgramChangeTask( cdschedule );
+    
+    // Restore shutdown tasks that belongs to this resource
+    this.RestoreRelations_GenericShutdownTask( cdschedule );
+    
+    // Restore tasks that belongs to this resource
+    this.RestoreRelations_GenericBatchTask( cdschedule ); 
+    
+    // Restore tasks that belongs to this resource
+    this.RestoreRelations_GenericContinuousTask( cdschedule );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

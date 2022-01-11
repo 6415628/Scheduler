@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method RemoveAssets (JSON jsonTree)
+{
+  Description: 'Remove imported assets (resource) data based on JSON input.'
+  TextBody:
+  [*
+    assetsJSON := guard( jsonTree.Get( Constants::JSON_Remove_Assets() ), null( JSON, owning ) );
+    
+    if( not isnull( assetsJSON ) )
+    {
+      for( i := 0; i < assetsJSON.Size(); i++ )
+      {
+        assetID := assetsJSON.Get( i ).GetString();
+        importedResource := ImportedResource_SC::FindImportedResourceTypeIndex( assetID );
+        
+        if( not isnull( importedResource ) )
+        {
+          importedResource.Remove();
+        }
+        else
+        {
+          logfile( Translations::LibSchedulerOptMgr_Remove_Asset_NotFound( assetID ) );
+        }
+      }
+    }
+  *]
+}

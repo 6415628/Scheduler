@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedRoutingStepCampaign (CDIntegration cdintegration)
+{
+  Description: 'Restore imported routing step campaign core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedRoutingStepCampaign_SC
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedRoutingStepCampaign ), cdirsc )
+    {
+      importedroutingstepcampaign := schedule.ImportedRoutingStepCampaign_SC( relnew, 
+                                                                              Campaign := cdirsc.Campaign(),
+                                                                              CampaignType := cdirsc.CampaignType(),
+                                                                              ResourceGroup := cdirsc.ResourceGroup(),
+                                                                              RoutingId := cdirsc.RoutingId(),
+                                                                              SequenceNr := cdirsc.SequenceNr()
+                                                                            );
+      CopyCorresponding::CopyFrom( cdirsc ).CopyTo( importedroutingstepcampaign );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnOK () id:Method_LibCal_dlgEditTimeInterval_OnOK
+{
+  #keys: '[146730.0.1319603118]'
+  Body:
+  [*
+    timezone := Form.GetCalendarTimeZone();
+    
+    startDate      := dsStartDate.Date();
+    endDate        := dsEndDate  .Date();
+    startTimeOfDay := durStartTimeOfDay.Duration();
+    endTimeOfDay   := durEndTimeOfDay  .Duration();
+    
+    // When running in days only mode, use the number of days from the NumberPicker to calculate the end date.
+    // Set the times to 0:00 (just to be sure).
+    if( LibCal_Event::USE_ONLY_DAYS() )
+    {
+      endDate        := startDate + [Number]npDuration.Number();
+      endTimeOfDay   := Duration::Zero();
+      startTimeOfDay := Duration::Zero();
+    }
+    
+    start := startDate.DateTime( timezone ).AddAsPeriod( timezone, startTimeOfDay );
+    end   := endDate  .DateTime( timezone ).AddAsPeriod( timezone, endTimeOfDay   );
+    
+    sTimeInterval := dhExplicitTimeInterval.Data();
+    sTimeInterval.Start( start );
+    sTimeInterval.End(   end   );
+    sTimeInterval.Comment( edtComment.Text() );
+    
+    sTimeInterval.Commit();
+    
+    Form.Close();
+  *]
+}

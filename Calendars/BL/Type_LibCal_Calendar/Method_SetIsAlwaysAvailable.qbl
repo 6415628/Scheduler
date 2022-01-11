@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetIsAlwaysAvailable (Boolean isAlwaysAvailable_i)
+{
+  TextBody:
+  [*
+    // Subscribe to / unsubscribe from Event "Always available" if applicable.
+    subscription := select( this.Subscriptions(), Elements, subscription, true, subscription.Event().IsAlwaysAvailableEvent() );
+    
+    if( isAlwaysAvailable_i and
+        isnull( subscription ) )
+    {
+      event := this.GetCommonCalendar().GetAlwaysAvailableEvent();
+      
+      // Don't let the CommonCalendar itself subscribe, it already owns the Event.
+      if( this <> this.GetCommonCalendar() )
+      {
+        this.SubscribeToEvent( event );
+      }
+    }
+    else if( not isAlwaysAvailable_i and
+             not isnull( subscription ) )
+    {
+      subscription.Delete();
+    }
+  *]
+}

@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method AssembleDataPiecesNvt () as owning NamedValueTree
+{
+  Description: 'Re-assemble the data pieces (NVT chunks) into a single NVT in sequence, to be processed.'
+  TextBody:
+  [*
+    dataPieces := selectsortedset( this, DataPiece, piece,
+                                   piece.IsCompleted(),
+                                   piece.SequenceNr() );
+    nvtContainer := construct( LibDEF_NamedValueTreeContainer );
+    
+    traverse( dataPieces, Elements, dp )
+    {
+      nvt := NamedValueTreeBinaryIO::NamedValueTreeFromBinaryData( dp.Payload().AsBinaryData() );
+      LibDEF_NamedValueTree::Create( nvtContainer, nvt );
+    }
+    
+    return LibDEF_NamedValueTreeProcessor::MergeNvt( nvtContainer );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

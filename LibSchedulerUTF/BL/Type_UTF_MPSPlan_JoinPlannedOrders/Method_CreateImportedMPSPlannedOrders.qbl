@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateImportedMPSPlannedOrders (Schedule schedule) as owning ImportedMPSPlannedOrders
+{
+  TextBody:
+  [*
+    // Create 1st default variant MPSPlannedOrder
+    importedMPSPlannedOrders := super.CreateImportedMPSPlannedOrders( schedule );
+    
+    // Create 2nd unit test variant specific MPSPlannedOrder
+    variant := this.Variant();
+    testInstance := this.GetTestInstance( variant );
+    existingImportedMPSPlannedOrder := select( importedMPSPlannedOrders, Elements, importedMPSPlannedOrder, true );
+    
+    // This assumes a new routing was already created
+    existingNewRouting := select( schedule, ImportedRouting_SC, importedRouting, importedRouting.RoutingId() <> variant );
+    
+    // Prevent duplicate type index
+    dueDate := existingImportedMPSPlannedOrder.DueDate() + Duration::Days( 1 );
+    
+    mpsPlanID := existingImportedMPSPlannedOrder.MPSPlanID();
+    routingID := ifexpr( testInstance.HasDiffRouting(), 
+                         existingNewRouting.RoutingId(),
+                         existingImportedMPSPlannedOrder.RoutingID() );
+    
+    importedMPSPlannedOrder := ImportedMPSPlannedOrder::FindImportedMPSPlannedOrder( mpsPlanID, routingID, dueDate );
+    
+    if( isnull( importedMPSPlannedOrder ) )
+    {
+      importedMPSPlannedOrder := ImportedMPSPlannedOrder::Create( schedule, mpsPlanID, routingID, dueDate );
+    }
+    
+    importedMPSPlannedOrder.Update( existingImportedMPSPlannedOrder.MPSPeriodStart(), 
+                                    existingImportedMPSPlannedOrder.MPSPeriodEnd(), 
+                                    existingImportedMPSPlannedOrder.Quantity() );
+    
+    importedMPSPlannedOrders.Add( importedMPSPlannedOrder );
+    
+    return &importedMPSPlannedOrders;
+  *]
+}

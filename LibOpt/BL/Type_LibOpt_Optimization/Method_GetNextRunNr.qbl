@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetNextRunNr () as Number
+{
+  TextBody:
+  [*
+    value := this.NextRunNr();
+    
+    // Get the last failed `LibOpt_RunNr`.
+    // If this one is higher than the one that is stored in the dataset, we use that one.
+    identifier := LibOpt_Optimization::AlgorithmStore_RunNr( this );
+    algorithm := AlgorithmStore::TryRetrieve( identifier );
+    if( not isnull( algorithm ) )
+    {
+      run_nr := algorithm.RetrieveString( attribute( LibOpt_Run, RunNr ).Name() );
+      AlgorithmStore::Store( identifier, & algorithm );
+      value := maxvalue( value, StringToNumber::ISOConverter().Convert( run_nr ) + 1 );
+    }
+    
+    this.NextRunNr( value + 1 );
+    
+    return value;
+  *]
+}

@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetDateOfFirstRecurrence (TimeZone timezone_i, Date startOfPeriod_i, Duration startTimeOfDay_i, 
+  Duration endTimeOfDay_i, Duration duration_i, Date earliestStart_i, 
+  Number recurrenceInterval_i, Number month_i, Boolean isDate_i, 
+  Number day_i, String weekOfMonth_i, String dayOfWeek_i) declarative remote as Date
+{
+  TextBody:
+  [*
+    // Start on the first day of the indicated MONTH of the year in which the period starts.
+    dateOfRecurrence := Date::Construct( startOfPeriod_i.Year(), month_i, 1 );
+    
+    // Determine the date of the month, depending on whether it concerns a specific day or a pattern.
+    date := LibCal_RecurrencePatternYearly::GetDateOfNextOccurrence( dateOfRecurrence, dateOfRecurrence, recurrenceInterval_i,
+                                                                     isDate_i, day_i, weekOfMonth_i, dayOfWeek_i );
+    
+    // Calculate endOfOccurrence, taking timezone and DSL into account.
+    endOfOccurrence := LibCal_Util::CalculateEndTime( timezone_i, date, startTimeOfDay_i, duration_i );
+    
+    // The occurrence must start after the start of the period.
+    // It can however start before the earliesStart, as long as it ends after it.
+    while( date < startOfPeriod_i or endOfOccurrence < earliestStart_i.DateTime( timezone_i ) )
+    {
+      // Get the next applicable occurrence.
+      dateOfRecurrence := LibCal_RecurrencePatternYearly::GetDateOfNextRecurrence( dateOfRecurrence, recurrenceInterval_i );
+      
+      // Determine the date, depending on whether it concerns a specific day or a pattern.
+      date := LibCal_RecurrencePatternYearly::GetDateOfNextOccurrence( dateOfRecurrence, dateOfRecurrence, recurrenceInterval_i,
+                                                                       isDate_i, day_i, weekOfMonth_i, dayOfWeek_i );
+    
+      endOfOccurrence := LibCal_Util::CalculateEndTime( timezone_i, date, startTimeOfDay_i, duration_i );
+    }
+    
+    // Return the start of the MONTH of the year.
+    return dateOfRecurrence;
+  *]
+}

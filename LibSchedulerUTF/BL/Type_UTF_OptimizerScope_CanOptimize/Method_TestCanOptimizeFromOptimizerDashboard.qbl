@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCanOptimizeFromOptimizerDashboard (Schedule schedule)
+{
+  Description: 'Unit test to test whether can optimize from optimizer dashboard form'
+  TextBody:
+  [*
+    isvariantfound := false;
+    resource1hasconfigurablerule := false;
+    resource2hasconfigurablerule := false;
+    issequencingoptimizerenabled := false;
+    isprogramoptimizerenabled := false;
+    selectedoptimizer := '';
+    isallowed := false;
+    
+    this.GetTestVariantForCanOptimizeFromOptimizerDashboard( isvariantfound,
+                                                             resource1hasconfigurablerule,
+                                                             resource2hasconfigurablerule,
+                                                             issequencingoptimizerenabled,
+                                                             isprogramoptimizerenabled, 
+                                                             selectedoptimizer,
+                                                             isallowed );
+    isallowedactual := false;
+    
+    if( isvariantfound )
+    {
+      operations := selectset( schedule, PlanUnit_SC.Operation_SC, op, true );
+      feedback := '';
+      isallowedactual := schedule.AllowedOptimizeBasedOnOptimizer( selectedoptimizer, operations, feedback );
+    }
+    
+    this.Run().AssertEqual( isallowed, isallowedactual,
+                            UTFUtility::GenerateFailedMessage( 'Precondition check of can optimize from optimizer dashboard', '' ) );
+  *]
+}

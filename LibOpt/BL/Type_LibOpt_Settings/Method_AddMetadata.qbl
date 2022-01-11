@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddMetadata (Type type, NamedValueTree nvt, NamedValue nv)
+{
+  TextBody:
+  [*
+    traverse( nv.Children(), Elements, child )
+    {
+      children := child.Children();
+      if( children.Size() = 0 )
+      {
+        attr := select( LibOpt_Utility::GetTypeAncestors( type ), Elements.MdlAttrElements.astype( MdlModeledAttrElement ), a, a.Name() = child.Name() );
+        
+        if( isnull( attr ) )
+        {
+          LibSE_SettingsContainer::Exclude( nvt, child );
+        }
+        else
+        {
+          LibSE_SettingsContainer::AddMetadata( nvt, child, attr, type );
+        }
+      }
+      else
+      {
+        rel := select( LibOpt_Utility::GetTypeAncestors( type ), Elements.MdlRelSideElements, rel, rel.Name() = child.Name() );
+        this.AddMetadata( rel.OtherSide().Type(), nvt, child );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

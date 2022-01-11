@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (ResourceInSuboptimizerSequencing from_resource, ResourceInSuboptimizerSequencing to_resource, ResourceConnection shadowee) as ResourceConnectionInSuboptimizerSequencing
+{
+  Description:
+  [*
+    Preconditions:
+    * from and to shadow resource must be owned by the same transient data
+    * from resource must shadow the given shadowee's FromResource
+    * to resource must shadow the given shadowee's ToResource
+  *]
+  TextBody:
+  [*
+    // mbr23 Jan-27-2020 (created)
+    assert( from_resource.Resource() = shadowee.FromResource() );
+    assert( to_resource.Resource() = shadowee.ToResource() );
+    owner := from_resource.ResourceGroup().TransientData();
+    assert( owner = to_resource.ResourceGroup().TransientData() );
+    object := owner.ResourceConnection( relnew,
+                                        FromResource := from_resource,
+                                        ToResource := to_resource,
+                                        ResourceConnection := shadowee );
+    return object;
+  *]
+}

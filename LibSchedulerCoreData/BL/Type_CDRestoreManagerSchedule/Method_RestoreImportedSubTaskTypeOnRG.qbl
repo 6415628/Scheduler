@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedSubTaskTypeOnRG (CDIntegration cdintegration, ImportedResourceGroup_SC importedresourcegroup)
+{
+  Description: 'Restore imported sub task type on resource group core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedSubTaskTypeOnRG_SC
+    cdImportedSubTaskTypeOnRGs := selectset( cdintegration, CDEntity.astype( CDImportedSubTaskTypeOnRG ), cdstt, 
+                                             cdstt.ResourceGroup() = importedresourcegroup.ResourceGroup() 
+                                           );
+    
+    traverse( cdImportedSubTaskTypeOnRGs, Elements, cdstt )
+    {
+      importedSubTaskTypeOnRG := importedresourcegroup.ImportedSubTaskTypeOnRG_SC( relnew, 
+                                                                                   ResourceGroup := cdstt.ResourceGroup(), 
+                                                                                   SubTaskID := cdstt.SubTaskID() 
+                                                                                 );
+                                                       
+      CopyCorresponding::CopyFrom( cdstt ).CopyTo( importedSubTaskTypeOnRG );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestProgramPhaseTransitionRule (Schedule schedule)
+{
+  Description: 'Test program phase transition rule'
+  TextBody:
+  [*
+    // All the phases will have only 5 tasks, only first phase has 6 tasks because of first program change task
+    // Gantt chart
+    // |            HEAD                 |   BODY      |    TAIL      |
+    // | ProgramChangeTask | Task1-Task5 | Task 6 - 10 | Task 11 - 15 |
+    isvalid := forall( schedule, ResourceGroup_SC.Resource_SC.ProgramSet.ProgramType.ProgramPhase, phase,
+                       ifexpr( phase.ProgramPhaseConfiguration().IsFirstProgramPhase(),
+                               phase.TaskInProgramSet( relsize ) = 6,
+                               phase.TaskInProgramSet( relsize ) = 5 ) );
+                             
+    this.Run().AssertTrue( isvalid,
+                           UTFUtility::GenerateFailedMessage( 'Test program phase transition rule failed.', this.Variant() ) );
+  *]
+}

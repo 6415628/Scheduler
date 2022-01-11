@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOAConstraintNoBufferWait (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata)
+{
+  Description: 'Add the constraint which ensures that the upstream resource does not become available until the downstream operation has started'
+  TextBody:
+  [*
+    // Create the no buffer wait dependency and link it to the time expression
+    dependency := poa.NewDependency( SuboptimizerSequencingPOA::NamePOADependencyNoBufferWait() );
+    dependencyconstr := poa.NewDependencyConstraint( SuboptimizerSequencingPOA::NamePOAConstraintNoBufferWait() );
+    dependencyconstr.Dependency( dependency );
+    dependencyconstr.Expression( poa.Expression( SuboptimizerSequencingPOA::NamePOAExpressionTime() ) );
+    
+    // Create the transition for the no buffer wait dependency
+    transition := POATransition::NN( poa, SuboptimizerSequencingPOA::NamePOAConstraintNoBufferWait(), 0.0 );
+    dependencyconstr.Transition( transition );
+    
+    // The downstream operation has to start before the upstream operation can finish
+    // Therefore, the upstream dummy node cannot start before the downstream main node
+    dependencyconstr.MatchKind( 'PP' );
+    
+    traverse( transientdata, OperationInSuboptimizerSequencing, upstreamoperation, 
+              upstreamoperation.GetHasNoBufferWaitSubtask() )
+    {
+      to_node := poa.Node( SuboptimizerSequencingPOA::NamePOADummyEndNode( upstreamoperation ), upstreamoperation );
+      
+      traverse( upstreamoperation, AsUpstreamOperationInPrecedenceDependency, precedencedependency,
+                precedencedependency.IsDirectPrecedence() )
+      {
+        from_node := poa.Node( precedencedependency.DownstreamOperation() );
+        dependency.Add( from_node, to_node );
+        
+        // Set the transition of this dependency
+        // Select the material that connects the upstream and downstream operation
+        operationmaterial := select( upstreamoperation, OutputDependency.astype( OperationMaterialInSuboptimizerSequencing ), material, 
+                                     material.AsInputDependency() = precedencedependency.DownstreamOperation() );
+        
+        // Take its optimistic TransportCoolingDuration                           
+        optimisticduration := guard( operationmaterial.OperationDependency().astype( OperationMaterial ).OptimisticTransportCoolingDuration(), Duration::Zero() );
+        
+        // Set the transition equal to the negative of this optimistic TransportCoolingDuration 
+        // since this duration postpones the start of the downstream operation but does not keep the upstream resource occupied
+        transition.Set( from_node, to_node, -optimisticduration.HoursAsReal() );
+      }
+    }
+  *]
+}

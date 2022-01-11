@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Synchronize (LibCal_StagingParticipation stagingParticipation_i)
+{
+  TextBody:
+  [*
+    stagEvent := stagingParticipation_i.StagingEvent();
+    
+    // Don't update in case of IsAllDay.
+    // In that case the StartDate and EndDate will be updated by SetIsAllDay.
+    // Unless the participation has just been created; in that case it must be updated to initialize it.
+    // Or unless the StartDate has changed.
+    if( not stagEvent.IsAllDay()
+        or this.StartDate().IsInfinite()
+        or this.StartDate() <> stagingParticipation_i.StartDate() )
+    {
+      // Calculate startTime and endTime, taking timezone and DSL into account.
+      timezone  := this.Calendar().GetTimeZone();
+      startTime := LibCal_Util::CalculateStartTime( timezone, stagingParticipation_i.StartDate(), stagEvent.StartTimeOfDay() );
+      endTime   := LibCal_Util::CalculateEndTime(   timezone, stagingParticipation_i.StartDate(), stagEvent.StartTimeOfDay(), stagEvent.Duration() );
+      this.Update( startTime.Date( timezone ), endTime.Date( timezone ) );
+    }
+    
+    // Also synchronize the RecurrencePeriod.
+    super.Synchronize( stagingParticipation_i );
+  *]
+}

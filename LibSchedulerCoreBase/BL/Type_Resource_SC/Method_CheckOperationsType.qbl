@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckOperationsType (Operation_SCs operations, output String feedback_o, output Boolean isallowedhard_o) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    onlyValidOperations := true; 
+    
+    // Run usual logic when not in optimization service mode
+    if( not this.Schedule().IsOptimizationService() )
+    {
+      invalid_operations := selectset( operations, Elements, op, op.Type().TrimBoth() <> this.Type().TrimBoth() or op.OperationOnResource( relsize ) = 0 )
+                                   
+      onlyValidOperations := invalid_operations.Size() = 0;
+      
+      if( not onlyValidOperations )
+      {
+        if( invalid_operations.Size() > 1 )
+        {
+          feedback_o := String::NewLine() + Translations::SC_ResourceTypeUnmatchedMultiple( this.Name(), this.Type() );
+        }
+        else
+        {  
+          operation := invalid_operations.Element( 0 );
+          feedback_o := Translations::SC_ResourceTypeUnmatched( operation.OperationID(), operation, this )
+        }
+        
+        isallowedhard_o := false; 
+      }
+    }
+    
+    return onlyValidOperations;
+  *]
+}

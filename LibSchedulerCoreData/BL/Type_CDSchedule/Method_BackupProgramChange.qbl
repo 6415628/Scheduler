@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupProgramChange (const Schedule schedule)
+{
+  Description: 'Backup program change core data'
+  TextBody:
+  [*
+    traverse( schedule, ProgramChange, programChange )
+    {
+      cdProgramChange := this.CDEntity( relnew, CDProgramChange );
+      CopyCorresponding::CopyFrom( programChange ).CopyTo( cdProgramChange );
+      
+      traverse( programChange, ProgramChangeInType, pct )
+      {
+        cdProgramChangeInType := this.CDEntity( relnew, CDProgramChangeInType );
+        CopyCorresponding::CopyFrom( pct ).CopyTo( cdProgramChangeInType );
+        
+        // Additonal attribute in core data to persist the program change that this program change in type belongs
+        cdProgramChangeInType.ProgramChangeID( programChange.ProgramChangeID() );
+        
+        // Additonal attribute in core data to persist the program type configuration that this program change in type belongs
+        cdProgramChangeInType.ToProgramDefinitionConfigurationID( pct.ToProgramTypeConfiguration().ProgramDefinitionConfigurationID() );
+        cdProgramChangeInType.ToProgramSetConfigurationID( pct.ToProgramTypeConfiguration().ProgramSetConfigurationID() ); 
+        cdProgramChangeInType.ToProgramTypeConfigurationID( pct.ToProgramTypeConfiguration().ProgramTypeConfigurationID() );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

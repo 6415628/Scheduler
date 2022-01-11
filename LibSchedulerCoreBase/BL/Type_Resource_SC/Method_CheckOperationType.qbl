@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckOperationType (Operation_SC operation, OperationOnResource operationonresource, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Checks operation type matches resource type and checks whether OOR exists'
+  TextBody:
+  [*
+    //Check if operation type matches resource type
+    isvalidtype := operation.Type().TrimBoth() = this.Type().TrimBoth();
+    
+    //Check OOR exists
+    value := isvalidtype and not isnull( operationonresource );
+    
+    if( not value )
+    {
+      feedback_o := String::NewLine() + Translations::SC_ResourceTypeUnmatched( operation.OperationID(), operation, this );
+    }
+    
+    return value;
+  *]
+}

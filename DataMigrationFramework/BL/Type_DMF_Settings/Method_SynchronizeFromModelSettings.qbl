@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeFromModelSettings
+{
+  TextBody:
+  [*
+    // sbt2 Apr-15-2021 (created)
+    
+    // Debug - do not delete
+    //logfile( ">>> SynchronizeModelSettings" );
+    
+    this.DataUpgradeRootDirectory      ( DMF_Settings::GetModelSetting_DataUpgradeRootDirectory() );
+    this.NrOfParallelDatasetsConversion( DMF_Settings::GetModelSetting_NrOfParallelDatasetsConversion() );
+    
+    // Data backup
+    previousIsAutoBackup := this.IsAutoBackup();
+    
+    this.IsAutoBackup       ( DMF_Settings::GetModelSetting_IsAutoBackup() );
+    this.AutoBackupFrequency( DMF_Settings::GetModelSetting_AutoBackupFrequency() );
+    
+    // Update last synchronization time
+    this.TimestampLastSynchronize( DateTime::Now() );
+    
+    // Update daemon only if there is a delta
+    if( previousIsAutoBackup <> this.IsAutoBackup() )
+    {
+      this.ConvertorDataset().EnableDisableExportDataDaemon();
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanBefore (Operation_SCs operations, Task_SC element)
+{
+  Description: 'Move all operations to a spot before other single task.'
+  TextBody:
+  [*
+    Operation_SC::SetIsPlanning( operations, true );
+    
+    // Unplan all operations previously planned on different resource
+    traverse( operations, Elements, operation,
+              guard( not this.IsTaskTypeMatching( operation.Task_SC() ), false ) )
+    {
+      operation.Unplan();
+    }
+    
+    // Propagate operation to task relation, as the operations have been unplanned
+    Transaction::Transaction().Propagate( relation( Operation_SC, Task_SC ) );
+    
+    traverse( operations, Elements, operation )
+    { 
+      if( this.IsPlanRelatedOperations() )
+      {
+        Schedule::PlanRelatedOperationsBefore( operation, this, element, false, false );
+      }
+      this.PlanBefore( operation, element );
+    }
+    
+    this.Schedule().AutomaticProductBasedMaterialReservationBySorting();
+    Operation_SC::SetIsPlanning( operations, false );
+  *]
+}

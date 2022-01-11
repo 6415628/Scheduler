@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateManualPlannedFulfillments (Demands demands, Supplys supplies, Boolean issplit, 
+  Real quantity_keep) as owning Fulfillments
+{
+  Description: 'Reserve supply to demand via drag and drop'
+  TextBody:
+  [*
+    demands := selectsortedset( demands, Elements, d, true, d.DueDate(), d.Quantity(), d.DemandID() );
+    supplies := selectsortedset( supplies, Elements, supply, true, supply.AvailableFrom(), supply.Quantity(), supply.SupplyID() ); 
+    createdFulfillments := construct( Fulfillments );
+    
+    // when supply availablefrom is maxdatetime, the sorting among supplies with maxdatetime will be inaccurate, apparently maxdatetimes are not treated equal
+    traverse( demands, Elements, demand )
+    { 
+      newFulfillments := demand.CreatePlannedFulfillments( supplies, true, issplit, quantity_keep );
+      createdFulfillments := createdFulfillments.Add( newFulfillments );
+    }
+    
+    return &createdFulfillments;
+  *]
+}

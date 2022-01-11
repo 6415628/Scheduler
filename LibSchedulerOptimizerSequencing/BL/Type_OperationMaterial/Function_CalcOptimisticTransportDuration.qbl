@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcOptimisticTransportDuration
+{
+  TextBody:
+  [*
+    // mbr23 Jan-23-2020 (created), logic taken from CalcTransportDuration and made planning-agnostic.
+    
+    rows := this.GetTransportDurationRows();
+    duration := min( rows, Elements, row,
+    // previous operation: match any of the allowed resource groups
+                           ( row.ResourceGroupIsWildcard()
+                             or exists( this, FromOperation.OperationOnResourceGroup.ResourceGroup_SC, rg,
+                                                rg.Name() = row.ResourceGroup() ) )
+    // next operation: match any of the allowed resource groups
+                           and ( row.NextResourceGroupIsWildcard()
+                                 or exists( this, ToOperation.OperationOnResourceGroup.ResourceGroup_SC, rg,
+                                                    rg.Name() = row.NextResourceGroup() ) )
+    // Match the planned previous operation allowed resource
+                           and ( row.ResourceIDIsWildcard()
+                                 or exists( this.FromOperation(), AllowedOperationOnResourceHard.Resource_SC, r, r.ResourceID() = row.ResourceID() ) )
+    // Match the planned next operation allowed resource
+                           and ( row.NextResourceIDIsWildcard()
+                                 or exists( this.ToOperation(), AllowedOperationOnResourceHard.Resource_SC, r, r.ResourceID() = row.NextResourceID() ) ),
+    // Be optimistic: get the row with the lowest transport duration
+                           row.TransportDuration() );
+    
+    if( duration.IsInfinite() )
+    {
+      duration := Duration::Zero();
+    }
+    
+    this.OptimisticTransportDuration( duration );
+  *]
+}

@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test080_DeleteConditionTrue (LibOpt_TestDataset dataset)
+{
+  Description: 'Check if a dataset is deleted if the `DeleteCondition` method of a `LibOpt_DatasetCopyConditional` returns `true`.'
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( true );
+    
+    // For each component in 'CreateAllComponents', a run is created that only contains that component.
+    runs := opt.CreateAllComponents();
+    se := dataset.ScopeElementMock( relnew );
+    
+    strs := construct( structured[stream[JSON]] );
+    traverse( runs, Elements, run )
+    {
+      scope := LibOpt_ScopeFat::Create( run );
+      scope.Add( se );
+      run.SetStartScope( scope );
+      
+      startcomponent := run.StartComponent();
+      // Attach a 'LibOpt_DatasetCopyConditional_UnitTest_DeleteConditionTrue' dataset copy to the 'Initialize', 'Continue' and 'Finalize' component positions of the 'startcomponent' component.
+      // Note: the 'Continue' component position of iterator components is skipped.
+      LibOpt_TestUnit_DatasetCopy::CreateDatasetCopiesForNormalComponentPositions( startcomponent,
+                                                                                   // The LibOpt_DatasetCopyConditional_UnitTest_DeleteConditionTrue type will first always create a dataset copy.
+                                                                                   // Then the dataset copy will always be deleted. 
+                                                                                   typeof( LibOpt_DatasetCopyConditional_UnitTest_DeleteConditionTrue ).Name() );
+      
+      strs.Add( run.Start() );  
+    }
+    
+    str := stream[JSON]::Merge( strs )
+    ->|stream[Void]::Wait( this.MDSEditorUpdateTime() ) // Wait some time to ensure that the dataset copies have been created and that MDSEditor::Editor().ObjectInfos() is updated. 
+    ->|void->() // Start a reactive call to handle the created dataset copies.
+    {
+      traverse( runs,
+                Elements.Component.ComponentPosition,
+                componentposition,
+                not isnull( componentposition.DatasetCopyConditional() ) 
+                )
+      {
+        LibOpt_TestUnit_DatasetCopy::AssertsForComponentPositionDeletedDataset( this, componentposition );
+      }
+    }   
+    
+    this.NoException( str );
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

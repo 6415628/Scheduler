@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method EnableDisableRuleCheckOption () id:Method_DialogRuleAllowedCombinedLength_EnableDisableRuleCheckOption
+{
+  #keys: '[136602.1.318851656]'
+  Body:
+  [*
+    // Disable rule check options for program phase transition rule or minimum combined length
+    isminimumcombinedlength := [Boolean]RadioButtonGroupMinMax.BoundValue();
+    isprogramphaserule := RadioButtonGroupRuleScope.BoundValue() = RuleConstant::RuleScope_ProgramPhase()
+                          and CheckBoxIsProgramPhaseTransitionRule.Checked()
+    isenablemanualplanning := not isminimumcombinedlength
+                              and not isprogramphaserule;
+    isenableoptimizer := not isprogramphaserule;
+                
+    RadioButtonGroupManualPlanning.Enabled( isenablemanualplanning );
+    RadioButtonGroupOptimizer.Enabled( isenableoptimizer );
+    
+    if( not isenablemanualplanning )
+    {
+      // Disable manual planning option
+      Dialog.Data().NeedManualPreconditionCheck( false );
+      RadioButtonGroupManualPlanning.BoundValue( 'false' );
+      feedbackmessage := ifexpr( isminimumcombinedlength,
+                                 Translations::Rule_ManualPlanningNotSupportedForMinimumCombinedLength(),
+                                 Translations::Rule_ManualPlanningNotSupportedForPhaseTransitionRule() );
+      RadioButtonGroupManualPlanning.DisableWithUserFeedback( feedbackmessage );
+    }
+    
+    if( not isenableoptimizer )
+    {
+      // Disable optimizer option
+      Dialog.Data().IsHardConstraintForOptimizer( true );
+      RadioButtonGroupOptimizer.BoundValue( 'true' );
+      RadioButtonGroupOptimizer.DisableWithUserFeedback( Translations::Rule_OptimizerOptionNotSupportedForPhaseTransitionRule() );
+    }
+  *]
+}

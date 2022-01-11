@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportAsIfFrom3DSpace (String dataTransformationID_i, Boolean doSynchronize_i) as Boolean id:Method_LibDIF_GlobalState_ImportAsIfFrom3DSpace
+{
+  #keys: '[131092.1.780824520]'
+  Body:
+  [*
+    // Import data from JSON.
+    success := false;
+    
+    // Ask the user for the JSON-file that contains the IDs of the objects that must be imported.
+    fileRef := Application.GetOpenFileName( "json" );
+    
+    if( fileRef <> "" )
+    {
+      // Make sure that the Integration-dataset is selected.
+      if( this.EnsureIntegrationDataset() )
+      {
+        // Call the QIntegrator to import the data as integration objects.
+        // Synchronize the data if applicable.
+        api := this.GetIntegrationAPI();
+        if( not isnull( api ) )
+        {
+          if( doSynchronize_i )
+          {
+            api.ImportAsIfFrom3DSpaceAndSynchronize( fileRef, dataTransformationID_i );
+          }
+          else
+          {
+            api.ImportAsIfFrom3DSpace( fileRef, dataTransformationID_i );
+          }
+    
+          success := true;
+        }
+      }
+    }
+    
+    return success;
+  *]
+}

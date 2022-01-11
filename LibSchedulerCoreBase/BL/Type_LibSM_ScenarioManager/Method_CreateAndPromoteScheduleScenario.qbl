@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateAndPromoteScheduleScenario
+{
+  Description: 'Create loaded Schedule scenario from Schedule dataset and promote it to leading scenario.'
+  TextBody:
+  [*
+    // Create Schedule scenario for Schedule dataset only
+    
+    // Use root folder
+    scenarioFolder := select( this, ScenarioNode.astype( LibSM_ScenarioFolder ), folder,
+                              folder.Name() = LibSM_ScenarioManager::GetFolderRoot() );
+    
+    // Use default knowledge profile
+    knowledgeProfile := select( this, KnowledgeProfile, knowledgeprofile,
+                                knowledgeprofile.Name() = Constants::GetKnowledgeProfileDefault() );
+    
+    // ScenarioType, Status and OptimizerStrategy have been replaced with LibSM_MetaData in the latest version of ScenarioManager library 
+    metadatas := construct( LibSM_MetaDatas );
+    
+    this.RefreshDatasets();
+    
+    datasets := this.GetDatasetsWithoutScenario();
+    
+    traverse( datasets, Elements, dataset, dataset.Name() = Constants::ScheduleDataset() )
+    {
+      scheduleScenario := this.CreateScenarioFromDataset( dataset, 
+                                                          scenarioFolder,
+                                                          dataset.Name(),
+                                                          '',
+                                                          false,
+                                                          '',
+                                                          knowledgeProfile,
+                                                          metadatas );
+                                       
+      //Promote first scenario to become leading scenario
+      scheduleScenario.astype( Scenario ).PromoteScenario();                                                                        
+    }
+  *]
+}

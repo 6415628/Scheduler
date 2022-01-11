@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: pnlStartOfPeriod_549/dsStartOfPeriod
+Response OnChanged () id:Response_pnlStartOfPeriod_549_dsStartOfPeriod_OnChanged
+{
+  #keys: '[131092.1.1288743783]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebDateTimeFieldBase_OnChanged'
+  QuillAction
+  {
+    Body:
+    [*
+      // Adjust the EndDate accordingly.
+      if( dhParticipationToSubscribeTo.Data().IsRecurring() )
+      {
+        if( dsEndOfPeriod.Date().IsFinite() )
+        {
+          delta := dsStartOfPeriod.Date() - dhStartOfPeriod.Data();
+          dsEndOfPeriod.Date( dsEndOfPeriod.Date() + delta );
+        }
+        
+        // Update the 'memory' for later delta-calculation.
+        dhStartOfPeriod.Data( dsStartOfPeriod.Date() );
+      }
+    *]
+    GroupServerCalls: false
+  }
+}

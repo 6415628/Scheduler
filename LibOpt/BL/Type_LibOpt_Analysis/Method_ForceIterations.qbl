@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method ForceIterations
+{
+  Description: 'Require that the `LibOpt_Analysis` is linked to a `LibOpt_Run` that has `HasIterations` on true.'
+  TextBody:
+  [*
+    if( not this.Run().HasIterations() )
+    {
+      this.Run().HasIterations( true );
+      
+      // Propagate to calculate the IterationNr
+      Transaction::Transaction().Propagate( relation( LibOpt_SnapshotComponent, IterationPartOwning ) );
+      Transaction::Transaction().Propagate( relation( LibOpt_SnapshotComponent, IterationPart ) );
+      Transaction::Transaction().Propagate( relation( LibOpt_SnapshotComponent, IterationOwning ) );
+      Transaction::Transaction().Propagate( relation( LibOpt_Iteration, IterationPartNM ) );
+      Transaction::Transaction().Propagate( attribute( LibOpt_Iteration, IterationNr ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

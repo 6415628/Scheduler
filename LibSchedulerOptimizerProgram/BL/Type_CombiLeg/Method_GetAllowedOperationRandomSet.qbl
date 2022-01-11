@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllowedOperationRandomSet (Operation_SCs operations) as owning Operation_SCs
+{
+  TextBody:
+  [*
+    // zyi1 Jul-30-2021 (created)
+    oponppors := selectset( operations,
+                            Elements.OperationOnPPCOnResource,
+                            ooppcor,
+                            exists( this, CombiLegOnCombiPhase.CombiProgramPhase.ProgramPhaseConfiguration, ppc, ppc = ooppcor.PPCOnResource().ProgramPhaseConfiguration() )
+                            and ooppcor.IsAllowed() )
+    info( 'oponppors: ', oponppors.Size(), ' allowed hard: ', counter( oponppors, Elements.Operation_SC, op, this.GetIsOperationAllowedHard( op ) ) );
+    return selectsortedset( oponppors,  
+                            Elements.Operation_SC,
+                            op, 
+                            this.GetIsOperationAllowedHard( op )
+                            //not already in previous combileg of the same combi program
+                            and not exists( this, 
+                                        LeadingCombiProgramPhase.CombiProgramType.CombiProgramPhase.CombiLegAsLeading,
+                                        cl, 
+                                        cl.SequenceNr() < this.SequenceNr()
+                                        and exists( cl, OperationInCombiLeg.Operation_SC, op1, op1 = op ) ),
+                            //and not exists( this, 
+                            //                CombiLegOnCombiPhase.CombiProgramPhase.CombiProgramType.CombiProgramPhase.CombiLegAsLeading.OperationInCombiLeg.Operation_SC, 
+                            //                op1, 
+                            //                op1 = op ), 
+                            //will first select due operations
+                            //If we run out of operations that are due in the scheduling horizon. 
+                            //Then we should stop creating new programs. But we should still fill up the existing leading program with operations that are not due.
+                            not op.PlanUnit_SC().Order_SC().IsDueInSchedulingHorizon(),
+                            Number::Random() );
+  *]
+}

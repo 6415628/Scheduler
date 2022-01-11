@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllShiftPatternAssignmentTimeReferences () as owning DateTimes
+{
+  Description: 'Returns all relevant shift pattern assignment time references, assignment chunk start/end times.'
+  TextBody:
+  [*
+    importedResource := ImportedResource_SC::FindImportedResourceTypeIndex( this.Resource_SC().ResourceID() );
+    
+    allRelevantStarts := selectuniquevalues( importedResource, 
+                                             ImportedShiftPatternAssignment, 
+                                             shiftPatternAssignment,
+                                             true,
+                                             shiftPatternAssignment.ChunkStartDate() );
+    
+    allRelevantEnds := selectuniquevalues( importedResource,
+                                           ImportedShiftPatternAssignment, 
+                                           shiftPatternAssignment,
+                                           true,
+                                           shiftPatternAssignment.ChunkEndDate() );
+    
+    // Need 'Copy' because 'Sort' doesn't return ownership of the structuredset
+    allRelevantTimings := allRelevantStarts.Union( allRelevantEnds ).Sort().Copy();
+    
+    return &allRelevantTimings;
+  *]
+}

@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddExpressionSequencePenalty (SuboptimizerMRSPOA_POAOneResourceGroup poa, LibOpt_Task task)
+{
+  Description: 'Theis method add the expression which define the sequence penalties'
+  TextBody:
+  [*
+    // stn4 Mar-22-2016 (created)
+    sequencepenaltyexpression := poa.NewExpression( SuboptimizerMRSPOA::NamePOAMinimizeSequencePenaltyExpression() );
+    ///////////////////////////////////////////////////////////////////////////
+    // DurationTransition : Setup Duration
+    ///////////////////////////////////////////////////////////////////////////
+    sequencepenaltytransition := POATransition::PNN( poa, 'SequencePenalty', 0.0 );
+    sequencepenaltytransition.Symmetric( false );
+    sequencepenaltyexpression.Transition( sequencepenaltytransition );
+    
+    traverse( task.Scope().ResourceGroups(), Elements.Resource_SC.astype( SingleResourceBase ), resource )
+    {
+      pathtype := poa.PathType( SuboptimizerMRSPOA::POANamePathResource( resource ), resource );
+    
+      traversedelement := this.GetAllowedElement( resource, task.Scope() );
+    
+      traverse( traversedelement, Elements, element1 )
+      {
+        node1 := poa.Node( SuboptimizerMRSPOA::POANameNodeOperation( element1 ), element1 );
+    
+        traverse( traversedelement, Elements, element2,
+                  element2 <> element1 )
+        {
+          node2 := poa.Node( SuboptimizerMRSPOA::POANameNodeOperation( element2 ), element2 );
+          //get the sequence penalty between element1 and element 2
+          setupdurationweight := this.Settings().SequencePenaltyFactor();
+          sequencepenalty := setupdurationweight * resource.GetSequencePenalty( element1, element2 )
+                             + setupdurationweight * resource.GetSetupDuration( element1, element2 ).HoursAsReal();
+          sequencepenaltytransition.Set( pathtype, node1, node2, sequencepenalty );
+        }
+      }
+    }
+  *]
+}

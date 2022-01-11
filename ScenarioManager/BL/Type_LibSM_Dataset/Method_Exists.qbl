@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method Exists () as Boolean
+{
+  Description: 'Returns whether the actual underlying dataset still exists.'
+  TextBody:
+  [*
+    editor        := MDSEditor::Editor();
+    loadedMDS     := editor.LoadedObjectInfo( this.DatasetMDSID() );
+    datasetExists := not isnull( loadedMDS );
+    
+    if ( not datasetExists )
+    {
+        // Now try whether the dataset is just offline (which is a more expensive check)
+        unloadedMDS := editor.ObjectInfo( this.DatasetMDSID() );
+        datasetExists := not isnull( unloadedMDS );
+    }
+    
+    return datasetExists;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestIsScheduledBeforeShelfLifeExpirationDateConstraint (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    hasShelfLifeExpirationDate := false;
+    shelfLifeExpirationDate := DateTime::MinDateTime();
+    end := DateTime::MinDateTime();
+    isValid := false;
+    
+    this.GetTestVariant( hasShelfLifeExpirationDate,
+                         shelfLifeExpirationDate,
+                         end,
+                         isValid );
+    
+    task := select( schedule, ResourceGroup_SC.Resource_SC.Task_SC, task, true );
+    
+    value := not isnull( task )
+             and task.HasShelfLifeExpirationDate() = hasShelfLifeExpirationDate
+             and task.ShelfLifeExpirationDate() = shelfLifeExpirationDate
+             and task.End() = end
+             and task.IsBeforeShelfLifeExpirationDate() = isValid;
+    
+    this.Run().AssertTrue( value, 
+                           UTFUtility::GenerateFailedMessage( 'Single task constraint for IsScheduledBeforeShelfLifeExpirationDate failed.', 
+                                                              this.Variant() ) );
+  *]
+}

@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidOperation (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Checks whether the operation exists in scheduler.'
+  TextBody:
+  [*
+    // woi1 Feb-10-2017 (created)
+    planunitid := this.OrderNo();
+    seqnr := [Number]this.OprSequenceNo()
+    operationid := Operation_SC::GenerateOperationID( planunitid, seqnr );
+    
+    operation := select( this, 
+                         ImportedAprisoOperationProgress_SC.ImportedAprisoScheduleProgress_SC.Schedule.PlanUnit_SC.Operation_SC, 
+                         op, 
+                         op.PlanUnit_SC().PlanUnitID() = planunitid 
+                         and op.WorkOrderSequenceNr() = seqnr );
+    
+    isvalid := not isnull( operation );
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( operationid );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedAprisoOperation_Instance( name ),
+                                                               Translations::SC_ImportedAprisoOperation_ViolateHasValidOperation() ) );
+    }
+    
+    return isvalid;
+  *]
+}

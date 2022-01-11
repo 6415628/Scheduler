@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestDeleteResourceGroupPrecondition (Schedule schedule)
+{
+  Description: 'Test delete resource group precondition.'
+  TextBody:
+  [*
+    feedback := '';
+    resourceGroup := select( schedule, ResourceGroup_SC, resourceGroup, true );
+    task := select( resourceGroup, Resource_SC.Task_SC, task, true );
+    
+    // Propagate attribute Resource_SC.CanBeDeleted for precondition check
+    Transaction::Transaction().Propagate( attribute( Resource_SC, CanBeDeleted ) );
+    
+    // Check if precondition is violated when resource has task planned
+    value := not ResourceGroup_SC::CanDeleteResources( resourceGroup, feedback );
+    
+    task.Unplan();
+    
+    // Propagate attribute Resource_SC.CanBeDeleted for precondition check
+    Transaction::Transaction().Propagate( attribute( Resource_SC, CanBeDeleted ) );
+    
+    // Check if precondition is not violated when resource has task planned
+    value := value and ResourceGroup_SC::CanDeleteResources( resourceGroup, feedback );
+    
+    this.Run().AssertTrue( value, UTFUtility::GenerateFailedMessage( 'DeleteResourceGroupPrecondition check failed', '' ) );
+  *]
+}

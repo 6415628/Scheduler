@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Read (Exception exception) as owning LibOpt_Error
+{
+  TextBody:
+  [*
+    substrings := exception.Message().Tokenize( LibOpt_SnapshotError::SeparatorDetailedInformation() );
+    
+    // Substring the message to find the correct messages.
+    result := construct( LibOpt_Error );
+    if( substrings.Size() = 2 )
+    {
+      result.Code( exception.ErrorNumber() );
+      result.GeneralInformation( substrings.Element( 0 ) );
+      result.DetailedInformation( substrings.Element( 1 ) );
+    }
+    else
+    {
+      result.Code( exception.ErrorNumber() );
+      result.GeneralInformation( exception.Message() );
+      result.DetailedInformation( '' );
+    }
+    
+    return & result;
+  *]
+}

@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetProgramTypeChangeIsAllowed (ProgramTypeConfiguration fromprogramtypeconfiguration, ProgramTypeConfiguration toprogramtypeconfiguration) declarative remote as Boolean
+{
+  Description: 'Get program type change is allowed or not based on multiple levels ( Program set, program type or program type change )'
+  TextBody:
+  [*
+    // Get program type change is allowed or not based on multiple levels ( Program set, program type or program type change )
+    value := false;
+    
+    // Only perform checkings if toprogramtypeconfiguration is not null
+    if( not isnull( toprogramtypeconfiguration ) )
+    {
+      // 1. Check on program type change level settings
+      programtypechange := select( toprogramtypeconfiguration, AsToProgramTypeConfiguration, typechange,
+                                   typechange.FromProgramTypeConfiguration() = fromprogramtypeconfiguration );
+      if( not isnull( programtypechange ) )
+      {    
+        value := programtypechange.IsAllowed();
+      }
+      // 2. Check on program type level settings which already included program set level settings if not overruled on program type level
+      else
+      {
+        value := toprogramtypeconfiguration.IsProgramTypeChangeAllowed();  
+      }                                   
+    }
+    
+    return value;
+  *]
+}

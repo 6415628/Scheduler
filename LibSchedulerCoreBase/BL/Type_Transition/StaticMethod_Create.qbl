@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (SingleTaskBase owner) as Transition
+{
+  TextBody:
+  [*
+    transition := owner.Transition( relnew );
+    
+    operation := owner.OperationAsSingleTask();
+    
+    traverse( owner,
+              Resource_SC.ResourceGroup_SC.PlannedOperation,
+              o,
+              o <> operation
+               and guard( owner.Next().astype( SingleTaskBase ).OperationAsSingleTask() <> o, true )
+             )
+    
+    {
+      o.OperationTransition( relnew, Transition := transition );
+    }
+    
+    return transition;
+  *]
+}

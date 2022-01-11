@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method CanSetAuthorization (String userName) declarative remote as Boolean
+{
+  Description: 'Has permission to set authorization'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    // A user is allowed to set authorization on own folders/scenarios, and on folders/scenarios that have been created by the System.
+    if( not feedback.CheckHard( this.IsAuthorized( userName ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioNode_CanSetAuthorization_IsNotCreatedByUser( this.CreatedBy(), this.Name() ) );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

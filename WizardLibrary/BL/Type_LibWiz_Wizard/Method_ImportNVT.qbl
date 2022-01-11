@@ -1,0 +1,65 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportNVT (BinaryValue binaryValue, LibWiz_InitProcess process) as LibWiz_InitProcess
+{
+  TextBody:
+  [*
+    // Import from binary file 
+    
+    canImport := binaryValue.Size() > 0;
+    objImport := null( Object, owning );
+    wizardType := this.GetType();
+    processType := process.GetType();
+    copyProcess := null( LibWiz_InitProcess );
+    processName := process.Name();
+    
+    if( canImport )
+    {
+      binaryData := binaryValue.AsBinaryData();
+      importNVT := NamedValueTreeBinaryIO::NamedValueTreeFromBinaryData( binaryData );
+      nameValue := select( importNVT.Root().Children(), Elements, e, e.Name() = wizardType.Name() ); 
+    
+      canImport := not isnull( nameValue );
+      if( canImport )
+      {     
+        // Flush old process
+        process.Delete();
+        
+        // Generate new IDs on NVT in order to avoid type index error
+        // when importing a workflow for a feature process that results from the export of another feature process 
+        rootObj := select( importNVT.Root().Children(), Elements, e, true );
+        LibWiz_NVTTools::GenerateIds( rootObj, '' );
+    
+        objImport := NamedValueTreeIO::ImportObject( importNVT, nameValue, wizardType );   
+    
+        wizardManager := objImport.astype( LibWiz_Wizard );
+        if( processType = typeof( LibWiz_InitProcessBase ) )
+        {
+          copyProcess := guard( wizardManager.LibWiz_InitProcessBase(), null( LibWiz_InitProcessBase ) );
+          canImport := not isnull( copyProcess );
+          if( canImport )
+          { 
+            this.LibWiz_InitProcessBase( relmove, copyProcess.astype( LibWiz_InitProcessBase ) ); 
+          }
+        }
+        else if( processType = typeof( LibWiz_InitProcessFeature ) )
+        {
+          copyProcess := select( wizardManager, LibWiz_InitProcessFeature, p, true );
+          canImport := not isnull( copyProcess );
+          if( canImport )
+          {
+            copyProcess.Name( processName ); // Keep old process name
+            this.LibWiz_InitProcessFeature( relmove, copyProcess.astype( LibWiz_InitProcessFeature ) ); 
+          }
+        }
+      }
+    }
+    
+    if( not canImport )
+    {
+      info( 'Import of Wizard Process failed.' );
+    }
+    
+    return copyProcess;
+  *]
+}

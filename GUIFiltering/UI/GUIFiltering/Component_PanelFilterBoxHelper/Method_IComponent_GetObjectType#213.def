@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method IComponent_GetObjectType (internal[GUIDataExtractor] dataextractor) as String id:Method_LibGUIFiltering_PanelFilterBoxHelper_IComponent_GetObjectType_213
+{
+  #keys: '[128900.0.423135594]'
+  Body:
+  [*
+    parenttype := dataextractor.GetProperty('DataType');
+    nodestype  := '';
+    
+    if ( parenttype <> '' )
+    {
+      typeview := ApplicationScope.ResolveType( parenttype ).TypeView();
+      path     := dataextractor.Transformation().Tokenize( '.' );
+    
+      traverse( path, Elements, relname )
+      {
+        rel := select( typeview, Relations, r, r.Name() = relname );
+        if ( not isnull(rel) )
+        {
+          typeview := rel.ToType().TypeView();
+        }
+        else
+        {
+          typeview := null(TypeView, owning);
+        }
+      }
+    
+      if ( not isnull(typeview) )
+      {
+        nodestype := typeview.Type().Name();
+      }
+    }
+    
+    return nodestype;
+  *]
+}

@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: SCListTask
+Response OnDrop (structured[PlanUnit_SC] information, BatchTask target, BatchResource resource) id:Response_SCListTask_OnDrop_8
+{
+  #keys: '[11932.0.373895548]'
+  Body:
+  [*
+    // OnDrop structured[PlanUnit] --> BatchResource
+    ctrlshift := dropaction.IsControlShift();
+    operations := selectset( information, Elements.Operation_SC, op, op.Type() = resource.Type());
+    
+    if( not isnull( target ) and not ctrlshift )
+    {
+      // (Add operation to batch)
+      target.Batch().AddOperations( operations );
+    }
+    else
+    {
+      resource.CreateBatchAssignOperationsPlanBatch( operations, target.Previous().astype( BatchTask ) );
+    }
+  *]
+  DefinitionID => /SCListTask/Responsedef_SCListTask_OnDrop
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey       := dropaction.IsControl();
+    ctrlshiftkey  := dropaction.IsControlShift();
+    
+    operations := selectset( information, Elements.Operation_SC, op, op.Type() = resource.Type());
+    aftertask  := target;
+    
+    if( not ctrlshiftkey ) //when ctrlshiftkey = false and not isnull droptarget, the intention is to merge all operations into the droptarget
+    {
+      operationsintarget  := selectset( target, OperationInTask, op, true, true ); //operations from the drop target
+      operations := operations.Union( operationsintarget );
+      aftertask := target.Next().astype( BatchTask );
+    }
+    
+    return  ApplicationScheduler.AllowedScheduling( resource,            //batchresource
+                                                    operations,         //structured operations
+                                                    ctrlkey,            //skip soft check
+                                                    ctrlshiftkey,       //ctrl shift key
+                                                    target.Previous(),   //before task
+                                                    aftertask,          //after task
+                                                    PlanUnit_SC::GetSelectedObjects( information ),
+                                                    feedback,
+                                                    isallowedhard )
+  *]
+  UserRequiresReadWrite: true
+}

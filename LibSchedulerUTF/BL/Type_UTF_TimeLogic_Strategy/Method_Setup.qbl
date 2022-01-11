@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    testinstance := this.GetTestInstance( variant );
+    
+    // Set company time
+    schedule.Time( UTFUtility::GetCompanyTime() );
+    
+    // Create Order
+    order := UTFMockObjectFactory::CreateOrder( schedule, testinstance.TestInstanceID() );
+    order.DueDate( testinstance.DueDate() );
+    
+    // Create PlanUnit
+    planunit := UTFMockObjectFactory::CreatePlanUnit( order, testinstance.TestInstanceID(), 1.0 );
+    
+    // Create Operation
+    operation := UTFMockObjectFactory::CreateOperation( planunit );
+    
+    // Create UTF resource group, resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, testinstance.TestInstanceID() );
+    LeadTimeStrategy_SC::Create( resource, Duration::Zero(), testinstance.ResourceStrategy() );
+    
+    // Create UTFSingleTask
+    task := UTFMockObjectFactory::CreateSingleTask( resource, operation );
+    
+    // Create subtask
+    resourcegroup := resource.ResourceGroup_SC().astype( UTFResourceGroup );
+    resourcegroup.CreateSubTaskTypeOnResourceGroupSetupProcessCleanup();  
+    
+    // Set the following task attributes - for this test it doesn't matter whether it is batch or single, single is easier to test
+    task.Update( testinstance );
+    
+    // Set the resource fit strategy. 
+    strategy := UTFUtility::GetStrategyConstant( testinstance.CalendarStrategy() );
+    resource.FitStrategy( strategy );
+    
+    // Create a resource downtime
+    resource.ResourceCalendar().AddTimeInterval( testinstance.CalendarDowntimeStart(), testinstance.CalendarDowntimeEnd(), 0.0, '' );
+                          
+    // Propagate all declarative attributes/relations prior to assertion in the actual test method.
+    Transaction::Transaction().Propagate();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

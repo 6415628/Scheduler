@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectScenarioManager () id:Method_LibSM_GlobalState_SelectScenarioManager
+{
+  #keys: '[136398.1.587826958]'
+  Body:
+  [*
+    // Select scenario manager if it is not selected
+    scenarioManager := LibSM_ScenarioManager;
+    
+    if( isnull( scenarioManager ) )
+    {
+      editor := ExternalMDSEditor::Editor();
+    
+      oinfo  := editor.LoadedObjectInfos( "MDSLibSM_ScenarioManager" ,
+                                          LibSM_ModelExtensions::GetDatasetFolderName() );
+    
+      if( oinfo.Elements( relsize ) > 0 )
+      {
+        o := select( oinfo, Elements, o, o.IsLoaded() );
+    
+        if( not isnull( o ) )
+        {
+          componentMDS := ComponentMDS::CreateForLoadedMDSsOnly( Application );
+    
+          mdsInstance := select( componentMDS, ComponentMDSKinds.ComponentMDSInstances, m, m.Name() = o.Name() );
+          mdsInstance.ComponentMDSKind().SelectInstance( mdsInstance );
+          componentMDS.Apply();
+        }
+      }
+    }
+  *]
+}

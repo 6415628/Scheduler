@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCheckDemoCategoryAndScenarioNameIsValid (Schedule schedule)
+{
+  TextBody:
+  [*
+    demoManager := schedule.DemoManager();
+    existingDemoCategory := select( schedule, DemoManager.DemoCategory, demoCategory, true );
+    existingDemoScenario := select( existingDemoCategory, DemoScenario, demoScenario, true );
+    
+    // This unit test assumes that demo category and scenarios are correctly synchronized
+    // If it was not synchronized correctly, there is no need to test this
+    // There is a separate unit test to test synchronization of demo categories nad scenarios
+    if( not isnull( existingDemoCategory ) and not isnull( existingDemoScenario ) )
+    {
+      DemoCategory::CheckCanCreateOrRename( demoManager, null( DemoCategory ), existingDemoCategory.Name() );
+      
+      this.Run().AssertFalse( FeedbackObject::CurrentFeedback().IsAllowed(),
+                              UTFUtility::GenerateFailedMessage( 'ManageDemo_CheckCanCreateOrRenameDemoCategory failed', '' ) );
+      
+      FeedbackObject::Clear();
+      DemoCategory::CheckCanCreateOrRename( demoManager, null( DemoCategory ), '9999999999' );
+      
+      this.Run().AssertTrue( FeedbackObject::CurrentFeedback().IsAllowed(),
+                             UTFUtility::GenerateFailedMessage( 'ManageDemo_CheckCanCreateOrRenameDemoCategory failed', '' ) );
+      
+      FeedbackObject::Clear();
+      DemoScenario::CheckCanCreateOrRename( demoManager, null( DemoScenario ), existingDemoCategory.Name(), existingDemoScenario.Name() )
+      
+      this.Run().AssertFalse( FeedbackObject::CurrentFeedback().IsAllowed(),
+                              UTFUtility::GenerateFailedMessage( 'ManageDemo_CheckCanCreateOrRenameDemoScenario failed', '' ) );
+      
+      FeedbackObject::Clear();
+      DemoScenario::CheckCanCreateOrRename( demoManager, null( DemoScenario ), existingDemoCategory.Name(), '9999999999' )
+      
+      this.Run().AssertTrue( FeedbackObject::CurrentFeedback().IsAllowed(),
+                              UTFUtility::GenerateFailedMessage( 'ManageDemo_CheckCanCreateOrRenameDemoScenario failed', '' ) );
+    }
+  *]
+}

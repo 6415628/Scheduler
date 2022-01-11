@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestResequenceShutdownWithPrecedingTaskInFSPL (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Expected outcome in Gantt chart
+    // Now the Gantt chart should look like this
+    // Resource1 : | Task2_10 | Task1_10 | Shutdown Task |
+    // Resource2 : | Task2_20 | Task1_20 |
+    
+    resource1 := select( schedule, ResourceGroup_SC.Resource_SC, r, r.ResourceID() = 'resource1' );
+    resource2 := select( schedule, ResourceGroup_SC.Resource_SC, r, r.ResourceID() = 'resource2' );
+    task1_10 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'operation1_10' );
+    task1_20 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'operation1_20' );
+    task2_10 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'operation2_10' );
+    task2_20 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'operation2_20' );
+    shutdownTask := select( schedule, Shutdown.Task_SC, t, true );
+    
+    value := resource1.First() = task2_10 and resource1.First().Next() = task1_10 and resource1.Last() = shutdownTask
+             and resource2.First() = task2_20 and resource2.Last() = task1_20;
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Resequence shutdown with preceding task in FSPL failed.', this.Variant() ) );
+  *]
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod NameToPath (String prefix, NamedValue nv, String path, 
+  String valuerep, LibOpt_BT_TrackingTableColumn column, NamedValueTree nvt)
+{
+  Description:
+  [*
+    Recursively search through the children nodes of a NamedValueTree starting from the root node "nv" and find the Node corresponding to the "path" argument,
+    then set the value of the NamedValue node to the "valuerep" argument provided using the `LibOpt_BT_TrackingTableBase::ApplySettingsToNamedValue( nvt, column, nv )` method.
+  *]
+  TextBody:
+  [*
+    // tbe7 Sep-15-2020 (created)
+    prefix := prefix + nv.Name();
+    if( prefix = path )
+    {
+      LibOpt_BT_TrackingTableBase::ApplySettingsToNamedValue( nvt, column, nv );
+    }
+    if( nv.Children().Size() > 0 )
+    {
+      prefix := ifexpr( nv.Name() = '', prefix, prefix + '.' );
+      traverse( nv.Children(), Elements, child )
+      {
+        LibOpt_Utility::NameToPath( prefix, child, path, valuerep, column, nvt );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateAllwoed (LibDEF_DataRepository dataset_i, String channelName_i, String name_i) const remote as Boolean
+{
+  Description: 'Checks if a new SetType can be created'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    hasName   := name_i <> "";
+    isExists  := hasName and
+                 exists( dataset_i, Channel.SetType, st, 
+                         st.ChannelName() = channelName_i and st.Name() = name_i );
+    
+    feedback.AddHard( hasName, Translations::LibDEF_PreconditionSetTypeName() );
+    feedback.AddHard( not isExists, Translations::LibDEF_PreconditionSetTypeAlreadyExists( name_i ) );
+    
+    return feedback.IsAllowed();
+  *]
+}

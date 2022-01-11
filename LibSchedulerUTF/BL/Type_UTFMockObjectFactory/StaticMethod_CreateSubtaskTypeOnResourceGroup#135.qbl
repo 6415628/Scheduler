@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateSubtaskTypeOnResourceGroup (ResourceGroup_SC resourceGroup, Strings subtaskTypes, String firstRespectRoutingSubTaskID, 
+  String lastRespectRoutingSubTaskID)
+{
+  Description: 'Create subtask type on resource group base on input argument value.'
+  TextBody:
+  [*
+    traverse( subtaskTypes, Elements, subtaskType )
+    {
+      subTaskTypeOnResourceGroup := SubTaskTypeOnResourceGroup::Create( resourceGroup, subtaskType );
+      
+      if( subtaskType = firstRespectRoutingSubTaskID )
+      {
+        subTaskTypeOnResourceGroup.IsFirstRespectRouting( true );
+      }
+      if( subtaskType = lastRespectRoutingSubTaskID )
+      {
+        subTaskTypeOnResourceGroup.IsLastRespectRouting( true );
+      }
+    }
+    
+    resourceGroup.SubTaskSequence( subtaskTypes.ToString( ';' ) );
+  *]
+}

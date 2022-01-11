@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_FeedbackBatchInSchedule (CDSchedule cdschedule)
+{
+  Description: 'Restore feedback batch in schedule core data relation to planning object'
+  TextBody:
+  [*
+    // Restore FeedbackBatchInSchedule
+    batchtasks := selectset( this.Schedule(), ResourceGroup_SC.Resource_SC.Task_SC.astype( BatchTask ), bt, true );
+    
+    traverse( cdschedule, CDEntity.astype( CDFeedbackBatchInSchedule ), cdfeedbackbatchinschedule )
+    {
+      feedbackbatchinschedule := FeedbackBatchInSchedule::FindFeedbackBatchInSchedule( cdfeedbackbatchinschedule.BatchID() );
+      
+      if( not isnull( feedbackbatchinschedule ) )
+      {
+        batchtask := select( batchtasks, Elements, bt, bt.BackupTaskID() = cdfeedbackbatchinschedule.BackupTaskID() );
+        feedbackbatchinschedule.UpdateBatchTask( batchtask ); 
+        
+        this.RestoreRelations_FeedbackBatchContentInSchedule( cdschedule, feedbackbatchinschedule );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

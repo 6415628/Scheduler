@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateComponentsImprovementPhasePOA (LibOpt_Run run, SettingsProgram settings, OptimizerStrategy strategy, 
+  LibOpt_SwitchProbability switchiterationtypeimprovement, Real probabilitypoa)
+{
+  TextBody:
+  [*
+    // Branch to the POA improvement iterations
+    switchpoaiterationtypes := this.SwitchProbability( run, 'POA iteration type switch impr' );
+    switchiterationtypeimprovement.Branch( probabilitypoa, switchpoaiterationtypes );
+    
+    // Branch between the various POA (improvement) iteration types
+    // POA iteration type: 2 node destruct - for this we start by selecting two random program types:
+    selector_two_programs := this.SelectorLegsPerProgram(  run,
+                                                           SettingsProgramSelectorLegForSelectorsPurePOA::ConstructFrom( settings.SelectorLeg() ),
+                                                           'Selector combilegs per program' );
+    
+    switchpoaiterationtypes.Branch( settings.ProbabilityOfUsing2NodeDestructPOA(), selector_two_programs);
+    // Plumbing: Go from the selector to the POA suboptimizer
+    improvement_pure_poa := this.SuboptimizerPOA( run,
+                                                  SettingsProgramPOACombiLegForPOA::ConstructFrom( settings.POACombiLeg() ),
+                                                  StrategyForSuboptimizerProgramPOACombiLeg::ConstructFrom( strategy ),
+                                                  "pure poa - 2 operation destruct",
+                                                  false, // Pure poa, not combi generation
+                                                  false, // Improvement phase, not construction phase
+                                                  true ); // Use the two node improvement strategy
+    
+    improvement_pure_poa.RollbackKPI( relset, construct( RollbackKPISchedule ) );
+    
+    selector_two_programs.To( improvement_pure_poa );
+    
+    // POA iteration type: Only select legs without minimum cumulative duration
+    selector_leg_no_min_cum_duration := this.SelectorLegsWithoutMinCummulativeDuration( run,
+                                                                                        SettingsProgramSelectorLegForSelectorsPurePOA::ConstructFrom( settings.SelectorLeg() ),
+                                                                                        'Selector legs without min cumulative rule' );
+    
+    switchpoaiterationtypes.Branch( 1-settings.ProbabilityOfUsing2NodeDestructPOA(), selector_leg_no_min_cum_duration );
+    
+    // Plumbing: Go from the selector to the POA suboptimizer
+    improvement_pure_poa := this.SuboptimizerPOA( run,
+                                                  SettingsProgramPOACombiLegForPOA::ConstructFrom( settings.POACombiLeg() ),
+                                                  StrategyForSuboptimizerProgramPOACombiLeg::ConstructFrom( strategy ),
+                                                  "pure poa",
+                                                  false, // Pure poa, not combi generation
+                                                  false, // Improvement phase, not construction phase
+                                                  false ); // Not a two node improvement strategy 
+    
+    improvement_pure_poa.RollbackKPI( relset, construct( RollbackKPISchedule ) );
+    selector_leg_no_min_cum_duration.To( improvement_pure_poa );
+  *]
+}

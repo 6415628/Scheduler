@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeWorkOrderColorRange
+{
+  TextBody:
+  [*
+    // zi hao May-22-2017 (created)
+    
+    schedule := this.Schedule();
+    allinstances := selectset( schedule, WorkOrderColorRange, wocr, true );
+    updatedinstances := construct( WorkOrderColorRanges );
+    
+    traverse( schedule, ImportedWorkOrderColorRange_SC, row, row.IsValidDataHard() )
+    {
+      workordercolorrange := WorkOrderColorRange::FindWorkOrderColorRange( row.ColorIndex() );
+      if( isnull( workordercolorrange ) )
+      {
+        workordercolorrange := WorkOrderColorRange::Create( schedule, row.ColorIndex() );
+      }
+      workordercolorrange.Update( row );
+      
+      updatedinstances.Add( workordercolorrange );
+    }
+    
+    // Delete old instances if they do not exist in the table
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, wocr )
+    {
+      wocr.Delete();
+    }
+  *]
+}

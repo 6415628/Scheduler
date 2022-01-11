@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method CanContinueBreakpoint (LibOpt_Task task) as Boolean
+{
+  TextBody:
+  [*
+    continue := false;
+    
+    event := this.BreakpointEvent();
+    if( isnull( event ) 
+        or task.BreakpointEvent() = event )
+    {
+      continue := true;
+    }
+    else if( event.AllowedComponents() > 0 )
+    {
+      continue := true;
+      event.AllowedComponents( event.AllowedComponents() - 1 );
+      task.BreakpointEvent( relset, event );
+    }
+    else if( event.AllowedSteps() > 0 )
+    {
+      continue := true;
+      event.AllowedSteps( event.AllowedSteps() - 1 );
+    }
+    
+    return continue;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method DeleteConditionPostProcessing (LibOpt_SnapshotReplannableCopyDataset snapshot, Boolean hastodeletedataset) as stream[Void]
+{
+  Description:
+  [*
+    The `DeleteCondition` method returns the `hastodeletedataset` variable. When this variable is `true`, then the dataset that belongs to `snapshot` should be deleted. 
+    This happens in `LibOpt_DatasetCopyConditional::DeleteDatasetCopy`. 
+    
+    This method also calls the `DeleteWhenFlagged` method. This method deletes this `LibOpt_DatasetCopyConditional` object if it can be deleted (and if it is flagged for deletion).
+  *]
+  TextBody:
+  [*
+    // evr3 Jun-4-2020 (created)
+    if( hastodeletedataset )
+    {  
+      LibOpt_DatasetCopyConditional::DeleteDatasetCopy( snapshot );
+    }
+    
+    snapshot.HasExecutedDoFinalizeDatasetCopyDelete( true );
+    // Delete this LibOpt_DatasetCopyConditional object if we flagged the object for deletion and if the object is not used for other snapshots
+    this.DeleteWhenFlagged( false );
+    
+    return stream[Void]::Success();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

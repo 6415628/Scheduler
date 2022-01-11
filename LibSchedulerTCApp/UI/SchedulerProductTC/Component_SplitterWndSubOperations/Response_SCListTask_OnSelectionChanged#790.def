@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: SCListTask
+Response OnSelectionChanged (Task_SC selection) id:Response_SCListTask_OnSelectionChanged_790
+{
+  #keys: '[134540.0.798271654]'
+  Body:
+  [*
+    //Show the Operation Window on Gantt Chart
+    //5.0
+    form := ApplicationScheduler.GetFormGanttChartSchedulingCentre();
+    if( not isnull( form ) )
+    {
+      markedtime := selection.CPPlannedEnd();
+    
+      if( markedtime.IsInfinite() )
+      {
+        // Set due date as the marked time when there is no information from CP
+        markedtime := guard( selection.GetOperation().DueDate(), DateTime::MinDateTime() );
+      }
+      
+      form.ChartMarkingOperationMPSEndOrDueDate().SetProperty( 'MarkPosition', markedtime.AsQUILL() );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_List_OnSelectionChanged'
+}

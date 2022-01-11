@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckBranchNameExists (String branchName, String definitionName) as Boolean id:Method_LibSM_DialogKnowledgeBranch_CheckBranchNameExists
+{
+  #keys: '[136402.0.1248899078]'
+  Body:
+  [*
+    values       := guard( DataHolderExistingBranchNames.Data().Tokenize( ';' ), construct( structured[String] ) );
+    isNameUnique := not exists( values, Elements, existing, existing = branchName );
+    isNew        := isnull( DataHolderDialogData.Data() );
+    isChanged    := this.DataHolderDialogData().Data().KBBranchName() <> EditFieldBranchName.Name();
+    mustCheck    := isNew or isChanged;
+    
+    if ( not FeedbackObject::CheckHard( isNameUnique or not mustCheck ) )
+    {
+      FeedbackObject::AddHard( Translations::LibSM_KnowledgeProfile_BranchAlreadyExists( branchName, definitionName ) );
+    }
+                               
+    return FeedbackObject::IsAllowed();
+  *]
+}

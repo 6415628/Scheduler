@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoHandleResultCall (Algorithm algorithm, LibOpt_Task task) as stream[JSON]
+{
+  Description:
+  [*
+    This method should be called to start the handle result part.
+    
+    This method will first check if a breakpoint / dataset copy needs to happen and then call the `DoHandleResult` code.
+  *]
+  TextBody:
+  [*
+    breakpoint_string := LibOpt_SuboptimizerAlgorithm::ComponentPosition_Solve();
+    
+    // Conditionally create a dataset copy.
+    // Create a copy that is robust against errors and rollbacks
+    isrobustdatasetcopy := true;
+    LibOpt_DatasetCopyConditional::CopyDatasetConditionally( breakpoint_string, task, isrobustdatasetcopy ); 
+    
+    result := stream[JSON]::Success();
+    breakpoint_stream := null( stream[Void] );
+    
+    if( this.HasBreakpoint( breakpoint_string, task, breakpoint_stream ) )
+    {
+      result := breakpoint_stream->|this->DoHandleResult( algorithm, task );
+    }
+    else
+    {
+      result := this.DoHandleResult( algorithm, task );
+    }
+    
+    return result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

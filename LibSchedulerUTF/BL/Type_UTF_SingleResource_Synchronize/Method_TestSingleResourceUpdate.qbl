@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestSingleResourceUpdate (Schedule schedule)
+{
+  Description: 'Test whether resource is updated correctly.'
+  TextBody:
+  [*
+    newString := this.Name().Concat( this.Name() );
+    newReal := 2.0;
+    newNumber := 2000;
+    newDuration := Duration::Days( 2 );
+    newBoolean := true;
+    
+    importedResource := select( schedule, ImportedResourceGroup_SC.ImportedResource_SC, importedResource, true );
+    // Set attributes as per default values to avoid sanity check violation
+    importedResource.CapacityResource( newString );
+    importedResource.CapacityResourceUtilizationFactor( newReal );
+    importedResource.ConfiguredFrozenPeriod( newDuration );
+    importedResource.ConfiguredOnHoldPeriod( newDuration );
+    importedResource.Index( newNumber );
+    importedResource.Length( newReal );
+    importedResource.Name( newString );
+    importedResource.ScoreResourceThroughPut( newBoolean );
+    importedResource.Speed( newReal );
+    importedResource.UseConfiguredFrozenPeriod( newBoolean );
+    importedResource.UseConfiguredOnHoldPeriod( newBoolean );
+    importedResource.UseFitProcessStrategy( newBoolean );
+    importedResource.UseFitStrategy( newBoolean );
+    
+    this.SynchronizeImportedData( schedule );
+    
+    isUpdatedResourceGroup := exists( schedule, ResourceGroup_SC.Resource_SC.astype( SingleResource ), resource, 
+                                      resource.CapacityResourceName() =  newString
+                                      and resource.UtilizationFactor() = newReal
+                                      and resource.FrozenPeriodUser() = newDuration
+                                      and resource.OnHoldPeriodUser() = newDuration
+                                      and resource.ImportedIndex() = newNumber
+                                      and resource.Length() = newReal
+                                      and resource.Name() = newString 
+                                      and resource.ScoreResourceThroughPut() = newBoolean
+                                      and resource.Speed() = newReal
+                                      and resource.UseFrozenPeriodUser() = newBoolean
+                                      and resource.UseOnHoldPeriodUser() = newBoolean
+                                      and resource.FitStrategy() = resource.GetFitStrategy( importedResource ) );
+    
+    this.Run().AssertTrue( isUpdatedResourceGroup, UTFUtility::GenerateFailedMessage( 'SingleResource failed to be updated', '' ) );
+  *]
+}

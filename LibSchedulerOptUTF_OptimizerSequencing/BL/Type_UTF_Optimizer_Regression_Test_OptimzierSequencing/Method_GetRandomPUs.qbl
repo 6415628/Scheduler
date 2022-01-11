@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetRandomPUs (Schedule schedule, Number targetnumber) as owning PlanUnit_SCs
+{
+  Description: 'Returns a set of random plan units'
+  TextBody:
+  [*
+    random_pus1 := construct( PlanUnit_SCs );
+    safety := 0;
+    while( random_pus1.Size() < targetnumber
+           and safety <= 1000 )
+    {
+      pu := maxselect( schedule, PlanUnit_SC, pu,
+                       pu.Operation_SC( relsize ) > 0
+                       and pu.IsDueInSchedulingHorizon(),
+                       Real::Random() );
+    
+      if( random_pus1.Find( pu ) = -1 )
+      {
+        random_pus1.Add( pu );
+      }
+      safety++
+    }
+    
+    return &random_pus1;
+  *]
+}

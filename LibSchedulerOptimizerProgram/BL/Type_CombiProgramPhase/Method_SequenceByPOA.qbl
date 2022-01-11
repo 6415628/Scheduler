@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method SequenceByPOA (CombiLeg startfrom, Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // zyi1 Jul-27-2021 (created)
+    combileg := null( CombiLeg );
+    
+    //start within previous phase
+    if( startfrom.LeadingCombiProgramPhase() = this )
+    {
+      combileg := startfrom;
+    }
+    //start from previous phase,  then for this phase, we can poa from the first combileg
+    else if( startfrom.LeadingCombiProgramPhase().SequenceNr() < this.SequenceNr() )
+    {
+      combileg := this.FirstLegAsLeading();
+    }
+    
+    while( not isnull( combileg ) )
+    {
+      combileg.SequenceByPOA( operations );
+      combileg := combileg.NextLegAsLeading();
+    }
+  *]
+}

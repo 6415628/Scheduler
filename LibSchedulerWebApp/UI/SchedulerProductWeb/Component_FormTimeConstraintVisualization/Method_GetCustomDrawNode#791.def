@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCustomDrawNode (Operation_SC operation, Boolean isUpstream, Number depth) as shadow[CustomDrawNodeOperation] id:Method_FormTimeConstraintVisualization_GetCustomDrawNode_791
+{
+  #keys: '[142956.3.474621717]'
+  Body:
+  [*
+    // Create node for operation
+    owner := DataHolderCustomDrawConfiguration.Data(); // DataHolder is set in GenerateTree
+    
+    node := select( owner, CustomDrawNode, node, 
+                    node.Name() = operation.OperationID() ).astype( shadow[CustomDrawNodeOperation] );
+    
+    if( isnull( node ) )
+    {
+      // Ensure sort sequence starts from 0
+      sortSeq := 0;
+      
+      if( exists( owner, CustomDrawNode, e,e.Depth() = depth and e.IsUpstream() = isUpstream ) )
+      {
+        sortSeq := max( owner, CustomDrawNode, e,
+                        e.Depth() = depth 
+                        and e.IsUpstream() = isUpstream, 
+                        e.SortSequence() ) + 1;
+      }
+      
+      node := owner.CustomDrawNode( relnew,
+                                    CustomDrawNodeOperation,
+                                    Operation_SC := operation,
+                                    Name := operation.OperationID(),
+                                    IsUpstream := isUpstream,
+                                    Depth := depth,
+                                    SortSequence := sortSeq );
+    }
+    
+    return node;
+  *]
+}

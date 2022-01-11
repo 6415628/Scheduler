@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetKPITotal (constcontent Order_SCs orders, constcontent Operation_SCs operations, constcontent Resource_SCs resources, 
+  constcontent Task_SCs shutdowntasks, const OptimizerStrategyInSchedule optimizerstrategy) const declarative remote as Real
+{
+  Description: 'Returns schedule total KPI score.'
+  TextBody:
+  [*
+    // This formula is a placeholder until a better default KPI formula is defined, Scheduler QP7227.
+    value := 0.0;
+    
+    if( not isnull( optimizerstrategy ) )
+    {
+      // Sequencing optimizer total KPI:
+      value := - Schedule::GetKPIDeliveryPerformance( orders ) * optimizerstrategy.MRS_KPIWeightDeliveryPerformance()
+               + Schedule::GetKPINrUnplannedOperation( operations ) * optimizerstrategy.MRS_KPIWeightUnplanned()
+               - Schedule::GetKPIProductivity( resources ) * optimizerstrategy.MRS_KPIWeightProductivity();
+               
+      // If the program optimizer is the last run optimizer, we should instead get the total KPI based on those KPIs
+      schedule := select( operations, Elements.Schedule, schedule, true );
+      if( guard( schedule.GetIsLastRunByProgramOptimizer(), false ) )
+      {
+        value := Schedule::GetKPIMPSAdherenceEarly( optimizerstrategy, operations ) * optimizerstrategy.KPIWeightMPSAdherenceEarly()
+                 + Schedule::GetKPIMPSAdherenceLate( optimizerstrategy, operations ) * optimizerstrategy.KPIWeightMPSAdherenceLate()
+                 + Schedule::GetKPIOperationLateness( operations ) * optimizerstrategy.KPIWeightOperationLateness()
+                 + Schedule::GetKPIPreferenceRuleViolation( operations ) * optimizerstrategy.KPIWeightPreferenceRuleViolation()
+                 + Schedule::GetKPIQuantityDueNotScheduled( operations ) * optimizerstrategy.KPIWeightQuantityDueNotScheduled()
+                 + Schedule::GetKPITotalDummyWorkOrdersDuration( operations ) * optimizerstrategy.KPIWeightTotalDummyWorkOrderTime()
+                 + Schedule::GetKPIShutdownTargetStart( optimizerstrategy, shutdowntasks ) * optimizerstrategy.KPIWeightShutdownTargetStart();
+      }         
+    }
+    
+    return value;
+  *]
+}

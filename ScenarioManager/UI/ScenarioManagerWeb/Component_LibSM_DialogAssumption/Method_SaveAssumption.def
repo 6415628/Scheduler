@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method SaveAssumption () id:Method_LibSM_DialogAssumption_SaveAssumption
+{
+  #keys: '[136402.0.1137827160]'
+  Body:
+  [*
+    // Saves the contents of the dialog to the existing or new Assumption.
+    
+    existing := this.DataHolderDialogData().Data();
+    isNew    := isnull( existing );
+    
+    if ( isNew )
+    {
+      scenario := this.DataHolderSelectedScenario().Data();
+      if ( not isnull( scenario ) )
+      {
+        user := QuintiqUser::CurrentUser().Name();
+        now  := DateTime::Now();
+        LibSM_Assumption::Create( scenario,
+                                  EditFieldTitle.Text(),
+                                  EditFieldDescription.Text(),
+                                  DropDownStringListType.Text(),
+                                  DropDownStringListImportance.Text(),
+                                  "",
+                                  user,
+                                  now,
+                                  user, 
+                                  now );
+      }
+    }
+    else if ( Form.HasChanges() )
+    {
+      Form.ApplyChanges();
+    }
+  *]
+}

@@ -1,0 +1,100 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateFSPLSchedule_MultipleChildPlanUnit
+{
+  Description: 'To create test data simulating child plan units for FSPL implementation and testing. For use in Schedule ONLY.'
+  TextBody:
+  [*
+    // FOR FSPL DEMO
+    // FOR USE IN Schedule ONLY
+    
+    //Create two child plan units, each with 1 HotRolling operation
+    traverse( this, PlanUnit_SC, pu )
+    {
+      supplies := construct( Supplys );
+      demands := construct( Demands );
+      
+      traverse( pu, Operation_SC, op_sc, op_sc.Type() = 'HotRolling' )
+      {
+        traverse( op_sc, ToOperationDependency, output_m )
+        {
+          output_m.Delete();
+        }
+      
+        // get supplies and demands of old operation
+        supplies := selectset( op_sc, PlannedSupply, supply, true );
+        demands := selectset( op_sc, PlannedDemand, demand, true );
+        
+        op_sc.Delete();
+      }
+      
+      for( i := 1; i <= 3; i++ )
+      {
+        //Create child plan unit
+        pu_id := pu.PlanUnitID();
+        new_pu_id := pu_id + '-1' + [String]i;
+      
+        planunit := PlanUnit_SC::FindPlanUnit( new_pu_id );
+      
+        //checks if plan unit exists
+        if( isnull( planunit ) )
+        {
+          planunit := GenericPlanUnit::Create( this, new_pu_id );
+        }
+        
+        puquantity := pu.Quantity();
+        order      := pu.Order_SC();
+        // can't use plan unit update method as it will create new operations
+        planunit.Order_SC( relset, order );
+        planunit.Quantity( puquantity );
+        planunit.NrOfLots( order.GetNrOfLots( puquantity ) );
+        planunit.IsCreatedInScheduler( order.IsCreatedInScheduler() );
+    
+        operationseqnr := pu.Operation_SC( relsize ) + i;
+    
+        operationid := Operation_SC::GenerateOperationID( new_pu_id, operationseqnr );
+    
+        operation_exist := exists( this, PlanUnit_SC.Operation_SC, operation, operation.OperationID() = operationid );
+    
+        //checks if operation exists
+        if( not operation_exist )
+        {
+          operation := planunit.CreateOperation( 'HotRolling' );
+          prevop := maxselect( pu, Operation_SC, op, true, op.SequenceNr() );
+    
+          iom := select( prevop, ToOperationDependency, o, isnull( o.ToOperation() )  )
+          
+          if( not isnull( iom ) )
+          {
+            operation.FromOperationDependency( relinsert, iom );        
+          }
+          else
+          {
+            prevop.CreateOutputOperationMaterial( puquantity );
+            iom := select( prevop, ToOperationDependency, o, isnull( o.ToOperation() )  )
+            operation.FromOperationDependency( relinsert, iom );
+          }
+    
+          operation.CreateOutputOperationMaterial( planunit.Quantity() );
+          operation.OperationID( operationid );
+    
+          operation.SequenceNr( operationseqnr );
+          operation.PreferredResource( '' );
+    
+          // setting demands of old operation to new operation
+          traverse( demands, Elements, demand )
+          {
+            demand.Operation_SC( relset, operation ); // since there are multiple plan units here, we'll just keep setting the relation until its the last operation, hence its only to the last operation
+          }
+          // setting supplies of old operation to new operation
+          traverse( supplies, Elements, supply )
+          {
+            supply.Operation_SC( relset, operation ); // since there are multiple plan units here, we'll just keep setting the relation until its the last operation, hence its only to the last operation
+          }
+          
+          planunit.Parent( relset, pu );
+        }
+      }
+    }
+  *]
+}

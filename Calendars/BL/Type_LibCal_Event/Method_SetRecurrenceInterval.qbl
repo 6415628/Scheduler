@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetRecurrenceInterval (Number interval_i) as LibCal_Event
+{
+  Description:
+  [*
+    Set the interval of the recurrence pattern.
+    Depending on the type of pattern the interval means "every 'X' number of weeks, months or years".
+  *]
+  TextBody:
+  [*
+    // Use a FeedbackObject the collect the validation feedback.
+    feedback := LibCal_Validate::FeedbackObject();
+    
+    moreInfo := this.GetEventInfo() + ", RecurrenceInterval = " + [String]interval_i;
+    LibCal_Validate::RegisterError( LibCal_Validate::Event_Pattern_RecurrenceInterval( interval_i ), moreInfo );
+    
+    // Process the feedback that has been registered by the validation (if any).
+    LibCal_Util::ProcessFeedbackObject( feedback );
+    
+    // The below is only executed when no validation errors were encountered.
+    // Initialize the RecurrencePattern if necessary.
+    this.InitializeRecurrencePattern();
+    
+    // Register if there are changes.
+    isChanged := this.RecurrencePattern().RecurrenceInterval() <> interval_i;
+    if( isChanged )
+    {
+      this.IsChanged( true );
+    }
+    
+    this.RecurrencePattern().RecurrenceInterval( interval_i );
+    
+    // Make the API fluent.
+    return this;
+  *]
+}

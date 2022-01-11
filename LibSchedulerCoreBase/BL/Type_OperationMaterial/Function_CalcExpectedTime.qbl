@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcExpectedTime
+{
+  Description: "computes the latest expected of the operation material base on the order schedule's due date."
+  TextBody:
+  [*
+    // khang chuen May-15-2015 (created)
+    
+    value := this.PlanUnit_SC().DueDate();
+    
+    if( this.HasToOperation() )
+    {
+      operation := this.ToOperation();
+      value := operation.LatestStart();
+    
+      if( this.PlanUnit_SC().IsLotLeadTimeLogicOn() )
+      {
+        value := operation.LastInputLotLatestStart();
+      }
+      
+      if( operation.Finished() and operation.HasReportedStart() )
+      {
+        value := operation.ReportedStart();
+      }
+      else if( not isnull( this.ReceiveSubTask() ) )
+      {
+        value := this.ReceiveSubTask().LatestEnd();
+      }
+    
+      value := value - this.TotalOffsetDuration();
+    }
+    
+    this.ExpectedTime( value );
+  *]
+}

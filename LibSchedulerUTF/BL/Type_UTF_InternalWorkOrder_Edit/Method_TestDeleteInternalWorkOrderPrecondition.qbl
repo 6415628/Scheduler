@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestDeleteInternalWorkOrderPrecondition (Schedule schedule)
+{
+  Description: 'Test delete work order.'
+  TextBody:
+  [*
+    editDeleteInternalWorkOrderTestInstance := this.GetEditDeleteInternalWorkOrderTestInstance( this.Variant() );
+    
+    feedback := '';
+    workOrders := selectset( schedule, WorkOrder, workOrder, true );
+    canDelete := WorkOrder::CanDelete( workOrders, feedback );
+    
+    WorkOrder::RemoveCanBeDeletedWorkOrders( workOrders );
+    
+    remaningWorkOrdersCannotBeDeleted := forall( workOrders, Elements, wo, not wo.CheckCanBeDeletedByUser() );
+    
+    // Do precon check
+    preconCheckValue := canDelete and remaningWorkOrdersCannotBeDeleted;
+    
+    this.Run().AssertTrue( preconCheckValue = editDeleteInternalWorkOrderTestInstance.CanDelete(),
+                           UTFUtility::GenerateFailedMessage( 'Precondition check for delete work order failed', this.Variant() ) );
+  *]
+}

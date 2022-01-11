@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod DeleteScript (DMF_ConvertorDataset dmf_i, String fileName_i, Boolean force_i)
+{
+  Description: 'Delete a selected script'
+  TextBody:
+  [*
+    // tgn3 Jul-21-2021 (created)
+    
+    // Mind: the force option is in place to protect files from being accidentally deleted
+    // The API will require the user to specify "force = true" for this to work
+    if( force_i )
+    {
+      settings := dmf_i.Settings();
+      fileName := settings.DataUpgradeScriptsDirectory().Concat( fileName_i );
+        
+      // Debug - do not delete
+      //logfile( ">>> fileName:", fileName );    
+       
+      // If file was manually removed in background, do nothing
+      if( OS::IsFile( fileName ) )
+      {    
+        OS::RemoveFile( fileName );
+        
+        // Refresh script information if file was removed
+        dmf_i.RefreshScriptInformation();
+      }
+    }
+    else
+    {
+      msg := "DMF_SQLScript failed. Please set 'force = true' for the API call to confirm a script deletion. This is to protect against the accidental deletion of scripts";
+      
+      DMF_Utility::LogWarning( msg );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

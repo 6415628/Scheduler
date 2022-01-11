@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test059_ResourceExchangability_CapabilitiesIgnoreFrozenOperations_Setup (Schedule schedule)
+{
+  Description:
+  [*
+    Input: one operation, o1.
+    Finds another operation, o2, of the same type.
+    Plans both on the same resource. Removes o2's allowedness on another resource.
+  *]
+  TextBody:
+  [*
+    op1 := selectobject( this.GetMethodOperationsInScope( this.GetCurrentMethodShortName(), schedule ), Elements, op, true );
+    op2 := select( schedule, Operation_SC, op, op <> op1 and op.Type() = op1.Type() );
+    
+    planresource := select( op1, AllowedOperationOnResourceHard.Resource_SC.astype( SingleResourceBase ), r, true );
+    planresource.PlanLast( op1 );
+    planresource.PlanLast( op2 );
+    anotherresource_oor := select( op2, AllowedOperationOnResourceHard, oor, oor.Resource_SC() <> planresource );
+    anotherresource_oor.UTF_IsAllowedHard( false );
+    
+    Transaction::Transaction().Propagate();
+  *]
+}

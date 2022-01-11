@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcReportedProcessStart
+{
+  TextBody:
+  [*
+    // She Ven 20130610 Get FeedbackTask's ReportedProcessStart
+    //
+    // This calculation is generic for both single task and batch task,
+    // hence will select a set of latest feedbacktask and get the earliest process start of them.
+    //
+    value := DateTime::MinDateTime();
+    latestfbtasks := maxset( this, FeedbackBatchContentInSchedule, fbtask, true, fbtask.TimeStamp() );
+    
+    if( latestfbtasks.Size() > 0 )
+    {
+      value := max( latestfbtasks, Elements, t, true, t.FeedbackBatchInSchedule().ProcessStartReadIn() );
+    }
+    this.ReportedProcessStart( value );
+  *]
+}

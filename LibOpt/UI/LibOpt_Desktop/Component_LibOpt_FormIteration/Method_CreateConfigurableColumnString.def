@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateConfigurableColumnString (shadow[LibOpt_UISnapshotAttribute] att) as String id:Method_LibOpt_FormIteration_CreateConfigurableColumnString
+{
+  #keys: '[139164.5.1067713876]'
+  Body:
+  [*
+    snapshots := construct( LibOpt_Snapshots );
+    component_snapshot := att.Snapshot();
+    while( not isnull( component_snapshot ) and not component_snapshot.istype( LibOpt_SnapshotComponent ) )
+    {
+      component_snapshot := component_snapshot.Parent();
+      snapshots.Add( component_snapshot );
+    }
+    
+    trav_rel := 'IterationPartNM.IterationPart.Snapshot.astype( ' + typeofexpression( att.Snapshot() ).Name() + ' )';
+    
+    filters := construct( Strings );
+    filters.Add( 'snapshot.Type() = "' + att.Snapshot().Type() + '"' );
+    
+    
+    for( i := 0; i < snapshots.Size(); i++ )
+    {
+      snap := snapshots.Element( i );
+      parents := '';
+      for( j := 0; j <= i; j++ )
+      {
+        parents := parents + '.Parent()';
+      }
+      filter := 'snapshot' + parents + '.astype( ' + typeofexpression( snap ).Name() + ' ).Type() = "' + snap.Type() + '"';
+      filters.Add( filter );
+    
+    }
+    
+    snapshot_select := 'select( object, '
+                    + trav_rel + ', '
+                    + 'snapshot, '
+                    + filters.ToString( ' and ' ) + ' )';
+    
+    
+    
+    result := 'VALUE( '
+            + snapshot_select
+            + '.'
+            + att.AttributeName()
+            + '() )';
+    
+    return result;
+  *]
+}

@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Operation (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    returnstream := stream[JSON]::Success();
+    errorposition := this.ErrorPosition();
+    if( errorposition = LibOpt_ComponentErrorPosition::OperationPropagationError() )
+    {
+      this.HasToForcePropagationError( true );  
+      returnstream := this.Continue( task );
+    }
+    else if( errorposition = LibOpt_ComponentErrorPosition::Operation() )
+    {
+      this.Throw( LibOpt_ComponentErrorPosition::Operation() );
+      returnstream := this.Continue( task );
+    }
+    else if( errorposition = LibOpt_ComponentErrorPosition::OperationReactive() )
+    {
+      returnstream := this->Throw( LibOpt_ComponentErrorPosition::OperationReactive() )
+                      ->|this->Continue( task );
+    }
+    else
+    {
+      // No error (or unknown string)
+      returnstream := this.Continue( task );
+    }
+    
+    return returnstream
+  *]
+}

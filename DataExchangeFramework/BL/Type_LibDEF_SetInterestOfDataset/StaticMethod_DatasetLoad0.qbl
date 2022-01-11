@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod DatasetLoad (LibDEF_DataBroker dataBroker_i, Key datasetMDSID_i, String datasetKind_i, 
+  String datasetPath_i, String datasetName_i, String datasetType_i)
+{
+  Description: 'When loading a dataset, mark all its SetInterest as online, and notify the Set owner (System) if necessary.'
+  TextBody:
+  [*
+    traverse( LibDEF_SetInterestOfDataset::GetAllDatasetInterests( dataBroker_i, datasetMDSID_i ),
+              Elements,
+              interest )
+    {
+      // Reset IsDatasetOffline flag
+      interest.IsDatasetOffline( false );
+    
+      interest.SetMeta().CreateInterestOnDatasetEvent(  datasetMDSID_i, 
+                                                        datasetKind_i,
+                                                        datasetPath_i,
+                                                        datasetName_i,
+                                                        datasetType_i );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

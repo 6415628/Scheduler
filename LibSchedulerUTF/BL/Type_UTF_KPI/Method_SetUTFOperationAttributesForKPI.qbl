@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetUTFOperationAttributesForKPI (UTFOperation operation, UTFSingleResource resource, DateTime duedate, 
+  Boolean isdummy, Boolean hasfeedback, Boolean hasfinished, 
+  Boolean isplanned)
+{
+  Description: 'Update UTFOperation attributes for KPI, general method that can be use for all KPI'
+  TextBody:
+  [*
+    // kjn10 Jul-7-2021 (created)
+    // if duedate is not needed for KPI testing, set argument to MaxDateTime
+    if( duedate.IsFinite() )
+    {
+      operation.PlanUnit_SC().Order_SC().DueDate( duedate );
+    }
+    
+    operation.UseIsDummyWorkOrder_UTF( true );
+    operation.IsDummyWorkOrder_UTF( isdummy );
+    
+    operation.UseHasFeedback_UTF( true );
+    operation.HasFeedback_UTF( hasfeedback );
+    operation.Finished_UTF( hasfinished );
+    
+    if( isplanned and not isnull( resource ) )
+    {
+      resource.PlanLast( operation );
+    }
+    
+    //overcome null feedback when propagate earliest end
+    if( isplanned or hasfeedback or hasfinished )
+    {
+      schedule := operation.PlanUnit_SC().Schedule();
+      operation.HasEarliestEndUTF( true );
+      operation.EarliestEnd_UTF( schedule.Time() );
+    }
+  *]
+}

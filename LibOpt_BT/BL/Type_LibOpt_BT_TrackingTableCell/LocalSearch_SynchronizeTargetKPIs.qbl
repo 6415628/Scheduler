@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+LocalSearch SynchronizeTargetKPIs (LibOpt_Optimization optimization, String store_key)
+{
+  AsyncPriority: 'Default'
+  OnFailureText:
+  [*
+    store := AlgorithmStore::Retrieve( store_key );
+    
+    json := JSON::Parse( store.RetrieveString( store_key ) );
+    for( j := 0; j < json.Size(); j++ )
+    {
+      type := json.GetProperty( j );
+      json_snapshot := json.Get( type );
+      for( i := 0; i < json_snapshot.Size(); i++ )
+      {
+        name := json_snapshot.Get( i ).Get( attribute( LibOpt_BT_KPIDefinition, Name ).Name() ).GetString();
+        value_type := json_snapshot.Get( i ).Get( attribute( LibOpt_BT_KPIDefinition, ValueType ).Name() ).GetString();
+        value := json_snapshot.Get( i ).Get( attribute( LibOpt_BT_KPI, Value ).Name() ).GetReal();
+        
+        kpi_definition := this.Table().BenchmarkTrackingDataset().FindCreateKPIDefinition( name, value_type, type );
+        target_kpi := this.FindCreateTargetKPI( kpi_definition );
+        target_kpi.Value( value );
+      }
+    }
+  *]
+  StrategyText:
+  [*
+    optimizer := this.Table().GetOptimizer( optimization );
+    this.ApplySettings( optimizer );
+    
+    Transaction::Transaction().Propagate();
+    optimizer.Optimization();
+    run := optimization.CreateRun( optimizer );
+    LibOpt_BT_RunSequenceElement::LogTargetValues( run );
+    
+    // Log the KPIs
+    json := JSON::Object();
+    traverse( run, Snapshot.astype( LibOpt_SnapshotKPI ), snapshot )
+    {
+      type := typeofexpression( snapshot );
+      json_snapshot := LibOpt_Utility::ReadSnapshot( snapshot );
+      json.Add( type.Name(), json_snapshot );
+    }
+    store := construct( MathematicalProgram );
+    store.StoreString( store_key, json.Build().AsString() );
+    AlgorithmStore::Store( store_key, & store );
+    
+    program.UndoStep( '' );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

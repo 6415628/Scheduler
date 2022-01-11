@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsProgramSetConfigurationIDUnique (ProgramDefinitionConfiguration owner, ProgramSetConfiguration programsetconfiguration, String programsetconfigurationid) remote as Boolean
+{
+  Description: 'Perform checking to ensure the program set configuration ID is unique.'
+  TextBody:
+  [*
+    // Perform checking to ensure the program definition configuration ID is unique.
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    value := not exists( owner,
+                         ProgramSetConfiguration,
+                         psc,
+                         psc <> programsetconfiguration,
+                         psc.ProgramSetConfigurationID() = programsetconfigurationid );
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      feedbackobject.AddHard( Translations::ProgramConfiguration_IDMustUnique( Translations::ProgramSetConfiguration_TypeName() ) );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

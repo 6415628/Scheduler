@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CanMove (LibSM_ScenarioFolder target, LibSM_ScenarioNodes sourceScenarioNodes, String username, 
+  Boolean isAdministrator) remote as Boolean
+{
+  Description: 'Set precondition if the a scenario node can be moved'
+  TextBody:
+  [*
+    // CanMoveToChild is used to check all children folders of parent folder, if target folder is a children folder
+    // of sources, it will return false.
+    feedback := FeedbackObject::LocalFeedback();
+    deleteAllowed := true;
+    
+    if( not feedback.CheckHard( not exists( sourceScenarioNodes, Elements, scenarionode, not LibSM_ScenarioNode::CanMoveToChild( scenarionode, target ) ) ) )
+    {
+       feedback.AddHard( Translations::LibSM_ScenarioFolder_CanNotMove_IsParentFolder() );
+    }
+    
+    if( target.IsRecycleBin() or target.IsDeleted() )
+    {
+      deleteAllowed := LibSM_ScenarioNode::CanDelete( sourceScenarioNodes, username, isAdministrator, false );
+    }
+    
+    return deleteAllowed 
+       and LibSM_ScenarioNode::CanModify( sourceScenarioNodes, username, isAdministrator )
+       and feedback.IsAllowed();
+  *]
+}

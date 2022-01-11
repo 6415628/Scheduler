@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckCanInsertProgramChange () declarative remote as Boolean
+{
+  Description: 'Check whether the task is allowed to insert new program change'
+  TextBody:
+  [*
+    // Check whether the task is allowed to insert new program change
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    // Only allow to insert new program change if currenttask and previoustask are not program change task 
+    value := not this.IsProgramChangeTask()
+             and guard( not this.Previous().IsProgramChangeTask(), true );
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      feedbackobject.AddHard( Translations::ProgramChange_AlreadyScheduled() );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

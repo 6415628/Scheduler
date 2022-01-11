@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCanceledMaturityWorkOrder (Schedule schedule)
+{
+  Description: 'Test deletion of work orders with canceled maturity based on mock 3DSpace JSON data.'
+  TextBody:
+  [*
+    isAllCanceledWorkOrderDeleted := forall( schedule,
+                                             ImportedWorkOrder.astype( ImportedExternalWorkOrder ),
+                                             importedExternalWorkOrder,
+                                             importedExternalWorkOrder.Maturity() = Constants::MaturityStatus_CANCELLED(),
+                                             isnull( importedExternalWorkOrder.WorkOrder() ) );
+    
+    this.Run().AssertTrue( isAllCanceledWorkOrderDeleted, 
+                           UTFUtility::GenerateFailedMessage( 'Deletion of CANCELED maturity work orders based on JSON data failed', '' ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

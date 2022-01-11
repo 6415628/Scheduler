@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method CopyCalendarFileToDataFolder () as Boolean
+{
+  Description: 'Copy calendar excel file from dataset dependent directory to Data folder'
+  TextBody:
+  [*
+    // Copy the Calendar excel from dataset dependent directory to Data folder, so import of calendar via EDI broker can be performed.
+    // This is needed when we have more than 1 Schedule dataset to backup/restore. 
+    
+    // Get the filenmae of the excel
+    filename := Schedule::GetEDIBrokerExcelFileName( typeof( Broker_LibCal_ExportCalendars ).Name() );
+    
+    // Get the dataset dependent directory
+    datasetdependentdirectory := this.Schedule().GetDatasetDependentDirectory();
+    sourcefilepath := datasetdependentdirectory + filename;
+    
+    // Get the Data directory
+    datadir := DomainModel::GetDataDirectory();
+    destinationfilepath := FileSystems::QFSPathToHardwarePath( datadir.Path() ) + '/' + filename;   
+    
+    // Copy the file over to Data folder
+    if( OS::IsFile( sourcefilepath ) )
+    {
+      OS::CopyFile( sourcefilepath, destinationfilepath );
+    }
+    
+    return OS::IsFile( destinationfilepath );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

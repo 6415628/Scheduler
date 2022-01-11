@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValidateExportedBatchTask (Schedule schedule, String scheduleID, String comment, 
+  DateTime commentLastUpdatedTimeStamp, String commentLastUpdatedUserName) as Boolean
+{
+  TextBody:
+  [*
+    exportedOperationBatch := select( schedule, ExportedOperationBatchContent.ExportedOperationBatch, exportedOperationBatch, true );
+    batch := select( schedule, Batch, batch, true );
+    batchTask := batch.BatchTask();
+    
+    // Compare value
+    value := exportedOperationBatch.ScheduleID() = ''
+             and exportedOperationBatch.Start() = batchTask.Start()
+             and exportedOperationBatch.ProcessStart() = batchTask.ProcessStart()
+             and exportedOperationBatch.End() = batchTask.End()
+             and exportedOperationBatch.ExportedComment() = comment
+             and exportedOperationBatch.ExportedCommentLastUpdatedTimeStamp().Equal( commentLastUpdatedTimeStamp, Duration::Seconds( 30 ) ) // Ignore 30 seconds difference because the DateTime::Now() value getting from variant and the actual action may have few seconds difference.
+             and exportedOperationBatch.ExportedCommentLastUpdatedUserName() = commentLastUpdatedUserName
+             and exportedOperationBatch.BatchID() = batch.BatchID()
+             and exportedOperationBatch.Practice() = batch.SelectedPractice();
+    
+    return value;
+  *]
+}

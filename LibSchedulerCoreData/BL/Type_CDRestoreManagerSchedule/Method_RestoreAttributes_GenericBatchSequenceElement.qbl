@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericBatchSequenceElement (CDSchedule cdschedule, Batch batch)
+{
+  Description: 'Restore generic batch sequence element core data attributes to planning object'
+  TextBody:
+  [*
+    cdOpBses := selectsortedset( cdschedule, CDEntity.astype( CDGenericBatchSequenceElement ), cdopbse, cdopbse.BatchID()= batch.BatchID(), cdopbse.SequenceNr());
+    
+    traverse( cdOpBses, Elements, cdopbse )
+    {
+      bse := batch.ConstructBatchSequenceElement();
+      CopyCorresponding::CopyFrom( cdopbse ).CopyTo( bse );
+      batch.AddLast( &bse );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendConfigurationRequestJoinToBootNode
+{
+  Description: 'Send a request to the BootNode for joining a domain.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-21-2016 (created)
+    // convert localhost to current host name
+    bootNodeHost := LibDEF_Util::ConvertLocalhost( LibDEF_Util::GetSettingValueBootNodeHostName() );
+    bootNodePort := LibDEF_Util::GetSettingValueBootNodePortNumber();
+    
+    // Create IntegrationEvent
+    event := this.EventCreate( bootNodeHost, bootNodePort, false );
+    
+    // to join a Domain, you must first have a Channel
+    channelMetas := selectset( this, SystemLocal.ChannelMeta, cm, true );
+    if( channelMetas.Size() > 0 )
+    {
+      nvt := this.SendConfigurationRequestJoin();
+    
+      LibDEF_Util::EventLog( event, "Requesting to join Domain; BootNode: " + LibDEF_Util::FormatCoordinateToString( bootNodeHost, bootNodePort ) );
+    
+      // if a BootNode is known, pass the System-GUID for callback
+      bootNodeGUID := "";
+      bootNode := this.BootNode();
+      if( not isnull( bootNode ) )
+      {
+        bootNodeGUID := bootNode.GUID();
+      }
+    
+      this.SendMessage( bootNodeGUID, bootNodeHost, bootNodePort,
+                        nvt, LibDEF_DataAccessor::KIND_REQUEST(), event );
+    }
+    else
+    {
+      LibDEF_Util::EventLogError( event,
+                                  "Failed to send Request to join Domain",
+                                  "Request to join Domain is disallowed, due to zero ChannelMetas instantiated." );
+    }
+  *]
+}

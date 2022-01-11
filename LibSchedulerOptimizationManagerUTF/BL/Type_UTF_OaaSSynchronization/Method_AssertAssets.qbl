@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method AssertAssets (Schedule schedule, JSON assetsArray)
+{
+  Description: 'Checks whether the schedule has resources that matches the JSON input data.'
+  TextBody:
+  [*
+    for( i := 0; i < assetsArray.Size(); i++ )
+    {
+      assetJSON := assetsArray.Get( i );
+      id := ImportedResource_SC::GetAssetID( assetJSON );
+      resource := select( schedule, ResourceGroup_SC.Resource_SC, resource, resource.ResourceID() = id );
+      
+      if( this.Run().AssertTrue( not isnull( resource ), Translations::LibSchedulerOptMgrUTF_Resource_NotCreated( id ) ) )
+      {
+        isFiniteStrategy := resource.ResourceGroup_SC().IsFiniteCapacity();
+        hasInfiniteLeadTimeStrategy := exists( resource, LeadTimeStrategy_SC, lts, lts.StrategyName() = Constants::StrategyInfinite() );
+       
+        this.Run().AssertEqual( ImportedResource_SC::GetGenericID( assetJSON ), resource.GenericID() );
+        this.Run().AssertEqual( ImportedResource_SC::GetWorkCenterID( assetJSON ), resource.ResourceGroup_SC().Name() );
+        this.Run().AssertTrue( ( not isFiniteStrategy ) = hasInfiniteLeadTimeStrategy );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

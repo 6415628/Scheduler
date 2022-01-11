@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExportDemoAndERPData (String demoCategory, String demoDatasetName)
+{
+  Description: 'Export demo and ERP data.'
+  TextBody:
+  [*
+    // Ensure that ExportedSchedule is created before synchronization or export start.
+    this.Schedule().FeedbackManager().GetSchedule();
+    
+    demoScenarioFolder := Constants::DemoScenarioFolderPath( demoCategory, demoDatasetName );
+    
+    // Check if the directory exist, create it if not
+    if( not OS::IsDirectory( demoScenarioFolder ) )
+    {
+      OS::CreateDirectory( demoScenarioFolder );
+    }
+    
+    this.ExportERPData( demoScenarioFolder );
+    this.ExportDemoData( demoScenarioFolder );
+    this.ExportMPSData();
+    
+    // Move all exported files FROM dataset-dependent directory to specified category and dataset folder
+    this.MoveDemoDataExcelsToDemoScenarioFolder( demoScenarioFolder );
+    
+    this.DemoCategorySelected( demoCategory );
+    this.DemoDataSelected( demoDatasetName );
+  *]
+}

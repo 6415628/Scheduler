@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAlwaysAvailableEvent () as LibCal_Event
+{
+  Description: "Get the 'Always available' event, create it if it does not exist."
+  TextBody:
+  [*
+    event := select( this, Event, evnt, true, evnt.IsAlwaysAvailableEvent() );
+    
+    if( isnull( event ) )
+    {
+      timezone := this.GetTimeZone();
+      
+      // This event is *not* default, i.e. it will not be applied automatically to all new calendars.
+      // A calendar starts closed and should be opened up explicitly by letting it subscribe to events of type 'Available'.
+      // Event 'Always available' can be used to open up a calendar, i.e. make all its capacity available.
+      event := LibCal_Event::Create( this, LibCal_Event::ALWAYS_AVAILABLE(),
+                                     DateTime::ConstructFromLocalDateTime( timezone, 2000, 01, 01 ),
+                                     DateTime::ConstructFromLocalDateTime( timezone, 2050, 01, 01 ) )
+                             .SetDescription( Translations::Event_AlwaysAvailableDescription() )
+                             .SetTypeAvailable();
+      event.IsAlwaysAvailableEvent( true );
+      
+      event.UpdateCalendar();
+    }
+    
+    return event;
+  *]
+}

@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetEmptySetByName (String channelName_i, String setTypeName_i, String setName_i) as LibDEF_Set
+{
+  Description: 'Gets a Set from DataRepository; if the Set does not exist, create it, else return the Set after deleting the SetObjects.'
+  TextBody:
+  [*
+    channel := select( this, Channel, channel, 
+                       channel.Name() = channelName_i );
+    
+    if( isnull( channel ) )
+    {
+      LibDEF_Util::LogError( "Error getting a Set from DataRepository, Channel with name '" + channelName_i + "' cannot be found." );
+    }
+    
+    setType := selectobject( this, Channel.SetType, st,
+                             st.Name() = setTypeName_i );
+    
+    if( isnull( setType ) )
+    {
+      LibDEF_Util::LogError( "Error getting a Set from DataRepository, SetType with GUID '" + setTypeName_i + "' cannot be found." );
+    }
+    
+    set := LibDEF_Set::FindSet( setType.ChannelName(), setType.Name(), setName_i );
+    
+    if( isnull( set ) )
+    { 
+      set := LibDEF_Set::Create( setType, setName_i );
+    }
+    else
+    {
+      set.SetObject( relflush );
+    }
+    
+    return set;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

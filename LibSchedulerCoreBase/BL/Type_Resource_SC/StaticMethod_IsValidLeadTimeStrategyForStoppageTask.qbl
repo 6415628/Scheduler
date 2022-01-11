@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod IsValidLeadTimeStrategyForStoppageTask (output String feedback_o, Resource_SC resource, String leadtimestrategy) declarative remote as Boolean
+{
+  Description: 'Checks if a resource_SC instance has a valid lead time strategy when this resource is in scope for a stoppage task ( Program or Shutdown ). Called from DialogResource in Designer.'
+  TextBody:
+  [*
+    // Checks if a resource_SC instance has a valid lead time strategy when this resource is in scope for a stoppage task ( Program or Shutdown ). 
+    
+    /*
+    Value will be true if one of the following conditions is meet:
+    1. If the resource is null means is New resource
+    2. If the resource is not in scope for any shutdown type or program definition
+    3. If the lead time strategy is ASAP
+    */
+    
+    value := isnull( resource )
+             or ( resource.ShutdownTypeInResource( relsize ) = 0
+                  and isnull( resource.ProgramDefinitionConfiguration() ) )
+             or leadtimestrategy = Constants::StrategyASAP();
+    
+    if( not value )
+    {
+      Utility_SC::Concat( feedback_o, Translations::SC_DialogResource_LeadTimeStrategy_Precondition() );
+    }
+    
+    return value;
+  *]
+}

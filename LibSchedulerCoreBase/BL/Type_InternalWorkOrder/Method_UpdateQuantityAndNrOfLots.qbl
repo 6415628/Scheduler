@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateQuantityAndNrOfLots (Real quantity, Number nrOfLots)
+{
+  Description: 'Update work order and order quantity and nr of lots.'
+  TextBody:
+  [*
+    // Update work order quantity
+    this.Quantity( quantity );
+    this.NrOfLots( nrOfLots);
+    
+    // Update Order quantity
+    this.Order_SC().Quantity( quantity );
+    this.Order_SC().NrOfLots( nrOfLots );
+    
+    // Update PlanUnit quantity.
+    traverse( this, Order_SC.PlanUnit_SC, planUnit )
+    {
+      planUnit.Quantity( quantity );
+      planUnit.NrOfLots( nrOfLots );
+    }
+    
+    // Update WorkOrderDemand quantity.
+    internalWorkOrderDemands := selectset( this, WorkOrderOperation.WorkOrderDemand.astype( InternalWorkOrderDemand ), internalWorkOrderDemand, true );
+    InternalWorkOrderDemand::UpdateWorkOrderDemandAndDemandQuantity( internalWorkOrderDemands );
+    
+    // Update WorkOrderSupply quantity.
+    internalWorkOrderSupplies := selectset( this, WorkOrderOperation.WorkOrderSupply.astype( InternalWorkOrderSupply ), internalWorkOrderSupply, true );
+    InternalWorkOrderSupply::UpdateWorkOrderSupplyAndSupplyQuantity( internalWorkOrderSupplies );
+  *]
+}

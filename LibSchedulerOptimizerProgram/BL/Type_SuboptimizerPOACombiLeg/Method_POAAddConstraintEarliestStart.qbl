@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintEarliestStart (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs, Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // zyi1 Jul-19-2021 (created)
+    constr := poa.NewStartConstraint( SuboptimizerPOACombiLeg::NamePOAConstraintEarliestStart( null( Rule ) ) );
+    
+    timeexpression := poa.Expression( SuboptimizerPOACombiLeg::NamePOAExpressionTime() );
+    constr.Expression( timeexpression );
+    
+    // This cannot be a PN valueset, so we cannot handle different onholdperiods per resource
+    valueset := POAValueSet::N( poa, SuboptimizerPOACombiLeg::NamePOAValueSetEarliestStartConstraint( null( Rule ) ), Real::MinReal() );
+    constr.ValueSet( valueset );
+    
+    scheduletime := this.GetSchedule().Time();
+    
+    // Add the start constraint on operations
+    traverse( combilegs, Elements, combileg )
+    {
+      // The leg cannot end before its earliest end
+      dummyend := poa.Node( SuboptimizerPOACombiLeg::NamePOADummyEnd( combileg ), combileg );
+      legearliestend := combileg.GetEarliestEnd();
+      valueset.Set( dummyend, maxvalue( legearliestend, scheduletime).HoursAsReal( scheduletime ) );
+      
+      // The leg cannot start before its earliest start
+      dummystart := poa.Node( SuboptimizerPOACombiLeg::NamePOADummyStart( combileg ), combileg );
+      legearlieststart := combileg.GetEarliestStart( combilegs );
+      valueset.Set( dummystart, maxvalue(  legearlieststart, scheduletime).HoursAsReal( scheduletime ) ); 
+      
+      traverse( operations, Elements, operation, combileg.GetIsOperationAllowedHard( operation ) )
+      {
+        node := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation ), operation );
+        // The earliest start of an operation is the maximum between the operation earliest start, 
+        // the end of the on hold period if the operation is on hold
+        // and the schedule time
+        earlieststart := maxvalue( operation.EarliestStart(),
+                                   ifexpr( operation.IsOnHold(), combileg.GetResource().OnHoldPeriodEnd() , scheduletime ),
+                                   scheduletime ).HoursAsReal( scheduletime );
+    
+        valueset.Set( node, earlieststart );
+      }
+    }
+  *]
+}

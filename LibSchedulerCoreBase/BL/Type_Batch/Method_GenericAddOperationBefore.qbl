@@ -1,0 +1,67 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenericAddOperationBefore (Operation_SC operation, BatchSequenceElement element) as BatchSequenceElement
+{
+  Description: 'Add operation before a batch sequence element'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // Method Batch::GenericAddOperationBefore() should be overloaded if BatchSequenceElement has subtype
+    oldprev    := null( BatchTask );
+    oldnext    := null( BatchTask );
+    task       := null( BatchTask );
+    emptybatch := null( Batch );
+    bse        := operation.BatchSequenceElement();
+    
+    // Unplan operation if it is planned on a single resource
+    if( not isnull( operation.SingleTaskBase() ) )
+    {
+      operation.Unplan();
+    }
+    
+    if( isnull( bse ) )
+    {
+      bse := this.AddBefore( this.ConstructBatchSequenceElement( operation ), element );
+    }
+    else
+    {
+      if( bse.Batch() <> this )
+      {
+        islastopinbatch := bse.Batch().BatchSequenceElement( relsize ) = 1; // Check if operation is the only operation in batch
+        prevbatchtask   := bse.Batch().BatchTask();
+        if( not isnull( prevbatchtask ) )
+        {
+          // Do not use the Previous/NextBatchTask relation as it may not be computed.
+          oldprev := prevbatchtask.Previous().astype( BatchTask );
+          oldnext := prevbatchtask.Next().astype( BatchTask );
+          
+          // when operation is the only operation in batch, move it to another batch will caused error because the task is not deleted for the batch
+          if( islastopinbatch )
+          {
+            prevbatchtask.Unplan();
+          }
+        }
+        // Remove source batch if the source operation is the only operation in batch.
+        if( islastopinbatch )
+        {
+          emptybatch := bse.Batch();
+        }
+      }
+      this.MoveBefore( bse, element );
+    }
+    
+    // Update FSPL operation in task and FSPL graph
+    task := guard( bse.Batch().BatchTask(), null( BatchTask ) );
+    if( not isnull( task ) )
+    {
+      task.Resource_SC().UpdateFSPLOperationInTaskAndGraph( task, oldprev, oldnext, null( BatchSequenceElement ) );
+    }
+    
+    if( not isnull( emptybatch ) )
+    {
+      emptybatch.Delete();
+    }
+    
+    return bse;
+  *]
+}

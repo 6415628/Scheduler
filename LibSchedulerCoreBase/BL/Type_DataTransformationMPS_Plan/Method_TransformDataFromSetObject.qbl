@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride TransformDataFromSetObject (const LibDEF_SetObject setObject_i)
+{
+  TextBody:
+  [*
+    // Todo - DM -> Mapping a planunit from the generic LibDMC_MPS_Plan type.
+    
+    schedule := this.DataTransformationDefinition().astype( DataTransformationDefinition ).Schedule();
+    mpsdatasetid := guard( schedule.IntegrationConfiguration().MPSDatasetID(), '' );
+    
+    // 1) Cast the object as the type of data to be transformed
+    dataInstance := setObject_i.astype( LibDEC_CP_Plan );
+    
+    // filter imported plan units by MPS dataset id
+    if( dataInstance.DatasetId() = mpsdatasetid )
+    {
+      // 2) CreateUpdate an instance of the <Topic> data with the dataInstance, add it to structure.
+      planunit := ImportedCP2SC_PlanUnit_SC::FindImportedCP2SC_PlanUnit_SC( dataInstance.ID(), dataInstance.OrderId() );
+      
+      if( isnull( planunit ) )
+      {
+        planunit := ImportedCP2SC_PlanUnit_SC::Create( schedule, dataInstance.ID(), dataInstance.OrderId() );
+      }
+      planunit.Update( dataInstance );
+      
+      traverse( dataInstance, Operation, ops )
+      {
+        opscp := ImportedCP2SC_Operation_SC::FindImportedCP2SC_Operation_SC( ops.Id(), ops.OrderId(),ops.MPS_PlanUnitId(), [Number]ops.ExternalSequenceNr() );
+         
+        if( isnull( opscp ) )
+        {
+          opscp := ImportedCP2SC_Operation_SC::Create( schedule, ops.Id(), ops.OrderId(), dataInstance.ID(), [Number]ops.ExternalSequenceNr() );
+        }
+        opscp.Update( ops );
+      }
+      
+      traverse( dataInstance, PlanUnitMapping, pumap )
+      {
+        pumapsc := ImportedCP2SC_PlanUnitMapping_SC::FindImportedCP2SC_PlanUnitMapping_SC( pumap.SC_PlanUnitId() );
+      
+        if( isnull( pumapsc ) )
+        {
+          pumapsc := ImportedCP2SC_PlanUnitMapping_SC::Create( schedule, pumap.SC_PlanUnitId() );
+        }
+        pumapsc.Update( pumap );
+      }
+    }
+  *]
+}

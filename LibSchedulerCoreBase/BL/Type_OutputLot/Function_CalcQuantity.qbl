@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcQuantity
+{
+  TextBody:
+  [*
+    // Janer Aug-16-2017 (created)
+    
+    // to accomodate the case of batch task, we use sum to get all the operations, so that we create sufficient lot material to downstream input lots
+    lotsize := sum( this, Task_SC.OperationInTask, op, op.OutputLotSize() ); 
+    op_qty := sum( this, Task_SC.OperationInTask, op, op.PlanUnit_SC().Quantity() );
+    
+    // we take the difference between the total quantity and the previous cumulated quantity
+    // then compare if the difference is greater than the input lot size
+    // take the lotsize if it is smaller, which means there is still leftover quantity 
+    value := minvalue( guard( op_qty - this.PreviousOutputLot().CumulativeQuantity(), op_qty ), lotsize );
+    
+    this.Quantity( value );
+  *]
+}

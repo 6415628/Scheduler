@@ -1,0 +1,67 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDrop (structured[Operation_SC] source, BatchResource droprow, Task_SC droptarget, 
+  Task_SC beforedroptarget, Task_SC afterdroptarget) id:Response_GanttChartSchedulingCentre_OnDrop_8
+{
+  #keys: '[12910.0.1173030863]'
+  Body:
+  [*
+    // OnDrop structured[Operation] --> Batch Task on BatchResource
+    ctrlshift := dropaction.IsControlShift();
+    beforeTask := beforedroptarget;
+    
+    if( isnull( beforeTask ) and 
+        guard( not isnull( droprow.LastFeedbackBatchInSchedule().BatchTask() ), false ) )
+    {
+      beforeTask := droprow.LastFeedbackBatchInSchedule().BatchTask();
+    }
+    
+    if( not isnull( droptarget.astype( BatchTask ) ) and not ctrlshift )
+    {
+      // (Add operation to batch)
+      droptarget.astype( BatchTask ).Batch().AddOperations( source );
+    }
+    else
+    {
+      // OnDrop structured[Operation] --> BatchResource (Create new batch)
+      droprow.CreateBatchAssignOperationsPlanBatch( source, guard( beforeTask.astype( BatchTask ), null( BatchTask ) ) );
+    }
+  *]
+  DefinitionID: 'Responsedef_GanttChart_OnDrop'
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey       := dropaction.IsControl();
+    ctrlshiftkey  := dropaction.IsControlShift();
+    
+    operations := construct( Operation_SCs );
+    aftertask := droptarget;
+    beforeTask := beforedroptarget;
+    
+    if( not ctrlshiftkey ) //when ctrlshiftkey = false and not isnull droptarget, the intention is to merge all operations into the droptarget
+    {
+      operations  := selectset( droptarget, OperationInTask, op, true, true ); //operations from the drop target
+      aftertask := afterdroptarget;
+    }
+     
+    // We check droprow.droprow.LastFeedback() because in the case where last feedback task is only started or has FSPL bound then it's task is preserved but hidden   
+    // hence only need this special handling and user can only plan after the last feedback task.
+    if( isnull( beforeTask ) 
+        and guard( not isnull( droprow.LastFeedbackBatchInSchedule().BatchTask() ), false ) )
+    {
+      beforeTask := droprow.LastFeedbackBatchInSchedule().BatchTask();
+    }
+    
+    source := source.Union( operations );
+    
+    return  ApplicationScheduler.AllowedScheduling( droprow,            //batchresource
+                                                    source,             //structured operations
+                                                    ctrlkey,            //skip soft check
+                                                    ctrlshiftkey,       //ctrl shift key
+                                                    beforeTask,         //before task
+                                                    aftertask,          //afterbatch
+                                                    Operation_SC::GetSelectedObjects( source ),
+                                                    feedback,
+                                                    isallowedhard )
+  *]
+}

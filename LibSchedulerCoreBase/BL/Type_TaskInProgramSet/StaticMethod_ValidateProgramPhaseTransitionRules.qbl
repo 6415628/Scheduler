@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ValidateProgramPhaseTransitionRules (BinaryValue previousphasecummulativecharacteristic, BinaryValue previousphasecummulativerealvalue, ProgramPhaseConfiguration programphaseconfiguration, 
+  Operation_SC operation, BinaryValue currentcumulativecharacteristic, BinaryValue currentcumulativerealvalue, 
+  Boolean isnewphase) declarative as Boolean
+{
+  Description: 'Validate all program phase transition rules related to current program phase configuration'
+  TextBody:
+  [*
+    // Validate all program phase transition rules related to current program phase configuration
+    isvalid := true;
+    
+    // Get all program phase transition rules
+    programphasetransitionrules := TaskInProgramSet::GetRulesForProgramPhaseTransition( programphaseconfiguration.ProgramTypeConfiguration(), 
+                                                                                        programphaseconfiguration, 
+                                                                                        operation );
+    
+    traverse( programphasetransitionrules, Elements, rule, not isnull( rule.RuleSubType() ) and isvalid )
+    { 
+      // Construct rule data object
+      dosequencingrule := construct( DORule_DataObjectSequencingRule );
+      
+      // Get data object for cumulative rules - Max Combined Length checkings
+      if( rule.RuleSubType().IsCumulativeValueNeeded() )
+      {
+        currentvalue := Characteristic::GetCumulativeValueForCharacteristic( rule.CharacteristicMain(), 
+                                                                             currentcumulativecharacteristic, 
+                                                                             currentcumulativerealvalue );
+                                                                               
+        dosequencingrule := TaskInProgramSet::GetRuleDataObjectForPhaseTransition(  rule.CharacteristicMain(), 
+                                                                                    currentvalue,
+                                                                                    previousphasecummulativecharacteristic, 
+                                                                                    previousphasecummulativerealvalue, 
+                                                                                    programphaseconfiguration.IsFirstProgramPhase() );
+      }
+      // Get data object for other rules - Min/Max values, Allowed/Not Allowed Difference/Value Jump, Allowed/Not Allowed Value
+      else
+      {
+        operationcharacteristic := select( operation, OperationCharacteristicPhaseTransition, op, op.Characteristic() = rule.CharacteristicMain() );
+        if( not isnull( operationcharacteristic ) )
+        {
+          dosequencingrule := operationcharacteristic.GetRuleDataObject();
+      
+          // Set HasPreviousOperation to FALSE to SKIP any transition rules which need previous operation if it is new phase checking  
+          // New phase does not need to check any transition rules which need previous operation 
+          if( isnewphase )
+          {
+            dosequencingrule.HasPreviousOperation( false )   
+          }
+        }
+      }
+      
+      // Validate the rule by passing in the rule data object
+      isvalid := rule.RuleSubType().Validate( rule, dosequencingrule ); 
+    }
+    
+    return isvalid;
+  *]
+}

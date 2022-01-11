@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[DemandBatch] selection) id:Response_SCListDemandBatch_MenuSelectDemandBatchAsMandatory_OnClick
+{
+  #keys: '[137186.0.1670493470]'
+  Body:
+  [*
+    // Add selected demand batches, demands & operations to mandatory optimizer scope
+    selection := selectset( selection, Elements, demandbatch, not demandbatch.IsFrozenInSchedule() );
+    // Add selected demand batches
+    mandatorydemandbatches := DataHolderOptimizerMandatoryDemandBatches.Data();
+    optionaldemandbatches := DataHolderOptimizerOptionalDemandBatches.Data();
+    
+    DataHolderOptimizerMandatoryDemandBatches.Data( mandatorydemandbatches.Union( selection ) );
+    DataHolderOptimizerOptionalDemandBatches.Data( optionaldemandbatches.Difference( selection ) );
+    
+    // Add selected demands
+    mandatorydemands := DataHolderOptimizerMandatoryDemands.Data();
+    optionaldemands := DataHolderOptimizerOptionalDemands.Data();
+    
+    demands := selectset( selection, Elements.DemandInBatch.Demand, demand, true );
+    
+    DataHolderOptimizerMandatoryDemands.Data( mandatorydemands.Union( demands ) );
+    DataHolderOptimizerOptionalDemands.Data( optionaldemands.Difference( demands ) );
+    
+    // Add selected operations
+    mandatoryoperations := DataHolderOptimizerMandatoryOperations.Data();
+    optionaloperations := DataHolderOptimizerOptionalOperations.Data();
+    
+    operations := selectset( selection, 
+                             Elements.BatchWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, 
+                             operation, 
+                             operation.AllowedOperationOnResource( relsize ) > 0 );
+    
+    DataHolderOptimizerMandatoryOperations.Data( mandatoryoperations.Union( operations ) );
+    DataHolderOptimizerOptionalOperations.Data( optionaloperations.Difference( operations ) );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /Responsedef_SCListDemandBatch_Menu_OnClick
+  Initiator: 'MenuSelectDemandBatchAsMandatory'
+  Precondition:
+  [*
+    operations := selectset( selection, 
+                             Elements.BatchWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, 
+                             operation, 
+                             operation.AllowedOperationOnResource( relsize ) > 0 );
+    
+    return Operation_SC::CheckCanAddToOptimizerScope( operations, feedback );
+  *]
+}

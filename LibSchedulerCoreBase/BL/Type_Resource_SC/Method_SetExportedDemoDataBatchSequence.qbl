@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetExportedDemoDataBatchSequence
+{
+  Description: 'Rearrange exported batches.'
+  TextBody:
+  [*
+    exportedOperationBatches := selectsortedset( this,
+                                                 ExportedOperationBatch.astype( ExportedDemoDataOperationBatch ),
+                                                 exportedOperationBatch,
+                                                 true, // Filter not needed because relation to demo data operation batch set if batch is planned
+                                                 //sort with Start instead of Exportedstart because if the exportedtask has feedback, the start time might differs from the initial exported start time
+                                                 exportedOperationBatch.ExportedStart() );
+    
+    for( i := 0; i < exportedOperationBatches.Size() ; i++ )
+    {
+      //Sequence nr is used in view for sorting purpose.
+      exportedOperationBatches.Element( i ).SequenceNr( i );
+    }
+  *]
+}

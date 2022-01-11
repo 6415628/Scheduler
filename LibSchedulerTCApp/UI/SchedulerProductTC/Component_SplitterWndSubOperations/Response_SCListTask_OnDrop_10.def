@@ -1,0 +1,62 @@
+Quintiq file version 2.0
+#parent: SCListTask
+Response OnDrop (structured[Task_SC] information, Task_SC target, BatchResource resource) id:Response_SCListTask_OnDrop_10
+{
+  #keys: '[109706.1.2114531475]'
+  Body:
+  [*
+    // OnDrop structured[Task] --> Task on Batch Resource
+    ctrlshift  := dropaction.IsControlShift();
+    
+    batchtasks := selectset( information, Elements.astype( BatchTask ), bt, true, true );
+    
+    if( ctrlshift )//merge batches
+    {
+      target.astype( BatchTask ).Batch().MergeBatches( batchtasks );
+    }
+    else
+    {
+      target.Resource_SC().PlanBefore( batchtasks, target );
+    }
+  *]
+  DefinitionID => /SCListTask/Responsedef_SCListTask_OnDrop
+  Precondition:
+  [*
+    retvalue      := true;
+    isallowedhard := true;
+    ctrlkey       := dropaction.IsControl();
+    ctrlshiftkey  := dropaction.IsControlShift();
+    identifier    := Task_SC::GetSelectedObjects( information );
+    
+    if( ctrlshiftkey ) //when ctrlshiftkey = true and not isnull target, the intention is to merge all operations into the droptarget.
+    {
+      newoperations := selectset( information, Elements.OperationInTask, op, true ); //operations from the selected batch tasks
+      operations    := selectset( target, OperationInTask, op, true ); //operations from the drop target
+      operations    := operations.Union( newoperations ); //combine both
+    
+      retvalue := ApplicationScheduler.AllowedScheduling( resource,          //batchresource
+                                                          operations,        //structured operations
+                                                          ctrlkey,           //skip soft check
+                                                          ctrlshiftkey,      //ctrl shift key
+                                                          target.Previous(), //beforetask
+                                                          target.Next(),     //aftertask
+                                                          identifier,
+                                                          feedback,
+                                                          isallowedhard );
+    }
+    else //else, the intention is replan the batch tasks.
+    {
+      retvalue := ApplicationScheduler.AllowedScheduling( resource,          //batchresource
+                                                          information,       //structured tasks
+                                                          ctrlkey,           //skip soft check
+                                                          ctrlshiftkey,      //ctrl shift key
+                                                          target.Previous(), //beforetask
+                                                          target,            //aftertask
+                                                          identifier,
+                                                          feedback,
+                                                          isallowedhard );
+    }
+    
+    return retvalue;
+  *]
+}

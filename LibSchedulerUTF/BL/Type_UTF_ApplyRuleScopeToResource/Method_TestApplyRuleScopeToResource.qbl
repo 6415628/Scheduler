@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestApplyRuleScopeToResource (Schedule schedule)
+{
+  Description: 'Test apply rule scope to resource'
+  TextBody:
+  [*
+    // Get variant attribute
+    planOnResourceWithRule := false;
+    hasNoConstraintViolation := false;
+    
+    this.GetTestVariant( planOnResourceWithRule,
+                         hasNoConstraintViolation );
+    
+    task3 := select( schedule, Operation_SC.Task_SC, task,
+                     task.GetOperation().OperationID() = 'Operation3' );
+    
+    // Propoagete constraint isAllLowPriorityRulesOK and isAllHighPriorityRulesOK
+    Transaction::Transaction().Propagate( constraint( Task_SC, IsAllLowPriorityRulesOK ) );
+    Transaction::Transaction().Propagate( constraint( Task_SC, IsAllHighPriorityRulesOK ) );
+    
+    value := task3.IsAllLowPriorityRulesOK() and 
+             task3.IsAllHighPriorityRulesOK();
+    
+    this.Run().AssertEqual( hasNoConstraintViolation, value,
+                            UTFUtility::GenerateFailedMessage( 'Applying rule scope to resource failed.',
+                                                               this.Variant() ) );
+  *]
+}

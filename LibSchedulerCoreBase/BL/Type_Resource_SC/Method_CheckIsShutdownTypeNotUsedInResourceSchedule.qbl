@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsShutdownTypeNotUsedInResourceSchedule (ShutdownType shutdowntype) declarative remote as Boolean
+{
+  Description: 'Checks whether shutdown type is not used in this resource schedule.'
+  TextBody:
+  [*
+    // Checks whether shutdown type is not used in this resource schedule.
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    value := not exists( this, Shutdown.ResponsibleShutdownType, st, st = shutdowntype );
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      feedbackobject.AddHard( Translations::ShutdownType_UsedInResourceSchedule() );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod M052_SuboptimizerMP_Initialize_RelativeGap_OneGoal (LibOpt_Suboptimizer self, MathematicalProgram program, LibOpt_Task task)
+{
+  Description: 'A `Initialize` method that results in a MIP with a relative gap warning'
+  TextBody:
+  [*
+    nr_vars := 1000;
+    nr_constrs := 100;
+    for( i := 0; i < nr_vars; i++ )
+    {
+      var := program.NewBinaryVariable( [String] i );
+      var.UpperBound( 1 );
+      
+      program.Goal().NewTerm( ( Real::Random() * 2 - 1 ).Round( 2 ), var );
+    }
+    
+    fixed := program.NewVariable( 'fixed' );
+    fixed.LowerBound( 1.0 );
+    fixed.UpperBound( 1.0 );
+    program.Goal().NewTerm( ( Real::Random() * 2 - 1 ).Round( 1 ), fixed );
+    
+    for( j := 0; j < nr_constrs; j++ )
+    {
+      constr := program.NewConstraint( [String] j );
+      constr.Sense( MPConstraintSense::LessOrEqual().AsString() );
+      
+      for( i := 0; i < nr_vars; i++ )
+      {
+        constr.NewTerm( ( Real::Random() * 2 - 1 ).Round( 2 ), program.Variable( [String] i ) );
+      }
+      constr.RHSValue( Real::Random() );
+    }
+    program.GoalSense( ifexpr( Real::Random() < 0.5, MPGoalSense::Minimize(), MPGoalSense::Maximize() ) );
+    program.TimeLimit( 0.1 );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedRuleScopeInProgramType (CDIntegration cdintegration, ImportedRule importedrule)
+{
+  Description: 'Restore imported rule scope in program type core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedRuleScopeInProgramType
+    cdimportedRuleScopeInProgramTypes := selectset( cdintegration, CDEntity.astype( CDImportedRuleScopeInProgramType ), cdiript, 
+                                                    cdiript.RuleID() = importedrule.RuleID() 
+                                                  );
+    traverse( cdimportedRuleScopeInProgramTypes, Elements, cdiript )
+    {
+      importedRuleScopeInProgramType := importedrule.ImportedRuleScopeInProgramType( relnew,
+                                                                                     ProgramDefinitionConfigurationID := cdiript.ProgramDefinitionConfigurationID(),
+                                                                                     ProgramSetConfigurationID := cdiript.ProgramSetConfigurationID(),
+                                                                                     ProgramTypeConfigurationID := cdiript.ProgramTypeConfigurationID(),
+                                                                                     RuleID := cdiript.RuleID()
+                                                                                   );
+      CopyCorresponding::CopyFrom( cdiript ).CopyTo( importedRuleScopeInProgramType );   
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

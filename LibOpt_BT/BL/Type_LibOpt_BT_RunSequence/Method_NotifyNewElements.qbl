@@ -1,0 +1,61 @@
+Quintiq file version 2.0
+#parent: #root
+Method NotifyNewElements
+{
+  Description:
+  [*
+    Check if we need to start new benchmark runs. If we do, start them.
+    
+    If we don't need them, shut down the server if this is configured in the configuration utility.
+  *]
+  TextBody:
+  [*
+    if( not this.IsRunning() )
+    {
+      this.SinceLastStart( relflush );
+    }
+    
+    this.IsRunning( true );
+    
+    // Partial propagate the attribute that is used below.
+    Transaction::Transaction().Propagate( attribute( LibOpt_BT_RunSequence, NumberOfOptimizerRunsRunning ) );
+    
+    nrrunsstarted := this.NumberOfOptimizerRunsRunning();
+    maxparallelruns := this.BenchmarkTrackingDataset().MaxParallelRuns();
+    
+    traverse( this, RunSequenceElement, runseqelement,
+              nrrunsstarted < maxparallelruns
+              and not runseqelement.IsCompleted()
+              and not runseqelement.IsRunning()
+            )
+    {
+      runseqelement.DoRun()
+        ->IgnoreException()
+        ->|this->NotifyNewElements(); // Recursive call.
+      
+      nrrunsstarted++;
+    }
+    
+    if( nrrunsstarted = 0 )
+    {
+      this.IsRunning( false );
+      
+      if( LibOpt_BT_ConfigurationSettings::GetSetting_RunOnServerStartup() )
+      {
+        // Log results when benchmarks are completed
+        if( LibOpt_BT_ConfigurationSettings::GetSetting_AutoExportResults() )
+        {
+          btss := selectset( this, SinceLastStart.BTS, bts, true );
+          LibOpt_BT_BTS::ExportResults( btss );
+        }
+        
+        // Automatically shutdown after the benchmark run has completed.
+        if( LibOpt_BT_ConfigurationSettings::GetSetting_ShutdownAfterCompletion() )
+        {
+          Kernel::Shutdown();
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

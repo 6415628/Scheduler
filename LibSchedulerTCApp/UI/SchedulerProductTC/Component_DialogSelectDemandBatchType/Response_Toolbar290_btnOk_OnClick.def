@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: Toolbar290/btnOk
+Response OnClick () id:Response_Toolbar290_btnOk_OnClick
+{
+  #keys: '[134372.0.134893167]'
+  Body:
+  [*
+    Dialog.ApplyChanges();
+    Dialog.EndModal(1);
+  *]
+  DefinitionID: 'Responsedef_GUIButtonBase_OnClick'
+  Precondition:
+  [*
+    overrideenable := false;
+    checkboxfeedback := '';
+    
+    canbatch := ApplicationScheduler.CanBatchDemandForDialog( DataHolderDemands.Data(), 
+                                                              guard( Dialog.Data().WrappedInstance(), null( DemandBatch ) ),
+                                                              SelectionDemandBatchType.Data(),
+                                                              false );
+    
+    if( not canbatch and not FeedbackObject::HasHardFeedback() )
+    {
+      overrideenable := true;
+      // Workaround to show feedback in the old way until all responses are converted to use FeedbackObject.
+      checkboxfeedback := FeedbackObject::CurrentFeedback().Feedback().ReplaceAll( Translations::SC_HoldCtrlToOverrideForFeedbackObject(), Translations::SC_CheckBoxToOverride() ); 
+      CheckBoxOverride.SetProperty( 'Tooltip', checkboxfeedback );
+    }
+    
+    
+    FeedbackObject::Clear();
+    
+    CheckBoxOverride.Enabled( overrideenable );
+    
+    canbatch := ApplicationScheduler.CanBatchDemandForDialog( DataHolderDemands.Data(), 
+                                                              guard( Dialog.Data().WrappedInstance(), null( DemandBatch ) ),
+                                                              SelectionDemandBatchType.Data(),
+                                                              CheckBoxOverride.Checked() );
+                                                              
+    // Workaround to show feedback in the old way until all responses are converted to use FeedbackObject.
+    feedback := FeedbackObject::CurrentFeedback().Feedback().ReplaceAll( Translations::SC_HoldCtrlToOverrideForFeedbackObject(), Translations::SC_CheckBoxToOverride() ); 
+    
+    return canbatch;
+  *]
+}

@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestDemandBatchingGetSuggestedQuantity (Schedule schedule)
+{
+  Description: 'Test batch creation'
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    
+    testinstance_demandinbatches := this.GetTestInstanceDemandInBatch( variant );
+    
+    // Select the demand batch
+    demandbatch := select( schedule, DemandBatch, db, true );
+    
+    // Check each the demand in batch is evaluated with the right quantity
+    traverse( testinstance_demandinbatches, Elements, testinstance )
+    {
+      demand := select( schedule, Demand, demand, demand.DemandID() = testinstance.DemandID() )
+      
+      // Assert the result
+      this.Run().AssertEqual( testinstance.SuggestedQuantity(), demandbatch.GetSuggestedQuantity( demand ), UTFUtility::GenerateFailedMessage( 'DemandBatching_GetSuggestedQuantity', variant ) ); 
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

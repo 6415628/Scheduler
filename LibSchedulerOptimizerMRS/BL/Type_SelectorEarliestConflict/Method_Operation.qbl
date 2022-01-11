@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Operation (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    // mbr23, 2019-09-02 (overridden)
+    
+    snapshot := this.CreateSnapshot( task ); // use the off-the-shelf SNapshotSelectorAnchor to store info which RG we pick
+    
+    this.RunContextSolvedConflicts().Populate( task.Scope() ); // ensure the context contains all the needed resource group links
+    
+    scope_elements := construct( structured[LibOpt_ScopeElement] );
+    
+    resourcegroup := this.GetNextConflictResourceGroup( task.Scope() );
+    
+    // keep the selected resource group
+    scope_elements.Add( resourcegroup );
+    
+    // log the anchor: (logic inspired from LibOpt_SelectorAnchor::Operation)
+    anchor := resourcegroup.GetAnchorOrCreate( task.Run() );
+    this.LogAnchor( snapshot, anchor );
+    this.UpdateAnchorData( anchor );
+    
+    // and select related operations
+    operations := selectset( task.Scope().Operations(),
+                             Elements,
+                             operation,
+                             guard( operation.Task_SC().Resource_SC().ResourceGroup_SC() = resourcegroup.ResourceGroup_SC(), false ) or
+                             exists( operation,
+                                     AllowedOperationOnResource.Resource_SC.ResourceGroup_SC,
+                                     rg,
+                                     resourcegroup.ResourceGroup_SC() = rg ) );
+    operation_scopeelementes := selectset( operations, Elements.ScopeElementOperation, se, true );
+    scope_elements := scope_elements.Add( operation_scopeelementes );
+    
+    scope := LibOpt_Scope::Create( task.Run(), scope_elements );
+    
+    // sets the flag to mark the operations in the active run
+    this.SetFlagActiveInOptRun( scope );
+    
+    return this.Continue( task, scope );
+  *]
+}

@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeLinkWO2COL (output Fulfillments updatedinstances)
+{
+  Description: 'Synchronizing characteristic based external fulfillments between work order supplies and customer order lines.'
+  TextBody:
+  [*
+    traverse( this, Schedule.ImportedFixedMaterialWO2COL, row, row.IsValidDataHard() )
+    {
+      demandid := MaterialCustomerOrderLine::GetDemandID( row.OrderNr(), row.OrderLineNr() );
+      workorderoutputmaterial := WorkOrderOutputMaterial::FindWorkOrderOutputMaterial( row.WorkOrderOutputMaterialId() );
+      customerorderline := MaterialCustomerOrderLine::FindMaterialCustomerOrderLine( DemandType::MaterialCustomerOrderLine(), demandid );
+      
+      supplies := selectsortedset( workorderoutputmaterial, MaterialPlannedSupply, supply, true, supply.AvailableFrom(), supply.Quantity(), supply.SupplyID() );
+      demands := construct( MaterialDemands );
+      
+      if( not isnull( customerorderline ) )
+      {
+        demands.Add( customerorderline );
+      }
+      
+      this.SynchronizeExternalFulfillments( demands, supplies, row, updatedinstances );
+    }
+  *]
+}

@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectKB (String kbdefinitionname, String kbbranchname) id:Method_ApplicationScheduler_SelectKB
+{
+  #keys: '[125460.0.290438470]'
+  Body:
+  [*
+    // Select kb #9234
+    exteditor := ExternalMDSEditor::Editor();
+    mdshandle := exteditor.ObtainMDS( Schedule.MDSID() );
+    
+    editor := CKBEditor::Create();
+    
+    kbids := editor.GetKBs();
+    kbid := select( kbids, Elements, kbid, kbid.Name() = kbdefinitionname );
+    
+    kbinfos := editor.GetKBStructure( kbid );
+    kbfullid := maxselect( kbinfos, 
+                           Elements.KBFullID, 
+                           k,
+                           k.Branch().ToUpper() = kbbranchname.ToUpper(),
+                           k.Version(),
+                           k.ChangeNr() );
+    
+    if( not isnull( kbfullid ) )
+    {
+      editor.SelectMDSKB( mdshandle, kbfullid );
+    }
+  *]
+}

@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: lblExportID
+Response OnTextChanged () id:Response_LibCal_pnlExportButton_lblExportID_OnTextChanged
+{
+  #keys: '[131094.0.2122155904]'
+  Body:
+  [*
+    exportSource := dhExportSource.Data();
+    if( not isnull( exportSource ) )
+    {
+      // Only do something if the current Client has triggered the export.
+      if( lblMyExportID.Text() <> "" and 
+          this.Text() = lblMyExportID.Text() )
+      {
+        // Get the ExportData right away to prevent that it might be overwritten by next export-action
+        // while the user is selecting a file.
+        binData := exportSource.GetExportData().AsBinaryData();
+        
+        // Ask the user for the filename.
+        fileName := Application.GetSaveFileName( LibCal_pnlExportButton.GetFileName(), "xlsx", "XLSX-files" );
+        
+        if( fileName <> "" )
+        {
+          // Write the data to a file on the Client-machine.
+          Application.WriteBinaryFile( fileName, binData );
+                                 
+          // Check if the file has been written succesfully.
+          if( not Application.ClientFileExists( fileName ) )
+          {
+            LibCal_Util::Info( "something went wrong while writing file '" + fileName + "'." );
+          }  
+        }
+        
+        // Reset
+        lblMyExportID.Text( "" );
+      }
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_Label_OnTextChanged'
+}

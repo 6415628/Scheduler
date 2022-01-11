@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_Tool (CDSchedule cdSchedule, CDToolGroup cdToolGroup, ToolGroup toolGroup)
+{
+  Description: 'Restore tool core data attributes to planning object'
+  TextBody:
+  [*
+    cdTools := selectset( cdSchedule, CDEntity.astype( CDTool ), cdTool, cdTool.BackupToolGroupKey() = cdToolGroup.BackupToolGroupKey() );
+    
+    traverse( cdTools, Elements, cdTool )
+    {
+      tool := Tool::Create( toolGroup, 
+                            cdTool.Name(), 
+                            cdTool.Index(),
+                            cdTool.ToolID(),
+                            cdTool.ToolGroupType() );
+    
+      CopyCorresponding::CopyFrom( cdTool ).CopyTo( tool );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

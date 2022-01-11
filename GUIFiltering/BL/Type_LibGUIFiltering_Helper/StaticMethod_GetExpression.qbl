@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetExpression (LibGUIFiltering_Term term, Strings alltokens, output Number tokenidx) as Boolean
+{
+  TextBody:
+  [*
+    // PER Oct-13-2016 (created)
+    token           := guard( alltokens.Element( tokenidx ), '' );
+    expressionfound := token <> '';
+    newtokenidx     := tokenidx;
+    operand         := '~';
+    
+    if ( expressionfound )
+    {
+      expressionfound := false;
+      
+      if ( LibGUIFiltering_Helper::IsOperand( token ) )
+      {
+        operand := token;
+        token   := '';
+        newtokenidx++;
+      }
+      
+      token     := guard( alltokens.Element( newtokenidx ), '' );
+      nexttoken := guard( alltokens.Element( newtokenidx + 1 ), '' );
+      
+      if ( token <> '' )
+      {
+        // Check if this is a range
+        if ( LibGUIFiltering_Helper::IsRangeIndicator( nexttoken ) )
+        {
+          thirdtoken := guard( alltokens.Element( newtokenidx + 2 ), '' );
+          
+          if ( thirdtoken <> '' )
+          {
+            term.IsRange( true );
+            term.Operand( operand );
+            term.RangeStart( token );
+            term.RangeEnd( thirdtoken );
+            term.OriginalToken( token + ' ' + nexttoken + ' ' + thirdtoken );
+            
+            expressionfound := true;
+            tokenidx        := newtokenidx + 3; 
+          }
+        }
+        else
+        {
+          term.IsRange( false );
+          term.Operand( operand );
+          term.Token( token );
+          
+          expressionfound := true;
+          tokenidx        := newtokenidx + 1;
+        }
+      }
+    }
+    
+    return expressionfound;
+  *]
+}

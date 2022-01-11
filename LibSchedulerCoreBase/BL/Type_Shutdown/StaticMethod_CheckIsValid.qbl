@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsValid (ShutdownType shutdowntype, Duration shutdownduration, Shutdown shutdown, 
+  Boolean skipsoftcheck) declarative remote as Boolean
+{
+  Description: 'Perform checking when creating and editing a shutdown type instance.'
+  TextBody:
+  [*
+    // Perform checking when creating and editing a shutdown type instance.
+    
+    /*
+    1. Check the shutdown type is not empty.
+    2. Check the shutdown duration is greater than zero
+    3. Soft checking - Shutdown planned outside frozen period
+    */
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    Shutdown::CheckIsShutdownTypeNotEmpty( shutdowntype );
+    Shutdown::CheckIsShutdownDurationGreaterThanZero( shutdownduration );
+    
+    // Soft checkings
+    if( not skipsoftcheck and not isnull( shutdown ) )
+    {
+      shutdown.CheckIsPlannedOutsideFrozenPeriod();
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

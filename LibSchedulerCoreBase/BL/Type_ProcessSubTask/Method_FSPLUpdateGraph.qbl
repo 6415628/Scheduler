@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride FSPLUpdateGraph (BatchSequenceElement oldbatchsequenceelement)
+{
+  Description: 'Updates PrecedenceGraph for Process subtasks.'
+  TextBody:
+  [*
+    // Tor Process subtask, link to upstream and downstream Process subtask, upstream NoBufferWait and NoBufferAction subtask.
+    // Link the upstream Process subtask
+    this.FSPLLinkUpstreamProcessSubTask();
+    
+    // Link the downstream Process subtask
+    this.FSPLLinkDownstreamProcessSubTask();
+    
+    // link TO upstream NoBufferWaitL
+    this.FSPLLinkToUpstreamNoBufferWait()
+    
+    // Link TO upstream NoBufferAction
+    this.FSPLLinkToUpstreamNoBufferAction();
+    
+    // Link TO upstream NoBufferOutflow
+    this.FSPLLinkToUpstreamNoBufferOutflow();
+    
+    // Remove edges related to oldbatchsequenceelement (that's being removed from the batch)
+    // Handling its edges from upstream process, and to nobufferaction, nobufferwait and downstream process subtasks
+    this.FSPLUpdateEdges( oldbatchsequenceelement );
+    
+    // Remove edges related to material reservation that are no longer valid
+    this.FSPLRemoveMaterialReservationEdges();
+  *]
+}

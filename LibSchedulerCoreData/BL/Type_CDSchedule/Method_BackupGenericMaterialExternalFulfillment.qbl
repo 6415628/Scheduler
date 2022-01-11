@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericMaterialExternalFulfillment (const MaterialDemand materialdemand)
+{
+  Description: 'Backup generic material external fulfillment core data'
+  TextBody:
+  [*
+    traverse( materialdemand, Fulfillment.astype( GenericMaterialExternalFulfillment ), genericMaterialExternalFulfillment )
+    {
+      cdGenericMaterialExternalFulfillment := this.CDEntity( relnew, CDGenericMaterialExternalFulfillment );
+      CopyCorresponding::CopyFrom( genericMaterialExternalFulfillment ).CopyTo( cdGenericMaterialExternalFulfillment );
+      
+      cdGenericMaterialExternalFulfillment.OperationMaterialID( guard( genericMaterialExternalFulfillment.OperationMaterial().OperationMaterialID(), '' ) );
+      cdGenericMaterialExternalFulfillment.BackupSupplyType( guard( genericMaterialExternalFulfillment.Supply().SupplyType(), '' ) );
+      cdGenericMaterialExternalFulfillment.ImportedFixedFulfillmentBackupID( guard( genericMaterialExternalFulfillment.ImportedFixedFulfillment().BackupImportedID(), '' ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

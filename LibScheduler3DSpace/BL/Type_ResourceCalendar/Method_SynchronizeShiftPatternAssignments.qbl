@@ -1,0 +1,61 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeShiftPatternAssignments
+{
+  Description:
+  [*
+    3DSpace specific synchronization. Subscribes to the shift patterns for this resource, equivalent to subscribing to all events of another calendars for a given period.
+    Shift pattern time periods are always OPEN periods.
+  *]
+  TextBody:
+  [*
+    // Only synchronize shift pattern time periods (events) that are not default
+    // Only closed periods are default
+    allInstances := selectset( this, Participation, participation, not participation.Event().IsDefault() );
+    updatedInstances := construct( LibCal_Participations );
+    
+    // Get all relevant time references - chunk start and end times of ALL shift pattern assignments, duplicates excluded
+    sortedTimeReferences := this.GetAllShiftPatternAssignmentTimeReferences();
+    
+    // Global variable to be retained during each traverse
+    recurrenceStart := min( sortedTimeReferences, Elements, timeReference, timeReference );
+    currentShiftPatternAssignment := this.GetNextHighestPriorityShiftCalendarAssignment( recurrenceStart );
+    
+    // Exclude first element because already used as starting point
+    recurrenceStartIndex := sortedTimeReferences.Find( recurrenceStart );
+    
+    if( recurrenceStartIndex > -1 )
+    {
+      sortedTimeReferences.Delete( recurrenceStartIndex ); 
+    }
+    
+    traverse( sortedTimeReferences, Elements, timeReference )
+    {
+      // The first iteration has no shift pattern assignment
+      // Only consider shift pattern assignments that overlap with the referenced time (EXCEPT those that end at reference time)
+      // Limitation here is that we will not be able to subscribe to shift patterns for zero duration/recurrence
+      nextShiftPatternAssignment := this.GetNextHighestPriorityShiftCalendarAssignment( timeReference );
+                                        
+      // We need the first iteration to find the right shift pattern assignment
+      // We need the next iteration to get the calculate the correct recurrence end time for the earlier shift pattern assignment
+      // Includes NULL to NOT NULL and vice versa
+      if( currentShiftPatternAssignment <> nextShiftPatternAssignment )
+      {
+        if( not isnull( currentShiftPatternAssignment ) )
+        { 
+          recurrenceEnd := minvalue( currentShiftPatternAssignment.ChunkEndDate(), timeReference );
+    
+          this.ApplyShiftPatternAssignment( currentShiftPatternAssignment, recurrenceStart, recurrenceEnd, updatedInstances );
+        }
+        
+        // Get new recurrence start time only for NEW shift assignment
+        recurrenceStart := timeReference;
+      }
+                                                                              
+      currentShiftPatternAssignment := nextShiftPatternAssignment;
+    }
+    
+    oldInstances := allInstances.Difference( updatedInstances );
+    LibCal_Participation::Delete( oldInstances );
+  *]
+}

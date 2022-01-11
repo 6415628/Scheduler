@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: SCListOperationsInBatch
+Response OnDrop (structured[Operation_SC] information, Operation_SC target) id:Response_SCListOperationsInBatch_OnDrop_1
+{
+  #keys: '[11790.0.14388088]'
+  Body:
+  [*
+    // structured[Operation_SC] --> Operation_SC
+    target.BatchSequenceElement().Batch().AddOperationsBefore( information, target.BatchSequenceElement() );
+  *]
+  DefinitionID: 'Responsedef_GUIComponent_OnDrop'
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey       := dropaction.IsControl();
+    ctrlshiftkey  := dropaction.IsControlShift();
+    batch         := target.BatchSequenceElement().Batch();
+    
+    operations    := selectset( batch, BatchSequenceElement.Operation_SC, bo, true, true );
+    operations    := operations.Union( information );
+    
+    result        := true;
+    
+    if( batch.IsPlanned() )
+    {
+      batchtask := batch.BatchTask();
+      result := ApplicationScheduler.AllowedScheduling( batchtask.BatchResource(), //batchresource
+                                                        operations,           //structured operations
+                                                        ctrlkey,              //skip soft check
+                                                        ctrlshiftkey,         //ctrl shift key
+                                                        batchtask.Previous(), //before task
+                                                        batchtask.Next(),     //afterbatch
+                                                        Operation_SC::GetSelectedObjects( information ),
+                                                        feedback,
+                                                        isallowedhard )
+    }
+    else
+    {
+      result := ApplicationScheduler.AllowedInBatch( operations, not batch.IsPlanned(), ctrlkey, false, feedback, isallowedhard );
+    }
+    
+    
+    return result;
+  *]
+}

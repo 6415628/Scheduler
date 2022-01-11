@@ -1,0 +1,76 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestMoveProgramPhases_Setup (Schedule schedule)
+{
+  Description: 'Test move program phases - setup'
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    moveprogramphaseaction := '';
+    
+    this.GetTestVariantForMoveProgramPhases( isvariantfound,
+                                             moveprogramphaseaction );
+    
+    if( isvariantfound )
+    {
+      programconfigurationID := 'Program definition id';
+      programconfigurationName := 'Program definiton name';
+      
+      // Create program definition
+      programdefinition := ProgramDefinitionConfiguration::Create( schedule, programconfigurationID );
+      programdefinition.Name( programconfigurationName );
+      
+      // Create program set
+      programset := ProgramSetConfiguration::Create( programdefinition, programconfigurationID );
+      programset.Name( programconfigurationName );
+      
+      // Create program type
+      programtype := ProgramTypeConfiguration::Create( programset, programconfigurationID );
+      programtype.Name( programconfigurationName );
+      
+      // Create program phase
+      programphase1 := ProgramPhaseConfiguration::Create( programtype, '1' );
+      programphase1.Name( programconfigurationName );
+      programphase1.MoveLast();
+      
+      programphase2 := ProgramPhaseConfiguration::Create( programtype, '2' );
+      programphase2.Name( programconfigurationName );
+      programphase2.MoveLast();
+      
+      programphase3 := ProgramPhaseConfiguration::Create( programtype, '3' );
+      programphase3.Name( programconfigurationName );
+      programphase3.MoveLast();
+      
+      programphase4 := ProgramPhaseConfiguration::Create( programtype, '4' );
+      programphase4.Name( programconfigurationName );
+      programphase4.MoveLast();
+      
+      // Program phases to be moved
+      programphases := construct( ProgramPhaseConfigurations );
+      programphases.Add( programphase2 );
+      programphases.Add( programphase3 );
+      
+      // Propagate SequenceNr before move phases
+      Transaction::Transaction().Propagate( attribute( ProgramPhaseConfiguration, SequenceNr ) );
+      
+      // Move program phases
+      if( moveprogramphaseaction = 'Top' )
+      {
+        ProgramPhaseConfiguration::MoveToTop( programphases ); 
+      }
+      else if( moveprogramphaseaction = 'Bottom' )
+      {
+        ProgramPhaseConfiguration::MoveToBottom( programphases ); 
+      }
+      else if( moveprogramphaseaction = 'Up' )
+      {
+        ProgramPhaseConfiguration::MoveUp( programphases ); 
+      }
+      else if( moveprogramphaseaction = 'Down' )
+      {
+        ProgramPhaseConfiguration::MoveDown( programphases ); 
+      }
+    }
+  *]
+}

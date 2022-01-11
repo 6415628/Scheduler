@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcValuesAsRealVector
+{
+  Description: 'Calculate the `RealVector` of values collected by this statistic, stored in the form of a `BinaryValue`.'
+  TextBody:
+  [*
+    values_real := selectvalues( this, Suboptimizer.SnapshotSuboptimizer, snapshotsuboptimizer,
+                                 // FILTER
+                                 this.CheckIsApplicable( snapshotsuboptimizer ),
+                                 // VALUE
+                                 BinaryValueUtils::RealVectorGetElement( snapshotsuboptimizer,
+                                                                         attribute( LibOpt_SnapshotSuboptimizer, Improvement ),
+                                                                         this.KPILevel() - 1
+                                                                       )
+                               );
+    
+    values_as_real_vector := RealVector::Construct( values_real ).AsBinaryValue();
+    
+    this.ValuesAsRealVector( values_as_real_vector );
+  *]
+}

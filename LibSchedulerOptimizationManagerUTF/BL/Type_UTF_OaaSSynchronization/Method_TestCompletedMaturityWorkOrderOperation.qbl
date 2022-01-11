@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCompletedMaturityWorkOrderOperation (Schedule schedule)
+{
+  Description: 'Test giving END feedback to work order operations with Completed maturity based on mock 3DSpace JSON data.'
+  TextBody:
+  [*
+    completedWorkOrderOperations := selectset( schedule,
+                                               WorkOrder.WorkOrderOperation.astype( ExternalWorkOrderOperation ),
+                                               externalWorkOrderOperation,
+                                               externalWorkOrderOperation.Maturity() = Constants::MaturityStatus_COMPLETED() );
+    
+    areAllCompletedOperationsEnded := forall( completedWorkOrderOperations,
+                                              Elements.Operation_SC,
+                                              operation,
+                                              operation.HasEnded() );
+    
+    this.Run().AssertTrue( areAllCompletedOperationsEnded, 
+                           UTFUtility::GenerateFailedMessage( 'Giving END feedback for COMPLETED maturity work order operations based on JSON data failed', '' ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoGenerateOccurrence (DateTime start_i, DateTime end_i, ExplicitTimeInterval firstOccurrence_i) as Boolean
+{
+  Description: 'Determine if an occurrence should be generated.'
+  TextBody:
+  [*
+    doGenerate := false;
+    calendar   := this.Calendar();
+    
+    /* Special case #1: CalendarWindow moved forward and
+     *                  the occurrence-to-be-generated starts before but ends after the new start of the window.
+     *                  In this case, the occurrence should not be generated.
+     *
+     * The fact that this occurrence was not found indicates that it was explicitly deleted;
+     * it should *not* be created now, but its deletion should be preserved.
+     *
+     * So: an occurrence can be generated when the CalendarWindow did not move forward,
+     *     or when the occurrence starts after the start of the window.
+     */
+    startOfWindowMovedForward := calendar.StartDate() > calendar.PreviousStartDate();
+    doGenerate := not startOfWindowMovedForward
+               or start_i >= calendar.Start();
+    
+    if( doGenerate )
+    {
+      /* Special case #2 : CalendarWindow moved backward and
+       *                   the occurrence-to-be-generated has overlap with the first already existing occurrence.
+       *                   In this case, the occurrence should not be generated.
+       *
+       * This indicates that the first occurrence was modified and preserved,
+       * and generating a new occurrence would result in a 'double' occurrence.
+       *
+       * So: an occurrence can be generated when the CalendarWindow did not move backward,
+       *     or when there is no overlap with the first existing occurrence.
+       */
+      startOfWindowMovedBackward    := calendar.StartDate() < calendar.PreviousStartDate();
+      hasOverlapWithFirstOccurrence := not isnull( firstOccurrence_i )
+                                   and end_i   > firstOccurrence_i.Start()
+                                   and start_i < firstOccurrence_i.End();
+                                   
+      doGenerate := not startOfWindowMovedBackward
+                 or not hasOverlapWithFirstOccurrence;
+    }
+    
+    return doGenerate;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

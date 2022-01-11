@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: pnlActionBar_432/btnLeaveDomain
+Response OnClick () id:Response_pnlActionBar_432_btnLeaveDomain_OnClick
+{
+  #keys: '[143398.0.685639870]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebButton_OnClick'
+  GroupServerCalls: true
+  Precondition:
+  [*
+    if( GlobalStateDataExchangeFramework.IsDEFDatasetsLoadedChecked() )
+    {
+      LibDEF_DataBroker.LeaveDomainAllowed();
+    }
+    return FeedbackObject::IsAllowed();
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Leave Domain
+      prompt := "Do you want to inform the BootNode for your leaving?";
+      response := WebMessageBox::Question( this, prompt, 'Yes|No|Cancel', 2 );
+      if ( response <> 2 )
+      {
+        informBootNode := response = 0;
+        LibDEF_DataBroker.LeaveDomain( informBootNode );
+      }
+    *]
+  }
+}

@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateOutputOperationMaterial (Operation_SC operation, String id, UTFOperation nextoperation) as UTFOperationMaterial
+{
+  TextBody:
+  [*
+    pu := operation.PlanUnit_SC();
+    om := UTFOperationMaterial::Create( pu, id );
+    om.Quantity( pu.Quantity() );
+    
+    operation.ToOperationDependency( relinsert, om );
+    
+    if( not isnull( nextoperation ) )
+    {
+      nextoperation.FromOperationDependency( relinsert, om );
+    }
+    
+    return om;
+  *]
+}

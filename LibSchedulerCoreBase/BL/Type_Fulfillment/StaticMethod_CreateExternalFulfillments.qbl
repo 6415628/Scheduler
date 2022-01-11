@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateExternalFulfillments (Demands demands, Supplys supplies, Real quantity_keep) as owning Fulfillments
+{
+  Description: 'Creates external fulfillments between multiple demands and supplies.'
+  TextBody:
+  [*
+    demands := selectsortedset( demands, Elements, d, true, d.DueDate(), d.Quantity(), d.DemandID() );
+    supplies := selectsortedset( supplies, Elements, supply, true, supply.AvailableFrom(), supply.Quantity(), supply.SupplyID() ); 
+    createdFulfillments := construct( Fulfillments );
+    
+    // when supply availablefrom is maxdatetime, the sorting among supplies with maxdatetime will be inaccurate, apparently maxdatetimes are not treated equal
+    traverse( demands, Elements, demand )
+    { 
+      newFulfillments := demand.CreateExternalFulfillments( supplies, quantity_keep );
+      createdFulfillments := createdFulfillments.Add( newFulfillments );
+    }
+    
+    return &createdFulfillments;
+  *]
+}

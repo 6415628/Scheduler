@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestFreezeScheduleByProgramSetting (Schedule schedule)
+{
+  Description: 'Test freeze schedule by program setting'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    isfreezeschedulebyprogram := false;
+    isprogram1alltasksfreeze := false;
+    isprogram2alltasksfreeze := false;
+    
+    this.GetTestVariantForForFreezeScheduleByProgram(  isvariantfound,
+                                                       isfreezeschedulebyprogram,
+                                                       isprogram1alltasksfreeze,
+                                                       isprogram2alltasksfreeze );
+    
+    value := true;
+    
+    // Only do checking when variant found
+    if( isvariantfound )
+    {
+      program1 := minselect( schedule, ResourceGroup_SC.Resource_SC.ProgramChange.ProgramType, pt, pt.Start() );
+      program2 := maxselect( schedule, ResourceGroup_SC.Resource_SC.ProgramChange.ProgramType, pt, pt.Start() );
+      isprogram1frozen := forallexists( program1, TaskInProgramSet.Task_SC, task, task.IsFrozenInSchedule() );
+      isprogram2frozen := forallexists( program2, TaskInProgramSet.Task_SC, task, task.IsFrozenInSchedule() );
+      
+      value := isprogram1frozen = isprogram1alltasksfreeze
+               and isprogram2frozen = isprogram2alltasksfreeze;          
+    }      
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Test freeze schedule by program setting failed.', 
+                           this.Variant() ) );
+  *]
+}

@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ParseFCjson (Schedule owner, JSON timePeriod, ImportedShiftPattern importedShiftPattern) as ImportedTimePeriod
+{
+  Description: 'Parse the JSON input for time periods received from 3DSpace.'
+  TextBody:
+  [*
+    startDay := ImportedTimePeriod::GetStartDay( timePeriod );
+    startTime := ImportedTimePeriod::GetStartTime( timePeriod );
+    endDay := ImportedTimePeriod::GetEndDay( timePeriod );
+    endTime := ImportedTimePeriod::GetEndTime( timePeriod );
+    
+    importedTimePeriod := select( importedShiftPattern, ImportedTimePeriod, importedTimePeriod,
+                                  importedTimePeriod.StartDay()= startDay
+                                  and importedTimePeriod.StartTime() = startTime
+                                  and importedTimePeriod.EndDay() = endDay
+                                  and importedTimePeriod.EndTime() = endTime );
+    
+    // ImportedTimePeriod is always created if there isn't one with matching attributes
+    // So all data (attribute and relation) is set during create
+    if( isnull( importedTimePeriod ) )
+    {
+      importedTimePeriod := ImportedTimePeriod::Create( owner, importedShiftPattern, startDay, startTime, endDay, endTime );
+    }
+    
+    return importedTimePeriod;
+  *]
+}

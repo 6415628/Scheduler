@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: pnlNotRecurring/datStartDate
+Response OnChanged () id:Response_pnlNotRecurring_datStartDate_OnChanged
+{
+  #keys: '[146730.0.907574506]'
+  Body:
+  [*
+    // Adjust the EndDate accordingly.
+    if( vhStartDate.Data().IsFinite() )
+    {
+      delta := this.Date() - vhStartDate.Data();
+      datEndDate.Date( datEndDate.Date() + delta );
+    }
+     
+    // Update the 'memory' for later delta-calculation, and/or setting the time back when AllDay is turned off.
+    vhStartDate.Data( this.Date() );
+    
+    // Adjust StartOfPeriod accordingly for convenience.
+    // EndOfPeriod is then also automatically adjusted.
+    if( btnNoRecurrence.Pressed() )
+    {
+      // Use the UTC-timezone here in order to keep the same date, don't correct for a specific timezone.
+      timezone := TimeZone::UTCTimeZone();
+      dtStartOfPeriod.DateTime( this.Date().DateTime( timezone ) );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIDateSelector_OnChanged'
+}

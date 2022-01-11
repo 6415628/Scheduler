@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnFailureExchangeData (NamedValueTree nvt_i, String targetSystemGUID_i)
+{
+  Description: 'Handle cases for failing to send DataExchange NVT.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-26-2016 (created)
+    // retrieve kind
+    kind := LibDEF_DataAccessor::GetHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_KIND() );
+    
+    if( LibDEF_DataAccessor::HasChildNamed( nvt_i, nvt_i.Root(), LibDEF_DataAccessor::HANDLE_CONFIGURATION() ) )
+    {
+      // Handle configuration message
+      // retrieve type
+      type := LibDEF_DataAccessor::GetConfigurationHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_TYPE() );
+    
+      if( kind = LibDEF_DataAccessor::KIND_REQUEST() and type = LibDEF_DataAccessor::TYPE_CONFIGURATION_JOIN() )
+      {
+        this.SendConfigurationRequestJoinOnFailure( nvt_i, targetSystemGUID_i );
+      }
+    }
+    else if( LibDEF_DataAccessor::HasChildNamed( nvt_i, nvt_i.Root(), LibDEF_DataAccessor::HANDLE_METADATA() ) )
+    {
+      // Handle metadata message
+    }
+    else if( LibDEF_DataAccessor::HasChildNamed( nvt_i, nvt_i.Root(), LibDEF_DataAccessor::HANDLE_DATA() ) )
+    {
+      // Handle set-data message
+    }
+  *]
+}

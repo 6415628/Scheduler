@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod EchoFromQI (String msg_i) as String
+{
+  Description:
+  [*
+    Let the QIntegrator echo a message back to the QAE.
+    Can be used to 'fake' messages coming from external systems via the QIntegrator.
+    Assumes a QI-route called "Echo" to be present.
+  *]
+  TextBody:
+  [*
+    echoedMsg := "";
+    
+    //info( ">>> MSG" );
+    //info( msg_i );
+    
+    // Create a NVT that contains msg_i as content as request for the QIntegrator.
+    requestNVT := LibDIF_IntegrationDataset::CreateRequestForQI( msg_i );
+    
+    //info( ">>> RequestNVT" );
+    //info( requestNVT.ToString() );
+    
+    // Trigger the action in the QIntegrator and wait for its response.
+    integratorID := LibDIF_Util::INTEGRATORID_ECHO();
+    errMsg       := "";
+    responseNVT  := LibInt_IntegratorProxy::SyncNvtRequest( integratorID, "", requestNVT, errMsg );
+    
+    if( errMsg <> "" )
+    {
+      info( "ERROR received from QIntegrator" );
+      error( errMsg );
+    }
+    else
+    {
+      //info( ">>> ResponseNVT" );
+      //info( responseNVT.ToString() );
+      
+      // Retrieve the message from the Body of the replied NVT.
+      bodyNode  := responseNVT.Root().Child( responseNVT.GetHandle( "Body" ) );
+      echoedMsg := bodyNode.GetValueAsString();
+    
+      //info( ">>> Echoed MSG" );
+      //info( echoedMsg );
+    }
+    
+    return echoedMsg;
+  *]
+}

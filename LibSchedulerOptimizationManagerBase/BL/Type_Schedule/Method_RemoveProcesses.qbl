@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method RemoveProcesses (JSON jsonTree)
+{
+  Description: 'Remove imported processes (routing) data based on JSON input.'
+  TextBody:
+  [*
+    processesJSON := guard( jsonTree.Get( Constants::JSON_Remove_Processes() ), null( JSON, owning ) );
+    
+    if( not isnull( processesJSON ) )
+    {
+      for( i := 0; i < processesJSON.Size(); i++ )
+      {
+        processID := processesJSON.Get( i ).GetString();
+        process := ImportedRouting_SC::FindImportedRouting_SC( processID );
+        
+        if( not isnull( process ) )
+        {
+          process.Remove();
+        }
+        else
+        {
+          logfile( Translations::LibSchedulerOptMgr_Remove_Process_NotFound( processID ) );
+        }
+      }
+    }
+  *]
+}

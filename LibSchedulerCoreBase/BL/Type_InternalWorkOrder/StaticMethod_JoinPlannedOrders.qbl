@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod JoinPlannedOrders (InternalWorkOrders plannedOrders) as InternalWorkOrder
+{
+  Description: 'Join multiple planned order.'
+  TextBody:
+  [*
+    totalQuantity := sum( plannedOrders, Elements, plannedOrder, true, plannedOrder.Quantity() );
+    plannedOrderWithEarliestDueDate := minselect( plannedOrders, Elements, plannedOrder, true, plannedOrder.DueDate() );
+    plannedOrdersWithLaterDueDate := plannedOrders;
+    plannedOrdersWithLaterDueDate.Remove( plannedOrderWithEarliestDueDate );
+    
+    // Update workorder, order and plan unit quantity accordingly.
+    plannedOrderWithEarliestDueDate.Quantity( totalQuantity );
+    plannedOrderWithEarliestDueDate.Order_SC().Quantity( totalQuantity );
+    earliestPlanUnit := select( plannedOrderWithEarliestDueDate, Order_SC.PlanUnit_SC, planUnit, true );
+    remainingPlanUnits := selectset( plannedOrdersWithLaterDueDate, Elements.Order_SC.PlanUnit_SC, planUnit, true );
+    if( not isnull( earliestPlanUnit ) )
+    {
+      // Join plan units, demands and supplies
+      earliestPlanUnit.Order_SC().JoinPlanUnits( earliestPlanUnit, remainingPlanUnits );
+    }
+    
+    WorkOrder::Remove( plannedOrdersWithLaterDueDate );
+    
+    return plannedOrderWithEarliestDueDate;
+  *]
+}

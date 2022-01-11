@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckCharacteristicSequencingRules (Operation_SC operation, Task_SC beforetask, Task_SC aftertask, 
+  output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Perform characteristic sequencing rule validation for precondition checking'
+  TextBody:
+  [*
+    // Perform characteristic sequencing rule validation for precondition checking
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    // Get the previous operation for sequencing rule check
+    // If no after task, then use beforetask as previous operation for sequence rule checking
+    previousoperation := guard( aftertask.GetOperation().GetPreviousOperationForSequencingRuleCheck(), 
+                                guard( beforetask.GetOperation(), null( Operation_SC) ) );
+    
+    if( not isnull( operation ) )
+    { 
+      operation.ValidateRulesForPreconditionCheck( this,
+                                                   previousoperation,
+                                                   beforetask,
+                                                   aftertask );
+    }
+    
+    // WORKAROUND: Assign the feedback text back to feedback_o as currently it is not fully supported feedback object
+    if( not feedbackobject.IsAllowed() )
+    {
+      Utility_SC::Concat( feedback_o, feedbackobject.Feedback() ) ; 
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

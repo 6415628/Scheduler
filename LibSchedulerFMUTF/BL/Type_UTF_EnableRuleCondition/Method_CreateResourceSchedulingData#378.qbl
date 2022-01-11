@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateResourceSchedulingData (Schedule schedule, String conditionType, Boolean operationAttributeValue)
+{
+  Description: 'Create shutdown scheduling test data'
+  TextBody:
+  [*
+    // Create 1 task
+    order := UTFMockObjectFactory::CreateOrder( schedule, 'Order'  );
+    planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'PlanUnit', 1.0 );
+    operation := UTFMockObjectFactory::CreateOperation( planUnit );
+    operation.OperationID( 'Operation' );
+    
+    // Plan operation
+    Transaction::Transaction().Propagate( relation( Operation_SC, AllowedOperationOnResource ) );
+    operation.Plan();
+    
+    // Assign operation need edge trimming/ need oil based on variant
+    if( conditionType = RuleConstant::Characteristic_OperationNeedsEdgeTrimming() )
+    {
+      // Assign attribute for needs edge trimming
+      operation.NeedsEdgeTrimming( operationAttributeValue );
+    }
+    else
+    {
+      // Assign attribute for needs oil
+      operation.NeedsOil( operationAttributeValue );
+    }
+    
+    // Assign width for operations
+    operation.Width( 20.0 );
+  *]
+}

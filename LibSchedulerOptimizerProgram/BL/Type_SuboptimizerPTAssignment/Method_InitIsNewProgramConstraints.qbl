@@ -1,0 +1,64 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitIsNewProgramConstraints (LibOpt_Task task, SuboptimizerMPPTAssignment_PTAssignmentMP program, TransientDataSuboptimizerPTAssignment transientData) as SuboptimizerMPPTAssignment_PTAssignmentMP
+{
+  TextBody:
+  [*
+    // jkr8 Jul-16-2021 (created)
+    
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // IsNewProgram_(t,b) >= sum_(beta = b-MaxNumberBuckets_t - 1,...,b)(IsProgramAssigned_(t,beta) ) - sum_(beta = b-MaxNumberBuckets_t,...,b-1)(IsNewProgram_(t,b) ) - MaxNumberBuckets_t, forall t in notleadingprogramsets, b in Buckets //
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // For Non-leading programsets, a new program set is required when the same program exceeds the maximum number of buckets a supporting program is allowed to be active 
+    // and no program set changes have occured in this period where the program set has been active. 
+    
+    traverse( transientData, Bucket, bucket, true )
+    {
+      traverse( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, programType, not programType.ProgramSetConfiguration().IsLeading() )
+      {
+        constr := program.IsNewProgramMaxBucketsConstraints().New( programType, bucket );
+        
+        constr.NewTerm( 1.0, program.IsNewProgramVariables().Get( programType, bucket ) );
+        
+        traverse( transientData, Bucket, otherbucket, 
+                  otherbucket.SequenceNr() > bucket.SequenceNr() - programType.SuboptimizerPTAssignment_MaxNrBuckets() and
+                  otherbucket.SequenceNr() <= bucket.SequenceNr() )
+        {
+          constr.NewTerm( -1.0, program.IsProgramAssignedVariables().Get( programType, otherbucket ) );
+        }
+                          
+        traverse( transientData, Bucket, otherbucket,
+                  otherbucket.SequenceNr() >= bucket.SequenceNr() - programType.SuboptimizerPTAssignment_MaxNrBuckets() and
+                  otherbucket.SequenceNr() < bucket.SequenceNr() )
+        {
+          constr.NewTerm( 1.0, program.IsNewProgramVariables().Get( programType, otherbucket ) );
+        }
+        
+        constr.RHSValue( -programType.SuboptimizerPTAssignment_MaxNrBuckets() );
+      } 
+    }
+    
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // IsNewProgram_(t,b) >= IsProgramAssigned_(t,b) - IsProgramAssigned_(t,b-1), forall t in nonleadingprogramsets and b = 2,...,B //
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // When a program type is different from it's program type in a previous bucket, set the IsNewProgram variable to 1. 
+    
+    traverse( transientData, Bucket, bucket, bucket.SequenceNr() <> 0 )
+    {
+      traverse( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, programType, not programType.ProgramSetConfiguration().IsLeading() )
+      {
+        constr := program.IsNewProgramPreviousProgramConstraints().New( bucket, programType )
+        
+        constr.NewTerm( 1.0, program.IsNewProgramVariables().Get( programType, bucket ) );
+        
+        constr.NewTerm( -1.0, program.IsProgramAssignedVariables().Get( programType, bucket ) );
+        
+        constr.NewTerm( 1.0, program.IsProgramAssignedVariables().Get( programType, bucket.PreviousBucket() ) );
+        
+        constr.RHSValue( 0.0 );
+      } 
+    }
+    
+    return program;
+  *]
+}

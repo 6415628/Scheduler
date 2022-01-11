@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateSubTaskTypeOnResourceGroup (String testinstanceid, Resource_SC resource)
+{
+  TextBody:
+  [*
+    testinstancesubtasks := this.GetTestInstanceSubTasks( testinstanceid );
+    
+    traverse( testinstancesubtasks, Elements, testinstancesubtask )
+    {
+      st := SubTaskTypeOnResourceGroup::Create( this, testinstancesubtask.SubTaskID() );
+      
+      st.Update( testinstancesubtask.SequenceNr(),
+                 testinstancesubtask.IsFirstRespectMachine(),
+                 testinstancesubtask.IsFirstRespectRouting(), 
+                 testinstancesubtask.IsLastRespectMachine(),
+                 testinstancesubtask.IsLastRespectRouting() );
+     
+      if( resource.istype( UTFBatchResource ) )
+      {
+        resource.astype( UTFBatchResource ).Update( testinstancesubtask );
+      }
+      else if(  resource.istype( UTFSingleResource ) )
+      {
+        resource.astype( UTFSingleResource ).Update( testinstancesubtask );
+      }
+    }
+    
+    this.UpdateSubTaskSequence();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

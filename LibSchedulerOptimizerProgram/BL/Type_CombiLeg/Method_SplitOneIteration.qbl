@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method SplitOneIteration () as CombiLeg
+{
+  Description: 'split leg combi if there are operations belong to different phase'
+  TextBody:
+  [*
+    // zyi1 Jul-14-2021 (created)
+    settings := select( this.GetSchedule(), Optimization.OptimizerProgram.Settings.astype( SettingsProgram ), settings, settings.IsActive() );
+    startnewlegop := minselect( this, OperationInCombiLeg, oicl, oicl.IsPhaseChanged() or oicl.SequenceNr() >= guard( settings.MaxOperationsInLeg(), 100 ), oicl.SequenceNr() );
+    
+    newcombileg := null( CombiLeg );
+    if( not isnull( startnewlegop ) )
+    {
+      ownerphase := this.LeadingCombiProgramPhase();
+      
+      //we will create a new leg,  and need decide its owner phase
+      //if leading phase changed,  then the owner phase would be the next phase, otherwise it would be the current phase
+      if( startnewlegop.IsLeadingPhaseChanged() )
+      {
+        ownerphase := ownerphase.NextPhase();
+      }
+      
+      if( not isnull( ownerphase ) )
+      {
+        newcombileg := CombiLeg::Create( ownerphase ); 
+        
+        traverse( startnewlegop, OperationInCombiProgramSet, oicps )
+        {
+          phase := oicps.CombiProgramPhase();
+          
+          CombiLegOnCombiPhase::Create( newcombileg, phase );
+        }
+        
+        //now we start to move operations to new combileg
+        op := startnewlegop;
+        
+        nextopincombileg := op.NextOperation();
+        newcombileg.MoveAfter( newcombileg.LastOperation(), op );
+        op := nextopincombileg;
+        while(  not isnull( op ) )
+        {
+          nextopincombileg := op.NextOperation();
+          newcombileg.MoveAfter( newcombileg.LastOperation(), op );
+          op := nextopincombileg;
+        }
+        newcombileg.MoveOperationInCombiProgramSetInPosition();      
+      }
+    }
+    
+    return newcombileg;
+  *]
+}

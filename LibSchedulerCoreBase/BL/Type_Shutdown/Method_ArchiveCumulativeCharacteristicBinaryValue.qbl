@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method ArchiveCumulativeCharacteristicBinaryValue (FeedbackTaskInSchedule feedbacktaskinschedule)
+{
+  Description: 'Archive cumulative characteristic value in binary value in feedback program'
+  TextBody:
+  [*
+    // Archive cumulative characteristic value in binary value in feedback program
+    
+    operation := guard( feedbacktaskinschedule.OperationTaskFeedback().Operation_SC(), null( Operation_SC ) );
+    
+    if( not isnull( operation ) )
+    {
+      // Get all cumulative characteristics
+      cumulativecharacteristicbinvalue := BinaryValue::Construct();
+      cumulativerealvaluebinvalue := BinaryValue::Construct();
+      cumulativecharacteristics := selectset( this, Schedule.Characteristic, char, char.IsAggregate() );  
+      Characteristic::GetCharacteristicBinaryValue( cumulativecharacteristics, 
+                                                    operation,
+                                                    this.ArchivedAfterShutdownCumulativeCharacteristic(),
+                                                    this.ArchivedAfterShutdownCumulativeRealValues(),
+                                                    this.End(), 
+                                                    feedbacktaskinschedule.End(),
+                                                    cumulativecharacteristicbinvalue,
+                                                    cumulativerealvaluebinvalue );
+                                                    
+      // Update archived cumulative characteristic attributes
+      this.ArchivedAfterShutdownCumulativeCharacteristic( cumulativecharacteristicbinvalue );
+      this.ArchivedAfterShutdownCumulativeRealValues( cumulativerealvaluebinvalue );  
+      
+      // Archive last feedback task is in shutdownscope
+      this.ArchivedLastFeedbackTaskIsInShutdownScope( feedbacktaskinschedule.IsWithinAfterShutdownScope() );
+      
+      // Set HasArchivedData
+      this.HasArchivedData( true );   
+    }
+  *]
+}

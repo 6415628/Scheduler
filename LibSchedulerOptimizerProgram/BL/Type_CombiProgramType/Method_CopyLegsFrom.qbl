@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method CopyLegsFrom (CombiProgramType fromcpt, Number copylegnum)
+{
+  TextBody:
+  [*
+    // zyi1 Jul-28-2021 (created)
+    legs := selectsortedset( fromcpt, CombiProgramPhase.CombiLegOnCombiPhase.CombiLeg, cl, cl.LeadingCombiProgramPhase().SequenceNr(), cl.SequenceNr() );
+    
+    copiedlegsnum := 0;
+    traverse( legs, Elements, cl, copiedlegsnum < copylegnum )
+    {
+      newcl := this.CopyEmptyLegFrom( fromcpt, cl );
+      
+      opincl := cl.FirstOperation();
+      while( not isnull( opincl ) )
+      {
+        newopincl := newcl.AddCandidateAtEnd( opincl.Operation_SC(), true );
+        newopincl.SynchronizeOperationInCombiProgramSets( true );
+        opincl := opincl.NextOperation();
+      }
+      copiedlegsnum++;
+    }
+  *]
+}

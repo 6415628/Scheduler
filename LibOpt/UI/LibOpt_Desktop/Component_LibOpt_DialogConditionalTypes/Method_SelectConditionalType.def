@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectConditionalType (GUIComponent parent, internal[Type] roottype, internal[Type] excludetype) as shadow[LibOpt_UIConditionalType] id:Method_LibOpt_DialogConditionalTypes_SelectConditionalType
+{
+  #keys: '[143908.0.730099744]'
+  Body:
+  [*
+    // shows the dialog in a modal way and returns the user-selected conditional type's name
+    
+    // When the dialog opens, create a new shadow[LibOpt_UIOwner], store it in the dataholder
+    owner := construct( shadow[ LibOpt_UIOwner ] );
+    Dialog.DataHolderOwner().Data( & owner );
+    
+    // Adds a shadow LibOpt_UIConditionalType for almost every subtype of LibOpt_BreakpointConditional/LibOpt_DatasetCopyConditional into the data holder owner. 
+    // The LibOpt_Breakpoint type and all LibOpt_DatasetCopyConditionalNotSelectable subtypes (e.g. LibOpt_DatasetCopyUnconditional) are excluded
+    this.CreateConditionalTypes( roottype, excludetype );
+    
+    value := Dialog.DoModal( parent ) > 0;
+    selection := null( shadow[ LibOpt_UIConditionalType ] );
+    if( value )
+    {
+      selection := Dialog.DataHolderSelectedType().Data();
+    }
+    
+    return selection;
+  *]
+}

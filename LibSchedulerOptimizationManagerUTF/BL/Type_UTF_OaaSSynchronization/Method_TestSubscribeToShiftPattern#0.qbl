@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestSubscribeToShiftPattern (Schedule schedule)
+{
+  Description: 'Test creating resource event subscription to shift pattern on mock 3DSpace JSON data that follows shift pattern assignment priority.'
+  TextBody:
+  [*
+    // This test assumes there are only two shift pattern assignments with differing priorities
+    highestPriorityShiftPatternAssignment := maxselect( schedule, 
+                                                        ImportedShiftPatternAssignment, 
+                                                        shiftPatternAssignment,
+                                                        true,
+                                                        shiftPatternAssignment.Priority() );
+    
+    lowestPriorityShiftPatternAssignment := minselect( schedule, 
+                                                       ImportedShiftPatternAssignment, 
+                                                       shiftPatternAssignment,
+                                                       true,
+                                                       shiftPatternAssignment.Priority() );
+    
+    isSubscribedToLowerPriorityShiftPattern := exists( schedule, 
+                                                       ResourceGroup_SC.Resource_SC.ResourceCalendar.Participation,
+                                                       participation,
+                                                       participation.Event().Calendar().CalendarID() = lowestPriorityShiftPatternAssignment.ShiftPatternID(),
+                                                       participation.RecurrencePeriod().StartDate() = lowestPriorityShiftPatternAssignment.ChunkStartDate().Date()
+                                                      and participation.RecurrencePeriod().EndDate() = highestPriorityShiftPatternAssignment.ChunkStartDate().Date() );
+    
+    isSubscribedToHigherPriorityShiftPattern := exists( schedule, 
+                                                        ResourceGroup_SC.Resource_SC.ResourceCalendar.Participation,
+                                                        participation,
+                                                        participation.Event().Calendar().CalendarID() = highestPriorityShiftPatternAssignment.ShiftPatternID(),
+                                                        participation.RecurrencePeriod().StartDate() = highestPriorityShiftPatternAssignment.ChunkStartDate().Date()
+                                                        and participation.RecurrencePeriod().EndDate() = highestPriorityShiftPatternAssignment.ChunkEndDate().Date() );
+    
+    this.Run().AssertTrue( isSubscribedToLowerPriorityShiftPattern and isSubscribedToHigherPriorityShiftPattern,
+                           UTFUtility::GenerateFailedMessage( 'Creation of calendar subscription to shift pattern based on JSON data failed', '' ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method EditResourceGroup (ResourceGroup_SC resourceGroup) id:Method_DialogCreateEditResourceGroup_EditResourceGroup
+{
+  #keys: '[143768.1.1635089618]'
+  Body:
+  [*
+    // ENTRY METHOD and initialize dialog for DialogCreateEditResourceGroup
+    Form.ShowModal();
+    this.Title( Translations::SC_DialogResourceGroups_EditResourceGroup_Title() );
+    
+    data := shadow( resourceGroup );        
+    DialogCreateEditResourceGroup.DataHolderResourceGroup().Data( &data );
+    
+    //Set image
+    //this.SetImage();
+    
+    this.UpdateEnableAndCheckStatusOfPlanRelated( resourceGroup.HasFixedSequencePlanLogic() );
+    
+    // Enables/disables GUI components in dialog
+    this.InitializeFeedbackWindowTab( resourceGroup );
+    
+    anyResourceWithTask := not isnull( select( resourceGroup, Resource_SC.Task_SC, task, true ) );
+    EditFieldOperationType.Enabled( not anyResourceWithTask, '' );
+  *]
+}

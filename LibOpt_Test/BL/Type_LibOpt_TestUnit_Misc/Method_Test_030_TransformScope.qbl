@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_030_TransformScope (LibOpt_TestDataset dataset)
+{
+  Description: 'Check that TransformScope correctly transforms all the scopes.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    keep := 'keep';
+    
+    count := opt.ComponentCounter( run, 'Count' );
+    selector := opt.SelectorByComment( run, 'Selector', keep );
+    selector.To( count );
+    run.SetStartComponent( selector );
+    
+    breakpoint := select( count, ComponentPosition, bp, bp.Name() = LibOpt_Component::ComponentPosition_Continue() );
+    breakpoint.SetBreakpoint();
+    
+    scope := LibOpt_ScopeFat::Create( run );
+    A := dataset.ScopeElementMock( relnew,
+                                   ValueIdentifier := 'A' );
+    B := dataset.ScopeElementMock( relnew,
+                                   ValueIdentifier := 'B' );
+    C := dataset.ScopeElementMock( relnew,
+                                   ValueIdentifier := 'C' );
+    D := dataset.ScopeElementMock( relnew,
+                                   ValueIdentifier := 'D' );
+    scope.Add( A, keep );
+    scope.Add( B, keep );
+    scope.Add( C );
+    
+    run.SetStartScope( scope );
+    
+    run.Start();
+    
+    this->WaitForBreakpoint( run, this.Run() )->|this->( v )
+    {
+      task := select( count, Task, task, true );
+      this.Run().AssertEqual( "ABC", this.ScopeToString( scope ) );
+      this.Run().AssertEqual( "AB", this.ScopeToString( task.Scope() ) );
+      from := construct( LibOpt_ScopeElements );
+      from.Add( A );
+      from.Add( B );
+      to := construct( LibOpt_ScopeElements );
+      to.Add( B );
+      to.Add( D );
+      LibOpt_ScopeElement::Transform( task, from, to );
+      this.Run().AssertEqual( "BCD", this.ScopeToString( scope ) );
+      this.Run().AssertEqual( "BD", this.ScopeToString( task.Scope() ) );
+      run.Stop();
+    }->Exception()->( e )
+    {
+      this.Run().RegisterFailure( e.Message() );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

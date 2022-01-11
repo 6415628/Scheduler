@@ -1,0 +1,95 @@
+Quintiq file version 2.0
+#parent: #root
+Method IAttribute_Resolve (String objecttype, String paths, output String attrpath, 
+  output String attrsynonym, output String attrtype) as Boolean id:Method_LibGUIFiltering_PanelFilterBoxHelper_IAttribute_Resolve
+{
+  #keys: '[128900.0.458099188]'
+  Body:
+  [*
+    individualpaths    := paths.Tokenize( ';' );
+    attrrepresentation := null(DataMemberRepresentation);
+    traverse( individualpaths, Elements, path, isnull(attrrepresentation) )
+    {
+      typeview           := ApplicationScope.ResolveType( objecttype ).TypeView();
+      pathelements       := path.Tokenize( '.' );
+      representation     := ApplicationScope.RepresentationManager().SelectedRepresentation();
+      typerepresentation := select( representation, TypeRepresentations, t, t.DataType().Name() = objecttype );
+      synonympath        := construct( Strings );
+      simplepath         := construct( Strings );
+      
+      for ( x := 0; x < pathelements.Size() - 1 and not isnull(typeview); x++ )
+      {                                       
+        elementname := pathelements.Element( x ).ToLowerServerSystemLocale();
+        if ( elementname.StartsWith( 'astype' ) )
+        {
+          elementname := guard(pathelements.Element( x ).Tokenize('(').Element(1).Tokenize(')').Element(0), '');
+          newtypeview := guard(ApplicationScope.ResolveType( elementname ).TypeView(), null(TypeView, owning));
+          
+          if ( not isnull(newtypeview)
+           and newtypeview.Type().IsDerivedFrom(typeview.Type()) )
+          {        
+            typerepresentation := select( representation, TypeRepresentations, t, t.DataType().Name() = newtypeview.Type().Name() );
+            typeview           := &newtypeview;
+            synonympath.Add( pathelements.Element( x ) );
+            simplepath.Add( pathelements.Element( x ) );
+          }
+          else
+          {
+            typerepresentation := null( TypeRepresentation );
+            typeview           := null( TypeView, owning );
+          }
+        }
+        else
+        {
+          relationrepresentation := select( typerepresentation, RelationRepresentations, r, r.Name().ToLowerServerSystemLocale() = elementname or r.Synonym().ToLowerServerSystemLocale() = elementname ); 
+          relationview           := select( typeview, 
+                                            Relations, 
+                                            r, 
+                                            r.Name().ToLowerServerSystemLocale() = elementname 
+                                         or guard( r.Name().ToLowerServerSystemLocale() = relationrepresentation.Name(), false ) );
+      
+          if ( not isnull(relationview)
+           and relationview.Cardinality() = '0to1' )
+          {                              
+            relationname       := relationview.Name();
+            typename           := guard( relationview.ToType().Name(), '' );
+            typeview           := guard( relationview.ToType().TypeView(), null(TypeView, owning) );                               
+            typerepresentation := select( representation, TypeRepresentations, t, t.DataType().Name() = typename );
+            
+            if ( not isnull(relationrepresentation)
+             and relationrepresentation.Synonym() <> '' )
+            {
+              synonympath.Add( relationrepresentation.Synonym() );      
+            }
+            else
+            {
+              synonympath.Add( relationname );
+            }
+            simplepath.Add( relationname );
+          }
+          else
+          {
+            typeview := null(TypeView, owning);
+          }
+        }
+      }
+      
+      attr               := pathelements.Element( pathelements.Size() - 1 ).ToLowerServerSystemLocale();
+      attrrepresentation := select( typerepresentation, DataMemberRepresentations, dm, dm.TypeName().ToLowerServerSystemLocale() = attr or dm.Synonym().ToLowerServerSystemLocale() = attr ); 
+      
+      if ( not isnull(attrrepresentation) )
+      {
+        simplepath.Add( attrrepresentation.TypeName() );
+        synonympath.Add( ifexpr( attrrepresentation.Synonym() <> '', 
+                                 attrrepresentation.Synonym(), 
+                                 attrrepresentation.TypeName() ) );
+                                 
+        attrpath    := simplepath.ToString( '.' );
+        attrsynonym := synonympath.ToString( '.' );
+        attrtype    := attrrepresentation.DataType().Name();                       
+      }
+    }
+    
+    return not isnull(attrrepresentation);
+  *]
+}

@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckHasValidQuantityMultipleOfLotSize (output Strings feedback_o) const declarative as Boolean
+{
+  Description: "Checks if this MPS planned order's quantity is a multiple of its routing's lot size."
+  TextBody:
+  [*
+    value := Utility_SC::CheckIsMultiple( this.Quantity(), 
+                                          guard( this.ImportedRouting_SC().LotSize(), 0 ) );
+    
+    if( not isnull( feedback_o ) and not value )
+    {
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( this.GetName(),
+                                                               Translations::ImportedMPSPlannedOrder_InvalidQuantityMultipleOfLotSize() ) );
+    }
+    
+    return value;
+  *]
+}

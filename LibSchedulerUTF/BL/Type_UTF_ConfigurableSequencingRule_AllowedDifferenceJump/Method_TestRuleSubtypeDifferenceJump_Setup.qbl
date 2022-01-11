@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRuleSubtypeDifferenceJump_Setup (Schedule schedule)
+{
+  Description: 'Test rule subtype difference jump - setup'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    width1 := 0.0;
+    width2 := 0.0;
+    name := '';
+    isMultipleRangesEnabled := false;
+    ruleRangeFrom := 0.0;
+    ruleRangeTo := 0.0;
+    ruleValue := 0.0;
+    isValid := false;
+    
+    this.GetTestVariant( isvariantfound,
+                         width1,
+                         width2,
+                         name,
+                         isMultipleRangesEnabled,
+                         ruleRangeFrom,
+                         ruleRangeTo,
+                         ruleValue,
+                         isValid );
+    
+    if( isvariantfound )
+    {
+      // Create rule
+      rule := this.CreateRule( schedule, name );
+      
+      // Assign rule IsMultipleRangesEnabled based on variant
+      rule.IsMultipleRangesEnabled( isMultipleRangesEnabled );
+      
+      // Assign rule threshold or create rule range based on attribute IsMultipleRangesEnabled()
+      if( rule.IsMultipleRangesEnabled() )
+      {
+        // Create rule range  
+        rule.RuleRange( relnew,
+                        From := ruleRangeFrom,
+                        To := ruleRangeTo,
+                        RuleRangeValue := ruleValue );
+      }
+      else
+      {
+        // Assign rule threshold
+        rule.RuleValue( ruleValue );  
+      }
+      
+      // Create and plan operations
+      this.CreateAndPlanOperations( schedule, width1, width2 );
+    }
+  *]
+}

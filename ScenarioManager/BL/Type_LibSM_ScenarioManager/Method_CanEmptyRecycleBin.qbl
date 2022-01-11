@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method CanEmptyRecycleBin (String userName, Boolean isAdministrator) declarative remote as Boolean
+{
+  Description: 'Empty  recycle bin'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    // A user can only empty then recycle bin when recycle bin contains only his own scenarios, and scenarios that have been created by the System.
+    if( not feedback.CheckHard( isAdministrator or (
+                                this.RecycleBinFolder().Children( relsize ) > 0 
+                                and 
+                                forall( this, RecycleBinFolder.Children, s,
+                                        s.IsDeleted()
+                                    and s.IsAuthorized( userName ) ) ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioManager_EmptyRecycleBinNotAllowed_NoScenarioNodes( userName ) );
+    }
+    // Check the case we're administrator, but there is nothing in the recycle bin.
+    else if ( not feedback.CheckHard( this.RecycleBinFolder().ChildCount() > 0 ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioManager_EmptyRecycleBin_NothingToEmpty() )
+    }
+    
+    
+    return feedback.IsAllowed();
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetSimEarliestStart (Tool tool, ToolTask tooltask, DateTime simearlieststart, 
+  DateTime toolearlieststart) declarative as DateTime
+{
+  Description: 'Get the earliest start for this subtask based on the availability of the tool required by the tool task.'
+  TextBody:
+  [*
+    // alexandern Jan-7-2016 (created) QP #6082
+    resource := tooltask.Task().Resource_SC();
+    subtask  := tooltask.SubTask();
+    
+    if( tooltask.Offset() > Duration::Zero() )
+    {
+      simearlieststart := maxvalue( simearlieststart,
+                                    resource.ResourceCalendar().Subtract( toolearlieststart, tooltask.Offset() ),
+                                    tool.ToolCalendar().Subtract( toolearlieststart, tooltask.Offset() ) );
+                          /* AlexanderNg 29-Oct-2015: need to consider the tool calendar when the resource's calendar downtime is
+                             later than tool's calendar downtime (if any), to prevent the simearlieststart starts earlier than
+                             the resource calendar downtime if the toolearlieststart is the end of the resource's calendar downtime
+                          */
+    }
+    else
+    {
+      toolearlieststartinresource := subtask.Resource_SC().ResourceCalendar().Subtract( toolearlieststart, - tooltask.Offset() );
+      temporarytoolearlieststart := tool.ToolCalendar().Subtract( toolearlieststart, - tooltask.Offset() );
+      subtaskearlieststart := toolearlieststart;
+    
+      if( toolearlieststart - toolearlieststartinresource = - tooltask.Offset()  // when the tool's availability is later than the resource's availability
+          or ( toolearlieststartinresource = temporarytoolearlieststart ) ) // when the availability of tool and resource are the same
+      {
+        subtaskearlieststart := tool.ToolCalendar().Add( toolearlieststart, - tooltask.Offset() );
+      }
+    
+      simearlieststart := maxvalue( simearlieststart,
+                                    subtaskearlieststart,
+                                    tool.ToolCalendar().Add( tool.SimAvailableTime(), - tooltask.Offset() ) );
+    }
+    
+    return simearlieststart;
+  *]
+}

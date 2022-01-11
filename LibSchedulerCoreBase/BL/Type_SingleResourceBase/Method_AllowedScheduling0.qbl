@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedScheduling (Operation_SCs operations, Task_SC beforetask, Task_SC aftertask, 
+  Boolean skipsoftcheck, output String feedback_o, output Boolean isallowedhard_o) declarative remote as Boolean
+{
+  Description: 'Checks whether the operations are allowed on single resource'
+  TextBody:
+  [*
+    // jan er Jun-20-2014 (created)
+    
+    value := this.CheckOperationsType( operations, feedback_o, isallowedhard_o );
+    
+    if( value )
+    {
+      // If the operation type check is fine, then proceed with all other checks.
+      // Traverse is used instead of forall because we want to show feedback for all the failed instances outside of operation type mismatches.
+      traverse( operations, Elements, op )
+      {
+        value := this.AllowedScheduling( op,
+                                         beforetask,
+                                         aftertask,
+                                         skipsoftcheck,
+                                         feedback_o,
+                                         isallowedhard_o )
+                 and value;
+      
+      }
+    }
+    
+    
+    return value;
+  *]
+}

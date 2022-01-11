@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionAssignProgramDefinitionToResource_Setup (Schedule schedule)
+{
+  Description: 'Test precondition assign program definition to resource - setup'
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    isBatchResource := false;
+    isJITleadtimestrategy := false;
+    hasprogramchangeforassignprogramdefinition := false;
+    isValidForAssignProgramDefinitionToResource := false;
+    
+    this.GetTestVariantForPreconditionAssignProgramDefinitionToResource( isvariantfound,
+                                                                         isBatchResource,
+                                                                         isJITleadtimestrategy,
+                                                                         hasprogramchangeforassignprogramdefinition,
+                                                                         isValidForAssignProgramDefinitionToResource );
+    
+    if( isvariantfound )
+    {
+      // Create program definition
+      UTFMockObjectFactory::CreateProgramDefinitionData( schedule, 'Program definition 1', false );
+      programdefinition2 := UTFMockObjectFactory::CreateProgramDefinitionData( schedule, 'Program definition 2', false );
+      
+      resource := null( Resource_SC );
+      // Create resource
+      if( isBatchResource )
+      {
+        resource := UTFMockObjectFactory::CreateBatchResource( schedule, 'Resource' );
+      }
+      else 
+      {
+        resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Resource' );
+        LeadTimeStrategy_SC::Create( resource, Duration::Zero(),
+                                     ifexpr( isJITleadtimestrategy,
+                                             Constants::StrategyJIT(),
+                                             Constants::StrategyASAP() ) );
+      }
+      
+      if( hasprogramchangeforassignprogramdefinition and not isnull( resource ) )
+      {
+        resource.AssignProgramDefinitionConfiguration( programdefinition2 ); 
+        programtype := selectset( programdefinition2, ProgramSetConfiguration.ProgramTypeConfiguration, pt, true );                                      
+        // Insert program change
+        resource.InsertProgramChange( null( Task_SC ), programtype, false, Duration::Zero() );  
+      }
+    }
+  *]
+}

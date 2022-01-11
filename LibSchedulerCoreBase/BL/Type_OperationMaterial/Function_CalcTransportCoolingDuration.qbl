@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcTransportCoolingDuration
+{
+  Description: 'Calculate the transport cooling duration.'
+  TextBody:
+  [*
+    // Kyle 06-05-2015, #5343 Use maxvalue of Transport or Cooling duration because
+    // mbr23, 2020-01-30: similar logic in CalcOptimistic... (LibSchedulerOptimizerSequencing). Changes to the logic should happen in both places.
+    // Cooling can already happen when we are transporting the material
+    // In some cases, the destination to transfer the material is near resulting in a shorter transport duration,
+    // resulting in insufficient time required to cooldown the material before the next operation can begin.
+    value := maxvalue( this.TransportDuration(), this.CoolingDuration() );
+    
+    this.TransportCoolingDuration( value );
+  *]
+}

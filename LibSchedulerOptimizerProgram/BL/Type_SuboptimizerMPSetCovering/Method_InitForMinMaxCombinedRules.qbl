@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitForMinMaxCombinedRules (SuboptimizerMPSetCovering_SelectCombis program, CombiLegs combilegs)
+{
+  TextBody:
+  [*
+    // yifei Aug-13-2021 (created)
+    // protramtype cumulative rules
+    cpts := selectset( combilegs, Elements.LeadingCombiProgramPhase.CombiProgramType.MasterCombiProgramType, cpt, true );
+    
+    traverse( cpts, Elements, cpt )
+    {
+      rules := selectset( cpt, ProgramTypeConfiguration.RuleScopeInProgramType.Rule, rule, rule.RuleSubType().IsCumulativeValueNeeded() );
+      
+      combilegs4cpt := selectset( combilegs, Elements, cl, cl.LeadingCombiProgramPhase().CombiProgramType().MasterCombiProgramType() = cpt );
+      
+      traverse( rules, Elements, rule )
+      {
+        this.InitForMinMaxCombinedRules( program, rule, cpt, combilegs4cpt );
+      }
+    }
+    
+    //phase cumulative rules
+    phases := selectset( combilegs, Elements.LeadingCombiProgramPhase.CombiProgramType.MasterCombiProgramType.CombiProgramPhase, phase, true );
+    
+    traverse( phases, Elements, combiphase )
+    {
+      rules := selectset( combiphase, ProgramPhaseConfiguration.RuleScopeInProgramPhase.Rule, rule, rule.RuleSubType().IsCumulativeValueNeeded() );
+      
+      combilegs4phase := selectset( combilegs, 
+                                    Elements, 
+                                    cl, 
+                                    cl.LeadingCombiProgramPhase().CombiProgramType().MasterCombiProgramType() = combiphase.CombiProgramType()
+                                    and cl.LeadingCombiProgramPhase().SequenceNr() = combiphase.SequenceNr() );
+      
+      traverse( rules, Elements, rule )
+      {
+        //Yifei Aug-26-2021: we assume there will be no rules applicable to both ProgramType level and ProgramPhase level
+        //if this exception happen, dupicated constraint error can happen. from what we can see now, that assumption is reasonable
+        this.InitForMinMaxCombinedRules( program, rule, combiphase.CombiProgramType(), combilegs4phase );
+      }
+    }
+  *]
+}

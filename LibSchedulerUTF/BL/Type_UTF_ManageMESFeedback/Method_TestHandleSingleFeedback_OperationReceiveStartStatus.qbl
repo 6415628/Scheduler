@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestHandleSingleFeedback_OperationReceiveStartStatus (Schedule schedule)
+{
+  TextBody:
+  [*
+    startStatus := Constants::StatusStart();
+    reportedStart := DateTime::Construct( 2017, 1, 1, 4, 0, 0 );
+    reportedProcessStart := reportedStart;
+    operation := select( schedule, PlanUnit_SC.Operation_SC, operation, true );
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, resource, true );
+    remark := Constants::EmptyString();
+    
+    // Giving start status, reported start and process start to operation.
+    schedule.FeedbackManager().TaskStart( operation, resource.ResourceID() , reportedStart, reportedProcessStart, remark );
+    
+    isFeedbackTaskExist := exists( schedule, FeedbackManager.FeedbackTaskInSchedule, feedbackTaskInSchedule,
+                                   feedbackTaskInSchedule.OperationID() = operation.OperationID()
+                                   and feedbackTaskInSchedule.Status() = startStatus
+                                   and feedbackTaskInSchedule.ReportedStart() = reportedStart
+                                   and feedbackTaskInSchedule.ReportedProcessStart() = reportedProcessStart
+                                   and feedbackTaskInSchedule.Remark() = remark );
+                                   
+    this.Run().AssertTrue( isFeedbackTaskExist );
+  *]
+}

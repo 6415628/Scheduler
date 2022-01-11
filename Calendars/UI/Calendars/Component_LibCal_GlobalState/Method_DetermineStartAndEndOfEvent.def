@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method DetermineStartAndEndOfEvent (output DateTime start_io, output DateTime end_io) id:Method_LibCal_GlobalState_DetermineStartAndEndOfEvent
+{
+  #keys: '[131094.1.1246609820]'
+  Body:
+  [*
+    // Determine the starttime and endtime of an event based on a provided start and end.
+    // This method is meant to be used when the creation of an event is triggered by OnDragCreate of a gantt chart.
+    // Is implemented in this method so that it is possible to change the behavior in all relevant places
+    // in the same way in one go by changing this method.
+    
+    // When running in days only mode the event should 'snap' to the start and end of the (next) day.
+    if( LibCal_Event::USE_ONLY_DAYS() )
+    {
+      start_io := start_io.Floor( Duration::Days( 1 ) );
+      end_io   := end_io.Ceil(    Duration::Days( 1 ) );
+    }
+    else
+    {
+      start_io := start_io.Floor( Duration::Minutes( 15 ) );
+      end_io   := end_io.Ceil(    Duration::Minutes( 15 ) );
+    }
+  *]
+}

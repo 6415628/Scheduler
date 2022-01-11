@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericProgramChangeTask (CDSchedule cdschedule)
+{
+  Description: 'Restore attributes for generic program change task core data to planning object'
+  TextBody:
+  [*
+    cdProgramChangeTasks := selectsortedset( cdschedule, CDEntity.astype( CDGenericProgramChangeTask ), cdProgramChangeTask, 
+                                             true,
+                                             cdProgramChangeTask.SequenceNr()
+                                           );
+    
+    traverse( cdProgramChangeTasks, Elements, cdProgramChangeTask )
+    {
+      resource := Resource_SC::FindResource_SC( cdProgramChangeTask.ResourceID() );
+      
+      if( not isnull( resource ) )
+      {
+        task := resource.ConstructProgramChangeTask();
+        CopyCorresponding::CopyFrom( cdProgramChangeTask ).CopyTo( task );
+        resource.AddLast( &task );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

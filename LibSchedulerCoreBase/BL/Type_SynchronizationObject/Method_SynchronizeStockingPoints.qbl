@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeStockingPoints
+{
+  Description: 'Synchronizes existing stocking points with imported data.'
+  TextBody:
+  [*
+    // WOI1 Jul-5-2016 (created)
+    
+    allinstances := selectset( this.Schedule(), StockingPoint, sp, true );
+    updatedinstances := construct( StockingPoints );
+    schedule := this.Schedule();
+    
+    traverse( schedule, ImportedStockingPoint_SC, row, row.IsValidDataHard() )
+    {
+      stockingpoint := StockingPoint::FindStockingPoint( row.Id() );
+      
+      if( isnull( stockingpoint ) )
+      {
+        stockingpoint := StockingPoint::Create( schedule, row.Id() )
+      }
+      
+      stockingpoint.Update( row );
+      
+      updatedinstances.Add( stockingpoint );
+    }
+    
+    //Find stocking points that do not exist in KT
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    //Delete stocking points that do not exist in KT and has no product in stocking points
+    traverse( oldinstances, Elements, old, old.CheckCanBeDeleted() )
+    {
+      old.Delete();
+    }
+  *]
+}

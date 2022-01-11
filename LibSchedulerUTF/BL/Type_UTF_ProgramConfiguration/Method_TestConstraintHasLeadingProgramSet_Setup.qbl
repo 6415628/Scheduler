@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestConstraintHasLeadingProgramSet_Setup (Schedule schedule)
+{
+  Description: 'Test constraint HasLeadingProgramSet - setup'
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    hasLeadingProgramSet := false;
+    isViolatedLeadingProgramSetConstraint := false;
+    
+    this.GetTestVariantForConstraintHasLeadingProgramSet( isvariantfound,
+                                                          hasLeadingProgramSet,
+                                                          isViolatedLeadingProgramSetConstraint );
+    
+    if( isvariantfound )
+    {
+      
+      // Create program definition
+      programdefinition := UTFMockObjectFactory::CreateProgramDefinitionData( schedule, 
+                                                                              'Program definition id',
+                                                                              false );
+      programset := select( programdefinition, ProgramSetConfiguration, set, true );
+      
+      if( hasLeadingProgramSet )
+      {
+        programset.SetAsLeading();
+      }
+      else
+      {
+        programset.AsLeadingProgramSetConfiguration( relflush ); 
+      }
+    }
+  *]
+}

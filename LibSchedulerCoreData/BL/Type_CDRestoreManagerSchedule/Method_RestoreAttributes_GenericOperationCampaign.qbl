@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericOperationCampaign (CDSchedule cdschedule)
+{
+  Description: 'Restore generic operation campaign core data attrbutes to planning object'
+  TextBody:
+  [*
+    // Restore operation campaign
+    schedule := this.Schedule();
+                                       
+    traverse( cdschedule, CDEntity.astype( CDGenericOperationCampaign ), cdoperationcampaign )
+    {
+      operation := select( schedule, PlanUnit_SC.Operation_SC, op, op.OperationID() = cdoperationcampaign.OperationID() );
+      
+      if( not isnull( operation ) )
+      {
+        genericOperationCampaign := GenericOperationCampaign::Create( operation, 
+                                                                      cdoperationcampaign.WorkOrderId(),
+                                                                      cdoperationcampaign.SeqNr(),
+                                                                      cdoperationcampaign.ResourceGroupName(),
+                                                                      cdoperationcampaign.CampaignTypeName() );
+                                                                    
+        CopyCorresponding::CopyFrom( cdoperationcampaign ).CopyTo( genericOperationCampaign );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

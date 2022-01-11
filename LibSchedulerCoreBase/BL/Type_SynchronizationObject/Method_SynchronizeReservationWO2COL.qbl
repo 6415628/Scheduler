@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeReservationWO2COL (output Fulfillments updatedinstances)
+{
+  Description: 'Synchronizing external fulfillments between work order supplies and customer order lines.'
+  TextBody:
+  [*
+    traverse( this, Schedule.ImportedFixedProductWO2COL, row, row.IsValidDataHard() )
+    {
+      demandid := ProductCustomerOrderLine::GetDemandID( row.OrderNr(), row.OrderLineNr() );
+      workordersupply := WorkOrderSupply::FindWorkOrderSupply( row.WorkOrderSupplyId() );
+      customerorderline := ProductCustomerOrderLine::FindProductCustomerOrderLine( DemandType::ProductCustomerOrderLine(), demandid );
+    
+      supplies := selectsortedset( workordersupply, ProductPlannedSupply, supply, true, supply.AvailableFrom(), supply.Quantity(), supply.SupplyID() ); 
+      demands := construct( ProductDemands );
+      
+      if( not isnull( customerorderline ) )
+      {
+        demands.Add( customerorderline );
+      }
+    
+      this.SynchronizeExternalFulfillments( demands, supplies, row, updatedinstances );
+    }
+  *]
+}

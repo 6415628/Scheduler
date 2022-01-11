@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RefreshDemandData (String selectedStockingPoint) id:Method_FormSuppliesAndDemands_RefreshDemandData
+{
+  #keys: '[143768.1.37902277]'
+  Body:
+  [*
+    // Refresh demand data
+    fixedFilter := '( ' + [String]( selectedStockingPoint = 'All' ) + ' or object.StockingPointId() = "' + selectedStockingPoint + '" )';
+    
+    if( CheckboxHideIncompatibleDemands.Checked() )
+    {
+      compatibleDemandKeys := selectvalues( DataHolderCompatibleDemands.Data(), Elements, compatibleDemand, true, compatibleDemand.Key() );
+      fixedFilter := fixedFilter + ' and ( ( "' + compatibleDemandKeys.ToString( ';' ) + '" ).FindString( [String]object.Key(), 0 ) <> -1 )';
+    }
+    
+    if( CheckboxHideFullyReservedDemands.Checked() )
+    {
+      fixedFilter := fixedFilter + ' and object.QuantityOpen() > 0';
+    }
+    
+    DataExtractorAllDemands.FixedFilter( fixedFilter );
+  *]
+}

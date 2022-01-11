@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod DeleteSnapshotAndUnusedLabels (DssKpiSnapshot snapshot)
+{
+  Description: 'Deletes the specified snapshot and also checks if the labels the snapshot was using are now no longer used by any other snapshot and if so delete them as well.'
+  TextBody:
+  [*
+    labels := selectset( snapshot, LabelValueInSnapshot.LabelValue, lv, true );
+    snapshot.Delete();
+    traverse( labels, Elements, l ) 
+    {
+      if ( l.LabelValueInSnapshot( relsize ) = 0 ) 
+      {
+        l.Delete();
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

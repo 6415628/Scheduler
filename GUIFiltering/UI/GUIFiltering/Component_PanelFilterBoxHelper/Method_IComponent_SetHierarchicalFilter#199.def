@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method IComponent_SetHierarchicalFilter (String filter, String traversepath, internal[GanttChartRowDefinition] filtercomponent) id:Method_LibGUIFiltering_PanelFilterBoxHelper_IComponent_SetHierarchicalFilter_199
+{
+  #keys: '[128900.0.529256229]'
+  Body:
+  [*
+    row          := filtercomponent;
+    parentrow    := guard( row.Parent().astype(GanttChartRowDefinition), null(GanttChartRowDefinition) );
+    
+    if ( not isnull(parentrow) )
+    {
+      traverserel  := this.IBuildPath( row.GetProperty( 'Relation' ), traversepath );
+      parentfilter := '';
+      
+      if ( filter <> '' )
+      {
+        parentfilter := 'exists( object, ' + traverserel + ', child, ' + filter.ReplaceAll( 'object.', 'child.' ) + ' )';
+      }
+      parentrow.SetProperty( 'Filter', parentfilter );
+      
+      if ( not isnull( parentrow ) )
+      {
+        this.IComponent_SetHierarchicalFilter( filter, traverserel, parentrow );   
+      }
+    }
+  *]
+}

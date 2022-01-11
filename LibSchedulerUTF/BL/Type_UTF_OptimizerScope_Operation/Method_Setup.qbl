@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Create resources
+    super.Setup( schedule );
+    
+    variant := this.Variant();
+    
+    // Create Order, PlanUnit, Operation
+    operation := UTFMockObjectFactory::CreateOperation( schedule, variant, 1.0 );
+    
+    testInstance := this.GetTestInstance( variant );
+    hasFeedback := testInstance.HasFeedback();
+    isFrozen := testInstance.IsFrozen();
+    hasAllowedResources := testInstance.HasAllowedResources();
+    
+    // Propagate OperationOnResource creation and HasAllowedResources attribute
+    Transaction::Transaction().PropagateAll( typeof( Operation_SC ) );
+    
+    if( hasFeedback or isFrozen and hasAllowedResources )
+    {
+      // Simulate planning
+      task := operation.Plan();
+      // Propagate task timelogic for feedback setting
+      Transaction::Transaction().PropagateAll( typeof( Task_SC ) );
+      
+      // Simulate feedback
+      if( hasFeedback )
+      {
+        schedule.FeedbackManager().TaskStart( operation, task.Resource_SC().ResourceID(), task.Start(), task.ProcessStart(), variant );
+      }
+      
+      // Simulate frozen horizon
+      if( isFrozen )
+      {
+        resource := task.Resource_SC();
+        resource.UseFrozenPeriodUser( true );
+        resource.FrozenPeriodUser( Duration::Days( 1 ) );
+      }
+    }
+    
+    // Delete all resources
+    if( not hasAllowedResources )
+    {
+      schedule.ResourceGroup_SC( relflush );
+    }
+  *]
+}

@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRuleSubtypeDifferenceJumpStrategyMultipleRange_Setup (Schedule schedule)
+{
+  Description: 'Test rule subtype difference jump strategy multiple range - setup'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    rulevaluerange1 := 0.0;
+    rulevaluerange2 := 0.0;
+    strategymultiplerange := '';
+    isValid := false;
+    
+    this.GetTestVariantForStrategyMultipleRange( isvariantfound,
+                                                 rulevaluerange1,
+                                                 rulevaluerange2,
+                                                 strategymultiplerange,
+                                                 isValid );
+    
+    if( isvariantfound )
+    {
+      // Create rule
+      rule := this.CreateRule( schedule, RuleConstant::RuleSubType_AllowedAbsoluteDifferenceUpwards() );
+      
+      // Set IsMultipleRangesEnabled = true
+      rule.IsMultipleRangesEnabled( true );
+      rule.StrategyMultipleRange( strategymultiplerange );
+      
+      // Create rule range1  
+      range1 := rule.RuleRange( relnew,
+                                From := 100.0,
+                                To := 200.0,
+                                RuleRangeValue := rulevaluerange1 );
+      
+      // Create rule range1  
+      range1 := rule.RuleRange( relnew,
+                                From := 200.0,
+                                To := 300.0,
+                                RuleRangeValue := rulevaluerange2 );
+      
+      // Create and plan operations
+      this.CreateAndPlanOperations( schedule, 100.0, 200.0 );
+    }
+  *]
+}

@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method PrefixFeedbackWithGeneralActionMessage (String generalactionmessage, String feedback) as String id:Method_ApplicationScheduler_PrefixFeedbackWithGeneralActionMessage
+{
+  #keys: '[136010.4.1980401484]'
+  Body:
+  [*
+    // This method prefix the given feedback message with top level general action message
+    // For example, "Selected Tasks cannot be planned on <resource id> because:"
+    // We usually only need a single top level general action message for a feeedback meesage. 
+    // To avoid duplicate, this method will first check if the top level general action message exist
+    
+    // Keep the original feedback message in case it already has general feedback message, so that it will return back the original feedback message
+    actionmessage := feedback;
+    
+    if( feedback.FindString( generalactionmessage, 0 ) < 0 ) 
+    {
+      // Get unique feedback messages via traverse instead of Unique function because Unique will sort the feedbacks incorrectly
+      feedbacks := feedback.Tokenize( String::NewLine() );
+      uniquefeedbacks := construct( Strings );
+      traverse( feedbacks, Elements, e )
+      {
+        if( uniquefeedbacks.Find( e ) < 0 )
+        {
+          uniquefeedbacks.Add( e );
+        }
+      }
+      
+      // assign action message only if it is not found in the original feedback message  
+      actionmessage:= generalactionmessage 
+                      + String::NewLine() 
+                      + uniquefeedbacks.ToString( String::NewLine() );
+    }
+    
+    return actionmessage;
+  *]
+}

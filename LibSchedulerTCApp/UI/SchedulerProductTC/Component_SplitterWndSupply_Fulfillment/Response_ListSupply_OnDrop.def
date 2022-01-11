@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: ListSupply
+Response OnDrop (structured[Demand] information, structured[Supply] target) id:Response_ListSupply_OnDrop
+{
+  #keys: '[122574.0.508570698]'
+  Body:
+  [*
+    // OnDrop structured[Demand] --> Supply
+    if( dropaction.IsControlShift() 
+        and information.Size() = 1
+        and information.Element( 0 ).istype( ProductDemand ) )
+    {
+      dlg := construct( DialogEditProductFulfillment );
+      productsupply := target.Element( 0 ).astype( ProductSupply );
+      productdemand := information.Element( 0 ).astype( ProductDemand );
+      dlg.HandleCreateEditPlannedFulfillment( this, productsupply, productdemand );
+    }
+    else if( dropaction.IsControlShift() 
+        and information.Size() = 1
+        and information.Element( 0 ).istype( MaterialDemand ) )
+    {
+      dlg := construct( DialogEditMaterialFulfillment );
+      materialsupply := target.Element( 0 ).astype( MaterialSupply );
+      materialdemand := information.Element( 0 ).astype( MaterialDemand );
+      dlg.HandleCreateEditPlannedFulfillment( this, materialsupply, materialdemand );
+    }
+    else
+    {
+      Fulfillment::CreateManualPlannedFulfillments( information, target, false, 0.0 );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIComponent_OnDrop'
+  Precondition:
+  [*
+    isallowedhard := true;
+    // Override soft rules when user hold ctrl key or ctrl shift key since we cannot hold ctrl to press OK button in dialog.
+    skipsoftrules := dropaction.IsControl() or dropaction.IsControlShift();
+    ctrlshiftkey  := dropaction.IsControlShift();
+    
+    return ApplicationScheduler.AllowedMaterialReservation( target,           // structured demand
+                                                            information,      // supply
+                                                            skipsoftrules,    // skip soft rules
+                                                            ctrlshiftkey,     // ctrl+shift key
+                                                            feedback,        
+                                                            isallowedhard );
+  *]
+}

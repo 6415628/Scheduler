@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: lstParticipations
+Response OnSelectionChanged (structured[Object] selection) id:Response_lstParticipations_OnSelectionChanged_379
+{
+  #keys: '[131094.1.749233251]'
+  Body:
+  [*
+    // This response is triggered when the section contains at least one EventCategory.
+    // The other OnSelectionChanges is not triggered in that case.
+    
+    // Make sure that the row of the first selected event is visible in the ganttchart.
+    event := minselect( selection, Elements.astype( LibCal_Participation ).Event, evnt, true, evnt.EventCategory().Name(), evnt.Subject() );
+    
+    if( not isnull( event ) )
+    {
+      gcCalendar.EnsureRowVisible( event.Key() );
+    }
+    else
+    {
+      // Only EventCategories are selected.
+      category := minselect( selection, Elements.astype( LibCal_EventCategory ), cat, true, cat.Name() );
+      gcCalendar.EnsureRowVisible( category.Key() );
+    }
+    
+    // Put the Participations that are selected in the list in a DataHolders,
+    // so that they can be used for filtering when 'Only show selected events' is checked.
+    participations := construct( LibCal_Participations );
+    
+    traverse( selection, Elements, obj, obj.istype( LibCal_Participation ) )
+    {
+      participations.Add( obj.astype( LibCal_Participation ) );
+    }
+    
+    dhSelectedParticipations.Data( &participations );
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_List_OnSelectionChanged'
+}

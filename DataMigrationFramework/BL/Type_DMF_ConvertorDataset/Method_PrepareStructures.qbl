@@ -1,0 +1,72 @@
+Quintiq file version 2.0
+#parent: #root
+Method PrepareStructures (Boolean isExport_i, DMF_Datasets datasets_i)
+{
+  Description: 'Prepare structure for export or upgrade flow'
+  TextBody:
+  [*
+    // tgn3 Apr-28-2021 (created)
+    
+    /* This method should
+    1) Generate CustomLogic for Export/Upgrade (depending on input arg)
+    2) Re-initialize custom logic as necessary (on context switch)
+    3) Generate Topics and switch their context as necessary
+    4) Generate DICV and RunStep instances (depending on input arg)
+    */
+    oldCustomLogicType := guard( this.CustomLogic().DefinitionName(), "" );
+    
+    // (Re)initialize custom logic as necessary
+    // Relevant topic is created 'OnCreate' of customLogic
+    // Context "switches" are expected to only happen when datasets are refrehsed
+    customLogic     := DMF_CustomLogicBase::FindCreateCustomLogic( this, isExport_i );
+    isContextSwitch := oldCustomLogicType <> customLogic.DefinitionName();
+    
+    //Propagate TopicStep.SequenceNr required to ensure RunSteps generated in correct sequence
+    Transaction::Transaction().Propagate( attribute( DMF_TopicStep, SequenceNr ) );
+    
+    // Generate topic steps & re-bind them to datasetTypes
+    // Also need to re-generate converter versions
+    // This should be skipped if there is no context switch
+    if( isContextSwitch )
+    {
+      // DevNote: TopicSteps only need to be re-generated on context switches
+      customLogic.Topic().GenerateTopicSteps();
+      customLogic.UpdateHelperRelations( true );
+    }
+    else
+    {
+      // Flush existing DICV
+      // This is necessary because the scope of selected datasets can change if the user changed their selection
+      // This is also not needed in the "if" block, because "ConvertorVersions" are flushed there
+      traverse( this, ConvertorVersion, converterVersion )
+      {
+        converterVersion.DatasetInConvertorVersion( relflush ); 
+      }  
+    }
+    
+    // Generate DICV and RunSteps
+    // For each dataset, generate one DatasetInConverterVersion (DICV) for each version it requires runsteps for
+    // This should work for both the export and upgrade flows
+    traverse( datasets_i, Elements, dataset )
+    {    
+      dataset.GenerateDatasetInConvertorVersions();
+    }
+    
+    //flush existing run steps before generating them
+    traverse( this, Topic, topic )
+    {
+      topic.RunStep( relflush );
+    }
+    
+    //runstep generation here
+    traverse( this, Topic, topic )
+    {
+      topic.GenerateRunSteps( datasets_i );
+    }
+    
+    // Update last run time (from beginning of transaction) and precision ticks
+    this.TimestampLastPrepare( DateTime::Now() );
+    this.PrecisionLastPrepare( OS::PrecisionCounter() );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

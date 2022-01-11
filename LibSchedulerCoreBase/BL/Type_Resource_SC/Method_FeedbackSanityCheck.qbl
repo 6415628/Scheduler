@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method FeedbackSanityCheck
+{
+  TextBody:
+  [*
+    // Check for all tasks whether the Start and End times are inline with the sequence numbers
+    // For tasks that lie in the past and for which also all previous tasks lie in the past
+    // only a warning is generated.
+    // For tasks that are in the future an error is generated if the task has feedback and
+    // not all previous tasks have feedback
+    
+    info( '--------------' );
+    info( 'Checking sequence on', this.ResourceID() );
+    
+    laststart := DateTime::MinDateTime();
+    lastend := DateTime::MinDateTime();
+    
+    traverse( this, Task_SC, task )
+    {
+      if( task.Start() < laststart )
+      {
+        // Check whether start is in sequence
+        info( 'Warning: Start of', task.DefinitionName(), 'sequencenr', task.SequenceNr(), 'on', this.ResourceID(), 'is before Start of previous task.' );
+      }
+    
+      if( task.End() < lastend )
+      {
+        // Check whether start is in sequence
+        info( 'Warning: End of', task.DefinitionName(), 'sequencenr', task.SequenceNr(), 'on', this.ResourceID(), 'is before End of previous task.' );
+      }
+    
+      // Carmen, fixing for BaseModel
+      //if( task.HasReportedStart() )
+      if( task.GetOperation().HasReportedStart() )
+      {
+        // Check whether all previous tasks also have feedback
+        // Carmen, fixing for BaseModel
+        //if( exists( this, Task, t, t.SequenceNr() < task.SequenceNr(), not t.HasReportedStart() ) )
+        if( exists( this, Task_SC, t, t.SequenceNr() < task.SequenceNr(), not t.GetOperation().HasReportedStart() ) )
+        {
+          info( 'Error:', task.DefinitionName(), 'sequencenr', task.SequenceNr(), 'on', this.ResourceID(),
+                  'has a reported start whereas not all previous tasks are started' )
+        }
+      }
+    
+      laststart := task.Start();
+      lastend := task.End();
+    }
+  *]
+}

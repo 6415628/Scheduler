@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateShutdownSchedulingData (Schedule schedule)
+{
+  Description: 'Create shutdown scheduling test data'
+  TextBody:
+  [*
+    // Create resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource' );
+    
+    // Create shutdown type
+    shutdowntype := UTFMockObjectFactory::CreateShutdownType( schedule, 'ShutdownType' );
+    shutdowntype.DefaultDuration( Duration::Hours( 1 ) );
+    
+    taskstart := schedule.Time();
+    // Create 2 tasks
+    for( i := 1; i <= 3; i++ )
+    {
+      // Create operation
+      order := UTFMockObjectFactory::CreateOrder( schedule, 'Order_'+ [String]i );
+      planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'Plan Unit_'+ [String]i, 1.0 );
+      operation := UTFMockObjectFactory::CreateOperation( planUnit );
+      operation.OperationID( 'Operation_' + [String]i );
+      operation.SequenceNr( i ); 
+       
+      task := resource.PlanLast( operation ).astype( UTFSingleTask );
+      task.HasStartUTF( true );
+      task.Start_UTF( taskstart );
+      task.HasEndUTF( true );
+      task.End_UTF( taskstart + Duration::Hours( 1 ) );
+      taskstart := taskstart + Duration::Hours( 1 );
+        
+      // Insert shutdown at Task 1
+      if( i = 1 or i = 2)
+      {
+        resource.InsertShutdown( task, shutdowntype, Duration::Hours( 0 ), false, false, DateTime::MinDateTime(), Duration::Zero() );
+      }
+      if(  i = 2 )
+      {
+        task.FreezeByUser();  
+      }
+    }
+    
+    // Gantt chart
+    // | Task1(Frozen) | ShutdownTask1(Frozen) | Task 2(Frozen) | ShutdownTask2 | Task 3 |
+  *]
+}

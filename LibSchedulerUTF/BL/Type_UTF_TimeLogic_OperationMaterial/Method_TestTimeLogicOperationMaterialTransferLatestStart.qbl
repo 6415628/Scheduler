@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestTimeLogicOperationMaterialTransferLatestStart (Schedule schedule)
+{
+  Description: 'Test transfer latest start for operation material.'
+  TextBody:
+  [*
+    //Get the test instance based on variant
+    variant := this.Variant();
+    
+    testinstance := this.GetTestInstanceMain( variant );
+    
+    //Select the only operation material
+    operationmaterial := select( schedule, PlanUnit_SC.OperationMaterial, om, true );
+    
+    //Assert the result
+    this.Run().AssertEqual( testinstance.TransferLatestStart(), operationmaterial.TransferLatestStart(), UTFUtility::GenerateFailedMessage( 'TimeLogic_OperationMaterial_TransferLatestStart', variant ) );
+    
+    // Add group measurement
+    settings := UTF_TimeLogic_OperationMaterial::GetTestInstanceSettings( testinstance );
+    UTFUtility::AddMeasurementGroup( this.Run(), settings );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

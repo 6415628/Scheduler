@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestHandleCalendarFeedbackConflict_NoOverlap (Schedule schedule)
+{
+  Description: 'Test logic for handling of calendar feedback for user case where there is no overlap.'
+  TextBody:
+  [*
+    start := DateTime::Construct( 2017, 1, 1, 4, 0, 0 );
+    end := DateTime::Construct( 2017, 1, 1, 6, 0, 0 );
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, res, true );
+    resource.HandleCalendarChangeConflicts( start, end, 0.5, '', '' );
+    resource.ResourceCalendar().AddTimeInterval( start, end, 0.5, '' );
+    
+    Transaction::Transaction().Propagate();
+    
+    this.Run().AssertTrue( exists( resource, ResourceCalendar.Elements, element, element.Start() = DateTime::Construct( 2017, 1, 1, 2, 0, 0 ) 
+                                                                                 and element.End() = DateTime::Construct( 2017, 1, 1, 4, 0, 0 )
+                                                                                 and element.Capacity() = 0 )
+                           and exists( resource, ResourceCalendar.Elements, element, element.Start() = DateTime::Construct( 2017, 1, 1, 4, 0, 0 ) 
+                                                                                     and element.End() = DateTime::Construct( 2017, 1, 1, 6, 0, 0 )
+                                                                                     and element.Capacity() = 0.5 )  );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

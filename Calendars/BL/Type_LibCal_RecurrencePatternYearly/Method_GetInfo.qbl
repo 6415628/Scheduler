@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetInfo () declarative as String
+{
+  TextBody:
+  [*
+    value  := "";
+    months := Translations::Pattern_Months().Tokenize( ';' );
+    
+    if( months.Size() = 12 )
+    {
+      if( this.RecurrenceInterval() > 1 )
+      {
+        value := "every " + [String]this.RecurrenceInterval() + " years on ";
+      }
+      
+      month  := months.Element( this.Month() - 1 );
+      
+      if( this.IsDay() )
+      {
+        value := ifexpr( value = "", "every ", value );
+        value := value + month + " " + [String]this.Day();
+      }
+      else
+      {
+        value := value + "the " + this.PatternWeekOfMonth() + " " + this.PatternDayOfWeek() + " of " + month;
+      }
+    }
+    else
+    {
+      value := [String]months.Size() + " months defined in Translations::Pattern_Months(), should be 12";
+    }
+    
+    return value;
+  *]
+}

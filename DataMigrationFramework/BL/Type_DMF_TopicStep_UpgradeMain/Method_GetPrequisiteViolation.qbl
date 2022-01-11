@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetPrequisiteViolation (DMF_RunStep runStep_i) declarative remote as String
+{
+  TextBody:
+  [*
+    violation := "";
+    runStepVersion := runStep_i.DatasetInConvertorVersion().ConvertorVersion().Version();
+    versionPath    := select( runStep_i, Dataset.DatasetType.VersionLookup.VersionPath, path,
+                              path.FromVersion() = runStepVersion );
+    
+    if( isnull( versionPath ) or versionPath.ToVersion().TrimBoth().Length() = 0 )
+    {
+      violation := "Target version is missing. Possibly invalid script or missing metadata SQL statement in script";
+    }
+    else if( not ( versionPath.FromVersion() = DMF_Dataset::FlattenVersion( runStep_i.Dataset().VersionInfo() ) ) and
+             versionPath.NrVersionPathsFromVersion() = 0 )
+    {
+      violation := "Unable to find the corresponding script that upgrades to '" + versionPath.FromVersion() + "'."; 
+    }
+    else if( not ( versionPath.ToVersion() = runStep_i.Dataset().DatasetType().MetadataVersion() ) and
+             versionPath.NrVersionPathsToVersion() = 0 )
+    {
+      violation := "Unable to find the corresponding script that upgrades from '" + versionPath.ToVersion() + "'."; 
+    }
+    
+    return violation;
+  *]
+}

@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcShelfLifeExpirationDate
+{
+  TextBody:
+  [*
+    value := DateTime::MinDateTime();
+    
+    // Calculate earliest ShelfLifeExpirationDate of all the operations in the batch with HasShelfLifeExpirationDate = true
+    if( this.HasShelfLifeExpirationDate() )
+    {
+      value := min( this, BatchSequenceElement.Operation_SC, op,
+                    op.HasShelfLifeExpirationDate(),
+                    op.ShelfLifeExpirationDate() );
+    }
+    
+    this.ShelfLifeExpirationDate( value );
+  *]
+}

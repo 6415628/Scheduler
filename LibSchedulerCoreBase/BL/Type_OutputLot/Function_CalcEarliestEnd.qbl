@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcEarliestEnd
+{
+  TextBody:
+  [*
+    // get latest input lot material
+    latest_inputlotmaterial := maxselect( this, InputLotMaterial, ilm, true, ilm.AsOutputLotMaterial().EarliestStart() );
+    // get remainder process duration
+    remainder_duration := latest_inputlotmaterial.Quantity() * this.Task_SC().GetOperation().PlannedProcessDurationPerQuantity();
+    // get earliest end based on last input lot material earliest start and duration
+    earliestStart := maxvalue( latest_inputlotmaterial.AsOutputLotMaterial().EarliestStart(),
+                               this.EarliestStart() );
+    
+    value := this.Task_SC().Resource_SC().ResourceCalendar().Add( earliestStart, remainder_duration )
+    
+    this.EarliestEnd( value );
+  *]
+}

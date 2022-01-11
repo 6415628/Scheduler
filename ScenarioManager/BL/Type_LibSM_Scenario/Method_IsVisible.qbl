@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride IsVisible (structured_UserGroupDefinition userGroups, Boolean showDeletedAndOffline, String userName, 
+  Boolean ignoreApplyAuthorizationSetting) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    setting            := this.ScenarioManager().GlobalParameter().IsAuthorizationApplied();
+    visibleAsSelection := this.IsOnline()      or showDeletedAndOffline;
+    notDeleted         := not this.IsDeleted() or showDeletedAndOffline;
+    
+    // Check that the user is either the owner, is part of a group that has explicit authorization on the scenario
+    hasPermission      := ignoreApplyAuthorizationSetting
+                          or not setting
+                          or this.IsAuthorized( userName )
+                          or exists( this, ScenarioAuthorization, auth, exists( userGroups, Elements, e, e.Name() = auth.Name() ) );
+    
+    // The result (is it visible?) is...
+    value :=  ( ( not setting and not ignoreApplyAuthorizationSetting ) // Either we don't have to check and we shouldn't ignore that, 
+             or ( setting and ignoreApplyAuthorizationSetting )           // Or we do have to check but for now we can ignore that, 
+             or hasPermission )
+          and visibleAsSelection 
+          and notDeleted ;                                              // Or we just have access based on the permissions and the deleted/offline requirement.
+    
+    // Set a feedback message, so if this scenario does show up in a list (e.g in the web client not supporting filtering, or undue usage of the API) 
+    // then we can still prevent usage of it via the precondition and let the user know politely.
+    feedback := FeedbackObject::LocalFeedback();
+    if ( not feedback.CheckHard( value ) ) 
+    {
+     feedback.AddHard( Translations::LibSM_Authorization_CannotAccessScenario( this.Name() ) ); 
+    }
+    return value;
+  *]
+}

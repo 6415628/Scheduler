@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method CleanupOldComponentRuns #extension
+{
+  TextBody:
+  [*
+    // mbr23, 2019-09-25 (extended)
+    
+    if( this.RunArchivingHorizon() > Duration::Zero() ) //zero or lower value means nothing gets deleted
+    {
+      earliestdatetokeep := Date::ActualDate() - this.RunArchivingHorizon();
+      traverse( this.Schedule().Optimization(), Optimizer.Run,
+                run,
+                run.FinishedOn().Date() < earliestdatetokeep.Date() )
+      {
+        run.Delete();
+      }
+    }
+  *]
+}

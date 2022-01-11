@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetEvent (String category_i, String subject_i) as LibCal_Event
+{
+  Description:
+  [*
+    Get an event based on its category and subject.
+    If multiple events with the same subject are found a warning is logged and no event is returned.
+  *]
+  TextBody:
+  [*
+    event  := null( LibCal_Event );
+    events := selectset( this, Event, evnt, evnt.EventCategory().Name() = category_i, evnt.Subject() = subject_i );
+    
+    if( events.Size() = 0 )
+    {
+      LibCal_Util::Info( "Event with Subject '" + subject_i + "' not found in Category '" + category_i + "' for calendar '" + this.CalendarID() + "'" );
+    }
+    else if(  events.Size() > 1 )
+    {
+      LibCal_Util::Info( "Multiple events with Subject '" + subject_i + "' found in Category '" + category_i + "' for calendar '" + this.CalendarID() + "'" );
+    }
+    else
+    {
+      event := events.Element( 0 );
+    }
+    
+    return event;
+  *]
+}

@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride FeedbackMessage (const Rule rule, DORule_DataObjectSequencingRule do_rule) const declarative remote as String
+{
+  TextBody:
+  [*
+    // Construct feedback message for overlapping 
+    feedback := '';
+    
+    // Get overlapping value
+    overlappingvalue := this.GetOverlappingValue( do_rule );
+    
+    // Get the overlapping message if overlapping value is finite
+    if( overlappingvalue.IsFinite() )
+    {
+      feedback := Translations::RuleFeedback_OverlappingLessThanMinValue( rule.Name(),
+                                                                          guard( rule.CharacteristicMain().Name(), "" ),
+                                                                          do_rule.PreviousMinRealValue(),
+                                                                          do_rule.PreviousMaxRealValue(),
+                                                                          do_rule.CurrentMinRealValue(),
+                                                                          do_rule.CurrentMaxRealValue(),
+                                                                          overlappingvalue,
+                                                                          rule.RuleValue() );
+    }
+    else
+    {
+      // If overlapping value is infinite, that mean there is gap with previous task, get the gap feedback message instead
+      gapvalue := minvalue( abs( do_rule.CurrentMaxRealValue() - do_rule.PreviousMinRealValue() ),
+                            abs( do_rule.CurrentMinRealValue() - do_rule.PreviousMaxRealValue() ) );
+                                                                                                   
+      feedback := Translations::RuleFeedback_OverlappingHasGap( rule.Name(),
+                                                                guard( rule.CharacteristicMain().Name(), "" ),
+                                                                do_rule.PreviousMinRealValue(),
+                                                                do_rule.PreviousMaxRealValue(),
+                                                                do_rule.CurrentMinRealValue(),
+                                                                do_rule.CurrentMaxRealValue(),
+                                                                gapvalue,
+                                                                rule.RuleValue() );
+    }
+    
+    // Append program set name
+    feedback := this.AppendProgramSetName( feedback, do_rule );
+    
+    return feedback;
+  *]
+}

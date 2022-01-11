@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test020_SwitchProbability (LibOpt_TestDataset dataset)
+{
+  Description: 'Checks that the probability switch does not send to components with 0 probability.'
+  TextBody:
+  [*
+    // Run randomized test
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    nr_of_tasks := Number::Random( 1, 100 );
+    
+    iterator := opt.IteratorUntil( run, 'Iterator' );
+    iterator.SetMaxIterations( nr_of_tasks );
+    switch := opt.SwitchProbability( run, 'Switch' );
+    
+    iterator.To( switch );
+    
+    nr_of_components := Number::Random( 1, 10 );
+    
+    components := construct( LibOpt_ComponentCounters );
+    components0 := construct( LibOpt_ComponentCounters );
+    sum_weights := 0.0;
+    for( j := 0; j < nr_of_components; j++ )
+    {
+      c := opt.ComponentCounter( run, 'Counter' + [String] j );
+      rand := Real::Random( 0.0, 1.0 );
+      weight := 0.0;
+      if( rand > 0.5 )
+      {
+        weight := Real::Random(); 
+      }
+      else
+      {
+        components0.Add( c );
+      }
+      sum_weights := sum_weights + weight;
+      switch.Branch( weight, c );
+      components.Add( c );
+    }
+    
+    opt.ConfigureForOneTransaction( run );
+    
+    Transaction::Transaction().Propagate();
+    
+    run.Start();
+    
+    traverse( components0, Elements, component )
+    {
+      this.Run().AssertEqual( 0, component.NrOfTimesCalled(), 'Number of calls has an unexpected value' );
+    }
+    this.Run().AssertEqual( ifexpr( sum_weights = 0, 0, nr_of_tasks ), sum( components, Elements, component, component.NrOfTimesCalled() ), 'Number of calls has an unexpected value' );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

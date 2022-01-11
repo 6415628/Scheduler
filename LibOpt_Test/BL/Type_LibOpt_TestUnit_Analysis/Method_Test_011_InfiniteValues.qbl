@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_011_InfiniteValues (LibOpt_TestDataset dataset)
+{
+  Description: 'Test whether infinite values break the analysis'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    component := opt.ComponentCounter( run, 'component' );
+    
+    run.ConfigureForOneTransaction();
+    run.Start();
+    
+    // Propagate after the run has finished
+    Transaction::Transaction().Propagate();
+    
+    this.Run().AssertEqual( LibOpt_RunStatus::Finished(), run.Status(), 'Run status incorrect' );
+    snapshot := select( component, SnapshotComponent, snapshot, true );
+    
+    LibOpt_MockSnapshot::Create( snapshot, Real::MinReal() );
+    LibOpt_MockSnapshot::Create( snapshot, Real::MaxReal() );
+    
+    // Propagate after the snapshots have been created, so the name is set correctly
+    Transaction::Transaction().Propagate();
+    
+    runs := construct( LibOpt_Runs );
+    runs.Add( run );
+    LibOpt_Analysis::Create( runs );
+    
+    // Propagate after the analysis has been created.
+    Transaction::Transaction().Propagate();
+    
+    analysis := select( run, Analysis, analysis, true );
+    this.Run().AssertEqual( 1, counter( analysis, AnalysisCorrelation, ac, ac.Count() > 0 ), 'Amount of analysis correlations' );
+    
+    corr := select( analysis, AnalysisCorrelation, corr,
+                             corr.Y().Component() = component
+                             and corr.Y().Name() = attribute( LibOpt_MockSnapshot, Value ).Name()
+                             and corr.Y().Path() = component.Name() + '.' + LibOpt_MockSnapshot::TypeName() );
+    
+    if( this.Run().AssertNotIsNull( corr, 'Correlation is null' ) )
+    {
+      this.Run().AssertTrue( corr.FiltersInfiniteValues(), 'Correlation "Value" contains infinite values' );
+      this.Run().AssertEqual( 0, corr.Count(), 'Correlation "Value" count' );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method AdjustTrees () id:Method_FormTimeConstraintVisualization_AdjustTrees
+{
+  #keys: '[132894.0.984127057]'
+  Body:
+  [*
+    // Adjust trees position, this is the last step of populate Y position
+    // If downstream tree taller, we adjust upstream tree, vice versa
+    config := DataHolderCustomDrawConfiguration.Data();
+    // Use depth as the decider when there are multiple nodes marked as root
+    root := minselect( config, CustomDrawNode, node, node.IsRoot(), node.Depth() ); 
+    
+    // To adjust the tree Y position, we pre-compute the root node position
+    // from upstream and downstream, whoever is at the higher position, needs
+    // to adjust its side lower 
+    this.AdjustNodeYPos( root, true /*isupstream*/ ); 
+    upStreamY := root.Y();
+    this.AdjustNodeYPos( root, false /*isupstream*/ );
+    downStreamY := root.Y();
+    
+    offset := upStreamY - downStreamY;
+    isupstream := false;
+    
+    // If upStream is higher, move it down
+    // vice versa
+    if( offset < 0 )
+    {
+      isupstream := true;
+    }
+    
+    // Adjust the whole side of the tree
+    traverse( config, CustomDrawNode, node,
+              node.IsUpstream() = isupstream )
+    {
+      node.Y( node.Y() + abs( offset ) );
+    }
+    
+    root.Y( ifexpr( offset < 0, downStreamY, upStreamY ) );
+  *]
+}

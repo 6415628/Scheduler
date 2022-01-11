@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateScopeElements () id:Method_LibOpt_FormAnalysisScopeElement_UpdateScopeElements
+{
+  #keys: '[139164.4.1710502656]'
+  Body:
+  [*
+    analysis := DataHolderShadowAnalysis.Data();
+    
+    if( not isnull( analysis ) )
+    {
+      scope_elements := DataHolderScopeElements.Data();
+      existing := selectset( analysis, AnalysisScopeElement.ScopeElement, se, true );
+      
+      unused_ses := existing.Difference( scope_elements );                                                 
+                                                       
+      // Delete scope elements that are not longer used
+      traverse( analysis, AnalysisScopeElement, ase, unused_ses.Find( ase.ScopeElement() ) >= 0 )
+      {
+        ase.Delete();
+      }
+      
+      existing_ase := analysis.AnalysisScopeElement( relget );
+      traverse( scope_elements.Difference( existing ), Elements, se )
+      {
+        analysis.AnalysisScopeElement( relnew, ScopeElement := se );
+      }
+      
+      Form.Filter( analysis.AnalysisScopeElement( relget ).Difference( existing_ase ) );
+    }
+  *]
+}

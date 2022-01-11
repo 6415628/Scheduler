@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcExpectedTime
+{
+  TextBody:
+  [*
+    value := this.ExpectedTime_UTF();
+    
+    if( not this.HasExpectedTimeUTF() )
+    {
+      // Run back the original code when no UTF manipulation is required on this attribute. 
+      value := this.PlanUnit_SC().Order_SC().DueDate();
+    
+      if( this.HasToOperation() )
+      {
+        operation := this.ToOperation();
+        value := operation.LatestStart();
+        
+        if( this.PlanUnit_SC().IsLotLeadTimeLogicOn() )
+        {
+          value := operation.LastInputLotLatestStart();
+        }
+        
+        if( operation.Finished() and operation.HasReportedStart() )
+        {
+          value := operation.ReportedStart();
+        }
+        else if( not isnull( this.ReceiveSubTask() ) )
+        {
+          value := this.ReceiveSubTask().LatestEnd();
+        }
+      
+        value := value - this.TotalOffsetDuration();
+      }
+    }
+    
+    this.ExpectedTime( value );
+  *]
+}

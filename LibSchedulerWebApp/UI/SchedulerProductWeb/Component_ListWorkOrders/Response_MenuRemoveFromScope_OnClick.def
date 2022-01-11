@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[WorkOrder] selection) id:Response_ListWorkOrders_MenuRemoveFromScope_OnClick
+{
+  #keys: '[142956.2.222985980]'
+  CanBindMultiple: false
+  DefinitionID => /Responsedef_ListWorkOrders_WebMenu_OnClick
+  GroupServerCalls: true
+  Initiator: 'MenuRemoveFromScope'
+  Precondition:
+  [*
+    operations := selectset( selection, Elements.WorkOrderOperation.Operation_SC, op, true );
+    
+    Scheduler.CanRemoveFromOptimizerScope( operations );
+    feedbackObject := FeedbackObject::CurrentFeedback();
+    feedback := feedbackObject.Feedback();
+    
+    return feedbackObject.IsAllowed();
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Remove operations in SELECTED work orders from optimizer scope
+      mandatoryOperations := DataHolderOptimizerScopeOperations.Data();
+      
+      operations := selectset( selection, Elements.WorkOrderOperation.Operation_SC, op, true );
+      
+      DataHolderOptimizerScopeOperations.Data( mandatoryOperations.Difference( operations ) );
+    *]
+  }
+}

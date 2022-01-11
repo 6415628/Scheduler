@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeOperationOnProgramPhaseConfiguration
+{
+  TextBody:
+  [*
+    // zyi1 Jul-12-2021 (created)
+    this.PPCOnResource( relflush ); 
+    
+    traverse( this, 
+              ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration.ProgramPhaseConfiguration,
+              ppc )
+    {
+      ppcor := PPCOnResource::Create( this, ppc );
+      
+      //resource rules
+      traverse( this, RuleScopeInResource.Rule, rule, rule.IsEnabled() )
+      {
+        RuleOnPPCOnResource::Create( rule, ppcor );
+      }
+      
+      //program type rules
+      traverse( ppcor, ProgramPhaseConfiguration.ProgramTypeConfiguration.RuleScopeInProgramType.Rule, rule, rule.IsEnabled() )
+      {
+        RuleOnPPCOnResource::Create( rule, ppcor );
+      }
+      
+      //program phase rules
+      traverse( ppcor, ProgramPhaseConfiguration.RuleScopeInProgramPhase.Rule, rule, rule.IsEnabled() )
+      {
+        RuleOnPPCOnResource::Create( rule, ppcor );
+      }
+      
+      traverse( this, OperationOnResource.Operation_SC, op )
+      {
+        OperationOnPPCOnResource::Create( op, ppcor );
+      }
+    }
+    
+    Transaction::Transaction().Propagate( relation( OperationOnPPCOnResource, OperationOnResource ) );
+    traverse( this, PPCOnResource.OperationOnPPCOnResource, ooppcor )
+    {
+      ooppcor.SetIsAllowed();
+    }
+  *]
+}

@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method RefreshVisibilityOfRoundUpDownButtons () id:Method_DialogSplitInternalWorkOrder_RefreshVisibilityOfRoundUpDownButtons
+{
+  #keys: '[142956.0.1227106289]'
+  Body:
+  [*
+    // Refresh visibility of round up/down button
+    
+    if( guard( DataHolderPlannedOrder.Data().LotSize() <> 0, false ) )
+    {
+      lotSize := DataHolderPlannedOrder.Data().LotSize();
+      quantity := NumberPickerQuantity.Number();
+      numberOfLots := floor( quantity / lotSize );
+      
+      // Call precondition logic to use feedback object properties
+      InternalWorkOrder::CheckSplitQuantityIsValid( DialogSplitInternalWorkOrder.DataHolderPlannedOrder().Data(), 
+                                                    DialogSplitInternalWorkOrder.NumberPickerQuantity().Number(),
+                                                    false );
+      
+      feedbackObject := FeedbackObject::CurrentFeedback();
+      value := Utility_SC::CheckIsMultiple( quantity, lotSize );
+    
+      // Only show when there is no hard rule violated and it is not a multiple of lot size 
+      PanelQuantityRounding.Visible( not feedbackObject.HasHardViolations() and not value ); 
+      ButtonQuantityRoundUp.Label( Translations::SC_QuantityRoundUpTo( ( numberOfLots + 1 ) * lotSize ) );
+      ButtonQuantityRoundDown.Visible( numberOfLots <> 0 );
+      ButtonQuantityRoundDown.Label( Translations::SC_QuantityRoundDownTo( numberOfLots * lotSize ) );
+    }
+  *]
+}

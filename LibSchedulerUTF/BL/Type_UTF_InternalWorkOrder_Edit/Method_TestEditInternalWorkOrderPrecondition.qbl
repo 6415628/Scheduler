@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestEditInternalWorkOrderPrecondition (Schedule schedule)
+{
+  Description: 'Test edit work order.'
+  TextBody:
+  [*
+    editDeleteInternalWorkOrderTestInstance := this.GetEditDeleteInternalWorkOrderTestInstance( this.Variant() );
+    workOrder := select( schedule, WorkOrder, workOrder, true );
+    
+    // Do precon check
+    workOrder.CheckCanEdit();
+    preconCheckValue := FeedbackObject::CurrentFeedback().IsAllowed();
+    
+    this.Run().AssertTrue( preconCheckValue = editDeleteInternalWorkOrderTestInstance.CanEdit(),
+                           UTFUtility::GenerateFailedMessage( 'Precondition check for edit work order failed', this.Variant() ) );
+  *]
+}

@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateDefaultSubTaskTypes (shadow[ResourceGroup_SC] rg_i) id:Method_DialogResourceGroup_SC_CreateDefaultSubTaskTypes
+{
+  #keys: '[129856.0.83009340]'
+  Body:
+  [*
+    // JamesK Sep-19-2016 #7841 Create default sub task types on resource group on create
+    setup := Constants::SubTask_Setup();
+    process := Constants::SubTask_Process();
+    
+    setupsubtasktype := select( rg_i.Schedule(), SubTaskType, stt, 
+                           stt.SubTaskID() = setup );
+                           
+    processsubtasktype := select( rg_i.Schedule(), SubTaskType, stt, 
+                           stt.SubTaskID() = process );
+    
+    rg_i.SubTaskTypeOnResourceGroup( relnew,
+                                     SubTaskID := Constants::SubTask_Setup(),
+                                     SubTaskName := Constants::SubTask_Setup_Name(),
+                                     SubTaskType := setupsubtasktype,
+                                     IsFirstRespectMachine := true,
+                                     IsFirstRespectRouting := true ); // setting default first respect machine/routing 
+    
+    rg_i.SubTaskTypeOnResourceGroup( relnew,
+                                     SubTaskID := Constants::SubTask_Process(),
+                                     SubTaskName := Constants::SubTask_Process_Name(),
+                                     SubTaskType := processsubtasktype,
+                                     IsLastRespectMachine := true,
+                                     IsLastRespectRouting := true ); // setting default last respect machine/routing
+  *]
+}

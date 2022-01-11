@@ -1,0 +1,15 @@
+Quintiq file version 2.0
+#parent: #root
+Method UnfreezeTaskFrozenByUserBefore (Task_SC task, Task_SC element)
+{
+  Description: 'Unfreeze tasks frozen by user if they are planned later OUTSIDE the frozen horizon or if they are planned to a different resource.'
+  TextBody:
+  [*
+    if( not guard( task.Resource_SC() = this and task.Next() = element, true ) // Don't unfreeze if task did not shift position
+        and ( guard( task.Resource_SC() <> this, true ) // Unfreeze if task is replanned to a different resource
+              or guard( task.SequenceNr() < element.SequenceNr() and not element.IsFrozenInSchedule(), true ) ) ) // Unfreeze if task is replanned later OUTSIDE frozen horizon
+    {
+      task.UnfreezeByUser();
+    }
+  *]
+}

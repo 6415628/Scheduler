@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_FeedbackProgramChangeTask (CDSchedule cdschedule)
+{
+  Description: 'Restore feedback program change task core data relation to planning object'
+  TextBody:
+  [*
+    // Restore FeedbackProgramChangeTask
+    traverse( cdschedule, CDEntity.astype( CDFeedbackProgramChangeTask ), cdfeedbackprogramchangetask )
+    {
+      fpct := FeedbackProgramChangeTask::FindFeedbackProgramChangeTask( cdfeedbackprogramchangetask.WorkOrderId(),
+                                                                        cdfeedbackprogramchangetask.PlanUnitId(),
+                                                                        cdfeedbackprogramchangetask.WorkOrderOperationSequenceNr(),
+                                                                        cdfeedbackprogramchangetask.ExternalStoppageTaskID() );
+                                                                  
+      if( not isnull( fpct ) )
+      {
+        pc := ProgramChange::FindProgramChange( cdfeedbackprogramchangetask.ProgramChangeID() );
+        fpct.ProgramChange( relset, pc );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

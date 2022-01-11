@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportAndSyncScenarioManagerMasterData
+{
+  Description: 'Import scenario manager master data. E.g. knowledge profile'
+  TextBody:
+  [*
+    // Import XLS
+    // Data folder path
+    folderpath := FileSystems::QFSPathToHardwarePath( DomainModel::GetDataDirectory().Path() ) + '/';
+    
+    // Full file path
+    filepath := folderpath.Concat( Constants::SM_MasterDataExcelFileName() );
+    
+    if( OS::IsFile( filepath ) )
+    {
+      // Open the file
+      file := OSFile::Construct();
+      file.Open( filepath, "Read", true );
+      
+      // Read the file
+      exceldata := file.ReadBinaryData();
+      
+      // Ensure dataset for import
+      datasetname := LibSM_StagingSet::EnsureDatasetForImport();
+      dataset := MDSLibSM_StagingSet::Find( DatasetFindOptions::Construct( datasetname ) );
+     
+      if( not isnull( dataset ) )
+      {
+        // Import data from XLS and sync
+        dataset->ImportDataFromXLS( filepath, exceldata.AsBinaryValue() )->SyncAll( this, false );
+      } 
+      else
+      {
+        info(" >>> No selected import dataset! ");
+      }  
+    }
+  *]
+}

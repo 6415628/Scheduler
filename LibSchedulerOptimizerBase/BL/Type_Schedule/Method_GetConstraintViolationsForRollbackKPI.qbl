@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetConstraintViolationsForRollbackKPI () as Real
+{
+  Description: 'Returns the constraint violations for the rollback KPI'
+  TextBody:
+  [*
+    // To be extended in the layers
+    constraintweight := 1.0;
+    
+    // For the sequencing optimizer
+    // All operations that are in scope of the active optimizer run should be planned
+    // Therefore, give a penalty for each unplanned operation in an active run
+    penalty := constraintweight * counter( this, Operation_SC, operation,
+                                           not operation.IsPlanned()
+                                           and operation.IsInActiveOptimizerRun() );
+    
+    return penalty;
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericBatchSequenceElement (const Batch batch)
+{
+  Description: 'Backup generoc batch sequence element core data'
+  TextBody:
+  [*
+    traverse( batch, BatchSequenceElement.astype( GenericBatchSequenceElement ), genericBatchSequenceElement )
+    {
+      cdGenericBatchSequenceElement := this.CDEntity( relnew, CDGenericBatchSequenceElement );
+      CopyCorresponding::CopyFrom( genericBatchSequenceElement ).CopyTo( cdGenericBatchSequenceElement );
+      
+      // Additonal attribute in core data to persist the batch that this batch sequence element belongs
+      cdGenericBatchSequenceElement.BatchID( batch.BatchID() );
+      
+      // Additonal attribute in core data to persist the operation that this batch sequence element relates to
+      cdGenericBatchSequenceElement.PlanUnitID( guard( genericBatchSequenceElement.Operation_SC().PlanUnitId(), '' ) );
+      cdGenericBatchSequenceElement.OperationID( guard( genericBatchSequenceElement.Operation_SC().OperationID(), '' ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

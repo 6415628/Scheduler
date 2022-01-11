@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: lstScenario
+Response OnClick (LibSM_Scenario selection) id:Response_lstScenario_MenuScenarioQuickCopy_OnClick
+{
+  #keys: '[131464.0.1583800715]'
+  Body:
+  [*
+    // Quickly copy a scenario without showing the scenario dialog (following origin scenario storage state)
+    isCopyAsMemoryOnly := false;
+    scenario := Form.LoadCopyDataset( selection, isCopyAsMemoryOnly );
+    LibSM_GlobalState.QueueForAutoSelectAfterCopy( scenario, false );
+    LibSM_GlobalState.AutoExpandSelection( this, scenario );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /lstScenario/Responsedef_lstScenario_Menu_OnClick
+  Initiator: 'MenuScenarioQuickCopy'
+  Precondition:
+  [*
+    groups := LibSM_GlobalState.dhUserGroup().Data();
+    return LibSM_GlobalState.HasValidDataset( selection ) 
+       and selection.CanQuickCopy( groups );
+  *]
+}

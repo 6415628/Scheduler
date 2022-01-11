@@ -1,0 +1,62 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod AllowedMoveToTop (Task_SCs selection, output String feedback_o) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    // gyg1 Jul-14-2016 (created)
+    
+    toptask  := select( selection, 
+                        Elements, 
+                        element, 
+                        not element.HasFSPLFeedbackOnPlanUnit(), 
+                        isnull( element.Previous() ) 
+                        or element.Previous().HasFSPLFeedbackOnPlanUnit() );
+    value    := isnull( toptask );
+    
+    if( not value )
+    {
+      feedback_o := Translations::SC_SelectionAlreadyAtFirstPosition( Task_SC::GetIdentifier( toptask, false ));
+    }
+    else
+    {
+      isallowedhard   := true;
+      operations      := selectset( selection, Elements.OperationInTask, op, true );
+      stoppagetasks   := selectset( selection, Elements.astype( StoppageTask ), stoppagetask, true );
+      resource        := selection.Element( 0 ).Resource_SC();
+      value           := Operation_SC::CanReplan( operations, false, feedback_o, isallowedhard );
+      value           := StoppageTask::CanReplan( stoppagetasks, false, feedback_o, isallowedhard ) and value;
+      aftertask       := minselect(  resource, Task_SC, task, not task.HasFSPLFeedbackOnPlanUnit(), task.SequenceNr() );
+      
+      ontype( resource )
+      {
+        SingleResourceBase as sr:
+        {
+          value := sr.AllowedScheduling( selection, //structured[Task]
+                                         null( Task_SC ),//beforetask
+                                         aftertask, //aftertask
+                                         false, //skipsoftcheck
+                                         false, //ctrlshiftkey
+                                         feedback_o,
+                                         isallowedhard ) and value;    
+        }
+        BatchResource as br:
+        {
+          batches := selectset( selection, Elements.astype( BatchTask ).Batch, batch, true, true );
+          value := br.AllowedScheduling( batches,  //structured batches
+                                         null( Task_SC ), //beforetask
+                                         aftertask, //aftertask
+                                         false, //skip soft check
+                                         feedback_o,
+                                         isallowedhard ) and value;    
+        }
+      }
+    }
+    
+    feedback_o := Translations::SC_CannotBeMovedToTop( Task_SC::GetSelectedObjects( selection ) )
+                  + String::NewLine()
+                  + feedback_o;
+    
+    return value;
+  *]
+}

@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method BeforeOptimizationTransactionBreak
+{
+  TextBody:
+  [*
+    // svt1 Jun-15-2017 (created)
+    // after create of new run, this might not be set yet
+    Transaction::Transaction().Propagate( method( OptimizerRunContinuous, CanDoElegantUIUpdates ) );
+    
+    if( this.CanDoElegantUIUpdates() )
+    {
+      this.TakeSnapshotBeforeUIRestore();
+      isalgorithmrollback := false;
+      scope := this.GetScopeForRollback();
+      this.UISnapshot().RollbackTo( isalgorithmrollback, scope );
+      
+      // will get propagated when transaction ends, almost immediately after
+    }
+  *]
+}

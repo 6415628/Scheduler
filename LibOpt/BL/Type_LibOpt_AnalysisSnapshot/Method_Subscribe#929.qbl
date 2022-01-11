@@ -1,0 +1,75 @@
+Quintiq file version 2.0
+#parent: #root
+Method Subscribe (LibOpt_Snapshot snapshot, String prefix)
+{
+  TextBody:
+  [*
+    nvt := NamedValueTreeIO::Export( snapshot );
+    
+    snapshot_type := snapshot.DefinitionName();
+    
+    analysis_attributes := snapshot.AnalysisAttributes();
+    
+    tv := typeofexpression( snapshot ).TypeView();
+    attributes := selectset( tv, Attributes, att,
+                             not att.IsSystem() );
+    
+    root := nvt.Root().Child( nvt.GetHandle( snapshot_type ) );
+    
+    path := prefix + snapshot.Type();
+    
+    // Iteration
+    traverse( snapshot, IterationPart.IterationPartNM.Iteration, iteration )
+    {
+      this.Subscribe( 'Iteration', path, [Real] iteration.IterationNr(), typeof( Number ), false );
+    }
+    
+    traverse( attributes, Elements, att )
+    {
+      child := root.Child( nvt.GetHandle( att.Name() ) );
+      val := child.GetValue();
+      
+      if( val.istype( Number ) or val.istype( Real ) or val.istype( Duration ) or val.istype( Boolean ) or val.istype( BinaryValue ) )
+      {
+        name := child.Name();
+    
+        to_analyze := exists( analysis_attributes, Elements, a, a.Name() = att.Name() );
+        if( val.istype( Real ) )
+        {
+          this.Subscribe( name, path, val.astype( Real ), typeof( Real ), to_analyze );
+        }
+        else if( val.istype( Number ) )
+        {
+          this.Subscribe( name, path, [Real] val.astype( Number ), typeof( Number ), to_analyze );
+        }
+        else if( val.istype( Duration ) )
+        {
+          this.Subscribe( name, path, val.astype( Duration ).MinutesAsReal() * 60, typeof( Duration ), to_analyze );
+        }
+        else if( val.istype( Boolean ) )
+        {
+          this.Subscribe( name, path, ifexpr( val.astype( Boolean ), 1.0, 0.0 ), typeof( Boolean ), to_analyze );
+        }
+        else if( val.istype( BinaryValue ) )
+        {
+          bin_value := val.astype( BinaryValue );
+          
+          real_vector := guard( RealVector::Construct( bin_value ), null( RealVector, owning ) );
+          if( not isnull( real_vector ) )
+          {
+            for( i := 0; i < real_vector.Size(); i++ )
+            {
+              this.Subscribe( name + '[' + [String] i + ']', path, real_vector.Get( i ), typeof( RealVector ), to_analyze );
+            }
+          }
+        }
+      }
+    }
+    
+    traverse( snapshot, Children, child, not child.istype( LibOpt_SnapshotComponent ) )
+    {
+      this.Subscribe( child, path + '.' );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetMaturityStatus () as String
+{
+  Description: '3DSpace specific. Evaluates current external work order and return Scheduler feedback equivalent 3DSpace maturity status.'
+  TextBody:
+  [*
+    maturity := Constants::MaturityStatus_FIRM();
+    isAllOperationCancelledAborted := forallexists( this, Order_SC.PlanUnit_SC.Operation_SC, op, op.HasBeenCancelled() or op.HasBeenAborted() );
+                                             
+    if( this.CheckHasAllOperationEnded() ) // Check all ENDED
+    {
+      maturity := Constants::MaturityStatus_COMPLETED();
+    }
+    else if( isAllOperationCancelledAborted ) // Check all CANCELLED or ABORTED
+    {
+      maturity := Constants::MaturityStatus_CANCELLED();
+    }
+    else if( not this.CheckHasNoOperationFeedback() ) // Check whether any other feedback eg STARTED
+    {
+      maturity := Constants::MaturityStatus_WORK_IN_PROGRESS();
+    }
+    
+    return maturity;
+  *]
+}

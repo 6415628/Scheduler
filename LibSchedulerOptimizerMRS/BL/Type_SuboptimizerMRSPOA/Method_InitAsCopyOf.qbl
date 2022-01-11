@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride InitAsCopyOf (LibOpt_Component original)
+{
+  TextBody:
+  [*
+    // mbr23, 2019-09-20 (overridden)
+    
+    // copy the original's custom type-indexed objects (OperationInSuboptimizer, TransferMaterialInSuboptimizer):
+    original_typed := original.astype( SuboptimizerMRSPOA );
+    
+    traverse( original_typed, OperationInSuboptimizer, child_original )
+    {
+      OperationInSuboptimizer::CreateAsCopyOf( this, child_original );
+    }
+    
+    traverse( original_typed, TransferMaterialInSuboptimizer, child_original )
+    {
+      // TransferMaterialInSuboptimizer objects are created OnCreate of OperationInSuboptimizer, so only create them if they don't yet exist:
+      TransferMaterialInSuboptimizer::FindOrCreate( this, child_original.OperationMaterial() );
+      // all other info on TransferMaterialInSuboptimizer that is not set on creation is declarative, so no need to copy anything else.
+    }
+  *]
+}

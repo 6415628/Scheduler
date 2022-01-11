@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update (ImportedTimePeriod importedTimePeriod)
+{
+  Description: 'Update based on 3DSpace time periods.'
+  TextBody:
+  [*
+    // We take from imported data because at this point schedule time isn't synchronized yet
+    scheduleTime := importedTimePeriod.Schedule().ImportedPlanningConfiguration().UserTime();
+    start := Constants::GetWeekDayInSameWeek( scheduleTime, importedTimePeriod.StartDay() ) + Duration::Seconds( importedTimePeriod.StartTime() );
+    end := Constants::GetWeekDayInSameWeek( scheduleTime, importedTimePeriod.EndDay() ) + Duration::Seconds( importedTimePeriod.EndTime() );
+    
+    // This only happens if the start' day of week is greater than the end' day of week
+    if( start >= end )
+    {
+      end := end + Duration::Weeks( 1 );
+    }
+    
+    // Time periods only include open periods
+    this.SetTypeAvailable()
+        .SetStart( start )
+        .SetEnd( end )
+        .SetRecurrencePeriodWithoutEnd( start.Date() );
+    
+    this.UpdateCalendar();
+    
+    this.ImportedTimePeriod( relset, importedTimePeriod );
+  *]
+}

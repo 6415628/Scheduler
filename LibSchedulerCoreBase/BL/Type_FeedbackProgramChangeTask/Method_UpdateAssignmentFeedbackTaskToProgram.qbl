@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateAssignmentFeedbackTaskToProgram
+{
+  Description: 'Determine tasks that are assigned to the program change'
+  TextBody:
+  [*
+    // When we update start / end time of program change task, we will need to recalculate the assigned program on task
+    feedbackManager := this.FeedbackManager();
+    
+    if( not isnull( feedbackManager ) and
+        guard( not feedbackManager.Schedule().TechnicalConfiguration().IsImportRelationBetweenFeedbackTaskAndProgram(), false ) )
+    {  
+      // Propagate end of program change task to allow assigning tasks into program change
+      Transaction::Transaction().Propagate( attribute( FeedbackProgramChangeTask, End ) );
+        
+      resource := this.Resource_SC();
+      feedbacktasksinresource := selectset( resource, FeedbackTaskInSchedule, ftis, not ftis.HasUserReportedProgram() );
+    
+      traverse( feedbacktasksinresource, Elements, feedbacktask )
+      {
+        feedbackManager.ManualAssignFeedbackTaskToProgram( resource, feedbacktask );
+      }
+    }
+  *]
+}

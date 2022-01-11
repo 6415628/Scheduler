@@ -1,0 +1,58 @@
+Quintiq file version 2.0
+#parent: SCListCampaigns
+Response OnClick (structured[CampaignTask] selection) id:Response_SCListCampaigns_MenuMoveDown4_OnClick
+{
+  #keys: '[11790.0.11550647]'
+  Body:
+  [*
+    // MoveDown structured[CampaignTask]
+    
+    CampaignTask::MoveCampaignTasksDown( selection );
+  *]
+  DefinitionID => //FilteredList/Responsedef_FilteredList_Menu_OnClick
+  Initiator: 'MenuMoveDown4'
+  Precondition:
+  [*
+    // Edited by Yong Guo Zhuang, 18-JUL-2016, Move precondition to editor.
+    /*
+    lasttask := select( selection, Elements, element, isnull( element.NextCampaignTask() ) );
+    value    := isnull( lasttask );
+    
+    if( not value )
+    {
+      feedback := Translations::SC_SelectionAlreadyAtLastPosition( CampaignTask::GetIdentifier( lasttask ));
+    }
+    else
+    {
+      isallowedhard   := true;
+      operations      := selectset( selection, Elements.TaskInCampaign.OperationInTask, op, true );
+      resource        := selection.Element( 0 ).Resource_SC();
+      value           := Operation_SC::CanReplan( operations, false, feedback, isallowedhard );
+    
+      if( resource.istype( SingleResourceBase ) )
+      {
+        value := resource.astype( SingleResourceBase).AllowedScheduling( selection, //structured[CampaignTask]
+                                                                     false, //skipsoftcheck
+                                                                     false, //ctrlshiftkey
+                                                                     true, //movedown
+                                                                     feedback,
+                                                                     isallowedhard ) and value;
+      }
+      else
+      {
+        value := resource.astype( BatchResource ).AllowedScheduling( selection,  //structured[CampaignTask]
+                                                                     false, //skip soft check
+                                                                     true, //move down
+                                                                     feedback,
+                                                                     isallowedhard ) and value;
+      }
+    }
+    
+    feedback := Translations::SC_CannotBeMovedDown( CampaignTask::GetSelectedObjects( selection ) )
+                + String::NewLine()
+                + feedback;
+    */
+    value := CampaignTask::AllowedMoveDown( selection, feedback );
+    return value;
+  *]
+}

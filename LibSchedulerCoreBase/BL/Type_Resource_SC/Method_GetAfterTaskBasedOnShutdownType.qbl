@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAfterTaskBasedOnShutdownType (Task_SC aftertask) declarative remote as Task_SC
+{
+  Description:
+  [*
+    Get after task based on shutdown type. 
+    Only used during sequencing rules to get the right after task
+  *]
+  TextBody:
+  [*
+    // Get after task based on shutdown type
+    
+    task := aftertask;
+    
+    // Checks whether aftertask is stoppage task, if yes, then need to update aftertask based on shutdown type configuration
+    if( guard( aftertask.IsStoppageTask(), false ) )
+    { 
+      stoppagetask := aftertask.astype( StoppageTask );
+      if( forallexists( stoppagetask, PreviousNonStoppageTask.NextStoppageTask.Shutdown.ResponsibleShutdownType, st, true, st.IsSequenceRulesEnabled() ) )
+      { 
+        task := guard( stoppagetask.PreviousNonStoppageTask().LastInStoppageSequence().Next(), null( Task_SC ) );
+      }
+    }
+    
+    return task;
+  *]
+}

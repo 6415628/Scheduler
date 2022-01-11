@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsNotAtLastPosition (ProgramPhaseConfigurations programphaseconfigurations) remote as Boolean
+{
+  Description: 'Perform checking whether all selected phases are not at last position'
+  TextBody:
+  [*
+    // Perform checking whether all selected phases are not at last position
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    lastposition := select( programphaseconfigurations, Elements, e, not isnull( e.AsLast() ) );
+    
+    value := isnull( lastposition );
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      feedbackobject.AddHard( Translations::ProgramPhaseConfiguration_AlreadyAtLastPosition( lastposition.ProgramPhaseConfigurationID() ) );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

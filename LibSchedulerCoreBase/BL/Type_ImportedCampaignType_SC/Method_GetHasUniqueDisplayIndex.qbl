@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasUniqueDisplayIndex (output Strings feedback_o) declarative as Boolean
+{
+  Description: "Check if imported campaign type's display index is unique"
+  TextBody:
+  [*
+    // James Kwapien Jan-16-2017 (created)
+    name := this.Name();
+    resourcegroup := this.ResourceGroup();
+    displayindex := this.DisplayIndex();
+    isvalid := counter( this.ImportedResourceGroup_SC(), ImportedCampaignType_SC, ict, true, ict.DisplayIndex() = displayindex ) = 1;
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedCampaignType_Instance( name, resourcegroup, displayindex ),
+                                                               Translations::SC_ImportedCampaignType_ViolateHasUniqueDisplayIndex() ));
+    }
+    
+    return isvalid;
+  *]
+}

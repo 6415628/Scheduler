@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestFeedbackProgramRule_Setup (Schedule schedule)
+{
+  Description: 'Test feedback program rule - setup'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    ruleScope := '';
+    ruleSubtype := '';
+    characteristic := '';
+    isProgramTypeNoViolated := false;
+    isProgramPhaseHeadNoViolated := false;
+    isProgramPhaseTailNoViolated := false;
+    isfeedbackstarted := false;
+    isTask2NoViolated := false;
+    isTask3NoViolated := false;
+    
+    this.GetTestVariantForFeedbackProgram( isvariantfound, 
+                                           ruleScope,
+                                           ruleSubtype,
+                                           characteristic,
+                                           isProgramTypeNoViolated,
+                                           isProgramPhaseHeadNoViolated,
+                                           isProgramPhaseTailNoViolated,
+                                           isfeedbackstarted,
+                                           isTask2NoViolated,
+                                           isTask3NoViolated );
+    
+    if( isvariantfound )
+    {
+      // Initialize rule framework and characteristic
+      schedule.InitializeRuleFramework();
+      schedule.InitializeCharacteristic();
+      
+      // Create program scheduling data
+      // Plan all operations
+      programDefConfig := this.CreateProgramSchedulingData( schedule );
+      
+      // Create transition rule
+      this.CreateProgramPhaseTransitionRule( schedule );
+      
+      // Create rule based on variant
+      this.CreateRule( schedule, ruleScope, ruleSubtype, characteristic, programDefConfig );
+          
+      // Create feedback program 
+      this.CreateProgramSchedulingFeedbackData( schedule );
+    }
+    
+    // Gantt chart
+    //                           |------   HEAD  -----   |-TAIL--|
+    // FeedbackProgramChangeTask | Task0 | Task1 | Task2 | Task3 |
+  *]
+}

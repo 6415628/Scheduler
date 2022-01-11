@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoOnDelete
+{
+  TextBody:
+  [*
+    // Delete BatchTask
+    if( not isnull( this.BatchTask() ) )
+    {
+      if( this.BatchTask().Resource_SC().IsPlanRelatedOperations() )
+      {
+        // Unplan related operations
+        traverse( this, BatchTask.OperationInTask, op )
+        {
+          op.UnplanRelatedOperations();
+        }
+      }
+      
+      if( not isnull( this.BatchTask() ) )
+      {
+        this.BatchTask().Unplan();
+      }
+    }
+  *]
+}

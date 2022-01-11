@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method Run (LibOpt_Component component) id:Method_LibOpt_GlobalState_Run
+{
+  #keys: '[144996.0.1717284615]'
+  Body:
+  [*
+    // Start a new Run
+    
+    if ( this.StartNewRunChecks( null( LibOpt_Optimizer ), component.Run() ) )
+    {
+      dlg := construct( LibOpt_DialogScopeElements );
+    
+      scope_elements := null( LibOpt_ScopeElements );
+    
+      if( dlg.Open( this, component.Run(), scope_elements ) )
+      {
+        run := null( LibOpt_Run );
+    
+        try
+        {
+          run := component.Run().CopyAndStart( component, scope_elements );
+        }
+        onerror
+        {
+          run := component.Run().RecoverLastFailedRunInOptimizer();
+        }
+    
+        this.Select( run );
+      }
+    }
+  *]
+}

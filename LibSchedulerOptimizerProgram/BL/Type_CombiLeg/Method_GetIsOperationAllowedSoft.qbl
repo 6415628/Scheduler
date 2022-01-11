@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetIsOperationAllowedSoft (Operation_SC op) as Boolean
+{
+  TextBody:
+  [*
+    // zyi1 Jul-22-2021 (created)
+    value := true;
+    
+    candidaterules := selectset( this, CombiLegOnCombiPhase.PPCOnResource.RuleOnPPCOnResource.Rule, rule, true );
+    
+    //add shutdown rules   
+    shutdownrules := selectset( this, Leg.RuleInLeg.Rule, rule, true );  
+    candidaterules := candidaterules.Union( shutdownrules );
+    
+    traverse( candidaterules,
+              Elements,
+              rule,
+              not rule.IsHardConstraintForOptimizer() 
+              and not rule.RuleSubType().IsCumulativeValueNeeded()
+              and not rule.RuleSubType().IsCheckOnPreviousOperation() )
+    {
+      value := value and rule.RuleSubType().Validate( rule, null( Operation_SC), op );
+    }
+    
+    return value;
+  *]
+}

@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: ListLibOpt_AnalysisCorrelation/DataHolderAnalysis
+Response OnDataChanged () id:Response_ListLibOpt_AnalysisCorrelation_DataHolderAnalysis_OnDataChanged
+{
+  #keys: '[139164.4.1718246884]'
+  Body:
+  [*
+    selected := DataHolderSelected.Data()
+    
+    // Re-select the same attributes when the analysis changed.
+    if( selected.Size() > 0 )
+    {
+      selected_names := selectvalues( selected, Elements, sel_corr, true, sel_corr.Name() );
+      set := selectset( DataHolderAnalysis.Data(), Elements.AnalysisCorrelation, corr,
+                        selected_names.Find( corr.Name() ) >= 0 );
+      if( set.Size() > 0 )
+      {
+        ListLibOpt_AnalysisCorrelation.SelectByKey( set.First().Key() );
+        traverse( set.SelectLast( set.Size() - 1 ), Elements, corr )
+        {
+          ListLibOpt_AnalysisCorrelation.ExtendSelectByKey( corr.Key() );  
+        }
+      }
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIComponent_OnDataChanged'
+}

@@ -1,0 +1,132 @@
+Quintiq file version 2.0
+#parent: CustomDrawTimeConstraintVisualization_384/CustomDrawDataLayerOperation
+Response OnDrawObject (shadow[CustomDrawNodeOperation] object) id:Response_CustomDrawTimeConstraintVisualization_384_CustomDrawDataLayerOperation_OnDrawObject
+{
+  #keys: '[142956.3.530777510]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebCustomDrawDataLayer_OnDrawObject'
+  QuillAction
+  {
+    Body:
+    [*
+      // Draw CustomDrawNodeOperation
+      
+      // Drawing parameters, node label, node title, label width, title width
+      config := Schedule.CustomDrawConfiguration();
+      if( not isnull( config ) )
+      {
+        rectWidth := config.RectWidth();
+        rectHeight := config.RectHeight();
+        nodeSize := config.NodeSize();
+        operation := object.Operation_SC();
+        nodetitle := '';
+        nodelabel := operation.WorkOrderId().Concat( '-' ).Concat( [String]operation.SequenceNr() );
+        
+        // The operation type is capped at maximum 12 characters.
+        // If more than 12 characters, add "..." in the end.
+        nodelabelOperationType := ifexpr( operation.Type().TrimBoth().Length() >=12,
+                                          operation.Type().SubString( 0, 12 ).Concat( "..." ),
+                                          operation.Type() );
+        
+        // Text width, derived from horizontal offset
+        rectX := region.BoundingRect().Left();
+        rectY := region.BoundingRect().Top();
+        rectMiddleX := floor( rectX + ( rectWidth / 2 ) );
+        rectMiddleY := floor( rectY + ( rectHeight / 2 ) );
+        imageX := floor( rectMiddleX - ( nodeSize / 2 ) ); // Middle of rect offset with half of image size
+        imageY := floor( rectMiddleY - ( nodeSize / 2 ) - ( rectHeight / 3.5 ) ); // Middle of rect offset with half of image size, offset with quarter of rect height to put it above text
+        
+        // Draw node
+        rect := Shape::Rect( rectX, 
+                             rectY, 
+                             rectWidth, 
+                             rectHeight );
+        surface.Fill( rect );
+        surface.Draw( rect );
+         
+        // Update pen parameters
+        surface.Font().Name( config.FontName() )
+                      .Size( config.FontSize() );
+        surface.TextColor( Color::Black() );
+        
+        // Draw text
+        if( object.IsRoot() )
+        {
+          surface.TextColor( ColorScheme.TimeConstraintVisualization_RootNode() );
+          surface.Font().Bold( true );
+        }
+        /*
+        // For node title, we define a region above the top of the node
+        // then align it bottom, so that the text sticks to the top of the node
+        // Draw node title
+        surface.TextZoom( region.BoundingRect().Left() + textOffsetX, // X
+                          region.BoundingRect().Top() - textHeight,   // Y
+                          textWidth,                   // Width
+                          textHeight,                  // Height
+                          nodetitle,                   // Text
+                          textformat );                // Text format
+        */
+                       
+        // Draw node label
+        
+        // Text drawn at top of rectangle
+        textFormat := TextFormat::Construct( TextFormat::AlignCentered(), TextFormat::WrapWords() );
+        surface.TextZoom( rectX,
+                          rectY  - nodeSize,
+                          rectWidth,                   
+                          rectHeight,
+                          nodelabelOperationType,
+                          textFormat );
+                          
+        // Text drawn in middle of rectangle
+        textFormat := TextFormat::Construct( TextFormat::AlignCentered(), TextFormat::WrapWords() );
+        surface.TextZoom( rectX + nodeSize,
+                          rectY,
+                          rectWidth - 2*nodeSize,                   
+                          rectHeight,                  
+                          nodelabel,
+                          textFormat );
+        
+        // Draw indication for stream limit hit
+        isUpstreamLimitHit := object.IsUpstream() and object.IsDepthLimitMet();
+        isDownstreamLimitHit := not object.IsUpstream() and object.IsDepthLimitMet();
+        
+        // Special handling for root
+        if( object.IsRoot() )
+        {
+          isUpstreamLimitHit := config.UpstreamDepthLimit() = 0 
+                                and Form.GetInputOutputs( operation, true /*isupstream*/ ).Size() > 0;
+          isDownstreamLimitHit := config.DownstreamDepthLimit() = 0 
+                                  and Form.GetInputOutputs( operation, false /*isupstream*/ ).Size() > 0 ;                                                                        
+        }
+        
+        if( isUpstreamLimitHit )
+        {
+          surface.Font().Bold( true );
+          surface.TextColor( ColorScheme.TimeConstraintVisualization_Edge() );
+          // Text drawn in outside LEFT of rectangle      
+          surface.TextZoom( rectX + 2 * -rectWidth,
+                            rectY,
+                            rectWidth,
+                            rectHeight,
+                            '...',
+                            textFormat );
+        }
+        
+        if( isDownstreamLimitHit )
+        {
+          surface.Font().Bold( true );
+          surface.TextColor( ColorScheme.TimeConstraintVisualization_Edge() );
+          // Text drawn in outside RIGHT of rectangle   
+          surface.TextZoom( rectX + 2 * rectWidth,
+                            rectY,
+                            rectWidth,
+                            rectHeight,
+                            '...',
+                            textFormat );
+        }
+      }
+    *]
+    GroupServerCalls: false
+  }
+}

@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateBatchAssignOperationsPlanBatch (Operation_SCs operations, BatchTask beforetask)
+{
+  Description: 'Create a new batch, assign operations to it and plan the batch.'
+  TextBody:
+  [*
+    //ISD-SC - C21. Issue 4304 - Multiple tasks are created based on the allowed rules is not correct.
+    //This method should create 1 batch and all the ops should be batched together.
+    
+    // Unplan all previously planned operations
+    if( exists( operations, Elements, operation,
+                operation.IsPlanned() or operation.PlannedInBatch() ) )
+    {
+      traverse( operations, Elements, operation )
+      {
+        operation.Unplan();
+      }
+      
+      // Propagate to recalculate declarative attributes on operations
+      Transaction::Transaction().Propagate();
+    }
+    
+    if( operations.Size() > 0 )
+    {
+      firstoperation := operations.Element( 0 );
+      //Create the batch
+      batch := Batch::Create( this.Schedule(), firstoperation.Type() );
+      //Remove batch operations from its existing batch (if any)
+      traverse( operations, Elements, op, not isnull( op.BatchSequenceElement() ) )
+      {
+        op.RemoveFromBatch();
+      }
+      //Add these operations to batch
+      batch.AddOperations( operations );
+      
+      if(  this.IsPlanRelatedOperations() )
+      {
+        traverse( batch, BatchSequenceElement.Operation_SC, o )
+        {
+          Schedule::PlanRelatedOperationsAfter( o, this, beforetask, false, false );
+        } 
+      }
+    
+      //Plan the batch
+      beforetask := this.PlanAfter( batch, beforetask );
+    }
+  *]
+}

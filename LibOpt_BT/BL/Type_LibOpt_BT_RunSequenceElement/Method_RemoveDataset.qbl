@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method RemoveDataset (LibOpt_Optimization optimization) as stream[Void]
+{
+  Description: 'Backup the dataset to a file on the disk. Then remove the dataset.'
+  TextBody:
+  [*
+    // afn3 Oct-18-2019 (created)
+    storageEditor   := MDSStorageEditor::Editor();
+    editor          := MDSEditor::Editor();
+    mdsid           := MDSID::Create( optimization.MDSID() );
+    mdsInfo         := editor.LoadedObjectInfo( mdsid );
+    
+    result := stream[Void]::Success();
+    if ( not isnull( mdsInfo ) )
+    {
+      bts := this.BTS();
+      dataset := this.RunSequence().BenchmarkTrackingDataset();
+      dataset.SyncDatasetBackupSettings();
+      if( dataset.HasDatasetBackup() and not isnull( bts ) )
+      {
+        foldername := bts.GetDatasetPath();
+        original_dataset_state := mdsInfo.State();
+        if ( not original_dataset_state = MDSInterface::StandAloneStorageState() )
+        { 
+          result := DatasetController::Change( mdsInfo.MDSID().MDSKey(), DatasetState::StandAloneStorage() )->|this->RemoveDataset( optimization );
+        }
+        else
+        {
+          if( not OS::IsDirectory( foldername ) )
+          {
+            OS::CreateDirectory( foldername );
+          }
+          
+          ids := MDSIDs::Create();
+          ids.Add( mdsid );
+          storageEditor.CreateDBExportFile( foldername , "QDB", ids ); //backup 
+          
+          bts.HasDatasetBackup( true );
+          
+          //remove
+          editor.UnloadMDS( mdsid  )
+          editor.DeleteMDS( mdsid );
+        }
+      }
+      else
+      {
+        //remove
+        editor.UnloadMDS( mdsid );
+        editor.DeleteMDS( mdsid );
+      }
+    }
+    return result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

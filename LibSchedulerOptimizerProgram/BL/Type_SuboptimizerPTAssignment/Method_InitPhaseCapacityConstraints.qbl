@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPhaseCapacityConstraints (LibOpt_Task task, ProgramTypeConfiguration programType, PTAssignmentBucket bucket, 
+  SuboptimizerMPPTAssignment_PTAssignmentMP program, TransientDataSuboptimizerPTAssignment transientData, Boolean isHardConstraint) as SuboptimizerMPPTAssignment_PTAssignmentMP
+{
+  TextBody:
+  [*
+    // jkr8 Sep-6-2021 (created)
+    
+    
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // sum_o ( capfactor_(o,r) * NrOpsAssignedToType_(o,t,b) + PhaseSlackVariable_(t,b,r) >= Capacity_r * IsProgramAssigned_(t,b), forall t in Leadingprogramset, b in buckets, r in Min Capacity Rules//
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Each phase must have enough compatible operations assigned to it. These constraints make sure that the program type that will be chosen must have enough compatible operations such that all phases can be filled.
+    
+    rules := selectset( programType, ProgramPhaseConfiguration.RuleScopeInProgramPhase.Rule, rule, true,
+                        ( isHardConstraint xor rule.IsHardConstraintForOptimizer() ) 
+                        and rule.RuleSubType().istype( RuleSubTypeMinMaxCombinedLength )
+                        and rule.RuleSubType().astype( RuleSubTypeMinMaxCombinedLength ).IsMinimumCombinedLength() );
+    
+    traverse( rules, Elements, rule )
+    {
+      constr := program.PhaseCapacityConstraints().New( programType, bucket, rule );
+      
+      traverse( transientData, OperationGroup, operationGroup )
+      {
+        capfactor := operationGroup.GetCapacityFactor( task, rule );
+        
+        constr.NewTerm( capfactor, program.NrOpsAssignedToTypeVariables().Get( operationGroup, bucket, programType ) );
+        
+        capacity := rule.RuleValue();
+        constr.NewTerm( -capacity, program.IsProgramAssignedVariables().Get( programType, bucket ) );
+        
+        //These constraints only apply to min capacity constraints.
+        constr.Sense( ">=" ); 
+        
+        if( isHardConstraint ) 
+        {
+          constr.NewTerm( 1.0, program.PhaseCapacitySlackHardVariables().Get( programType, bucket, rule ) );
+        }
+        else
+        {
+          constr.NewTerm( 1.0, program.PhaseCapacitySlackSoftVariables().Get( programType, bucket, rule ) );
+        }
+        
+        constr.RHSValue( 0.0 );
+      }
+    }
+              
+    return program
+  *]
+}

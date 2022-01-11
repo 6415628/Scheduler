@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateDuration () id:Method_LibCal_dlgEvent_UpdateDuration
+{
+  #keys: '[131094.0.992053406]'
+  Body:
+  [*
+    duration := Duration::Zero();
+    timezone := TimeZone::UTCTimeZone();  // Use the UTC-timezone here, don't correct for a specific timezone.  
+    
+    // Always use the controls on pnlIsNotRecurring for calculating the duration, also in case of recurrence. 
+    // These controls are always kept up-to-date, also when the time-controls on pnlIsRecurring are changed.
+    if( datStartDate.Date().IsFinite() and durStartTimeOfDay.Duration().IsFinite() and
+        datEndDate  .Date().IsFinite() and durEndTimeOfDay  .Duration().IsFinite() )
+    {
+      // Don't use AddAsPeriod here, the 'nett' duration should be calculated here.
+      start := datStartDate.Date().Add( timezone, durStartTimeOfDay.Duration() );
+      end   := datEndDate  .Date().Add( timezone, durEndTimeOfDay  .Duration() );
+    
+      duration := end - start;
+    }
+    
+    // When running in days only mode, ceil the duration to a full day.
+    if( LibCal_Event::USE_ONLY_DAYS() )
+    {
+      duration := duration.Ceil( Duration::Days( 1 ) );
+    }
+    
+    // Update the ValueHolder, which will update the labels that show the duration.
+    vhDuration.Data( duration );
+  *]
+}

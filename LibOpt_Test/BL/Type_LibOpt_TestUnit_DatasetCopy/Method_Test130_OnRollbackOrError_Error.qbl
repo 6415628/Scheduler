@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test130_OnRollbackOrError_Error (LibOpt_TestDataset dataset)
+{
+  Description:
+  [*
+    Check if the `LibOpt_DatasetCopyOnRollbackOrError` type does not delete a dataset copy when an error occurs on a component.
+    We place a `LibOpt_DatasetCopyOnRollbackOrError` dataset copy on the 'Initialize', 'Continue' and 'Finalize' component positions of the Flow component.
+    This Flow component links to an Error component. This Error component will force an error when the `Operation` method of that component is called.
+    We also create a `LibOpt_DatasetCopyOnRollbackOrError` dataset copy on the 'Initialize' and 'HandleError' component positions of the Error component.
+  *]
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( true );
+    run := opt.CreateRun();
+    
+    // Create a Flow component and and attach a 'LibOpt_DatasetCopyOnRollbackOrError' object to the 'Initialize', 'Continue' and 'Finalize' component positions of this Flow component.
+    flowcomponent := opt.ComponentFlow( run, 'Flow', true );
+    LibOpt_TestUnit_DatasetCopy::CreateDatasetCopiesForNormalComponentPositions( flowcomponent, 
+                                                                                 // The LibOpt_DatasetCopyOnRollbackOrError type will always create a dataset copy.
+                                                                                 // This dataset copy will only be deleted if no rollbacks and no errors occur.
+                                                                                 // We will schedule an error in this unit test, so we expect that all dataset copies will be not be deleted.
+                                                                                 typeof( LibOpt_DatasetCopyOnRollbackOrError ).Name() );
+    
+    // Create a component that throws an error in the Operation method. 
+    errorcomponent := opt.ComponentError( run, 'Error', LibOpt_ComponentErrorPosition::Operation() );
+    flowcomponent.To( errorcomponent )
+    // Set a 'LibOpt_DatasetCopyOnRollbackOrError' object on the 'Initialize' and the 'Handle error' component positions. 
+    initializeposition := select( errorcomponent, ComponentPosition, position, position.Name() = LibOpt_Component::ComponentPosition_Initialize() );
+    initializeposition.SetDatasetCopy( typeof( LibOpt_DatasetCopyOnRollbackOrError ).Name() );
+    errorposition := select( errorcomponent, ComponentPosition, position, position.Name() = LibOpt_Component::ComponentPosition_Error() );
+    errorposition.SetDatasetCopy( typeof( LibOpt_DatasetCopyOnRollbackOrError ).Name() );
+    
+    streamrun := run.Start(); 
+    
+    // Wait until the run is finished.
+    str := streamrun
+    ->|stream[Void]::Wait( this.MDSEditorUpdateTime() ) // Wait some time to ensure that the dataset copies are succesfully created.
+    ->|void->()
+    {
+      traverse( run,
+                Component.ComponentPosition,
+                componentposition,
+                not isnull( componentposition.DatasetCopyConditional() ) 
+                )
+      {
+        LibOpt_TestUnit_DatasetCopy::AssertsForComponentPositionCreatedDataset( this, componentposition );
+      }
+    }
+    this.NoException( str );
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

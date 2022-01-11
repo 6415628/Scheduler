@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method ShowDuration (Duration duration_i) id:Method_LibCal_dlgEvent_ShowDuration
+{
+  #keys: '[146730.0.1288387764]'
+  Body:
+  [*
+    // Is only applicable when not running in days only mode,
+    // when running in days only more a NumberPicker is used.
+    // When the duration is one or more full days, the time should not be shown.
+    duration := duration_i;
+    hideTime := duration.HourOfDay() = 0 and duration.MinuteOfHour() = 0;
+    
+    if( not LibCal_Event::USE_ONLY_DAYS() )
+    {
+      mask := ifexpr( hideTime, "", "h:m" );
+      
+      if( abs( duration ) >= Duration::Days( 1 ) )
+      {
+        mask := "d 'day" + ifexpr( abs( duration ) >= Duration::Days( 2 ), "s'", "'" ) + "  " + mask;
+      }
+      
+      valDuration.Text( duration.Format( mask ) );
+    }
+  *]
+}

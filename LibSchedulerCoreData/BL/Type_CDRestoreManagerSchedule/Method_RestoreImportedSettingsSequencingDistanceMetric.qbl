@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedSettingsSequencingDistanceMetric (CDIntegration cdintegration, ImportedSettingsSequencing importedsettingssequencing)
+{
+  Description: 'Restore imported settings sequencing distance metric core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedSettingsSequencingDistanceMetric
+    cdimportedSettingsSequencingDistanceMetrics := selectset( cdintegration, CDEntity.astype( CDImportedSettingsSequencingDistanceMetric ), cdisdm, 
+                                                              cdisdm.SettingsId() = importedsettingssequencing.Id() 
+                                                            );
+    traverse( cdimportedSettingsSequencingDistanceMetrics, Elements, cdisdm )
+    {
+      importedSettingsSequencingDistanceMetric := importedsettingssequencing.ImportedSettingsSequencingDistanceMetric( relnew,
+                                                                                                                       SettingsId := cdisdm.SettingsId()
+                                                                                                                     );
+      CopyCorresponding::CopyFrom( cdisdm ).CopyTo( importedSettingsSequencingDistanceMetric );   
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

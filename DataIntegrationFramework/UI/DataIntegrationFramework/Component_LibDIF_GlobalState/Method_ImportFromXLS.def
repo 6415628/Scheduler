@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportFromXLS (String brokerID_i, String dataTransformationID_i, Boolean doSynchronize_i) as Boolean id:Method_LibDIF_GlobalState_ImportFromXLS
+{
+  #keys: '[146730.0.583908152]'
+  Body:
+  [*
+    // Import data from XLS.
+    success := false;
+    
+    // Ask the user for the filename.
+    filename := Application.GetOpenFileName( "xlsx" );
+    
+    if( filename <> "" )
+    {
+      // Make sure that the Integration-dataset is selected.
+      if( this.EnsureIntegrationDataset() )
+      {
+        // Convert the BinaryData to a BinaryValue so it can be passed to the Server.
+        xlsData := Application.ReadBinaryFile( filename ).AsBinaryValue();
+    
+        // Call the import broker to import the data as integration objects.
+        // Synchronize the data if applicable.
+        api := this.GetIntegrationAPI();
+        if( not isnull( api ) )
+        {
+          if( doSynchronize_i )
+          {
+            api.ImportFromXLSAndSynchronize( xlsData, brokerID_i, dataTransformationID_i );
+          }
+          else
+          {
+            api.ImportFromXLS( xlsData, brokerID_i, dataTransformationID_i );
+          }
+    
+          success := true;
+        }
+      }
+    }
+    
+    return success;
+  *]
+}

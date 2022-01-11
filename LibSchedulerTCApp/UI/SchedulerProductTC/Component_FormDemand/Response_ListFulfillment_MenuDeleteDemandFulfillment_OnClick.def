@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: ListFulfillment
+Response OnClick (structured[Fulfillment] selection) id:Response_ListFulfillment_MenuDeleteDemandFulfillment_OnClick
+{
+  #keys: '[129524.0.190086348]'
+  Body:
+  [*
+    // Delete demand fulfillments
+    value := true;  
+    feedback_o := '';
+    hasNoSoftViolation := Fulfillment::CanDeleteSoft( selection, feedback_o );
+    
+    if( not hasNoSoftViolation )
+    {
+      value := MessageBox::Question( this, feedback_o, '&Yes|&No' ) = 0
+    }
+    
+    if( value )
+    {
+      demands := selectset( selection, Elements.Demand, d, true );
+      Fulfillment::DeletePlannedFulfillment( selection, demands );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => //SplitterWndDemand_Fulfillment/ListFulfillment/Responsedef_ListFulfillment_Menu_OnClick
+  Initiator: 'MenuDeleteDemandFulfillment'
+  Precondition:
+  [*
+    return Fulfillment::CanDeleteHard( selection, feedback );
+  *]
+}

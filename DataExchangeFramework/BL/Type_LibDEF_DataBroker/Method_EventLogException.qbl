@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method EventLogException (String methodName_i, Number errorNr_i, String generalInformation_i, 
+  String detailedInformation_i, String developerInformation_i)
+{
+  Description: 'Logs runtime exception into IntegrationEvent'
+  TextBody:
+  [*
+    event := select( this, IntegrationEvent, event, not event.IsCompletedInTransaction() );
+    
+    LibDEF_Util::EventLogError( event, 
+                                this.DefinitionName() + "." + methodName_i + ": Encountered " + generalInformation_i + " exception, triggering error",
+                                "Error nr: " + [String]errorNr_i + String::NewLine()
+                                + "General information: " + generalInformation_i + String::NewLine()
+                                + "Detailed information: " + detailedInformation_i + String::NewLine()
+                                + "Developer information: " + developerInformation_i );
+  *]
+}

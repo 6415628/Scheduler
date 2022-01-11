@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method Asserts_Test040_FrozenHorizon (Schedule schedule, Operation_SCs operations, Resource_SCs resources)
+{
+  Description: 'Checks the outcome of Test040: The operation sequence is expected to be 1-10-101-103 on the casing resource and 101-10-1-103 on the insert resource.'
+  TextBody:
+  [*
+    debuginfo( schedule.MDSSchedule().Name() );
+    Transaction::Transaction().Propagate();
+    
+    // same check as for Test03x:
+    this.Asserts_Test_IsPlanned( schedule, operations, resources );
+    
+    // Additionally, assert that the operations are in the expected sequence
+    traverse( resources, Elements, resource )
+    {
+      // On the first casing resource
+      if( resource.ResourceID() = "1201" )
+      {
+        tasks := selectsortedset( resource, Task_SC.astype( SingleTaskBase ), task, true, task.SequenceNr() );
+        expectedsequence := construct( Strings );
+        expectedsequence.Add( "PU_1_000-10" );
+        expectedsequence.Add( "PU_10_000-10" );
+        expectedsequence.Add( "PU_101_000-10" );
+        UTF_Optimizer_Regression_Test_OptimizerSequencing::AssertSequence( tasks, expectedsequence, this.Run() );
+      }
+      // On the first insert bottom resource
+      if( resource.ResourceID() = "1301" )
+      {
+        tasks := selectsortedset( resource, Task_SC.astype( SingleTaskBase ), task, true, task.SequenceNr() );
+        expectedsequence := construct( Strings );
+        expectedsequence.Add( "PU_101_000-20" );
+        expectedsequence.Add( "PU_10_000-20" );
+        expectedsequence.Add( "PU_1_000-20" );
+        UTF_Optimizer_Regression_Test_OptimizerSequencing::AssertSequence( tasks, expectedsequence, this.Run() );
+      }
+      
+    }
+  *]
+}

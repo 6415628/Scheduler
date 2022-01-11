@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateProgramSchedulingFeedbackData (Schedule schedule)
+{
+  Description: 'Create program scheduling feedback test data'
+  TextBody:
+  [*
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, res, true );
+    
+    sortedprogramchanges := selectsortedset( schedule, ProgramChange, pc, true, pc.ProgramChangeID() );
+    programchangestart := schedule.Time() - Duration::Hours( 6 );
+    
+    isfirstprogramchange := true;
+    traverse( sortedprogramchanges, Elements, programchange )
+    {
+      // Create program change feedback
+      feedbackprogramchangetask := UTFMockObjectFactory::CreateFeedbackProgramChangeTask( schedule.FeedbackManager(), programchange );
+    
+      feedbackprogramchangetask.Update( programchange.ProgramChangeID(),
+                                        programchangestart,
+                                        programchangestart + Duration::Hours( 1 ),
+                                        Constants::TaskType_ProgramChange(),
+                                        resource.ResourceID(),
+                                        null( ProgramChangeTask ),
+                                        Constants::StatusEnd() );
+      
+      // Create feedback program type and program phase
+      traverse( schedule, ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration, programtypeconfig,
+                isfirstprogramchange or programtypeconfig.ProgramTypeConfigurationID() <> 'Backup program' )
+      {
+        feedbackprogramtype := FeedbackProgramType::Create( programchange,  
+                                                            programtypeconfig.ProgramDefinitionConfigurationID(),
+                                                            programtypeconfig.ProgramSetConfigurationID(),
+                                                            programtypeconfig.ProgramTypeConfigurationID(),
+                                                            programchange.ProgramChangeID() );
+        feedbackprogramtype.Update( resource.ResourceID() );
+        feedbackprogramtype.SynchronizeFeedbackProgramPhase();
+      }
+      
+      isfirstprogramchange := false;                                                                                                                                                                   
+      programchangestart := programchangestart + Duration::Hours( 5 );
+    }
+    
+    // Gantt chart
+    // |------  ------ ------ ------   FEEDBACK-- ------ ------ ------ ------| 
+    //                   |------     HEAD-----   |-TAIL--|                   |---------HEAD----------   |
+    // ProgramChangeTask | Task0 | Task1 | Task2 | Task3 | ProgramChangeTask | Task4 (Violated) | Task5 |
+  *]
+}

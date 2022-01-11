@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method SequenceByPOAOneExecution
+{
+  TextBody:
+  [*
+    // zyi1 Jul-27-2021 (created)
+    combilegs := construct( CombiLegs );
+    operations := construct( Operation_SCs );
+    optimizer := select( this, CombiProgramSet.Resource_SC.ResourceGroup_SC.Schedule.Optimization.Optimizer.Run.Component.astype( SuboptimizerPOACombiLeg ), opt, opt.IsCombiGeneration() );
+    
+    traverse( this, CombiProgramPhase.CombiLegAsLeading, cl )
+    {
+      //cl.AddAdditionalOperations( 15 );
+      combilegs.Add( cl );
+      
+      traverse( cl, OperationInCombiLeg.Operation_SC, op )
+      {
+        operations.Add( op );
+      }
+    }
+    
+    //propogate the attributes/relations which will be used in poa
+    Transaction::Transaction().Propagate( attribute( OperationInCombiLeg, IsHardTransitionRuleOk ) );
+    Transaction::Transaction().Propagate( relation( OperationInCombiLeg, LeadingOperationInCombiProgramSet ) );
+    Transaction::Transaction().Propagate( relation( OperationInCombiLeg, OperationOnResource ) )
+    
+    optimizer.SequenceCombiLeg( combilegs, operations );
+  *]
+}

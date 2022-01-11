@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckBatchingSize (Operation_SCs operations, Boolean skipsoftcheck, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Check can the number of selected operations fit inside the shared resources.'
+  TextBody:
+  [*
+    value := true;
+    
+    if( not skipsoftcheck )
+    {
+      // Select all allowed resources from the operations
+      allBatchResources := selectset( operations, Elements.AllowedOperationOnResource.Resource_SC.astype( BatchResource ), batchResource,
+                                      true );
+      
+      // Select resource that is being shared by all operations with highest max batch size
+      commonResource := maxselect( allBatchResources, Elements, batchResource,
+                                   forall( operations,
+                                           Elements,
+                                           operation,
+                                           exists( operation, AllowedOperationOnResource.Resource_SC.astype( BatchResource ), operationBatchResource,
+                                                   operationBatchResource = batchResource ) ),
+                                   batchResource.MaximumBatchSize() );
+      
+      // Added guard to prevent selected operations do not have common resource
+      maximumBatchSize := guard( commonResource.MaximumBatchSize(), Real::MinReal() );
+      
+      value := operations.Size() <= maximumBatchSize;
+      
+      if( not value )
+      {
+        errorMessage := ifexpr( maximumBatchSize = Real::MinReal(),
+                                Translations::SC_OperationsDoNotShareCommonResource(),
+                                Translations::SC_NrOfOperationsExceedMaxBatchSize( maximumBatchSize ) );
+        
+        feedback_o := feedback_o
+                      + String::NewLine()
+                      + errorMessage;
+      }
+    }
+    
+    return value;
+  *]
+}

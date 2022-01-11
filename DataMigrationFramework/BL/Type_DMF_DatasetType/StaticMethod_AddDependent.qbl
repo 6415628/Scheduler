@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod AddDependent (DMF_ConvertorDataset dmf_i, String datasetTypeName_i, String dependentName_i)
+{
+  Description: 'Helper method to configure the dependency of one core dataset to another. The user should be careful not to configure any circular dependencies, as it could result in unexpected behaviors'
+  TextBody:
+  [*
+    // Only handle dataset types that weren't filtered out
+    excludedTypes         := dmf_i.LastExcludeTypeFilter().Tokenize( "," );
+    isDatasetTypeIncluded := excludedTypes.Find( datasetTypeName_i ) = -1;
+    
+    if( isDatasetTypeIncluded )
+    {
+      //create among between dataset type
+      feedback := FeedbackObject::LocalFeedback();
+      
+      feedback.EnableLocalFeedbackText();
+      
+      datasetType          := DMF_DatasetType::FindDatasetTypeTypeIndex( datasetTypeName_i );
+      datasetTypeDependent := DMF_DatasetType::FindDatasetTypeTypeIndex( dependentName_i );
+      canAddDependent      := DMF_DatasetType::CanAddDependent( datasetType, datasetTypeName_i, datasetTypeDependent, dependentName_i );
+      
+      if( canAddDependent )
+      {
+        DMF_DatasetTypeDependent::FindCreateDatasetTypeDependent( datasetType, datasetTypeDependent );
+      }
+      else
+      {
+        DMF_Utility::LogError( feedback.Feedback() );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

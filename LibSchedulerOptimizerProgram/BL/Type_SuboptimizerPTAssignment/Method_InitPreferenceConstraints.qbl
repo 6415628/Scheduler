@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPreferenceConstraints (LibOpt_Task task, SuboptimizerMPPTAssignment_PTAssignmentMP program, TransientDataSuboptimizerPTAssignment transientData) as SuboptimizerMPPTAssignment_PTAssignmentMP
+{
+  TextBody:
+  [*
+    // jkr8 Jul-16-2021 (created)
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Preference_(o,b) >= sum_t preferenceCost_(o,t) * NrOpsAssignedToType_(o,t,b), forall o in OperationGroups, b = 1,...,B //
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Calculate the preference costs that are related to operations that are planned on an operation type.
+    
+    traverse( transientData, OperationGroup, operationGroup, true ) 
+    {
+      traverse( transientData, Bucket, bucket, true )
+      {
+        constr := program.PreferenceConstraints().New( bucket, operationGroup );
+        
+        constr.NewTerm( 1.0, program.PreferenceVariables().Get( operationGroup, bucket ) );
+        
+        traverse( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, programType )
+        {
+          preference := operationGroup.GetPreferenceCosts( programType );
+          constr.NewTerm( -preference, program.NrOpsAssignedToTypeVariables().Get( operationGroup, bucket, programType ) );
+        }
+        
+        constr.RHSValue( 0.0 );
+      }
+    }
+    
+    return program;
+  *]
+}

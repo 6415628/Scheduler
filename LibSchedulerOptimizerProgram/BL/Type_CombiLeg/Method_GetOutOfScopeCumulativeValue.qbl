@@ -1,0 +1,85 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetOutOfScopeCumulativeValue (Characteristic characteristic, Boolean isminrule, ProgramSetConfiguration programsetconfig, 
+  Boolean isphaserule, Operation_SCs operations, CombiLegs combilegs) as Real
+{
+  TextBody:
+  [*
+    value := 0.0;
+    
+    // Check if this combileg is the first combileg in scope of its program type that is related to the input programset
+    isfirstinprogram := not exists( combilegs, Elements, scope_combileg,
+                                    // scope combileg must be before this combileg
+                                    scope_combileg.SequenceNr() < this.SequenceNr()
+                                    // this combileg belongs to a combiprogramtype that is part of the input program set
+                                    and this.GetIsSameProgram( scope_combileg, programsetconfig ) );
+    
+    // If this was the first in the program it is automatically the first in the phase
+    isfirstinphase := isfirstinprogram
+                      // or if there is no other combileg in scope part of the same phase
+                      or not exists( combilegs, Elements, scope_combileg,
+                                    // scope combileg must be before this combileg
+                                    scope_combileg.SequenceNr() < this.SequenceNr()
+                                    // this combileg belongs to a combiprogramtype that is part of the input program set
+                                    and this.GetIsSamePhase( scope_combileg, programsetconfig ) );
+    
+    // Only add the cummulative out of scope value for the first combileg of the programtype/phase belonging to this program set configuration                                                  
+    if( isfirstinprogram
+        or ( isfirstinphase and isphaserule ) )
+    {
+      // Select the last frozen operation of this leg
+      // This operation is out of scope of the optimizer (if it is frozen in schedule but in scope, POA will still consider it as a frozen node)
+      lastoosoperation := maxselect( this, OperationInCombiLeg, oic,
+                                     not exists( operations, Elements, operation,
+                                                 oic.Operation_SC() = operation ),
+                                     oic.EndTime() );
+      
+      // If all operations of this combileg are in scope
+      if( isnull( lastoosoperation )
+          // and there is a previous combileg
+          and not isnull( this.Previous() )
+          // and either the previous combileg is part of the same phase (of the input programsetconfig) as this combileg
+          and ( this.GetIsSamePhase( this.Previous(), programsetconfig )
+                // Or this is not a phase rule and the previous combileg is part of the same program (of the input programset) as this combileg
+                or ( not isphaserule
+                     and this.GetIsSameProgram( this.Previous(), programsetconfig ) ) ) )
+      {
+        // then select the last operation of the previous combileg
+        // combi generation mode, if not first combileg in programtype, should go in here
+        // otherwise lastoosoperation would be null and value would be 0.0
+        lastoosoperation := this.Previous().LastOperation();
+      }
+      
+      // If there was a last out of scope op on this leg, then get the current cummulative value 
+      if( not isnull( lastoosoperation ) )
+      {
+        // ADSC-26441: this GetRuleDataObjectForConstraintPrecondition needs to also consider stuff that is out of scope of the optimizer and/or feedback and/or archived;
+        lastopinset := select( lastoosoperation, OperationInCombiProgramSet, oicps, true );
+        dataobj := lastopinset.GetRuleDataObjectForConstraintPrecondition( characteristic, isphaserule, 0.0 ); 
+        value := dataobj.CurrentRealValue();
+      }
+      
+      // Add the cummulative value of the out of scope operations that are after this last frozen op
+      nextcombileg := this.Next();
+      while( not isnull( nextcombileg )
+             // consider the next leg as long is it is part of the same program for a program rule
+             and ( ( not isphaserule
+                     and this.GetIsSameProgram( nextcombileg, programsetconfig ) )
+                   // or part of the same phase for a phase rule
+                   or ( isphaserule
+                        and this.GetIsSamePhase( nextcombileg, programsetconfig ) ) ) )
+      {
+        // Add the value of all operations that are out of scope on the relevant combilegs 
+        traverse( nextcombileg, OperationInCombiLeg, oic,
+                  not exists( operations, Elements, operation,
+                              oic.Operation_SC() = operation ) )
+        {
+          value := value + oic.Operation_SC().GetCharacteristicRealValue( characteristic );
+        }
+        nextcombileg := nextcombileg.Next();
+      }
+    }
+    
+    return value;
+  *]
+}

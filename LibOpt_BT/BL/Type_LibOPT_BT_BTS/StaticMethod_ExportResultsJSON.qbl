@@ -1,0 +1,122 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ExportResultsJSON (const constcontent LibOpt_BT_BTSs elements) as owning JSON
+{
+  Description: 'Export the results of the given BTS instances to JSON.'
+  TextBody:
+  [*
+    sorted := selectsortedset( elements, Elements, elem, true, elem.FinishedOn() );
+    
+    json_group := JSON::Object();
+    json_group.Add( 'name', 'Benchmarks' );
+    json_group.Add( 'description', 'The benchmarks that were executed' );
+    json_group.Add( 'parameters', JSON::Array() );
+    
+    json_tests := JSON::Array();
+    traverse( sorted, Elements, elem )
+    {
+      json_parameters := JSON::Array();
+      
+      settings := elem.TrackingTableCell().Table().Dataset().GetSynchronizedSettings();
+      elem.TrackingTableCell().ApplySettings( settings );
+      
+      LibOpt_BT_BTS::ExportResultsJSON_Settings( settings, settings.Root(), '', json_parameters );
+      
+      json_results := JSON::Array();
+      traverse( elem, KPI, kpi )
+      {
+        json_result := JSON::Object();
+        json_result.Add( 'name', kpi.KPIDefinition().Name() );
+        type := Type::Resolve( kpi.KPIDefinition().KPIType() );
+        tv := type.TypeView();
+        
+        name := kpi.KPIDefinition().Name();
+        index := name.FindString( '[', 0 );
+        if( index >= 0 )
+        {
+          name := name.SubString( 0, index );
+        }
+        attr := select( tv, Attributes, att, att.Name() = name );
+        if( not isnull( attr ) )
+        {
+          json_result.Add( 'description', attr.Description() );
+        }
+        
+        value_type := Type::Resolve( kpi.KPIDefinition().ValueType() );
+        if( value_type = typeof( Number ) )
+        {
+          json_result.Add( 'intValue', [Number] kpi.Value() );
+        }
+        else if ( value_type = typeof( Real ) )
+        {
+          json_result.Add( 'dblValue', kpi.Value() );
+        }
+        else if ( value_type = typeof( Boolean ) )
+        {
+          json_result.Add( 'boolValue', kpi.Value() > 0 );
+        }
+        
+        json_thresholds := JSON::Array();
+        
+        json_threshold_beaten := JSON::Object();
+        json_threshold_beaten.Add( 'method', 'Beaten' );
+        if( kpi.KPIDefinition().IsMinimize() )
+        {
+          json_threshold_beaten.Add( 'minimum', Real::MinReal() );
+          json_threshold_beaten.Add( 'maximum', kpi.TargetKPI().Value() );
+        }
+        else
+        {
+          json_threshold_beaten.Add( 'minimum', kpi.TargetKPI().Value() );
+          json_threshold_beaten.Add( 'maximum', Real::MaxReal() );
+        }
+        json_thresholds.Add( json_threshold_beaten );
+        
+        json_threshold_ballpark := JSON::Object();
+        json_threshold_ballpark.Add( 'method', 'Ballpark' );
+        if( kpi.KPIDefinition().IsMinimize() )
+        {
+          json_threshold_ballpark.Add( 'minimum', kpi.TargetKPI().Value() );
+          json_threshold_ballpark.Add( 'maximum', kpi.TargetKPI().Value() * ( kpi.KPIDefinition().AcceptancePercentage() + 1 ) );
+        }
+        else
+        {
+          json_threshold_ballpark.Add( 'minimum', kpi.TargetKPI().Value() / ( kpi.KPIDefinition().AcceptancePercentage() + 1 ) );
+          json_threshold_ballpark.Add( 'maximum', kpi.TargetKPI().Value() );
+        }
+        json_thresholds.Add( json_threshold_ballpark );
+        
+        json_threshold_previous_run := JSON::Object();
+        json_threshold_previous_run.Add( 'method', 'Previous run' );
+        
+        change := 0.9 + ( Real::Random() * 0.2 );
+        json_threshold_previous_run.Add( 'delta', kpi.Value() * ( change - 1 ) );
+        json_threshold_previous_run.Add( 'percentage', change * 100 );
+        json_thresholds.Add( json_threshold_previous_run );
+        
+        json_result.Add( 'thresholds', json_thresholds );
+        
+        json_results.Add( json_result );
+      }
+      
+      json_test := JSON::Object();
+      json_test.Add( 'name', elem.TrackingTableCell().GetDescription() );
+      json_test.Add( 'description', 'The run of the cell' );
+      json_test.Add( 'parameters', json_parameters );
+      json_test.Add( 'results', json_results );
+      
+      json_tests.Add( json_test );
+    }
+    
+    json_group.Add( 'tests', json_tests );
+    
+    json_groups := JSON::Array();
+    json_groups.Add( json_group );
+    
+    result := JSON::Object();
+    result.Add( "groups", json_groups );
+    
+    return result.Build();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

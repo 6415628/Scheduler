@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method ConfirmWhenDifferent () as Boolean id:Method_LibCal_dlgCalendarSettings_ConfirmWhenDifferent
+{
+  #keys: '[146730.0.1422592967]'
+  Body:
+  [*
+    // Explicit confirmation is only required when there are calendars with divergent settings,
+    // i.e. with settings that are different from the settings of the calendar of the panel.
+    calendarsToUpdate  := dhCalendars.Data();
+    divergentCalendars := this.GetDivergentCalendars( dpCalendarSettings.Data(), dhCalendars.Data() );
+    continue           := true;
+    
+    if( divergentCalendars.Size() > 0 )
+    {
+      dlg := construct( LibCal_dlgCalendarSettingsConfirmation );
+      dlg.ShowInfo( dpCalendarSettings.Data(), divergentCalendars );  // Show info about the divergent calendars.
+      
+      retVal   := dlg.DoModal( this );
+      continue := retVal >= 0;
+    
+      if( retVal = 1 )
+      {
+        // Only update calendars with the same settings, so remove the divergent calendars.
+        calendarsToUpdate := calendarsToUpdate.Difference( divergentCalendars );
+      }
+    }
+    
+    if( continue )
+    {
+      this.UpdateCalendars( calendarsToUpdate );
+    }
+    
+    return continue;
+  *]
+}

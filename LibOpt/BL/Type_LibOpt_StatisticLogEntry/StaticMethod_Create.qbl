@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (LibOpt_Run owner, Type statistictype, LibOpt_Component component, 
+  String logentrydetails) as LibOpt_StatisticLogEntry
+{
+  Description: 'Create a `LibOpt_StatisticLogEntry` instance for the given "owner" (`LibOpt_Run`).'
+  TextBody:
+  [*
+    statisticsnapshotlogentry := LibOpt_Statistic::Create( owner, statistictype,
+                                                           guard( component.Name(), Translations::LibOpt_Statistic_NoSpecificComponent() ),
+                                                           /*
+                                                             - If the given "component" is null, link this Statistic with the
+                                                               `StartComponent` of the "owner" (Run).
+                                                             - This workaround is to facilitate the display of Statistics when we apply
+                                                               filtering based on the selection of a particular Component.
+                                                             - With this relation set, the Statistic will be displayed when the
+                                                               `StartComponent` of the "owner" (Run) is selected.
+                                                           */
+                                                           ifexpr( isnull( component ), owner.StartComponent(), component )
+                                                         ).astype( LibOpt_StatisticLogEntry );
+    
+    // Set `LibOpt_StatisticLogEntry`-specific attributes.
+    statisticsnapshotlogentry.LogEntryDetails( logentrydetails );
+    
+    return statisticsnapshotlogentry;
+  *]
+}

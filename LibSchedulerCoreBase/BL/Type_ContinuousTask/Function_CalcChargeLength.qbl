@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcChargeLength
+{
+  TextBody:
+  [*
+    // jiex Nov-4-2016 (created)
+    
+    value := this.GetParallelMaxLength();    
+    lastfeedbacktask := this.Resource_SC().LastFeedbackTaskInSchedule();
+    gap := 0.0;
+    
+    if( this.IsParallelWithPrevious() )
+    {
+      if( this.IsParallelWithFeedback() )
+      {
+        gap := guard( lastfeedbacktask.ExportedGapToPrevious(), 0.0 );
+      }
+      else
+      {
+        gap := guard( this.AsFirstTaskInParallel().GapToPrevious(), 0.0 );
+      }
+    }
+    else
+    {
+      gap := this.GapToPrevious();
+    }
+    value := value + gap;
+                                              
+    this.ChargeLength( value );
+  *]
+}

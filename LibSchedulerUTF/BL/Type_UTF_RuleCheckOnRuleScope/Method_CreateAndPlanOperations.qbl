@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateAndPlanOperations (Schedule schedule, SingleResourceBase resource, DateTime shutdowstart)
+{
+  Description: 'Create and plan operations'
+  TextBody:
+  [*
+    // Create and plan operations
+    taskstart := shutdowstart + Duration::Hours( 1 );
+    
+    operation0 := this.CreateOperation( schedule, 1.0, 'operation0' );
+    operation0.Length( 1.0 );
+    task0 := resource.PlanLast( operation0 );
+    task0.astype( UTFSingleTask ).HasStartUTF( true );
+    task0.astype( UTFSingleTask ).HasEndUTF( true );
+    task0.astype( UTFSingleTask ).Start_UTF( taskstart );
+    task0.astype( UTFSingleTask ).End_UTF( taskstart + Duration::Hours( 1 ) );
+    taskstart := taskstart + Duration::Hours( 1 );
+    
+    operation1 := this.CreateOperation( schedule, 1.0, 'operation1' );
+    operation1.Length( 1.0 );
+    task1 := resource.PlanLast( operation1 );
+    task1.astype( UTFSingleTask ).HasStartUTF( true );
+    task1.astype( UTFSingleTask ).HasEndUTF( true );
+    task1.astype( UTFSingleTask ).Start_UTF( taskstart );
+    task1.astype( UTFSingleTask ).End_UTF( taskstart + Duration::Hours( 1 ) );
+    taskstart := taskstart + Duration::Hours( 1 );
+    
+    // Create operation2 and plan it
+    operation2 := this.CreateOperation( schedule, 1.0, 'operation2' );
+    operation2.Length( 1.0 );
+    task2 := resource.PlanLast( operation2 );
+    task2.astype( UTFSingleTask ).HasStartUTF( true );
+    task2.astype( UTFSingleTask ).HasEndUTF( true );
+    task2.astype( UTFSingleTask ).Start_UTF( taskstart );
+    task2.astype( UTFSingleTask ).End_UTF( taskstart + Duration::Hours( 1 ) );
+    
+    // Assign operation width that will violate the rule
+    operation1.Width( 100.0 );
+    operation2.Width( 100.0 );
+  *]
+}

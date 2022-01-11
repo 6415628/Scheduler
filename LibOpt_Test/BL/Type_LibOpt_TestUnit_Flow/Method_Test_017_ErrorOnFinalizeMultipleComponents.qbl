@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_017_ErrorOnFinalizeMultipleComponents (LibOpt_TestDataset dataset)
+{
+  Description:
+  [*
+    Test Snapshot created by an Error component. Error is thrown in the OnFinalize method.
+    The graph is component -> error component
+  *]
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    start := opt.ComponentCounter( run, 'Normal component' );
+    err := opt.ComponentError( run, 'Error', LibOpt_ComponentErrorPosition::OnFinalize() );
+    
+    start.To( err );
+    
+    run.SetStartComponent( start );
+    
+    test := run->Start()->|void->()
+    {  
+      this.Run().AssertEqual( LibOpt_RunStatus::Failed(), run.Status(), 'Failed status' );
+      this.Run().AssertEqual( 3, run.Snapshot( relsize ) );
+      this.Run().AssertEqual( 1, counter( run, Snapshot.astype( LibOpt_SnapshotError ), e, true ), 'Nr error snapshots' );
+      
+      snapshot := select( start, SnapshotComponent, c, true );
+      this.Run().AssertFalse( isnull( snapshot ), 'No snapshot is found [Start]' );
+      if( not isnull( snapshot ) )
+      {
+        this.Run().AssertEqual( 1, snapshot.Children( relsize ), 'Not enough children [Start]' );
+        child := select( snapshot, Children, child, true );
+        this.Run().AssertTrue( child.istype( LibOpt_SnapshotComponent ), 'Child snapshot is not of type SnapshotError [Start]' );
+      }
+      
+      snapshot := select( err, SnapshotComponent, c, true );
+      this.Run().AssertFalse( isnull( snapshot ), 'No snapshot is found [Err]' );
+      if( not isnull( snapshot ) )
+      {
+        this.Run().AssertEqual( 1, snapshot.Children( relsize ), 'Not enough children [Err]' );
+        child := select( snapshot, Children, child, true );
+        this.Run().AssertTrue( child.istype( LibOpt_SnapshotError ), 'Child snapshot is not of type SnapshotError [Err]' );
+      }
+    }
+    
+    this.NoException( test );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

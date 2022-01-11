@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride HandleResult (POAAlgorithm poa, LibOpt_Task task) as LibOpt_Scope
+{
+  TextBody:
+  [*
+    // mbr23, 2020-01-16 (overridden)
+    
+    poatyped := poa.astype( SuboptimizerSequencingPOA_SequencingPOA );
+    
+    this.HandleResultsPlanOperations( poatyped, task );
+    
+    // resets the flag to mark the operations in the active run
+    operations := selectset( task.Scope().ScopeElements(), Elements.astype( ScopeElementOperation ).Operation_SC, ope, not ope.IsFrozenInSchedule() );
+    traverse( operations, Elements, op )
+    {
+      op.IsInActiveOptimizerRun( false );
+    }
+    
+    return task.Scope();
+  *]
+}

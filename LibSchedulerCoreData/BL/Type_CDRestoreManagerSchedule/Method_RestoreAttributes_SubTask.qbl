@@ -1,0 +1,122 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_SubTask (CDSchedule cdschedule)
+{
+  Description: 'Restore attributes for subtask core data to planning object'
+  TextBody:
+  [*
+    subtasks := selectset( this.Schedule(), ResourceGroup_SC.Resource_SC.Task_SC.SubTask, subtask, true );
+    
+    cdcleanupsubtasks := selectset( cdschedule, CDEntity.astype( CDCleanUpSubTask ), cdcleanupsubtasks, true);
+    cdnobufferactioninputsubtasks := selectset( cdschedule, CDEntity.astype( CDNoBufferActionInputSubTask ), cdnobufferactioninputsubtask, true );
+    cdnobufferactionsubtasks := selectset( cdschedule, CDEntity.astype( CDNoBufferActionSubTask ), cdnobufferactionsubtask, true );
+    cdnobufferoutflowsubtasks := selectset( cdschedule, CDEntity.astype( CDNoBufferOutflowSubTask ), cdnobufferoutflowsubtask, true );
+    cdnobufferwaitsubtasks := selectset( cdschedule, CDEntity.astype( CDNoBufferWaitSubTask ), cdnobufferwaitsubtask, true );
+    cdprocesssubtasks := selectset( cdschedule, CDEntity.astype( CDProcessSubTask ), cdprocesssubtask, true );
+    cdreceivesubtasks := selectset( cdschedule, CDEntity.astype( CDReceiveSubTask ), cdreceivesubtask, true );
+    cdsetupsubtasks := selectset( cdschedule, CDEntity.astype( CDSetupSubTask ), cdsetupsubtask, true );
+    cdstoppagesubtasks := selectset( cdschedule, CDEntity.astype( CDStoppageSubTask ), cdstoppagesubtask, true );
+    cdtransfersubtasks := selectset( cdschedule, CDEntity.astype( CDTransferSubTask ), cdtransfersubtask, true );
+    
+    // Clean up subtask
+    traverse( subtasks, Elements.astype( CleanUpSubTask ), subtask )
+    {
+      cdcleanupsubtask := select( cdcleanupsubtasks, Elements, cd, cd.TaskID() = subtask.Task_SC().BackupTaskID() )
+      if( not isnull( cdcleanupsubtask ) )
+      {
+        CopyCorresponding::CopyFrom( cdcleanupsubtask ).CopyTo( subtask );
+      }
+    }
+    
+    // No buffer action input subtask
+    traverse( subtasks, Elements.astype( NoBufferActionInputSubTask ), subtask )
+    {
+      cdnobufferactioninputsubtask := select( cdnobufferactioninputsubtasks, Elements, cd, cd.TaskID() = subtask.Task_SC().BackupTaskID() )
+      if( not isnull( cdnobufferactioninputsubtask ) )
+      {
+        CopyCorresponding::CopyFrom( cdnobufferactioninputsubtask ).CopyTo( subtask );
+      }
+    }
+    
+    // No buffer action subtask
+    traverse( subtasks, Elements.astype( NoBufferActionSubTask ), subtask )
+    {
+      cdnobufferactionsubtask := select( cdnobufferactionsubtasks, Elements, cd, cd.TaskID() = subtask.Task_SC().BackupTaskID() )
+      if( not isnull( cdnobufferactionsubtask ) )
+      {
+        CopyCorresponding::CopyFrom( cdnobufferactionsubtask ).CopyTo( subtask );
+      }
+    }
+    
+    // No buffer outflow subtask
+    traverse( subtasks, Elements.astype( NoBufferOutflowSubTask ), subtask )
+    {
+      cdnobufferoutflowsubtask := select( cdnobufferoutflowsubtasks, Elements, cd, cd.TaskID() = subtask.Task_SC().BackupTaskID() )
+      if( not isnull( cdnobufferoutflowsubtask ) )
+      {
+        CopyCorresponding::CopyFrom( cdnobufferoutflowsubtask ).CopyTo( subtask );
+      }
+    }
+    
+    // No buffer wait subtask
+    traverse( subtasks, Elements.astype( NoBufferWaitSubTask ), subtask )
+    {
+      cdnobufferwaitsubtask := select( cdnobufferwaitsubtasks, Elements, cd, cd.TaskID() = subtask.Task_SC().BackupTaskID() )
+      if( not isnull( cdnobufferwaitsubtask ) )
+      {
+        CopyCorresponding::CopyFrom( cdnobufferwaitsubtask ).CopyTo( subtask );
+      }
+    }
+    
+    // Process subtask
+    traverse( subtasks, Elements.astype( ProcessSubTask ), subtask )
+    {
+      cdprocesssubtask := select( cdprocesssubtasks, Elements, cd, cd.TaskID() = subtask.Task_SC().BackupTaskID() )
+      if( not isnull( cdprocesssubtask ) )
+      {
+        CopyCorresponding::CopyFrom( cdprocesssubtask ).CopyTo( subtask );
+      }
+    }
+    
+    // Receive subtask
+    traverse( subtasks, Elements.astype( ReceiveSubTask ), subtask )
+    {
+      cdreceivesubtask := select( cdreceivesubtasks, Elements, cd, cd.TaskID() = subtask.Task_SC().BackupTaskID() )
+      if( not isnull( cdreceivesubtask ) )
+      {
+        CopyCorresponding::CopyFrom( cdreceivesubtask ).CopyTo( subtask );
+      }
+    }
+    
+    // Setup subtask
+    traverse( subtasks, Elements.astype( SetupSubTask ), subtask )
+    {
+      cdsetupsubtask := select( cdsetupsubtasks, Elements, cd, cd.TaskID() = subtask.Task_SC().BackupTaskID() )
+      if( not isnull( cdsetupsubtask ) )
+      {
+        CopyCorresponding::CopyFrom( cdsetupsubtask ).CopyTo( subtask );
+      }
+    }
+    
+    // Stoppage subtask
+    traverse( subtasks, Elements.astype( StoppageSubTask ), subtask )
+    {
+      cdstoppagesubtask := select( cdstoppagesubtasks, Elements, cd, cd.TaskID() = subtask.Task_SC().BackupTaskID() )
+      if( not isnull( cdstoppagesubtask ) )
+      {
+        CopyCorresponding::CopyFrom( cdstoppagesubtask ).CopyTo( subtask );
+      }
+    }
+    
+    // Transfer subtask
+    traverse( subtasks, Elements.astype( TransferSubTask ), subtask )
+    {
+      cdtransfersubtask := select( cdtransfersubtasks, Elements, cd, cd.TaskID() = subtask.Task_SC().BackupTaskID() )
+      if( not isnull( cdtransfersubtask ) )
+      {
+        CopyCorresponding::CopyFrom( cdtransfersubtask ).CopyTo( subtask );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddNewSnapshots
+{
+  TextBody:
+  [*
+    LibOpt_AnalysisSnapshot::Analyze( this.Run().Component( relget ) );
+    this.MaxSnapshotNr( max( this, Run.Component.SnapshotComponent.AnalysisSnapshot, snapshot, true, snapshot.SnapshotNr() ) );
+    
+    // Add attributes
+    traverse( this, Run.Component, component )
+    {
+      iteration := select( component, AnalysisSnapshotType, t, t.Name() = 'Iteration' );
+      traverse( component, AnalysisSnapshotType, type )
+      {
+        att := select( type, AsY, att,
+                       att.Analysis() = this and 
+                       att.X() = iteration );
+        if( isnull( att ) )
+        {
+          this.AnalysisCorrelation( relnew,
+                                  X := iteration,
+                                  Y := type );
+        }
+      }
+    }
+    
+    // Update all attributes
+    traverse( this, AnalysisCorrelation, att )
+    {
+      att.Update();
+    }
+    
+    this.Analyze();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

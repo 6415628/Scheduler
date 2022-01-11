@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateBuckets (LibOpt_Task task, SettingsProgramPTAssignment settings)
+{
+  TextBody:
+  [*
+    // jkr8 Jul-21-2021 (created)
+    
+    totalNumberOfBuckets := 30;
+    bucketIterator := 0;
+    
+    //Select the resource we are optimizing
+    resource := select( task.Scope().ScopeElements(), Elements.astype( ScopeElementResource ).Resource_SC, resource, true, true );
+    
+    //Select the planned programtypes
+    programTypes := selectsortedset( resource, ProgramSet.ProgramType, pt, pt.ProgramSet().ProgramSetConfiguration().IsLeading(), pt.Start() );
+    
+    lastBucket := null( PTAssignmentBucket );
+    
+    //If we already have planned programtypes on the resource, we assign them to buckets and make those buckets fixed.
+    //We also assign the number of operations from an operationgroup to the bucket that are planned on that programtype.
+    traverse( programTypes, Elements, programType )
+    {
+      lastBucket := PTAssignmentBucket::Create( this, true, programType.Start() + ( programType.End() - programType.Start())/2 );
+      bucketIterator := bucketIterator + 1;
+      
+      ProgramTypeInBucket::Create( lastBucket, programType.ActiveCombiProgramType() );
+      
+      //Create objects for non leading programtypes that are scheduled in the same bucket.
+      traverse( resource, 
+                ProgramSet.ProgramType, 
+                pt, 
+                not pt.ProgramSet().ProgramSetConfiguration().IsLeading() and (
+                pt.Start() <= programType.Start() and pt.End() >= programType.End() ) )
+      {
+        ProgramTypeInBucket::Create( lastBucket, pt.ActiveCombiProgramType() );
+      }
+    }
+    
+    Transaction::Transaction().Propagate( relation( ProgramTypeInBucket, ProgramType ) );
+    
+    while( bucketIterator < totalNumberOfBuckets )
+    {
+      emptyBucket := null( PTAssignmentBucket );
+      if( not isnull( lastBucket) )
+      {
+        emptyBucket := PTAssignmentBucket::Create( this, false, lastBucket.AverageOperationEndTime() + settings.AverageLeadingProgramDuration() );
+      }
+      else
+      {
+        emptyBucket := PTAssignmentBucket::Create( this, false, resource.Schedule().Time() + settings.AverageLeadingProgramDuration()/2 );
+      }
+      lastBucket := emptyBucket;
+      bucketIterator := bucketIterator + 1;
+    }
+  *]
+}

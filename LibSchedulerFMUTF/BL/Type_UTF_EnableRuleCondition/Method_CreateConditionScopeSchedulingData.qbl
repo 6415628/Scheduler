@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateConditionScopeSchedulingData (Schedule schedule, String conditionType, Boolean operation1AttributeValue, 
+  Boolean operation2AttributeValue)
+{
+  Description: 'Create shutdown scheduling test data'
+  TextBody:
+  [*
+    // Create 2 tasks
+    for( i := 1; i <= 2; i++ ) 
+    {
+      order := UTFMockObjectFactory::CreateOrder( schedule, 'Order_' + [String]i  );
+      order.Product_SC( relset, GenericProduct::Create( schedule, 'Product_' + [String]i  ) );
+      planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'PlanUnit_' + [String]i, 1.0 );
+      operation := UTFMockObjectFactory::CreateOperation( planUnit );
+      operation.OperationID( 'Operation_' + [String]i );
+      
+      // Plan operation
+      Transaction::Transaction().Propagate( relation( Operation_SC, AllowedOperationOnResource ) );
+      operation.Plan();
+    }
+    
+    operations := selectset( schedule, Operation_SC, o, true );
+    operation_1 := select( operations, Elements, o, o.OperationID() = 'Operation_1' );
+    operation_2 := select( operations, Elements, o, o.OperationID() = 'Operation_2' );
+    
+    // Assign operation need edge trimming/ need oil based on variant
+    if( conditionType = RuleConstant::Characteristic_OperationNeedsEdgeTrimming() )
+    {
+      // Assign attribute for needs edge trimming
+      operation_1.NeedsEdgeTrimming( operation1AttributeValue );
+      operation_2.NeedsEdgeTrimming( operation2AttributeValue );
+    }
+    else
+    {
+      // Assign attribute for needs oil
+      operation_1.NeedsOil( operation1AttributeValue );  
+      operation_2.NeedsOil( operation2AttributeValue );  
+    }
+    
+    // Assign width for operations
+    operation_1.Width( 10.0 );
+    operation_2.Width( 20.0 );
+    
+    // Assign product type for operations
+    operation_1.PlanUnit_SC().Order_SC().Product_SC().Type( 'A' )
+    operation_2.PlanUnit_SC().Order_SC().Product_SC().Type( 'B' )
+  *]
+}

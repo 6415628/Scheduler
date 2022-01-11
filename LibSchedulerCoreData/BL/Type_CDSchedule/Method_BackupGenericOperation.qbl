@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericOperation (const GenericPlanUnit genericPlanUnit)
+{
+  Description: 'Backup generic operation core data'
+  TextBody:
+  [*
+    traverse( genericPlanUnit, Operation_SC.astype( GenericOperation ), genericOperation )
+    {
+      cdGenericOperation := this.CDEntity( relnew, CDGenericOperation );
+      CopyCorresponding::CopyFrom( genericOperation ).CopyTo( cdGenericOperation );
+      
+      // Additonal attribute in core data to persist the plan unit that this operation belongs
+      cdGenericOperation.PlanUnitID( genericPlanUnit.PlanUnitID() );
+      
+      // Additonal attribute in core data to persist the FSPL operation in task that this operation belongs
+      cdGenericOperation.ResourceID( guard ( genericOperation.Task_SC().Resource_SC().ResourceID(), '' ) );
+      cdGenericOperation.FSPLOperationInTaskBackupTaskID( guard( genericOperation.AsFSPLOperationInTask().TaskID(), '' ) );
+      
+      // Backup generic operation campaign
+      this.BackupGenericOperationCampaign( genericOperation );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: CustomDrawComponentResourceView/CustomDrawDataLayerNode
+Response OnDrawObject (shadow[ResourceNode] object) id:Response_CustomDrawComponentResourceView_CustomDrawDataLayerNode_OnDrawObject
+{
+  #keys: '[134650.0.35941592]'
+  Body:
+  [*
+    // Draw node
+    img := object.Image();
+    
+    minsize := minvalue ( object.Height(), object.Width() );
+    surface.Image( region.Left(), region.Top(), minsize, minsize, img + '(32)' );
+    /*
+      If we are dragging an object which are not initially highlighted and some objects are already
+      highlighted. We will flush all objects in DataHolderHighlight, then highlight the selected
+      object and add it to DataHolderHighlight.
+    */
+    if( exists( DataHolderHighlightedNode.Data(), Elements, u, u = object ) )
+    {
+      surface.Pen().Style( PenSpecification::StyleSolid() );
+      surface.Pen().Width( 1 );
+      surface.Pen().Color( ColorScheme.Outline() );
+      surface.Rect( region.Left(), region.Top(), region.Width(), region.Height() );
+    }
+  *]
+  DefinitionID: 'Responsedef_CustomDrawDataLayer_OnDrawObject'
+  Precondition:
+  [*
+    return not isnull( DataHolderSelectedResourceView.Data() );
+  *]
+}

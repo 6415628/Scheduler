@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportFromJSON (String integratorID_i, String dataTransformationID_i, Boolean doSynchronize_i) as Boolean id:Method_LibDIF_GlobalState_ImportFromJSON
+{
+  #keys: '[131092.1.704922554]'
+  Body:
+  [*
+    // Import data from JSON.
+    success := false;
+    
+    // Ask the user for the filename.
+    filename := Application.GetOpenFileName( "json" );
+    
+    if( filename <> "" )
+    {
+      // Make sure that the Integration-dataset is selected.
+      if( this.EnsureIntegrationDataset() )
+      {
+        json := Application.ReadTextFile( filename );
+    
+        // Call the QIntegrator to import the data as integration objects.
+        // Synchronize the data if applicable.
+        api := this.GetIntegrationAPI();
+        if( not isnull( api ) )
+        {
+          if( doSynchronize_i )
+          {
+            api.ImportFromJSONAndSynchronize( json, integratorID_i, dataTransformationID_i );
+          }
+          else
+          {
+            api.ImportFromJSON( json, integratorID_i, dataTransformationID_i );
+          }
+    
+          success := true;
+        }
+      }
+    }
+    
+    return success;
+  *]
+}

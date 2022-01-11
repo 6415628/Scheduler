@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_020_DetectSpawnedReactiveCalls (LibOpt_TestDataset dataset)
+{
+  Description: 'Check if reactive call detection is working correctly.'
+  TextBody:
+  [*
+    this.Run().AssertEqual( 0, LibOpt_CurrentTransaction::GetSpawnedReactiveCalls(), 'Start' );
+    
+    nr_of_calls := 4;
+    
+    inner := this->( this )
+    {
+      // It does not matter how many calls there are currently waiting. It should return 0 if there was none created in this.
+      this.Run().AssertEqual( 0, LibOpt_CurrentTransaction::GetSpawnedReactiveCalls(), 'Inner' );
+      
+      this.Run().AssertGreaterOrEqual( nr_of_calls, ModeledRunningTaskList::GetTaskList( '', Duration::Zero() ).Elements( relsize ), 'Inner-all' );
+    }
+    
+    this.Run().AssertEqual( 1, LibOpt_CurrentTransaction::GetSpawnedReactiveCalls(), 'After one is spawned' );
+    
+    for( i := 0; i < nr_of_calls; i++ )
+    {
+      inner->|void->() { };
+    }
+    
+    this.Run().AssertEqual( nr_of_calls + 1, LibOpt_CurrentTransaction::GetSpawnedReactiveCalls(), 'After 4 more' );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

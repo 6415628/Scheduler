@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestAllowedOperationOnResource_Setup (Schedule schedule)
+{
+  Description: 'Test AllowedOperationOnResource - setup'
+  TextBody:
+  [*
+    // Get variant data
+    hasexternalalloweddata := false;
+    useexternalallowed := false;
+    isexternalwooresourceallowed := false;
+    isproductallowed := false;
+    isoperationcompleted := false;
+    isValid := false;
+    
+    this.GetTestVariant( hasexternalalloweddata,
+                         useexternalallowed,
+                         isexternalwooresourceallowed,
+                         isproductallowed,
+                         isoperationcompleted,
+                         isValid );
+    
+    // Create resources
+    resource1 := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource1' );
+    
+    // Propagate declarative attribute to be used to assign operation type
+    Transaction::Transaction().Propagate( attribute( Resource_SC, Type ) );
+    
+    // Create work order
+    workOrder := GenericExternalWorkOrder::Create( schedule, 'WorkOrder' );
+    
+    // Create 1 operation
+    order := UTFMockObjectFactory::CreateOrder( schedule, 'Order' );
+    planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'PlanUnit', 1.0 );
+    operation := UTFOperation::Create( planUnit, resource1.Type() );
+    operation.OperationID( 'Operation' );
+    operation.HasIsCompleted_UTF( true );
+    operation.IsCompleted_UTF( isoperationcompleted );
+    
+    // Transaction propagate is needed to intantiate the OOR
+    Transaction::Transaction().Propagate( relation( Operation_SC, OperationOnResource ) );
+    
+    // Set AllowedProduct flag
+    oor := select( resource1, OperationOnResource.astype( UTFOperationOnResource ), oor1, true );
+    oor.AllowedProduct_UTF( isproductallowed );
+    oor.HasAllowedProduct_UTF( true );
+    
+    if( hasexternalalloweddata )
+    {
+      // Create work order operation
+      workOrderOperation := workOrder.CreateWorkOrderOperation( 1 );
+      operation.WorkOrderOperation( relset, workOrderOperation );
+      
+      // Create work order operation resource for each resource of this operation
+      workOrderOperationResource := WorkOrderOperationResource::Create( workOrderOperation, resource1.ResourceID() );
+      workOrderOperationResource.IsAllowed( isexternalwooresourceallowed );
+      workOrderOperationResource.UseIsAllowed( useexternalallowed );
+    }
+  *]
+}

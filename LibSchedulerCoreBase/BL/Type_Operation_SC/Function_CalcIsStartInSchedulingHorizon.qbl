@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcIsStartInSchedulingHorizon
+{
+  TextBody:
+  [*
+    // Dennis May-24-2013 (created)
+    // DvtK 24.05.2013 Make sure that we also export feedbacked operations to CP
+    // Chris 20141117 #4856: Quantus KPI - Operations on time, renaming IsInSchedulingHorizon to IsStartInSchedulingHorizon
+    // Get schedule time
+    value := false;
+    scheduletime := this.PlanUnit_SC().Schedule().Time();
+    starttime := this.Start();
+    
+    if( starttime.IsFinite() )
+    {
+      schedulinghorizon := Duration::Zero();
+      
+      // If has feedback, get reported resource scheduling horizon
+      // If doesn't have feedback but planned, get planned resource scheduling horizon
+      // Else, get the longest scheduling horizon on applicable resource group
+      if( this.HasFeedback() )
+      {
+        schedulinghorizon := guard( this.ActiveOperationFeedback().Resource_SC().ResourceGroup_SC().SchedulingHorizon(), schedulinghorizon );
+      }
+      else if( this.IsPlanned() )
+      {
+        schedulinghorizon := this.Task_SC().Resource_SC().ResourceGroup_SC().SchedulingHorizon();
+      }
+      else
+      {
+        schedulinghorizon := this.LongestSchedulingHorizon()
+      }
+      
+      value := starttime <= scheduletime + schedulinghorizon;
+    }
+    
+    this.IsStartInSchedulingHorizon( value );
+  *]
+}

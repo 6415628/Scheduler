@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcDueDate_Scheduling_Start
+{
+  TextBody:
+  [*
+    // IS201051
+    
+    value := this.DueDate_Scheduling() - this.ExpectedDuration();
+    
+    if( not this.IsPlanned() )
+    {
+      // TG take LeadTime into account only if the operation is not planned
+      value := value - this.LeadTime();
+    }
+    else
+    {
+      // TG changed the logic in a way that now a DueDate_Scheduling_Start can be BEFORE Start for a planned operation,
+      // this happens to take into account lead time of later not planned operations.
+      value := minvalue( this.Start(), value )
+      
+      if( this.PlanUnit_SC().IsLotLeadTimeLogicOn() and guard (this.GetTask().FirstRespectRoutingSubTask().IsProcess(), false ) )
+      {
+        value := this.GetTask().LastInputLot().Start();
+      }
+    }
+    
+    this.DueDate_Scheduling_Start( value );
+  *]
+}

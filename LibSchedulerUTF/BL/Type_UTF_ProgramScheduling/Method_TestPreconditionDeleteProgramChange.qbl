@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionDeleteProgramChange (Schedule schedule)
+{
+  Description: 'Test precondition delete program change'
+  TextBody:
+  [*
+    // Get variant data
+    resourceType := '';
+    leadTimeStrategy := '';
+    hasResourceProgramDefinition := false;
+    isaftertaskprogramchange := false;
+    isValidForPreconInsert := false;
+    hasProgramChange := false;
+    hasFeedback := false;
+    isValidForPreconDelete := false;
+    hasProgramType := false;
+    isValidForPreconCreateEdit := false;
+    isallowedtypechangeonprogramtypelevel := false;
+    isallowedtypechangeonprogramtypechangelevel := false;
+    isValidForConstraintProgramTypeChange := false;
+    
+    this.GetTestVariant( resourceType,
+                         leadTimeStrategy,
+                         hasResourceProgramDefinition,
+                         isaftertaskprogramchange,
+                         isValidForPreconInsert,
+                         hasProgramChange,
+                         hasFeedback,
+                         isValidForPreconDelete,
+                         hasProgramType,
+                         isValidForPreconCreateEdit,
+                         isallowedtypechangeonprogramtypelevel,
+                         isallowedtypechangeonprogramtypechangelevel,
+                         isValidForConstraintProgramTypeChange );
+    
+    task := null( Task_SC );
+    
+    // Choose between normal task and program change task based on variant
+    if( hasProgramChange )
+    {
+      // Select program change task
+      task := select( schedule, ResourceGroup_SC.Resource_SC.Task_SC.astype( ProgramChangeTask ), t, true );  
+    }
+    else
+    {
+      // Select single task
+      task := select( schedule, Operation_SC.Task_SC, t, true );
+    }
+    
+    value := task.CanDeleteProgramChangeHard();
+    
+    this.Run().AssertEqual( isValidForPreconDelete, value,
+                            UTFUtility::GenerateFailedMessage( 'Precondition in deleting program change failed.', this.Variant() ) );
+  *]
+}

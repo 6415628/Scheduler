@@ -1,0 +1,70 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetEarliestStart (LibOpt_Task task)
+{
+  Description: 'Set the earliest start variable'
+  TextBody:
+  [*
+    // jkr8 Nov-23-2020 (created)
+    
+    value := DateTime::MinDateTime();
+    if( this.IsInSpan() and not this.IsFiller() )
+    {
+      assert( isnull( this.TransientData().Task() ) or this.Operation().IsPlanned(), "operation", this.Operation().OperationID(), "is in the scope span but unplanned. This must not happen according to the definition of `span`." );
+      if( this.IsFirstOfGroupOfOperationsInScopeOnResource() )
+      {
+        // we can't plan this operation earlier than what it is actually already planned: (except if there are in-scope upstream operations, but we ignore this case.)
+        
+    
+        value := guard( this.Operation().Start(), DateTime::MinDateTime() );
+    
+      }
+      else if( this.IsPreviousTaskNotInSpan() )
+      {
+        // First execute regular way of calculating earliest start
+        upstream_in_total_scope := selectset( this, InputDependency.OperationDependency, od, true );
+        upstream_out_of_total_scope := selectset( this.Operation(), FromOperationDependency, od, true ).Difference( upstream_in_total_scope );
+        
+        earliest_start_difference := OperationInSuboptimizerSequencing::GetEarliestStartDifference( upstream_out_of_total_scope, this.Operation() );
+        value := this.Operation().Start() - earliest_start_difference;
+        
+        // look if earliest start is more restricted due to out of scope operations before this operation
+        scope_operations := task.Scope().Operations();
+        scope_operation_materials := selectset( scope_operations, Elements.FromOperationDependency, od, exists( scope_operations, Elements, scop, scop = od.FromOperation() ) );
+        
+        previous_operation := guard( this.Operation().Task_SC().Previous().astype( SingleTaskBase ).OperationAsSingleTask(), null( Operation_SC ) );
+        // Continue untill the previous span operation has been found.
+        while( scope_operations.Find( previous_operation ) = -1 )
+        {
+          scope_operation_materials := selectset( scope_operation_materials, Elements, od, true );
+          upstream_out_of_total_scope := selectset( previous_operation, FromOperationDependency, od ,scope_operation_materials.Find( od ) = -1  );
+          
+          upstream_operation_earlieststart_difference := OperationInSuboptimizerSequencing::GetEarliestStartDifference( upstream_out_of_total_scope, previous_operation );
+          
+          // Looking at operations planned between the operation linked with this OperationInSuboptimizerSequencing and the operation linked with previous_operation,
+          // we need to set the earliest start of this OperationInSuboptimizerSequencing to the minimum of the start of a task minus the earliest start of that task for all these in between operations
+          if( upstream_operation_earlieststart_difference < earliest_start_difference )
+          {
+            earliest_start_difference := upstream_operation_earlieststart_difference;
+            value := this.Operation().Start() - earliest_start_difference;
+          }
+          
+          previous_operation := previous_operation.Task_SC().Previous().astype( SingleTaskBase ).OperationAsSingleTask();
+        }
+      }
+      else
+      {
+        // we're planned in the middle of the total scope of the resource; there are span or scope operations before us on the same resource.
+        // we are bound by the upstream operations. The rest (previous operation on resource) POA can figure out itself.
+        upstream_in_total_scope := selectset( this, InputDependency.OperationDependency, od, true );
+        upstream_out_of_total_scope := selectset( this.Operation(), FromOperationDependency, od, true ).Difference( upstream_in_total_scope );
+        
+        upstream_operation_earlieststart_difference := OperationInSuboptimizerSequencing::GetEarliestStartDifference( upstream_out_of_total_scope, this.Operation() );
+        value := this.Operation().Start() - upstream_operation_earlieststart_difference;
+      }
+    }
+    // if it is not in span, but in the regular scope, we need no restriction as POA calculates the timing correctly.
+    
+    this.EarliestStart( value );
+  *]
+}

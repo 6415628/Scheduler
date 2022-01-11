@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method SplitChildPlanUnitsForNewPlanUnit (PlanUnit_SC newPlanUnit, Real quantity) as owning PlanUnit_SCs
+{
+  Description: 'Splits the child plan units of this plan unit based on the parent split quantity, to link it to the new plan unit created from splitting earlier.'
+  TextBody:
+  [*
+    newChildPlanUnits := construct( PlanUnit_SCs );
+    originalQuantity := quantity + this.Quantity();
+    splitRatio := guard( quantity / originalQuantity, 0 );
+    order := this.Order_SC();
+    sortedChildPlanUnits := selectsortedset( this, Child, childPlanUnit, true, childPlanUnit.ChildNr() );
+    
+    traverse( sortedChildPlanUnits, Elements, childPlanUnit )
+    {
+      newQuantity := childPlanUnit.Quantity() * splitRatio;
+      newNrOfLots := floor( childPlanUnit.NrOfLots() * splitRatio );
+      newChildPlanUnit := order.CreatePlanUnit( childPlanUnit, order.GetLastPlanUnitNr(), newQuantity, newNrOfLots);
+      order.SplitPlanUnit( childPlanUnit, newChildPlanUnit, newQuantity, newNrOfLots );
+      newPlanUnit.LinkToChildPlanUnit( newChildPlanUnit );
+      newChildPlanUnits.Add( newChildPlanUnit );
+    }
+    
+    return &newChildPlanUnits;
+  *]
+}

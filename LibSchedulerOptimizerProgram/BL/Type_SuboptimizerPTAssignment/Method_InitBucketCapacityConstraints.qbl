@@ -1,0 +1,91 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitBucketCapacityConstraints (LibOpt_Task task, SuboptimizerMPPTAssignment_PTAssignmentMP program, TransientDataSuboptimizerPTAssignment transientData) as SuboptimizerMPPTAssignment_PTAssignmentMP
+{
+  TextBody:
+  [*
+    // jkr8 Jul-16-2021 (created)
+    
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // sum_o ( capfactor_(o,r) * NrOpsAssignedToType_(o,t,b) <= Capacity_r * IsProgramAssigned_(t,b) + SlackVariable_(t,b,r) , forall t in Leadingprogramset, b in buckets, r in Max capacity Rules//
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // The total number of operations assigned to a bucket must be less than its maximum capacity. This capacity is dependent on the rules of programtypes. 
+    // The rule needs to be hard for the optimizer.
+    // We have to correct for the characteristic of the rule, which is done by creating a factor for an operation group dependent on the rule.
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // sum_o ( capfactor_(o,r) * NrOpsAssignedToType_(o,t,b) + SlackVariable_(t,b,r) >= Capacity_r * IsProgramAssigned_(t,b), forall t in Leadingprogramset, b in buckets, r in Min Capacity Rules//
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // The total number of operations assigned to a bucket must be more than its capacity. This capacity is dependent on the rules of programtypes. 
+    // The rule needs to be hard for the optimizer.
+    // We have to correct for the characteristic of the rule, which is done by creating a factor for an operation group dependent on the rule.
+    
+    traverse( task.Scope().ScopeElements(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration, programType, programType.ProgramSetConfiguration().IsLeading() ) 
+    {
+      traverse( transientData, Bucket, bucket, true )
+      {
+        rules := selectset( programType, RuleScopeInProgramType.Rule, rule, rule.RuleSubType().istype( RuleSubTypeMinMaxCombinedLength ) );
+    
+        traverse( rules, Elements, rule )
+        {
+          constr := program.BucketCapacityConstraints().New( programType, bucket, rule );
+        
+          traverse( transientData, OperationGroup, operationGroup, true )
+          {
+            //Calculate the average capacity factor for the operation group
+            capfactor := operationGroup.GetCapacityFactor( task, rule );
+            constr.NewTerm( capfactor, program.NrOpsAssignedToTypeVariables().Get( operationGroup, bucket, programType ) );
+          }
+        
+          //Calculate the capacity of a program
+          capacity := rule.RuleValue();
+          
+        
+          constr.NewTerm( -capacity, program.IsProgramAssignedVariables().Get( programType, bucket ) );
+           
+          coefficient := -1.0;
+          if( rule.RuleSubType().astype( RuleSubTypeMinMaxCombinedLength ).IsMinimumCombinedLength() )
+          {
+            coefficient := 1.0;
+            
+            //If the rule is Minimum combined length, the capacity of the operations should exceed the total capacity
+            constr.Sense( ">=" );
+          }                       
+          if( rule.IsHardConstraintForOptimizer() )
+          {
+            constr.NewTerm( coefficient, program.CapacitySlackHardVariables().Get( programType, bucket, rule ) );
+          }
+          else
+          {
+            constr.NewTerm( coefficient, program.CapacitySlackSoftVariables().Get( programType, bucket, rule ) );
+          }
+          
+        
+          constr.RHSValue( 0.0 );
+        }
+        
+        // Do the same for max and min phase rules that are active in all phases.
+          
+        // Max sum Hard
+        this.InitSumPhaseCapacityConstraints( task, programType, bucket, program, transientData, true, false );
+          
+        // Min sum Hard
+        this.InitSumPhaseCapacityConstraints( task, programType, bucket, program, transientData, true, true );
+          
+        // Max sum Soft
+        this.InitSumPhaseCapacityConstraints( task, programType, bucket, program, transientData, false, false );
+          
+        // Min sum Soft
+        this.InitSumPhaseCapacityConstraints( task, programType, bucket, program, transientData, false, true );   
+        
+        // Min Hard
+        this.InitPhaseCapacityConstraints( task, programType, bucket, program, transientData, true );
+        
+        // Min Soft 
+        this.InitPhaseCapacityConstraints( task, programType, bucket, program, transientData, false );       
+      }
+    }
+    
+    return program;
+  *]
+}

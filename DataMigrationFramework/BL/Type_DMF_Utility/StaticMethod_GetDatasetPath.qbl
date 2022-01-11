@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetDatasetPath (Key folderId_i) as String
+{
+  Description: 'Helper method to determine folder path via a folder ID'
+  TextBody:
+  [*
+    // Timothy Guan Oct-12-2021 (created)
+    
+    folder := select( DomainModel::Domain().MDSFolderDefinitions(),
+                      Elements,
+                      mdsfolderdef,
+                      mdsfolderdef.FolderID() = folderId_i,
+                      true );
+    
+    path  := "/" + folder.Name();
+    count := 0;
+    
+    while( not isnull( folder.Parent() ) and count < 10 )
+    {
+      folder := folder.Parent();
+      path   := "/" + folder.Name() + path;
+      
+      count++;
+    }
+    
+    return path;
+  *]
+}

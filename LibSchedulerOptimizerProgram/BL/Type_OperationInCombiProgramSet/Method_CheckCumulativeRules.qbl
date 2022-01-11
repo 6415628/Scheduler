@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckCumulativeRules
+{
+  TextBody:
+  [*
+    // zyi1 Jul-14-2021 (created)
+    ptvalue := true;
+    phvalue := true
+    traverse( this, Operation_SC.OperationCharacteristic, oc, not isnull( this.PreviousOperation() ) )
+    {
+      ptrules := oc.Operation_SC().GetCumulativeRulesForProgramType( this.CombiProgramType().ProgramTypeConfiguration(), 
+                                                                   guard( this.GetPreviousOperationInCombiProgramType().Operation_SC(), null( Operation_SC) ), 
+                                                                   oc.Characteristic() );
+    
+      //if for this oc,  there is no cumulative rule, then the following forall will return true     
+                                                         
+      ptvalue := ptvalue and forall( ptrules,  
+                       Elements, 
+                       rule,
+                       true,
+                       rule.RuleSubType().Validate( rule, this.GetRuleDataObjectForConstraintPrecondition(  rule.CharacteristicMain(), false, 0.0 ) ) )
+                       
+      phrules := oc.Operation_SC().GetCumulativeRulesForProgramPhase( this.CombiProgramPhase().ProgramPhaseConfiguration(),
+                                                                      guard( this.GetPreviousOperationInCombiProgramPhase().Operation_SC(), null( Operation_SC ) ),
+                                                                      oc.Characteristic() );
+      phvalue := phvalue and forall( phrules,
+                                     Elements,
+                                     rule,
+                                     true,
+                                     rule.RuleSubType().Validate( rule, this.GetRuleDataObjectForConstraintPrecondition(  rule.CharacteristicMain(), true, 0.0 ) ) );
+                                                                                                                        
+    }
+    
+    this.IsCumulativeRulesForProgramTypeOK( ptvalue );
+    this.IsCumulativeRulesForProgramPhaseOK( phvalue );
+  *]
+}

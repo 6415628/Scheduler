@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod AllowedMoveDown (Task_SCs selection, output String feedback_o) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    // gyg1 Jul-14-2016 (created)
+    
+    // If this task has linked succeeding stoppage task, then get the next task of succeeding stoppage task
+    // Else just get the next task
+    lasttask := select( selection, Elements, element, 
+                        isnull( element.GetNextTaskWithSucceedingStoppageTask() ) );
+    value    := isnull( lasttask );
+    
+    if( not value )
+    {
+      feedback_o := Translations::SC_SelectionAlreadyAtLastPosition( Task_SC::GetIdentifier( lasttask, false ));
+    }
+    else
+    {
+      isallowedhard   := true;
+      operations      := selectset( selection, Elements.OperationInTask, op, true );
+      stoppagetasks   := selectset( selection, Elements.astype( StoppageTask ), stoppagetask, true );
+      resource        := selection.Element( 0 ).Resource_SC();
+      value           := Operation_SC::CanReplan( operations, false, feedback_o, isallowedhard );                     
+      value           := StoppageTask::CanReplan( stoppagetasks, false, feedback_o, isallowedhard ) and value;
+    
+      ontype( resource )
+      {
+        SingleResourceBase as sr:
+        {
+          value := sr.AllowedScheduling( selection, //structured[Task]
+                                         false, //skipsoftcheck
+                                         false, //ctrlshiftkey
+                                         true, //movedown
+                                         feedback_o,
+                                         isallowedhard ) and value;
+        }
+        BatchResource as br:
+        {
+          value := br.AllowedScheduling( selection,  //structured[Task]
+                                         false, //skip soft check
+                                         true, //move down
+                                         feedback_o,
+                                         isallowedhard ) and value;
+        }
+      }
+    }
+    
+    feedback_o := Translations::SC_CannotBeMovedDown( Task_SC::GetSelectedObjects( selection ) )
+                  + String::NewLine()
+                  + feedback_o;
+    
+    return value;
+  *]
+}

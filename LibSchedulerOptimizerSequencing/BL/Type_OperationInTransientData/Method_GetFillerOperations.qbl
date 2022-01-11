@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetFillerOperations (LibOpt_Task task) as owning Operation_SCs
+{
+  Description: 'Get the other filler operations that belong to this filler operation'
+  TextBody:
+  [*
+    // jkr8 Nov-23-2020 (created)
+    scope := task.Scope()
+    
+    operations := construct( structured[Operation_SC] );
+    
+    operations.Add( this.Operation() );
+    selected_operation := this.Operation().Task_SC().Next().astype( SingleTaskBase ).OperationAsSingleTask();
+    
+    while( not exists( scope.Operations(), Elements, opis, opis = selected_operation ) )
+    {
+      operations.Add( selected_operation );
+      selected_operation := selected_operation.Task_SC().Next().astype( SingleTaskBase ).OperationAsSingleTask();
+    }
+    
+    return & operations;
+  *]
+}

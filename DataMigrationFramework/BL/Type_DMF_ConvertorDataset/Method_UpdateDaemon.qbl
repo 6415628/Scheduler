@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateDaemon (String daemonName_i, Duration startTimeDuration_i, Duration frequency_i)
+{
+  Description: 'Update daemon'
+  TextBody:
+  [*
+    // Attempt to locate daemon
+    daemon := select( this.MDSDMF_ConvertorDataset(), MDSObjectDaemons, dmon, dmon.Name() = daemonName_i );
+    
+    if( not isnull( daemon ) )
+    {
+      tz := TimeZone::DeductedDatasetTimezone();
+      
+      daemon.LocalStartDate     ( Date::Today( tz ) );
+      daemon.LocalStartTimeOfDay( startTimeDuration_i );
+      daemon.LocalFrequency     ( frequency_i );
+      
+      // Log message to indicate whether daemon was enabled
+      msg := daemonName_i + " daemon " + ifexpr( frequency_i = Duration::Zero(), "disabled", "enabled" );
+      
+      DMF_Utility::LogInfo( msg );
+    }
+    else
+    {
+      msg := "Daemon '" + daemonName_i + "' not found";
+    
+      DMF_Utility:: LogWarning( msg );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

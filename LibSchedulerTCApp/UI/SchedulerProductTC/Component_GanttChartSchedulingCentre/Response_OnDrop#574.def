@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDrop (structured[DemandBatch] source, BatchResource droprow, Batch droptarget, 
+  Batch beforedroptarget, Batch afterdroptarget) id:Response_GanttChartSchedulingCentre_OnDrop_574
+{
+  #keys: '[133896.0.973734864]'
+  Body:
+  [*
+    // OnDrop structured[DemandBatch] --> Batch on BatchResource
+    
+    ctrlshift := dropaction.IsControlShift();
+    
+    sourceoperations := selectset( source, Elements.BatchWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, operation,
+                                   operation.Type() = droprow.Type() );
+    
+    if( not isnull( guard( droptarget.BatchTask(), null( BatchTask ))) and not ctrlshift )
+    {
+      // Add operation to batch
+      droptarget.AddOperations( sourceoperations );
+    }
+    else
+    {
+      // Create new batch
+      droprow.CreateBatchAssignOperationsPlanBatch( sourceoperations, guard( beforedroptarget.BatchTask(), null( BatchTask ) ) );
+    }
+  *]
+  DefinitionID: 'Responsedef_GanttChart_OnDrop'
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey       := dropaction.IsControl();
+    ctrlshiftkey  := dropaction.IsControlShift();
+    
+    sourceoperations := selectset( source, Elements.BatchWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, operation,
+                                   operation.Type() = droprow.Type() );
+    operations := construct( Operation_SCs );
+    aftertask := guard( droptarget.BatchTask(), null( BatchTask ) );
+    
+    if( not ctrlshiftkey ) //when ctrlshiftkey = false and not isnull droptarget, the intention is to merge all operations into the droptarget
+    {
+      operations  := selectset( droptarget, BatchSequenceElement.Operation_SC, op, true, true ); //operations from the drop target
+      aftertask := guard( afterdroptarget.BatchTask(), null( BatchTask ) );
+    }
+    
+    sourceoperations := sourceoperations.Union( operations );
+    
+    return  ApplicationScheduler.AllowedScheduling( droprow,            //batchresource
+                                                    sourceoperations,   //structured operations
+                                                    ctrlkey,            //skip soft check
+                                                    ctrlshiftkey,       //ctrl shift key
+                                                    guard( beforedroptarget.BatchTask(), null( BatchTask ) ),   //before task
+                                                    aftertask,          //afterbatch
+                                                    Operation_SC::GetSelectedObjects( sourceoperations ),
+                                                    feedback,
+                                                    isallowedhard )
+  *]
+}

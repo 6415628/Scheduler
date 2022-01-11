@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod EnsureExistWithDownstream (SuboptimizerMRSPOA owner, Operation_SCs operations) as owning OperationInSuboptimizers
+{
+  Description:
+  [*
+    For each operation in the given set and all operations that use as input material anything produced by any of the operations in the given set, checks whether an OperationInSuboptimizer object exists linking it to the given suboptimizer, and if not, creates it.
+    Returns the so-ensured set of OperationInSuboptimizers.
+    Runtime complexity linear in the size of (input plus downstream operations).
+  *]
+  TextBody:
+  [*
+    // mbr23 Aug-29-2019 (created)
+    
+    closure := operations.Union( selectset( operations,
+                                            Elements.ToOperationDependency.ToOperation,
+                                            downstreamoperation,
+                                            true ) );
+    
+    return OperationInSuboptimizer::EnsureExist( owner, closure );
+  *]
+}

@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method FSPLGetUpstreamTasks () as owning Task_SCs
+{
+  Description: 'To get all upstream tasks, including those across plan units. Currently used in cycle fixing.'
+  TextBody:
+  [*
+    // WOI1 May-9-2016 (created)
+    tasks := construct( Task_SCs );
+    
+    traverse( this, FSPLOperationInTask.FromOperationDependency.FromOperation.AsFSPLOperationInTask, up_task )
+    {
+      uptask := up_task.FSPLGetUpstreamTasks(); // This already includes upstream material reservation tasks
+      materialtask := up_task.FSPLGetDownstreamMaterialReservationTasks(); // We only need to include downstream material reservation tasks here
+      tasks := tasks.Union( uptask ).Union( materialtask );
+    }
+    
+    tasks.Add( this );
+    return &tasks
+  *]
+}

@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateFSPLSingleResource (Schedule schedule, String resourceID) as SingleResource
+{
+  TextBody:
+  [*
+    // Create resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, resourceID );
+    
+    // Assign FSPL to resource1 and resource2
+    resource.ResourceGroup_SC().HasFixedSequencePlanLogic( true );
+    
+    // Create subtask on resource group
+    subtasks := construct( Strings );
+    subtasks.Add( Constants::SubTask_Process() );
+    subtasks.Add( Constants::SubTask_NoBufferWait() );
+    UTFMockObjectFactory::CreateSubtaskTypeOnResourceGroup( resource.ResourceGroup_SC(), subtasks, '', '' );
+    
+    // Create lead time strategy and assign to resource1 and resource2
+    LeadTimeStrategy_SC::Create( resource, Duration::Zero(), Constants::StrategyASAP() );
+    Transaction::Transaction().Propagate( attribute( Resource_SC, StrategyName ) );
+    
+    return resource;
+  *]
+}

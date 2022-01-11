@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: CustomDrawComponentContainer/CustomDrawDataLayerLink
+Response OnDetermineRegion (LibOpt_Link object) id:Response_CustomDrawComponentContainer_CustomDrawDataLayerLink_OnDetermineRegion
+{
+  #keys: '[139164.3.980124265]'
+  Body:
+  [*
+    scale_x := ValueHolderScaleX.Data();
+    scale_y := ValueHolderScaleY.Data();
+    
+    offset_x := ValueHolderOffsetX.Data();
+    offset_y := ValueHolderOffsetY.Data();
+    
+    poly := NumberVector::Construct();
+    
+    points := selectsortedset( object, UIGraphArc.UIGraphArcPoint, point, true, point.UIGraphArc().SequenceNr(), point.SequenceNr() );
+    
+    traverse( points, Elements, point )
+    {
+      Form.AddPoint( poly,
+                     [Number] ( point.X() * scale_x + offset_x ),
+                     [Number] ( point.Y() * scale_y + offset_y ) );
+    }                                                                                                                                                     
+    
+    // Solve pixel ugliness.
+    poly.Set( 1, poly.Get( 1 ) + 1 );
+    poly.Set( poly.Size() - 1, poly.Get( poly.Size() - 1 ) - 1 );
+    
+    zorder := 0;
+    if( object.GetOrigin().CanBeCalled() )
+    {
+      zorder := 1;
+    }
+    
+    this.AddRegion( LibOpt_FormComponentGraph.GetLinePolygon( poly ), zorder );
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_CustomDrawDataLayer_OnDetermineRegion'
+}

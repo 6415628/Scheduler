@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method PollBreakpoints (LibOpt_Task task) as stream[Void]
+{
+  TextBody:
+  [*
+    result := null( stream[Void] );
+    if( task.CanContinue() )
+    {
+      continue := this.CanContinueBreakpoint( task );
+        
+      // Create a dataset copy when the AE requests a copy by pressing the 'Create dataset copy' button in the 'Component positions' form.
+      if( this.HasToCreateDatasetOnBreakpoint() ) 
+      {
+        LibOpt_DatasetCopyConditional::CopyDataset( task,
+                                                    "Breakpoint " + task.ComponentPosition().Name(), 
+                                                    false // We can only reach this if-block if PollBreakpoints is called reactively, so we can safely create a quick/reactive dataset copy here.                                                                     
+                                                    );     
+                                      
+        this.HasToCreateDatasetOnBreakpoint( false );
+      }
+      
+      if( continue )
+      {
+        result := emit( void );
+      }
+      else
+      {
+        if( this.BreakpointPollDuration() <= Duration::Zero() )
+        {
+          result := this->PollBreakpoints( task );
+        }
+        else
+        {
+          result := stream[Void]::Wait( this.BreakpointPollDuration() )
+                    ->|this->PollBreakpoints( task );
+        }
+      }
+      task.IsWaiting( not continue );
+    }
+    
+    return result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

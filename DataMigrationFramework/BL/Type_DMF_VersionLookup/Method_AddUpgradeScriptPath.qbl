@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddUpgradeScriptPath
+{
+  TextBody:
+  [*
+    // Scan the all the files in the "Scripts" folder, filter with the script prefix
+    settings   := this.ConvertorDataset().Settings();
+    scriptPath := settings.DataUpgradeScriptsDirectory();
+    
+    if( OS::IsDirectory( scriptPath ) )
+    {
+      fileNamePrefix := this.GetFileNamePrefix();
+      sqlFiles       := OS::ScanDirectory( scriptPath, DMF_DBInterface::GetPatternSQLFile() );
+    
+      // Create a version path for each located .sql file
+      traverse( sqlFiles, Elements, sqlFile )
+      {    
+        fileName := sqlFile.RestString( scriptPath.Length() );
+        
+        if( fileName.StartsWith( fileNamePrefix ) )
+        {     
+          //Read all the script for the datasettype
+          //retrieve the version from the script
+          DMF_VersionPath::Create( this, scriptPath, fileName );
+        }    
+      }
+    }
+    else
+    {
+      //event logging failed, no directory found
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

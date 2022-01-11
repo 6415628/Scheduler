@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod FindCreateCustomLogic (DMF_ConvertorDataset owner_i, Boolean isExport_i) as DMF_CustomLogicBase
+{
+  Description:
+  [*
+    Find and create custom logic if it doesn't exist.
+    If the flow was changed, discard the old type and re-create them
+  *]
+  TextBody:
+  [*
+    // tgn3 Apr-22-2021 (created)
+    
+    customLogic  := owner_i.CustomLogic();
+    expectedType := ifexpr( isExport_i, 
+                            typeof( DMF_CustomLogicExport ).Name(),
+                            typeof( DMF_CustomLogicUpgrade ).Name() );
+    
+    // If custom logic missing or incorrect type, re-create it (will replace previous instance)
+    if( isnull( customLogic ) or customLogic.DefinitionName() <> expectedType )
+    {
+      customLogic := DMF_CustomLogicBase::Create( owner_i, expectedType );
+    }
+    
+    return customLogic;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

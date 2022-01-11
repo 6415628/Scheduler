@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: ListPlannedOrders
+Response OnClick (structured[MPSPlannedOrder] selection) id:Response_ListPlannedOrders_MenuCreateFirmPlannedOrders_OnClick_549
+{
+  #keys: '[142956.0.564105044]'
+  CanBindMultiple: false
+  DefinitionID => /ListPlannedOrders/Responsedef_ListPlannedOrders_WebMenu_OnClick
+  Initiator: 'MenuCreateFirmPlannedOrders'
+  Precondition:
+  [*
+    MPSPlannedOrder::CanCreateFirmPlannedOrder( selection);
+    
+    return FeedbackObject::IsAllowed();
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Create Firm Planned Orders from selected MPSPlannedOrders
+      availableMPSPlannedOrders := selectset( selection, Elements, mpsPlannedOrder, mpsPlannedOrder.CanCreateFirmPlannedOrder() );
+      workOrders := MPSPlannedOrder::CreateFirmPlannedOrders( availableMPSPlannedOrders );
+    *]
+    GroupServerCalls: false
+  }
+}

@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateStatistics (LibOpt_Run run, Type statistictype, LibOpt_Component component, 
+  output LibOpt_SnapshotLogEntrys snapshotlogentries_o)
+{
+  Description: 'Create `LibOpt_StatisticLogEntrys` of the given "statistictype" (`Type`) for the given "run" (`LibOpt_Run`) and "component" (`LibOpt_Component`).'
+  TextBody:
+  [*
+    // Get the set of log entry snapshots for the current component.
+    snapshotlogentries_component := selectset( snapshotlogentries_o, Elements, snapshotlogentry,
+                                               // FILTER
+                                               snapshotlogentry.GetComponent() = component
+                                             );
+    
+    // For better performance on subsequent `selectset` operations on the "snapshotlogentries" set, remove snapshots that are no longer needed.
+    snapshotlogentries_o.Remove( snapshotlogentries_component );
+    
+    // Get the unique set of log entry details.
+    logentrydetails_unique := selectuniquevalues( snapshotlogentries_component, Elements, snapshotlogentry,
+                                                  // FILTER
+                                                  true,
+                                                  // VALUE
+                                                  snapshotlogentry.Details()
+                                                );
+    
+    // For each unique log entry details, create a log entry statistic for the current component.
+    traverse( logentrydetails_unique, Elements, logentrydetails_current )
+    {
+      // Generate a log entry statistic for the current component and current log entry details.
+      statisticsnapshotlogentry := LibOpt_StatisticLogEntry::Create( run, statistictype,
+                                                                             component,
+                                                                             logentrydetails_current
+                                                                           );
+      
+      // Get the set of snapshot log entries (from the "component" set) which details matches "logentrydetails_current".
+      snapshotlogentries_current := selectset( snapshotlogentries_component, Elements, snapshotlogentry,
+                                               // FILTER
+                                               true,
+                                               // VALUE
+                                               snapshotlogentry.Details() = logentrydetails_current
+                                             );
+      
+      // Link the set of log entry snapshots which details matches "snapshotlogentry" to the statistic just generated above.
+      traverse( snapshotlogentries_current, Elements, snapshotlogentry )
+      {
+        statisticsnapshotlogentry.SnapshotLogEntry( relinsert, snapshotlogentry );
+      }
+      
+      // For better performance on subsequent `selectset` operations on the "snapshotlogentries_component" set, remove snapshots that are no longer needed.
+      snapshotlogentries_component.Remove( snapshotlogentries_current );
+    }
+  *]
+}

@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetUserTimeZoneID () as String id:Method_LibDEF_DialogEditIntegrationEventCleanupDaemon_GetUserTimeZoneID
+{
+  #keys: '[122752.0.1252766031]'
+  Body:
+  [*
+    // Use GMT as default
+    /* This has to be done this way, because when the server runs in legacy timezone mode,
+     * the Application will still return the timezone ID of the user preference,
+     * which is undesired when not running in the full timezone mode.
+     * TODO: An RFC will be raised, this implementation might not be needed once it is fixed.
+     */
+    timezone := "GMT";
+    if( TimeZone::HasTimeZoneSupport() )
+    {
+      timezone := Application.SessionTimeZone().ID();
+    }
+    
+    return timezone;
+  *]
+}

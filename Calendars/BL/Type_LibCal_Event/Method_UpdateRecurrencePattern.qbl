@@ -1,0 +1,65 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateRecurrencePattern (Boolean isRecurring_i, String patternType_i, Number recurrenceInterval_i, 
+  String weekly_Weekdays_i, Boolean monthly_IsDay_i, Number monthly_Day_i, 
+  String monthly_WeekOfMonth_i, String monthly_DayOfWeek_i, Boolean yearly_IsDate_i, 
+  Number yearly_Month_i, Number yearly_Day_i, String yearly_WeekOfMonth_i, 
+  String yearly_DayOfWeek_i)
+{
+  TextBody:
+  [*
+    if( not isRecurring_i )
+    {
+      // Remove the RecurrencePattern.
+      this.RemoveRecurrencePattern();
+    }
+    else
+    {
+      // Set a RecurrencePattern of the applicable type.
+      
+      // Weekly
+      if( patternType_i = LibCal_RecurrencePattern::TYPE_WEEKLY() )
+      {
+        this.SetRecurrencePatternWeekly( weekly_Weekdays_i );
+      }
+      
+      // Monthly
+      else if( patternType_i = LibCal_RecurrencePattern::TYPE_MONTHLY() )
+      {
+        if( monthly_IsDay_i )
+        {
+          this.SetRecurrencePatternMonthly( monthly_Day_i );
+        }
+        else
+        {
+          this.SetRecurrencePatternMonthly( monthly_WeekOfMonth_i, monthly_DayOfWeek_i );
+        }
+      }
+      
+      // Yearly
+      else if( patternType_i = LibCal_RecurrencePattern::TYPE_YEARLY() )
+      {
+        if( yearly_IsDate_i )
+        {
+          this.SetRecurrencePatternYearly( yearly_Month_i, yearly_Day_i );
+        }
+        else
+        {
+          this.SetRecurrencePatternYearly( yearly_Month_i, yearly_WeekOfMonth_i, yearly_DayOfWeek_i );
+        }
+      }
+      
+      else
+      {
+        LibCal_Util::Info( "LibCal_Event.UpdateRecurrencePattern() : unexpected PatternType '" + patternType_i + "' encountered." ); 
+      }
+      
+      // Finally, set the recurrence interval.
+      this.SetRecurrenceInterval( recurrenceInterval_i );
+    }
+    
+    // Right away update the relation from the Participations to the RecurrencePattern.
+    Transaction::Transaction().Propagate( relation( LibCal_Participation, RecurrencePattern ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

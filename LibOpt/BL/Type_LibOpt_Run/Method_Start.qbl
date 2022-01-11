@@ -1,0 +1,95 @@
+Quintiq file version 2.0
+#parent: #root
+Method Start () as stream[JSON]
+{
+  Description:
+  [*
+    Start optimization of this run.
+    
+    If the run is configured to execute in a single transaction (using `InOneTransaction`, the run wil do so without creating a transaction. When an error or rollback happens in this case, the transaction will be aborted.
+    You can still inspect the run in that case by clicking "Recover last run" in the optimizers form.
+  *]
+  TextBody:
+  [*
+    this.CheckStart();
+    
+    this.MDSIDRun( this.MDSID() ); 
+    
+    this.StartedOn( DateTime::ActualTime() );
+    time := OS::PrecisionCounter();
+    this.StartedOnPrecision( time / OS::PrecisionCounterFrequency() );
+    
+    start_component := this.StartComponent();
+    task := LibOpt_Task::Create( this, start_component, this.StartScope() );
+    
+    result := null( stream[JSON] );
+    if( this.InOneTransaction() )
+    {
+      // Explicit propagate all, to make sure the behavior is identical to the run starting in another transaction.
+      Transaction::Transaction().Propagate();
+      LibOpt_DatasetCopyConditional::CopyDatasetConditionally( LibOpt_Component::ComponentPosition_Initialize(), task, true ); // Conditionally create a robust dataset copy
+      
+      nr_reactive_calls := LibOpt_CurrentTransaction::GetSpawnedReactiveCalls();
+      transaction := LibOpt_CurrentTransaction::GetCurrentTransaction( start_component );
+      
+      if( transaction.IsSafe() )
+      {
+        istaskregistered := transaction.BeforeMethodCall_ExistingSafeTransaction( task );
+        // A user error might occur in LibOpt_TaskTransporterOneTransaction::Send or in other methods called by Send. 
+        // However, transaction.IsSafe() is true, so we are inside a try{...} block. We have also called BeforeMethodCall_ExistingSafeTransaction. The error is therefore handled gracefully. 
+        result := LibOpt_TaskTransporterOneTransaction::Send( task, false );
+        transaction.AfterMethodCall_ExistingSafeTransaction( task, istaskregistered ); 
+      }
+      else
+      {
+        try
+        {
+          istaskregistered := transaction.BeforeMethodCall_TryBlock( task );
+          // A user error might occur in LibOpt_TaskTransporterOneTransaction::Send or in other methods called by Send. 
+          // However, we are inside a try{...} block. We have also called BeforeMethodCall_TryBlock. The error is therefore handled gracefully. 
+          result := LibOpt_TaskTransporterOneTransaction::Send( task, false );
+          transaction.AfterMethodCall_TryBlock( task, this, istaskregistered );
+        }
+        onerror
+        {
+          this.IsFailed( true );
+          transaction.OnError( e );
+        }
+        onfailure
+        {
+          this.IsFailed( true );
+          transaction.OnFailure( e );
+        }
+      }
+      
+      if( LibOpt_CurrentTransaction::GetSpawnedReactiveCalls() = nr_reactive_calls )
+      {
+        this.OnFinish();
+      }
+      else
+      {
+        err_message := Translations::LibOpt_Run_NotRunningInOneTransaction( this, LibOpt_CurrentTransaction::GetSpawnedReactiveCallNames( time ) );
+        err := construct( LibOpt_Error, GeneralInformation := err_message );
+        LibOpt_SnapshotError::Throw( this, err );
+        this.RollbackOneTransaction();
+      }
+    
+    }
+    else
+    {
+      // The DatasetCopyConditional relation was not yet propagated because it depends on the Run.Optimization relation.
+      // This relation did not exist during the previous propagate, because the run object was only created right before this method is called.
+      // The DatasetCopyConditional relation is required when creating a dataset copy. 
+      Transaction::Transaction().Propagate( relation( LibOpt_BreakpointPosition, DatasetCopyConditional ) );
+      LibOpt_DatasetCopyConditional::CopyDatasetConditionally( LibOpt_Component::ComponentPosition_Initialize(), task, false ); // Conditionally create a quick dataset copy
+      result := LibOpt_TaskTransporterReactive::Send( task );
+      handle_exception := result->Exception()->( e ) { this.IsFailed( true ) }
+      ignore_exception := result->IgnoreException();
+      on_finish        := ignore_exception->|this->OnFinish();
+      result := ignore_exception->Merge( handle_exception->|stream[JSON]::Success(),
+                                         on_finish->|stream[JSON]::Success() );
+    }
+    
+    return result;
+  *]
+}

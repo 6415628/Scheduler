@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod EnsureDatasetForImport () as String
+{
+  Description: 'Make sure that an instance of this dataset exists for reading an import.'
+  TextBody:
+  [*
+    datasetName := "KpiStagingSet";
+    editor      := MDSEditor::Editor();
+    
+    loadedInfo  := editor.LoadedObjectInfo( "KpiStagingSet", "/root", datasetName );
+    
+    if( isnull( loadedInfo ) )
+    {
+      unloadedInfo := editor.ObjectInfo( "KpiStagingSet", "/root", datasetName );
+      if( isnull( unloadedInfo ) )
+      {
+        params := MDSParameters::Create();
+        params.State( MDSInterface::MemoryOnlyState() );
+        MDSKpiStagingSet::CreateMDS( datasetName, params );
+      }
+      else
+      {
+        MDSKpiStagingSet::Load( unloadedInfo.MDSID().MDSKey() );
+      }
+    }
+    else
+    {
+      MDSKpiStagingSet::Root( loadedInfo.MDSID().MDSKey() );
+    }
+    return datasetName;
+  *]
+}

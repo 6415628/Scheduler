@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExportedInternalWorkOrders
+{
+  Description: 'Synchronizes the exported work order objects with work orders created in scheduler.'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    allinstances := selectset( schedule, FeedbackManager.ExportedSchedule.ExportedWorkOrder.astype( ExportedInternalWorkOrder ), exportedworkorder, true ); 
+    updatedinstances := construct( ExportedInternalWorkOrders );
+    
+    traverse( schedule, WorkOrder.astype( InternalWorkOrder ), workorder ) // filter for work orders created in scheduler only
+    {
+      exportedworkorder := ExportedInternalWorkOrder::FindExportedInternalWorkOrder( workorder.Id() );
+    
+      if( isnull( exportedworkorder ) )
+      {
+        exportedworkorder := ExportedInternalWorkOrder::Create( schedule.FeedbackManager().ExportedSchedule(), workorder.Id() );
+      }
+    
+      exportedworkorder.Update( workorder );
+      exportedworkorder.SynchronizeExportedWorkOrderOperations();
+      
+      updatedinstances.Add( exportedworkorder );
+    }
+    
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, old )
+    {
+      old.Delete();
+    }
+  *]
+}

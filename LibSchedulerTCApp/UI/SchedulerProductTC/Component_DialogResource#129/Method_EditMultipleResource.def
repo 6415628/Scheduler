@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method EditMultipleResource (internal[GUIComponent] parent_i, structured[Resource_SC] resources) id:Method_DialogResource_EditMultipleResource
+{
+  #keys: '[132916.0.400386022]'
+  Body:
+  [*
+    this.Title( 'Edit multiple resources' );
+    resourceswithownership := selectset( resources, Elements, r, true );
+    DataHolderResources.Data( &resourceswithownership );
+    
+    resource := resources.Element( 0 );
+    owner := resource.ResourceGroup_SC();    
+    
+    // Disable MaximumBatchSize Editor if SingleResourceBase
+    if( not owner.HasBatches() )
+    {
+      CheckBoxApplyMaxBatchSize.Visible( false );
+    }
+    
+    data := shadow( resource );                    
+                        
+    Dialog.Data( &data );
+    
+    LabelResourceID.Visible( false );
+    EditorResourceID.Visible( false );
+    LabelName.Visible( false );
+    EditorName.Visible( false );
+    this.InitializeBatchEdit();
+    
+    
+    if( Dialog.DoModal( parent_i ) > 0 )
+    { 
+      traverse( resources, Elements, r )
+      {      
+        resourceforbatchedit := Dialog.Data().ResourceForBatchEdit( relnew, ResourceID := r.ResourceID() );
+        this.UpdateResourceForBatchEdit( resourceforbatchedit );
+        
+        //post processing to update the node image
+        r.Image( NodeImage.Image() );
+      }    
+      Dialog.Data().Commit();
+    }
+  *]
+}

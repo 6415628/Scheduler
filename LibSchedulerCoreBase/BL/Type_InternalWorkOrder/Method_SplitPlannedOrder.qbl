@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method SplitPlannedOrder (Real quantity, Number nrOfLots) as InternalWorkOrder
+{
+  Description: 'Split selected planned order.'
+  TextBody:
+  [*
+    // Update original planned order's quantity
+    planUnit := select( this, Order_SC.PlanUnit_SC, planUnit, true );
+    originalPlannedOrderQuantity := this.Quantity() - quantity;
+    originalPlannedOrderNrOfLots := this.NrOfLots() - nrOfLots;
+    
+    this.UpdateQuantityAndNrOfLots( originalPlannedOrderQuantity, originalPlannedOrderNrOfLots );
+    
+    // Propagate MPSPlannedOrder QuantityOpen which is used to decide work order quantity
+    Transaction::Transaction().Propagate( attribute( MPSPlannedOrder, QuantityOpen ) );
+    
+    // Create new firm planned order base on open quantity.
+    newFirmPlannedOrder := this.Routing().CreateWorkOrder( this.ProductInStockingPoint(), quantity, nrOfLots, this.DueDate(), this.IsDummy() );
+    newFirmPlannedOrder.IsCreatedFromMPSPlannedOrder( true );
+    newPlanUnit := select( newFirmPlannedOrder, Order_SC.PlanUnit_SC, newPlanUnit, true );
+    
+    this.Order_SC().SplitTasks( planUnit, newPlanUnit );
+    
+    return newFirmPlannedOrder;
+  *]
+}

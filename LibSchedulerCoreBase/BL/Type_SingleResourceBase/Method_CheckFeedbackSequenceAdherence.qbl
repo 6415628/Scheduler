@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CheckFeedbackSequenceAdherence
+{
+  TextBody:
+  [*
+    // iterate all feedbacktasks to check if feedbacktask sequence is according to scheduled sequence
+    // ignore accuracy of the first feedbacktask when its previous is out of feedback history horizon and is deleted.
+    
+    feedbacktasks := selectsortedset( this, FeedbackTaskInSchedule, feedbacktask,
+                                      true, feedbacktask.Start(), feedbacktask.End(), feedbacktask.OperationID() );
+    previousfeedbacktaskid := '';
+    
+    traverse( feedbacktasks, Elements, feedbacktask )
+    {
+      feedbacktask.IsPreviousAdherence( feedbacktask.ScheduledPrevOperationID() = '' or feedbacktask.ScheduledPrevOperationID() = previousfeedbacktaskid );
+    
+      previousfeedbacktaskid := feedbacktask.OperationID();
+    }
+  *]
+}

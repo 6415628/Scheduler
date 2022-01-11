@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedDemoDataShutdownTask (CDIntegration cdintegration)
+{
+  Description: 'Restore imported demo data shutdown task core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedDemoDataShutdownTask
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedDemoDataShutdownTask ), cdiddst )
+    {
+      importedDemoDataShutdownTask := schedule.ImportedDemoDataShutdownTask( relnew, 
+                                                                             ShutdownID := cdiddst.ShutdownID()
+                                                                            );
+                                                                              
+      CopyCorresponding::CopyFrom( cdiddst ).CopyTo( importedDemoDataShutdownTask );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

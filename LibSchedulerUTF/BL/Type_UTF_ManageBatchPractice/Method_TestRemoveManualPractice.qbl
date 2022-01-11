@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRemoveManualPractice (Schedule schedule)
+{
+  TextBody:
+  [*
+    hasAlternaticePractice := false;
+    hasManualPractice := false;
+    this.GetTestVariant( hasAlternaticePractice, hasManualPractice );
+    
+    batch_1 := select( schedule, Batch, batch,
+                       true );
+    
+    // Practice before removal
+    originalPractice := batch_1.SelectedPractice();
+    
+    // Remove manual practice
+    batch_1.RemoveManualPractice();
+    
+    // Propagate declarative attribute
+    Transaction::Transaction().Propagate( attribute( Batch, SelectedPractice ) );
+    
+    value := not hasManualPractice or ( originalPractice = UTFUtility::AlternativePractice()
+                                        and batch_1.ManualPractice() = '' );
+    
+    this.Run().AssertTrue( value, UTFUtility::GenerateFailedMessage( "UTF_ManageBatchPractice", this.Variant() ) );
+  *]
+}

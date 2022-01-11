@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method InsertMetadata (DataUpgradeIO duio_i, DMF_UpgradeabilityMetaData metadata_i) as Boolean
+{
+  Description: 'Helper method to insert metadata to a database'
+  TextBody:
+  [*
+    // tgn3 Apr-8-2021 (created)
+    
+    table := metadata_i.DefinitionName();
+    
+    // Find out existing number of records (for auto-increment)
+    nextKey := this.GetNextUniqueKey( duio_i, table );
+    
+    columns := construct( Strings );
+    values  := construct( Strings );
+    
+    //get all the name value tree from the metadata_i, it consists of both columns and values;
+    contents := metadata_i.GetDetailInformations();
+    delim    := DMF_UpgradeabilityMetaData::GetDetailInfoDelimeter();
+    
+    //distribute the value key in the table
+    columns.Add( DMF_DBInterface::GetKeyColumn() );
+    values.Add( [String]nextKey );
+    
+    traverse( contents, Elements, content )
+    {
+      splitcontent := content.Tokenize( delim );
+      columnName   := splitcontent.Element( 0 );
+      columnValue  := ifexpr( columnName = attribute( DMF_UpgradeabilityMetaData, DatasetName ).Name(), 
+                              '', 
+                              guard( splitcontent.Element( 1 ), '' ) );
+      columns.Add( columnName );
+      values.Add( columnValue );
+    }
+    
+    return this.Insert( duio_i, table, columns, values );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

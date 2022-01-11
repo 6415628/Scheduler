@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetOrCreateMatchingConfiguration (KpiMetaDatas kpis) as DssKpiConfiguration
+{
+  Description: 'Gets or creates a Kpi Configuration that matches the Kpi specified in the argument.'
+  TextBody:
+  [*
+    // First try to find a matching configuration.
+    configurations   := selectset( this, Configuration, config, config.NumberOfKpis() = kpis.Size() );
+    configuration    := null( DssKpiConfiguration );
+    kpiCompareString := DssKpiConfiguration::CreateKpiCompareString( kpis );
+    
+    traverse( configurations, Elements, config, isnull( configuration ) )
+    {
+      if ( config.Matches( kpiCompareString ) )
+      {
+        configuration := config;
+      }
+    }
+    
+    // If no matching configuration has been found, then create a new one.
+    if ( isnull( configuration ) )
+    {
+      configuration := DssKpiConfiguration::Create( this, kpis );
+    }
+    
+    return configuration;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

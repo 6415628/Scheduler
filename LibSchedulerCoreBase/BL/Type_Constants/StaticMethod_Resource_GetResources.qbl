@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Resource_GetResources (String rgtype_i, Schedule owner_i) const declarative remote as String
+{
+  Description:
+  [*
+    Concatenate all ResourceIDs for a resource group into a string
+    Usage:
+    DialogToolRequirementBase - FromResource StringSelection
+  *]
+  TextBody:
+  [*
+    // James Kwapien Sep-29-2016 (created)
+    resourceids := construct( Strings );
+    // Need to add all resources string for dialog selection
+    resourceids.Add( Translations::SC_Resources_AllResources() );
+    
+    rg := select( owner_i, ResourceGroup_SC, rg, rg.Type() = rgtype_i );
+    
+    if( not isnull( rg ))
+    {
+      resources := selectset( rg, Resource_SC, resource, true );
+    
+      traverse( resources, Elements, resource )
+      {
+        resourceids.Add( resource.ResourceID() );
+      }
+    }
+    
+    return resourceids.Concatenate( ";" );
+  *]
+}

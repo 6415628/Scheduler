@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestSplitPlannedOrder (Schedule schedule)
+{
+  Description: 'Test split firm planned order from MPS planned orders.'
+  TextBody:
+  [*
+    testInstance := this.GetTestInstance( this.Variant() );
+    
+    // Get planned order to split
+    plannedOrder := select( schedule, WorkOrder.astype( InternalWorkOrder ), plannedOrder, true );
+    totalNrOfLots := plannedOrder.NrOfLots();
+    totalQty := plannedOrder.Quantity();
+    
+    // Get lot size and quantity to split
+    lotSize := min( schedule, Routing, routing, routing.LotSize() );
+    nrOfLotsToSplit := 3;
+    qtyToSplit := nrOfLotsToSplit * lotSize;
+    
+    // Expected remaining quantity and nr of lots for original planned order
+    remainingNrOfLots := totalNrOfLots - nrOfLotsToSplit;
+    remainingQty := totalQty - qtyToSplit;
+    
+    // Split planned order result check
+    newPlannedOrder := plannedOrder.SplitPlannedOrder( qtyToSplit, nrOfLotsToSplit );
+    
+    isSplitCorrect := newPlannedOrder.Quantity() = qtyToSplit and newPlannedOrder.NrOfLots() = nrOfLotsToSplit // Check new planned order split quantities
+                      and plannedOrder.Quantity() = remainingQty and plannedOrder.NrOfLots() = remainingNrOfLots; // Check old planned order split quantities
+    
+    canSplit := testInstance.CanSplit();
+    
+    // Don't need to check splitting if split is not allowed
+    this.Run().AssertTrue( not canSplit or canSplit = isSplitCorrect,
+                           UTFUtility::GenerateFailedMessage( 'Split planned order failed with unexpected final quantities and lots.', '' ) );
+  *]
+}

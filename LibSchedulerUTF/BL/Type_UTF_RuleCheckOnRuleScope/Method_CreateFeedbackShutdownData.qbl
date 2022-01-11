@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateFeedbackShutdownData (Schedule schedule, Real threshold, String measure)
+{
+  Description: 'Create feedback shutdown data'
+  TextBody:
+  [*
+    // Initialize rule framework
+    schedule.InitializeRuleFramework();
+    
+    // Create Allowed Maximum Value Check rule
+    rule := this.CreateMaximumValueRealRule( schedule );
+    
+    // Create shutdown type and assign to resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource' );
+    shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, 'shutdown type' );
+    UTFMockObjectFactory::CreateShutdownTypeInResource( shutdownType, resource );
+    
+    // Create shutdown scope in rule
+    rule.RuleScopeSelected( RuleConstant::RuleScope_Shutdown() );
+    UTFMockObjectFactory::CreateRuleScopeInShutdownType( rule, shutdownType );
+    
+    // Assign rule scope based on variant
+    rule.IsBeforeShutdown( false );
+    rule.RuleScopeShutdownAggregateThreshold( threshold );
+    
+    // Create characteristic scope based on variant
+    characteristicScope := select( schedule, Characteristic, char, char.ID() = measure );
+    rule.CharacteristicScope( relset, characteristicScope );
+      
+    // Assign a shutdown at operation2
+    shutdownTask := resource.InsertShutdown( null( Task_SC ), 
+                                             shutdownType, 
+                                             Duration::Hours( 1 ), 
+                                             true,
+                                             false,
+                                             DateTime::MinDateTime(),
+                                             Duration::Zero() );
+    shutdown := shutdownTask.Shutdown();
+    
+    // Create shutdown feedback
+    feedbackshutdowntask := UTFMockObjectFactory::CreateFeedbackShutdownTask( schedule.FeedbackManager(),
+                                                                              shutdown );
+    shutdowstart := schedule.Time() - Duration::Hours( 3 );
+    feedbackshutdowntask.Update( shutdown.ShutdownID(),
+                                 shutdowstart,
+                                 shutdowstart + Duration::Hours( 1 ),
+                                 Constants::TaskType_ShutDown(),
+                                 resource.ResourceID(),
+                                 null( ShutdownTask ),
+                                 Constants::StatusEnd() );
+    
+    // Create operation1 and feedback task
+    this.CreateAndPlanOperations( schedule, resource, shutdowstart );
+  *]
+}

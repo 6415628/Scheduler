@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericSingleTask (const SingleResource singleResource)
+{
+  Description: 'Backup generic single task core data'
+  TextBody:
+  [*
+    traverse( singleResource, SingleTaskBase.astype( GenericSingleTask ), genericSingleTask )
+    {
+      cdSingleTask := this.CDEntity( relnew, CDGenericSingleTask );
+      CopyCorresponding::CopyFrom( genericSingleTask ).CopyTo( cdSingleTask );
+      
+      // Additonal attribute in core data to persist the resource that this single task belongs
+      cdSingleTask.ResourceID( singleResource.ResourceID() ); 
+      
+      // Additonal attribute in core data to persist the operation that this single task relates to
+      cdSingleTask.PlanUnitID( guard ( genericSingleTask.OperationAsSingleTask().PlanUnitId(), '' ) );
+      cdSingleTask.OperationID( guard( genericSingleTask.OperationAsSingleTask().OperationID(), '' ) );
+      
+      // Additional attribute in core data to be used to find the corresponding task during restore
+      cdSingleTask.BackupTaskID( genericSingleTask.TaskID() );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

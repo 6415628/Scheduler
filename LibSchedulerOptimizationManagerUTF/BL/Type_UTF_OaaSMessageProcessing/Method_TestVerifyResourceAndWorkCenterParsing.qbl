@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestVerifyResourceAndWorkCenterParsing (Schedule schedule)
+{
+  Description: 'Simulate test of parsing resource and work center data for given initialization request.'
+  TextBody:
+  [*
+    // -- Work Center --
+    workCenterJSON := this.GetJSONInputData_WorkCentersArray().Build().Get( 0 ); // Get to grab array's first instance
+    workCenter := ImportedResourceGroup_SC::ParseFCjson( schedule, workCenterJSON );
+    
+    this.Run().AssertEqual( ImportedResourceGroup_SC::GetWorkCenterID( workCenterJSON ), workCenter.ResourceGroup() );
+    this.Run().AssertTrue( ImportedResourceGroup_SC::GetIsFiniteCapacity( workCenterJSON ) = workCenter.IsFiniteCapacity() );
+    
+    // -- Asset --
+    assetJSON := this.GetJSONInputData_AssetsArray().Build().Get( 0 ); // Get to grab array's first instance
+    resource := ImportedResource_SC::ParseFCjson( schedule, assetJSON );
+    
+    this.Run().AssertEqual( ImportedResource_SC::GetAssetID( assetJSON ), resource.ResourceID() );
+    this.Run().AssertEqual( ImportedResource_SC::GetGenericID( assetJSON ), resource.GenericID() );
+    this.Run().AssertEqual( ImportedResource_SC::GetWorkCenterID( assetJSON ), resource.ResourceGroup() );
+    
+    // -- Time Calendar --
+    timeCalendarJSON := this.GetJSONInputData_TimeCalendarsArray().Build().Get( 0 );
+    timeCalendar := ImportedShiftPatternAssignment::ParseFCjson( schedule, timeCalendarJSON, resource );
+    
+    this.Run().AssertEqual( ImportedShiftPatternAssignment::GetShiftPatternID( timeCalendarJSON ), timeCalendar.ShiftPatternID() );
+    this.Run().AssertEqual( ImportedShiftPatternAssignment::GetText( timeCalendarJSON ), timeCalendar.Text() );
+    this.Run().AssertEqual( ImportedShiftPatternAssignment::GetChunkStartDate( timeCalendarJSON ), timeCalendar.ChunkStartDate() );
+    this.Run().AssertEqual( ImportedShiftPatternAssignment::GetChunkEndDate( timeCalendarJSON ), timeCalendar.ChunkEndDate() );
+    this.Run().AssertEqual( ImportedShiftPatternAssignment::GetPriority( timeCalendarJSON ), timeCalendar.Priority() );
+    
+    workCenter.Delete();
+    timeCalendar.Delete();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDrawNode (StoppageTask element, Resource_SC row) id:Response_GanttChartSchedulingCentre_OnDrawNode_181
+{
+  #keys: '[143388.0.1768536401]'
+  Body:
+  [*
+    // On DrawNode StoppageTask if no constraint violation
+    
+    if( not element.HasConstraintViolations() )
+    {
+      // Show frozen color scheme if it is frozen
+      if( element.IsFrozenInSchedule() )
+      {
+        drawinfo.AddCompartment( ColorScheme.IsStoppageTaskFrozenInSchedule(), element.Duration() );
+      }
+      // Update Gantt Chart node for ProgramChangeTask based on ProgramChangeTask color scheme
+      else if( element.IsProgramChangeTask() )
+      {
+        drawinfo.AddCompartment( ColorScheme.ProgramChangeTask(), element.Duration() );
+      }
+      // Update Gantt Chart Node color according to subtask type
+      else
+      {
+        subtasks := selectsortedset( element, SubTask, subtask, true, subtask.SequenceNr() );
+        
+        traverse( subtasks, Elements, subtask )
+        {
+          if( subtask.istype( StoppageSubTask ) )
+          {
+            shutdowntype := guard( element.Shutdown().ShutdownType(), null( ShutdownType ) );
+            if( not isnull( shutdowntype ) )
+            {
+              drawinfo.AddCompartment( Color::Color( shutdowntype.ColorCode() ), subtask.Duration() );
+            }
+          }
+        }
+      }
+    }
+  *]
+  DefinitionID: 'Responsedef_GanttChart_OnDrawNode'
+}

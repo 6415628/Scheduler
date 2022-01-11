@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method IsPreparedForRun () const remote as Boolean
+{
+  Description: 'Precondition: checks if the user has run a prepare action after their last refresh action'
+  TextBody:
+  [*
+    // Timothy Guan Oct-14-2021 (created)
+    
+    // DevNote: The prepared structure may not necessarily contain any UpgradeMain instances.
+    // It can happen that only a dataset rebuild is required
+    feedback := FeedbackObject::LocalFeedback();
+    
+    isPreparedForRun := this.TimestampLastPrepare() <> DateTime::MinDateTime() and
+                        this.TimestampLastPrepare() > this.TimestampLastRefresh();
+    
+    if( not feedback.CheckHard( isPreparedForRun ) )
+    {
+      feedback.AddHard( Translations::DMF_ConvertorDataset_RequiresPreparation() );
+    }
+    
+    return isPreparedForRun;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

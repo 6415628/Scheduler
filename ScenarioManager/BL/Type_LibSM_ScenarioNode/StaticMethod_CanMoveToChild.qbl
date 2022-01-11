@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CanMoveToChild (LibSM_ScenarioNode scenarioNode, LibSM_ScenarioFolder target) remote as Boolean
+{
+  TextBody:
+  [*
+    // Check the children folder's name with target folder name
+    canmove := not exists( scenarioNode,
+                           Children.astype( LibSM_ScenarioFolder ),
+                           node,
+                           node.Name() = target.Name() );
+    if( canmove )
+    {
+      // Due to multiple level of hierarchy, use CanMoveToChild recursive method to check the next level of children folder
+      // if any children folder is same name as target folder, it will return false.
+      canmove := forall( scenarioNode,
+                         Children.astype( LibSM_ScenarioFolder ),
+                         node,
+                         LibSM_ScenarioNode::CanMoveToChild( node, target ) );
+    }
+    
+    return canmove;
+  *]
+}

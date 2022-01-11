@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+DeclarativeReferenceRelation CalcAsOperationCharacteristicPhaseTransition
+{
+  #keys: '1[136602.1.329120154]'
+  Expression:
+  [*
+    op := null( Operation_SC );
+    
+    // Only set this relation
+    // 1. The operation is planned or has feedback
+    // 2. The characteristic is used in program phase transition rules
+    if( ( this.Operation_SC().IsPlanned() or this.Operation_SC().HasFeedback() )
+        and exists( this, Operation_SC.PlannedResource.ProgramChange.ProgramType.ProgramTypeConfiguration.ProgramPhaseConfiguration.RuleScopeInProgramPhase.Rule, rule,
+                         rule.IsEnabled()
+                         and rule.IsProgramPhaseTransitionRule()
+                         and rule.CharacteristicMain() = this.Characteristic() ) )
+    {
+      op := this.Operation_SC(); 
+    }
+    
+    return op;
+  *]
+  Relation: AsOperationCharacteristicPhaseTransition
+}

@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetNextBlockingToolTaskStart (DateTime earlieststart, Strings blockids) declarative as DateTime
+{
+  Description: 'Get the start time of the next blocking tool task for the downstream operation within the same plan unit.'
+  TextBody:
+  [*
+    // alexandern Nov-12-2015 (created)
+    nextblockttstart := DateTime::MinDateTime();
+    scheduletime      := this.Resource_SC().Schedule().Time();
+    nextoperationids := construct( Strings );
+    
+    traverse( this, OperationInTask, operation )
+    {
+      traverse( operation, PlanUnit_SC.Operation_SC, opinpu, opinpu.SequenceNr() > operation.SequenceNr() )
+      {
+        nextoperationids.Add( opinpu.OperationID() )
+      }
+    }
+    
+    nextblocktt := minselect( this, OperationInTask.PlanUnit_SC.Operation_SC.Task_SC.ToolTask, tt,
+                              blockids.Find( tt.BlockID() ) > -1
+                              and nextoperationids.Find( tt.Task().GetOperation().OperationID() ) > -1
+                              and tt.Task() <> this
+                              and guard( tt.Task().Previous().EarliestEnd(), scheduletime ) > earlieststart,
+                              guard( tt.Task().Previous().EarliestEnd(), scheduletime ) );
+    
+    if( not isnull( nextblocktt ) )
+    {
+      nextblockttstart := guard( nextblocktt.Task().Previous().EarliestEnd(), scheduletime );
+    }
+    else // look for the next blocking tool task from Receiving (downstream) task(s)
+    {
+      nextblockttstart := this.GetNextBlockingReceiveToolTask( earlieststart, blockids );
+    }
+    
+    return nextblockttstart;
+  *]
+}

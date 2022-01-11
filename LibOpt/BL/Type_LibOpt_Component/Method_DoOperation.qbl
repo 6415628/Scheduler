@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoOperation (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    result := stream[JSON]::Success();
+    
+    if( this.Run().HasSnapshots() )
+    {
+      task.SnapshotComponent().PrecisionTimeStampStartComponent( OS::PrecisionCounter() / OS::PrecisionCounterFrequency() );
+    }
+    
+    if( task.CanContinue() )
+    {
+      this.NrTimesCalled( this.NrTimesCalled() + 1 );
+      transaction := LibOpt_CurrentTransaction::GetCurrentTransaction( this );
+      
+      if( transaction.IsSafe() )
+      {
+        istaskregistered := transaction.BeforeMethodCall_ExistingSafeTransaction( task );
+        // A user error might occur in Operation or in other methods called by Operation. 
+        // However, transaction.IsSafe() is true, so we are inside a try{...} block. We have also called BeforeMethodCall_ExistingSafeTransaction. The error is therefore handled gracefully. 
+        result := this.Operation( task );
+        transaction.AfterMethodCall_ExistingSafeTransaction( task, istaskregistered );
+      }
+      else
+      {
+        try
+        {
+          istaskregistered := transaction.BeforeMethodCall_TryBlock( task );
+          // A user error might occur in Operation or in other methods called by Operation. 
+          // However, we are inside a try{...} block. We have also called BeforeMethodCall_TryBlock. The error is therefore handled gracefully. 
+          result := this.Operation( task );
+          transaction.AfterMethodCall_TryBlock( task, task.Run(), istaskregistered );
+        }
+        onerror
+        {
+          transaction.OnError( e );
+        }
+        onfailure
+        {
+          transaction.OnFailure( e );
+        }
+      }
+    }
+    
+    return result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

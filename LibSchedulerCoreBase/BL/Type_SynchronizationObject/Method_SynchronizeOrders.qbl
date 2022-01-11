@@ -1,0 +1,73 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeOrders
+{
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // FOR DEMO
+    allinstances := selectset( this.Schedule(), Order_SC, order, not order.IsCreatedInScheduler() ); // we don't synchronize orders created in scheduler
+    updatedinstances := construct( Order_SCs );
+    
+    // Chris 20141007 EDI Conversion: Implement method to synchronize order from ImportedOrder_SC
+    // Create orders
+    traverse( this.Schedule(), WorkOrder, row, not row.IsCreatedInScheduler() ) // we don't synchronize work orders created in scheduler
+    {
+      order := row.CreateOrder_SC();
+      updatedinstances.Add( order );
+    }
+    
+    
+    // Delete unwanted existing orders
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, order, order.CanBeDeleted() )
+    {
+      order.Delete(); // we don't delete plan units here, because it is synchronized in SynchronizePlanUnits
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    /* The old ERP import
+    ordermultiplynr := this.Schedule().DataMultiplier().OrderMultplyNumber();                   // DataMultiplier
+    
+    allinstances := selectset( this.Schedule(), Order_SC, order, true, true );
+    updatedinstances := construct( Order_SCs );
+    
+    // Chris 20141007 EDI Conversion: Implement method to synchronize order from ImportedOrder_SC
+    // Create orders
+    for( i := 0; i < ordermultiplynr; i++ )                                                    // DataMultiplier
+    {
+      traverse( this.Schedule(), ImportedOrder_SC, row )
+      {
+        orderid := DataMultiplier::GetOrderID( row.OrderNr(), i );                             // DataMultiplier
+        order := Order_SC::FindOrder( orderid );
+    
+        if( isnull( order ) )
+        {
+          order := Order_SC::Create( this.Schedule(), orderid );
+        }
+    
+        order.Update( row );
+    
+        updatedinstances.Add( order );
+      }
+    }
+    
+    // Delete unwanted existing orders
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, order, order.CanBeDeleted() )
+    {
+      order.Delete();
+    }
+  *]
+}

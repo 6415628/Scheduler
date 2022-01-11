@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckType (LibCal_Participation selection_i, Boolean isEvent_i) remote as Boolean
+{
+  Description:
+  [*
+    Check if selection_i is of the expected type (Event or Subscription).
+    To be used in the UI.
+  *]
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    isAllowed := ifexpr( isEvent_i, selection_i.IsLeading(),
+                                    selection_i.IsSubscription() );
+    
+    if( not feedback.CheckHard( isAllowed ) )
+    {
+      subject := ifexpr( isEvent_i, "an event", "a subscription" );
+      feedback.AddHard( Translations::Participation_IsNot( subject ) );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetCharacteristicRealValue (Operation_SC op, Resource_SC res, Characteristic characteristic) as Real
+{
+  TextBody:
+  [*
+    // yifei Aug-24-2021 (created)
+    ret := 0.0;
+    
+    if( characteristic.ID() = RuleConstant::Characteristic_DurationInHours() )
+    {
+      oor := select( op, OperationOnResource, oor, oor.Resource_SC() = res );
+      ret := guard( oor.ProcessDuration().HoursAsReal(), 0.0 )
+    }
+    else if(  characteristic.ID() = RuleConstant::Characteristic_NumberOfTasks() )
+    {
+      ret := 1.0;
+    }
+    else
+    {
+      operationchar :=  select( op, OperationCharacteristic, opchar,
+                              opchar.Characteristic() = characteristic );
+      ret := guard( operationchar.RealValue(), 0.0 );
+    }                          
+    
+    return ret;
+  *]
+}

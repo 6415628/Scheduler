@@ -1,0 +1,102 @@
+Quintiq file version 2.0
+#parent: #root
+Method SimulateEarliestStartAndAssignTool (DateTime earlieststart, DateTime simearlieststart) declarative as DateTime
+{
+  Description: 'Calculate the earliest start for this subtask based on the availability of the tool the tool task requires and set the tool suitable for the tool task.'
+  TextBody:
+  [*
+    // alexandern Oct-22-2015 (created) QP #5798
+    count    := 0; // gooi: used to indicate number of iteration count
+    subtask  := this.SubTask();
+    toolid   := construct( Strings );
+    
+    // we will continue to search a time that is OK for everything to start. POTENTIAL PERFORMANCE ISSUE
+    while( earlieststart <> simearlieststart )
+    {
+      count ++;
+      /* COM2
+        AlexanderNg 16-Oct-2015: removed the use of GetEarliestStartWithCalendar here because that method was used when the earliest start
+        is calculated from a Task level, but now it is in SubTask level, so it will not be suitable to use that method anymore
+        in case the calendar strategy is UseFit or UseFitProcess, the earliest start of this subtask will be wrong already.
+      */
+      earlieststart := simearlieststart; // for each of the iteration, we will default the earliest start to the sim earliest start that we found during previous iteration
+      toolid.Flush();
+      toolinformation := '';
+      
+      sortedtooltask := selectsortedset( subtask, ToolTask, tooltask, true, tooltask.ToolGroupType() );
+      nroftooltask := 0;
+      nextelementindex := 0;
+      tthasselectedtool := true; // check if ToolTask has selected tool
+      tghasrequiredtool := true; // check if required ToolGroupType has enough required tools 
+      
+      // for each of the tool task, we will need to find a tool for it.
+      traverse( sortedtooltask, Elements, tt )
+      {
+        nroftooltask := nroftooltask + 1;
+        nextelementindex := nextelementindex + 1;
+        
+        tt.ToolID( '' );
+        ttearlieststart := this.GetToolTaskEarliestStart( tt, earlieststart ); // AlexanderNg 7-Jan-2016 QP #6082
+        tt.HasTool( false );
+        tool := this.GetAvailableTool( tt, toolid, ttearlieststart ); // AlexanderNg 7-Jan-2016 QP #6082
+    
+        if( not isnull( tool ) )
+        {
+          query := Calendar::Query();
+          query.AddCalendar( tool.ToolCalendar() );
+          resourcecalendar := this.SubTask().GetResourceCalendar();
+    
+          if( not isnull( resourcecalendar ) )
+          {
+            query.AddCalendar( resourcecalendar );
+          }
+    
+          // now, we found a tool that can start asap
+          toolearlieststart := query.NextFit( maxvalue( ttearlieststart, tool.SimAvailableTime() ), tt.Duration() );
+    
+          // AlexanderNg 7-Jan-2016 QP #6082
+          simearlieststart := this.GetSimEarliestStart( tool, tt, simearlieststart, toolearlieststart );
+    
+          tt.ToolID( tool.ToolID() ); // The tool selected for this tool task
+          toolid.Add( tool.ToolID() );
+          tt.HasTool( true );
+        }
+        else
+        {
+          tthasselectedtool := false;
+          tghasrequiredtool := false;
+        }
+        
+        // this is to check if next element is with different ToolGroup Type as current element
+        if( tt.ToolGroupType() <> guard( sortedtooltask.Element( nextelementindex ).ToolGroupType(), '' ) )
+        {
+          nroftool      := guard( tt.ToolGroup().Tool( relsize ), 0 ); // JamesK Sep-26-2016 ToolGroup.Type() is now editable in dialog, need to guard against relation changing
+        
+          if( not tghasrequiredtool )
+          {
+            if( nroftooltask > nroftool )
+            {
+              toolinformation := toolinformation + Translations::SC_NotEnoughTool( this.SubTask().DefinitionName(), nroftooltask, tt.ToolGroupType(), nroftool ) + String::NewLine();
+            }
+            else //ang1 8Mar2016 QP #6471: if the number of tool is same or more than the number of tooltask and the tooltask
+            {    //still cannot find the tool then it is because the tool is still blocked by other tasks
+              toolinformation := toolinformation + Translations::SC_ToolIsBlocked() + String::NewLine();
+            }
+          }
+          nroftooltask  := 0;
+          tghasrequiredtool := true;
+        }
+      }
+      
+      this.SubTask().HasSelectedTool( tthasselectedtool );
+      
+      // JamesK Sep-26-2016 ToolGroup.Type() is now editable in dialog, need to guard against relation changing
+      if( not isnull( this.SubTask() ))
+      {
+        this.SubTask().ToolInformation( toolinformation );
+      }
+    }
+    
+    return earlieststart;
+  *]
+}

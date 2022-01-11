@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeProductPlannedDemands
+{
+  Description: 'Synchronize product-based demands for this operation.'
+  TextBody:
+  [*
+    // WOI1 Jul-28-2016 (created)
+    allinstances     := selectset( this, PlannedDemand.astype( ProductPlannedDemand ), planneddemands, true )
+    updatedinstances := construct( ProductPlannedDemands );
+    
+    traverse( this, WorkOrderOperation.WorkOrderDemand, workorderdemand )
+    {
+      productplanneddemand := workorderdemand.GetProductPlannedDemand( this );
+      updatedinstances.Add( productplanneddemand );
+      
+      // Propagate Operation.NumberOfInputLots which is used in synchronization of stock elements.
+      Transaction::Transaction().Propagate( attribute( Operation_SC, NumberOfInputLots ) );
+      
+      // Synchronize stock elements
+      productplanneddemand.SynchronizeStockElement();
+    }
+    
+    //Delete product planned demands if they do not exist in KT
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, productplanneddemand )
+    {
+      productplanneddemand.Remove();
+    }
+  *]
+}

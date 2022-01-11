@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOAConstraintMakespan (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata)
+{
+  Description: 'Adds the POA constraints corresponding to the makespan'
+  TextBody:
+  [*
+    valueset := POAValueSet::P( poa, SuboptimizerSequencingPOA::NamePOAConstraintMakespan(), Real::MaxReal() );
+    
+    endorderconstraint := poa.NewEndPathConstraint( SuboptimizerSequencingPOA::NamePOAConstraintMakespan() );
+    
+    endorderconstraint.Expression( poa.Expression( SuboptimizerSequencingPOA::NamePOAExpressionTime() ) );
+    endorderconstraint.ValueSet( valueset );
+    
+    endorderconstraint.Power( OptimizerRun::GetPOAPower( guard( this.Strategy().Sequencing_KPIPowerConstraintMakespan(), OptimizerRun::POADefaultPower() ) ) );
+    
+    endorderconstraint.Factor( guard( this.Strategy().Sequencing_KPIWeightConstraintMakespan(), 1.0 ) );
+    
+    // Define constraint for the makespan path
+    path := poa.PathType( SuboptimizerSequencingPOA::NamePOAPathMakespan() );
+    valueset.Set( path, 0.0 ); // penalize from the first millisecond onwards
+    
+    traverse( transientdata, ResourceGroup.Resource, resource, true )
+    {
+      valueset := POAValueSet::P( poa, SuboptimizerSequencingPOA::NamePOAConstraintMakespanResource( resource.Resource() ), Real::MaxReal() );
+      
+      endresourceconstraint := poa.NewEndPathConstraint( SuboptimizerSequencingPOA::NamePOAConstraintMakespanResource( resource.Resource() ) );
+    
+      endresourceconstraint.Expression( poa.Expression( SuboptimizerSequencingPOA::NamePOAExpressionTime() ) );
+      endresourceconstraint.ValueSet( valueset );
+      endresourceconstraint.Power( OptimizerRun::POADefaultPower() );
+      endresourceconstraint.Factor( guard( this.Strategy().Sequencing_KPIWeightConstraintMakespanResource(), 1.0 ) );
+    
+      path := poa.PathType( this.GetPathTypeName( resource ) );
+      valueset.Set( path, 0.0 );
+    }
+  *]
+}

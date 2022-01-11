@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsValid (Schedule owner, ProgramDefinitionConfiguration programdefinitionconfiguration, String programdefinitionconfigurationid, 
+  String name, Resource_SCs resources) remote as Boolean
+{
+  Description: 'Perform checking on general fields when creating and editing a program definition configuration instance.'
+  TextBody:
+  [*
+    // Perform checking on general fields when creating and editing a program definition configuration instance.
+    
+    /*
+    1. Check the program definition configuration ID is not empty.
+    2. Check the program definition configuration ID is unique.
+    3. Check the name is not empty.
+    4. Check the resource is not used in other program definition configuration
+    */
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    ProgramDefinitionConfiguration::CheckIsProgramDefinitionConfigurationIDNotEmpty( programdefinitionconfigurationid );
+    ProgramDefinitionConfiguration::CheckIsProgramDefinitionConfigurationIDUnique( owner, programdefinitionconfiguration, programdefinitionconfigurationid );
+    ProgramDefinitionConfiguration::CheckIsNameNotEmpty( name );
+    ProgramDefinitionConfiguration::CheckIsResourceNotAssigned( owner, programdefinitionconfiguration, resources );
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

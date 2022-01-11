@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetupWithTwoTasks (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    testinstance := this.GetTestInstanceMain( variant );
+    
+    // Set company time
+    schedule.Time( UTFUtility::GetCompanyTime() );
+    
+    // Create UTF resource group and resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, testinstance.TestInstanceID() );
+    LeadTimeStrategy_SC::Create( resource, Duration::Zero(), testinstance.ResourceStrategy() )
+    
+    // Create 2 different Orders, PlanUnits, operations, tasks.
+    for ( i := 0; i < 2; i ++ )
+    {
+      id := UTFUtility::ConcatWithHyphen( testinstance.TestInstanceID(), [String]i );
+      operation := UTFMockObjectFactory::CreateOperation( schedule, id, 1.0 );
+      UTFMockObjectFactory::CreateInputOperationMaterial( operation, id );
+    
+      resource.GenericPlanLastUTF( operation );   
+    }  
+    
+    // Propagate all declarative attributes/relations operationonresource                                      
+    Transaction::Transaction().Propagate( relation( Operation_SC , OperationOnResource));
+    
+    // Create subtasktypeonresourcegroup and set the duration
+    UTFMockObjectFactory::CreateSubTaskTypeOnResourceGroup( testinstance.TestInstanceID(), resource ); 
+    
+    // Propagate all declarative attributes/relations prior to assertion in the actual test method.                                       
+    Transaction::Transaction().Propagate();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

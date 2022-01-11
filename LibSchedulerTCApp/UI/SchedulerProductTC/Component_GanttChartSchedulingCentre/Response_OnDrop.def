@@ -1,0 +1,62 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDrop (structured[Task_SC] source, SingleResourceBase droprow, Task_SC beforedroptarget, 
+  Task_SC afterdroptarget) id:Response_GanttChartSchedulingCentre_OnDrop
+{
+  #keys: '[11532.0.78999134]'
+  Body:
+  [*
+    // OnDrop structured[Task] --> SingleResourceBase
+    
+    beforetask := beforedroptarget;
+    // We check droprow.First().HasFeedbackTask because only in the case where resource.First have reported start then only it will be hidden in the gantt chart, 
+    // hence only need this special handling and user can only plan after the last feedback task.
+    if( isnull( beforetask ) and guard( not isnull( droprow.LastFeedback().Task_SC() ), false ) and droprow.LastFeedbackTaskInSchedule().Task_SC().End() < droptime )
+    {
+      beforetask := droprow.LastFeedback().Task_SC();
+    }
+    
+    if( ApplicationScheduler.IsPlanSiblingOperations( source, droprow ) )
+    {
+      // Plan sibling operations
+      batchtasks := selectset( source, Elements.astype( BatchTask ), batchtask, true );
+      droprow.PlanAfterBatchOnSingleResource( batchtasks, beforetask );
+    }
+    else
+    {
+      droprow.PlanAfter( source, beforetask );
+    }
+  *]
+  DefinitionID: 'Responsedef_GanttChart_OnDrop'
+  Precondition:
+  [*
+    isallowedhard := true;
+    aftertask := droprow.First();
+    ctrlkey   := dropaction.IsControl();
+    ctrlshift := dropaction.IsControlShift();
+    beforetask := beforedroptarget;
+    
+    // We check droprow.droprow.LastFeedback() because in the case where last feedback task is only started or has FSPL bound then it's task is preserved but hidden   
+    // hence only need this special handling and user can only plan after the last feedback task.
+    if( isnull( beforetask ) and guard( not isnull( droprow.LastFeedback().Task_SC() ), false ) and droprow.LastFeedbackTaskInSchedule().Task_SC().End() < droptime )
+    {
+      beforetask := droprow.LastFeedback().Task_SC();
+    }
+    
+    if( not isnull( beforetask ) )
+    {
+      aftertask := beforetask.Next();
+    }
+    
+    return ApplicationScheduler.AllowedScheduling( droprow,
+                                                   source,
+                                                   ctrlkey,
+                                                   ctrlshift,
+                                                   beforetask,
+                                                   aftertask,
+                                                   Task_SC::GetSelectedObjects( source ),
+                                                   feedback,
+                                                   isallowedhard );
+  *]
+  UserRequiresReadWrite: true
+}

@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcIsAllowedInUnification
+{
+  TextBody:
+  [*
+    // mbr23 Feb-20-2020 (created)
+    
+    value := this.IsAllowed();
+    if( this.Resource().ResourceGroup().IsExchangable() )
+    {
+      value := false; // we're exchangeable. Only the representative unified resource gets to have this allowed flag set.
+      if( not isnull( this.Resource().AsUnifiedResource() ) )
+      {
+        // this resource is the representative unified resource of the whole group. Allow in unification if any group resources allow it:
+        value := exists( this.Operation(), AllowedOperationOnResource, aoor, aoor.Resource().ResourceGroup() = this.Resource().AsUnifiedResource() );
+      }
+    }
+    
+    this.IsAllowedInUnification( value );
+  *]
+}

@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#root
+#parent: #DomainModel
+TypeSpecialization LibOpt_BT_TrackingTable
+{
+  #keys: '2[139164.5.1083316473][138586.1.467104059]'
+  OnCommit:
+  [*
+    // On creation of a new tracking table:
+    if( isnew )
+    {
+      // 1. Create default column.
+      LibOpt_BT_TrackingTableColumn::Create( this, Translations::LibOpt_BT_TrackingColumn_Full_Description() );
+      
+      // 2. Create default rows.
+      LibOpt_BT_TrackingTableRow::Create( this, 'XS', 0.01 );
+      LibOpt_BT_TrackingTableRow::Create( this, 'S', 0.05 );
+      LibOpt_BT_TrackingTableRow::Create( this, 'M', 0.25 );
+      LibOpt_BT_TrackingTableRow::Create( this, 'L', 0.5 );
+      LibOpt_BT_TrackingTableRow::Create( this, 'XL', 0.75 );
+      LibOpt_BT_TrackingTableRow::Create( this, 'Full', 1.0 );
+      
+      // 3. Synchronize settings.
+      this.Dataset().SynchronizeSettings();
+      
+      // 4. Synchronize target KPIs.
+      Transaction::Transaction().Propagate(); // There are some declarative elements in the static method call below.
+      LibOpt_BT_TrackingTableBase::SynchronizeTargetKPIs( this.Cell( relget ) );
+    }
+  *]
+  Parent: LibOpt_BT_TrackingTableBase
+  StructuredName: 'LibOpt_BT_TrackingTables'
+}

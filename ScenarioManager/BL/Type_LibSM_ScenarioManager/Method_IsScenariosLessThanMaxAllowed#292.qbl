@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method IsScenariosLessThanMaxAllowed (String action) declarative remote as Boolean
+{
+  Description: 'Returns whether the number of loaded scenarios is less that the maximum number of loaded scenarios. This overload also creates a hard feedback in the feedback object with a text referring to the specified action.'
+  TextBody:
+  [*
+    nrOfScenarios := this.NrOfScenarios();
+    maxScenarios  := this.GlobalParameter().MaxNrOfScenarios();
+    allowed       := this.IsScenariosLessThanMaxAllowed();
+    feedback      := FeedbackObject::LocalFeedback();
+    
+    if ( not feedback.CheckHard( allowed ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioManager_CanNotPerformAction_ExceededMaxNrOfScenarios( action, 
+                                                                                                          nrOfScenarios,
+                                                                                                          maxScenarios ) );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

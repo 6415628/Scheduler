@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetSimEarliestStartAndAssignTool () declarative as DateTime
+{
+  Description: 'Get the earliest start for this subtask based on the availability of the tool tasks that it requires.'
+  TextBody:
+  [*
+    // alexandern Oct-22-2015 (created)
+    // Determine earliest start of the subtask.
+    // NOTE: The earliest start is the START of the subtask
+    // NOTE: The tool is always nextfit!!
+    
+    /* COM1
+      AlexanderNg 16-Oct-2015: used strategy's earliest start to replace the MES and RES (please refer to the comment "COM2" inside the
+      method SimulateEarliestStartAndAssignTool below) because the strategy's earliest start has taken into account the resource calendar
+    */
+    // earliest starts
+    resource              := this.Resource_SC();
+    strategyearlieststart := this.Task_SC().Strategy_SC().EarliestStart();
+    prevsubtask           := this.Previous();
+    prevearliestend       := DateTime::MinDateTime();
+    
+    if( not isnull( prevsubtask ) )
+    {
+      prevearliestend := prevsubtask.EarliestEnd();
+    }
+    
+    om := this.OperationMaterial();
+    query := Calendar::Query();
+    query.AddCalendar( resource.ResourceCalendar() );
+    
+    if( not isnull( om ) and not isnull( om.ReceiveSubTask() ) )
+    {
+      receivingresource := om.ReceiveSubTask().Resource_SC();
+      query.AddCalendar( receivingresource.ResourceCalendar() );
+    }
+               // AlexanderNg 22-Oct-2015 need to use strategyearlieststart in case the TransferSubTask is first subtask
+    transferearlieststart := query.NextFit( maxvalue( strategyearlieststart, 
+                                                      prevearliestend, 
+                                                      guard( om.ReceiveSubTask().Task_SC().Previous().End(), prevearliestend ) + guard( om.ReceiveSubTask().AsFirstRespectRoutingSubTask().DurationBeforeRoutingStart(), Duration::Zero() ) ),
+                                            this.NetDuration() );
+    earlieststart         := DateTime::MinDateTime();
+    simearlieststart      := transferearlieststart;
+    
+    return this.ToolSimulationSubTask().SimulateEarliestStartAndAssignTool( earlieststart, simearlieststart );
+  *]
+}

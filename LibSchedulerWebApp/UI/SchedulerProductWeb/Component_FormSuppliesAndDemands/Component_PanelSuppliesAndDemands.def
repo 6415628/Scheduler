@@ -1,0 +1,121 @@
+Quintiq file version 2.0
+Component PanelSuppliesAndDemands
+{
+  #keys: '[143768.1.17128049]'
+  BaseType: 'WebPanel'
+  Children:
+  [
+    #child: PanelSupplies
+    #child: PanelDemands
+    Component DataHolderSelectedDemand
+    {
+      #keys: '[143768.1.25730181]'
+      BaseType: 'WebDataHolder'
+      Databinding: 'Demand'
+      Properties:
+      [
+        Taborder: 4
+      ]
+    }
+    Component DataHolderCompatibleSupplies id:DataHolderCompatibleSupplies_358
+    {
+      #keys: '[143768.1.36610321]'
+      BaseType: 'WebDataHolder'
+      Databinding: 'structured[Supply]*'
+      Children:
+      [
+        Component DataExtractorCompatibleProductSupplies id:DataExtractorCompatibleProductSupplies_129
+        {
+          #keys: '[143768.1.36610322]'
+          BaseType: 'WebDataExtractor'
+          Properties:
+          [
+            DataType: 'Demand'
+            ExtractionMode: 'Selected'
+            Source: 'ListAllDemands'
+            Taborder: 0
+            Transformation: 'astype(ProductDemand).ProductInStockingPoint.Product_SC.ProductCompatibleDemand.AsProductCompatibleSupply.ProductInStockingPoint.ProductSupply'
+          ]
+        }
+        Component DataExtractorCompatibleMaterialSupplies id:DataExtractorCompatibleMaterialSupplies_750
+        {
+          #keys: '[143768.1.36610323]'
+          BaseType: 'WebDataExtractor'
+          Properties:
+          [
+            DataType: 'Demand'
+            ExtractionMode: 'Selected'
+            FilterArguments: 'DataHolderSelectedDemand:QLibSchedulerWebApp::FormSuppliesAndDemands.DataHolderSelectedDemand'
+            FixedFilter: 'DataHolderSelectedDemand.istype( MaterialDemand ) and object.UoM() = DataHolderSelectedDemand.astype( MaterialDemand ).UoM()and object.IsDiscrete() = DataHolderSelectedDemand.IsDiscrete()'
+            Source: 'ListAllDemands'
+            Taborder: 1
+            Transformation: 'astype(MaterialDemand).StockingPoint.MaterialSupply'
+          ]
+        }
+      ]
+      Properties:
+      [
+        MergeStyle: 'Union'
+        Taborder: 2
+      ]
+    }
+    Component DataHolderSelectedSupply
+    {
+      #keys: '[143768.1.36748496]'
+      BaseType: 'WebDataHolder'
+      Databinding: 'Supply'
+      Properties:
+      [
+        Taborder: 5
+      ]
+    }
+    Component DataHolderCompatibleDemands
+    {
+      #keys: '[143768.1.36671858]'
+      BaseType: 'WebDataHolder'
+      Databinding: 'structured[Demand]*'
+      Children:
+      [
+        Component DataExtractorCompatibleProductDemands
+        {
+          #keys: '[143768.1.36678594]'
+          BaseType: 'WebDataExtractor'
+          Properties:
+          [
+            DataType: 'Supply'
+            ExtractionMode: 'Selected'
+            Source: 'ListAllSupplies'
+            Taborder: 0
+            Transformation: 'astype(ProductSupply).ProductInStockingPoint.Product_SC.ProductCompatibleSupply.AsProductCompatibleDemand.ProductInStockingPoint.ProductDemand'
+          ]
+        }
+        Component DataExtractorCompatibleMaterialDemands
+        {
+          #keys: '[143768.1.36690667]'
+          BaseType: 'WebDataExtractor'
+          Properties:
+          [
+            DataType: 'Supply'
+            ExtractionMode: 'Selected'
+            FilterArguments: 'DataHolderSelectedSupply:QLibSchedulerWebApp::FormSuppliesAndDemands.DataHolderSelectedSupply'
+            FixedFilter: 'DataHolderSelectedSupply.istype(MaterialSupply) and object.UoM() = DataHolderSelectedSupply.astype(MaterialSupply).UoM()and object.IsDiscrete() = DataHolderSelectedSupply.IsDiscrete()'
+            Source: 'ListAllSupplies'
+            Taborder: 1
+            Transformation: 'astype(MaterialSupply).StockingPoint.MaterialDemand'
+          ]
+        }
+      ]
+      Properties:
+      [
+        MergeStyle: 'Union'
+        Taborder: 3
+      ]
+    }
+  ]
+  Properties:
+  [
+    Orientation: 'horizontal'
+    SizeRatio: 10
+    Taborder: 1
+  ]
+}

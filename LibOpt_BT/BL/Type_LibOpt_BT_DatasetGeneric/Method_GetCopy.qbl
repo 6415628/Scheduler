@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetCopy (String dataset_name, DatasetState state) as stream[LibOpt_Optimization]
+{
+  TextBody:
+  [*
+    option := DatasetFindOptions::Construct( this.Name() ).IncludeOffline( true );
+    mdsid := DatasetController::FindUnique( option );
+    
+    options := DatasetCreateOptions::Construct( dataset_name )
+                    .AsCopy( mdsid )
+                    .State( state );
+    
+    m := Reflection::FindStaticMethodBySignature( 'MDS' + this.Kind(), 'Create', 'DatasetCreateOptions' );
+    m.AddObjectArgument( options );
+    
+    m.Execute();
+    copy := m.GetStreamResult();
+    dataset := copy.astype( stream[Object] );
+    return dataset->LibOpt_BT_DatasetGeneric::GetOptimizationFromDataset();
+  *]
+}

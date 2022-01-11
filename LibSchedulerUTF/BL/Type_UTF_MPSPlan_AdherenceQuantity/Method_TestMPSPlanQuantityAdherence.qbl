@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestMPSPlanQuantityAdherence (Schedule schedule)
+{
+  Description: "Unit test for checking that the work order's quantity adheres to the MPS planned order's period that it falls in."
+  TextBody:
+  [*
+    testInstance := this.GetTestInstance( this.Variant() );
+    
+    // Needed to propagate after planning operations and moving schedule time
+    Transaction::Transaction().Propagate( attribute( MPSPlannedOrder, QuantityFirmed ) );
+    
+    // Assume only 2 MPSPlannedOrders created
+    earliestMPSPlannedOrder := minselect( schedule, MPSPlan.MPSPlannedOrder, mpsPlannedOrder, true, mpsPlannedOrder.DueDate() );
+    latestMPSPlannedOrder := maxselect( schedule, MPSPlan.MPSPlannedOrder, mpsPlannedOrder, true, mpsPlannedOrder.DueDate() );
+    
+    // Assume only 1 firm planned order created
+    firmPlannedOrder := select( schedule, WorkOrder.astype( InternalWorkOrder ), firmPlannedOrder, true );
+    
+    isLinkToEarlierMPSPlannedOrder := guard( firmPlannedOrder.MPSPlannedOrder() = earliestMPSPlannedOrder, false );
+    isQtyAdhereToEarlierPeriod := firmPlannedOrder.Quantity() = earliestMPSPlannedOrder.QuantityFirmed();
+    
+    isLinkToLaterMPSPlannedOrder := guard( firmPlannedOrder.MPSPlannedOrder() = latestMPSPlannedOrder, false );
+    isQtyAdhereToLaterPeriod := firmPlannedOrder.Quantity() = latestMPSPlannedOrder.QuantityFirmed();
+    
+    // Firmed quantity should be counted into the MPS period it falls in
+    result := ( testInstance.IsAdhereToLaterPeriod() and isLinkToLaterMPSPlannedOrder and isQtyAdhereToLaterPeriod )
+              or ( isLinkToEarlierMPSPlannedOrder and isQtyAdhereToEarlierPeriod );
+    
+    this.Run().AssertTrue( result,
+                           UTFUtility::GenerateFailedMessage( 'MPS Planned Order quantity adherence logic failed', '' ) );
+  *]
+}

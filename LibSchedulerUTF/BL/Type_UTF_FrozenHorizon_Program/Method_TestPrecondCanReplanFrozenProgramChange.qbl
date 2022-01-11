@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPrecondCanReplanFrozenProgramChange (Schedule schedule)
+{
+  Description: 'Test replan frozen program change precondition checking'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    isfreezeschedulebyprogram := false;
+    isprogram1alltasksfreeze := false;
+    isprogram2alltasksfreeze := false;
+    
+    this.GetTestVariantForForFreezeScheduleByProgram(  isvariantfound,
+                                                       isfreezeschedulebyprogram,
+                                                       isprogram1alltasksfreeze,
+                                                       isprogram2alltasksfreeze );
+    
+    value := true;
+    
+    // Only do checking when variant found
+    if( isvariantfound )
+    {
+      programchange1 := minselect( schedule, ResourceGroup_SC.Resource_SC.ProgramChange.ProgramChangeTask, task, task.SequenceNr() );
+      programchange2 := maxselect( schedule, ResourceGroup_SC.Resource_SC.ProgramChange.ProgramChangeTask, task, task.SequenceNr() );
+      
+      feedback := '';
+      isallowedhard := false;
+      value := not programchange1.CanReplan( false, feedback, isallowedhard ) // Do not allow replan frozen program change
+               and programchange2.CanReplan( false, feedback, isallowedhard ); // Allow replan frozen program change      
+    }      
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Test precondition replan frozen program change failed.', 
+                           this.Variant() ) );
+    
+    // Gantt chart
+    // Program set        |----------------- Program 1 ----------------------|                    |-----Program 2----|
+    // ProgramChangeTask1 (Frozen) | Task1(Frozen) --- Task3(Frozen)- Task 7 | ProgramChangeTask2 | Task 8 - Task 15 |
+  *]
+}

@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateStartAndEnd () id:Method_LibCal_dlgCalendarSettings_UpdateStartAndEnd
+{
+  #keys: '[131094.1.162996849]'
+  Body:
+  [*
+    now      := DateTime::Now();
+    base     := dtBase.DateTime();
+    window   := [Number]edtWindow.Text();
+    history  := [Number]edtHistory.Text();
+    interval := durUpdateInterval.Duration();
+    timezone := LibCal_GlobalState.GetLocalTimeZone();
+    
+    if( TimeZone::HasTimeZoneSupport() )
+    {
+      base := base + timezone.RawOffset();  // Compensate for the correction of the DateTime-control.
+    }
+    
+    start      := base;
+    lastUpdate := base;
+    
+    if( now >= base and
+        interval > Duration::Zero() )
+    {
+      if( base.IsInfinite() )
+      {
+        base := now.StartOfDay( timezone );
+      }
+      
+      nrOfIntervalsSinceBase := ( now - base ) div interval;
+      lastUpdate             := base + nrOfIntervalsSinceBase * interval;
+    }
+    
+    start := lastUpdate - Duration::Days( history );
+    end   := guard( start + Duration::Days( window ), DateTime::MinDateTime() );
+    
+    mask    := "D2-MM-Y  H2:m";
+    convOps := ConversionOptions::ISO();
+    
+    lblStart.Text( start.Format( mask, convOps ) );
+    lblEnd.Text(   end  .Format( mask, convOps ) );
+    
+    lblLastUpdate.Text( lastUpdate.Format( mask, convOps ) );
+    
+    nextUpdate := "-";
+    if( interval > Duration::Zero() )
+    {
+      nextUpdate := ifexpr( base > now, base, lastUpdate + interval ).Format( mask, convOps );
+    }
+    lblNextUpdate.Text( nextUpdate );
+  *]
+}

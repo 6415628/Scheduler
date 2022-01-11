@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizePlanUnit_SC
+{
+  Description: "Updates the plan unit's quantity if there is only ONE plan unit."
+  TextBody:
+  [*
+    // WOI1 Nov-3-2016 (created)
+    oldquantity := sum( this, PlanUnit_SC, pu, true, pu.Quantity() );
+    nrofplanunits := this.PlanUnit_SC( relsize );
+    extraquantity := this.Quantity() - oldquantity;
+    
+    if( nrofplanunits = 1 )
+    { 
+      pu := select( this, PlanUnit_SC, pu , true );
+      pu.Update( this, this.Quantity(), this.NrOfLots() );
+    }
+    else if( extraquantity > 0.0 )
+    {
+      this.CreatePlanUnit( this.GetLastPlanUnitNr(), extraquantity, this.GetNrOfLots( extraquantity ) );
+    }
+  *]
+}

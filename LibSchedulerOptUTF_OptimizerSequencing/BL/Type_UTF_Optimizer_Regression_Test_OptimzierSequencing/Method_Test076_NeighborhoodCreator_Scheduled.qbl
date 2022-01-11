@@ -1,0 +1,64 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test076_NeighborhoodCreator_Scheduled (Schedule schedule)
+{
+  Description: "Tests the NeighborhoodCreatorDistanceMetric's 'scheduled' dimension"
+  TextBody:
+  [*
+    // mbr23 Feb-17-2020 (created)
+    
+    anchor := minselect( schedule, Operation_SC, op, true, Real::Random() ); // select any anchor
+    neighborhood_size_operations := 15;
+    distancemetric := construct( SettingsSequencingDistanceMetricForSequencing ); 
+    // Set all values to 0
+    distancemetric.UTF_SetAllToZero();
+    distancemetric.ClosenessByScheduled( 1.0 ); // only enable the "scheduled" dimension
+    
+    selector := this.Run_Test07x_NeighborhoodCreator( schedule, anchor, neighborhood_size_operations, distancemetric );
+    
+    // start scenario: some operations are sequenced:
+    anchortask := anchor.Plan();
+    resource := anchortask.Resource_SC().astype( SingleResourceBase );
+    planned_operations := 1;
+    candidates := selectsortedset( resource, AsAllowedResourceHard.Operation_SC, op, op <> anchor, Real::Random() );
+    traverse( candidates, Elements, op, planned_operations < neighborhood_size_operations * 1.5 ) // plan 50% more than the scope size
+    {
+      if( Real::Random() < 0.5 )
+      {
+        resource.PlanFirst( op );  
+      }
+      else
+      {
+        resource.PlanLast( op );
+      }
+      planned_operations := planned_operations + 1;
+    }
+    
+    // construct expected output: symmetric around anchor task.
+    Transaction::Transaction().Propagate(); // SequenceNr; relations between Resource, Task, and Operation
+    expected_output := construct( LibOpt_ScopeElements );
+    expected_output.Add( anchor.GetOrCreateScopeElement() );
+    while( expected_output.Size() < neighborhood_size_operations )
+    {
+      first_in_output := minselect( expected_output, Elements.astype( ScopeElementOperation ).Operation_SC.Task_SC, t, true, t.SequenceNr() );
+      last_in_output := maxselect( expected_output, Elements.astype( ScopeElementOperation ).Operation_SC.Task_SC, t, true, t.SequenceNr() );
+      if( not isnull( first_in_output.Previous() ) )
+      {
+        expected_output.Add( first_in_output.Previous().astype( SingleTaskBase ).OperationAsSingleTask().GetOrCreateScopeElement() );
+      }
+      if( not isnull( last_in_output.Next() ) )
+      {
+        expected_output.Add( last_in_output.Next().astype( SingleTaskBase ).OperationAsSingleTask().GetOrCreateScopeElement() );
+      }
+    }
+    this.Run().AssertEqual( neighborhood_size_operations, expected_output.Size(), 'calculation of "expected" output failed. The number of expected output elements does not match the neighborhood size.' );
+    expected_output.Add( resource.GetOrCreateScopeElement() );
+    
+    // assert that output is `expected_output`:
+    selector.Run().Start() ->| this->( o ) {
+      UTF_Optimizer_Regression_Test_OptimizerSequencing::AssertOutputScopeEquals( expected_output, this.Run(), selector );
+    }->Exception()->(exception) {
+      this.Run().RegisterFailure( "post-optimization assert failed:\n" + exception.Message() );
+    };
+  *]
+}

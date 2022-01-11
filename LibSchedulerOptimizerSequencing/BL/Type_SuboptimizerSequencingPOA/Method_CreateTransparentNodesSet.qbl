@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateTransparentNodesSet (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata) const as POANPossible
+{
+  TextBody:
+  [*
+    // By default the nodes are not transparent;
+    transparentnodes := POAPossible::N( poa, SuboptimizerSequencingPOA::NamePOAPossibleTransparent(), false );
+    
+    // The dummy end nodes are transparent
+    traverse( transientdata, OperationInSuboptimizerSequencing, operation, operation.GetRequiresDummyEndNode() )
+    {
+      dummynode := poa.Node( SuboptimizerSequencingPOA::NamePOADummyEndNode( operation ), operation );
+      transparentnodes.Set( dummynode, true );
+    }
+    
+    return transparentnodes;
+  *]
+}

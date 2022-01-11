@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateUpdateSet (String setTypeGUID_i, String setName_i, String setGUID_i, 
+  LibDEF_DataTransformation dataTransformation_i, String dataFilterArguments_i)
+{
+  Description: 'Create or update Set with SetObjects.'
+  TextBody:
+  [*
+    // Patrick May-31-2016 (created)
+    
+    // Get the Set.
+    set := this.GetEmptySet( setTypeGUID_i, setName_i, setGUID_i );
+    
+    // Get the data to be exchanged.
+    data := ifexpr( dataFilterArguments_i.Length() = 0,
+                    dataTransformation_i.CollectData(),
+                    dataTransformation_i.CollectData( dataFilterArguments_i ) );
+    
+    if( not dataTransformation_i.AdvancedTransformationMode() )
+    {
+      // For simple transformation:
+      // Transform each data-element into a SetObject.
+      traverse( data, Elements, object )
+      {
+        setObject := set.CreateSetObject();
+        dataTransformation_i.TransformDataToSetObject( object, setObject );
+      }
+    }
+    else
+    {
+      // For advanced transformation with more flexibility:
+      // The method must be overridden to create SetObject instances and transformation
+      dataTransformation_i.AdvancedTransformDataAndAddToSet( set, data );
+    }
+    
+    // update the Set timestamp
+    set.UpdateTimestamp();
+    
+    // Call DataBroker once adding SetObjects is done
+    // performance improvement - only sync created/updated set
+    isDatasetConstructed := false;
+    LibDEF_DataRepository::SyncSetToDataBroker( set, isDatasetConstructed );
+  *]
+}

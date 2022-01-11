@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetRunningPlanUnitNr (PlanUnit_SC planUnit) const declarative remote as Number
+{
+  Description: 'Reverse engineer plan unit number from plan unit ID.'
+  TextBody:
+  [*
+    planUnitNr := 0;
+    
+    if( not isnull( planUnit ) )
+    {
+      planUnitID := planUnit.PlanUnitID();
+      
+      // When the plan unit previously belonged to an InternalWorkOrder, later replaced with an ExternalWorkOrder with SchedulerWOID
+      // We replace SchedulerWOID with the new ExternalWorkOrder.ID
+      schedulerWOID := guard( planUnit.Order_SC().WorkOrder().SchedulerWOID(), '' );
+      planUnitID := planUnitID.ReplaceAll( schedulerWOID, planUnit.Order_SC().OrderNr() );
+      
+      // Get plan unit running number
+      planUnitNr := [Number]planUnitID.ReplaceAll( planUnit.Order_SC().GetPlanUnitID(), '' );
+    }
+    
+    return planUnitNr
+  *]
+}

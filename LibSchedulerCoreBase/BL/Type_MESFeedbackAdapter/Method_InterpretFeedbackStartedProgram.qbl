@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method InterpretFeedbackStartedProgram
+{
+  Description: 'Converts feedback started program into relevant program and link it to the feedback program change task.'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    importedstartedprograms := selectset( schedule,
+                                          ImportedFeedbackStartedProgram,
+                                          isp,
+                                          isp.IsValidData()
+                                          and isp.ImportedFeedbackTask().IsValidDataHard() );
+    
+    feedbackmanager := this.FeedbackManager();
+    
+    if( not isnull( feedbackmanager ) )
+    {                      
+      traverse( importedstartedprograms, Elements, isp )
+      {
+        // Find the program change via SchedulerStoppageTaskID or ExternalProgramID
+        // If not available, create as it its generated from external
+        programchange := select( schedule, ProgramChange, pc, pc.ProgramChangeID() = isp.SchedulerStoppageTaskID()
+                                                              or pc.ProgramChangeID() = isp.ExternalStoppageTaskID() );
+                                                                                                                 
+        if( isnull( programchange ) )
+        {
+          ProgramChange::Create( schedule, isp.ExternalStoppageTaskID() );
+        }
+      }
+    }
+  *]
+}

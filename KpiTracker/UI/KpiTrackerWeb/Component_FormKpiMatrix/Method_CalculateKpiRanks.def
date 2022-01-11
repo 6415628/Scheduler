@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method CalculateKpiRanks () id:Method_FormKpiMatrix_CalculateKpiRanks
+{
+  #keys: '[146450.0.591122800]'
+  Accessibility: 'Extensible'
+  Body:
+  [*
+    // Sets the IsBest/IsWorst attributes on the KpiValueData objects that are populating the Matrix and list.
+    
+    data := DataHolderSnapshotData.Data();
+    
+    // Traverse through all the fetched KPIs and set the whole thing once.
+    traverse( DataHolderSourceKpis.Data(), Elements, kpi ) 
+    {
+      // only perform this routine if the kpi is max or min (not if it's a counter)
+      if ( kpi.IsMaximize() or kpi.IsMinimize() ) 
+      {
+        values := selectset( data, SnapshotData.Value, val, 
+                             val.Name() = kpi.Name() );
+      
+      
+        multiplier := ifexpr( kpi.IsMaximize(), 1, -1 )
+        bestvalue  := max( values, Elements, val, true, val.Value() * multiplier ) * multiplier;
+        worstvalue := min( values, Elements, val, true, val.Value() * multiplier ) * multiplier;
+        traverse( values, Elements, val )
+        {
+          val.UI_IsBest( val.Value() = bestvalue );
+          val.UI_IsWorst( val.Value() = worstvalue );
+        }       
+      }
+    }
+  *]
+  UseInheritedAccessibility: false
+}

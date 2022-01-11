@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method PopulateDialog () id:Method_LibSM_dlgCreateEditScenario_PopulateDialog
+{
+  #keys: '[131464.0.1901295913]'
+  Body:
+  [*
+    // Prepare dialog by showing/hiding UI components based on whether it is Create/Edit/Copy scenario, and whether Timezone mode is turned on
+    
+    vhKnowledgeMode.Value( LibSM_ScenarioManager::GetKB_UseExisting() );
+    edtScenarioName.SetFocus();
+    data := Dialog.Data();
+    
+    if( not isnull( data ) )
+    {
+      scenarioName := data.Name();
+      scenarioDatasetName := data.Dataset().Name();
+      if( vhIsCopyScenario.Value() = [String]true )
+      {
+        // Assign a new name of copied Scenario to the editor box and label
+        scenarioFactory := Dialog.Data().ScenarioManager().ScenarioFactory();
+        scenarioName := scenarioFactory.GetScenarioCopyName( data.Name() );
+        scenarioDatasetName := scenarioFactory.GetUniqueDatasetName( scenarioName );
+      }
+        
+        this.Title( this.Title() + " " + scenarioName );
+        this.edtScenarioName().Text( scenarioName );
+        this.lblDatasetNameText().Text( scenarioDatasetName );
+    }
+    
+    // When creating a Scenario from an existing dataset, the name 
+    // should be read from the still 'unbound' LibSM_Dataset object. 
+    if ( not isnull( dhShadowDataset.Data() ) )
+    {
+      this.lblDatasetNameText().Text( dhShadowDataset.Data().Name() );
+    }
+    
+    this.EnableCheckBoxes();
+    this.EnableStorageStateUI();
+  *]
+}

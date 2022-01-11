@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: ndCalendarElement
+Response OnDraw (CalendarElement element) id:Response_LibCal_gcResourceCalendars_ndCalendarElement_OnDraw
+{
+  #keys: '[131094.1.547629094]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebGanttChartNode_OnDraw'
+  QuillAction
+  {
+    Body:
+    [*
+      // CalendarElement; draw the backgroundcolor of the node based on the capacity.
+      // The color cannot be determined base on the EventType, because that is not available here.
+      // As a consequence 'Partial' with Capacity = 0.0 is visualized as 'Unavailable' and
+      // 'Partial' with Capacity = 1.0 is visualized as 'Available' here, while the TimeIntervals
+      // that define the CalendarElement are still shown as 'Partial'.
+      // But having 'Partial' with 0.0 or 1.0 is considered to be an edge-case. 
+      
+      showOccurrences := not isnull( dhShowOccurrences.Data() );
+      
+      // Show white as light yellow because the backgroundcolor of the row is white and cannot be changed.
+      white := Color::Color( 255, 255, 204 );  // Light yellow
+      
+      if( element.Capacity() = 0.0 )       // Unavailable
+      {
+        drawinfo.BackgroundColor( Color::LightGray() );
+      }
+      else if( element.Capacity() = 1.0 )  // Available (for completeness, is filtered out)
+      {                                    // DevNote: are currently NOT filtered out because the 'white' needs to be shown.
+        if( not showOccurrences )          // Filter of ndCalendarElement can be added back when real White can always be used.
+        {
+          drawinfo.BackgroundColor( white );
+        }
+        else
+        {
+          drawinfo.BackgroundColor( Color::White() );
+        }  
+      }
+      else                                 // Partially available
+      {
+        // Show the CalendarElement in light gray when the events are not shown individually,
+        // otherwise show the CalendarElement as 'white' (i.e. light yellow). In that case, partial capacity is visualized
+        // by a different node that shows the occurrence (i.e. an ExplicityTimeInterval).
+        if( not showOccurrences )
+        {
+          backgroundColor := Color::Interpolate( Color::Gray(), white, 0.7 );  // Grayish yellow
+          drawinfo.BackgroundColor( backgroundColor );
+        }
+        else
+        {
+          drawinfo.BackgroundColor( Color::White() );
+        }
+      }
+    *]
+    GroupServerCalls: false
+  }
+}

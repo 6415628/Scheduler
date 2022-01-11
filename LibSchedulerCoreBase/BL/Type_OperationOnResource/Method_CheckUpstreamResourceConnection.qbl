@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckUpstreamResourceConnection (output Resource_SC up_resource) declarative remote as Boolean
+{
+  Description: 'Checks whether the resource connection from its upstream operation to this operation is allowed.'
+  TextBody:
+  [*
+    // WOI1 Mar-1-2017 (created)
+    resource := this.Resource_SC(); // current resource
+    operation := this.Operation_SC(); // current operation
+    
+    // CHECKS UPSTREAM PLANNING
+    // find all planned upstream operations :
+    upstream_ops := selectset( operation, FromOperationDependency.FromOperation, op, op.IsPlanned() )
+    upstream_res := selectset( upstream_ops, Elements.Task_SC.Resource_SC, res, true );
+    allowedresources := selectset( resource, AsAllowedToResource.AllowedFromResource, res, true );
+    
+    up_resource := select( upstream_res, Elements, r, not exists( allowedresources, 
+                                                                  Elements, 
+                                                                  ar, 
+                                                                  ar = r ) );
+                                                                    
+    return isnull( up_resource );
+  *]
+}

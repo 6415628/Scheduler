@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Delete (OptimizerUserSettingGroupInScenarioManagers optimizerusersettinggroupinscenariomanagers, Schedule schedule)
+{
+  Description: 'Delete selected non-default settings group.'
+  TextBody:
+  [*
+    // Get default user settings group
+    defaultSettings := select( optimizerusersettinggroupinscenariomanagers, 
+                               Elements.ScenarioManager.OptimizerUserSettingGroupInScenarioManager, 
+                               settings, 
+                               settings.IsDefault() );
+    
+    // Check if any of the selected user settings groups are not default and currently used
+    isInDeletionScope := exists( optimizerusersettinggroupinscenariomanagers, 
+                                 Elements, 
+                                 e,
+                                 e <> defaultSettings,
+                                 schedule.CheckIsSettingGroupUsed( e.ID() ) );
+    
+    // Only delete non default user settings groups
+    traverse( optimizerusersettinggroupinscenariomanagers, 
+              Elements, 
+              optimizerusersettinginscenariomanager, 
+              not optimizerusersettinginscenariomanager.IsDefault() )
+    {
+      optimizerusersettinginscenariomanager.Delete();
+    }
+    
+    // Update the selected settings if selected non-default is within the deletion scope
+    if( not isnull( defaultSettings ) and isInDeletionScope )
+    {
+      schedule.SetOptimizerSetting( defaultSettings, '' );
+    }
+  *]
+}

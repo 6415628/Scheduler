@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ChunkNvt (NamedValueTree nvt_i, Number numberOfNodesPerChunk_i) as owning LibDEF_NamedValueTreeContainer
+{
+  Description:
+  [*
+    Break the NVT into chunks where each NVT chunk will consist of the given number of nodes (with some variability due to the required parent path if the break point is at a certain child in the NVT).
+    The NVT chunks will be contained in the returned NVT container.
+  *]
+  TextBody:
+  [*
+    // Initialize return variable.
+    nvtContainer := construct( LibDEF_NamedValueTreeContainer );
+    
+    // Initialize variables.
+    startPath := construct( structured[NamedValue] );
+    targetPath := construct( structured[NamedValue] );
+    counterNodes := 0;
+    targetNvtTemp := NamedValueTree::Create();
+    
+    // Start chunking and extraction.
+    targetNvtTemp.Root( nvt_i.Root().Name() ); // copy root
+    LibDEF_NamedValueTreeProcessor::ChunkNode( nvt_i, startPath, targetNvtTemp, targetPath, nvtContainer, counterNodes, numberOfNodesPerChunk_i );
+    
+    // if there is any leftover NVT extracted, save it
+    if( counterNodes > 0 )
+    {
+      LibDEF_NamedValueTree::Create( nvtContainer, targetNvtTemp );
+    }
+    
+    return &nvtContainer;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

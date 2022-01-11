@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateFor (LibOpt_Run run)
+{
+  Description: 'Create `LibOpt_StatisticSuboptimizerMPs` for the given "run" (`LibOpt_Run`).'
+  TextBody:
+  [*
+    traverse( run.SuboptimizerMPs(), Elements, suboptimizermp )
+    {
+      nrexecutions_max := max( suboptimizermp, SnapshotMP, snapshotmp,
+                               // FILTER
+                               true,
+                               // VALUE
+                               snapshotmp.ExecutionNr()
+                             );
+      
+      // Create MP suboptimizer statistics.
+      for( executionnr := 1; executionnr <= nrexecutions_max; executionnr++ )
+      {
+        // Create `LibOpt_StatisticSuboptimizerMPInfeasible`.
+        LibOpt_StatisticSuboptimizerMP::Create( run, typeof( LibOpt_StatisticSuboptimizerMPInfeasible ),
+                                                suboptimizermp,
+                                                executionnr, // ExecutionNr
+                                                0            // GoalLevel (irrelevant for this statistic type)
+                                              );
+        
+        // Create `LibOpt_StatisticSuboptimizerMPKappa`.
+        LibOpt_StatisticSuboptimizerMP::Create( run, typeof( LibOpt_StatisticSuboptimizerMPKappa ),
+                                                suboptimizermp,
+                                                executionnr, // ExecutionNr
+                                                0            // GoalLevel (irrelevant for this statistic type)
+                                              );
+        
+        
+        nrgoallevels_max := max( suboptimizermp, SnapshotMP, snapshotmp,
+                                 // FILTER
+                                 snapshotmp.ExecutionNr() = executionnr,
+                                 // VALUE
+                                 snapshotmp.NrGoalLevels()
+                               );
+        for( goallevel := 1; goallevel <= nrgoallevels_max; goallevel++ )
+        {
+          // Create `LibOpt_StatisticSuboptimizerMPRelativeGap`.
+          LibOpt_StatisticSuboptimizerMP::Create( run, typeof( LibOpt_StatisticSuboptimizerMPRelativeGap ),
+                                                  suboptimizermp,
+                                                  executionnr, // ExecutionNr
+                                                  goallevel    // GoalLevel
+                                                );
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

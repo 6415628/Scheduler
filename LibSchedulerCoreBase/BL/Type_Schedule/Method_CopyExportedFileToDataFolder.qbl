@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method CopyExportedFileToDataFolder (String brokername)
+{
+  TextBody:
+  [*
+    // wkn1 Sep-20-2017 (created)
+    // Get desired file name
+    actualfilename := Schedule::GetEDIBrokerExcelFileName( brokername );
+    mdsname := this.MDSSchedule().Name();
+    
+    // Get Data directory
+    datadir := DomainModel::GetDataDirectory();
+    datadirectorypath := FileSystems::QFSPathToHardwarePath( datadir.Path() );
+    
+    // Copy broker exported file to Data\
+    // Getting directory of source file
+    traverse( datadir, Children, child, child.IsDirectory() and child.Name() = typeof( Schedule ).Name() ) // get directory Data\Schedule\
+    {
+      traverse( child, Children, datasetdirectory, datasetdirectory.IsDirectory() and datasetdirectory.Name() = mdsname ) // get directory Data\Schedule\DataSetName
+      {
+        traverse( datasetdirectory, Children, actualfile, actualfile.IsFile() and actualfile.Name() = actualfilename ) // get Data\Schedule\DataSetName\XXXX.xlsx ( XXXX is the broker exported file name )
+        {
+          // Get source file
+          sourcefilepath := FileSystems::QFSPathToHardwarePath( actualfile.Path() );
+          
+          // Get destination file path
+          destinationfilepath := datadirectorypath + '/' + actualfilename;
+    
+          OS::CopyFile( sourcefilepath, destinationfilepath ) // Data\Schedule\DataSetName\XXXX.xlsx moved to Data\
+        }
+      }
+    }
+  *]
+}

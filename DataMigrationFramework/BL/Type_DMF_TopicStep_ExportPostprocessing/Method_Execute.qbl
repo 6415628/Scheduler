@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Execute (Key datasetKey_i, DMF_Dataset dataset_i, DMF_RunStep runStep_i) as stream[Void]
+{
+  TextBody:
+  [*
+    // Override in subclass
+    
+    // This method should always call ExecuteExtensible as a follow up action
+    // It is the method at which we expect end users to implement custom logic
+    ret_s := DMF_Utility::LogInfo( 'Dataset execution completed for dataset ' + dataset_i.Name() )->AsVoid();
+    
+    // DevNote: we can't call super->After( ret_s )->Execute( ... ), the compiler doesn't recognize it
+    // We can't directly call this->ExecuteExtensible( ... ) either, there is a bug with the parser that thinks it's inaccessible
+    // When this method is overridden, and ExecuteExtensible is overridden/extended in an external scope
+    return this->After( ret_s )->ExecuteExtensible( datasetKey_i, dataset_i, runStep_i );
+  *]
+}

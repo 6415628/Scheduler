@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: Toolbar/btnOk
+Response OnClick () id:Response_Toolbar_btnOk_OnClick
+{
+  #keys: '[129856.0.22023103]'
+  Body:
+  [*
+    //Perform Synchronize KT on OK button click  
+    Schedule.SynchronizationObject().SynchronizeKTWithMaterialReservation();
+    Dialog.ApplyChanges();
+    Dialog.EndModal(1);
+  *]
+  DefinitionID: 'Responsedef_GUIButtonBase_OnClick'
+  Precondition:
+  [*
+    return ResourceGroup_SC::IsValid( Schedule, 
+                                     guard( Dialog.Data().WrappedInstance().Name(), '' ), 
+                                     EditorName.Text(), 
+                                     ifexpr( StringSelectionResourceType.HasChanges(), 
+                                             guard( Dialog.Data().WrappedInstance(), null( ResourceGroup_SC ) ),
+                                             null( ResourceGroup_SC )),
+                                     EditorOperationType.Text(),
+                                     feedback );
+  *]
+}

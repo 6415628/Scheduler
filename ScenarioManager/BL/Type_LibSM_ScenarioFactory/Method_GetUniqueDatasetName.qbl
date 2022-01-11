@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetUniqueDatasetName (String name) as String
+{
+  Description: 'Get unique dataset name'
+  TextBody:
+  [*
+    /*
+    To obtain unique dataset name:
+    1. Check if exist dataset with name = datasetName ( e.g: "TEST" )
+    2. if exists, then append a timestamp (TEST_20180501_120000).
+    3. if that also exists, append a running number, and increase that number until it's unique.
+    */
+    editor         := MDSEditor::Editor();
+    rootFolderName := "/root";
+    datasetName    := name;
+    
+    // Does the name already exist?
+    objectInfos := editor.ObjectInfos( LibSM_ModelExtensions::GetPlanningDatasetKind(), 
+                                     rootFolderName, 
+                                     name );
+    
+    objectInfo := objectInfos.Find( name );
+    
+    if ( not isnull( objectInfo ) )
+    {
+      // It did exist, so start adding a time stamp.
+      converter := DateTimeToString::StandardConverter();
+      converter.SetCustomConversion();
+      converter.CustomFormatString( 'yyyyMMdd_HHmmss' );  // use "HH" for 24 hours format, leading with 0 if needed
+      
+      datasetName       := name + '_' + converter.Convert( DateTime::Now() );
+      number            := 1;
+      continueSearching := true;
+      
+      // Still not unique, add numbers after the time stamp.
+      while( continueSearching )
+      {
+        objectKindInfos := editor.ObjectInfos( LibSM_ModelExtensions::GetPlanningDatasetKind(),
+                                             rootFolderName,
+                                             datasetName );
+      
+        objectKindInfo := objectKindInfos.Find( datasetName );
+      
+        if( not isnull( objectKindInfo ) )
+        {
+          datasetName := name + '_' + converter.Convert( DateTime::Now() ) + '_' + [String]number;
+          number++;
+        }
+        else
+        {
+          continueSearching := false;
+        }
+      }
+    }
+    
+    return datasetName;
+  *]
+}

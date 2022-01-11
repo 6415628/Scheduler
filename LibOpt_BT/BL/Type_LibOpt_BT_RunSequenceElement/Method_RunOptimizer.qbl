@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method RunOptimizer (LibOpt_Optimization optimizationCopy) as stream[LibOpt_BT_BTS]
+{
+  Description: 'Runs the optimizer on given scope in the given dataset. Dataset will be copied.'
+  TextBody:
+  [*
+    optimizationCopy.Conditional( relflush );
+    table := this.TrackingTableCell().Table();
+    optimizer := table.GetOptimizer( optimizationCopy );//get the optimizer that applies to this test in the copy dataset
+    
+    run := this -> ConfigureSettings( optimizer )//configure the settings for this test 
+                ->|optimizationCopy -> CreateRun( optimizer );
+    
+    scope := this.TrackingTableCell().Row() -> SelectScope( optimizer, run ); //get the scope for the optimizer run ---- this needs to be implemented by the AE!
+    
+    bts := run -> SetStartScope( scope )
+              -> LibOpt_BT_RunSequenceElement::LogTargetValues()
+              ->| table
+              -> Unplan( scope )//unplan the scope ---- this needs to be implemented by the AE!
+              ->| void
+              ->( ) { this.StartedOn( DateTime::Now() ); }
+              ->| run
+              -> Start()//run the optimizer
+              ->| void
+              ->( ) { this.FinishedOn( DateTime::Now() ); }
+              ->| this
+              -> LogResults( run );
+    
+    output := bts
+              ->| emit( this.TrackingTableCell() )
+              -> PostProcess( optimizationCopy )
+              -> Exception()
+              -> LibOpt_BT_RunSequenceElement::OnException( this );
+    
+    return output->|bts->IgnoreException();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

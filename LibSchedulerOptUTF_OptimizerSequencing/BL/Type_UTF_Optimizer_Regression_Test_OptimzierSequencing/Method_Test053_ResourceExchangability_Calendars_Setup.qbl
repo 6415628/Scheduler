@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test053_ResourceExchangability_Calendars_Setup (Schedule schedule)
+{
+  Description: 'Addds a downtime to resource 1101.'
+  TextBody:
+  [*
+    start := schedule.Time() + Duration::Hours( 1.5 );
+    end := start + Duration::Hours( 3 );
+    calendar := select( schedule, ResourceGroup_SC.Resource_SC, r, r.ResourceID() = "1101" ).ResourceCalendar();
+    
+    // mbr23, 2020-04-21: workaround for the calendar library not having a proper API for creating events solely from the business logic:
+    event := LibCal_Event::Create( calendar, 'repair', start, end );
+    event.SetTypeUnavailable(); // means capacity = 0
+    event.UpdateCalendar();
+    event.SetCategory( LibCal_Event::TYPE_EXCEPTION() );
+    
+    Transaction::Transaction().Propagate();
+  *]
+}

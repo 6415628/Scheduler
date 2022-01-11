@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ValidateInput (LibSM_ScenarioManager owner, String type, String value, 
+  LibSM_MetaData oldmetadata) declarative remote as Boolean
+{
+  Description: 'Check unique value for metadata fieldname'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    // Value can't be empty.
+    if( not feedback.CheckHard( not value = "" ) )
+    {
+      feedback.AddHard( Translations::LibSM_MetaData_ValidateInput_NameCannotBeEmpty() );
+    }
+    
+    if ( not feedback.CheckHard( not type = "" ) )
+    {
+      feedback.AddHard( Translations::LibSM_MetaData_ValidateInput_TypeCannotBeEmpty() );
+    }
+    
+    // Value must be unique
+    if( not feedback.CheckHard( not exists( owner, MetaData, md, 
+                                            md <> oldmetadata and
+                                            ( md.Value() = value 
+                                              and md.Type() = type ) ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_MetaData_ValidateInput_NameExists( type, value ) );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

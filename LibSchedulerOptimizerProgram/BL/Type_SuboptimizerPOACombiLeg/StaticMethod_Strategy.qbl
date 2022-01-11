@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Strategy (POAAlgorithm poa, NamedValueTree settingsnvt, String name_logfile, 
+  Boolean istwonodestrategy)
+{
+  TextBody:
+  [*
+    LibOpt_SuboptimizerPOA::StrategyStart( poa );
+    
+    // The NVT is unpacked to the settings object
+    parameters := SuboptimizerPOACombiLeg::ConvertToSettingsProgramPOAForSuboptimizer( settingsnvt );
+    
+    // If the use empty strategy debug flag is set
+    if( parameters.IsUseEmptyDebugStrategy() )
+    {
+      // Then call the empty strategy
+      LibOpt_SuboptimizerPOA::EmptyStrategy( poa )
+    }
+    else if( istwonodestrategy )
+    {
+      SuboptimizerPOACombiLeg::StrategyTwoNodeDestruct( poa, parameters, name_logfile );
+    }
+    else
+    {
+      // Otherwise call the default strategy
+      SuboptimizerPOACombiLeg::StrategySimple( poa, parameters, name_logfile );
+    }
+    
+    LibOpt_SuboptimizerPOA::StrategyFinish( poa );
+  *]
+}

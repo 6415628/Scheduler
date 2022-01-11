@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test072_NeighborhoodCreator_Precedence (Schedule schedule)
+{
+  Description: "Tests the NeighborhoodCreatorDistanceMetric's 'Precedence' dimension"
+  TextBody:
+  [*
+    // mbr23 Feb-14-2020 (created)
+    
+    anchor := minselect( schedule, Operation_SC, op, true, Real::Random() ); // select any anchor
+    neighborhood_size_operations := 8; // precedence only affects <= 3 operations
+    distancemetric := construct( SettingsSequencingDistanceMetricForSequencing ); 
+    // Set all values to 0
+    distancemetric.UTF_SetAllToZero();
+    distancemetric.ClosenessByPrecedence( 1.0 ); // only enable the "precedence" dimension
+    
+    selector := this.Run_Test07x_NeighborhoodCreator( schedule, anchor, neighborhood_size_operations, distancemetric );
+    
+    minimum_output := construct( LibOpt_ScopeElements );
+    minimum_output.Add( anchor.GetOrCreateScopeElement() );
+    traverse( anchor.PlanUnit_SC(), Operation_SC, op ) // the operations of the plan unit are connected by the precedence.
+    {
+      minimum_output.Add( op.GetOrCreateScopeElement() );
+    }
+    
+    // assert that output contains `minimum_output`:
+    selector.Run().Start() ->| minimum_output -> UTF_Optimizer_Regression_Test_OptimizerSequencing::AssertOutputScopeContains( this.Run(), selector )->Exception()->(exception) {
+      this.Run().RegisterFailure( "post-optimization assert failed:\n" + exception.Message() );
+    };
+  *]
+}

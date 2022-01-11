@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method RunOnStartup
+{
+  Description: 'Run the configured benchmarks when the server is started, if the runonserverstartup setting is enabled.'
+  TextBody:
+  [*
+    if( LibOpt_BT_ConfigurationSettings::GetSetting_RunOnServerStartup() )
+    {
+      if( LibOpt_BT_ConfigurationSettings::GetSetting_ShowProgress() )
+      {
+        info( Translations::LibOpt_BT_BenchmarkTrackingDataset_ExecutingBenchmarks() );
+      }
+      run_sequence := this.RunSequence();
+      template_name := LibOpt_BT_ConfigurationSettings::GetSetting_QueueTemplate();
+      
+      if( template_name <> '' )
+      {
+        template := select( this, QueueTemplate, template, template.Name() = template_name );
+        
+        if( isnull( template ) )
+        {
+          // Throw an error and notify new elements to shut down the server if needed.
+          void->( ) {
+            error( 'Cannot find queue template called "' + template_name + '"' );
+          }->Exception()->( e ) {
+            run_sequence.NotifyNewElements();
+          }
+        }
+        else
+        {
+          for( i := LibOpt_BT_ConfigurationSettings::GetSetting_NumberOfIterations(); i > 0; i-- )
+          {
+            template.AddToQueue();
+          }
+        }
+      }
+      else
+      {
+        // Execute all tables once
+        for( i := LibOpt_BT_ConfigurationSettings::GetSetting_NumberOfIterations(); i > 0; i-- )
+        {
+          LibOpt_BT_RunSequenceElement::Create( run_sequence, this.TrackingTable( relget ), run_sequence.Last() );
+        }
+        run_sequence.NotifyNewElements();
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

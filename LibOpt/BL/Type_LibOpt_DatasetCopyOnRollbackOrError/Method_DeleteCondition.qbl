@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride DeleteCondition (LibOpt_Task task) as Boolean
+{
+  Description:
+  [*
+    This method checks if a rollback or an error occured on this component or on any downstream components. If there are no rollbacks and no errors, then the dataset that is attached to the `LibOpt_DatasetCopyOnRollbackOrError` is deleted.
+    
+    Extending this method (or subclassing the `LibOpt_DatasetCopyOnRollbackOrError` type) will break the unit tests. We recommend you to create a new subclass from the `LibOpt_DatasetCopyConditional` type if you want to modify this method.
+  *]
+  TextBody:
+  [*
+    descendants := task.SnapshotComponent().Descendants();
+    
+    hasrollback := exists( descendants,
+                           Elements.astype( LibOpt_SnapshotKPI ),
+                           snapshotKPI, 
+                           snapshotKPI.IsRolledBack() );
+    
+    hasrollbackorerror := hasrollback 
+                          or exists( descendants,
+                                     Elements.astype( LibOpt_SnapshotError ),
+                                     snapshoterror, 
+                                     true );
+    
+    return not hasrollbackorerror;
+  *]
+}

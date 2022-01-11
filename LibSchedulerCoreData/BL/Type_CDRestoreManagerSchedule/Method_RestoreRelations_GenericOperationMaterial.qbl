@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericOperationMaterial (CDSchedule cdschedule)
+{
+  Description: 'Restore relations for operation material core data to planning object'
+  TextBody:
+  [*
+    traverse( cdschedule, CDEntity.astype( CDGenericOperationMaterial ), cdopmat )
+    {
+      planunit := PlanUnit_SC::FindPlanUnit( cdopmat.PlanUnitID() );
+      
+      om := select( planunit, OperationMaterial, om, om.OperationMaterialID() = cdopmat.OperationMaterialID() );
+      
+      if( not isnull( om ) )
+      {  
+        // AsInputOperationMaterialFulfillment, M-1
+        inputplanunit := PlanUnit_SC::FindPlanUnit( cdopmat.AsInputOperationMaterialFulfillmentPlanUnitID() );
+        asinputomfulfillment := select( inputplanunit, Operation_SC, operation, 
+                                        operation.OperationID() = cdopmat.AsInputOperationMaterialFulfillmentOperationID()
+                                      );
+        om.AsInputOperationMaterialFulfillment( relset, asinputomfulfillment );
+        
+        // AsOutputOperationMaterialFulfillment, M-1
+        outputplanunit := PlanUnit_SC::FindPlanUnit( cdopmat.AsOutputOperationMaterialFulfillmentPlanUnitID() );
+        asoutputomfulfillment := select( outputplanunit, Operation_SC, operation, 
+                                         operation.OperationID() = cdopmat.AsOutputOperationMaterialFulfillmentOperationID() 
+                                       );
+        om.AsOutputOperationMaterialFulfillment( relset, asoutputomfulfillment );
+        
+        // WorkOrderOperationPrecedence, M-1
+        workorderoperationprecedence := WorkOrderOperationPrecedence::FindWorkOrderOperationPrecedence( cdopmat.WorkOrderOperationPrecedenceID() );
+        om.WorkOrderOperationPrecedence( relset, workorderoperationprecedence );
+        
+        // FromOperation, M-1 and ToOperation, M-1
+        fromOp := select( planunit, Operation_SC, op, op.OperationID() = cdopmat.FromOperationID() );
+        toOp := select( planunit, Operation_SC, op, op.OperationID() = cdopmat.ToOperationID() );
+        
+        om.FromOperation( relset, fromOp )
+        om.ToOperation( relset, toOp );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeDemoDataFeedbackData
+{
+  TextBody:
+  [*
+    // Temporary set MESFeedbackAdapterEDI as active adapter to handle the synchronization, and reset it after the synchronization
+    integrationConfiguration := this.Schedule().IntegrationConfiguration();
+    
+    if( not isnull( integrationConfiguration ) )
+    {
+      activeFeedbackAdapter := integrationConfiguration.ActiveFeedbackAdapter();
+      
+      // Set MESFeedbackAdapterEDI as active if it is not
+      if( activeFeedbackAdapter <> Constants::MESFeedbackAdapterEDI() )
+      {
+        integrationConfiguration.ActiveFeedbackAdapter( Constants::MESFeedbackAdapterEDI() );
+        Transaction::Transaction().Propagate( relation( Schedule, ActiveFeedbackAdapter ) );
+      }
+      
+      this.Schedule().ActiveFeedbackAdapter().InterpretFeedbackData();
+      // Update archived data for feedback program type 
+      this.SynchronizeDemoDataFeedbackProgramArchivedData();
+      
+      // Reset ActiveFeedbackAdapter
+      integrationConfiguration.ActiveFeedbackAdapter( activeFeedbackAdapter );
+    }
+  *]
+}

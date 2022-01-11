@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitializeBase () id:Method_LibCal_dpCalendarSettings_InitializeBase
+{
+  #keys: '[146730.0.1349448759]'
+  Body:
+  [*
+    calendar := this.Data();
+    
+    if( not isnull( calendar ) )
+    {
+      base := calendar.Base();
+      
+      // Show the Base of the calendar in the timezone of the calendar, when applicable.
+      if( TimeZone::HasTimeZoneSupport() )
+      {
+        // Subtract the offset of the current timezone, because that will be added by the DateTime-control again.
+        timezone := calendar.GetTimeZone();
+        base     := base + timezone.RawOffset() - LibCal_GlobalState.GetLocalTimeZone().RawOffset();
+      }
+      
+      dtBase.DateTime( base );  // Set explicitly, so no databinding is used for this control.
+    }
+  *]
+}

@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Method Write (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    result := stream[JSON]::Success();
+    traverse( this, DistributedMessage, message )
+    {
+      json := LibOpt_Message::Pack( message.Write( task ), [String] this.InternalIdentifier() + message.Identifier() );
+      result := result->Merge( emit( json ) );
+    }
+    
+    return result
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

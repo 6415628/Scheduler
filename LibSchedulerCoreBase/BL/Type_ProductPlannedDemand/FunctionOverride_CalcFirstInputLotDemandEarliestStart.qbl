@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcFirstInputLotDemandEarliestStart
+{
+  TextBody:
+  [*
+    value := DateTime::MaxDateTime();
+    
+    if( guard( this.Schedule().TechnicalConfiguration().IsLotLeadTimeLogicOn(), false ) )
+    {
+      inputlot_demand_qty := this.Operation_SC().FirstInputLotQuantity() * this.InputFactor();
+      
+      value := max( this, FulfillmentLot, fl, 
+                    ( fl.CumulativeQuantity() >= inputlot_demand_qty
+                      and guard( fl.PreviousFulfillmentLot().CumulativeQuantity() < inputlot_demand_qty, true ) ) // if theres no previous, it is true   
+                    or ( fl.CumulativeQuantity() < inputlot_demand_qty ),
+                    fl.EarliestAvailableTime() + fl.Fulfillment().OperationMaterial().TotalOffsetDuration() ); // need to include TotalOffsetDuration
+    }
+    
+    this.FirstInputLotDemandEarliestStart( value );
+  *]
+}

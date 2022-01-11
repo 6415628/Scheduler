@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidNoBufferType (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if imported object has valid no buffer type'
+  TextBody:
+  [*
+    // The valid NoBufferType are {(empty), ReserveUpstream, ReserveDownstream, ReserveBoth, Outflow} 
+    isvalid := this.NoBufferType().Length() = 0
+               or this.NoBufferType() = Constants::TimeConstraint_NoBufferType_Outflow()
+               or this.NoBufferType() = Constants::TimeConstraint_NoBufferType_ReserveBoth()
+               or this.NoBufferType() = Constants::TimeConstraint_NoBufferType_ReserveDownstream()
+               or this.NoBufferType() = Constants::TimeConstraint_NoBufferType_ReserveUpstream();
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedWorkOrderOperationPrecedence_Instance( name ),
+                                                               Translations::SC_ImportedWorkOrderOperationPrecedence_ViolateNoBufferTypeAllowedValues() ) );
+    }
+    
+    return isvalid;
+  *]
+}

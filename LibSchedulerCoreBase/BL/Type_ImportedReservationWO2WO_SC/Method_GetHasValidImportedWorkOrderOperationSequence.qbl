@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidImportedWorkOrderOperationSequence (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if the supply and demand is valid based on the work order operation sequence. A downstream operation cannot be the supply of a demand of an upstream operation from the same work order'
+  TextBody:
+  [*
+    // Janer Mar-10-2017 (created)    
+    isvalid := true;
+    
+    if( not isnull( this.ImportedWorkOrderOperationForDemand() ) and not isnull( this.ImportedWorkOrderOperationForSupply() ) )
+    {
+      isvalid := this.ImportedWorkOrderOperationForDemand().WorkOrderId() <> this.ImportedWorkOrderOperationForSupply().WorkOrderId()
+                 or this.ImportedWorkOrderOperationForSupply().SequenceNr() < this.ImportedWorkOrderOperationForDemand().SequenceNr();
+    }                         
+    
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedReservationWO2WO_Instance( name ),
+                                                               Translations::SC_ImportedReservationWO2WO_ViolateSupplyDemandOperationSequence() ) );
+    }
+    
+    return isvalid;
+  *]
+}

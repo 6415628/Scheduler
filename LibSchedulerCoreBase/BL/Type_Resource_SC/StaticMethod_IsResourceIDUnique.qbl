@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod IsResourceIDUnique (output String feedback_o, Schedule schedule, String new_resourceid_i, 
+  String edit_resourceid_i) remote as Boolean
+{
+  Description: 'Checks if a resource_SC instance has a unique resource ID.'
+  TextBody:
+  [*
+    // James Kwapien Sep-1-2016 (created)
+    is_valid_ID := not exists( schedule,
+                               ResourceGroup_SC.Resource_SC,
+                               resource,
+                               edit_resourceid_i = '' or resource.ResourceID() <> edit_resourceid_i,
+                               resource.ResourceID() = new_resourceid_i );
+    
+    if( not is_valid_ID )
+    {
+       Utility_SC::Concat( feedback_o, Translations::SC_Resource_ResourceID_NotUnique() );
+    }
+    
+    return is_valid_ID;
+  *]
+}

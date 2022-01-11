@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update (BatchTask batchtask)
+{
+  Description: 'Call when HandleExportBatchTasks being executed in FeedbackManager to update exported batch'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // to add in attributes that will be communicated to shopfloor
+    // We use guard instead because we want the exported operation batch to reflect the updated or lack of batch task data
+    resource := guard( batchtask.Resource_SC(), null( Resource_SC ) );
+    this.ExportedStart( guard( batchtask.Start(), DateTime::MinDateTime() ) );
+    this.ExportedProcessStart( guard( batchtask.ProcessStart(), DateTime::MinDateTime() ) );
+    this.ExportedEnd( guard( batchtask.End(), DateTime::MinDateTime() ) );
+    this.ExportedResource( guard( resource.ResourceID(), '' ) );
+    this.Resource_SC( relset, resource );
+    // Chris 20141105 PracticeReadIn shall be updated as well
+    this.ExportedDuration( guard( batchtask.Duration(), Duration::Zero() ) );                
+    this.ExportedProcessDuration( guard( batchtask.ProcessDuration(), Duration::Zero() ) );
+    this.ExportedSetupDuration( guard( batchtask.SetupDuration(), Duration::Zero() ) );
+    
+    if( not isnull( this.ImportedFeedbackBatch() ) )
+    { 
+      this.ImportedFeedbackBatch().ResourceReadIn( guard( resource.ResourceID(), '' ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

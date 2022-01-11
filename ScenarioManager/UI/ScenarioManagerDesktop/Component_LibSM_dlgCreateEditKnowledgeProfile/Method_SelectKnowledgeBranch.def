@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectKnowledgeBranch (shadow[LibSM_KnowledgeProfile] oldProfile, LibSM_KnowledgeProfile latestKnowledgeprofile) id:Method_LibSM_dlgCreateEditKnowledgeProfile_SelectKnowledgeBranch
+{
+  #keys: '[107496.2.1680410829]'
+  Body:
+  [*
+    // select knowledge branch ( if it has been changed in the profile ) for scenarios that use this knowledge profile
+    
+    traverse( latestKnowledgeprofile, KnowledgeBaseBranchInProfile, latestBranch )
+    {
+      oldBranch := select( oldProfile, KnowledgeBaseBranchInProfile, oldBranch,
+                           oldBranch.KBDefinitionName() = latestBranch.KBDefinitionName() )
+    
+      if( oldBranch.KBBranchName() <> latestBranch.KBBranchName()
+       or oldBranch.KBBranchVersion() <> latestBranch.KBBranchVersion() )
+      {
+        LibSM_GlobalState.SelectKB( latestBranch.KnowledgeProfile(),
+                                             latestBranch.KBDefinitionName(),
+                                             latestBranch.KBBranchName(),
+                                             latestBranch.KBBranchVersion() );
+        
+      }
+    }
+  *]
+}

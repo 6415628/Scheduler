@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: SCListResources
+Response OnDrop (structured[Batch] information, BatchResource target) id:Response_SCListResources_OnDrop_4
+{
+  #keys: '[12910.0.1177571546]'
+  Body:
+  [*
+    // OnDrop structured[Batch] --> Resource
+    
+    target.PlanLast( information );
+  *]
+  DefinitionID: 'Responsedef_GUIComponent_OnDrop'
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey       := dropaction.IsControl();
+    ctrlshiftkey  := dropaction.IsControlShift();
+    
+    return ApplicationScheduler.AllowedScheduling( target, //batchresource
+                                                   information,  //structured batches
+                                                   ctrlkey, //skip soft check
+                                                   ctrlshiftkey, //ctrl shift key
+                                                   target.Last(), //beforetask
+                                                   null( Task_SC ), //aftertask
+                                                   Batch::GetSelectedObjects( information ),
+                                                   feedback,
+                                                   isallowedhard );
+  *]
+  UserRequiresReadWrite: true
+}

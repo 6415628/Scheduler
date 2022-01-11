@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericPlannedSupply2ExternalSupply (CDSchedule cdSchedule, GenericProductExternalSupply genericProductExternalSupply)
+{
+  Description: 'Restore generic planned supply to external supply core data attributes to planning object'
+  TextBody:
+  [*
+    cdGenericPlannedSupply2ExternalSupplys := selectset( cdSchedule, CDEntity.astype( CDGenericPlannedSupply2ExternalSupply ), cdGenericPlannedSupply2ExternalSupply,
+                                                         cdGenericPlannedSupply2ExternalSupply.ExternalSupplyID() = genericProductExternalSupply.SupplyID() );
+    
+    traverse( cdGenericPlannedSupply2ExternalSupplys, Elements, cdGenericPlannedSupply2ExternalSupply )
+    {
+      genericPlannedSupply2ExternalSupply := GenericPlannedSupply2ExternalSupply::Create( genericProductExternalSupply,
+                                                                                          cdGenericPlannedSupply2ExternalSupply.WorkOrderSupplyID() );
+                                                                                    
+      CopyCorresponding::CopyFrom( cdGenericPlannedSupply2ExternalSupply ).CopyTo( genericPlannedSupply2ExternalSupply ); 
+      
+      // Restore FulfillmentConversion
+      this.RestoreAttributes_FulfillmentConversion( cdSchedule, genericPlannedSupply2ExternalSupply );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

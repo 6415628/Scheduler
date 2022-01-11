@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeWorkOrderOperationFlows (output OperationMaterials updatedInstances)
+{
+  Description: 'Synchronizes operation material based on work order operation flows.'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    allinstances := selectset( schedule, PlanUnit_SC.OperationMaterial, om, true );
+    
+    traverse( schedule, ImportedFlow, importedFlow, importedFlow.IsValidDataHard() )
+    {
+      // Assumed that WorkOrder to PlanUnit_SC is 1-to-1
+      prevOperation := select( importedFlow, ImportedExternalWorkOrderOperationStart.ExternalWorkOrderOperation.Operation_SC, op, true );
+      nextOperation := select( importedFlow, ImportedExternalWorkOrderOperationEnd.ExternalWorkOrderOperation.Operation_SC, op, true );
+    
+      if( isnull( prevOperation ) or isnull( nextOperation ) )
+      {
+        debuginfo( Translations::Lib3DSpace_NoOperationForFlow( importedFlow.FlowID(), importedFlow.StartOperationID(), importedFlow.EndOperationID() ) );
+      }
+      else
+      { 
+        operationMaterial := select( allinstances, Elements, om, true, 
+                                     om.ToOperation() = nextOperation 
+                                     and om.FromOperation() = prevOperation );
+    
+        if( isnull( operationMaterial ) )
+        {
+          operationMaterial := nextOperation.CreateInputOperationMaterial( prevOperation, prevOperation.PlanUnit_SC().Quantity() );
+        }
+        
+        operationMaterial.Update3DSpace( importedFlow );
+        updatedInstances.Add( operationMaterial ); 
+      }
+    }
+  *]
+}

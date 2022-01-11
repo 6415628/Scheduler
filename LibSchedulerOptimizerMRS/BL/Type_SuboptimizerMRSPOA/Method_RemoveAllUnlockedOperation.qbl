@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method RemoveAllUnlockedOperation
+{
+  TextBody:
+  [*
+    // stn4 Jun-6-2016 (created)
+    schedule := this.GetSchedule();
+    //unplan all planned tasks first
+    if( not this.IsInConstrainedPOAMode() )
+    {
+      //unplan all resource
+      traverse( schedule, ResourceGroup_SC.Resource_SC.Task_SC.astype( SingleTaskBase ), task,
+                not task.OperationAsSingleTask().ScopeElementOperation().OnRunOrCreate( this.Run() ).IsLocked()
+             //   and not task.SingleOperation().IsInFrozenPeriod()
+                )
+      {
+        task.Unplan();
+      }
+    }
+  *]
+}

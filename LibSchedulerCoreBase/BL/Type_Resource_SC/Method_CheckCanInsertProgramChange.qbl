@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckCanInsertProgramChange (Task_SC aftertask) declarative remote as Boolean
+{
+  Description: 'Checks whether can insert program change'
+  TextBody:
+  [*
+    // CheckCanInsertProgramChange
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    /*
+    1. Checks whether this resource can apply program scheduling
+    2. Checks whether this resource has program definiiton
+    3. Checks whether the task is allowed to insert program change
+    */
+    
+    value := this.CheckCanApplyProgramScheduling();
+    if( value )
+    {
+      this.CheckHasProgramDefinition();
+      if( not isnull( aftertask ) )
+      {
+        aftertask.CheckCanInsertProgramChange(); 
+      }
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

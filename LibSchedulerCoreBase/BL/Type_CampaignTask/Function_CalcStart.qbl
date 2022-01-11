@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcStart
+{
+  Description: 'Calculate the start of campaign tasks'
+  TextBody:
+  [*
+    // JK 12-16-2016 QP 8382 Adjusted relational logic for updated object model with multiple campaigns
+    value := min( this, 
+                  OperationCampaign.Operation_SC, 
+                  operation, 
+                  // WORKAROUND to ensure campaign includes subtasks durations before first respect routing
+                  // REAL solution would probably be to update Operation_SC.Start calculation
+                  minvalue( operation.Start(), guard( operation.Task_SC().Start(), operation.Start() ) ) );
+    
+    this.Start( value );
+  *]
+}

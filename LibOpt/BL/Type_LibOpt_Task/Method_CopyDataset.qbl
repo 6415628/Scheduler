@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method CopyDataset () as LibOpt_SnapshotReplannableCopyDataset
+{
+  Description:
+  [*
+    This method creates a copy of the current dataset. It also creates a `LibOpt_SnapshotReplannableCopyDataset` snapshot that will be shown in the 'Snapshots' and 'Replannable snapshots' forms.
+    Note that if dataset copies are disabled (so if `this.Run().IsCreatingDatasetCopiesEnabled()` is `false`), then this method will return `null( LibOpt_SnapshotReplannableCopyDataset )`.
+    If you want to log any additional information, please use `LibOpt_Task.Log( description, snapshot )` and pass the `LibOpt_SnapshotReplannableCopyDataset`.
+    This will create a `LibOpt_SnapshotInfo` snapshot in the 'Snapshots' form. This snapshot is a child of the `LibOpt_SnapshotReplannableCopyDataset` snapshot. 
+    When the `LibOpt_SnapshotReplannableCopyDataset` snapshot is null, then the `LibOpt_SnapshotInfo` snapshot is added as a child of the `task.SnapshotComponent()` snapshot.
+  *]
+  TextBody:
+  [*
+    // evr3 May-20-2020 (created)
+    
+    snapshot := null( LibOpt_SnapshotReplannableCopyDataset );
+    
+    // An AE should be able to start a run while being sure that no dataset copies are made. The AE can do this by setting the IsCreatingDatasetCopiesEnabled attribute to false. 
+    // If you want to create a dataset copy regardless of the value of the IsCreatingDatasetCopiesEnabled attribute, then please consider calling LibOpt_DatasetCopyConditional::CopyDataset directly. 
+    if( this.Run().IsCreatingDatasetCopiesEnabled() )
+    {
+      snapshot := LibOpt_DatasetCopyConditional::CopyDataset( this,
+                                                              "AE Created", // By default, this string will be used as a suffix in the name of the created dataset. The sting will also show up in `Type` column of the snapshot form. 
+                                                              true // Create a slow copy that is robust against errors and rollbacks in the same transaction.
+                                                              ); 
+    }
+    
+    return snapshot;
+  *]
+}

@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitializeStockingPointStock
+{
+  TextBody:
+  [*
+    scheduler := this.Schedule();
+    
+    traverse( scheduler, ImportedStockingPoint_SC, target, target.IsValidDataHard() )
+    {
+      sp := target.StockingPoint();
+      stock := guard( sp.StockingPointStock(), null( StockingPointStock ) );
+      
+      // Create new stock
+      if( not isnull( sp ) and isnull( stock ) )
+      {
+        stock := StockingPointStock::Create( scheduler );
+        stock.StockingPoint( relset, sp );   
+    
+        // Requires propagation to perform update of stock derived attributes. RFC #91615. 
+        // Remove duplicate start amount and propagation when RFC resolved.
+        stock.StartAmount( sum( target, ImportedSupply_SC.astype( ImportedMaterial_SC ), supply, supply.IsValidDataHard(), supply.Quantity() ) ); // sum only valid supplies, invalid ones will be brought up by sanity check
+        Transaction::Transaction().Propagate();
+      }      
+      
+      startamount := sum( target, ImportedSupply_SC.astype( ImportedMaterial_SC ), supply, supply.IsValidDataHard(), supply.Quantity() ); // sum only valid supplies, invalid ones will be brought up by sanity check
+      stock.SetStartAmount( startamount );                                                                               
+      stock.SetMinMaxTarget( target.MinimumStockLevel(), target.MaximumStockLevel(), target.TargetStockLevel() );
+    }
+  *]
+}

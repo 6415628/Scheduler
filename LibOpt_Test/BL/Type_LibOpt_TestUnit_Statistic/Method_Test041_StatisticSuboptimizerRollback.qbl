@@ -1,0 +1,70 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test041_StatisticSuboptimizerRollback (LibOpt_TestDataset dataset)
+{
+  Description: 'Test that we get the right amount of issues for `LibOpt_StatisticSuboptimizerRollback`'
+  TextBody:
+  [*
+    nr_iterations := 100;
+    nr_rollbacks := 5;
+    
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    scope := LibOpt_Scope::Create( run );
+    run.SetStartScope( scope );
+    
+    iterator := opt.Iterator( run, 'Iterator' );
+    iterator.SetMaxIterations( nr_iterations );
+    
+    rollback_kpi := opt.RollbackKPIScripted( 1 );
+    
+    iterations := construct( Numbers );
+    for( i := 0; i < nr_iterations; i++ )
+    {
+      iterations.Add( i );
+    }
+    random_sorted := selectsortedset( iterations, Elements, iteration, true, Real::Random() );
+    rollback_indices := NumberVector::Construct( random_sorted ).GetRange( 0, nr_rollbacks - 1 )
+    is_rollback := BooleanVector::Construct( nr_iterations, rollback_indices.AsValues() );
+    
+    
+    kpi := 100.0;
+    rollback_kpi.Enqueue( kpi );
+    for( i := 0; i < nr_iterations; i++ )
+    {
+      kpi := kpi + ifexpr( is_rollback.Get( i ), 1, -1 ) * Real::Random();
+      rollback_kpi.Enqueue( kpi );
+    }
+    
+    suboptimizer := opt.SuboptimizerMPReflection( run, 'Suboptimizer', & rollback_kpi,
+                                                  method( LibOpt_RollbackKPIScripted, MP_HandleResult,
+                                                          LibOpt_Suboptimizer, MathematicalProgram, LibOpt_Task, Boolean ) );
+    
+    iterator.To( suboptimizer );
+    
+    this.NoException( run->Start()->|void->( )
+    {
+      statistics := selectset( run, Statistic.astype( LibOpt_StatisticSuboptimizerRollback ), statistic, true );
+      
+      if( this.Run().AssertEqual( 1, statistics.Size(), 'Incorrect amount of statistics' ) )
+      {
+        traverse( statistics, Elements, statistic )
+        {
+          this.Run().AssertEqual( nr_rollbacks, statistic.Issue( relsize ), 'Unexpected amount of issues' );
+        }
+        
+        traverse( suboptimizer, SnapshotComponent, snapshot )
+        {
+          traverse( snapshot, IterationPart.IterationPartNM.Iteration, iteration )
+          {
+            expected := ifexpr( is_rollback.Get( iteration.IterationNr() - 1 ), 1, 0 );
+            actual := counter( snapshot, IterationPart.Snapshot.Issue, issue, issue.Statistic().istype( LibOpt_StatisticSuboptimizerRollback ) )
+            this.Run().AssertEqual( expected, actual, 'Unexpected amount of issues on iteration ' + [String] iteration.IterationNr() );
+          }
+        }
+      }
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

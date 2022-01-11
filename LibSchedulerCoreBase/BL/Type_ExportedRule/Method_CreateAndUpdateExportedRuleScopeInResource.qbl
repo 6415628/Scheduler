@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateAndUpdateExportedRuleScopeInResource (Rule rule)
+{
+  Description: 'Create and update exported rule scope in resource.'
+  TextBody:
+  [*
+    allinstances := selectset( this, ExportedRuleScopeInResource, exportedrsir, true );
+    updatedinstances := construct( ExportedRuleScopeInResources );
+    
+    traverse( rule, RuleScopeInResource, rulescopeinresource )
+    {
+      exportedrulescopeinresource := select( this, ExportedRuleScopeInResource, exportedrsir, 
+                                             exportedrsir.RuleID() = rule.RuleID()                                      
+                                             and exportedrsir.ResourceID() = guard( rulescopeinresource.Resource_SC().ResourceID(), '' ) );
+                      
+      if( isnull( exportedrulescopeinresource ) )
+      {
+        exportedrulescopeinresource := ExportedRuleScopeInResource::Create( this, rulescopeinresource );
+      }
+      
+      updatedinstances.Add( exportedrulescopeinresource );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, exportedrulescopeinresource )
+    {
+      exportedrulescopeinresource.Delete();
+    }
+  *]
+}

@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateLocalSystemConfiguration (LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Update configurations of local System representation from model settings.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-29-2016 (created)
+    // instantiate local System
+    if( isnull( this.SystemLocal() ) )
+    {
+      LibDEF_System::CreateAsLocal( this, event_i );
+    }
+    // DO NOT update local System coordinate, as it might clash with other known Systems
+    // instead, send the local coordinate to BootNode and then update when receive acknowledgement
+    
+    localSystem := this.SystemLocal();
+    
+    // Set DEF version
+    localSystem.UpdateVersion( LibDEF_DataAccessor::MAJORVERSION_VALUE(), LibDEF_DataAccessor::MINORVERSION_VALUE() );
+    
+    // update local System-Name
+    systemName := LibDEF_Util::GetSettingValueSystemName();
+    localSystem.Name( systemName );
+  *]
+}

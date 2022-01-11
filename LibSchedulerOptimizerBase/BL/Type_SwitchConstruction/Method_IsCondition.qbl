@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride IsCondition (LibOpt_Task task) as Boolean
+{
+  TextBody:
+  [*
+    // true iff there are unplanned operations AND every iteration so far was (also a construction path AND did not fail). 
+    // Failed = rollback, error or no improvement (a change equals an improvement if there was no rollback).
+    
+    value := false;
+    if( this.HasNecessaryOperationsNotPlanned( task ) )
+    {
+      // there are unplanned operations.
+      
+      // condition is equal to: last iteration is null or (went the LinkTrue path AND did not error or roll back).
+      
+      previoussnapshots := task.SnapshotComponent().GetSnapshotsOnPreviousIteration();
+      if( previoussnapshots.Size() = 0 )
+      {
+        value := true; // this is the first iteration. Let's construct!
+      }
+      else
+      {
+        Transaction::Transaction().Propagate( relation( LibOpt_SnapshotComponent, IterationPart ) ); // this relation is not calculated before the first iteration. Used below.
+        // check: last iteration also went the LinkTrue and has no errors or rollbacks:
+        value := exists( previoussnapshots,
+                         Elements.astype( LibOpt_SnapshotComponent ),
+                         snapcomp,
+                         snapcomp.Component() = this,
+                         exists( snapcomp,
+                                 Children.astype( LibOpt_SnapshotSwitch ),
+                                 snap,
+                                 snap.Link() = this.LinkTrue() ) // also executed the construction path
+                         and forall( snapcomp.IterationPart(), IterationPartNM.Iteration, iteration,
+                                     iteration.NrOfErrors() = 0
+                                     and iteration.NrOfRollbacks() = 0
+                                     and iteration.IsChange() ) );
+      }
+    }
+    return value;
+  *]
+}

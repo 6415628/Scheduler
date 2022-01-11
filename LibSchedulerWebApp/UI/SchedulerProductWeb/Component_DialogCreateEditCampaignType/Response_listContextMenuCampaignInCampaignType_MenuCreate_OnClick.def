@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: listContextMenuCampaignInCampaignType/MenuCreate
+Response OnClick () id:Response_listContextMenuCampaignInCampaignType_MenuCreate_OnClick
+{
+  #keys: '[143768.1.1787445513]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebMenu_OnClick'
+  GroupServerCalls: true
+  Precondition:
+  [*
+    return DialogCreateEditCampaignType.DoOkPrecondition( feedback );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Create a new shadow[CampaignInCampaignType]
+      // Create CampaignType if it has not so that we can create CampaignInCampaignType
+      value := true;
+      
+      if( isnull( DataHolderCampaignType.Data() ) )
+      {
+        value := WebMessageBox::Question( Translations::CampaignType_CreateConfirmation(), 'Yes|No' ) = 0;
+      }
+      
+      if( value )
+      {
+        DialogCreateEditCampaignType.CreateCampaignType();
+        
+        dlg := construct( DialogCreateEditCampaignInCampaignType );
+        dlg.New( DataHolderCampaignType.Data() );
+      }
+    *]
+  }
+}

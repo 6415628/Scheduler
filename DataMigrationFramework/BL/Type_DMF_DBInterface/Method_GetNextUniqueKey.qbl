@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetNextUniqueKey (DataUpgradeIO duio_i, String table_i) as Number
+{
+  Description: 'Retrieve the next key after the maximum key for a table'
+  TextBody:
+  [*
+    // tgn3 Apr-8-2021 (created)
+    
+    // Default to -1, which indicates something went wrong
+    nextKey := -1;
+    
+    query := "SELECT MAX(Key) FROM " + table_i;
+    
+    results := construct( Strings );
+    msg     := "";
+    
+    isSuccess := this.Execute( duio_i, query, results, msg );
+    
+    // Only handle result if query succeeded
+    // DevNote: if there are no rows in the table, a size 1 result is returned with an empty string
+    // This will get cast as 0 with [Number]. Guard is included as insurance
+    if( isSuccess )
+    {  
+      nextKey := guard( [Number]results.Element( 0 ) + 1, nextKey ); 
+    }
+    else
+    {
+      DMF_Utility::LogWarning( msg ); 
+    }
+    
+    // Debug - do not delete
+    //logfile( ">>> nextKey", nextKey );
+    
+    return nextKey;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

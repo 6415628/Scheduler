@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateIssue (LibOpt_SnapshotMP snapshotmp, String issuetype, const constcontent LibOpt_StatisticSeverityScaleEntrys severityscaleentries_lowerthresholdviolation, 
+  const constcontent LibOpt_StatisticSeverityScaleEntrys severityscaleentries_upperthresholdviolation)
+{
+  Description: 'Create a `LibOpt_Issue` for the given "snapshot mp" (`LibOpt_SnapshotMP`) if its `LibOpt_SnapshotMP.IsFeasible` value is `false`.'
+  TextBody:
+  [*
+    if( not snapshotmp.IsFeasible() )
+    {
+      // Create an Issue and link it to the relevant Snapshot.
+      LibOpt_Issue::Create( this,
+                            snapshotmp,
+                            issuetype,
+                            this.Focus() + ', ' + Translations::LibOpt_IterationNr( snapshotmp.GetIteration().IterationNr(), this.Run().TotalNrOfIterations() ),
+                            LibOpt_Issue::Severity_5_Max(),
+                            Translations::LibOpt_Issue_Details_SuboptimizerMPInfeasible()
+                          );
+    }
+  *]
+}

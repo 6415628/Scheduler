@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAlternatives () declarative as owning Practices
+{
+  Description: 'Get alternative practices are allowed'
+  TextBody:
+  [*
+    //get alternatives form the KT
+    rows := this.GetAlternativeRows();
+    
+    //create a set of the alternatives
+    alternatives := selectset( this.Schedule(),
+                               Practice,
+                               practice,
+                               true,
+                               practice = this or //Unfortunately needed because declerative add is not allowed
+                               exists( rows,
+                                       Elements,
+                                       row,
+                                       row.Alternative() = practice.UsedPractice() ) );
+    
+    return &alternatives;
+  *]
+}

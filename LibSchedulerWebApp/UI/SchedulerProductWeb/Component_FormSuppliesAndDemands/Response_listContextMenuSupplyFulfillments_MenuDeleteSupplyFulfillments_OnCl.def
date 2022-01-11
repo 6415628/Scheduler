@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: listContextMenuSupplyFulfillments/MenuDeleteSupplyFulfillments
+Response OnClick (structured[Fulfillment] selection) id:Response_listContextMenuSupplyFulfillments_MenuDeleteSupplyFulfillments_OnClick
+{
+  #keys: '[143768.1.235897774]'
+  CanBindMultiple: false
+  DefinitionID => /listContextMenuSupplyFulfillments/Responsedef_listContextMenuSupplyFulfillments_MenuDeleteSupplyFulfillments_OnClick
+  GroupServerCalls: true
+  Precondition:
+  [*
+    return Fulfillment::CanDeleteHard( selection, feedback );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Delete supply fulfillments
+      existsFrozenFulfillment := exists( selection, Elements, fulfillment, fulfillment.IsFrozenInSchedule() );
+      
+      if( Scheduler.ConstructMessageBoxForSoftPrecondition( existsFrozenFulfillment, Translations::SC_Confirmation_Unreserve_Fulfillments() ) )
+      {
+        Fulfillment::DeletePlannedFulfillment( selection );
+      }
+    *]
+  }
+}

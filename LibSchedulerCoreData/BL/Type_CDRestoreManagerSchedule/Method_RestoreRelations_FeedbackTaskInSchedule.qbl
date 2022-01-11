@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_FeedbackTaskInSchedule (CDSchedule cdschedule)
+{
+  Description: 'Restore feedback task in schedule core data relation to planning object'
+  TextBody:
+  [*
+    // Restore FeedbackBatchInSchedule
+    schedule := this.Schedule();
+    
+    traverse( cdschedule, CDEntity.astype( CDFeedbackTaskInSchedule ), cdfeedbacktaskinschedule )
+    {
+      ftis := FeedbackTaskInSchedule::FindFeedbackTaskInSchedule( cdfeedbacktaskinschedule.WorkOrderId(),
+                                                                  cdfeedbacktaskinschedule.PlanUnitId(),
+                                                                  cdfeedbacktaskinschedule.WorkOrderOperationSequenceNr() );
+                                                                  
+      if( not isnull( ftis ) )
+      {
+        // Restore relation to operation task feedback
+        operation := select( schedule, PlanUnit_SC.Operation_SC, op, op.OperationID() = cdfeedbacktaskinschedule.OperationID() );                                                            
+        ftis.CreateUpdateOperationTaskFeedback( operation );
+        
+        // Restore relation to task
+        task := select( schedule, ResourceGroup_SC.Resource_SC.Task_SC, t, t.BackupTaskID() = cdfeedbacktaskinschedule.BackupTaskID() )
+        ftis.Task_SC( relset, task )    
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

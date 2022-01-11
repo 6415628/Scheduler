@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateFSPLSimplePaperbag_SingleChildPlanUnit
+{
+  Description: 'To create test data simulating child plan units for FSPL implementation and testing. For use in SimplePaperbags ONLY.'
+  TextBody:
+  [*
+    // FOR FSPL DEMO
+    // FOR USE IN SimplePaperbags ONLY
+    traverse( this, PlanUnit_SC, pu )
+    {
+      pu_id := pu.PlanUnitID();
+      new_pu_id := pu_id + '-1';
+    
+      planunit := PlanUnit_SC::FindPlanUnit( new_pu_id);
+    
+      if( isnull( planunit ) )
+      {
+        planunit := GenericPlanUnit::Create( this, new_pu_id);
+      }
+    
+      order      := pu.Order_SC();
+      quantity := order.Quantity();
+      planunit.Update( order, quantity, order.GetNrOfLots( quantity ) );
+    
+      operationseqnr := pu.Operation_SC( relsize ) + 1;
+    
+      operationid := Operation_SC::GenerateOperationID( new_pu_id, operationseqnr );
+    
+      operation := planunit.CreateOperation( 'Folding' );
+      prevop := maxselect( pu, Operation_SC, op, true, op.SequenceNr() );
+      om := select( prevop, ToOperationDependency, o, true );
+      operation.FromOperationDependency( relinsert, om )
+    
+      operation.CreateOutputOperationMaterial( planunit.Quantity() );
+      operation.OperationID( operationid );
+    
+      operation.SequenceNr( operationseqnr );
+      operation.PreferredResource( '' );
+      planunit.Parent( relset, pu );
+    }
+  *]
+}

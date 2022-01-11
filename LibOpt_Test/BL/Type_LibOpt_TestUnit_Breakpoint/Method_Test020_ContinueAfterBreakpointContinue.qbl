@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test020_ContinueAfterBreakpointContinue (LibOpt_TestDataset dataset)
+{
+  Description: 'Check if after we accept a breakpoint, the component flow continues. One break point after execution. We accept it.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    component1 := opt.ComponentCounter( run, 'Component1' );
+    component2 := opt.ComponentCounter( run, 'Component2' );
+    component1.To( component2 );
+    component_position := select( component1, ComponentPosition, bp, bp.Name() = LibOpt_Component::ComponentPosition_Continue() );
+    component_position.SetBreakpoint();
+    
+    run.SetStartComponent( component1 );
+    str := run->Start();
+    this->WaitForBreakpoint( run, this.Run() )
+      ->|this->( this )
+      {
+        this.Run().AssertEqual( 1, component1.NrOfTimesCalled(), 'Component 1: Number of calls has an unexpected value [1]' );
+        this.Run().AssertEqual( 0, component2.NrOfTimesCalled(), 'Component 2: Number of calls has an unexpected value [1]' );
+      }
+      ->|run->Continue();
+    str->|this->( this )
+      {
+        this.Run().AssertEqual( 1, component1.NrOfTimesCalled(), 'Component 1: Number of calls has an unexpected value [2]' );
+        this.Run().AssertEqual( 1, component2.NrOfTimesCalled(), 'Component 2: Number of calls has an unexpected value [2]' );
+      }
+    str->Exception()->LibOpt_TestUnit_TestDataset::CheckNoException( this );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method BatchCancelled (String batchid, String resource_id, DateTime time, 
+  String remark)
+{
+  Description: 'Feedback API: handle feedback batch with feedback type StartCancelled or EndCancelled'
+  TextBody:
+  [*
+    // jiex Aug-25-2016 (created)
+    // (1) remove existing feedback batch
+    // (2) plan the batch as first batch task in schedule
+    
+    fbbatchinschedule := FeedbackBatchInSchedule::FindFeedbackBatchInSchedule( batchid )
+    
+    if( not isnull( fbbatchinschedule ) )
+    {
+      traverse( fbbatchinschedule, FeedbackBatchContentInSchedule, fbcontent )
+      {
+        operation := guard( fbcontent.OperationBatchFeedback().AsOwningOperation_SC(), null( Operation_SC ) );
+        
+        if( not isnull( operation ) )
+        {
+          // Reset and update statuses with remarks
+          operation.UpdateFeedbackStatus( Constants::StatusCancelled(), remark, resource_id );
+        }
+      }
+      
+      resource := Resource_SC::FindResource_SC( resource_id );
+        
+      if( not isnull( resource ) and resource.istype( BatchResource ) )
+      {
+        operations := selectset( fbbatchinschedule, FeedbackBatchContentInSchedule.OperationBatchFeedback.AsOwningOperation_SC, op, true );
+        resource.astype( BatchResource ).CreateBatchAssignOperationsPlanBatch( operations, null( BatchTask ) );
+      }
+      
+      fbbatchinschedule.Delete();
+    }
+  *]
+}

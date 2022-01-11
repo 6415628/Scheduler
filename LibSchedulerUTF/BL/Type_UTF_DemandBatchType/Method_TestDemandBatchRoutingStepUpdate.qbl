@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestDemandBatchRoutingStepUpdate (Schedule schedule)
+{
+  Description: 'Test the update logic of demand batch routing step.'
+  TextBody:
+  [*
+    // Update operation types of routing steps
+    importedDemandBatchRoutingSteps := selectsortedset( schedule, 
+                                                        ImportedDemandBatchType.ImportedDemandBatchRoutingStep, 
+                                                        importedDemandBatchRoutingStep, 
+                                                        true, 
+                                                        importedDemandBatchRoutingStep.SequenceNr() );
+    newOperationTypes := construct( Strings );
+    
+    traverse( importedDemandBatchRoutingSteps, Elements, importedDemandBatchRoutingStep )
+    {
+      operationType := importedDemandBatchRoutingStep.BatchType().Concat( [String] ( importedDemandBatchRoutingStep.SequenceNr() + 10 ) )
+      importedDemandBatchRoutingStep.OperationType( operationType );
+      newOperationTypes.Add( operationType );
+      
+      // Create resource group to pass sanity test
+      importedResourceGroup := schedule.ImportedResourceGroup_SC( relnew, ResourceGroup := operationType, EquipmentClassID := '' );
+      importedResourceGroup.ResourceType( operationType );
+    }
+    
+    // Update synchronize DemandBatchType
+    Transaction::Transaction().Propagate( attribute( ImportedData_SC, IsValidDataHard ) );
+    schedule.SynchronizationObject().SynchronizeDemandBatchTypes();
+    
+    allUpdatedOperationTypes := forallexists( schedule, 
+                                              DemandBatchType.DemandBatchRoutingStep, 
+                                              demandBatchRoutingStep,
+                                              true,
+                                              newOperationTypes.Find( demandBatchRoutingStep.OperationType() ) > -1 );
+    
+    this.Run().AssertTrue( allUpdatedOperationTypes, UTFUtility::GenerateFailedMessage( 'DemandBatchRoutingStep_Update', '' ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

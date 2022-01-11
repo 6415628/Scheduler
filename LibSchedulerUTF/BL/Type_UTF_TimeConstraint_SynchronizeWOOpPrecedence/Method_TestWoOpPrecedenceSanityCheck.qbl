@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestWoOpPrecedenceSanityCheck (Schedule schedule)
+{
+  Description: 'Test sanity check of imported work order operation precedence in data driven time constraints mode.'
+  TextBody:
+  [*
+    hasValidCircularPrecedence := false;
+    hasValidNoBufferType := false;
+    hasValidOffsetRelation := false;
+    hasValidDependencyType := false;
+    result := false;
+    
+    // Get data for test variant
+    this.GetTestVariant( hasValidCircularPrecedence, hasValidNoBufferType, hasValidOffsetRelation, hasValidDependencyType, result );
+                                                                                         
+    // Propagate is valid data for the imported work order opration precedence instance.
+    Transaction::Transaction().Propagate( attribute( ImportedWorkOrderOperationPrecedence, IsValidData ) );
+    schedule.DetectCycleForPrecedenceSanityCheck();
+    // Propagate is valid data for the imported work order opration precedence instance after doing circularity check
+    Transaction::Transaction().Propagate( attribute( ImportedWorkOrderOperationPrecedence, IsValidData ) );
+    
+    allValidPrecedence := forallexists( schedule, ImportedWorkOrderOperationPrecedence, precedence, true, precedence.IsValidData() );
+    
+    this.Run().AssertTrue( allValidPrecedence = result,
+                           UTFUtility::GenerateFailedMessage( 'Sanity check for imported work order operation precedence failed', this.Variant() ) );
+  *]
+}

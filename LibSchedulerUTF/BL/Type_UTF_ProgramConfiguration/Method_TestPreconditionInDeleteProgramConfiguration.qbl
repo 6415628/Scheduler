@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionInDeleteProgramConfiguration (Schedule schedule)
+{
+  Description: 'Test precondition in delete program configuration data'
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    objectype := '';
+    hasPlannedProgramChange := false;
+    isValidForPreconDelete:= false;
+    
+    this.GetTestVariantForPreconditionDeleteProgramConfiguration( isvariantfound,
+                                                                  objectype,
+                                                                  hasPlannedProgramChange,
+                                                                  isValidForPreconDelete );
+    
+    value := false;
+    if( isvariantfound )
+    {
+      programdefinitions := selectset( schedule, ProgramDefinitionConfiguration, pt, true );
+      programsets := selectset( programdefinitions, Elements.ProgramSetConfiguration, ps, true );
+      programtypes := selectset( programsets, Elements.ProgramTypeConfiguration, pt, true );
+      
+      value := isValidForPreconDelete;
+      if( objectype = 'program definition' ) 
+      {
+        value := ProgramDefinitionConfiguration::CheckCanBeDeleted( programdefinitions );   
+      }
+      else if( objectype = 'program set' ) 
+      {
+        value := ProgramSetConfiguration::CheckCanBeDeleted( programsets ); 
+      }
+      else if( objectype = 'program type' ) 
+      {
+        value := ProgramTypeConfiguration::CheckCanBeDeleted( programtypes );   
+      }
+    }
+    
+    this.Run().AssertEqual( isValidForPreconDelete, value,
+                            UTFUtility::GenerateFailedMessage( 'Precondition in deleting ' + objectype + ' failed.', this.Variant() ) );
+  *]
+}

@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestImportShutdownType (Schedule schedule)
+{
+  TextBody:
+  [*
+    importedShutdownType := select( schedule, ImportedShutdownType, ist, true );
+    importedShutdownTypeInResource := select( schedule, ImportedShutdownTypeInResource, istir, true );
+    
+    shutdownType := select( schedule, ShutdownType, st, true );
+    shutdownTypeInResource := select( shutdownType, ShutdownTypeInResource, stir, true );
+    resourceGroup := select( schedule, ResourceGroup_SC, rg, true );
+    resource := select( resourceGroup, Resource_SC, r, true );
+    
+    isShutdownTypeCreated := not isnull( shutdownType )
+                             and shutdownType.ShutdownTypeID() = importedShutdownType.ShutdownTypeID() 
+                             and shutdownType.Name() = importedShutdownType.Name()
+                             and shutdownType.DefaultDuration() = importedShutdownType.DefaultDuration()
+                             and shutdownType.ColorCode() = importedShutdownType.ColorCode() 
+                             and shutdownType.IsSequenceRulesEnabled() = importedShutdownType.IsSequenceRulesEnabled()
+                             and shutdownType.IsLinkToPrecedingTask() = importedShutdownType.IsLinkToPrecedingTask();
+    
+    isShutdownTypeInResourceCreated := not isnull( shutdownTypeInResource )
+                                       and shutdownTypeInResource.ResourceID() = importedShutdownTypeInResource.ResourceID()
+                                       and shutdownTypeInResource.ShutdownTypeID() = importedShutdownTypeInResource.ShutdownTypeID()
+                                       and shutdownTypeInResource.ShutdownType() = shutdownType
+                                       and shutdownTypeInResource.Resource_SC() = resource;
+    
+    
+    isShudownSubtaskCreated := exists( resourceGroup, SubTaskTypeOnResourceGroup, storg,
+                                       storg.SubTaskType().SubTaskID() = Constants::SubTask_Stoppage()
+                                       and storg.SubTaskType().SubTaskName() = Constants::SubTask_Stoppage_Name() );
+    
+    value := isShutdownTypeCreated 
+             and isShutdownTypeInResourceCreated
+             and isShudownSubtaskCreated;
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Import shutdown type failed.', this.Variant() ) );
+  *]
+}

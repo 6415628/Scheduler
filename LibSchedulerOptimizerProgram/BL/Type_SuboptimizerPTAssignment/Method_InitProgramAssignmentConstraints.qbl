@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitProgramAssignmentConstraints (const LibOpt_Task task, SuboptimizerMPPTAssignment_PTAssignmentMP program, TransientDataSuboptimizerPTAssignment transientData) as SuboptimizerMPPTAssignment_PTAssignmentMP
+{
+  TextBody:
+  [*
+    // jkr8 Jul-16-2021 (created)
+    
+    ////////////////////////////////////////////////////////////////////////////////
+    // sum_t(IsProgramAssigned_(t,b) = IsUsed_b, forall programsets, b = 1,...,B  //
+    ////////////////////////////////////////////////////////////////////////////////
+    // Each bucket must have a program set assigned to it.
+    
+    traverse( task.Scope().ScopeElementsConst(), Elements.astype( ScopeElementProgramTypeConfiguration ).ProgramTypeConfiguration.ProgramSetConfiguration, programSet, true )
+    {
+      traverse( transientData, Bucket, bucket, true ) 
+      {
+        constr := program.ProgramAssignmentConstraints().New( programSet, bucket );
+        
+        traverse( programSet, ProgramTypeConfiguration, programType, true ) 
+        {
+          constr.NewTerm( 1.0, program.IsProgramAssignedVariables().Get( programType, bucket ) );
+        }
+        
+        constr.NewTerm( -1.0, program.IsUsedVariables().Get( bucket ) );
+        
+        constr.RHSValue( 0.0 );
+      }
+    }
+    
+    return program;
+  *]
+}

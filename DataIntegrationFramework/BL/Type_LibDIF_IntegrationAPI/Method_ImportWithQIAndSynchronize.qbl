@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportWithQIAndSynchronize (String concept_i, String dataTransformationID_i) as stream[LibDIF_IntegrationAPI]
+{
+  Description:
+  [*
+    Trigger the import of data of the provided concept with the QI as integration objects,
+    followed by triggering the synchronization of the integration objects to model objects in the planning-dataset, using the DataTransformation with the provided ID.
+    The DataTransformation with the provided ID can be used to validate the imported integration objects.
+  *]
+  TextBody:
+  [*
+    dataTransformation := this.GetDataTransformation( dataTransformationID_i );
+    
+    // Get the Integration-dataset and trigger its ImportWithQI,
+    // followed by triggering synchronization of the data.
+    api := this.GetIntegrationDataset() ->  ImportWithQI( concept_i, dataTransformation )
+                                        ->| this -> SynchronizeData( dataTransformationID_i ) -> ( api ) { return api; }
+    
+    // Return a stream that can be reacted on.
+    return api;
+  *]
+}

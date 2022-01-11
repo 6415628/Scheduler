@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method Optimize (Resource_SCs resources, Operation_SCs operations) as stream[JSON]
+{
+  Description: 'Create and starts a Sequencing optimizer run to optimize the given operations on the given resources.'
+  TextBody:
+  [*
+    // If no operations were selected, then use the default scope
+    isdefaultscope := operations.Size() = 0;
+    
+    optimization := this.AsOptimizerProgramForOptimization();
+    
+    // Update selected optimizer
+    if( not isnull( optimization ) )
+    {
+      optimization.Schedule().Optimizer().SelectedOptimizer( Constants::OptimizerPrograms() );
+    }
+    
+    scope_elements := this.CreateScope( resources, operations, isdefaultscope );
+    
+    operations_selected := selectset( scope_elements, Elements.astype( ScopeElementOperation ).Operation_SC, op, true );
+    
+    // Lock all selected operations by the optimizer
+    traverse( operations_selected, Elements, op )
+    {
+      op.IsLockedByOptimizer( true );
+    }
+    
+    // what the optimizer locked may propagate through to more operations being locked: (used below in LockLockedAndFrozenOperationsInScope)
+    Transaction::Transaction().Propagate( attribute( Operation_SC, IsLocked ) );
+    
+    
+    run := optimization.CreateRun( this, scope_elements );
+    
+    return run.Start();
+  *]
+}

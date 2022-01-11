@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendMetadataRequestGetSetsForSetType (LibDEF_SetTypeMeta setTypeMeta_i)
+{
+  Description: 'Send a Metadata message for requesting Sets metadata for selected SetType metadata.'
+  TextBody:
+  [*
+    // Jacky CHAN May-17-2016 (created)
+    nvt := LibDEF_DataAccessor::CreateMessageMetadata();
+    
+    // define Type
+    LibDEF_DataAccessor::SetMetadataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_TYPE(), LibDEF_DataAccessor::TYPE_METADATA_GETSETLIST() );
+    
+    // add header
+    LibDEF_DataAccessor::SetMetadataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_SETTYPEGUID(), setTypeMeta_i.GUID() );
+    
+    dataBroker := this.DataBroker();
+    event      := dataBroker.EventCreate( this, false );
+    
+    LibDEF_Util::EventLog( event, "Request list of Sets for selected SetType" );
+    
+    dataBroker.SendMessage( this, nvt, LibDEF_DataAccessor::KIND_REQUEST(), event );
+  *]
+}

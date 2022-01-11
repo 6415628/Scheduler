@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[PlanUnit_SC] selection) id:Response_SCListPlanUnits_MenuSelectPlanUnitAsMandatory_OnClick
+{
+  #keys: '[137186.0.750064499]'
+  Body:
+  [*
+    // Add operations in selected plan units to MANDATORY scope
+    mandatoryOperations := DataHolderOptimizerMandatoryOperations.Data();
+    optionalOperations := DataHolderOptimizerOptionalOperations.Data();
+    
+    operations := selectset( selection, Elements.Operation_SC, op, op.AllowedOperationOnResource( relsize ) > 0 );
+    
+    DataHolderOptimizerMandatoryOperations.Data( mandatoryOperations.Union( operations ) );
+    DataHolderOptimizerOptionalOperations.Data( optionalOperations.Difference( operations ) );
+  *]
+  CanBindMultiple: false
+  DefinitionID => //FilteredList/Responsedef_FilteredList_Menu_OnClick
+  Initiator: 'MenuSelectPlanUnitAsMandatory'
+  Precondition:
+  [*
+    operations := selectset( selection, Elements.Operation_SC, op, op.AllowedOperationOnResource( relsize ) > 0 );
+    return Operation_SC::CheckCanAddToOptimizerScope( operations, feedback );
+  *]
+}

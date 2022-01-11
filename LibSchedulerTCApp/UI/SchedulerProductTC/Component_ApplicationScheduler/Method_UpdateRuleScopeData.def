@@ -1,0 +1,120 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateRuleScopeData (shadow[Rule] rule, structured[Resource_SC] resources, structured[ShutdownType] shutdowntypes, 
+  structured[ProgramTypeConfiguration] programtypes, structured[ProgramPhaseConfiguration] programphases) id:Method_ApplicationScheduler_UpdateRuleScopeData
+{
+  #keys: '[136602.0.2141503980]'
+  Body:
+  [*
+    // Update rule scope in resource for shadow rule object
+    
+    // if rule scope is resource
+    if( rule.RuleScopeSelected() = RuleConstant::RuleScope_AllTasksOnResource() )
+    {
+      allinstances := selectset( rule, RuleScopeInResource, rsir, true );
+      updateinstances := construct( structured[shadow[RuleScopeInResource]] );
+      traverse( resources, Elements, e )
+      {
+        rsir := select( allinstances, Elements, rsir, rsir.Resource_SC() = e );
+        if( isnull( rsir ) )
+        {
+          rsir := rule.RuleScopeInResource( relnew, Resource_SC := e );
+        }
+        updateinstances.Add( rsir );
+      }
+      
+      tobedeleted := allinstances.Difference( updateinstances );
+      traverse( tobedeleted, Elements, e )
+      {
+        e.Delete();
+      }
+    }
+    // if rule scope is shutdown
+    else if( rule.RuleScopeSelected() = RuleConstant::RuleScope_Shutdown() )
+    {
+      allinstances := selectset( rule, RuleScopeInShutdownType, rsst, true );
+      updateinstances := construct( structured[shadow[RuleScopeInShutdownType]] );
+      traverse( shutdowntypes, Elements, e )
+      {
+        rsst := select( allinstances, Elements, rsst, rsst.ShutdownType() = e );
+        if( isnull( rsst ) )
+        {
+          rsst := rule.RuleScopeInShutdownType( relnew, ShutdownType := e );
+        }
+        updateinstances.Add( rsst );
+      }
+      
+      tobedeleted := allinstances.Difference( updateinstances );
+      traverse( tobedeleted, Elements, e )
+      {
+        e.Delete();
+      }
+    }
+    // if rule scope is program
+    else if( rule.RuleScopeSelected() = RuleConstant::RuleScope_Program() )
+    {
+      allinstances := selectset( rule, RuleScopeInProgramType, rspt, true );
+      updateinstances := construct( structured[shadow[RuleScopeInProgramType]] );
+      traverse( programtypes, Elements, e )
+      {
+        rspt := select( allinstances, Elements, rspt, rspt.ProgramTypeConfiguration() = e );
+        if( isnull( rspt ) )
+        {
+          rspt := rule.RuleScopeInProgramType( relnew, ProgramTypeConfiguration := e );
+        }
+        updateinstances.Add( rspt );
+      }
+      
+      tobedeleted := allinstances.Difference( updateinstances );
+      traverse( tobedeleted, Elements, e )
+      {
+        e.Delete();
+      }
+    }
+    // if rule scope is program phase
+    else if( rule.RuleScopeSelected() = RuleConstant::RuleScope_ProgramPhase() )
+    {
+      allinstances := selectset( rule, RuleScopeInProgramPhase, rspp, true );
+      updateinstances := construct( structured[shadow[RuleScopeInProgramPhase]] );
+      traverse( programphases, Elements, e )
+      {
+        rspp := select( allinstances, Elements, rspp, rspp.ProgramPhaseConfiguration() = e );
+        if( isnull( rspp ) )
+        {
+          rspp := rule.RuleScopeInProgramPhase( relnew, ProgramPhaseConfiguration := e );
+        }
+        updateinstances.Add( rspp );
+      }
+      
+      tobedeleted := allinstances.Difference( updateinstances );
+      traverse( tobedeleted, Elements, e )
+      {
+        e.Delete();
+      }
+    }
+    //Clean up other rule scope data, reset to default rule scope data
+    if( rule.RuleScopeSelected() <> RuleConstant::RuleScope_AllTasksOnResource() )
+    {
+      rule.RuleScopeInResource( relflush ); 
+    }
+    
+    if( rule.RuleScopeSelected() <> RuleConstant::RuleScope_Shutdown() )
+    {
+      rule.RuleScopeInShutdownType( relflush );
+      rule.CharacteristicScope( relflush );
+      rule.RuleScopeShutdownAggregateThreshold( 0.0 );
+      rule.IsBeforeShutdown( false );
+    }
+    
+    if( rule.RuleScopeSelected() <> RuleConstant::RuleScope_Program() )
+    {
+      rule.RuleScopeInProgramType( relflush );
+    }
+    
+    if( rule.RuleScopeSelected() <> RuleConstant::RuleScope_ProgramPhase() )
+    {
+      rule.RuleScopeInProgramPhase( relflush );
+      rule.IsProgramPhaseTransitionRule( false );
+    }
+  *]
+}

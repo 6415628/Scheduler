@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcDetails
+{
+  TextBody:
+  [*
+    value := '';
+    datasetname := this.DatasetName();
+    
+    if( not this.IsQuickDatasetCopy() //Only robust dataset copies require the GetMDSObject method.
+        and not this.IsGetMDSObjectOverridden() )
+    {
+      value := Translations::LibOpt_Suboptimizer_CopyDataset_OverrideGetMDSObject( this.Run().Optimization(), this.ComponentPositionName() );
+    }
+    else if( this.HasFailedToCreateDataset() )
+    {
+      value := Translations::LibOpt_Component_CopyDataset_FailedToCreateDataset( datasetname );       
+    }
+    else if( this.IsDatasetDeletedByOptimizer() )
+    {
+      value := Translations::LibOpt_Component_CopyDataset_OptimizerDeletionMessage( datasetname ); 
+    }
+    else if( this.IsDatasetDeletedManually() )
+    {
+      value := Translations::LibOpt_Component_CopyDataset_ManualDeletionMessage( datasetname );
+    }
+    // Default deletion text. For now, this text is only used if the IsDatasetDeletedUnspecifiedReason attribute is true. 
+    else if( this.IsDatasetDeleted() )
+    {
+      value := Translations::LibOpt_Component_CopyDataset_NoDeletionReasonSpecified( datasetname ); 
+    }
+    else if( not this.HasCreatedDataset() ) // Dataset is being created.
+    {
+      value := Translations::LibOpt_Component_CopyDataset_CopyIsBeingCreated( datasetname );
+    }
+    else // Dataset has been created
+    {
+      value := Translations::LibOpt_Component_CopyDataset_CopyHasBeenCreated( datasetname );
+    }                    
+    
+    this.Details( value );
+  *]
+}

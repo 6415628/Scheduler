@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride FeedbackMessage (const Rule rule, DORule_DataObjectSequencingRule do_rule) const declarative remote as String
+{
+  TextBody:
+  [*
+    // Operator string based on comparator type
+    comparatorstring := "";
+    if( this.Limit() = RuleConstant::Limit_Min() )
+    {
+      comparatorstring := Translations::RuleFeedback_LessThan(); 
+    }
+    else if( this.Limit() = RuleConstant::Limit_Max() )
+    {
+      comparatorstring := Translations::RuleFeedback_MoreThan(); 
+    }
+    else if( this.Limit() = RuleConstant::Limit_Allowed() )
+    {
+      comparatorstring := Translations::RuleFeedback_NotEqualTo(); 
+    }
+    else if( this.Limit() = RuleConstant::Limit_NotAllowed() )
+    {
+      comparatorstring := Translations::RuleFeedback_EqualTo(); 
+    }
+    
+    // Construct feedback message for difference jump
+    percentage := ifexpr( this.IsAbsolute(), "", Translations::Percentage() );
+    feedback := Translations::RuleFeedback_DifferenceJump( rule.Name(),
+                                                             guard( rule.CharacteristicMain().Name(), "" ),
+                                                             this.GetDifferenceJumpValue( rule, do_rule ),
+                                                             comparatorstring,
+                                                             this.Name().ToLower(),
+                                                             this.GetRuleValue( rule, do_rule ),
+                                                             percentage );
+    
+    // Append program set name
+    feedback := this.AppendProgramSetName( feedback, do_rule );
+    
+    return feedback;
+  *]
+}

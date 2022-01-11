@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: ListScenarios
+Response OnClick (structured[LibSM_Scenario] selection) id:Response_ListScenarios_MenuUnload_OnClick
+{
+  #keys: '[136398.0.1976582570]'
+  CanBindMultiple: false
+  DefinitionID => /ListScenarios/Responsedef_ListScenarios_WebMenu_OnClick
+  GroupServerCalls: true
+  Initiator: 'MenuUnload'
+  Precondition:
+  [*
+    selectedPlanningDatasetKey := LibSM_GlobalState.GetSelectedPlanningDatasetKey();
+    return LibSM_GlobalState.IsVisible( selection ) and LibSM_GlobalState.HasValidDataset( selection )
+       and LibSM_Scenario::CanUnload( selection, selectedPlanningDatasetKey );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Unload scenarios
+      LibSM_Scenario::Unload( selection );
+      LibSM_GlobalState.PopulateMDS();
+    *]
+  }
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddReceive (SubTask beforesubtask) as SubTask
+{
+  Description: 'Add the receive subtask for a task after the inputted previous subtask.'
+  TextBody:
+  [*
+    // AlexanderNg Aug-2-2015 (created)
+    
+    sortedioms := this.GetInputOperationMaterials(); // AlexanderNg 11-Aug-2015 QP #5680
+    
+    // Remove existing ReceiveSubTask
+    traverse( this, SubTask.astype( ReceiveSubTask ), receivesubtask )
+    {
+      receivesubtask.Delete();
+    }
+    
+    subtask := null( SubTask );
+    
+    traverse( sortedioms, Elements, iom )
+    {
+      subtask := this.AddAfter( construct( ReceiveSubTask ), beforesubtask );
+      subtask.astype( ReceiveSubTask ).OperationMaterial( relset, iom );
+      beforesubtask := subtask;
+    }
+    
+    return subtask;
+  *]
+}

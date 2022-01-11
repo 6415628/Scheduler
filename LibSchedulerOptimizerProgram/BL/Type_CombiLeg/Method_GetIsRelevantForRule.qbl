@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetIsRelevantForRule (ProgramSetConfiguration programsetconfig, Rule rule) as Boolean
+{
+  Description: 'Checks whether the input rule is relevant for input program type for this combileg'
+  TextBody:
+  [*
+    value := false;
+    // If this is a phase rule
+    if( rule.RuleScopeSelected() = RuleConstant::RuleScope_ProgramPhase() )
+    {
+      // Then the rule scope must include the phase related to this combileg and part of the input programset
+      value := exists( this, CombiLegOnCombiPhase.CombiProgramPhase, combiphase,
+                       combiphase.CombiProgramType().CombiProgramSet().ProgramSetConfiguration() = programsetconfig
+                       and exists( rule, RuleScopeInProgramPhase.ProgramPhaseConfiguration, ppc,
+                                   ppc = combiphase.ProgramPhaseConfiguration() ) );
+    }
+    else if( rule.RuleScopeSelected() = RuleConstant::RuleScope_Shutdown() )
+    {
+      value := exists( this, 
+                       Leg.RuleInLeg.Rule,
+                       rule1,
+                       rule1 = rule );
+    }
+    else                
+    {
+      // Otherwise the rule scope must include the program type related to this combileg and part of the input programset
+      value := exists( this, CombiLegOnCombiPhase.CombiProgramPhase.CombiProgramType, cpt,
+                       cpt.CombiProgramSet().ProgramSetConfiguration() = programsetconfig
+                       and exists( rule, RuleScopeInProgramType.ProgramTypeConfiguration, ptc,
+                                   ptc = cpt.ProgramTypeConfiguration() ) );
+    }
+    
+    
+    return value;
+  *]
+}

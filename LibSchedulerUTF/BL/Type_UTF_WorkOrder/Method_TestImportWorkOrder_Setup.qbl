@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestImportWorkOrder_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Create product, stocking point, routing and resource
+    importedProduct := ImportedProduct_SC::Create( schedule, 'Product ID' )
+    importedStockingPoint := ImportedStockingPoint_SC::Create( schedule, 'Stocking Point ID' );
+    importedRouting := ImportedRouting_SC::Create( schedule, 'Routing ID' );
+    importedResourceGroup := ImportedResourceGroup_SC::Create( schedule, 'Resource Group ID' );
+    
+    // Create imported external work order
+    importedExternalWorkOrder := UTFMockObjectFactory::CreateImportedExternalWorkOrder( schedule, 'Imported External Work Order' );
+    importedExternalWorkOrder.Update( DateTime::Construct( 2000, 01, 01 ),
+                                      importedProduct.Id(),
+                                      1,
+                                      importedStockingPoint.Id(),
+                                      importedRouting.RoutingId(),
+                                      true ); // IsDummy
+    
+    // Create imported external work order operation
+    
+    importedExternalWorkOrderOperation := UTFMockObjectFactory::CreateImportedExternalWorkOrderOperation( schedule,
+                                                                                                          importedExternalWorkOrder.Id(),
+                                                                                                          10 );
+    importedExternalWorkOrderOperation.Update( importedResourceGroup.ResourceType(), // Operation type
+                                               '', // Preferred resource
+                                               0, // Input lot size
+                                               0, // Output lot size
+                                               100, // Width
+                                               100, // Length
+                                               1, // Yield
+                                               false, // Has finished 
+                                               DateTime::Construct( 2000, 01, 01 ), // End time
+                                               true, // Has shelf life expiration date
+                                               DateTime::Construct( 2000, 01, 01 ) ); // Shelf life expiration date
+                           
+    // Call synchronize work order logic
+    Transaction::Transaction().Propagate( method( SynchronizationObject, SynchronizeWorkOrders ) );
+    schedule.SynchronizationObject().SynchronizeWorkOrders();
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

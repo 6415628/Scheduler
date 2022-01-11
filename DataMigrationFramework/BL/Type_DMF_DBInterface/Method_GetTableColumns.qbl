@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetTableColumns (Object object_i, Strings excludeColumns_i) as owning Strings
+{
+  Description: 'Helper method to retrieve list of all columns we want to retrieve from a table based on an input object'
+  TextBody:
+  [*
+    // tgn3 Apr-9-2021 (created)
+    
+    // Mind: this will always return results with columns
+    // in the sequence they appear in the schema in the database
+    // This is the reason we need keys, as sequence can change when new attributes are added
+    type := Type::Resolve( object_i.DefinitionName() );
+    
+    // 'excludeColumns' is used to omit specific unwanted columns
+    // 'attr.IsDerived' is used to filter out native attributes
+    // Note: "IsFrozen" cannot be checked, it's not detected by this traversion
+    columns := selectvalues( type, MdlAttrElements, attr, 
+                             not attr.IsDerived() and 
+                             excludeColumns_i.Find( attr.Name() ) = -1, 
+                             attr.Name() );
+    
+    /* Debug - do not delete
+    traverse( columns, Elements, column )
+    {
+      logfile( ">>>", column ); 
+    }
+    //*/
+    
+    return &columns;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

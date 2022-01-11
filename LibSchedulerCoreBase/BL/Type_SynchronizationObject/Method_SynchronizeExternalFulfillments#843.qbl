@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExternalFulfillments
+{
+  TextBody:
+  [*
+    allinstances := selectset( this, Schedule.Demand.Fulfillment, fulfillment, fulfillment.CheckIsFixedReservation() );
+    updatedinstances := construct( Fulfillments );
+    
+    Fulfillment::ZeroQuantityDecision( allinstances ); // Reset all fixed fulfillment quantities to zero to allow for resynchronization
+    Transaction::Transaction().Propagate( attribute( Supply, QuantityOpen ) ); // needs to be propagated after setting fulfillment to 0
+    Transaction::Transaction().Propagate( attribute( Demand, QuantityOpen ) ); // needs to be propagated after setting fulfillment to 0
+    
+    // Synchronize characteristic-based fixed reservations
+    this.SynchronizeLinkStock2COL( updatedinstances );
+    this.SynchronizeLinkStock2DD( updatedinstances );
+    this.SynchronizeLinkStock2WO( updatedinstances );
+    this.SynchronizeLinkWO2COL( updatedinstances );
+    this.SynchronizeLinkWO2DD( updatedinstances );
+    
+    // Synchronize product-based fixed reservations
+    this.SynchronizeReservationExt2COL( updatedinstances );
+    this.SynchronizeReservationExt2DD( updatedinstances );
+    this.SynchronizeReservationExt2WO( updatedinstances );
+    this.SynchronizeReservationWO2COL( updatedinstances );
+    this.SynchronizeReservationWO2DD( updatedinstances );
+    this.SynchronizeReservationWO2WO( updatedinstances );
+    
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, old )
+    {
+      old.Delete();
+    }
+  *]
+}

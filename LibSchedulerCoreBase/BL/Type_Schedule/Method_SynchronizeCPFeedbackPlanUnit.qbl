@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeCPFeedbackPlanUnit
+{
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // FOR DEMO
+    // Demo specific method. Project should remove this method.
+    // wooi zhi Sep-10-2012 (created)
+    
+    mdsdatasetid := guard( this.IntegrationConfiguration().MPSDatasetID(), '' );
+    allinstances := selectset( this, SC2MPS_PlanUnit, planunit, true ); 
+    updatedinstances := construct( SC2MPS_PlanUnits );
+    
+    traverse( this, Order_SC.PlanUnit_SC, planunit, 
+             ( this.IntegrationConfiguration().MPSSourceName() = Constants::GetMPSSourceAsCP() or planunit.HasAnyOperationWithValidRoutingStep() ) 
+              and ( planunit.IsPartiallyPlanned() or planunit.IsPlanned() ) )
+    {
+      pu := planunit.SC2MPS_PlanUnit();
+      
+      if( isnull( pu ) )
+      {
+        pu := SC2MPS_PlanUnit::Create( this, planunit );
+      }
+    
+      pu.Update( planunit.Quantity(),
+                 mdsdatasetid );
+      
+      updatedinstances.Add( pu );
+      
+      this.SynchronizeCPFeedbackOperation( planunit, pu );
+    }
+    
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, old )
+    {
+      old.Delete();
+    }
+  *]
+}

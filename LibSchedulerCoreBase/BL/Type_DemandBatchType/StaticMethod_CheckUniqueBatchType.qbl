@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckUniqueBatchType (Schedule schedule, DemandBatchType demandBatchType, String batchtype) const declarative remote as Boolean
+{
+  Description: 'Checks if the input batch type is unique.'
+  TextBody:
+  [*
+    feedbackobject := FeedbackObject::LocalFeedback();
+    batchtype := batchtype.TrimBoth(); // Avoid white space batch type
+    
+    value := batchtype.Length() > 0
+             and forall( schedule, DemandBatchType, existingDemandBatchType, 
+                         existingDemandBatchType <> demandBatchType, // Only check with OTHER demand batch types when editing
+                         existingDemandBatchType.BatchType() <> batchtype ); // Not allowed to recreate same batch type
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      feedbackobject.AddHard( Translations::SC_DemandBatchType_NotUniqueBatchType() );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

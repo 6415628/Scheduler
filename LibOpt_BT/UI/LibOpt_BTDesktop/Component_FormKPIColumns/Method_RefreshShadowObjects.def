@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method RefreshShadowObjects () id:Method_FormKPIColumns_RefreshShadowObjects
+{
+  #keys: '[139544.3.27235791]'
+  Body:
+  [*
+    owner := DataHolderOwner.Data();
+    
+    // Delete KPI columns no longer necessary
+    kpi_defs := selectset( LibOpt_BT_BenchmarkTrackingDataset, KPIDefinition, kpi, true );
+    traverse( owner, UIKPIColumn, kpi, kpi_defs.Find( kpi.KPIDefinition() ) < 0 )
+    {
+      kpi.Delete();
+    }
+                                                                  
+    // Create new KPI columns
+    kpi_types := Form.GetSubtypes( typeof( LibOpt_SnapshotKPI ) );
+    existing_defs := selectset( owner, UIKPIColumn.KPIDefinition, kpidef, true );
+    traverse( kpi_defs, Elements, kpi, existing_defs.Find( kpi ) < 0 )
+    {
+      elem := owner.UIKPIColumn( relnew,
+                                 KPIDefinition := kpi );
+      
+      type := select( kpi_types, Elements, type, type.Name() = kpi.KPIType() );
+      if( not isnull( type ) )
+      {
+        tv := type.TypeView();
+        kpi_name := LibOpt_BT_UIKPIColumn::GetKPIName( kpi.Name() );
+        elem.Description( guard( select( tv, Attributes, a, a.Name() = kpi_name ).Description(), '' ) );
+      }
+    }
+  *]
+}

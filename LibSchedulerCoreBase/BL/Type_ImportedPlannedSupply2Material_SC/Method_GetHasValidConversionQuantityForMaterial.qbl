@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidConversionQuantityForMaterial (output Strings feedback_o) declarative as Boolean
+{
+  Description: "Checks if the conversion quantity is lesser than the inventory material quantity, because you can't convert beyond the final quantity."
+  TextBody:
+  [*
+    value := this.Quantity() <= this.ImportedMaterial_SC().Quantity(); 
+    
+    if( not isnull( feedback_o ) and not value )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedPlannedSupply2Material_Instance( name ),
+                                                               Translations::SC_ImportedPlannedSupply2Material_ViolateHasValidConversionQuantityForMaterial() ) );
+    }
+    
+    return value;
+  *]
+}

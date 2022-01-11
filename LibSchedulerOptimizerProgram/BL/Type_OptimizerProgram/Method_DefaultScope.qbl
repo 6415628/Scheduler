@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride DefaultScope () as owning LibOpt_ScopeElements
+{
+  TextBody:
+  [*
+    // by default, optimize on all resources and all operations, and all resource groups:
+    
+    //for debug purpose,  first select one cold rolling resource to optimize
+    schedule := this.GetSchedule();
+    resources := selectset( schedule, ResourceGroup_SC.Resource_SC, res, res.IsSelectedForProgramOptimizer() );
+    
+    scopeelements := this.SetScope( resources, construct( Operation_SCs ), true );
+    operations := selectset( scopeelements, Elements.astype( ScopeElementOperation ).Operation_SC, op, true );
+    this.InitialSynchronization( resources, operations );
+    
+    Transaction::Transaction().Propagate( attribute( Operation_SC, IsPlanned ) ); //set scope will use this flag
+    return &scopeelements;
+  *]
+}

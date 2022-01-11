@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateOperations (Schedule schedule, SingleResourceBase resource, Boolean isplan, 
+  DateTime firsttaskstart)
+{
+  TextBody:
+  [*
+    // Create 5 operations
+    for( i := 1; i<=5; i++ )
+    {
+      order := UTFMockObjectFactory::CreateOrder( schedule, 'Order_' + [String]i );
+      planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'Plan Unit_' + [String]i, 1.0 );
+      operation := UTFMockObjectFactory::CreateOperation( planUnit );
+      operation.OperationID( 'Operation_' + [String]i );
+      operation.SequenceNr( i );
+      task := resource.PlanLast( operation );
+      task.astype( UTFSingleTask ).HasStartUTF( true );
+      task.astype( UTFSingleTask ).HasEndUTF( true );
+      task.astype( UTFSingleTask ).Start_UTF( firsttaskstart );
+      task.astype( UTFSingleTask ).End_UTF( firsttaskstart + Duration::Hours( 1 ) );
+      task.astype( UTFSingleTask ).HasActualProcessDurationUTF( true )
+      task.astype( UTFSingleTask ).ActualProcessDuration_UTF( Duration::Hours( 1 ) );
+      task.astype( UTFSingleTask ).HasActualSetupDurationUTF( true );
+      task.astype( UTFSingleTask ).ActualSetupDuration_UTF( Duration::Hours( 1 ) );
+      
+      firsttaskstart := firsttaskstart + Duration::Hours( 1 );
+    }
+  *]
+}

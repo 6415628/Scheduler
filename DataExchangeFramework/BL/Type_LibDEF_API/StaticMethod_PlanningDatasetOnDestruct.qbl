@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod PlanningDatasetOnDestruct (const MDSObject mdsObject_i)
+{
+  Description:
+  [*
+    A collection of API methods that should be implemented on the planning dataset's OnDestruct body.
+    This is a wrapper API method for easier implementation by the QSes.
+  *]
+  TextBody:
+  [*
+    dbDataset := LibDEF_DataBroker::GetDataset();
+    
+    dbDataset->Exception()
+             ->( e ){
+                    // Possible consequences of failure:
+                    // - The DataBroker will not be aware that the particular planning dataset is offline/deleted, DatasetInterest will remain valid.
+                    // Secondary solution:
+                    // - The DataBroker will notice that the planning dataset is offline when it's back online.
+                    // - If the planning dataset is permanently deleted (Memory-only dataset) then the DatasetInterest has to be deleted manually.
+                    //   Method LibDEF_SetInterestOfDataset.Delete( false ) should be used.
+                    LibDEF_Util::LogWarning( "LibDEF_API::PlanningDatasetOnDestruct() fails due to unavailable LibDEF_DataBroker." );
+                }        
+    
+    // When a memory-only dataset is unloaded, it is deleted permanently
+    if( mdsObject_i.State() = MDSInterface::MemoryOnlyState() )
+    {
+      // Job: When deleting a dataset permanently, delete its dataset-interests.
+      dbDataset->DatasetDelete( mdsObject_i.MDSID() );
+    }
+    else
+    {
+      // Job: When unloading a dataset, leave the dataset-interests and update Set's owner/System if required.
+      dbDataset->DatasetUnload( mdsObject_i.MDSID() );
+    }
+  *]
+}

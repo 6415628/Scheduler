@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestMaterialReservationFulfillmentQuantity (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    
+    testinstance := this.GetTestInstanceMain( variant );
+    
+    demands := selectset( schedule, Demand, d, true );
+    supplies := selectset( schedule, Supply, s, true );
+    
+    if( demands.Size() > 0 and supplies.Size() > 0 )
+    {
+      Fulfillment::CreateManualPlannedFulfillments( demands, supplies, false, 0.0 );
+      fulfillment := select( demands, Elements.Fulfillment, fulfillment, true );
+      
+      this.Run().AssertEqual( testinstance.FulfillmentQuantity(),
+                              guard( fulfillment.GetQuantity(), 0 ),
+                              UTFUtility::GenerateFailedMessage( 'MaterialReservation_SupplyGetQuantityOpen failed', '' ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

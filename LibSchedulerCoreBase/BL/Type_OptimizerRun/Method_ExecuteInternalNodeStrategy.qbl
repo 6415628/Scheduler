@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExecuteInternalNodeStrategy
+{
+  TextBody:
+  [*
+    // svt1 May-30-2017 (created)
+    
+    // generic code before each child run
+    this.IterationPreProcessing();
+    
+    // Determine the next optimizer run type, parameters and scope
+    nextopttype := this.GetNextOptimizerType();
+    nextparam := this.GetNextOptimizerParameter( nextopttype );
+    nextscope := this.CreateNextScope( nextparam );
+    
+    // Create the next child run and start it
+    nextrun := this.CreateNextRun( &nextscope, nextparam );
+    
+    this.SetTimeLimitChildRun( nextparam, nextrun );
+    
+    this.PassInformationToChildRun( nextrun );
+    
+    if( not this.Optimizer().IsInStepByStepMode()
+        or this.RunAsSingleRunInStepByStepMode() )
+    {
+      nextrun.StartRun();
+    }
+  *]
+}

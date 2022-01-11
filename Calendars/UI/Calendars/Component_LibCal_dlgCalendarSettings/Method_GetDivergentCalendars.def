@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetDivergentCalendars (LibCal_Calendar leadingCalendar_i, structured[LibCal_Calendar] calendars_i) as structured[LibCal_Calendar] id:Method_LibCal_dlgCalendarSettings_GetDivergentCalendars
+{
+  #keys: '[146730.0.1422593045]'
+  Body:
+  [*
+    // Get calendars with settings that are different from the settings of the 'leading' calendar.
+    divergentCalendars := construct( LibCal_Calendars );
+    
+    traverse( calendars_i, Elements, calendar )
+    {
+      isDifferent := calendar <> leadingCalendar_i and
+                     ( calendar.TimeZone()       <> leadingCalendar_i.TimeZone()
+                    or calendar.Base()           <> leadingCalendar_i.Base()
+                    or calendar.UpdateInterval() <> leadingCalendar_i.UpdateInterval()
+                    or calendar.Window()         <> leadingCalendar_i.Window()
+                    or calendar.History()        <> leadingCalendar_i.History() );
+    
+      if( isDifferent )
+      {
+        divergentCalendars.Add( calendar );
+      }
+    }
+    
+    return &divergentCalendars;
+  *]
+  ReturnsOwning: true
+}

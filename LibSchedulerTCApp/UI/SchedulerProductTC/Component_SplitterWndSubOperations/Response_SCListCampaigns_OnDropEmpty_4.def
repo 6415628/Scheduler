@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: SCListCampaigns
+Response OnDropEmpty (structured[Task_SC] information, BatchResource resource) id:Response_SCListCampaigns_OnDropEmpty_4
+{
+  #keys: '[107652.0.1040190392]'
+  Body:
+  [*
+    // OnDrop structured[Task] --> null ( CampaignTask ) on batch Resource
+    
+    resource.PlanLast( information );
+  *]
+  DefinitionID => /SCListCampaigns/Responsedef_SCListCampaigns_OnDropEmpty
+  Precondition:
+  [*
+    retvalue      := true;
+    isallowedhard := true;
+    ctrlkey       := dropaction.IsControl();
+    ctrlshiftkey  := dropaction.IsControlShift();
+    identifier    := Task_SC::GetSelectedObjects( information );
+    
+    retvalue := ApplicationScheduler.AllowedScheduling( resource,        //batchresource
+                                                        information,     //structured tasks
+                                                        ctrlkey,         //skip soft check
+                                                        ctrlshiftkey,    //ctrl shift key
+                                                        resource.Last(), //beforetask
+                                                        null( Task_SC ), //aftertask
+                                                        identifier,
+                                                        feedback,
+                                                        isallowedhard );
+    
+    return retvalue;
+  *]
+  UserRequiresReadWrite: true
+}

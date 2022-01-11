@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method Open (GUIComponent parent_i, LibCal_Participation participation_i) id:Method_LibCal_dlgSubscription_Open
+{
+  #keys: '[131094.1.100403815]'
+  Body:
+  [*
+    // Set the checkboxes.
+    if( participation_i.IsLeading() or
+        participation_i.astype( LibCal_Subscription ).UseLeadingPeriod() )
+    {
+      ckbAllOccurrences.Checked( true );
+      Dialog.DisablePeriodOfTime( "" );
+    }
+    else
+    {
+      ckbPeriodOfTime.Checked( true );
+    }
+    
+    // Initialize the values of the controls for the period of time.
+    if( participation_i.IsRecurring() )
+    {
+      this.InitializeRecurrencePeriod( participation_i.GetRecurrencePeriod() );
+    }
+    else
+    {
+      this.InitializeNonRecurring();
+    }
+    
+    if( Dialog.DoModal( parent_i ) = 1 )
+    {
+      // If OK was clicked and the dialog was opened from another dialog (LibCal_dlgSubscribeToEvent),
+      // then also close the other dialog.
+      if( parent_i.istype( Dialog ) )
+      {
+        parent_i.astype( Dialog ).EndModal( 1 );
+      }
+    }
+  *]
+}

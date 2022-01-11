@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: ButtonEmptyRecycleBin
+Response OnClick () id:Response_LibSM_ActionBarGroup_ButtonEmptyRecycleBin_OnClick
+{
+  #keys: '[136398.0.2043362693]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebButton_OnClick'
+  Precondition:
+  [*
+    panel    := LibSM_GlobalState;
+    userName := panel.GetUserName(); 
+    isAdmin  := panel.IsAdministrator();
+    return panel.HasScenarioManagerDataset()
+       and LibSM_ScenarioManager.CanEmptyRecycleBin( userName, isAdmin );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Empty trash
+      message := Translations::LibSM_ScenarioManager_Confirmation_EmptyRecycleBin();
+      
+      if( WebMessageBox::Question( message, Translations::LibSM_Question_YesNo_Web() ) = 0 )
+      {
+        panel    := LibSM_GlobalState;
+        userName := panel.GetUserName();
+        isAdmin  := panel.IsAdministrator();
+        LibSM_ScenarioManager.EmptyRecycleBin( userName, isAdmin );
+        //Application.RemoveHistory();
+      }
+    *]
+    GroupServerCalls: false
+  }
+}

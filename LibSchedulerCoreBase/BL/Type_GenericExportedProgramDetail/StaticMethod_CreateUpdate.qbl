@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateUpdate (ExportedSchedule owner, ProgramChangeTask programchangetask) as owning GenericExportedProgramDetails
+{
+  Description: 'Create program details to be exported from program change task'
+  TextBody:
+  [*
+    gepds := construct( GenericExportedProgramDetails );
+    
+    traverse( programchangetask, ProgramChange.ProgramType, pt )
+    {
+      gepd := GenericExportedProgramDetail::FindGenericExportedProgramDetail( pt.ScheduledProgramID() );
+      
+      if( isnull( gepd ) )
+      {
+        gepd := owner.ExportedProgramDetail( relnew,
+                                             GenericExportedProgramDetail,
+                                             ScheduledProgramID :=  pt.ScheduledProgramID() );
+      }
+                                           
+      gepd.Update( pt );                                       
+      gepds.Add( gepd );                                                                
+    }
+    
+    return &gepds;
+  *]
+}

@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExportedCalendarRule
+{
+  Description: 'Create exported calendar rule instances that will be exported as part of demo data interface.'
+  TextBody:
+  [*
+    calendarKnowledgeBase := KBID::Create( Constants::GetCalendarsKnowledgeBaseID() );
+    
+    if( not isnull( calendarKnowledgeBase ) )
+    {
+      calendar := QuillCalendar::Calendar( calendarKnowledgeBase )
+      exportedSchedule := guard( this.Schedule().FeedbackManager().ExportedSchedule(), null( ExportedSchedule ) );
+      allRuleInstances := selectset( exportedSchedule, ExportedCalendarRule, exportedCalendarRule, true );
+      updatedRuleInstances := construct( ExportedCalendarRules );
+      
+      traverse( calendar, Rules, rule )
+      {
+        exportedCalendarRule := ExportedCalendarRule::FindExportedCalendarRule( rule.Name() );
+        
+        if( isnull( exportedCalendarRule ) )
+        {
+          exportedCalendarRule := ExportedCalendarRule::Create( exportedSchedule, rule.Name() );
+        }
+        
+        if( not isnull( exportedCalendarRule ) )
+        {
+          exportedCalendarRule.Update( rule );
+          exportedCalendarRule.SynchronizeExportedCalendarRuleTimeInterval( rule );
+          exportedCalendarRule.SynchronizeExportedCalendarRuleInRuleGroup( rule );
+        }
+        
+        updatedRuleInstances.Add( exportedCalendarRule );
+      }
+      
+      //Delete old instances
+      oldRuleInstances := allRuleInstances.Difference( updatedRuleInstances );
+      
+      traverse( oldRuleInstances, Elements, calendarRule )
+      {
+        calendarRule.Remove();
+      }
+    }
+  *]
+}

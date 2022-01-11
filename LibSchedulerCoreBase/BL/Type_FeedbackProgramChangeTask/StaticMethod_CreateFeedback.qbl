@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateFeedback (FeedbackManager owner, ProgramChangeTask stoppageTask, Boolean hasReportedStart, 
+  DateTime reportedStart, Boolean hasReportedEnd, DateTime reportedEnd, 
+  Boolean hasUserReportedProgramType, ProgramTypeConfigurations userReportedProgramTypes, String status)
+{
+  Description: 'Create feedback task and update feedback'
+  TextBody:
+  [*
+    taskID := stoppageTask.TaskID();
+    fpct := FeedbackProgramChangeTask::Create( owner, 
+                                               '',
+                                               '',
+                                               0,
+                                               taskID );
+    
+    reportedStart := ifexpr( hasReportedStart, reportedStart, DateTime::MinDateTime() );  // If no reported start, we will set it to infinite value
+    reportedEnd := ifexpr( hasReportedEnd, reportedEnd, DateTime::MinDateTime() );        // If no reported end, we will set it to infinite value
+    
+    // For newly created feedback program change task, all user set values will be updated to reported values
+    // except program type
+    fpct.Update( taskID,
+                 reportedStart,
+                 reportedEnd,
+                 Constants::TaskType_ProgramChange(),
+                 stoppageTask.Resource_SC().ResourceID(),
+                 stoppageTask,
+                 status );
+    
+    programchange := stoppageTask.ProgramChange();
+    fpct.ProgramChange( relset, programchange );
+    
+    fpct.UpdateFeedback( true,
+                         hasReportedStart,
+                         reportedStart,
+                         hasReportedEnd,
+                         reportedEnd,
+                         hasUserReportedProgramType,
+                         userReportedProgramTypes );
+    
+    fpct.UpdateReportedPrograms( userReportedProgramTypes );
+    
+    if( not isnull( programchange ) )
+    {
+      programchange.UnplanProgramChangeTask();
+    }
+    
+    // Propagate assigned resource to feedback program change task to be used to re-assign task to program
+    Transaction::Transaction().Propagate( relation( FeedbackProgramChangeTask, Resource_SC ) );
+    fpct.UpdateAssignmentFeedbackTaskToProgram();
+  *]
+}

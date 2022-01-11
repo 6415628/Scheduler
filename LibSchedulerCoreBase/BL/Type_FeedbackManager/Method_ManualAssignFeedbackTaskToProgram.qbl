@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method ManualAssignFeedbackTaskToProgram (Resource_SC resource, FeedbackTaskInSchedule feedbackTaskInSchedule)
+{
+  TextBody:
+  [*
+    currentInstances := selectset( feedbackTaskInSchedule, FeedbackTaskInFeedbackProgramType, ftifpt, true );
+    newInstances := construct( FeedbackTaskInFeedbackProgramTypes );
+    
+    // Find feedback program change task before the current feedback task
+    feedbackprogramchangetask := maxselect( resource, FeedbackStoppageTask.astype( FeedbackProgramChangeTask ), fpct, fpct.End() <= feedbackTaskInSchedule.Start(), fpct.Start(), fpct.End() );
+    
+    if( not isnull( feedbackprogramchangetask ) )
+    {
+      // Find all program set that is not changed by this program change task.
+      // For missing program set, we need to find the latest available program change with the program set and link the task to it.
+      missingprogramsets := selectset( resource, ProgramSet, ps, not exists( feedbackprogramchangetask, ProgramChange.FeedbackProgramType.ProgramSet, programset, programset = ps ) );
+      
+      tolinkfeedbackprogramtypes := selectset( feedbackprogramchangetask, ProgramChange.FeedbackProgramType, feedbackprogramtype, true );
+      traverse( missingprogramsets, Elements, programset )
+      {
+        toadd := maxselect( resource, ProgramChange.FeedbackProgramType, fpt, fpt.ProgramSet() = programset
+                                                                              and fpt.End() <= feedbackprogramchangetask.Start(),
+                                                                              fpt.Start(), 
+                                                                              fpt.End() );
+        tolinkfeedbackprogramtypes.Add( toadd );                                                                            
+      }
+      
+      traverse( tolinkfeedbackprogramtypes, Elements, feedbackprogramtype )
+      {
+        ftifpt := FeedbackTaskInFeedbackProgramType::CreateUpdate( feedbackTaskInSchedule, feedbackprogramtype, false );          
+        newInstances.Add( ftifpt );
+      } 
+    }
+    
+    allInstances := newInstances.Union( currentInstances );
+    
+    // Propagate so that we can use the program information to determine which newly added program are duplicate of an existing program set
+    Transaction::Transaction().Propagate( attribute( FeedbackTaskInFeedbackProgramType, ProgramDefinitionID ) );
+    Transaction::Transaction().Propagate( attribute( FeedbackTaskInFeedbackProgramType, ProgramSetID ) );
+    
+    // Find all feedback program type that is the same program set.
+    duplicateProgramTypes := selectduplicates( allInstances, Elements, e, true, e.ProgramDefinitionID(), e.ProgramSetID() );
+    
+    // Delete the old feedback program type
+    toRemoveInstances := duplicateProgramTypes.Difference( newInstances );
+    
+    traverse( toRemoveInstances, Elements, e )
+    {
+      e.Remove();
+    }
+  *]
+}

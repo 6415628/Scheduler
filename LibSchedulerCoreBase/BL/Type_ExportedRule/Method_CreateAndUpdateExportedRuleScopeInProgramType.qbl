@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateAndUpdateExportedRuleScopeInProgramType (Rule rule)
+{
+  Description: 'Create and update exported rule scope in program  type.'
+  TextBody:
+  [*
+    allinstances := selectset( this, ExportedRuleScopeInProgramType, exportedrsist, true );
+    updatedinstances := construct( ExportedRuleScopeInProgramTypes );
+    
+    traverse( rule, RuleScopeInProgramType, ruleScopeInProgramType )
+    {
+      programTypeConfig := ruleScopeInProgramType.ProgramTypeConfiguration();
+      
+      exportedRuleScopeInProgramType := select( this, ExportedRuleScopeInProgramType, ersipt,
+                                                ersipt.RuleID() = rule.RuleID()
+                                                and ersipt.ProgramDefinitionConfigurationID() = programTypeConfig.ProgramDefinitionConfigurationID()
+                                                and ersipt.ProgramSetConfigurationID() = programTypeConfig.ProgramSetConfigurationID()
+                                                and ersipt.ProgramTypeConfigurationID() = programTypeConfig.ProgramTypeConfigurationID() );
+                      
+      if( isnull( exportedRuleScopeInProgramType ) )
+      {
+        exportedRuleScopeInProgramType := ExportedRuleScopeInProgramType::Create( this, ruleScopeInProgramType );
+      }
+      updatedinstances.Add( exportedRuleScopeInProgramType );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, exportedRuleScopeInProgramType )
+    {
+      exportedRuleScopeInProgramType.Remove();
+    }
+  *]
+}

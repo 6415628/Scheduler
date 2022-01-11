@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeProductExternalSupplies
+{
+  Description: 'Synchronizing imported external supplies from ERP system.'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // FOR DEMO
+    
+    allinstances_es := selectset( this, Schedule.Supply.astype( ProductExternalSupply ), externalsupplies, true );
+    updatedinstances_es := construct( ProductExternalSupplys );
+    
+    traverse( this, Schedule.ImportedExternalSupply_SC, row, row.IsValidDataHard() )
+    {
+      externalsupply := ProductExternalSupply::FindProductExternalSupply( SupplyType::ProductExternalSupply(), row.Id() );
+      
+      if( isnull( externalsupply ) )
+      {
+        externalsupply := this.Schedule().CreateSupply( SupplyType::ProductExternalSupply(), row.Id() ).astype( ProductExternalSupply );
+      } 
+      // update existing external supply
+      externalsupply.Update( row );
+      updatedinstances_es.Add( externalsupply );
+    }
+    
+    //Delete external supplies that do not exist in tables
+    oldinstaces_es := allinstances_es.Difference( updatedinstances_es );
+    
+    traverse( oldinstaces_es, Elements, externalsupply, externalsupply.CheckCanBeDeleted() )
+    {
+      externalsupply.Remove();
+    }
+  *]
+}

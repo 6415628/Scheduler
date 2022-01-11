@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedExternalOperationCampaign (CDIntegration cdintegration)
+{
+  Description: 'Restore imported external operation campaign core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedExternalOperationCampaign
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedExternalOperationCampaign ), cdeoc )
+    {
+      importedExternalOperationCampaign := schedule.ImportedOperationCampaign( relnew, 
+                                                                               ImportedExternalOperationCampaign,
+                                                                               CampaignType := cdeoc.CampaignType(),
+                                                                               ResourceGroup := cdeoc.ResourceGroup(),
+                                                                               SeqNr := cdeoc.SeqNr(),
+                                                                               WorkOrderId := cdeoc.WorkOrderId()
+                                                                              );
+      CopyCorresponding::CopyFrom( cdeoc ).CopyTo( importedExternalOperationCampaign );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

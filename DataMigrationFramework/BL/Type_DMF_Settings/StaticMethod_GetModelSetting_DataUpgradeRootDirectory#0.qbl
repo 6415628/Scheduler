@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetModelSetting_DataUpgradeRootDirectory (Boolean hasModelSettings_i, String settingValue_i) as String
+{
+  TextBody:
+  [*
+    directoryPath := DMF_Settings::GetDefaultDataUpgradeRootDirectory();
+    
+    logMessage := "";
+    
+    if( hasModelSettings_i )
+    {
+      // Setting value is empty
+      if( settingValue_i.TrimBoth().Length() = 0 )
+      {
+        logMessage := "[" + DMF_Settings::SETTINGS_DATA_UPGRADE_ROOT_DIRECTORY() + "]: Empty value provided. Default path is used instead";
+      }
+      // Setting value is not a valid path
+      else if( not OS::IsDirectory( settingValue_i ) )
+      {
+        logMessage := "[" + DMF_Settings::SETTINGS_DATA_UPGRADE_ROOT_DIRECTORY() + "]: Value provided is not a valid path. Default path is used instead; Value: " + settingValue_i;
+      }
+      // All OK - use path as provided in settings
+      else
+      {
+        directoryPath := settingValue_i;
+      }
+      
+      // Log warning if there are messages to be logged
+      if( logMessage.Length() > 0 )
+      {
+        DMF_Utility::LogWarning( logMessage );
+      }
+    }
+    
+    return directoryPath;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

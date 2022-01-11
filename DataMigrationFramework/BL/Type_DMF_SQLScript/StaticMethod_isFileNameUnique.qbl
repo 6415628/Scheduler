@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod IsFileNameUnique (DMF_ConvertorDataset owner_i, String editingFileName_i, String fileName_i) const remote as Boolean
+{
+  TextBody:
+  [*
+    // tgn3 Jul-13-2021 (created)
+    
+    feedback := FeedbackObject::LocalFeedback();
+    
+    fileName := fileName_i.ReplaceAll( DMF_DBInterface::GetScriptFileExtension(), "" );
+    
+    // Ignore any file names that don't match what is currently being edited
+    // And match against any potential duplicates
+    isFileNameUnique := not exists( owner_i, SQLScript, script, 
+                                    script.FileName() + DMF_DBInterface::GetScriptFileExtension() <> editingFileName_i,
+                                    script.FileName() = fileName );
+    
+    // Debug - do not delete
+    //logfile( ">>>", editingFileName_i, fileName, isFileNameUnique );
+    
+    if( not feedback.CheckHard( isFileNameUnique ) )
+    {
+      feedback.AddHard( Translations::DMF_SQLScript_IsFileNameNotUnique( fileName_i ) );
+    }
+    
+    return isFileNameUnique;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

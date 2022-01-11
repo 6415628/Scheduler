@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestImportWorkOrderCharacteristic (Schedule schedule) #extension
+{
+  TextBody:
+  [*
+    // Verify work order operation are synchronized to external work order
+    importedWorkOrderOperationCharacteristic := select( schedule, ImportedWorkOrderOperationCharacteristic, iwoc, true );
+    externalWorkOrderOperation := select( schedule, WorkOrder.WorkOrderOperation.astype( ExternalWorkOrderOperation ), ewoo, true );
+    
+    // Verify routing step characteristic are synchronized to internal work order
+    importedRoutingStepCharacteristic:= select( schedule, ImportedRoutingStepCharacteristic, irsc, true );
+    internalWorkOrderOperation := select( schedule, WorkOrder.WorkOrderOperation.astype( InternalWorkOrderOperation ), iwoo, true );
+    
+    isValidExternalWorkOrder := externalWorkOrderOperation.InputThickness() = importedWorkOrderOperationCharacteristic.InputThickness()
+                                and externalWorkOrderOperation.OutputThickness() = importedWorkOrderOperationCharacteristic.OutputThickness()
+                                and externalWorkOrderOperation.NeedsOil() = importedWorkOrderOperationCharacteristic.NeedsOil()
+                                and externalWorkOrderOperation.OilIndex() = importedWorkOrderOperationCharacteristic.OilIndex()
+                                and externalWorkOrderOperation.MinimumTemperature() = importedWorkOrderOperationCharacteristic.MinimumTemperature()
+                                and externalWorkOrderOperation.MaximumTemperature() = importedWorkOrderOperationCharacteristic.MaximumTemperature()
+                                and externalWorkOrderOperation.NeedsEdgeTrimming() = importedWorkOrderOperationCharacteristic.NeedsEdgeTrimming()
+                                and externalWorkOrderOperation.EdgeTrim() = importedWorkOrderOperationCharacteristic.EdgeTrim()
+                                and externalWorkOrderOperation.TreatmentType() = importedWorkOrderOperationCharacteristic.TreatmentType();
+    
+    isValidInternalWorkOrder := internalWorkOrderOperation.InputThickness() = importedRoutingStepCharacteristic.InputThickness()
+                                and internalWorkOrderOperation.OutputThickness() = importedRoutingStepCharacteristic.OutputThickness()
+                                and internalWorkOrderOperation.NeedsOil() = importedRoutingStepCharacteristic.NeedsOil()
+                                and internalWorkOrderOperation.OilIndex() = importedRoutingStepCharacteristic.OilIndex()
+                                and internalWorkOrderOperation.MinimumTemperature() = importedRoutingStepCharacteristic.MinimumTemperature()
+                                and internalWorkOrderOperation.MaximumTemperature() = importedRoutingStepCharacteristic.MaximumTemperature()
+                                and internalWorkOrderOperation.NeedsEdgeTrimming() = importedRoutingStepCharacteristic.NeedsEdgeTrimming()
+                                and internalWorkOrderOperation.EdgeTrim() = importedRoutingStepCharacteristic.EdgeTrim()
+                                and internalWorkOrderOperation.TreatmentType() = importedRoutingStepCharacteristic.TreatmentType();
+    
+    isValid := isValidExternalWorkOrder and isValidInternalWorkOrder;
+    
+    this.Run().AssertTrue( isValid );
+  *]
+}

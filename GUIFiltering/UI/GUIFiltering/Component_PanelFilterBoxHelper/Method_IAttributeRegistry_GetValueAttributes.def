@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method IAttributeRegistry_GetValueAttributes (String string, Strings attributes) id:Method_LibGUIFiltering_PanelFilterBoxHelper_IAttributeRegistry_GetValueAttributes
+{
+  #keys: '[128900.0.373900292]'
+  Body:
+  [*
+    pos := 0;
+    while ( this.IUserConfigurableInfo_FindAttributeStart( string, pos ) )
+    {
+      attr        := '';
+      parenthesis := 1;
+    
+      while ( pos < string.Length() and parenthesis > 0 )
+      {
+        char := string.SubString( pos, 1 );
+    
+        if ( char = '(' )
+        {
+          parenthesis++;
+        }
+        else if ( char = ')' )
+        {
+          parenthesis--;
+        }
+        else if ( char = ';' and parenthesis = 1 )
+        {
+          parenthesis := 0;
+        }
+    
+        if ( parenthesis > 0 )
+        {
+          attr := attr + char;
+        }
+    
+        pos++;
+      }
+    
+      if ( parenthesis = 0 )
+      {
+        attr := attr.ReplaceAll( '()', '' );
+    
+        if ( attr.FindString( '(', 0 ) < 0
+         and attr.StartsWith( 'object.' ) )
+        {
+          attr := attr.RestString( 7 );
+          attributes.Add( attr );
+        }
+      }
+    }
+  *]
+}

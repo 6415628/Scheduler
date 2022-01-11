@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method CanCopy () declarative remote as Boolean
+{
+  Description: 'Returns whether copy is allowed. Assumed authorization checking is done on the client.'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    if( not feedback.CheckHard( not this.IsDeleted() ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_CanNotDoAction_IsRecycleBin() );
+    }
+    
+    // Check max nr of online datasets (the called method will add on to the FeedbackObject.
+    this.ScenarioManager().IsLoadedScenariosLessThanMaxAllowed( "copied" );  
+    
+    if ( not feedback.CheckHard( not this.IsLoadingInProgress() ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_CanNotCopy_IsLoading( this.Name() ) );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

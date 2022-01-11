@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeTerminalOperationMaterials
+{
+  Description: 'Synchronizes operation material for the first and last operations.'
+  TextBody:
+  [*
+    traverse( this.Schedule(), PlanUnit_SC, planUnit )
+    {
+      // Find the first operation and add an input operation material if it doesn't have one
+      firstOperation := minselect( planUnit, Operation_SC, operation, true, operation.SequenceNr() );
+      
+      if( not isnull( firstOperation ) and firstOperation.FromOperationDependency( relsize ) = 0 )
+      {
+        firstOperation.CreateInputOperationMaterial( null( Operation_SC ), planUnit.Quantity() );
+      }
+      
+      lastOperation := maxselect( planUnit, Operation_SC, operation, true, operation.SequenceNr() );
+      
+      // Find the last operation and add an output operation material if it doesn't have one
+      if( not isnull( lastOperation ) and lastOperation.ToOperationDependency( relsize ) = 0 )
+      {
+        lastOperation.CreateOutputOperationMaterial( planUnit.Quantity() );
+      }
+    }
+  *]
+}

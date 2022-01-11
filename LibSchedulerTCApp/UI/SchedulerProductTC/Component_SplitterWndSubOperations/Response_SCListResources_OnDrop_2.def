@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: SCListResources
+Response OnDrop (structured[PlanUnit_SC] information, SingleResourceBase target) id:Response_SCListResources_OnDrop_2
+{
+  #keys: '[12142.0.44018374]'
+  Body:
+  [*
+    // OnDrop structure[PlanUnit] --> SingleResourceBase
+    operations := selectset( information, Elements.Operation_SC, op, op.Type() = target.Type() );
+    target.PlanLast( operations );
+    
+    /*
+    target.PlanLast( information );
+  *]
+  DefinitionID: 'Responsedef_GUIComponent_OnDrop'
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey  := dropaction.IsControl();
+    ctrlshiftkey := dropaction.IsControlShift();
+    
+    operations := selectset( information, Elements.Operation_SC, op, op.Type() = target.Type() );
+    
+    return ApplicationScheduler.AllowedScheduling( target,
+                                                   operations,
+                                                   ctrlkey,
+                                                   ctrlshiftkey,
+                                                   target.Last(),
+                                                   null( Task_SC ),
+                                                   PlanUnit_SC::GetSelectedObjects( information ),
+                                                   feedback,
+                                                   isallowedhard );
+  *]
+  UserRequiresReadWrite: true
+}

@@ -1,0 +1,84 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDrop (structured[Task_SC] source, BatchResource droprow, Task_SC droptarget, 
+  Task_SC beforedroptarget, Task_SC afterdroptarget) id:Response_GanttChartSchedulingCentre_OnDrop_4
+{
+  #keys: '[12910.0.1172694870]'
+  Body:
+  [*
+    // OnDrop structured[Task] --> BatchResource
+    
+    // todo review
+    // IMPORTANT NOTE:
+    // AvK (08.20.2007) ==> in order to make sure this response is fired, you have to make sure that you only display BATCHTASKs by overloading the GanttNodeDefinition
+    ctrlshift := dropaction.IsControlShift();
+    
+    //if( controlkey )//merge batches
+    if( ctrlshift )
+    {
+      // (Add operation to batch)
+      operations := selectset( source, Elements.astype( BatchTask ).Batch.BatchSequenceElement.Operation_SC, operation, true );
+      droptarget.astype( BatchTask ).Batch().MergeOperations( operations );
+    }
+    else
+    {
+      target := droptarget;
+      
+      if( isnull( droptarget ) )
+      {
+        target := afterdroptarget;
+      }
+      
+      droprow.PlanBefore( source, guard( target.astype( BatchTask ), null( BatchTask ) ) );
+    }
+  *]
+  DefinitionID: 'Responsedef_GanttChart_OnDrop'
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey       := dropaction.IsControl();
+    ctrlshiftkey  := dropaction.IsControlShift();
+    
+    result := true;
+    identifier := Task_SC::GetSelectedObjects( source );
+    
+    if( isnull( beforedroptarget ) 
+        and guard( not isnull( droprow.LastFeedbackBatchInSchedule().BatchTask() ), false ) 
+        and droprow.LastFeedbackBatchInSchedule().BatchTask().End() < droptime )
+    {
+      beforedroptarget := droprow.LastFeedbackBatchInSchedule().BatchTask();
+    }
+    
+    if( ctrlshiftkey ) //when ctrlshiftkey = true and not isnull droptarget, the intention is to merge all operations into the droptarget.
+    {
+      newoperations := selectset( source, Elements.OperationInTask, op, true ); //operations from the selected batch task
+      operations    := selectset( droptarget, OperationInTask, op, true ); //operations from the drop target
+      operations    := operations.Union( newoperations ); //combine both
+    
+      result := ApplicationScheduler.AllowedScheduling( droprow, //batchresource
+                                                        operations,  //structured operations
+                                                        ctrlkey, //skip soft check
+                                                        ctrlshiftkey, //ctrl shift key
+                                                        beforedroptarget, //beforetask
+                                                        afterdroptarget,  //aftertask
+                                                        identifier,
+                                                        feedback,
+                                                        isallowedhard );
+    }
+    else //else, the intention is replan the batch tasks.
+    {
+      result := ApplicationScheduler.AllowedScheduling( droprow,            //batchresource
+                                                        source,             //structured tasks
+                                                        ctrlkey,            //skip soft check
+                                                        ctrlshiftkey,       //ctrl shift key
+                                                        beforedroptarget,   //beforetask
+                                                        afterdroptarget,    //aftertask
+                                                        identifier,
+                                                        feedback,
+                                                        isallowedhard );
+    }
+    
+    return result;
+  *]
+  UserRequiresReadWrite: true
+}

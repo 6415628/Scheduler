@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveMetadataRequestGetChannelsMetadata (NamedValueTree nvt_i, NamedValue body_i, LibDEF_System requestor_i, 
+  LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive a Metadata message for requesting Metadata for certain Channels.'
+  TextBody:
+  [*
+    LibDEF_Util::EventLog( event_i, "Receiving system metadata request" );
+    
+    // Jacky CHAN May-13-2016 (created)
+    channelNames := construct( Strings );
+    
+    traverse( body_i.Children(), Elements, channelMeta,
+              channelMeta.Name() = typeof( LibDEF_ChannelMeta ).Name() )
+    {
+      syncChannel := NamedValueTreeIO::ImportObject( nvt_i, channelMeta, typeof( LibDEF_ChannelMeta ) ).astype( LibDEF_ChannelMeta );
+      channelNames.Add( syncChannel.Name() );
+    }
+    
+    if( channelNames.Size() > 0 )
+    {
+      this.SendMetadataSuccessGetChannelsMetadata( channelNames, requestor_i, event_i );
+    }
+    else
+    {
+      LibDEF_Util::EventLogError( event_i, 
+                                  "Failed to process system metadata request",
+                                  "No channels received from requestor '" + requestor_i.Name() + "'. Ensure that the requestor Systems has at least one Channel implemented." );
+    }
+  *]
+}

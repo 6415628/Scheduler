@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcExpectedDate_Suggested
+{
+  TextBody:
+  [*
+    //Kyle 11-05-2015 #5344 Use TotalOffsetDuration instead of TransportCoolingDuration
+    value := min( this, FromOperationDependency, iom,
+                  iom.HasFromOperation(),
+                  iom.FromOperation().ExpectedDate_Suggested() + iom.TotalOffsetDuration() );
+    
+    // She Ven: check for IsFinite
+    if( value.IsFinite() )
+    {
+      value := value + this.LeadTime() + this.ExpectedDuration();
+    }
+    
+    if( this.HasSuggestedDate() )
+    {
+      value := maxvalue( value, this.SuggestedDate() );
+    }
+    
+    // If no real value is found, set to -inf to ensure that some other value is taken
+    // (e.g. ExpectedDate_Scheduling)
+    if( value = DateTime::MaxDateTime() )
+    {
+      value := DateTime::MinDateTime()
+    }
+    
+    this.ExpectedDate_Suggested( value );
+  *]
+}

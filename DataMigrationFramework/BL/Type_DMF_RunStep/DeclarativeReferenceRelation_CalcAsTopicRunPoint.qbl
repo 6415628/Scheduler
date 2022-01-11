@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+DeclarativeReferenceRelation CalcAsTopicRunPoint
+{
+  #keys: '1[142988.0.1908248832]'
+  Expression:
+  [*
+    // Preprocessing, Main, and Postprocessing have to be executed in sequence.
+    // Therefore only Preprocessing (as the first in sequence) is added into the list as a "start" runpoint relation.
+    topic := null( DMF_Topic );
+    topicStep := this.TopicStep();
+    
+    if( topicStep.istype( DMF_TopicStep_ExportPreprocessing ) or
+        topicStep.istype( DMF_TopicStep_UpgradePre ) or
+        topicStep.istype( DMF_TopicStep_UpgradePreprocessing ) or
+        topicStep.istype( DMF_TopicStep_UpgradePost ) )
+    {
+      topic := this.Topic();
+    }
+    
+    return topic;
+  *]
+  Relation: AsTopicRunPoint
+}

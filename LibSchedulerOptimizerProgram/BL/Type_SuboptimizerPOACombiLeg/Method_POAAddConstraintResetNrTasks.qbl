@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintResetNrTasks (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs)
+{
+  Description: 'Resets the expressions at the beginning of a new program or phase'
+  TextBody:
+  [*
+    // The nr of tasks in leg constraint should be reset to 0 for every leg
+    traverse( combilegs, Elements, combileg)
+    {                           
+      // Get the start node of the leg, which will be used to set the right value for the expression
+      startnode := poa.Node( SuboptimizerPOACombiLeg::NamePOACombiLegStart( combileg ), combileg );
+      taskexpression := poa.Expression( SuboptimizerPOACombiLeg::NamePOAExpressionNrTasksInLeg() );
+      poa.NewResetConstraint( SuboptimizerPOACombiLeg::NamePOAConstraintResetNrTasks( combileg ),
+                              startnode,
+                              taskexpression,
+                              0.0 );
+                              
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

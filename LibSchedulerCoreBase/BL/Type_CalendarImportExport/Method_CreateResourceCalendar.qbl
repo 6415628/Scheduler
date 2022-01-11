@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateResourceCalendar (LibCal_StagingCalendar stagingCalendar_i) as LibCal_Calendar
+{
+  TextBody:
+  [*
+    calendar := null( ResourceCalendar );
+    
+    // Get the OwnerID from the staging calendar.
+    ownerID := stagingCalendar_i.OwnerID();
+    
+    // Get the owner.
+    // For the selection use the same attribute(s) as is used in the override of method LibCal_Calendar.GetOwnerID().
+    owner := select( this, Schedule.ResourceGroup_SC.Resource_SC, resource, resource.ResourceID() = ownerID );
+    
+    if( not isnull( owner ) )
+    {
+      // Create a new calendar based on the imported data, and set it to be owned by the owner.
+      // This requires a typecast to the applicable subtype of LibCal_Calendar.    
+      newCalendar := LibCal_Calendar::Create( stagingCalendar_i );
+      
+      if( not isnull( newCalendar ) )
+      {
+        calendar := owner.ResourceCalendar( relset, &newCalendar.astype( ResourceCalendar ) );
+      }
+    }
+    else  // Owner not found.
+    {
+      info( ">>> WARNING: " + this.DefinitionName() + ".CreateMachineCalendar() : Machine '" + ownerID + "' not found." );
+    }
+    
+    return calendar;
+  *]
+}

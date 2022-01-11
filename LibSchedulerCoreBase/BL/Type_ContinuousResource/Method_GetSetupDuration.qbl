@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetSetupDuration (Operation_SC fromoperation, Operation_SC tooperation) declarative as Duration
+{
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // this method should be implemented by the QS for each specialization of ContinuousResource
+    
+    value := Duration::Zero();
+    
+    if( this.ResourceGroup_SC().HasSetup()
+        and not isnull( tooperation )
+        and not isnull( fromoperation ) )
+    {
+      // Setup duration for product jump
+      setuprow := this.GetSetupRow( fromoperation.PlanUnit_SC().ProductType(), 
+                                    fromoperation.PlanUnit_SC().ProductId(),
+                                    tooperation.PlanUnit_SC().ProductType(), 
+                                    tooperation.PlanUnit_SC().ProductId(),
+                                    fromoperation.Practice(),
+                                    tooperation.Practice(),
+                                    fromoperation.SetupGroup(),
+                                    tooperation.SetupGroup() )
+    
+      if( not isnull( setuprow ) )
+      {
+        value := setuprow.SetupDuration();
+      }
+    }
+    
+    return value;
+  *]
+}

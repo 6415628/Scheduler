@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeInternalWorkOrders
+{
+  Description: 'Synchronizes the internal work orders created from the demo scenario.'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( schedule, ImportedRouting_SC, importedRouting, importedRouting.IsValidDataHard() )
+    {
+      traverse( importedRouting, ImportedInternalWorkOrder, importedInternalWorkOrder, importedInternalWorkOrder.IsValidDataHard() )
+      {
+        workOrderID := importedInternalWorkOrder.Id();
+        internalWorkOrder := InternalWorkOrder::FindInternalWorkOrder( workOrderID );
+        
+        if( isnull( internalWorkOrder ) )
+        {
+          internalWorkOrder := GenericInternalWorkOrder::Create( schedule, workOrderID );
+        }
+        
+        internalWorkOrder.Update( importedInternalWorkOrder );
+        internalWorkOrder.SynchronizeWorkOrderOperations();
+        internalWorkOrder.CreateOrder_SC(); // Created basic Order_SC for SynchronizePlanUnit to create standard operations
+      }
+      
+      routing := importedRouting.Routing();
+      
+      // Reset routing running number
+      if( not isnull( importedRouting.Routing() ) )
+      {
+        routing.ResetToLatestWorkOrderNr();
+      }
+    }
+  *]
+}

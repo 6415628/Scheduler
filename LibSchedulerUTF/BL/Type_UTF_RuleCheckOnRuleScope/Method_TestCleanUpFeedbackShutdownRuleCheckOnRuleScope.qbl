@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCleanUpFeedbackShutdownRuleCheckOnRuleScope (Schedule schedule)
+{
+  Description: 'Test clean up feedback shutdown rule scope in rule'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    measure := ''
+    threshold := 0.0;
+    isfeedbackstarted := false;
+    isTask2Valid := false;
+    
+    this.GetTestVariantForFeedbackShutdown( isvariantfound,
+                                            measure,
+                                            threshold,
+                                            isfeedbackstarted,
+                                            isTask2Valid );
+    value := true;
+    
+    // Only do checking when variant found
+    if( isvariantfound )
+    {
+      // Gantt chart
+      // | Feedback Shutdown Task ( CleanUp ) | Feedback Task0 ( CleanUp ) | Feedback Task1 ( Remains ) | Task2 |
+        
+      // Propagate declarative attribute
+      Transaction::Transaction().Propagate( attribute( Task_SC, TaskID ) );
+      
+      // Only valid with following conditions
+      // Shutdown is cleaned up
+      // Operation 0 feedback task is cleaned up
+      // Operation 1 feedback task still remains because last feedback task is needed for rule framework checking
+      isshutdowncleanup := schedule.Shutdown( relsize ) = 0;
+      isfbtaskcleanup := schedule.FeedbackManager().FeedbackTaskInSchedule( relsize ) = 1;
+      isfbtask1exists := exists( schedule, FeedbackManager.FeedbackTaskInSchedule, feedbacktask, 
+                                 feedbacktask.OperationID() = 'operation1' );
+    
+      value := isshutdowncleanup
+               and isfbtaskcleanup
+               and isfbtask1exists;
+    }      
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Test clean up feedback shutdown rule scope failed.', 
+                           this.Variant() ) );
+  *]
+}

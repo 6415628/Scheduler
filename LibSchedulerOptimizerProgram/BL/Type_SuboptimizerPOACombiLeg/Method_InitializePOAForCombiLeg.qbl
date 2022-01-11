@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitializePOAForCombiLeg (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs, Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // zyi1 Jul-15-2021 (created)
+    this.POADetermineFrozenBoundaryNodes( combilegs );
+    
+    this.POAAddNodes( poa, combilegs, operations );   
+    
+    schedule := this.GetSchedule();
+    scheduletime := schedule.Time();
+    
+    // Set the offsetdatetime of POAAnalysis at the start of the run instead of doing this manually (and forgetting it)
+    if( guard( POAAnalysis::Analysis().Active(), false ) )
+    {
+      POAAnalysis::Analysis().OffsetDateTime( scheduletime );
+    }
+    
+    this.POAAddPaths( poa, combilegs ); 
+    
+    this.POAAddExpressions( poa, combilegs, operations );  
+    
+    this.POAAddConstraints( poa, combilegs, operations );  
+    
+    this.POAAddGoals( poa, combilegs ); 
+    
+    this.POAPrepareForInitial( poa, combilegs, operations ); 
+    
+    this.POAAddInitial( poa, combilegs, operations );
+  *]
+}

@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericMaterialPlannedDemand (const Schedule schedule)
+{
+  Description: 'Backup generic material planned demand core data'
+  TextBody:
+  [*
+    traverse( schedule, Demand.astype( GenericMaterialPlannedDemand ), genericMaterialPlannedDemand )
+    {
+      cdGenericMaterialPlannedDemand := this.CDEntity( relnew, CDGenericMaterialPlannedDemand );
+      CopyCorresponding::CopyFrom( genericMaterialPlannedDemand ).CopyTo( cdGenericMaterialPlannedDemand );
+      
+      cdGenericMaterialPlannedDemand.OperationID( guard( genericMaterialPlannedDemand.Operation_SC().OperationID(), '' ) );
+      cdGenericMaterialPlannedDemand.PlanUnitID( guard( genericMaterialPlannedDemand.PlanUnit_SC().PlanUnitID(), ''  ) );
+      
+      // Backup fullfillment
+      this.BackupGenericMaterialPlannedFulfillment( genericMaterialPlannedDemand );
+      this.BackupGenericMaterialExternalFulfillment( genericMaterialPlannedDemand );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,13 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeWorkOrdersCreatedInScheduler
+{
+  Description: 'Clean up work orders that are created in scheduler when ALL their operations have received feedback that they are ENDED and outside of the shopfloor history range.'
+  TextBody:
+  [*
+    traverse( this.Schedule(), WorkOrder.astype( InternalWorkOrder ), wo, wo.CheckHasAllOperationEnded() and wo.CheckCanBeDeletedBySystem() )
+    {
+      wo.Remove();
+    }
+  *]
+}

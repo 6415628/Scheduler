@@ -1,0 +1,66 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestAllowedValuesRule_Setup (Schedule schedule)
+{
+  Description: 'Test ( not ) allowed values rule check - setup'
+  TextBody:
+  [*
+    // Get variant attribute
+    characteristicType := '';
+    isAllowedValue := false;
+    ruleValueString := '';
+    operationAttributeValue := '';
+    hasConstraintViolation := false;
+    
+    this.GetTestVariant( characteristicType,
+                         isAllowedValue,
+                         ruleValueString,
+                         operationAttributeValue,
+                         hasConstraintViolation );
+    
+    // Create rule
+    rule := Rule::Create( schedule, 1 );
+    
+    // Create rule type
+    ruleType := UTFMockObjectFactory::CreateRuleType( schedule,
+                                                      RuleConstant::RuleType_AllowedValueStringsCheck() );
+    
+    rule.RuleType( relset, ruleType );
+    
+    // Create rule subtype based on variant
+    subTypeName := ifexpr( isAllowedValue,
+                           RuleConstant::RuleSubType_AllowedValue(),
+                           RuleConstant::RuleSubType_NotAllowedValue() );
+    
+    ruleSubtype := UTFMockObjectFactory::CreateRuleSubtypeAllowedValueStrings( ruleType, 
+                                                                               subTypeName,
+                                                                               isAllowedValue );
+    
+    rule.RuleSubType( relset, ruleSubtype );
+    
+    // Create characteristic main based on variant
+    this.CreateCharacteristicMain( schedule, rule );
+    
+    // Enable rule
+    rule.IsEnabled( true );
+    
+    // Assign rule value strings based on variant
+    rule.RuleValueStrings( relnew, Value := ruleValueString );
+    
+    // Create resource and apply rule scope to rule.
+    rule.RuleScopeSelected( RuleConstant::RuleScope_AllTasksOnResource() );
+    resource := UTFMockObjectFactory::CreateRuleScopeInSingleResource( schedule, rule, 'resource' );
+    
+    // Create operation
+    order := UTFMockObjectFactory::CreateOrder( schedule, 'Order' );
+    planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'PlanUnit ', 1.0 );
+    operation := UTFMockObjectFactory::CreateOperation( planUnit );
+    operation.OperationID( 'Operation' );
+    
+    // Assign operation attribute based on variant
+    this.AssignOperationAttributeValueBase( schedule, operation );
+    this.AssignOperationAttributeValueLayer( schedule, operation );
+    
+    resource.PlanLast( operation );
+  *]
+}

@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CopyExternalFilesToDataFolder (String subFolderName)
+{
+  TextBody:
+  [*
+    // ckr3 Apr-28-2017 (created)
+    dataFolderPath := FileSystems::QFSPathToHardwarePath(  DomainModel::GetDataDirectory().Path() );
+    
+    if( OS::IsDirectory( dataFolderPath ) and subFolderName <> "" )
+    {
+      sourceFilePath := dataFolderPath + "/" + Constants::FolderPath_Schedule() + subFolderName;
+    
+      brokerSourceFile := selectset( DomainModel::Domain().EDIDefinitionManager(), BrokerDefinitions, broker,
+                                     broker.Name().StartsWith( "Broker_" ) );
+    
+      // Copy the files from the subfolder to the folder that the EDI brokers are pointing to
+      traverse( brokerSourceFile, Elements, file )
+      {
+        fileName := guard( file.Source().astype( EDIXLSLinkDefinition ).FileName(), "" );
+        if( fileName <> "" )
+        {
+          sourceFile := sourceFilePath + "/" + fileName;
+          destinationFile := dataFolderPath + "/" + fileName;
+    
+          if( OS::IsFile( sourceFile ) )
+          {
+            OS::CopyFile( sourceFile, destinationFile );
+          }
+        }
+      }
+    }
+  *]
+}

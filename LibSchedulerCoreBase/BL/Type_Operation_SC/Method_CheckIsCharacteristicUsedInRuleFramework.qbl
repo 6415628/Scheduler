@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsCharacteristicUsedInRuleFramework (String characteristicid) declarative remote as Boolean
+{
+  Description: 'Checks whether the characteristic is used in rule framework based on current operation and characteristic id'
+  TextBody:
+  [*
+    // Checks whether the characteristic is used in rule framework based on current operation and characteristic id
+    // Get the rules which have rule scope shutdown type and resources that linked to current operation's OperationOnResource
+    characteristic := select( this, PlanUnit_SC.Schedule.CharacteristicUsedInRuleFramework, char, char.ID() = characteristicid );
+    value := false;
+    
+    if( not isnull( characteristic ) and characteristic.IsUsedInRuleFramework() )
+    {  
+      traverse( characteristic, RuleCharacteristic.Rule, charrule, charrule.IsEnabled() and not value )
+      {
+        if( charrule.RuleScopeSelected() = RuleConstant::RuleScope_AllTasksOnResource() )
+        {
+          charres := selectset( charrule, RuleScopeInResource.Resource_SC, res, true );
+          opres := selectset( this, AllowedOperationOnResourceHard.Resource_SC, res, true );
+          value := charres.Intersect( opres ).Size() > 0;
+        }
+        else if( charrule.RuleScopeSelected() = RuleConstant::RuleScope_Shutdown() )
+        {
+          charshutdowntype := selectset( charrule, RuleScopeInShutdownType.ShutdownType, shutdowntype, true );
+          opshutdowntype := selectset( this, AllowedOperationOnResourceHard.Resource_SC.ShutdownTypeInResource.ShutdownType, shutdowntype, true );
+          value := charshutdowntype.Intersect( opshutdowntype ).Size() > 0;
+        }
+        else if( charrule.RuleScopeSelected() = RuleConstant::RuleScope_Program() )
+        {
+          charprogram := selectset( charrule, RuleScopeInProgramType.ProgramTypeConfiguration, programtype, true );
+          opprogram := selectset( this, AllowedOperationOnResourceHard.Resource_SC.ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration, programtype, true );
+          value := charprogram.Intersect( opprogram ).Size() > 0;
+        }
+        else if( charrule.RuleScopeSelected() = RuleConstant::RuleScope_ProgramPhase() )
+        {
+          charprogramphase := selectset( charrule, RuleScopeInProgramPhase.ProgramPhaseConfiguration, programphase, true );
+          opprogramphase := selectset( this, AllowedOperationOnResourceHard.Resource_SC.ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration.ProgramPhaseConfiguration, programphase, true );
+          value := charprogramphase.Intersect( opprogramphase ).Size() > 0;
+        }
+      }
+    }
+    
+    return value;
+  *]
+}

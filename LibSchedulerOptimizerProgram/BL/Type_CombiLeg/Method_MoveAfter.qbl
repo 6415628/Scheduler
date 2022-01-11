@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method MoveAfter (OperationInCombiLeg after, OperationInCombiLeg tomove)
+{
+  Description: 'move operation in CombiLeg in the same leg or from different leg'
+  TextBody:
+  [*
+    // zyi1 Jul-14-2021 (created)
+    if( tomove.CombiLeg() = this )
+    {
+      this.MoveAfterOperation( after, tomove );
+    }
+    else
+    {
+      //select the OperationInCombiProgramSet for all sets of the tomove OperationInCombiLeg
+      // since we need to rebuild the relation from the tomove to those oicps
+      oicpss := selectset( tomove, OperationInCombiProgramSet, oicps, true );
+      operation := tomove.Operation_SC();
+      OperationInCombiLeg::Delete( tomove, false );
+      newoicl := this.AddCandidateAtEnd( operation, false );
+      
+      traverse( oicpss, Elements, oicps )
+      {
+        oicps.OperationInCombiLeg( relset, newoicl );
+      }
+      
+      //newoicl.SynchronizeOperationInCombiProgramSets();
+    }
+    
+    //note that after moving single elements,  the oicps's attribute and phase link would have obsolete value, in fact all the oicpss after the moved ocps
+    //would be in a not correct status,  but synchronizing all of then for each move would be too expensive, so I remove the synchronization logic here
+    //mothods call this method should be resposonsible for the synchronization
+    // also kick out the logic of moving the OICPSs into right position,  because it's easier to set once all moving of OperationInCombiLeg done
+  *]
+}

@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeWorkOrders
+{
+  Description: 'Synchronizes existing work orders with imported data from ERP system.'
+  TextBody:
+  [*
+    allinstances := selectset( this.Schedule(), WorkOrder, workorder, not workorder.IsCreatedInScheduler() );
+    updatedinstances := construct( WorkOrders );
+    
+    traverse( this.Schedule(), ImportedWorkOrder.astype( ImportedExternalWorkOrder ), row, row.IsValidDataHard() )
+    {
+      workorder := ExternalWorkOrder::FindExternalWorkOrder( row.Id() );
+    
+      if( isnull( workorder ) )
+      {
+        workorder := GenericExternalWorkOrder::Create( this.Schedule(), row.Id() );
+      }
+    
+      workorder.Update( row );
+        
+      // synchronize work order operations
+      workorder.SynchronizeWorkOrderOperations();
+      schedule_woid := row.SchedulerWOID();
+      
+      if( schedule_woid.Length() > 0 and not row.HasReplacedInternalWorkOrder() )
+      {
+        oldworkorder := InternalWorkOrder::FindInternalWorkOrder( schedule_woid ); // the ID of the work order created in schedule is the same as ScheduleWOID
+        
+        if( not isnull( oldworkorder ) )
+        {
+          // Do not replace internal work order if imported external work order have sanity check error.
+          if( not row.IsValidDataSoft() )
+          {
+            workorder.InternalWorkOrderToReplace( relset, oldworkorder );
+          }
+          else
+          { 
+            // replace work order created in schedule if this work order was originally created in schedule
+            workorder.ReplaceWorkOrder( oldworkorder ); // replaces the work order created in schedule and relinks all its Schedule objects to the current work order, then deletes it.
+            workorder.ImportedExternalWorkOrder().HasReplacedInternalWorkOrder( true );
+          }
+        }
+      }
+      
+      updatedinstances.Add( workorder );
+    }
+    
+    //Delete work orders if they do not exist in KT
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, workorder, workorder.CheckCanBeDeletedBySystem() ) // checks if the work order's order can be deleted, there shouldn't be a scenario where a work order has no order
+    {
+      workorder.Delete(); // delete work order only, because synchronization of order is done in SynchronizeOrders
+    }
+  *]
+}

@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericBatchWorkOrderOperation (CDSchedule cdSchedule, GenericBatchWorkOrder genericBatchWorkOrder)
+{
+  Description: 'Restore generic batch work order operation core data relations to planning object'
+  TextBody:
+  [*
+    cdgenericbatchworkorderoperations := selectset( cdSchedule, CDEntity.astype( CDGenericBatchWorkOrderOperation ), cdGenericBatchWorkOrderOperation,
+                                                    cdGenericBatchWorkOrderOperation.WorkOrderId() = genericBatchWorkOrder.Id() );
+    
+    traverse( cdgenericbatchworkorderoperations, Elements, cdGenericBatchWorkOrderOperation )
+    {
+      genericBatchWorkOrderOperation := WorkOrderOperation::FindWorkOrderOperation( cdGenericBatchWorkOrderOperation.WorkOrderId(),
+                                                                                    cdGenericBatchWorkOrderOperation.SequenceNr() ).astype( GenericBatchWorkOrderOperation );
+     
+      if( not isnull( genericBatchWorkOrderOperation ) )
+      {
+        // ImportedWorkOrderOperation, 1-1
+        importedWorkOrderOperation := ImportedWorkOrderOperation::FindImportedWorkOrderOperation_SC( cdGenericBatchWorkOrderOperation.WorkOrderId(),
+                                                                                                     cdGenericBatchWorkOrderOperation.SequenceNr() );
+        
+        genericBatchWorkOrderOperation.ImportedWorkOrderOperation( relset, importedWorkOrderOperation );
+        
+        // RoutingStep, 1-1
+        routingStep := RoutingStep::FindRoutingStep( genericBatchWorkOrder.RoutingID(),
+                                                     cdGenericBatchWorkOrderOperation.RoutingStepSequenceNr() );
+                                                     
+        genericBatchWorkOrderOperation.RoutingStep( relset, routingStep );                                               
+        
+        // Backup batch work order output material
+        this.RestoreRelations_GenericBatchWorkOrderOutputMaterial( cdSchedule, genericBatchWorkOrderOperation );
+        
+        // Backup batch work order supply
+        this.RestoreRelations_GenericBatchWorkOrderSupply( cdSchedule, genericBatchWorkOrderOperation );
+      } 
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

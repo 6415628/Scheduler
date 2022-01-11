@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericExternalWorkOrderOutputMaterial (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic external work order output material core data attributes to planning object'
+  TextBody:
+  [*
+    traverse( cdSchedule, CDEntity.astype( CDGenericExternalWorkOrderOutputMaterial ), cdDGenericExternalWorkOrderOutputMaterial )
+    {
+      externalWorkOrderOperation := ExternalWorkOrderOperation::FindExternalWorkOrderOperation( cdDGenericExternalWorkOrderOutputMaterial.WorkOrderId(),
+                                                                                                cdDGenericExternalWorkOrderOutputMaterial.SequenceNr() );
+      
+      if( not isnull( externalWorkOrderOperation ) )
+      {                                                                                                                                                                                                    
+        genericExternalWorkOrderOutputMaterial := GenericExternalWorkOrderOutputMaterial::Create( externalWorkOrderOperation, cdDGenericExternalWorkOrderOutputMaterial.Id() );
+        CopyCorresponding::CopyFrom( cdDGenericExternalWorkOrderOutputMaterial ).CopyTo( genericExternalWorkOrderOutputMaterial );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

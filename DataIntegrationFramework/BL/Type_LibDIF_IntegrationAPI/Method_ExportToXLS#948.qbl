@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExportToXLS (Key exportID_i, structured_Object objects_i, String dataTransformationID_i, 
+  String brokerID_i)
+{
+  Description:
+  [*
+    Trigger the transformation of the provided model objects to integration objects, using the DataTransformation with the provided ID,
+    and export the integration objects to XLS using the EDI-broker with the provided ID.
+    This method is meant to be called from the UI.
+    Only the client that recognizes the exportID_i that it has passed in will retrieve the ExportData.
+  *]
+  TextBody:
+  [*
+    dataTransformation := this.GetDataTransformation( dataTransformationID_i );
+    
+    // Create a temporary Integration-dataset and trigger its ExportToXLS.
+    tempDataset := LibDIF_IntegrationDataset::CreateTemporaryDataset( this.GetDatasetName() );
+    exportData  := tempDataset -> ExportToXLS( objects_i, dataTransformation, brokerID_i, true );  // Export for UI.
+    
+    // Store the data in an attribute that is 'monitored' in the Client.
+    // Setting the attribute will trigger the Client to write the data to file.
+    // Setting is done via a reactive call in order to capture the BinaryValue from the stream that is returned by Export.
+    this -> SetExportDataXLS( exportID_i, exportData );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method RequestSetData (String channelName_i, String setTypeName_i, Strings setNames_i)
+{
+  Description:
+  [*
+    Allow Model to request (multiple) sets when doesn't know if a set is local or external.
+    The sets must belong to the same channel and set type.
+  *]
+  TextBody:
+  [*
+    handler := this.GetDataTransformationHandler( channelName_i );
+    objects := handler.CollectData();
+    
+    handler.PreprocessLocalObjectsBeforeRequesting( objects );
+    
+    planningDatasetMDSID := this.GetPlanningDatasetMDSID();
+    planningDatasetType  := this.GetPlanningDatasetTypeName();
+    
+    LibDEF_API::RequestSetDataByName( planningDatasetMDSID,
+                                      planningDatasetType,
+                                      this.Key(),
+                                      channelName_i,
+                                      setTypeName_i,
+                                      setNames_i );
+  *]
+}

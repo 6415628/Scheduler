@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetProgramPhaseCumulativeValue (ProgramSet programset, Characteristic characteristic) declarative remote as Real
+{
+  Description: 'Get program phase cumulative value based on input program set and characteristic'
+  TextBody:
+  [*
+    // Get program phase cumulative value based on input program set and characteristic
+    
+    currentphasecumulativevalue := 0.0;
+    taskinprogramset := select( this, TaskInProgramSet, tips, tips.ProgramSet() = programset );
+    
+    if( not isnull( taskinprogramset ) )
+    {
+      previousphasecumulatativevalue := Characteristic::GetCumulativeValueForCharacteristic( characteristic, 
+                                                                                             taskinprogramset.PreviousPhaseCumulativeCharacteristic(),
+                                                                                             taskinprogramset.PreviousPhaseCumulativeRealValues() );
+      
+      currentprogramcumulativevalue := Characteristic::GetCumulativeValueForCharacteristic( characteristic, 
+                                                                                             taskinprogramset.CumulativeCharacteristic(),
+                                                                                             taskinprogramset.CumulativeRealValues() );
+      
+      // In order to get the current phase cumulative value, minus the current program cumulative value with previous phase cumulative value
+      currentphasecumulativevalue := currentprogramcumulativevalue - previousphasecumulatativevalue;
+    }
+    
+    return currentphasecumulativevalue;
+  *]
+}

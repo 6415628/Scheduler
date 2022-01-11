@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test030_SwitchPriority (LibOpt_TestDataset dataset)
+{
+  Description: 'Checks that the priority switch always sends to the component with the highest priority, with the availability checker = true'
+  TextBody:
+  [*
+    // Run randomized tests
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    switch := opt.SwitchPriority( run, 'Switch' );
+    
+    nr_of_components := Number::Random( 1, 10 );
+    
+    first_component := null( LibOpt_ComponentCounter );
+    components := construct( LibOpt_ComponentCounters );
+    for( j := 0; j < nr_of_components; j++ )
+    {
+      c := opt.ComponentCounter( run, 'Counter' + [String] j );
+      rand := Real::Random( 0.0, 1.0 );
+      isTrue := rand > 0.5;
+      if( rand <= 0.75 )
+      {
+        switch.Branch( opt.MockAvailabilityChecker( isTrue ), c );
+      }
+      else
+      {
+        switch.Branch( opt.AvailabilityCheckerTrue(), c );
+      }
+      if( isTrue and isnull( first_component ) )
+      {
+        first_component := c;
+      }
+      components.Add( c );
+    }
+    
+    run.SetStartComponent( switch );
+    opt.ConfigureForOneTransaction( run );
+    str := run.Start();
+    
+    str->|this->( this )
+    {
+      traverse( components, Elements, component )
+      {
+        this.Run().AssertEqual( ifexpr( component = first_component, 1, 0 ), component.NrOfTimesCalled(), 'Number of calls has an unexpected value' );
+      }
+    }
+    str->Exception()->LibOpt_TestUnit_TestDataset::CheckNoException( this );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

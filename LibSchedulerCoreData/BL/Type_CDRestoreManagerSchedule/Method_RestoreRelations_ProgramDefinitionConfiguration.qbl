@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_ProgramDefinitionConfiguration (CDSchedule cdSchedule)
+{
+  Description: 'Restore program definition configuration core data relations to planning object'
+  TextBody:
+  [*
+    traverse( cdSchedule, CDEntity.astype( CDProgramDefinitionConfiguration ), cdProgramDefinitionConfiguration )
+    {
+      programDefinitionConfiguration := ProgramDefinitionConfiguration::FindProgramDefinitionConfiguration( cdProgramDefinitionConfiguration.ProgramDefinitionConfigurationID() );
+      
+      if( not isnull( programDefinitionConfiguration ) )
+      {
+        // LeadingProgramSetConfiguration, 1-1
+        leadingprogramset := ProgramSetConfiguration::FindProgramSetDefinition( cdProgramDefinitionConfiguration.ProgramDefinitionConfigurationID(), 
+                                                                                cdProgramDefinitionConfiguration.LeadingProgramSetConfigurationID() );
+        if( not isnull( leadingprogramset ) )
+        {
+          leadingprogramset.SetAsLeading(); 
+        }
+    
+        // There is no relation to restore for program type change configuration
+        // There is no relation to restore for program phase configuration 
+        // There is no relation to restore for program type configuration 
+        // There is no relation to restore for program set configuration
+      }  
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

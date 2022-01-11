@@ -1,0 +1,75 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleResults (ScopeElementOperation anchor, NeighborhoodCreatorDistanceMetric_GraphProgramNeighborhoodCreatorDistanceMetric program, SnapshotNeighborhoodCreatorDistanceMetric snapshot, 
+  LibOpt_Scope resultscope)
+{
+  Description:
+  [*
+    Extracts the closest `NumOperations` operations to the anchor (including the anchor) from the graph after the shortest path algorithm has executed, plus all resources that are at most as far away from the anchor as the furthest away such selected operation.
+    These so-selected scope elements will be added to the given `resultscope`, with the distance to the anchor as a comment.
+  *]
+  TextBody:
+  [*
+    // mbr23 Feb-7-2020 (created)
+    
+    algorithm := program.ShortestPathAlgorithm( NeighborhoodCreatorDistanceMetric::NameAlgorithm() );
+    result := algorithm.Result();
+    graph := program.Graph( NeighborhoodCreatorDistanceMetric::NameGraph() );
+    anchornode := graph.OperationNodes().Get( anchor );
+    
+    resultscope.Add( anchor, "#Anchor" ); // the anchor has an infinite distance to itself (according to the ShortestPathAlgorithm), so needs to be added extra.
+    friend_operations_to_select := this.Settings().NumOperations() - 1; // -1 because the anchor is already selected
+    if( friend_operations_to_select < 0 )
+    {
+      // this can happen if the `NumOperations` is accidentally set to 0
+      friend_operations_to_select := 0;
+    }
+    
+    // first, find out the pivot distance: the distance below which operations are included. This must be just so far that at most `NumOperations` will be included.
+    distances := construct( Reals );
+    traverse( graph.OperationNodes(), Elements, node )
+    {
+      path := result.Path( anchornode, node );
+      distances.Add( path.Distance() );
+    }
+    distances.Sort();
+    pivot_distance := Real::MaxReal();
+    if( distances.Size() > friend_operations_to_select )
+    {
+      pivot_distance := distances.Element( friend_operations_to_select );
+    }
+    snapshot.PivotDistance( pivot_distance );
+    
+    // now traverse again and choose those operations and resources that are closer than the pivot distance:
+    pivot_operations := construct( ScopeElementOperations ); // keep track of nodes that are removed from the anchor by exactly the pivot distance (used below)
+    traverse( graph.OperationNodes(), Elements, node )
+    {
+      path := result.Path( anchornode, node );
+      if( path.Distance() < pivot_distance )
+      {
+        resultscope.Add( node.Operation( this ), "Distance to anchor: " + path.Distance().AsQUILL() );
+      }
+      else if( path.Distance() = pivot_distance )
+      {
+        pivot_operations.Add( node.Operation( this ) );
+      }
+    }
+    traverse( graph.ResourceNodes(), Elements, node )
+    {
+      path := result.Path( anchornode, node );
+      if( path.Distance() < pivot_distance )
+      {
+        resultscope.Add( node.Resource( this ), "Distance to anchor: " + path.Distance().AsQUILL() );
+      }
+    }
+    // there may be multiple operations that share exactly the pivot distance. These have not been included in above logic. Let's randomly select from them until the desired neighborhood size is reached:
+    while( pivot_distance.IsFinite() // if the pivot distance is infinite, don't extend the scope. We absolutely don't want unconnected operations i nthe scope, even if that means that we end up with fewer than the requested neighborhood size.
+           and resultscope.OperationsConst().Size() < this.Settings().NumOperations()
+           and pivot_operations.Size() > 0 )
+    {
+      random_operation := minselect( pivot_operations, Elements, op, true, Real::Random() );
+      pivot_operations.Remove( random_operation );
+      resultscope.Add( random_operation, "#NeighborhoodFrontier Distance to anchor: " + pivot_distance.AsQUILL() );
+    }
+  *]
+}

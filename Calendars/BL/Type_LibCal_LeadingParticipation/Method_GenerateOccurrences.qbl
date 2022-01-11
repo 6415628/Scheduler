@@ -1,0 +1,67 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenerateOccurrences
+{
+  Description: 'Generate TimeIntervals for the occurrences of an Event, given the RecurrencePattern of the Event and the RecurrencePeriod of the Participation.'
+  TextBody:
+  [*
+    LibCal_Util::DebugInfo( "GenerateOccurrences of " + this.Event().GetEventInfo() );
+    
+    // For debugging
+    //showInfo := this.Event().Subject() = "TEST";
+    //showInfo := true;
+    
+    // Determine the data that is required for generating the applicable occurrences.
+    // The data is returned as output-arguments by PrepareGenerateOccurrences().
+    timezone              := this.Calendar().GetTimeZone();
+    dateOfFirstRecurrence := Date::MinDate();
+    endDate               := Date::MinDate();
+    startOverlap          := Date::MinDate();
+    endOverlap            := Date::MinDate();
+    preserveOccurrences   := true;
+    
+    if( this.PrepareGenerateOccurrences( dateOfFirstRecurrence, endDate,  // Start and end of the period during which occurrences should be generated.
+                                         startOverlap, endOverlap,        // Start and end of the overlap between the current period and the new period.
+                                         preserveOccurrences ) )          // Indicates if occurrences that already exist in the overlapping period should be preserved (i.e. used as-is).
+    {
+      // Mark the existing TimeIntervals as SoftDeleted.
+      traverse( this, ExplicitTimeInterval, timeInterval )
+      {
+        timeInterval.IsSoftDeleted( true );
+      }
+    
+      // Execute the actual generation.
+      this.GenerateOccurrences( dateOfFirstRecurrence, endDate, startOverlap, endOverlap, preserveOccurrences );
+    
+      // When occurrences should be preserved, the TimeIntervals that were already part of the original window should remain 'as-is';
+      // therefore they have been ignored in GenerateOccurrences().
+      // Their IsSoftDeleted-flag should now be reset, in order to prevent them from being deleted.
+      if( preserveOccurrences and this.Calendar().Window() > 0 )
+      {
+        traverse( this, ExplicitTimeInterval, eti )
+        {
+          // If the TimeInterval ends at the start of a day, this is the start of the next day.
+          // In that case, one day should be subtracted in order to not take the next day into account.
+          // Otherwise the occurrence will be preserved while it shouldn't.
+          etiStartDate := eti.Start().Date( timezone );
+          etiEndDate   := eti.End().Date( timezone ) - ifexpr( eti.End() = eti.End().StartOfDay( timezone ), 1, 0 );
+    
+          if( etiEndDate   >= startOverlap and
+              etiStartDate <=  endOverlap   and
+              etiStartDate >= this.GetRecurrencePeriod().StartDate() )  // Don't start before the start of the period.
+          {
+            eti.IsSoftDeleted( false );
+          }
+        }
+      }
+    
+      // Permanently delete the TimeIntervals that are still SoftDeleted.
+      this.DeleteTimeIntervals( true );  
+    
+      // Register that the changes have been processed.
+      this.IsChanged( false );
+      this.HasChangedRecurrencePeriod( false );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

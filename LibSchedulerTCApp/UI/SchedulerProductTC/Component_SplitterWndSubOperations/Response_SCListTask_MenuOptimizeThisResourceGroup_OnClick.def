@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: SCListTask
+Response OnClick (Task_SC selection) id:Response_SCListTask_MenuOptimizeThisResourceGroup_OnClick
+{
+  #keys: '[137186.0.730264345]'
+  Body:
+  [*
+    // Optimize all tasks on all resources in selected task's resource group from selected task's start time
+    
+    // Clear scoped operations - which also clears DataHolderOptimizerAllScopedOperations because it has data extractors grabbing from Mandatory and Optional dataholders
+    DataHolderOptimizerMandatoryOperations.Data().Flush();
+    DataHolderOptimizerOptionalOperations.Data().Flush();
+    
+    // Scope selection
+    resourcegroup := selection.Resource_SC().ResourceGroup_SC();
+    plannedoperations := resourcegroup.GetPlannedOperations( selection.Start() ); // this includes selection
+    DataHolderOptimizerMandatoryOperations.Data( &plannedoperations );
+    
+    // Get all allowed resources
+    resources := selectset( selection, Resource_SC.ResourceGroup_SC.Resource_SC, res, true );
+    
+    // Optimize - we call Mandatory here because the data extractors for AllScopedOperations dataholder does not update before calling this method
+    Schedule.Optimization().OptimizerSequencing().OptimizeWithDefaultSettings( DataHolderOptimizerMandatoryOperations.Data(), resources );
+  *]
+  CanBindMultiple: false
+  DefinitionID => //FilteredList/Responsedef_FilteredList_Menu_OnClick
+  Initiator: 'MenuOptimizeThisResourceGroup'
+  Precondition:
+  [*
+    // Check if system contains batch and is optimizer enabled.
+    return Schedule.AllowedOptimize( feedback )
+           and Schedule.AllowedOptimizeThisResourceGroup( selection.Resource_SC().ResourceGroup_SC(), feedback );
+  *]
+}

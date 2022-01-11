@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: #root
+Method Insert (DataUpgradeIO duio_i, String table_i, Strings columns_i, 
+  Strings values_i) as Boolean
+{
+  Description: 'Insert a data record to a table for a database. Returns success state for handling as necessary'
+  TextBody:
+  [*
+    // tgn3 Apr-8-2021 (created)
+    
+    /* Example - do not delete
+    INSERT into DMF_UpgradeablityMetaData
+    ( Key, CoreDataMajorVersion, CoreDataMinorVersion, CoreDataBuildVersion, CoreDataPatchVersion, DatasetKind, DatasetName )
+    VALUES( '0', '1', '2', '3', '4', '5', '6' )
+    */
+    delim     := DMF_DBInterface::GetQueryDelimiter();
+    isSuccess := false;
+    msg       := ""; 
+    
+    // Only proceed if columns and values have the same size
+    isSameSize := columns_i.Size() = values_i.Size();;
+    
+    if( isSameSize )
+    {
+      // It's safer to single quote strings in SQL, in case the string clashes with reserved keywords
+      values := selectvalues( values_i, Elements, valueString, true, "'" + valueString + "'" ).ToString( delim );
+      
+      queryStrings := construct( Strings );
+      
+      queryStrings.Add( "INSERT into " + table_i );
+      queryStrings.Add( "( " + columns_i.ToString( delim ) + " )" );
+      queryStrings.Add( "VALUES ( " + values + " )" );
+      
+      query := queryStrings.ToString( String::NewLine() );
+      
+      // Attempt to execute query with no result, handle feedback if any
+      isSuccess := this.Execute( duio_i, query, msg );
+    }
+    else
+    {
+      // Failure due to bad input
+      msg := "Failed to insert record. Reason: The number of columns and values should be the same.";
+    }
+    
+    // Info any warnings that may have occurred
+    if( msg.Length() > 0 )
+    {
+      DMF_Utility::LogWarning( msg );
+    }
+    
+    return isSuccess;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

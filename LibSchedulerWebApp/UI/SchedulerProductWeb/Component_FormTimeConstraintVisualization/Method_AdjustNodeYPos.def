@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method AdjustNodeYPos (shadow[CustomDrawNode] node, Boolean isUpstream) id:Method_FormTimeConstraintVisualization_AdjustNodeYPos
+{
+  #keys: '[134266.2.1644571]'
+  Body:
+  [*
+    // Adjust nodes Y position
+    
+    // To adjust the Y position of the node, 
+    // go to all its kids node, find their middle Y position
+    
+    config := DataHolderCustomDrawConfiguration.Data();
+    
+    // Find the nodes using the key attribute
+    inputNodes := selectset( config, CustomDrawNode, n,
+                             n.Depth() = node.Depth() + 1
+                             and n.IsUpstream() = isUpstream
+                             and n.OwnerNodeKey() = node.Key().AsQUILL() )
+    
+    // Compute the center position
+    if( inputNodes.Size() > 0 )
+    {
+      upperbound := max( inputNodes, Elements, e, e.Y() );
+      lowerbound := min( inputNodes, Elements, e, e.Y() );
+      
+      node.Y( lowerbound + floor( ( upperbound - lowerbound ) / 2 ) );
+    }
+  *]
+}

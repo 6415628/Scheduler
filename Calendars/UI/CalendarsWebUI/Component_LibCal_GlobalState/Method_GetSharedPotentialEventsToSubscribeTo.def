@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetSharedPotentialEventsToSubscribeTo (structured[LibCal_Calendar] calendars_i) as structured[LibCal_Event] id:Method_LibCal_GlobalState_GetSharedPotentialEventsToSubscribeTo
+{
+  #keys: '[131094.1.605814264]'
+  Body:
+  [*
+    sharedEvents := null( LibCal_Events, owning ); 
+    
+    // Initialize to the potential events of the first calendar.
+    if( calendars_i.Size() > 0 )
+    {
+      sharedEvents := calendars_i.Element( 0 ).GetPotentialEventsToSubscribeTo();
+    }
+    
+    // Intersect with the potential events of the other calendars.
+    traverse( calendars_i, Elements, calendar )
+    {
+      sharedEvents := sharedEvents.Intersect( calendar.GetPotentialEventsToSubscribeTo() );
+    }
+    
+    return &sharedEvents;
+  *]
+  ReturnsOwning: true
+}

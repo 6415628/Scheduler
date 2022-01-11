@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateUpstreamResourceConnections
+{
+  Description:
+  [*
+    Creates shadow objects in the owning transient data for the direct upstream resource connections of this resource, if the connected resource is also shadowed.
+    Should only be called as part of object creation.
+  *]
+  TextBody:
+  [*
+    // mbr23 Jan-27-2020 (created)
+    traverse( this.Resource(), AsToResource, connection )
+    {
+      resource := connection.FromResource();
+      if( not isnull( resource ) )
+      {
+        se := resource.ScopeElementResource();
+        if( not isnull( se ) )
+        {
+          transientdata := this.ResourceGroup().TransientData();
+          seor := se.OnRun( transientdata.Task().Run() );
+          if( not isnull( seor ) )
+          {
+            in_transientdata := ResourceInSuboptimizerSequencing::Find( transientdata, seor );
+            if( not isnull( in_transientdata ) )
+            {
+              ResourceConnectionInSuboptimizerSequencing::Create( in_transientdata, this, connection );
+            }
+          }
+        }
+      }
+    }
+  *]
+}

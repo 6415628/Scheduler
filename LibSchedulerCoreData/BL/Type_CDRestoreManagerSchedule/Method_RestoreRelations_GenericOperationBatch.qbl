@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericOperationBatch (CDSchedule cdschedule)
+{
+  Description: 'Restore generic operation batch core data relations to planning object'
+  TextBody:
+  [*
+    // Restore operation batch
+    schedule := this.Schedule();
+    
+    traverse( cdschedule, CDEntity.astype( CDGenericOperationBatch ), cdbatch )
+    {
+      batch := select( schedule, Batch, batch, 
+                       batch.BatchID() = cdbatch.BatchID(),
+                       batch.Type() = cdbatch.Type()
+                     );
+      
+      if( not isnull( batch ) )
+      {
+        // Restore imported demo data operation batch that belongs to this batch
+        importeddemodataoperationbatch := ImportedDemoDataOperationBatch::FindImportedDemoDataOperationBatch( cdbatch.BatchID() );
+        batch.ImportedDemoDataOperationBatch( relset, importeddemodataoperationbatch );
+        
+        // Restore batch sequence elements that belongs to this batch
+        this.RestoreRelations_GenericBatchSequenceElement( cdschedule, batch );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

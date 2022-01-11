@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[DemandBatch] selection) id:Response_SCListDemandBatch_MenuDeleteBatch_OnClick
+{
+  #keys: '[134372.0.67759772]'
+  Body:
+  [*
+    // Delete demand batches
+    value := true;
+    feedback_o := '';
+    hasNoSoftViolation := DemandBatch::CanDeleteSoft( selection, feedback_o );
+    
+    if( not hasNoSoftViolation )
+    {
+      value := MessageBox::Question( this, feedback_o, '&Yes|&No' ) = 0;
+    }
+    
+    if( value )
+    {
+      DemandBatch::Remove( selection );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => /Responsedef_SCListDemandBatch_Menu_OnClick
+  Initiator: 'MenuDeleteBatch'
+  Precondition:
+  [*
+    value := DemandBatch::RemoveAllowed( selection, useroverride );
+    
+    // Workaround to show feedback in the old way until all responses are converted to use FeedbackObject.
+    // Do not show 'Hold Ctrl to override' for menu item                                      
+    feedback := ApplicationScheduler.ShowOldStyleFeedbackWithoutOverrideOption( FeedbackObject::CurrentFeedback().Feedback() );    
+    
+    return value;
+  *]
+}

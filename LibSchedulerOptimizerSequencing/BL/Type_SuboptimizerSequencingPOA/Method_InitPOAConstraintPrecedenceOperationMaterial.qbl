@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOAConstraintPrecedenceOperationMaterial (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata)
+{
+  Description: 'Add the constraint which enforces precedence relations between operations due to input/output materials.'
+  TextBody:
+  [*
+    dependency := poa.NewDependency( SuboptimizerSequencingPOA::NamePOADependencyMaterial() );
+    dependencyconstr := poa.NewDependencyConstraint( SuboptimizerSequencingPOA::NamePOAConstraintPrecedence() );
+    dependencyconstr.Dependency( dependency );
+    dependencyconstr.Expression( poa.Expression( SuboptimizerSequencingPOA::NamePOAExpressionTime() ) );
+    // node 1 has to end before node 2 can start with its transition
+    dependencyconstr.MatchKind( 'ET' );
+    transition := POATransition::NN( poa, SuboptimizerSequencingPOA::NamePOAConstraintPrecedence(), 0.0 );
+    dependencyconstr.Transition( transition );
+    
+    traverse( transientdata, PrecedenceDependency, precedence )
+    {
+      from_node := poa.Node( precedence.UpstreamOperation() );
+      to_node := poa.Node( precedence.DownstreamOperation() );
+      dependency.Add( from_node, to_node );
+      transition.Set( from_node, to_node, precedence.OptimisticDueTime().HoursAsReal() );
+      
+      
+    }
+    
+    //todo := "also add dependency in case an intermediary operation is out of scope -- that should probably be an independent subclass of PrecedenceDependencyInSuboptimizerSequencing. Will be implementd in ADSC-1565: SuboptimizerPOA: handle dependency gaps in subscope";
+  *]
+}

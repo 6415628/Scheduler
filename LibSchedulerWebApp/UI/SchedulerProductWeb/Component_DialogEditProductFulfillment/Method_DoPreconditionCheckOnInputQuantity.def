@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoPreconditionCheckOnInputQuantity (Real quantityToReserve) id:Method_DialogCreateEditFulfillment_DoPreconditionCheckOnInputQuantity
+{
+  #keys: '[143768.1.45550317]'
+  Body:
+  [*
+    // Checks if input quantity to reserve is valid
+    feedback_o := '';
+    demand := DataHolderDemand.Data();
+    supply := DataHolderSupply.Data();
+    fulfillment := DataHolderFulfillment.Data();
+    
+    isAllowedHard := demand.CheckIsFulfillmentInputQuantityAllowedHard( supply, fulfillment, [String]quantityToReserve, feedback_o );
+    isAllowedSoft := true;
+    
+    if( isAllowedHard )
+    {
+      isAllowedSoft := demand.CheckIsFulfillmentInputQuantityAllowedSoft( supply, fulfillment, [String]quantityToReserve, feedback_o );
+    }
+    
+    NumberPickerQuantityToReserve.HintClear();
+    
+    if( not isAllowedHard )
+    {
+      NumberPickerQuantityToReserve.HintError( feedback_o );
+      CheckBoxOverrideWarnings.Visible( true );
+      CheckBoxOverrideWarnings.Enabled( false, '' );
+    }
+    else if( not isAllowedSoft )
+    {
+      NumberPickerQuantityToReserve.HintWarn( feedback_o );
+      CheckBoxOverrideWarnings.Enabled( true, '' );
+    }
+    else
+    {
+      CheckBoxOverrideWarnings.Visible( false );
+    }
+  *]
+}

@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method CleanupOldRuns
+{
+  Description: 'Deletes old OptimizerRun objects, based on current time, cleanup range parameter and time of run.'
+  TextBody:
+  [*
+    // lah1 Jun-17-2016 (created)
+    
+    if( this.RunArchivingHorizon() > Duration::Zero() ) //zero or lower value means nothing gets deleted
+    {
+      earliestdatetokeep := Date::ActualDate() - this.RunArchivingHorizon();
+      traverse( this, OptimizerRun, run, 
+                run.EndTime().Date() < earliestdatetokeep.Date()
+                and not isnull( run.Next() )
+              )
+      {
+        run.Delete();
+      }
+    }
+    
+    this.CleanupOldComponentRuns();
+  *]
+}

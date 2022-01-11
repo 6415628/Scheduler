@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnWriteView () id:Response_LibGUIFiltering_PanelFilterBox_OnWriteView
+{
+  #keys: '[128900.0.323435739]'
+  Body:
+  [*
+    nvt      := NamedValueTree::Create();
+    hroot    := nvt.GetHandle( 'Root'    );
+    hoptions := nvt.GetHandle( 'Options' );
+    hfilters := nvt.GetHandle( 'Filters' );
+    
+    nvt.Root().AddChild( hroot );
+    root := nvt.Root().Child( hroot );
+    
+    root.AddChild( hoptions, this.PanelFilterBoxHelper().UserData() );
+    root.AddChild( hfilters, 'Filters' );
+    
+    filters        := root.Child( hfilters );
+    currentfilters := EditorFilterBox.Strings().Tokenize( EditorFilterBox.RowSeparator() );
+    
+    for ( x := 0; x < currentfilters.Size() and not currentfilters.Element( x ) = PanelFilterBoxHelper.IGetSeparator(); x++ )
+    {
+      handle := nvt.GetHandle( 'Filter' + [String]x );
+      filters.AddChild( handle, currentfilters.Element( x ) );  
+    }
+    
+    data := NamedValueTreeXMLStreamer::ToString( nvt, nvt.Root() );
+    viewdata.Data( data );
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIComponent_OnWriteView'
+}

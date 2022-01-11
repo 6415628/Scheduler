@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ApplySettingsWithDefinedBy (LibOpt_BT_TrackingTableBases set, NamedValueTree settings) remote
+{
+  TextBody:
+  [*
+    ancestors := selectsortedset( set, Elements, ttb, true, ttb.Priority() );
+    
+    traverse( ancestors, Elements, ancestor )
+    {
+      if( ancestor.SettingsDelta() <> '' )
+      {
+        delta := LibOpt_Utility::JSONToNamedValue( JSON::Parse( ancestor.SettingsDelta() ) );
+        
+        LibOpt_BT_TrackingTableBase::ApplySettings( delta.Root(), settings.Root() );
+        LibOpt_BT_TrackingTableBase::ApplyDefinedBy( settings, delta.Root(), settings.Root(), ancestor.GetName() );
+      }
+    }
+  *]
+}

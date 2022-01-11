@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeProducts
+{
+  TextBody:
+  [*
+    // saravanen 07-Mar-2014
+    allinstances := selectset( this.Schedule(), Product_SC, product, true )
+    updatedinstances := construct( Product_SCs );
+    
+    // Chris 20141007 EDI Conversion: Implement method to synchronize product from ImportedProduct_SC
+    traverse( this.Schedule(), ImportedProduct_SC, row, row.IsValidDataHard() )
+    {
+      product := Product_SC::FindProductId( row.Id() );
+    
+      if( isnull( product ) )
+      {
+        product := this.Schedule().CreateProduct( row.Id() );
+      }
+    
+      product.Update( row );
+      
+      // Propagate relation between Product_SC and ImportedProduct_SC becasue the declarative relation is used immediately in the next line.
+      Transaction::Transaction().Propagate( relation( Product_SC, ImportedProduct_SC ))
+      product.SynchronizeProductInStockingPoints();
+      product.SynchronizeMatchingDemandOnSupply();
+      
+      updatedinstances.Add( product );
+    }
+    
+    //Delete products if they do not exist in KT and they do not have any Orders or Materials
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, product, product.CheckCanBeDeleted() )
+    {
+      product.Delete();
+    }
+    
+    //Synchronize alternative products
+    this.SynchronizeAlternativeProducts()
+  *]
+}

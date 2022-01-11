@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method Execute (LibOpt_Task parent, LibOpt_Scope scope) as stream[JSON]
+{
+  Description: 'This method sends the given `LibOpt_Task` and `LibOpt_Scope` to the destination'
+  TextBody:
+  [*
+    // Stop continuing the breakpoint on the parent
+    parent.BreakpointEvent( relflush );
+    
+    subtask := parent.SubTask( scope, this.Destination() );
+    
+    transporter := this.TaskTransporter();
+    
+    if( isnull( this.Destination() ) )
+    {
+      origin := this.GetOrigin()
+      error( Translations::LibOpt_Link_Destination_Null( origin.Name() ) );
+    }
+    
+    // Conditionally create a dataset copy.
+    // If transporter.InOneTransaction is true, then the next task will run in one transaction, so user errors or rollbacks might occur.
+    // Therefore, the dataset should be created in a robust way (so the last argument = true). 
+    // If transporter.InOneTransaction is false, then we can create a quick copy, because the current transaction ends shortly after this method ends (so the last argument = false).
+    LibOpt_DatasetCopyConditional::CopyDatasetConditionally( LibOpt_Component::ComponentPosition_Initialize(), subtask, transporter.InOneTransaction() );
+    
+    return transporter.Send( subtask );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

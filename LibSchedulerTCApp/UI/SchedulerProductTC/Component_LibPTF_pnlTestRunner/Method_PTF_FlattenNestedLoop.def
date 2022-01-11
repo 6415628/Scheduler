@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_FlattenNestedLoop (Number largestregnum, String body) as String id:Method_LibPTF_pnlTestRunner_PTF_FlattenNestedLoop
+{
+  #keys: '[104342.0.866223841]'
+  Body:
+  [*
+    // Specifically for Loops - Copy the statement within loops and repeat them for a number of specified times
+    resultbody        := body;
+    loopidentifier    := LibPTF_StandardAction::Loop() + [String]largestregnum;
+    endloopidentifier := LibPTF_StandardAction::EndLoop() + [String]largestregnum;
+    
+    // Extract the loop keyword and its corresponding actions from the script
+    startindexofbody           := resultbody.FindString( loopidentifier, 0 );
+    loopkeywordandactionlength := resultbody.FindString( endloopidentifier, 0 ) - startindexofbody;
+    loopkeywordandactions      := resultbody.SubString( startindexofbody, loopkeywordandactionlength );
+    
+    // Extract number of iteration and index of which the actions within loop starts
+    actionsstartindex := loopkeywordandactions.FindString( ";", 0 ) + 1;
+    loopwithiteration := loopkeywordandactions.SubString( 0, actionsstartindex - 1 );
+    iteration         := [Number]loopwithiteration.Tokenize( " " ).Element( 1 );
+    
+    actionswithinloop := loopkeywordandactions.RestString( actionsstartindex  );
+    appendactions     := ""
+    
+    for( i := 1; i <= iteration - 1; i++ )
+    {
+      appendactions := appendactions + actionswithinloop;
+    }
+    
+    // Append additional invocation of actions into scripts of which to meet the number of iteration
+    targetindextoappend := resultbody.FindString( ";", startindexofbody ) + 1;
+    resultbody          := resultbody.Insert( targetindextoappend, appendactions );
+    
+    resultbody := resultbody.ReplaceAll( loopidentifier + " " + [String]iteration + ";", "" );
+    resultbody := resultbody.ReplaceAll( endloopidentifier + ";", "" );
+    
+    
+    return resultbody;
+  *]
+}

@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method Initialize (CombiLegs combilegs) as owning SuboptimizerMPSetCovering_SelectCombis
+{
+  TextBody:
+  [*
+    // yifei Aug-10-2021 (created)
+    traverse( combilegs, Elements, combileg )
+    {
+      combileg.IsSelected( false );
+    }
+    
+    Transaction::Transaction().Propagate( attribute( CombiLeg, ID ) );
+    Transaction::Transaction().Propagate( attribute( Leg, ID ) );
+    Transaction::Transaction().Propagate( relation( Leg, NextLegInProgramType ) ); //used in building transition constraints
+    
+    program := SuboptimizerMPSetCovering_SelectCombis::Create();
+    
+    program.Log( true );
+    
+    program.RegisterTypeDescriptor( attribute( CombiLeg, ID ) );
+    program.RegisterTypeDescriptor( attribute( Operation_SC, OperationID ) );
+    program.RegisterTypeDescriptor( attribute( Leg, ID ) );
+    program.RegisterTypeDescriptor( attribute( Rule, Name ) );
+    program.RegisterTypeDescriptor( attribute( CombiProgramType, ID ) );
+    
+    this.InitVariables( program, combilegs );
+    this.InitConstraints( program, combilegs );
+    this.InitGoal( program, combilegs );
+    this.InitForMinMaxCombinedRules( program, combilegs );
+    
+    program.GenerateNames();
+    
+    return &program;
+  *]
+}

@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#root
+#parent: #DomainModel
+Type LibOpt_ScopeElementOnScope
+{
+  #keys: '5[144996.0.843489170][144996.0.843489168][0.0.0][144996.0.843489169][144996.0.843489171]'
+  BaseType: Object
+  Description:
+  [*
+    The N:M relation between `LibOpt_Scope` and `LibOpt_ScopeElement`.
+    
+    If a `LibOpt_ScopeElement` is deleted, all its `LibOpt_ScopeElementOnScope` will also be deleted, except if the `LibOpt_Run.DebugScope` attribute is `true`.
+    In that case a new `LibOpt_ScopeElementDeleted` will be created to represent the deleted `LibOpt_ScopeElement`.
+    The `LibOpt_ScopeElementOnScopes` related to the deleted `LibOpt_ScopeElement` will relate to this new `LibOpt_ScopeElementDeleted`.
+  *]
+  OnDelete:
+  [*
+    se := this.ScopeElement();
+    if( se.Optimization().AutoDeleteScopeElements()
+        and se.ScopeElementOnScope( relsize ) = 1
+        and se.ScopeShared( relsize ) = 0 )
+    {
+      se.Delete();
+    }
+  *]
+  StructuredName: 'LibOpt_ScopeElementOnScopes'
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

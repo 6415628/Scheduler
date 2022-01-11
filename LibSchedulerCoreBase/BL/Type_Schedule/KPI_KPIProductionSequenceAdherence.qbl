@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+KPI KPIProductionSequenceAdherence
+{
+  #keys: '2[109706.2.630241116][109706.2.630241122]'
+  Body:
+  [*
+    // Auto conversion: verify the code as it is not properly guarded and runtime errors may occur
+    // The final value was set to Real::MinReal()
+    // MODELING HANDLE SC
+    // FOR DEMO
+    // this KPI is demo specific. Please change this for project specific KPI.
+    // Chris 20141117 #: KPI for Production Sequence Consistence
+    // By default, value is 0.0
+    value := 0.0;
+    
+    // Calculate the sequence inconsistence feedback tasks
+    totalsequenceinconsistencefeedbacktasks := sum( this,
+                                                    ResourceGroup_SC.Resource_SC,
+                                                    resource,
+                                                    true,
+                                                    resource.TotalPreviousInconsistence() );
+    
+    // Calculate the resources feedback tasks
+    totalfeedbacktasks := sum( this,
+                               ResourceGroup_SC.Resource_SC,
+                               resource,
+                               true,
+                               resource.TotalFeedbackTask() );
+    
+    // If there is no feedback tasks in resource, KPI production sequence adherence will not be calculated
+    if( totalfeedbacktasks > 0 )
+    {
+      // Calculate percentage of total feedback task that is resource consistence in total feedback task in feedback adherence horizon.
+      value := ( 1 - ( totalsequenceinconsistencefeedbacktasks / totalfeedbacktasks ) ) * 100
+    }
+    
+    return value.Round( 2 );
+  *]
+  Description: 'Total feedback task that is previous consistence / Total feedback task in feedback adherence horizon.'
+  ValueType: Real
+}

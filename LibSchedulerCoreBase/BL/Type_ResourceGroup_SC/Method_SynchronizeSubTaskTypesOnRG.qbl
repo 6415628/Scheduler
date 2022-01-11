@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeSubTaskTypesOnRG
+{
+  TextBody:
+  [*
+    // James Kwapien Sep-15-2016 (created) #7724
+    allinstances := selectset( this, SubTaskTypeOnResourceGroup, sttorg, sttorg.SubTaskID() <> Constants::SubTask_Stoppage() );
+    updatedinstances := construct( SubTaskTypeOnResourceGroups );
+    importedrg := select( this.Schedule(), ImportedResourceGroup_SC, irg, irg.ResourceGroup() = this.Name() );
+    
+    if( not isnull( importedrg ) )
+    {
+      traverse( importedrg, ImportedSubTaskTypeOnRG_SC, row )
+      {
+        rgsub := select( this,
+                         SubTaskTypeOnResourceGroup,
+                         sttorg,
+                         sttorg.SubTaskID() = row.SubTaskID() );
+        
+        subTaskType := select( this, Schedule.SubTaskType, subTaskType, subTaskType.SubTaskID() = row.SubTaskID() );
+        
+        isAllowedInTimeConstraintMode := not this.Schedule().TechnicalConfiguration().IsDataDrivenTimeConstraintsMode()
+                                         or subTaskType.IsAllowedInDataDrivenTimeConstraintsMode();
+        
+        // When running is time constraint mode, do not synchronize subtasks that are not allowed
+        if( isAllowedInTimeConstraintMode )
+        {
+          if( isnull( rgsub ) )
+          {
+            rgsub := SubTaskTypeOnResourceGroup::Create( this, row.SubTaskID() );
+          }
+      
+          rgsub.Update( row ); 
+        }
+        
+        updatedinstances.Add( rgsub );
+      }
+    
+      // Delete sub task types on resource groups if they do not exist in data broker
+      oldinstances := allinstances.Difference( updatedinstances );
+      
+      traverse( oldinstances, Elements, subtasktype )
+      {
+        subtasktype.Delete();
+      }
+    }
+  *]
+}

@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetRecurrencePatternWeekly (Boolean monday_i, Boolean tuesday_i, Boolean wednesday_i, 
+  Boolean thursday_i, Boolean friday_i, Boolean saturday_i, 
+  Boolean sunday_i) as LibCal_Event
+{
+  Description: 'Set a recurrence pattern that recurs every week.'
+  TextBody:
+  [*
+    // Use a FeedbackObject the collect the validation feedback.
+    feedback := LibCal_Validate::FeedbackObject(); 
+    
+    moreInfo := this.GetEventInfo();
+    LibCal_Validate::RegisterError( LibCal_Validate::Event_Pattern_Weekdays( monday_i, tuesday_i, wednesday_i, thursday_i, friday_i, saturday_i, sunday_i ), moreInfo );
+    
+    // Process the feedback that has been registered by the validation (if any).
+    LibCal_Util::ProcessFeedbackObject( feedback );
+    
+    // The below is only executed when no validation errors were encountered.
+    // Check if a new RecurrencePattern must be created.
+    pattern      := guard( this.RecurrencePattern().astype( LibCal_RecurrencePatternWeekly ), null( LibCal_RecurrencePatternWeekly ) );
+    changeOfType := isnull( pattern );
+    
+    isChanged := changeOfType  // There was no pattern yet, or it was not a Weekly pattern
+              or pattern.Monday()    <> monday_i
+              or pattern.Tuesday()   <> tuesday_i
+              or pattern.Wednesday() <> wednesday_i
+              or pattern.Thursday()  <> thursday_i
+              or pattern.Friday()    <> friday_i
+              or pattern.Saturday()  <> saturday_i
+              or pattern.Sunday()    <> sunday_i;
+    
+    if( isChanged )
+    {
+      // Create the RecurrencePattern.
+      LibCal_RecurrencePatternWeekly::Create( this, monday_i, tuesday_i, wednesday_i, thursday_i, friday_i, saturday_i, sunday_i );
+      this.IsChanged( true );
+    
+      // Initialize the RecurrencePeriod of the LeadingParticipation if necessary.
+      this.InitializeRecurrencePeriod();
+    }
+    
+    // Make the API fluent.
+    return this;
+  *]
+}

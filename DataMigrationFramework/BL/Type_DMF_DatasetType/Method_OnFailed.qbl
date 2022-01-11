@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnFailed
+{
+  Description: 'On dataset failure update all the dependent datasets to be failed'
+  TextBody:
+  [*
+    msg := 'Dataset type ' + this.Name() + ' failed lead to dependant dataset type ';
+    traverse( this, DatasetTypeDependent.Dependent, datasetTypeDependant )
+    {
+       traverse( datasetTypeDependant, Dataset, dataset )
+      {
+        dependantMsg := msg + dataset.Name() + ' failed to proceed with the process.';
+        firstrunstep := minselect( dataset, RunStep, r, true, r.SequenceNr() );
+        runstep_s := void->()
+        {
+          error( dependantMsg );
+        }
+        runstep_s->Exception()->( ex )
+        {
+          firstrunstep.OnFailed( ex );
+        }
+      }
+      datasetTypeDependant.OnFailed();
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeProgramConfigurations
+{
+  Description: 'Synchronize program configurations data from imported data'
+  TextBody:
+  [*
+    // Synchronize program configurations data from imported data
+    allinstances := selectset( this.Schedule(), ProgramDefinitionConfiguration, programdefinition, true );
+    updatedinstances := construct( ProgramDefinitionConfigurations );
+    
+    traverse( this.Schedule(), ImportedProgramDefinitionConfiguration, importeddefinition )
+    {
+      programdefinition := ProgramDefinitionConfiguration::FindProgramDefinitionConfiguration( importeddefinition.ProgramDefinitionConfigurationID() );
+      
+      if( isnull( programdefinition ) )
+      {
+        programdefinition := ProgramDefinitionConfiguration::Create( this.Schedule(), importeddefinition.ProgramDefinitionConfigurationID() );
+      }
+      
+      // Synchronize program set and resource's program definition
+      programdefinition.SynchronizeProgramSetConfiguration( importeddefinition );
+      programdefinition.SynchronizeResourceProgramDefinition( importeddefinition );
+      programdefinition.Update( importeddefinition );
+      
+      updatedinstances.Add( programdefinition );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    traverse( oldinstances, Elements, e )
+    {
+      e.Remove();
+    }
+    
+    // Update stoppage subtask type in resource groups
+    ResourceGroup_SC::UpdateStoppageSubTaskTypeInResourceGroup( this.Schedule() );
+  *]
+}

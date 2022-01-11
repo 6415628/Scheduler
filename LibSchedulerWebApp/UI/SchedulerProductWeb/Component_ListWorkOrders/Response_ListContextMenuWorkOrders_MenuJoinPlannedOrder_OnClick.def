@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: ListContextMenuWorkOrders/MenuJoinPlannedOrder
+Response OnClick (structured[WorkOrder] selection) id:Response_ListContextMenuWorkOrders_MenuJoinPlannedOrder_OnClick
+{
+  #keys: '[143768.0.387780613]'
+  CanBindMultiple: false
+  DefinitionID => /ListContextMenuWorkOrders/Responsedef_ListContextMenuWorkOrders_MenuJoinPlannedOrder_OnClick
+  Precondition:
+  [*
+    WorkOrder::CheckCanJoin( selection )
+    FeedbackObject::CurrentFeedback().HardFeedbackStrings().ToString( String::NewLine() );
+    return FeedbackObject::IsAllowed();
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Join planned orders
+      workOrderIds := selectvalues( selection, Elements, workOrder, true, workOrder.Id() );
+      internalWorkOrders := selectset( selection, Elements.astype( InternalWorkOrder ), internalworkorders, true );
+      workOrder := InternalWorkOrder::JoinPlannedOrders( internalWorkOrders );
+      workOrderIds.Delete( workOrderIds.Find( workOrder.Id() ) );
+      WebMessageBox::Success( Translations::WorkOrder_JoinSuccessMessage( workOrderIds.ToString( ',' ), workOrder.Id() ) );
+    *]
+    GroupServerCalls: false
+  }
+}

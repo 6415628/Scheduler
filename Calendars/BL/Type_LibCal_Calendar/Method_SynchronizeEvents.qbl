@@ -1,0 +1,102 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeEvents (LibCal_StagingCalendar stagingCalendar_i, Boolean doDelete_i, Boolean keepIfNotImported_i)
+{
+  Description:
+  [*
+    Synchronize the staging objects. The deletion behavior is determined by the arguments:
+    doDelete_i = TRUE deletes instances that do not exist in staging (anymore). When FALSE, no instances are deleted.
+    keepIfNotImported_i = TRUE does not delete instances that do not exist in staging if they were not imported previously (i.e. have been created manually or by the application).
+  *]
+  TextBody:
+  [*
+    // Consider all existing events to be soft-deleted.
+    softDeletedEvents := this.Event( relget );
+    
+    traverse( stagingCalendar_i, StagingEvent, stagEvent )
+    {
+      // Get the event that must be synchronized.
+      event := select( this, Event, evnt, true, evnt.EventID() = stagEvent.StagingEventID() );
+      
+      // Synchronize the event if there are no errors.
+      if( stagEvent.CanSynchronize() )
+      {
+        // The event does not exist for the current calendar yet.
+        // A new event should be created, but this can only be done if the event does not already exist in another calendar. 
+        if( isnull( event ) )
+        {
+          eventInOtherCalendar := LibCal_Event::FindByEventID( stagEvent.StagingEventID() );
+          if( isnull( eventInOtherCalendar ) )
+          {
+            // Create a new event.
+            event := LibCal_Event::CreateForImport( this, stagEvent.StagingEventID() );
+          }
+          else
+          {
+            LibCal_Util::Warning( stagEvent.CalendarType() + "." + stagEvent.CalendarID()
+                                + "Event with ID '" + stagEvent.StagingEventID() + "' cannot be created because if already exists for "
+                                + eventInOtherCalendar.Calendar().DefinitionName() + "." + eventInOtherCalendar.Calendar().CalendarID() + "." );
+          }
+        }
+      
+        // Synchronize the data.
+        if( not isnull( event ) )
+        {   
+          event.Synchronize( stagEvent );
+    
+          // Synchronize the LeadingParticipation as part of synchronizing the Event.
+          // The other participations (subscriptions) are synchronized later on.   
+          leadingStagPart := stagEvent.LeadingStagingParticipation();
+          if( not isnull( leadingStagPart ) )
+          {
+            // If necessary, create a LeadingParticipation for the event.
+            participationCreated := false;
+            if( isnull( event.LeadingParticipation() ) )
+            {
+              LibCal_LeadingParticipation::CreateForImport( this, leadingStagPart.StagingParticipationID(), event );
+              participationCreated := true;
+            }
+      
+            // Synchronize the data.
+            event.LeadingParticipation().Synchronize( leadingStagPart );
+      
+            // If a new LeadingParticipation was just created, SetDuration() and SetIsAllDay() of the event must be called.
+            // These methods could not be executed during the synchronization of the event, because they depend on the event's
+            // LeadingParticipation, which did not exist yet at that time.
+            if( participationCreated )
+            {      
+              event.SetDuration( stagEvent.Duration() );
+              event.SetIsAllDay( stagEvent.IsAllDay() );
+            }
+          }
+          else
+          {
+            LibCal_Util::Warning( stagEvent.CalendarType() + "." + stagEvent.CalendarID() + " : " +
+                                  "no LeadingParticipation found for event '" + event.Subject() + "'." );
+          }
+        }
+      }
+            
+      // Remove the event from the set of soft-deleted events.
+      if( not isnull( event ) )
+      {
+        softDeletedEvents.Remove( event );
+      }
+    }
+    
+    // If applicable, delete the events that are soft-deleted, i.e. that are not present in staging.
+    // Except for the "Always available" event, which should never be deleted.
+    if( doDelete_i )
+    {
+      traverse( softDeletedEvents, Elements, event, not event.IsAlwaysAvailableEvent() )
+      {
+        // Only the events that are imported should be deleted, unless indicated otherwise.
+        if( event.IsCreatedByImport() or not keepIfNotImported_i )
+        {
+          event.Delete();
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

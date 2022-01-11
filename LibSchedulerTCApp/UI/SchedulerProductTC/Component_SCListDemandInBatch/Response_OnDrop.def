@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDrop (structured[Demand] information, DemandInBatch target) id:Response_SCListDemandInBatch_OnDrop
+{
+  #keys: '[134372.0.67770212]'
+  Body:
+  [*
+    // [Demands] -> [DemandInBatch]
+    skipbatchquantitycheck := target.DemandBatch().QuantityOpen() <= 0.0   // Always add in full if batch is already full.
+    
+    target.DemandBatch().AddDemandsBefore( information, target, skipbatchquantitycheck);
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIComponent_OnDrop'
+  Precondition:
+  [*
+    skipbatchquantitycheck := ifexpr( information.Size() > 1,      // Hidden option to override semi-hard constraints
+                                      dropaction.IsControlShift(), // only enabled when multiple demands are selected
+                                      true );   // For single demand, always skip semi-hard checks
+                                                        
+    skipsoftcheck := dropaction.IsControl();
+    
+    ApplicationScheduler.CanBatchDemands( information,
+                                          target.DemandBatch(),
+                                          target.DemandBatch().DemandBatchType(),
+                                          skipsoftcheck,
+                                          skipbatchquantitycheck );
+    
+    // Workaround to show feedback in the old way until all responses are converted to use FeedbackObject.                                    
+    feedback := ApplicationScheduler.ShowOldStyleFeedback( FeedbackObject::CurrentFeedback().Feedback() );    
+    
+    return FeedbackObject::IsAllowedWithOverride( skipsoftcheck );
+  *]
+}

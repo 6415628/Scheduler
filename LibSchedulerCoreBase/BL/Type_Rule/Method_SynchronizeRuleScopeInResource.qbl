@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeRuleScopeInResource (ImportedRule importedRule)
+{
+  Description: 'Synchronize rule scope in resource'
+  TextBody:
+  [*
+    // Get all current instances
+    allInstances := selectset( this, RuleScopeInResource, ele, true );
+    updatedInstances := construct( RuleScopeInResources );
+    
+    // Rule scope in resource
+    traverse( importedRule, ImportedRuleScopeInResource, ele )
+    {
+      resource := Resource_SC::FindResource_SC( ele.ResourceID() );
+      rsir := select( this, 
+                      RuleScopeInResource, 
+                      rulescope, 
+                      rulescope.Resource_SC().ResourceID() = ele.ResourceID() );
+                      
+      if( not isnull( resource ) and isnull( rsir ) )
+      {
+        rsir := RuleScopeInResource::Create( this );
+        rsir.Resource_SC( relset, resource );
+      }
+      
+      if( not isnull( rsir ) )
+      {
+        updatedInstances.Add( rsir ); 
+      }
+    }
+    
+    // Delete old instances
+    oldInstances := allInstances.Difference( updatedInstances );
+    traverse( oldInstances, Elements, e )
+    {
+      e.Remove(); 
+    }
+  *]
+}

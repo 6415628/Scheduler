@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: lstSnapshots
+Response OnClick (shadow[KpiSnapshotData] selection) id:Response_lstSnapshots_MenuSaveAsJSON_OnClick
+{
+  #keys: '[146450.0.1733284382]'
+  Body:
+  [*
+    //Export to JSON file
+    nvt := Kpi_GlobalState.ConvertShadowSnapshotDataToNvt( selection );
+    json := KpiJsonConverter::CreateJsonStringFromNvt( nvt );
+    
+    datetime := [String] selection.PlanDateTime();
+    newdatetime := datetime.ReplaceAll( ":", "" );
+    
+    filename := this.Application().GetSaveFileName( "KpiSnapshot " + newdatetime, "json", "(.json)" );
+    if( filename <> '' )
+    {
+      Application.WriteTextFile( filename, json );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => /lstSnapshots/Responsedef_lstSnapshots_Menu_OnClick
+  Initiator: 'MenuSaveAsJSON'
+}

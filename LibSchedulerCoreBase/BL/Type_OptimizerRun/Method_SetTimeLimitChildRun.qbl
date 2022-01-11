@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetTimeLimitChildRun (OptimizerParameter childparameters, OptimizerRun childrun)
+{
+  TextBody:
+  [*
+    timeleft := this.TimeLimit() - this.RunDuration();
+    
+    // First try user settings, otherwise parameters for timelimit
+    timelimituser := ifexpr( not isnull( childrun.GetOptimizerType().OptimizerUserSetting() ),
+                             childrun.GetOptimizerType().OptimizerUserSetting().TimeLimit(),
+                             guard( childparameters.TimeLimit(), Duration::MaxDuration() ) );
+    
+    timelimit := minvalue( timelimituser, timeleft );
+    
+    childrun.TimeLimit( timelimit );
+  *]
+}

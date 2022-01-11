@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_CapacityResourceGroup (CDSchedule cdSchedule)
+{
+  Description: 'Restore capacity resource group core data attributes to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+        
+    traverse( cdSchedule, CDEntity.astype( CDCapacityResourceGroup ), cdCapacityResourceGroup )
+    {
+      capacityResourceGroup := CapacityResourceGroup::Create( schedule );
+      
+      CopyCorresponding::CopyFrom( cdCapacityResourceGroup ).CopyTo( capacityResourceGroup );
+      
+      this.RestoreAttributes_CapacityResourceGroupPeriod( cdCapacityResourceGroup, capacityResourceGroup );
+      this.RestoreAttributes_CapacityResource( cdSchedule, cdCapacityResourceGroup, capacityResourceGroup );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

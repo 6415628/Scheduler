@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod SetInternalMessageBody (NamedValueTree nvt_i, NamedValueTree bodyNvt_i)
+{
+  Description: 'Set the body of the internal message with the given NVT, overwriting any existing one.'
+  TextBody:
+  [*
+    nvtBody := LibDEF_DataAccessor::GetInternalMessageBody( nvt_i );
+    
+    if( not isnull( nvtBody ) )
+    {
+      // First clean the content of the nvtBody, then fill in with the given bodyNvt's children
+      nvtBody.DeleteChildren();
+      
+      traverse( bodyNvt_i.Root().Children(), Elements, child )
+      {
+        child.Copy( nvtBody, true );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

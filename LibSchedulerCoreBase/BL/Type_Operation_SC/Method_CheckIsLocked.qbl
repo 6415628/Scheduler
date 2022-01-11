@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsLocked (output String feedback_o) const declarative remote as Boolean
+{
+  Description: 'Check if operation is locked by optimizer.'
+  TextBody:
+  [*
+    value := not this.IsLocked();
+    
+    if( not value )
+    {
+      Utility_SC::Concat( feedback_o, 
+                          Translations::Operation_CannotChangeBecauseLockedByOptimizer( this.OperationID() ) );
+    }
+    
+    // Added to allow its usage in feedback object
+    feedbackObject := FeedbackObject::LocalFeedback();
+    feedbackObject.AddSoft( value, 
+                            Translations::Operation_CannotChangeBecauseLockedByOptimizer( this.OperationID() ) );
+    
+    return value;
+  *]
+}

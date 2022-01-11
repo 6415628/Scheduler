@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Plan (Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // She Ven 20121008 #4514 Remove checking on isnull(Resource) and resetting selected resource
+    /*
+    Gooi Code
+    1. Create Batch
+    2. Fill the batch
+    3. Plan the batch
+    */
+    while( operations.Size() > 0 )
+    { 
+      firstoperation := operations.Element( 0 )
+      
+      batch := Batch::Create( this.Schedule(), firstoperation.Type() );
+    
+      // add a batch operation to set the practice for the batch
+      batch.AddOperation( operations.Element( 0 ) );
+      // To set the batch's practice
+      Transaction::Transaction().Propagate();
+      // Plan related operations
+      Schedule::PlanRelatedOperationsBefore( operations.Element( 0 ), this, null( BatchTask ), true, false );
+      
+      operations.Delete( 0 );
+      
+      this.PlanLast( batch );
+    
+      batch.AddOperationToBatch( operations ); 
+    }
+  *]
+}

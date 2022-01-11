@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[DemandBatch] selection) id:Response_SCListDemandBatch_MenuUnplan_OnClick
+{
+  #keys: '[133896.0.974862950]'
+  Body:
+  [*
+    // Unplan demand batches
+    value := true;
+    feedback_o := '';
+    operations := selectset( selection, Elements.BatchWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, operation, true );
+    tasks := selectset( operations, Elements.Task_SC, task, true );
+    hasNoSoftViolation := Task_SC::CanUnplanSoft( tasks, feedback_o );
+    
+    if( not hasNoSoftViolation )
+    {
+      value := MessageBox::Question( this, feedback_o, '&Yes|&No' ) = 0
+    }
+    
+    if( value )
+    {
+      Schedule.UnplanOperations( operations );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => /Responsedef_SCListDemandBatch_Menu_OnClick
+  Initiator: 'MenuUnplan'
+  Precondition:
+  [*
+    operations := selectset( selection, Elements.BatchWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, operation, true );
+    return ApplicationScheduler.AllowedUnplanOperations( operations, feedback );
+  *]
+}

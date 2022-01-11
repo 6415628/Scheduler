@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method Setup (LibSM_ScenarioManager scenarioManager, String datasetNameSuffix)
+{
+  Description: 'Setup logic for all tests related to synchronizing work order operation precedence.'
+  TextBody:
+  [*
+    // Create a non-leading schedule
+    // Naming the dataset as this to avoid triggering the follow-up reactive call of setting optimizer strategy/setting
+    // The follow-up reactive calls causes error as UTF can't handle follow-up reactive calls
+    // The follow-up reactive calls are processed AFTER the unit test is complete, which is too late and causes error
+    // The DatasetNameSuffix is needed to differentiate the names between different UTF 
+    // as the dataset deletion might be slower than calling next UTF test method
+    datasetName := Schedule::DatasetNamePartSkipOnDatasetConstructedDefaultOptimizerJobs() + datasetNameSuffix; 
+    datasetInfo := MDSEditor::Editor().ObjectInfo( Constants::LeadingScheduleDataset(), Constants::DatasetFolder(), datasetName );
+    
+    // Check if dataset exist
+    if( isnull( datasetInfo ) )
+    {
+      MDSSchedule::CreateMemoryOnlyMDS( datasetName );
+    }
+    
+    // Create scenario for nonLeadingSchedule dataset
+    scenarioManager.CreateScenarioForAllDatasets();
+  *]
+}

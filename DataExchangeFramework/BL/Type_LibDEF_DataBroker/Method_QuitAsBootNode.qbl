@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+Method QuitAsBootNode
+{
+  Description: 'Quit being a BootNode, the new BootNode must be a known System within the Domain.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-28-2016 (created)
+    // Refresh values from model settings
+    SettingsEngine::SettingsEngine().ProcessUpdates();
+    
+    bootNodeHost := LibDEF_Util::GetSettingValueBootNodeHostName();
+    bootNodePort := LibDEF_Util::GetSettingValueBootNodePortNumber();
+    
+    event := this.EventCreate( bootNodeHost, bootNodePort, false );
+    
+    // if another system is a BootNode
+    if( bootNodeHost <> "" and bootNodePort > 0 )
+    {
+      // convert localhost to current host name
+      bootNodeHost := LibDEF_Util::ConvertLocalhost( bootNodeHost );
+    
+      detail := "Host name: " + bootNodeHost + "; Port number: " + [String]bootNodePort;
+    
+      newBootNode := LibDEF_System::FindSystemByCoordinate( this, bootNodeHost, bootNodePort );
+      if( not isnull( newBootNode ) )
+      {
+        newBootNode.SetAsBootNode();
+    
+        // Updates the IntegrationEvent with BootNode's information
+        event.Update( newBootNode );
+    
+        LibDEF_Util::EventLog( event, "This System is no longer the BootNode." );
+        LibDEF_Util::EventLog( event, "Another System has become the BootNode. BootNode has been updated. " + detail );
+        LibDEF_Util::EventLog( event, "Sending request to peers to synchronize configuration." );
+        LibDEF_IntegrationEvent::EventComplete( event );
+    
+        // request all other Systems (including the new BootNode) to read model settings
+        traverse( this.GetOtherPeers( true ), Elements, system )
+        {
+          this.SendConfigurationRequestSyncConfig( system );
+        }
+      }
+      else
+      {
+        LibDEF_Util::EventLogError( event,
+                                    "Failed to quit as BootNode.",
+                                    "Cannot quit as BootNode, the new BootNode must be a known System within the Domain. Check the model settings." );
+      }
+    }
+    else
+    {
+      LibDEF_Util::EventLogError( event,
+                                  "Failed to quit as BootNode.",
+                                  "To let the BootNode System leave the domain, another System must be assigned as the BootNode first. Check the model settings." );
+    
+    }
+  *]
+}

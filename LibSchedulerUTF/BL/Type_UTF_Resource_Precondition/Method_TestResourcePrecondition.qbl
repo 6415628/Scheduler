@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestResourcePrecondition (Schedule schedule)
+{
+  Description: 'Test the validity of the resource input precondition during manual creation or editing.'
+  TextBody:
+  [*
+    variant := this.Variant();
+    testInstance := this.GetTestInstance( variant );
+    
+    // Input parameters to resource precondition
+    feedback_o := variant;
+    maxBatchSize := ifexpr( testInstance.HasValidMaxBatchSize(), 1.0, 0 );
+    resourceGroup := select( schedule, ResourceGroup_SC, resourceGroup, true );
+    newResourceID := variant;
+    resourceName := ifexpr( testInstance.HasValidName(), variant, '' );
+    continuousGapLength := ifexpr( testInstance.HasValidGapLength(), 1.0, 0 );
+    continuousLength := ifexpr( testInstance.HasValidLength(), continuousGapLength + 1, continuousGapLength - 1 );
+    continuousLoadGapWidth := ifexpr( testInstance.HasValidLoadGap(), 1.0, 0 );
+    continuousLoadWidth := ifexpr( testInstance.HasValidWidth(), continuousLoadGapWidth + 1, continuousLoadGapWidth - 1 );
+    continuousSpeed := ifexpr( testInstance.HasValidSpeed(), 1.0, 0 );
+    toolSimulationHorizon := ifexpr( testInstance.HasValidToolSimulationHorizon(), Duration::Hours( 1 ), Duration::Zero() );
+    
+    isPassPrecondition := Resource_SC::IsValid( feedback_o,
+                                                schedule,
+                                                testInstance.HasBatches(),
+                                                maxBatchSize,
+                                                resourceGroup,
+                                                newResourceID,
+                                                '',
+                                                resourceName,
+                                                testInstance.IsContinuous(),
+                                                continuousLength,
+                                                continuousLoadWidth,
+                                                continuousLoadGapWidth,
+                                                continuousGapLength,
+                                                continuousSpeed,
+                                                testInstance.HasToolSimulationHorizon(),
+                                                toolSimulationHorizon,
+                                                null( Resource_SC ),
+                                                '' );
+                                                                                            
+    this.Run().AssertTrue( testInstance.IsValid() = isPassPrecondition, UTFUtility::GenerateFailedMessage( 'Resource precondition failed', '' ) );
+  *]
+}

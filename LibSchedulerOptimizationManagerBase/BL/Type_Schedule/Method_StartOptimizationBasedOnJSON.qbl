@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method StartOptimizationBasedOnJSON (String jsonString, output String feedback_o) as String
+{
+  Description: 'Pass in the optimization parameters and then starts the optimization process.'
+  TextBody:
+  [*
+    status := '';
+    
+    // Check if there is an optimizer running.
+    if( this.CheckOptimizerNotRunning( feedback_o ) )
+    {
+      status := Constants::OptimizationServiceStatus_OK();
+      scheduleDS := MDSSchedule::Find( DatasetFindOptions::Construct( this.MDSSchedule().Name() ) );
+      
+      // Separate stream to handle Scheduler logic
+      void->( )
+      {
+        // Import optimization service parameters
+        scheduleDS.ImportObject().ImportOptimizationServiceParameters( jsonString );
+        // Synchronize optimization parameters
+        scheduleStream := scheduleDS.SynchronizationObject()->SynchronizeOptimizationServiceParameters();
+        // Optimize the plan AFTER we have finished synchronizing the service parameters
+        scheduleDS->After( scheduleStream )->Optimize();
+      }
+    }
+    else
+    {
+      status := Constants::OptimizationServiceStatus_Error();
+    }
+    
+    return status;
+  *]
+}

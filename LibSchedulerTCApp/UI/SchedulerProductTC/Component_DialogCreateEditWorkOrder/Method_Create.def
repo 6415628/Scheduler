@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method Create (internal[GUIComponent] parent, Product_SC product, ProductInStockingPoint productinstockingpoint) id:Method_DialogCreateEditWorkOrder_Create
+{
+  #keys: '[122574.0.593140047]'
+  Body:
+  [*
+    // Create work order
+    data := Schedule.WorkOrder( relshadow, GenericInternalWorkOrder, Id := '' );
+    
+    // display default company time 
+    data.DueDate( Schedule.Time() );
+    
+    Dialog.Data( data );
+    
+    // set default values depending on where dialog is called from
+    if( not isnull( product ) )
+    {
+      SelectionProduct.Data( product )
+    }
+    else if( not isnull( productinstockingpoint ) )
+    {
+      SelectionProduct.Data( productinstockingpoint.Product_SC() );
+      SelectionProductInStockingPoint.Data( productinstockingpoint );
+    }
+    
+    if( this.DoModal( parent ) > 0 )
+    {
+      Dialog.Data().Routing().CreateWorkOrder( SelectionProductInStockingPoint.Data(),
+                                               Dialog.Data().Quantity(),
+                                               Dialog.Data().NrOfLots(),
+                                               Dialog.Data().DueDate(),
+                                               CheckBoxIsDummyWorkOrder.Checked() );        
+    }
+  *]
+}

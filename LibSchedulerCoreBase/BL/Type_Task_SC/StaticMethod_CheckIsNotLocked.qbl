@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsNotLocked (Task_SCs tasks, String action, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Checks whether the task is locked by optimization.'
+  TextBody:
+  [*
+    value := not exists( tasks, Elements, task, task.IsLocked() );
+    
+    if( not value )
+    {
+      if( action = Constants::Action_UnplanTask() )
+      {
+        feedback_o := feedback_o + String::NewLine() + Translations::Task_CannotUnplanBecauseLockedByOptimizer();
+      }
+      else if( action = Constants::Action_ReserveMaterialForTask() )
+      {
+        feedback_o := feedback_o + String::NewLine() + Translations::Task_ReserveMaterialConfirmation();
+      }
+    }
+    
+    return value;
+  *]
+}

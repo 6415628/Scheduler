@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendMetadataRequestHaltDataTransfer (LibDEF_DataTransfer dataTransfer_i)
+{
+  Description: 'Send a data transfer halt request.'
+  TextBody:
+  [*
+    // Jacky CHAN Aug-8-2016 (created)
+    nvt := LibDEF_DataAccessor::CreateMessageMetadata();
+    
+    // add request headers
+    LibDEF_DataAccessor::SetMetadataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_TYPE(),             LibDEF_DataAccessor::TYPE_METADATA_HALTDATATRANSFER() );
+    LibDEF_DataAccessor::SetMetadataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_DATATRANSFERGUID(), dataTransfer_i.GUID() );
+    
+    event := dataTransfer_i.IntegrationEvent();
+    LibDEF_Util::EventLog( event, "Sending data transfer stop message to System [GUID: " + this.GUID() + "]." );
+    
+    this.DataBroker().SendMessage( this, nvt, LibDEF_DataAccessor::KIND_REQUEST(), event );
+  *]
+}

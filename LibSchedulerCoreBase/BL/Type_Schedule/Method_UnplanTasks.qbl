@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method UnplanTasks (Task_SCs tasks)
+{
+  Description: 'Unplan / delete all selected tasks.'
+  TextBody:
+  [*
+    traverse( tasks, Elements, task, task.CanUnplanHard() )
+    {
+      if( task.Resource_SC().IsPlanRelatedOperations() )
+      {
+        // unplan related operations
+        traverse( task, OperationInTask, op ) 
+        {
+          op.UnplanRelatedOperations();
+        }
+      }
+      
+      task.Unplan();
+    }
+    
+    this.AutomaticProductBasedMaterialReservationBySorting();
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

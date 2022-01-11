@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendDataRequestGetSet (LibDEF_SetMeta setMeta_i, Key planningDatasetMDSID_i, String planningDatasetType_i, 
+  Key planningDatasetDTD_i, Boolean byChunk_i)
+{
+  Description: 'Send a Data-Request message for a Set.'
+  TextBody:
+  [*
+    // Jacky CHAN May-26-2016 (created)
+    channelMetaName  := setMeta_i.SetTypeMeta().ChannelMeta().Name();
+    channelMetaLocal := select( this.DataBroker(), SystemLocal.ChannelMeta, cm,
+                                cm.Name() = channelMetaName );
+    
+    if( not isnull( channelMetaLocal ) )
+    {
+      nvt  := LibDEF_DataAccessor::CreateMessageData();
+      type := ifexpr( byChunk_i, LibDEF_DataAccessor::TYPE_DATA_GETSETCHUNKED(), LibDEF_DataAccessor::TYPE_DATA_GETSET() )
+      
+      // define Type and required Header
+      LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_TYPE(),             type );
+      LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_SETGUID(),          setMeta_i.GUID() );
+      LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_DATASETMDSID(),     planningDatasetMDSID_i );
+      LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_DATASETDTD(),       planningDatasetDTD_i   );
+      LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_DATASETMODELTYPE(), planningDatasetType_i );
+    
+      event := this.DataBroker().EventCreate( this, false );
+      LibDEF_Util::EventLog( event, "Sending GetSet " + ifexpr( byChunk_i, "(with chunks) ", "" ) + "request." );
+    
+      this.DataBroker().SendData( this, nvt, LibDEF_DataAccessor::KIND_REQUEST(), event,
+                                  channelMetaName, channelMetaLocal.MajorVersion(), channelMetaLocal.MinorVersion() );
+    }
+    else
+    {
+      LibDEF_Util::LogError( "Error requesting Set, Channel '" + channelMetaName + "' cannot be found locally." );
+    }
+  *]
+}

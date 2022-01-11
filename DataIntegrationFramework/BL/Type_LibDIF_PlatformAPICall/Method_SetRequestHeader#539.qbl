@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetRequestHeader (NamedValueTree requestNVT_io, LibDIF_PlatformAPICallOptions options_i)
+{
+  Description: 'Set the Header of the provided requestNVT. The provided options are used to construct the applicable endpoint path.'
+  TextBody:
+  [*
+    if( not isnull( requestNVT_io ) )
+    {
+      // Construct the applicable EndpointPath by substituting the path parameters and appending the query.
+      endpointPath := this.SubstitutePathParameters( options_i.PathParameters() ) + options_i.Query();
+      
+      LibInt_MessageAccessor::SetHeaderProperty( requestNVT_io, "HTTPEndpointMethod"     , this.Type()        );
+      LibInt_MessageAccessor::SetHeaderProperty( requestNVT_io, "HTTPEndpointPath"       , endpointPath       );
+      LibInt_MessageAccessor::SetHeaderProperty( requestNVT_io, "HTTPHeader.Content-Type", "application/json" );  // Hardcoded (for now?)
+      LibInt_MessageAccessor::SetHeaderProperty( requestNVT_io, "HTTPHeader.Accept"      , "application/json" );  // Hardcoded (for now?)
+    }
+    else
+    {
+      LibDIF_Util::Error( "RequestNVT should already have been created" );
+    }
+  *]
+}

@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_FeedbackBatchContentInSchedule (CDSchedule cdschedule, FeedbackBatchInSchedule feedbackbatchinschedule)
+{
+  Description: 'Restore feedback batch content in schedule core data relation to planning object'
+  TextBody:
+  [*
+    // Restore FeedbackBatchContentInSchedule
+    feedbackbatchcontentinschedules := selectset( cdschedule, CDEntity.astype( CDFeedbackBatchContentInSchedule ), cdfeedbackbatchcontentinschedule,
+                                                  cdfeedbackbatchcontentinschedule.BatchID() = feedbackbatchinschedule.BatchID() );
+    schedule := this.Schedule()
+    
+    traverse( feedbackbatchcontentinschedules, Elements, cdfeedbackbatchcontentinschedule )
+    {
+      fbcis := FeedbackBatchContentInSchedule::FindFeedbackBatchContentInSchedule( cdfeedbackbatchcontentinschedule.BatchID(),
+                                                                                   cdfeedbackbatchcontentinschedule.WorkOrderId(),
+                                                                                   cdfeedbackbatchcontentinschedule.PlanUnitId(),
+                                                                                   cdfeedbackbatchcontentinschedule.WorkOrderOperationSequenceNr() );
+    
+      
+      if( not isnull( fbcis ))
+      {      
+        // Restore relation to operation batch feedback
+        operation := select( schedule, PlanUnit_SC.Operation_SC, op, op.OperationID() = cdfeedbackbatchcontentinschedule.OperationID() );                                                                                 
+        fbcis.CreateUpdateOperationBatchFeedback( operation );
+        
+        // Restore relation to batchtask
+        fbcis.Task_SC( relset, feedbackbatchinschedule.BatchTask() );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

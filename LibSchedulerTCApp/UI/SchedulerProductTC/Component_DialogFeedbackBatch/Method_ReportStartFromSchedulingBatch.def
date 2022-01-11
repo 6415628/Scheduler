@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReportStartFromSchedulingBatch (internal[GUIComponent] parent, String status, ExportedOperationBatch selection, 
+  String resource) id:Method_DialogFeedbackBatch_ReportStartFromSchedulingBatch
+{
+  #keys: '[118288.0.259764977]'
+  Body:
+  [*
+    // report start base on selected ExportedBatch
+    this.StringSelectionPractice().Strings( selection.PossiblePractices() );
+    this.ReportedResourceSelection().BoundValue( resource );
+    this.Title( status );
+    this.StringSelectionPractice().BoundValue(selection.Practice());
+    this.CalculateStartTimeForSchedulingBatch(  status, selection );
+    if( this.DoModal( parent ) > 0 )
+    {
+      if( status = Constants::StatusStart() )
+      {
+          ImportedFeedbackBatch::ReportStart(selection, GUIDateTimeSelector.DateTime(), ReportedResourceSelection.Data(), StringSelectionPractice.BoundValue(), EditorDesc.Text() );
+      }
+      else if( status = Constants::StatusEnd() )
+      {
+          ImportedFeedbackBatch::ReportEnd(selection, GUIDateTimeSelector.DateTime(), ReportedResourceSelection.Data(), StringSelectionPractice.BoundValue(), EditorDesc.Text() );
+      }
+    }
+  *]
+}

@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: FilterMenuButton
+Response OnOptionSelected () id:Response_LibGUIFiltering_PanelFilterBox_FilterMenuButton_OnOptionSelected
+{
+  #keys: '[128900.0.380613132]'
+  Body:
+  [*
+    if ( option = Translations::LibGUIFiltering_Settings() )
+    {
+      helper := LibGUIFiltering_PanelFilterBox.PanelFilterBoxHelper();
+      dlg    := construct(LibGUIFiltering_DialogFilterBoxFilterOptions);
+      
+      dlg.CheckBoxFilterAsYouType().Checked(           helper.IOptions_Get( LibGUIFiltering_Options::O01_FilterAsYouType()           ) );
+      dlg.CheckBoxFilterPartialMatches().Checked(      helper.IOptions_Get( LibGUIFiltering_Options::O02_FilterNumericAsPartial()    ) );
+      dlg.CheckBoxAllowAdditionalAttributes().Checked( helper.IOptions_Get( LibGUIFiltering_Options::O03_AllowAdditionalAttributes() ) );
+      dlg.CheckBoxApplyFilterOnLoseFocus().Checked(    helper.IOptions_Get( LibGUIFiltering_Options::O05_ApplyFilterOnLoseFocus()    ) );
+      if ( dlg.DoModal( this ) > 0 )
+      {
+        helper.IOptions_Set( LibGUIFiltering_Options::O01_FilterAsYouType()          , dlg.CheckBoxFilterAsYouType().Checked()           );
+        helper.IOptions_Set( LibGUIFiltering_Options::O02_FilterNumericAsPartial()   , dlg.CheckBoxFilterPartialMatches().Checked()      );
+        helper.IOptions_Set( LibGUIFiltering_Options::O03_AllowAdditionalAttributes(), dlg.CheckBoxAllowAdditionalAttributes().Checked() );
+        helper.IOptions_Set( LibGUIFiltering_Options::O05_ApplyFilterOnLoseFocus()   , dlg.CheckBoxApplyFilterOnLoseFocus().Checked()    );
+      }
+    }
+    else if ( option = Translations::LibGUIFiltering_ClearFilter() )
+    {
+      EditorFilterBox.Text( '' );
+      PanelFilterBoxHelper.API_ApplyFilter();
+    }
+    else if ( option = Translations::LibGUIFiltering_ManageStoredFilters() )
+    {                                                        
+      registeredcomponent := select( PanelFilterBoxHelper.IComponentRegistry_Get(), LibGUIFiltering_RegisteredComponent, rc, true );
+      component           := PanelFilterBoxHelper.IComponent_FindByPath( guard( registeredcomponent.FilterComponentPath(), '' ) );
+                             
+      if ( not isnull(component) )
+      {                      
+        component.SetFocus();
+        Application.ToolPaneManager().ShowFiltering( component );
+      }
+      else
+      {
+        Application.ToolPaneManager().ShowFiltering();
+      }
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_DropDownButton_OnOptionSelected'
+}

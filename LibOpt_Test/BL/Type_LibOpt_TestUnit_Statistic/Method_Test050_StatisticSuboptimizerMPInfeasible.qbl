@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test050_StatisticSuboptimizerMPInfeasible (LibOpt_TestDataset dataset)
+{
+  Description: 'Test that we get the right amount of issues for `LibOpt_StatisticSuboptimizerMPInfeasible`'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    scope := LibOpt_Scope::Create( run );
+    run.SetStartScope( scope );
+    
+    iterator := opt.IteratorForEachLink( run, 'Iterator' );
+    
+    rollback_kpi := opt.RollbackKPIStatic();
+    suboptimizer_infeasible := opt.SuboptimizerMPReflection( run, 'Infeasible subopt', & rollback_kpi,
+                                                             method( LibOpt_TestUnit_Statistic, M050_SuboptimizerMP_Initialize_Infeasible,
+                                                                     LibOpt_Suboptimizer, MathematicalProgram, LibOpt_Task ),
+                                                             method( LibOpt_SuboptimizerMPReflection, HandleResult_Empty,
+                                                                     LibOpt_Suboptimizer, MathematicalProgram, LibOpt_Task, Boolean ) );
+    
+    rollback_kpi := opt.RollbackKPIStatic();
+    suboptimizer_feasible := opt.SuboptimizerMPReflection( run, 'Feasible subopt', & rollback_kpi,
+                                                           method( LibOpt_SuboptimizerMPReflection, HandleResult_Empty,
+                                                                   LibOpt_Suboptimizer, MathematicalProgram, LibOpt_Task, Boolean ) );
+    
+    iterator.Fork( suboptimizer_infeasible );
+    iterator.Fork( suboptimizer_feasible );
+    run.ConfigureForOneTransaction();
+    
+    this.NoException( run->Start()->|void->( )
+    {
+      statistics := selectset( run, Statistic.astype( LibOpt_StatisticSuboptimizerMPInfeasible ), statistic, true );
+      
+      if( this.Run().AssertEqual( 2, statistics.Size(), 'Incorrect amount of statistics' ) )
+      {
+        statistic_infeasible := select( statistics, Elements, statistic, statistic.Component() = suboptimizer_infeasible );
+        statistic_feasible   := select( statistics, Elements, statistic, statistic.Component() = suboptimizer_feasible );
+        
+        this.Run().AssertEqual( 1, statistic_infeasible.NrElements(), 'Incorrect amount of elements on infeasible suboptimizer' );
+        this.Run().AssertEqual( 1, statistic_feasible.NrElements(), 'Incorrect amount of elements on feasible suboptimizer' );
+        
+        this.Run().AssertEqual( 1, statistic_infeasible.Issue( relsize ), 'Incorrect amount of issues on infeasible suboptimizer' );
+        this.Run().AssertEqual( 0, statistic_feasible.Issue( relsize ), 'Incorrect amount of issues on feasible suboptimizer' );
+      }
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreMDS
+{
+  Description: 'Restore the dataset that has been exported to a file.'
+  TextBody:
+  [*
+    // afn3 Oct-18-2019 (created)
+    storageEditor   := MDSStorageEditor::Editor();
+    foldername      := this.GetDatasetPath();
+    
+    mdsid := MDSID::Create( this.DatasetMDSID() );
+    ids := MDSIDs::Create();
+    ids.Add( mdsid );
+    storageEditor.RestoreDBExportFile( foldername, 'QDB', ids );
+    
+    editor        := MDSEditor::Editor();
+    dataset_mdsid := this.DatasetMDSID();
+    mdsInfo       := editor.ObjectInfo( dataset_mdsid );
+    
+    if( isnull( mdsInfo ) )
+    {
+      error( Translations::LibOpt_BT_BTS_RestoreMDS_NotFound( foldername ) );
+    }
+    else
+    {
+      if(  not mdsInfo.IsLoaded()  )
+      {
+        editor.LoadMDS( mdsInfo.MDSID() );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

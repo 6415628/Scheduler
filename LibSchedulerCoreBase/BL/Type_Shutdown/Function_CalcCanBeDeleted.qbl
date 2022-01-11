@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcCanBeDeleted
+{
+  TextBody:
+  [*
+    // Can be deleted if
+    // 1. No planned task
+    // 2. FeedbackShutdownTask can be deleted = TRUE which outside the history horizon end and has reported end
+    // 3. The after shutdown feedback task are not in after shutdown scope
+    // 4. The after shutdown task are not in after shutdown scope
+    value := isnull( this.Task_SC() )
+             and guard( this.FeedbackShutdownTask().CanBeDeleted(), true )
+             and forall( this, AfterShutdownFeedbackTaskInSchedule, fbtask, not fbtask.IsWithinAfterShutdownScope() )
+             and forall( this, AfterShutdownTask, task, not task.IsWithinAfterShutdownScope() );
+    
+    this.CanBeDeleted( value );
+  *]
+}

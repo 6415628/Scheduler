@@ -1,0 +1,62 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateEvent (LibCal_Calendar owner_i, LibCal_EventCategory category_i, DateTime start_i, 
+  DateTime end_i) id:Method_LibCal_dlgEvent_CreateEvent
+{
+  #keys: '[131092.0.2119819436]'
+  Body:
+  [*
+    timezone := owner_i.GetTimeZone();
+    
+    // Create a new Event...
+    sEvent := owner_i.Event( relshadow,
+                             EventID        := [String]Key::NextPersistentKey(),
+                             StartTimeOfDay := start_i.TimeOfDay( timezone ),
+                             EndTimeOfDay   := end_i  .TimeOfDay( timezone ),
+                             EventCategory  := category_i );
+    
+    // Special case: by default the EventType is 'Unavailable', but when an event is created for
+    // category 'Available' or 'Partial' then set the Type to 'Available' resp 'Partial'. 
+    if( guard( category_i.Name() = LibCal_Event::TYPE_AVAILABLE(), false ) )
+    {
+      sEvent.Type( LibCal_Event::TYPE_AVAILABLE() );
+    }
+    else if( guard( category_i.Name() = LibCal_Event::TYPE_PARTIAL(), false ) )
+    {
+      sEvent.Type( LibCal_Event::TYPE_PARTIAL() );
+    }
+    
+    // Set the Event and the related controls,
+    dhEvent.Data( &sEvent );
+    this.SetEventData();
+    
+    // ...and an accompanying LeadingParticipation.
+    // Only set the dates, the times will be updated from the Event later if necessary.
+    sLeadPart := owner_i.Participation( relshadow, LibCal_LeadingParticipation,
+                                        ParticipationID := [String]Key::NextPersistentKey(),
+                                        StartDate       := start_i.Date( timezone ),
+                                        EndDate         := end_i  .Date( timezone ) );
+    
+    // Set the Participation and the related controls.
+    dhLeadingParticipation.Data( &sLeadPart );
+    this.SetParticipationData();
+    
+    // The values are explicitly assigned here 'at the beginning' to the controls,
+    // so that the values can be used by the rest of the logic. The databinding is executed too late for that...
+    // Further initialization is done in the OnCreated of the Dialog.
+    
+    // Initialize the capacity here, when done in the OnCreate() edtCapacity is not disabled correctly.
+    this.InitializeCapacity();
+    
+    // Initialize the category here, when done in the OnCreate() there is no selection in the DropDownList.
+    // Select the general category for new events.
+    this.InitializeCategories();
+    ddlCategory.Data( owner_i.CalendarRegistry().GetGeneralEventCategory() );
+    
+    // Must be done here, when done in the OnCreate() the checkmarks are not always set when the dialog is opened for editing an event.
+    this.InitializeSubscribers();
+    
+    // Open the dialog.
+    this.Show( "modal" );
+  *]
+}

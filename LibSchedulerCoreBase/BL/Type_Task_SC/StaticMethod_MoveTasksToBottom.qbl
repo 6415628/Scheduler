@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod MoveTasksToBottom (Schedule schedule, Task_SCs tasks)
+{
+  Description: 'Move tasks to bottom position'
+  TextBody:
+  [*
+    operations := selectset( tasks, Elements.OperationInTask, op, true );
+    Operation_SC::SetIsPlanning( operations, true );
+    
+    // Get sorted tasks
+    tasks := Resource_SC::GetSortedTasksFromTasks( tasks );
+    
+    traverse( tasks, Elements, task )
+    {
+      task.MoveLast();
+    }
+    
+    if( not isnull( schedule ) )
+    {
+      schedule.AutomaticProductBasedMaterialReservationBySorting();
+      Operation_SC::SetIsPlanning( operations, false );
+    }
+  *]
+}

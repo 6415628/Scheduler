@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetMPSPlanChartElementByRouting () declarative as MPSPlanChartElementByRouting
+{
+  Description: 'Retrieves the routing-related planned chart element, also to allow future overriding.'
+  TextBody:
+  [*
+    order := this.Order_SC();
+    // Ideally we should move the Routing relation from InternalWorkOrder to WorkOrder as that is a more elegant solution
+    // However, we want to tackle that in DQS-2138.
+    routing := select( this, Schedule.Routing, routing, routing.RoutingId() = this.RoutingID() );
+    
+    return select( routing, 
+                   MPSPlanChartElementByRouting,
+                   mPSPlanChartElementByRouting, 
+                   // Check whether order was completed within the MPS Period 
+                   // Unless it is not fully scheduled, then take matching due dates
+                   // This assumes mpsPlanChartElementByProduct are created for every duedate/day
+                   ifexpr( guard( order.IsPlanned(), false ),
+                           // MPSPeriodStart <= order.CompletionTime < MPSPeriodEnd
+                           mPSPlanChartElementByRouting.MPSPeriodEnd() > order.CompletionTime() 
+                           and mPSPlanChartElementByRouting.MPSPeriodStart() <= order.CompletionTime(),
+                           mPSPlanChartElementByRouting.DueDate() = this.DueDate() ) );
+  *]
+}

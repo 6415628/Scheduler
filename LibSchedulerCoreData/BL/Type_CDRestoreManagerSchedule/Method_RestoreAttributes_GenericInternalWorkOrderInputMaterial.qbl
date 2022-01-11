@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericInternalWorkOrderInputMaterial (CDSchedule cdSchedule, GenericInternalWorkOrderOperation genericInternalWorkOrderOperation)
+{
+  Description: 'Restore generic internal work order input material core data attributes to planning object'
+  TextBody:
+  [*
+    cdInternalWorkOrderInputMaterials := selectset( cdSchedule, CDEntity.astype( CDGenericInternalWorkOrderInputMaterial ), cdGenericInternalWorkOrderInputMaterial,
+                                                    cdGenericInternalWorkOrderInputMaterial.WorkOrderId() = genericInternalWorkOrderOperation.WorkOrderId(),
+                                                    cdGenericInternalWorkOrderInputMaterial.SequenceNr() = genericInternalWorkOrderOperation.SequenceNr() );
+     
+    traverse( cdInternalWorkOrderInputMaterials, Elements, cdGenericInternalWorkOrderInputMaterial )
+    {
+      genericInternalWorkOrderInputMaterial := GenericInternalWorkOrderInputMaterial::Create( genericInternalWorkOrderOperation, cdGenericInternalWorkOrderInputMaterial.Id() );
+      CopyCorresponding::CopyFrom( cdGenericInternalWorkOrderInputMaterial ).CopyTo( genericInternalWorkOrderInputMaterial );  
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

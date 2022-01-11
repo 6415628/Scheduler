@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckAndApplyIsToolSimulationHasHorizon (Resource_SC resource, Resource_SC sourceresource)
+{
+  TextBody:
+  [*
+    // wkn1 Jun-1-2017 (created)
+    // If source resource tool simulation has horizon (means it must have another strategy after tool simulation horizon)
+      // i. select the strategy after tool simulation
+      // ii. set the resource second strategy to the strategy or create one if it doesnt have
+    // If source resource does not have tool simulation horizon (means infinite tool simulation)
+      // Delete the resource second strategy if it has
+    if( this.ApplyIsToolSimulationHasHorizon() )
+    {
+      resource.IsToolSimulationHasHorizon( sourceresource.IsToolSimulationHasHorizon() );
+      if( sourceresource.IsToolSimulationHasHorizon() )
+      {
+        lts := maxselect( sourceresource, LeadTimeStrategy_SC, s, true, s.MinDistance() );
+        
+        if( resource.LeadTimeStrategy_SC( relsize ) = 1 )
+        {
+          LeadTimeStrategy_SC::Create( resource, lts.MinDistance(), lts.StrategyName() );
+        }
+        else
+        {
+          resource.LastLeadTimeStrategy().StrategyName( lts.StrategyName() );
+          resource.LastLeadTimeStrategy().MinDistance( lts.MinDistance() );
+        }
+      }
+      else if( resource.LeadTimeStrategy_SC( relsize ) > 1 )
+      {
+        resource.LastLeadTimeStrategy().Delete();
+      }
+    }
+  *]
+}

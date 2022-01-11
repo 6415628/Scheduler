@@ -1,0 +1,61 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateProgramSchedulingData (Schedule schedule, Number planoperationseqnrfrom, Boolean hasprogramphase, 
+  Number numberofoperations) as ProgramDefinitionConfiguration
+{
+  Description: 'Create program scheduling test data'
+  TextBody:
+  [*
+    // Create resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource' );
+    
+    // Assign ASAP lead time strategy
+    LeadTimeStrategy_SC::Create( resource, Duration::Zero(), Constants::StrategyASAP() );
+    Transaction::Transaction().Propagate( attribute( Resource_SC, StrategyName ) );
+    
+    // Create program definition
+    programdefinition := UTFMockObjectFactory::CreateProgramDefinitionData( schedule, 'Program definition id', hasprogramphase );
+    
+    // Assign program definition to both resource 1 
+    resource.AssignProgramDefinitionConfiguration( programdefinition );
+    
+    // Insert program change 
+    programtype := selectset( programdefinition, ProgramSetConfiguration.ProgramTypeConfiguration, pt, true );
+    resource.InsertProgramChange( null( Task_SC ), programtype, false, Duration::Zero() );
+    
+    // Set the first task start based on which operation will be planned without any feedback
+    taskstart := schedule.Time() - Duration::Hours( 10 );
+    // Create 15 tasks
+    for( i := 1; i <= numberofoperations; i++ )
+    {
+      // Create workorder, workorderoperation, planunit, operation
+      idstring := [String] i;
+      workorder := UTFMockObjectFactory::CreateWorkOrderAndOperation( schedule, 'Order_' + idstring, 1.0 );
+      order := UTFMockObjectFactory::CreateOrder( schedule, workorder.Id() );
+      workorder.Order_SC( relset, order );
+      planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'Plan Unit_'+ idstring, 1.0 );
+      operation := UTFMockObjectFactory::CreateOperation( planUnit );
+      operation.WorkOrderOperation( relset, select( workorder, WorkOrderOperation, op, true ) );
+      operation.OperationID( 'Operation_' + idstring );
+      operation.SequenceNr( i );
+      operation.Practice( 'SH' );
+      operation.Width( 1.0 );
+      operation.Length( 1.0 );
+      
+      // Plan operation
+      task := resource.PlanLast( operation ).astype( UTFSingleTask );
+      task.HasStartUTF( true );
+      // The operation which would not receive feedback will start from schedule time
+      if( i = planoperationseqnrfrom )
+      {
+        taskstart := schedule.Time();
+      }
+      task.Start_UTF( taskstart );
+      task.HasEndUTF( true );
+      task.End_UTF( taskstart + Duration::Hours( 1 ) );
+      taskstart := taskstart + Duration::Hours( 1 );
+    }
+    
+    return programdefinition;
+  *]
+}

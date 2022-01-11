@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericPlannedSupply2ExternalSupply (const GenericProductExternalSupply genericProductExternalSupply)
+{
+  Description: 'Backup generic planned supply to external supply core data'
+  TextBody:
+  [*
+    traverse( genericProductExternalSupply, PlannedSupply2ExternalSupply.astype( GenericPlannedSupply2ExternalSupply ), genericPlannedSupply2ExternalSupply )
+    {
+      cdGenericPlannedSupply2ExternalSupply := this.CDEntity( relnew, CDGenericPlannedSupply2ExternalSupply );
+      CopyCorresponding::CopyFrom( genericPlannedSupply2ExternalSupply ).CopyTo( cdGenericPlannedSupply2ExternalSupply ); 
+      
+      cdGenericPlannedSupply2ExternalSupply.ProductPlannedSupplyType( guard ( genericPlannedSupply2ExternalSupply.ProductPlannedSupply().SupplyType(), '' ) );
+      
+      // Backup FulfillmentConversion
+      this.BackupFulfillmentConversion( genericPlannedSupply2ExternalSupply );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

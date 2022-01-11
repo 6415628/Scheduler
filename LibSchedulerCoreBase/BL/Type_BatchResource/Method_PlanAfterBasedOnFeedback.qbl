@@ -1,0 +1,68 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride PlanAfterBasedOnFeedback (Operation_SC operation, FeedbackBatchContentInSchedule fbcontentinschedule)
+{
+  TextBody:
+  [*
+    //
+    // A batch will be created for each ImportedFeedbackBatchContent's Batch
+    // This is so that the ImportedFeedbackBatchContent's Tasks can be added into the new Batch to match the Feedback
+    //
+    // Check if the ImportedFeedbackBatchContent's batch already exists by comparing ExportedBatchID
+    batch := select( this.Schedule(), Batch, b,
+                     b.BatchID() = fbcontentinschedule.ExportedBatchID() );
+    
+    // If batch does not exist, check if a feedback batch is created previously by comparing BatchID
+    if( isnull( batch ) )
+    {
+      batch := select( this.Schedule(), Batch, b,
+                       b.BatchID() = fbcontentinschedule.BatchID() );  
+    }
+    
+    // If the Batch does not already exists, create new Batch
+    if( isnull( batch ) )
+    {
+      batch := Batch::CreateBasedOnFeedback( this.Schedule(),
+                                             fbcontentinschedule.BatchID(),
+                                             this.Type() );                                         
+    }
+    
+    // if the operation is not batched or is in other batch, add to current batch
+    if( isnull( operation.BatchSequenceElement() )
+        or operation.BatchSequenceElement().Batch() <> batch )
+    {
+      operation.RemoveFromBatch();
+      
+      // Add the ImportedFeedbackBatchContent's Operation to the Batch
+      batch.AddOperationAfter( operation, null( BatchSequenceElement ) );
+    }
+    
+    // Get the FeedbackBatchInSchedule for this ImportedFeedbackBatchContent. The FeedbackBatchInSchedule for this ImportedFeedbackTask should have already been created
+    // because the FeedbackBatch handling is called first in FeedbackManager.Import
+    feedbackBatchinSchedule := select( this.Schedule(),
+                                       FeedbackManager.FeedbackBatchInSchedule,
+                                       fbis,
+                                       fbis.BatchID() = fbcontentinschedule.BatchID() );
+    
+    // Propagate FeedbackBatchInSchedule End to get the right before batch to plan after.
+    Transaction::Transaction().Propagate( attribute( FeedbackBatchInSchedule, End ) );
+    
+    // Get the FeedbackTaskInSchedule that Ends right before the Start of the ImportedFeedbackTask's FeedbackBatchInSchedule ( to get the previous FeedbackTaskInSchedule )
+    beforeFeedbackBatchInSchedule := guard( maxselect( this,
+                                                       FeedbackBatchInSchedule,
+                                                       fbis,
+                                                       fbis.End() <= feedbackBatchinSchedule.StartReadIn(),
+                                                       fbis.End() ),
+                                                       null( FeedbackBatchInSchedule ) );
+    
+    beforeBatchTask := guard( beforeFeedbackBatchInSchedule.BatchTask(), null( BatchTask ) );
+    
+    // Plan the batch to be after the beforeBatch
+    newBatchTask := this.PlanAfter( batch, beforeBatchTask );
+    
+    fbcontentinschedule.Task_SC( relset, newBatchTask ); // sets new task relation to feedback task
+    
+    // Recalculate operation task. This is needed when a new BatchTask is created.
+    Transaction::Transaction().Propagate( relation( Operation_SC, Task_SC ) );
+  *]
+}

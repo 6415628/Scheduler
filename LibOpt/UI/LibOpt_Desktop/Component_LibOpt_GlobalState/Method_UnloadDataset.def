@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method UnloadDataset (structured[LibOpt_SnapshotReplannableCopyDataset] snapshots) id:Method_LibOpt_GlobalState_UnloadDataset
+{
+  #keys: '[141860.2.581306648]'
+  Body:
+  [*
+    // Unload the datasets that are attached to the LibOpt_SnapshotReplannableCopyDatasets
+    loadedobjectinfos := ExternalMDSEditor::Editor().LoadedObjectInfos();
+    infocurrentdataset := loadedobjectinfos.Find( snapshots.First().MDSID() );
+    
+    // Show a popup with a warning if you are trying to unload the currently selected dataset.
+    traverse( snapshots,
+              Elements,
+              snapshot
+              )
+    {
+      if( infocurrentdataset.Name() = snapshot.DatasetName() )
+      {
+        if ( MessageBox::Question( this, Translations::LibOpt_SnapshotReplannable_MessageBox_UnloadCurrentDataset(), '&Yes|&No' ) <> 0 )
+        {
+          snapshots.Remove( snapshot );
+        }
+      }
+    }
+    
+    // The UnloadDatasetCopiesAndUpdateSnapshotStatus unloads all dataset copies.
+    // When a dataset copy cannot be found, then the UnloadDatasetCopiesAndUpdateSnapshotStatus also updates all snapshots. 
+    // We both unload the datasets and update the snapshots in a single method to ensure that we only start 1 server transaction.
+    // We cannot use the 'Group server calls in 1 transaction' checkbox, because UI methods (like this one) cannot be used when that checkbox is checked.
+    isanydatasetdeleted := LibOpt_SnapshotReplannableCopyDataset::UnloadDatasetCopiesAndUpdateSnapshotStatus( snapshots )
+    if( isanydatasetdeleted )
+    {
+      // Show a popup warning explaining that the status of the snapshots has been updated.
+      MessageBox::Warning( this,
+                           Translations::LibOpt_SnapshotReplannable_MessageBox_UnexpectedStatus(),
+                           Translations::LibOpt_MessageBox_OK()
+                           );
+    }
+  *]
+}

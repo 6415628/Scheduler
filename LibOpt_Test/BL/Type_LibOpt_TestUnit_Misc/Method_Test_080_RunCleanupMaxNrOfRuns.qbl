@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_080_RunCleanupMaxNrOfRuns (LibOpt_TestDataset dataset)
+{
+  Description: 'Test if the auto cleanup with max number of runs works'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    opt.IsAutoCleanupRunsOnNrOfRuns( false );
+    
+    // Remove all existing runs
+    opt.Run( relflush );
+    
+    for( i := 0; i < 20; i++ )
+    {
+      run := opt.CreateRun();
+      run.FinishedOn( DateTime::Now() - Duration::Hours( i + 0.5 ) );
+    }
+    
+    // Add some running runs for distraction.
+    // These should not even be taken into account by the auto cleanup
+    for( i := 0; i < 7; i++ )
+    {
+      run := opt.CreateRun();
+      run.StartedOn( DateTime::Now() );
+    }
+    
+    opt.MaxNrOfRuns( 10 );
+    opt.IsAutoCleanupRunsOnNrOfRuns( true );
+    
+    // Propagate to make sure that the status of the run is correct.
+    Transaction::Transaction().Propagate();
+    
+    cleanup := opt.GetRunsForCleanup( 0 );
+    // Expect 20 - 10
+    this.Run().AssertEqual( 10, cleanup.Size(), 'Cleanup size' );
+    
+    cleanup := opt.GetRunsForCleanup( 2 );
+    // Expect 20 + 2 - 10
+    this.Run().AssertEqual( 12, cleanup.Size(), 'Cleanup size 2' );
+    this.Run().AssertEqual( 20 + 7, opt.Run( relsize ), 'Nothing changed' );
+    
+    opt.CreateRun();
+    this.Run().AssertEqual( 10 + 7, opt.Run( relsize ), 'Nr of runs after auto cleanup' );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

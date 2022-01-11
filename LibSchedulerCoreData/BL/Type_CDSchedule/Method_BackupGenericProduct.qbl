@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericProduct (const Schedule schedule)
+{
+  Description: 'Backup generic product core data'
+  TextBody:
+  [*
+    traverse( schedule, Product_SC.astype( GenericProduct ), genericProduct )
+    {
+      cdGenericProduct := this.CDEntity( relnew, CDGenericProduct );
+      CopyCorresponding::CopyFrom( genericProduct ).CopyTo( cdGenericProduct );  
+      
+      // Backup ProductCompatibleDemand
+      this.BackupProductDemandOnSupply( genericProduct );
+      
+      // Backup ProductInStockingPoint
+      this.BackupProductInStockingPoint( genericProduct );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

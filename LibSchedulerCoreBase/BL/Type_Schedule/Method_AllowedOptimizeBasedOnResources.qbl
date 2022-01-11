@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedOptimizeBasedOnResources (Resource_SCs resources, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Check whether optimizer can be run based on the selected resources and optimizer settings'
+  TextBody:
+  [*
+    // Check whether optimizer can be run based on the selected resources and optimizer settings ( For precondition checking in operation list )
+    isallowed := true;
+    
+    if( exists( resources, Elements, res, res.HasConfigurableRule() ) )
+    {
+      if( not this.TechnicalConfiguration().IsProgramOptimizerEnabled() )
+      {
+        isallowed := false;
+        Utility_SC::Concat( feedback_o, Translations::Optimizer_OnlyOptimizeWhenProgramOptimizerIsEnabled() );
+      }
+    }
+    else if( not this.TechnicalConfiguration().IsSequencingOptimizerEnabled() )
+    {
+      isallowed := false;
+      Utility_SC::Concat( feedback_o, Translations::Optimizer_OnlyOptimizeWhenSequencingOptimizerIsEnabled() );
+    }
+    // Not allowed if there is no resource group without configurable rules ( HasConfigurableRule = FALSE )
+    else if( not exists( resources, Elements.ResourceGroup_SC, resgroup, not resgroup.HasConfigurableRule() ) )
+    {
+      isallowed := false;
+      Utility_SC::Concat( feedback_o, Translations::Optimizer_MixedResourcesWithWithoutConfigurableRules() );
+    }
+    
+    return isallowed;
+  *]
+}

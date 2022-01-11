@@ -1,0 +1,74 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod JSONToNamedValue (JSON json) const remote as owning NamedValueTree
+{
+  TextBody:
+  [*
+    result := NamedValueTree::Create();
+    
+    // Read the name
+    name := json.Get( attribute( NamedValue, Name ).Name() ).GetString();
+    
+    result.Root( name );
+    nv := result.Root();
+    
+    // Read the value
+    if( json.Has( typeof( Value ).Name() ) )
+    {
+      json_value := json.Get( typeof( Value ).Name() );
+      type := json_value.Get( typeof( Type ).Name() ).GetString();
+      payload := json_value.Get( typeof( Value ).Name() ).GetString();
+      if( type = typeof( BinaryValue ).Name() )
+      {
+        nv.SetValue( BinaryValue::FromHexString( payload ) );
+      }
+      else if( type = typeof( Boolean ).Name() )
+      {
+        nv.SetValue( StringToBoolean::ISOConverter().Convert( payload ) );
+      }
+      else if( type = typeof( Char ).Name() )
+      {
+        nv.SetValue( StringToChar::ISOConverter().Convert( payload ) );
+      }
+      else if( type = typeof( Date ).Name() )
+      {
+        nv.SetValue( StringToDate::ISOConverter().Convert( payload ) );
+      }
+      else if( type = typeof( DateTime ).Name() )
+      {
+        nv.SetValue( StringToDateTime::ISOConverter().Convert( payload ) );
+      }
+      else if( type = typeof( Duration ).Name() )
+      {
+        nv.SetValue( StringToDuration::ISOConverter().Convert( payload ) );
+      }
+      else if( type = typeof( Key ).Name() )
+      {
+        nv.SetValue( StringToKey::ISOConverter().Convert( payload ) );
+      }
+      else if( type = typeof( Number ).Name() )
+      {
+        nv.SetValue( StringToNumber::ISOConverter().Convert( payload ) );
+      }
+      else if( type = typeof( Real ).Name() )
+      {
+        nv.SetValue( StringToReal::ISOConverter().Convert( payload ) );
+      }
+      else if( type = typeof( String ).Name() )
+      {
+        nv.SetValue( payload );
+      }
+    }
+    
+    // Read the children
+    children := json.Get( method( NamedValue, Children ).Name() );
+    
+    for( i := 0; i < children.Size(); i++ )
+    {
+      nvt := LibOpt_Utility::JSONToNamedValue( children.Get( i ) );
+      nvt.Root().Move( nv, true );
+    }
+    
+    return & result;
+  *]
+}

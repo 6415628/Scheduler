@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExecuteRunStep
+{
+  TextBody:
+  [*
+    // sbt2 May-21-2021 (created)
+    this.UpdateStatus( DMF_Utility::ID_Started() );
+    this.UpdateStart ( DateTime::Now(), OS::PrecisionCounter() );
+    
+    // Execute the step
+    exec := this->Execute();
+    excep := exec->Exception();
+    
+    // After we execute the step, go to finish if there is no error
+    this->After( exec )->OnFinished();
+    
+    // If there is error, the above code won't be entered,
+    // we will enter a method that takes execption as an argument,
+    // which will only be fired if there is an exception during this->Execute()
+    this->After( excep )->OnFailed( excep );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_CampaignType (CDSchedule cdSchedule)
+{
+  Description: 'Restore campaign type core data to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdSchedule, CDEntity.astype( CDCampaignType ), cdCampaignType )
+    {
+      resourceGroup := select( schedule, ResourceGroup_SC, rg, rg.Name() = cdCampaignType.ResourceGroup() );
+      
+      if( not isnull( resourceGroup ) )
+      {
+        campaignType := CampaignType::Create( resourceGroup, 
+                                              cdCampaignType.Name(),
+                                              cdCampaignType.DisplayIndex() );
+                                              
+        CopyCorresponding::CopyFrom( cdCampaignType ).CopyTo( campaignType );
+      }    
+    }
+     
+    // Restore CampaignInCampaignType
+    this.RestoreAttributes_CampaignInCampaignType( cdSchedule );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

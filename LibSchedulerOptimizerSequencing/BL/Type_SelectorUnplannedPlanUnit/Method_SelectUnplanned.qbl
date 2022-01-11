@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SelectUnplanned (LibOpt_Task task, Number target_nr_unplanned) as owning ScopeElementOperations
+{
+  TextBody:
+  [*
+    unplanned_sorted := selectsortedset( task.Scope().ScopeElementsNotLocked(),
+                                         Elements.astype( ScopeElementOperation ),
+                                         se,
+                                         not se.Operation_SC().IsPlanned(),
+                                         se.Operation_SC().WorkOrderOperation().WorkOrder().DueDate() );
+    
+    // select the `target_num_unplanned` most urgent ones:
+    selected_unplanned := construct( ScopeElementOperations );
+    
+    // If the nr of unplanned operations is less than the target, then select all
+    if( unplanned_sorted.Size() <= target_nr_unplanned )
+    {
+      selected_unplanned := & unplanned_sorted;
+    }
+    // else continue to select the first work order with unplanned and in scope operations until the target number of operations is reached
+    else
+    {
+      traverse( unplanned_sorted, Elements, operation,
+                selected_unplanned.Size() < target_nr_unplanned )
+      {
+        // Add the first unplanned operation to the scope and remove it from the sorted set
+        selected_unplanned.Add( operation );
+        unplanned_sorted.Remove( operation );
+        
+        // Select all operations that belong to the same workorder and that are unplanned
+        relatedoperations := selectset( unplanned_sorted, Elements, op,
+                                        not op.Operation_SC().IsPlanned()
+                                        and op.Operation_SC().WorkOrderOperation().WorkOrder() = operation.Operation_SC().WorkOrderOperation().WorkOrder() );
+        traverse( relatedoperations, Elements, related_op )
+        {
+          selected_unplanned.Add( related_op );
+          unplanned_sorted.Remove( related_op );
+        }
+      }
+    }
+    
+    return &selected_unplanned;
+  *]
+}

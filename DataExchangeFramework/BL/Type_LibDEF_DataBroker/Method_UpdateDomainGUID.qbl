@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateDomainGUID (LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Update Domain-GUID from the model settings.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-19-2016 (created)
+    newDomainGuid := LibDEF_Util::GetSettingValueDomainGUID();
+    
+    // the changes of DomainGUID must be either to or from empty String "", a System cannot change Domain without leaving old one first.
+    if( this.DomainGUID().Length() > 0 and newDomainGuid = "" )
+    {
+      if( this.InDomain() )
+      {
+        this.SendConfigurationRequestLeave( event_i );
+      }
+      else
+      {
+        this.DomainGUID( newDomainGuid );
+        
+        LibDEF_Util::EventLog( event_i, "Domain-GUID configuration has been deleted." );
+      }
+    }
+    else if( this.DomainGUID().Length() > 0 and this.DomainGUID() <> newDomainGuid and this.InDomain() )
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  "Failed to update Domain-GUID",
+                                  "Domain-GUID cannot be updated. Changing Domain requires to leave first then join." );
+    }
+    else
+    {
+      this.DomainGUID( newDomainGuid );
+    
+      LibDEF_Util::EventLog( event_i, "Domain-GUID configuration has been registered." );
+    }
+  *]
+}

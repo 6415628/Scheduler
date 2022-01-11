@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsInShutdownScopeForCumulativeValueCalculation (Rule rule, BinaryValue previouscumulativecharacteristic, BinaryValue previouscumulativerealvalue) declarative remote as Boolean
+{
+  Description: 'Check whether current task is in the shutdown scope of input rule and previous cumulative values'
+  TextBody:
+  [*
+    // Check whether current task is in the shutdown scope of input rule and previous cumulative values
+    cumulativestart := Real::MaxReal();
+    
+    // For duration in hours, the cumulative start should based on the distance between shutdown and task
+    // 1. If BeforeShutdown, the distance will be NextShutdown.Start - Current.End
+    // 2. If AfterShutdown, the distance will be Current.Start - PreviousShutdown.End
+    if( rule.CharacteristicScope().ID() = RuleConstant::Characteristic_DurationInHours() )
+    {
+      cumulativestart := ifexpr( rule.IsBeforeShutdown(),
+                                 guard( ( this.NextShutdown().Start() - this.End() ).HoursAsReal(), Real::MaxReal() ),
+                                 guard( ( this.Start() - this.PreviousShutdown().End() ).HoursAsReal(), Real::MaxReal() ) );
+    }
+    else
+    {  
+      cumulativestart := Characteristic::GetCumulativeValueForCharacteristic( rule.CharacteristicScope(),
+                                                                              previouscumulativecharacteristic,
+                                                                              previouscumulativerealvalue );
+    }
+    
+    return rule.CheckIsInShutdownScope( cumulativestart );
+  *]
+}

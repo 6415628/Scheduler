@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CanDelete (String userName, Boolean isAdministrator, Boolean permanently) remote as Boolean
+{
+  Description: 'Returns whether the folder may be deleted.'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    if( not feedback.CheckHard( not this.IsDeleted() or permanently ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_CanNotDelete_IsAlreadyDeleted( this.Name() ) );
+    }
+    
+    if( not feedback.CheckHard( not this.IsRecycleBin() ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_CanNotDelete_IsRecycleBin() );
+    }
+    else if( not feedback.CheckHard( not this.IsRootFolder() ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_CanNotDelete_IsRootFolder() );
+    }
+    
+    // A user is allowed to delete his own folders, and folders that have been created by the System.
+    else if( not feedback.CheckHard( this.IsAuthorized( userName ) or isAdministrator ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_CanNotDelete_NotCreatedByUser( this.Name(),
+                                                                                          this.CreatedBy() ) );
+    }
+    else if ( not feedback.CheckHard( isAdministrator or forall( this.GetAllChildren(), Elements, node, node.IsAuthorized( userName ) ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_CanNotDelete_NotAllChildrenCreatedByUser() );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

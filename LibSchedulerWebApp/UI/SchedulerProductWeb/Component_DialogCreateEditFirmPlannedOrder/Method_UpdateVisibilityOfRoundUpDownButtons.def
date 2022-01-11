@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateVisibilityOfRoundUpDownButtons () id:Method_DialogCreateEditInternalWorkOrder_UpdateVisibilityOfRoundUpDownButtons
+{
+  #keys: '[143768.0.1021234080]'
+  Body:
+  [*
+    // Refresh visibility of round up/down button
+    
+    feedback_o := '';
+    if( not isnull( ddlProductRouting.Data() ) and ddlProductRouting.Data().LotSize() <> 0 )
+    {
+      quantity := npQuantity.Number();
+      numberOfLots := floor( quantity / ddlProductRouting.Data().LotSize() );
+      
+      value := ddlProductRouting.Data().CheckQuantityMultipleOfLotSize( quantity, feedback_o );
+      
+      pnlQuantityRounding.Visible( not value );
+      btnQuantityRoundUp.Label( 'Round up (' + [String]( ( numberOfLots + 1 ) * ddlProductRouting.Data().LotSize() ) + ')' );
+      btnQuantityRoundDown.Visible( numberOfLots <> 0 );
+      btnQuantityRoundDown.Label(  'Round down (' + [String]( numberOfLots * ddlProductRouting.Data().LotSize() ) + ')' );
+    }
+  *]
+}

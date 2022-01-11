@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcProgramTypeChangeDuration
+{
+  TextBody:
+  [*
+    // Calculate program type change duration for this to program type
+    value := max( this, ProgramChange.ProgramChangeTask.TaskInProgramSet, taskinprogramset,
+                  guard( taskinprogramset.ProgramSet().ProgramSetConfiguration() = this.ToProgramTypeConfiguration().ProgramSetConfiguration(), false ),
+                  taskinprogramset.GetProgramTypeChangeDuration() );
+    
+    // Get program type change duration for feedback
+    feedbackvalue := max( this, ProgramChange.FeedbackProgramType, fpt, 
+                          guard( fpt.ProgramSet().ProgramSetConfiguration() = this.ToProgramTypeConfiguration().ProgramSetConfiguration(), false ),
+                          fpt.GetProgramTypeChangeDuration() );
+             
+    value := maxvalue( value, feedbackvalue );   
+    
+    // In cases where no tasks is associated to the program at all, we will use the program type duration
+    if( value.IsInfinite() )
+    {
+      value := guard( this.ToProgramTypeConfiguration().ProgramTypeChangeDuration(), Duration::Zero() );
+    }
+    
+    this.ProgramTypeChangeDuration( value );
+  *]
+}

@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericExternalWorkOrderOperation (const GenericExternalWorkOrder genericExternalWorkOrder)
+{
+  Description: 'Backup generic external work order operation core data'
+  TextBody:
+  [*
+    traverse( genericExternalWorkOrder, WorkOrderOperation.astype( GenericExternalWorkOrderOperation ), genericExternalWorkOrderOperation )
+    {
+      cdGenericExternalWorkOrderOperation := this.CDEntity( relnew, CDGenericExternalWorkOrderOperation );
+      CopyCorresponding::CopyFrom( genericExternalWorkOrderOperation ).CopyTo( cdGenericExternalWorkOrderOperation );
+      
+      // Additional attributes in core data to persist the relation to RoutingStep
+      cdGenericExternalWorkOrderOperation.RoutingId( guard( genericExternalWorkOrderOperation.RoutingStep().RoutingId(), '' ) );
+      cdGenericExternalWorkOrderOperation.RoutingStepSequenceNr( genericExternalWorkOrderOperation.RoutingStepSequenceNr() );
+      
+      /* 
+      Restore the following objects
+      1. GenericExternalWorkOrderOutputMaterial
+      2. GenericExternalWorkOrderInputMaterial
+      3. GenericExternalWorkOrderSupply
+      4. GenericExternalWorkOrderDemand
+      5. WorkOrderOperationResource
+      */
+      
+      this.BackupGenericExternalWorkOrderOutputMaterial( genericExternalWorkOrderOperation );
+      this.BackupGenericExternalWorkOrderInputMaterial( genericExternalWorkOrderOperation );
+      this.BackupGenericExternalWorkOrderSupply( genericExternalWorkOrderOperation );
+      this.BackupGenericExternalWorkOrderDemand( genericExternalWorkOrderOperation );
+      this.BackupWorkOrderOperationResource( genericExternalWorkOrderOperation );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

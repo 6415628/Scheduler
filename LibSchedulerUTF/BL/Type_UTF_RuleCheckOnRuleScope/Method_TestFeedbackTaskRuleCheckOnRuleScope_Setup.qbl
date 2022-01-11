@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestFeedbackTaskRuleCheckOnRuleScope_Setup (Schedule schedule)
+{
+  Description: 'Test feedback task rule scope in rule - setup'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    measure := ''
+    threshold := 0.0;
+    isfeedbackstarted := false;
+    isTask2Valid := false;
+    
+    this.GetTestVariantForFeedbackShutdown( isvariantfound,
+                                            measure,
+                                            threshold,
+                                            isfeedbackstarted,
+                                            isTask2Valid );
+    
+    // Only setup when variant found
+    if( isvariantfound )
+    {
+      // Create feedback shutdown data
+      this.CreateFeedbackShutdownData( schedule, threshold, measure );
+      
+      // Transaction propagate needed for newly created operations/tasks before create feedbacks
+      Transaction::Transaction().Propagate()
+      
+      // Create feedback for operations
+      this.CreateFeedbackForOperations( schedule, isfeedbackstarted );
+    }
+    // Gantt chart
+    // | Feedback Shutdown Task | Feedback Task 0 | (Start/End) Feedback Task1 | Task1 (If StartFeedback) | Task2 |
+  *]
+}

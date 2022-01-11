@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method MultipleSupply (ImportedWorkOrderSupplies rows)
+{
+  Description: 'Synchronization method to be used in data multiplication of work order supplies for multiplied work operations.'
+  TextBody:
+  [*
+    // woi1 Apr-28-2017 (created)
+    // ONLY FOR DEVELOPMENT PURPOSES ONLY
+    // ONLY USED WITH DATA MULTIPLIER ONLY
+    traverse( rows, Elements, row, row.IsValidDataHard() )
+    {
+      id := DataMultiplier::GetDemandSupplyId( this.WorkOrderId(), row.Id() )
+      multiplied_wos := ImportedWorkOrderSupply::FindImportedWorkOrderSupply_SC( id );
+      
+      if( isnull( multiplied_wos ) )
+      {
+        multiplied_wos := ImportedExternalWorkOrderSupply::Create( this.Schedule(), id );
+      }
+      
+      multiplied_wos.Update( row );
+    }
+  *]
+}

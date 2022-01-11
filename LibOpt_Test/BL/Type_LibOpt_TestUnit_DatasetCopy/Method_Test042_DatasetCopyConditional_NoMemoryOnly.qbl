@@ -1,0 +1,58 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test042_DatasetCopyConditional_NoMemoryOnly (LibOpt_TestDataset dataset)
+{
+  Description:
+  [*
+    Check that the state of a MemoryOnly dataset copy has been changed to a StandAloneStorage state by the end of a run.
+    `datasetinfo.State()` is only updated when the state of a dataset has finished changing. This can take a while when there are many datasets whose state has to be changed. Therefore, in this method, we only change the state of a single dataset.
+    Note: In other unit tests, for example in the unit tests that call the `AssertsForComponentPositionCreatedDataset` method, we only check if the `LibOpt_SnapshotReplannableCopyDataset.IsMemoryOnly` attribute has been set to `false`.
+  *]
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( true );
+    run := opt.CreateRun();
+    
+    // Create a Flow component (or any other other component) so that we can create a dataset copy
+    flowcomponent := opt.ComponentFlow( run, 'Flow', true );
+    // Start the run so that we can get a LibOpt_Task that we can use to create a dataset copy.
+    str := run.Start();
+    firsttask := select( flowcomponent, Task, task, task.Component() = flowcomponent );
+    snapshotreplannable := firsttask.CopyDataset();
+    
+    // We don't want that this unit test passes because snapshotreplannable is null.
+    // We therefore call this auxiliary assert to ensure that the test fails when snapshotreplannable is null. 
+    this.Run().AssertNotIsNull( snapshotreplannable,
+                                "Expected to create a '" 
+                                + typeof( LibOpt_SnapshotReplannableCopyDataset ).Name()
+                                + "' snapshot when calling '"
+                                + typeof( LibOpt_Task ).Name()
+                                + "."
+                                + method( LibOpt_Task, CopyDataset ).Name()
+                                + "'. However, no snapshot was created."
+                                );                            
+    
+    
+    str->|stream[Void]::Wait( this.MDSEditorUpdateTime() ) // Wait some time to ensure that the dataset copies have been created and that MDSEditor::Editor().ObjectInfos() is updated. 
+       ->|void->() // Start a reactive call to handle the created dataset copies.
+    {  
+      if( not isnull( snapshotreplannable ) )
+      {
+        datasetinfo := MDSEditor::Editor().ObjectInfos().Find( snapshotreplannable.DatasetName() );
+        this.Run().AssertTrue( guard( datasetinfo.State() = DatasetState::StandAloneStorage().AsString(), false ),
+                               "Expected that the state of the created dataset copy would be "
+                               + DatasetState::StandAloneStorage().AsString()
+                               + ". However, the state of the dataset is "
+                               + guard( datasetinfo.State(), "[DATASET COULD NOT BE FOUND]" ) 
+                               + "."
+                               ); 
+      }
+    }   
+    
+    this.NoException( str );
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

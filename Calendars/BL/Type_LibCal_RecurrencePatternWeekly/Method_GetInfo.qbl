@@ -1,0 +1,63 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetInfo () declarative as String
+{
+  TextBody:
+  [*
+    value := "";
+    days  := Translations::Pattern_Days().Tokenize( ';' );
+    
+    if( days.Size() = 7 )
+    {
+      value := "every ";
+      
+      if( this.RecurrenceInterval() > 1 )
+      {
+        value := value + [String]this.RecurrenceInterval() + " weeks on ";
+      }
+      
+      selectedDays := construct( Strings );
+      
+      if( this.Monday()    ) { selectedDays.Add( days.Element( monday    - 1 ) ); }
+      if( this.Tuesday()   ) { selectedDays.Add( days.Element( tuesday   - 1 ) ); }
+      if( this.Wednesday() ) { selectedDays.Add( days.Element( wednesday - 1 ) ); }
+      if( this.Thursday()  ) { selectedDays.Add( days.Element( thursday  - 1 ) ); }
+      if( this.Friday()    ) { selectedDays.Add( days.Element( friday    - 1 ) ); }
+      if( this.Saturday()  ) { selectedDays.Add( days.Element( saturday  - 1 ) ); }
+      if( this.Sunday()    ) { selectedDays.Add( days.Element( sunday    - 1 ) ); }
+      
+      if( selectedDays.Size() = 7 )
+      {
+        // If the value only contains 'every ' it must be reset first.
+        value := ifexpr( value = "every ", "", value ) + "every day of the week";  
+      }
+      else
+      {
+        // If there are multiple days, then replace then use 'and' instead of the last comma.
+        lastDay          := "";
+        nrOfSelectedDays := selectedDays.Size();
+                                                   
+        if( nrOfSelectedDays > 1 )
+        {
+          lastDay := selectedDays.Element( nrOfSelectedDays - 1 );
+          selectedDays.Delete( nrOfSelectedDays - 1 );
+        }
+        
+        daysValue := selectedDays.ToString( ', ' );
+        
+        if( nrOfSelectedDays > 1 )
+        {
+          daysValue := daysValue + " and " + lastDay;
+        }
+                                                   
+        value := value + daysValue;
+      }
+    }
+    else
+    {
+      value := [String]days.Size() + " days defined in Translations::Pattern_Days(), should be 7";
+    }
+    
+    return value;
+  *]
+}

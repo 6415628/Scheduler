@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: btnCalendarSettings
+Response OnClick () id:Response_LibCal_pnlSettingsButton_btnCalendarSettings_OnClick
+{
+  #keys: '[131094.0.1990989458]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebButton_OnClick'
+  QuillAction
+  {
+    Body:
+    [*
+      // Update the settings of (a subset of) all calendars.
+      calendarRegistry := LibCal_GlobalState.GetCalendarRegistry();
+      
+      if( not isnull( calendarRegistry ) )
+      {
+        calendars := calendarRegistry.GetCalendars( dhContext.Data() );
+        
+        if( calendars.Size() = 0 )
+        {
+          showModal := true;
+          WebMessageBox::Error( Translations::MessageBox_NoCalendarsFound( dhContext.Data() ),
+                                Translations::MessageBox_OK(), showModal );
+        }
+        else
+        {
+          dlg := construct( LibCal_dlgCalendarSettings );
+          dlg.Open( calendars );
+        }
+      }
+      else
+      {
+        WebMessageBox::Error( "CalendarRegistry = NULL" ); 
+      }
+    *]
+    GroupServerCalls: false
+  }
+}

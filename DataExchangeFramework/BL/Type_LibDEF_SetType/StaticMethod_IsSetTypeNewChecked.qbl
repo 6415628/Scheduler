@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod IsSetTypeNewChecked (LibDEF_DataRepository dataset_i, String channelName_i, String name_i) declarative remote as Boolean
+{
+  Description: 'Checks if the SetType is new.'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    value := isnull( select( dataset_i, Channel.SetType, st,
+                             st.ChannelName() = channelName_i,
+                             st.Name()        = name_i ) );
+    
+    if( not value )
+    {
+      feedback.AddHard( "Set Type '" + name_i + "' already exists." );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

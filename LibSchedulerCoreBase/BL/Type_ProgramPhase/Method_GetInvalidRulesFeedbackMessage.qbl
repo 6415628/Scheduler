@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetInvalidRulesFeedbackMessage (Boolean ishardconstraintforoptimizer) declarative remote as String
+{
+  Description: 'Get invalid rules feedback message'
+  TextBody:
+  [*
+    // Get invalid rules feedback message
+    feedbacks := construct( Strings );
+    
+    lasttaskinprogram := guard( this.LastInProgramPhase(), null( TaskInProgramSet ) );
+    
+    if( not isnull( lasttaskinprogram ) )
+    {
+      // Get all the rules related to program phase scope ( not transition program phase rules )
+      ruleswithprogramphasescope := selectset( this.ProgramPhaseConfiguration(), RuleScopeInProgramPhase.Rule, rule,
+                                               rule.IsHardConstraintForOptimizer() = ishardconstraintforoptimizer
+                                               and rule.RuleSubType().IsCumulativeValueNeeded()
+                                               and not rule.IsProgramPhaseTransitionRule()
+                                               and rule.IsEnabled()
+                                               );
+      
+      traverse( ruleswithprogramphasescope, Elements, rule )
+      {   
+        // Construct rule data object
+        dosequencingrule := lasttaskinprogram.GetRuleDataObjectForConstraintPrecondition( rule.CharacteristicMain(), true, 0.0 );
+        value := rule.RuleSubType().Validate( rule, dosequencingrule );
+        if( not value )
+        {
+          feedbacks.Add( rule.RuleSubType().FeedbackMessage( rule, dosequencingrule ) ); 
+        }
+      }  
+    }
+    
+    return feedbacks.ToString( String::NewLine() );
+  *]
+}

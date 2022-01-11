@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method LoadDatasetSnapshotReplannable (LibOpt_SnapshotReplannableCopyDataset snapshot) id:Method_LibOpt_GlobalState_LoadDatasetSnapshotReplannable
+{
+  #keys: '[141860.2.526521079]'
+  Body:
+  [*
+    // Loads the dataset that is attached to the LibOpt_SnapshotReplannableCopyDataset. 
+    
+    editor := ExternalMDSEditor::Editor();
+    infos := editor.ObjectInfos();
+    datasetinfo := infos.Find( snapshot.DatasetName() );
+    
+    if( not isnull( datasetinfo ) )
+    {
+      LibOpt_GlobalState.LoadDataset( datasetinfo );
+      snapshot.IsDatasetLoaded( true );
+    }
+    else
+    {
+      // The dataset that is attached to the replannable snapshot is already deleted. 
+      // The below method will update all LibOpt_SnapshotReplannableCopyDataset snapshots to prevent further mismatches and show a warning to explain this to the AE. 
+      LibOpt_GlobalState.LoadDatasetSnapshotReplannableAlreadyDeleted( snapshot )
+    }
+  *]
+}

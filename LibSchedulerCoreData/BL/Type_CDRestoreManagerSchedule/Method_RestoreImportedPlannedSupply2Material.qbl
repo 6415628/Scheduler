@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedPlannedSupply2Material (CDIntegration cdintegration, ImportedMaterial_SC importedmaterial)
+{
+  Description: 'Restore imported planned supply to material core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedPlannedSupply2Material_SC
+    cdImportedPlannedSupply2Materials := selectset( cdintegration, CDEntity.astype( CDImportedPlannedSupply2Material ), cdm, cdm.MaterialID() = importedmaterial.Id() );
+    
+    traverse( cdImportedPlannedSupply2Materials, Elements, cdpsm )
+    {
+      importedPlannedSupply2Material := importedmaterial.ImportedPlannedSupply2Material_SC( relnew,
+                                                                                            MaterialID := cdpsm.MaterialID(),
+                                                                                            WorkOrderOutputMaterialID := cdpsm.WorkOrderOutputMaterialID()
+                                                                                          );
+                                                       
+      CopyCorresponding::CopyFrom( cdpsm ).CopyTo( importedPlannedSupply2Material );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

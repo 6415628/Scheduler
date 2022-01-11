@@ -1,0 +1,110 @@
+Quintiq file version 2.0
+Component ListOptimizerDashboardKPIData
+{
+  #keys: '[137186.0.141650150]'
+  BaseType: 'List'
+  Children:
+  [
+    Component GUIDataSetLevel950
+    {
+      #keys: '[137186.0.141650153]'
+      BaseType: 'GUIDataSetLevel'
+      Properties:
+      [
+        Columns: 'LibOpt_SnapshotColumns'
+        DataExtractor: 'GUIDataExtractor848'
+        PosX: 35
+        PosY: 30
+      ]
+    }
+    #child: ColumnTitles772
+    Component popupList468
+    {
+      #keys: '[137186.0.141650151]'
+      BaseType: 'popupList'
+      Properties:
+      [
+        PosX: 35
+        PosY: 60
+      ]
+    }
+    Component GUIDataExtractor848
+    {
+      #keys: '[137186.0.141650152]'
+      BaseType: 'GUIDataExtractor'
+      Properties:
+      [
+        DataSet: 'Schedule'
+        DataType: 'Schedule'
+        FixedFilter:
+        [*
+          // filter on: there exists no other kpi point that is before this and better
+          //               or that is equal and at the same time
+          // also filter out if the vector is empty
+          RealVector::Construct( object.RollbackKPI() ).Size() > 0 // this is actual KPI
+          and not exists( object.Run(),
+            Snapshot.astype( LibOpt_SnapshotKPI ),
+            other,
+            other.SequenceNr() < object.SequenceNr() and // other is before this
+            RealVector::Construct( other.RollbackKPI() ).Size() > 0 and // other is actual KPI
+            ( RealVector::Construct( other.RollbackKPI() ).Get( 0 ) < RealVector::Construct( object.RollbackKPI() ).Get( 0 )  // other is better
+               or ( RealVector::Construct( other.RollbackKPI() ).Get( 0 ) = RealVector::Construct( object.RollbackKPI() ).Get( 0 ) // or the other has the same KPI
+                      and other.TimeStamp() = object.TimeStamp()                                                                                                      // and the same timestamp
+                     )
+             )
+          )
+        *]
+        PosX: 5
+        PosY: 30
+        Transformation: 'Optimization.LastRun.Snapshot.astype(LibOpt_SnapshotKPI)'
+      ]
+    }
+  ]
+  Properties:
+  [
+    AutoDrag: true
+    BackgroundColor: 'Window'
+    ContextMenu: 'popupList468'
+    FullRowSelect: true
+    ModeledStringList ChildOrdering
+    {
+      c: ColumnTitles772
+      c: popupList468
+      c: GUIDataExtractor848
+      c: GUIDataSetLevel950
+    }
+  ]
+  ResponseDefinitions:
+  [
+    DelegatedResponseDefinition OnClick id:Responsedef_ListOptimizerDashboardKPIData_Menu_OnClick
+    {
+      #keys: '[133088.0.2057456903]'
+      Initiator: 'Menu'
+      IsInherited: false
+      ResponseType: 'OnClick'
+      Arguments:
+      [
+        ResponseDefinitionArgument selection
+        {
+          #keys: '[133089.0.670263331]'
+          Binding: 'this.Selection()'
+        }
+      ]
+    }
+    DelegatedResponseDefinition OnClick id:Responsedef_ListOptimizerDashboardKPIData_GUIButtonBase_OnClick
+    {
+      #keys: '[133088.0.2057456904]'
+      Initiator: 'GUIButtonBase'
+      IsInherited: false
+      ResponseType: 'OnClick'
+      Arguments:
+      [
+        ResponseDefinitionArgument selection
+        {
+          #keys: '[133089.0.670263377]'
+          Binding: 'this.Selection()'
+        }
+      ]
+    }
+  ]
+}

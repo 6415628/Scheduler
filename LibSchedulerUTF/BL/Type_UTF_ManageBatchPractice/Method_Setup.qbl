@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Crate order and plan unit
+    planUnit_1 := UTFMockObjectFactory::CreateOrderAndPlanUnit( schedule, "PlanUnit_1", 1.0 )
+    
+    // Create opearations
+    operation_1 := UTFMockObjectFactory::CreateOperation( planUnit_1 );
+    operation_1.OperationID( "operation_1" );
+    
+    // Create batches
+    batch_1 := UTFMockObjectFactory::CreateBatch( schedule );
+    
+    // Add operations into batch
+    batch_1.AddOperation( operation_1 );
+    
+    // Propogate sequence nr because it is set declaratively.
+    Transaction::Transaction().Propagate( attribute( BatchSequenceElement, SequenceNr ) );
+    
+    // Create practice
+    UTFPractice::Create( schedule, "practice_A" );
+    
+    // Add practice to operations
+    practice_A := select( schedule, Practice, practice,
+                          practice.UsedPractice() = "practice_A" );
+    
+    operation_1.Practice( practice_A.UsedPractice() );
+    
+    // Create alternative practive and assign manual practice based on variant
+    hasAlternaticePractice := false;
+    hasManualPractice := false;
+    this.GetTestVariant( hasAlternaticePractice, hasManualPractice );
+    
+    if( hasAlternaticePractice )
+    {
+      // Create alternative practice
+      alternativePractice := UTFPractice::Create( schedule, UTFUtility::AlternativePractice() );
+      
+      if( hasManualPractice )
+      {
+        // Assign manual practice
+        batch_1.ManualPractice( alternativePractice.UsedPractice() );
+        
+        // Propagate declarative attribute
+        Transaction::Transaction().Propagate( attribute( Batch, SelectedPractice ) );
+      }
+    }
+  *]
+}

@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddEarliestStartForDummyNodes (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata, POANValueSet earlieststarts, 
+  OperationInSuboptimizerSequencing operation)
+{
+  Description: 'Adds the earliest start time for the dummy NoBufferWait nodes'
+  TextBody:
+  [*
+    // Set the earliest start of the dummy end nodes
+    if( operation.GetRequiresDummyEndNode() )
+    {
+      poaepoch := this.POAEpoch(); // considers the start of the earliest frozen/feedback task before schedule time if any, else use schedule time
+      earliest_start := poaepoch;
+      // If the dummy node is related to a NoBufferWait subtask, get the latest earliest start based on this subtask
+      if( operation.GetHasNoBufferWaitSubtask() )
+      {
+        traverse( operation, Operation.DownstreamOperations, downstreamop )
+        {
+          // Only consider those downstream operations that are out of scope since the others are included in the dependency
+          isoutofscope := isnull( transientdata.Get( downstreamop ) );
+          if( isoutofscope )
+          {
+            // Select the operation material that links the operation to the downstream operation
+            operationmaterial := select( downstreamop, FromOperationDependency.astype( OperationMaterial ), material,
+                                         material.FromOperation() = operation.Operation() );
+                                         
+            
+            // The upstream operation cannot finish (and thus the dummy end node cannot start)
+            // before the downstream operation starts minus the optimistic transport cooling duration
+            estartfromdownstream := downstreamop.Start() 
+                                    - guard( operationmaterial.OptimisticTransportCoolingDuration(),
+                                             Duration::Zero() );
+                                                                 
+            // only update the earliest start time if it is later than the current earliest start
+            if( estartfromdownstream > earliest_start )
+            {     
+              earliest_start := estartfromdownstream;
+            }
+          }
+        }
+      }
+      // Set the earliest start
+      dummynode := poa.Node( SuboptimizerSequencingPOA::NamePOADummyEndNode( operation ), operation )
+      earlieststarts.Set( dummynode, earliest_start.HoursAsReal( poaepoch ) );
+    }
+  *]
+}

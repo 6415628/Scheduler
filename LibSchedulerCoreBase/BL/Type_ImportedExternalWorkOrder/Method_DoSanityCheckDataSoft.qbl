@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride DoSanityCheckDataSoft (output Strings feedback_o) declarative as Boolean
+{
+  TextBody:
+  [*
+    isvalid := super.DoSanityCheckDataSoft( feedback_o );
+    
+    if( this.SchedulerWOID() <> '' )
+    {
+      hasValidSchedulerWOID := this.GetHasValidSchedulerWOID( feedback_o );
+      isvalid := hasValidSchedulerWOID and isvalid;
+      
+      // Only check for matching work order details if work order has valid Scheduler WOID
+      if( hasValidSchedulerWOID and not this.HasReplacedInternalWorkOrder() )
+      {
+        isvalid := this.GetHasSameRoutingAsInternalWorkOrder( feedback_o ) and isvalid;
+        isvalid := this.GetHasSameProductInStockingPointAsInternalWorkOrder( feedback_o ) and isvalid;
+        isvalid := this.GetHasSameOperationAsInternalWorkOrder( feedback_o ) and isvalid;
+      }
+    }
+    
+    return isvalid;
+  *]
+}

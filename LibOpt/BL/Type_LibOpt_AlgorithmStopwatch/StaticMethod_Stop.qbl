@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Stop (Algorithm algorithm, String id) const
+{
+  Description:
+  [*
+    Stop the stopwatch with the given id. From this moment in time, the stopwatch is no longer counting.
+    If the stopwatch was not running, nothing happens.
+  *]
+  TextBody:
+  [*
+    if( LibOpt_AlgorithmStopwatch::IsRunning( algorithm, id ) )
+    {
+      LibOpt_AlgorithmStopwatch::SetRunning( algorithm, id, false );
+      saved := guard( algorithm.RetrieveReal( LibOpt_AlgorithmStopwatch::StrTimeStored( id ) ), 0.0 );
+      extra := guard( OS::PrecisionCounter() - algorithm.RetrieveReal( LibOpt_AlgorithmStopwatch::StrTimeStart( id ) ), 0.0 );
+      algorithm.StoreReal( LibOpt_AlgorithmStopwatch::StrTimeStored( id ), saved + extra );
+    }
+  *]
+}

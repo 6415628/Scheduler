@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateJSONCapableResourceFromOOR () as owning JSONBuilder
+{
+  Description: 'Creates capable resources in JSON from the current dataset with existing operation on resources.'
+  TextBody:
+  [*
+    capableResources := JSON::Array();
+    
+    // Traverse to resource to only create Capable Resource per unique resource
+    allowedResources := selectset( this, WorkOrderOperation.Operation_SC.OperationOnResource.Resource_SC, resource, true );
+    
+    traverse( allowedResources, Elements, resource )
+    {
+      // Select any OOR to retrieve ProcessDurationPerQuantity, they should be identical for all operations
+      operationOnResource := select( this, WorkOrderOperation.Operation_SC.OperationOnResource, oor, oor.Resource_SC() = resource );
+      capableResource := JSON::Object();
+      capableResource.Add( Constants::JSON_CapableResource_AssetID(), resource.ResourceID() );
+      capableResource.Add( Constants::JSON_CapableResource_DurationRuc(), operationOnResource.ProcessDurationPerQuantity().TotalInSeconds() );
+      capableResource.Add( Constants::JSON_CapableResource_Ruc(), 1 );
+      capableResources.Add( capableResource ); 
+    }
+    
+    return &capableResources;
+  *]
+}

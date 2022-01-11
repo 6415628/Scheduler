@@ -1,0 +1,63 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetPenaltyForPreferenceRuleViolation (Resource_SC resource, Characteristic characteristic, DORule_DataObjectSequencingRule do_rule) declarative remote as Real
+{
+  Description: 'Get penalty for preference rule violation'
+  TextBody:
+  [*
+    previousoperation := this.GetPreviousOperationForSequencingRuleCheck();
+    
+    // Calculate penalty for resource and shutdown rules
+    rules := this.GetRulesForOperation( resource, 
+                                        this.GetPreviousOperationForSequencingRuleCheck(), 
+                                        characteristic, 
+                                        null(  Task_SC ), 
+                                        null( Task_SC ) );
+    
+    penalty := sum( rules, Elements, rule, 
+                    not rule.IsHardConstraintForOptimizer()
+                    and rule.CharacteristicMain() = characteristic,
+                    rule.RuleSubType().GetPenaltyForPreferenceRuleViolation( rule, previousoperation, this, do_rule ) );
+    
+    traverse( this, Task_SC.TaskInProgramSet, tips, not isnull( tips.ProgramType() ) )
+    {   
+      // Calculate penalty for program and phase non cumulative rules ( Min/Max value, Allowed/Not Allowed value, Difference Jump, Value Jump, Overlapping Range )
+      previoustaskinprogramset := select( previousoperation, Task_SC.TaskInProgramSet, t, t.ProgramSet() = tips.ProgramSet() );
+      programnoncumulativerules := tips.GetNonCumulativeRules( previoustaskinprogramset, previousoperation );
+      penalty := penalty
+                 + sum( programnoncumulativerules, Elements, rule, 
+                        not rule.IsHardConstraintForOptimizer()
+                        and rule.CharacteristicMain() = characteristic,
+                        rule.RuleSubType().GetPenaltyForPreferenceRuleViolation( rule, previousoperation, this, do_rule ) );
+    
+      // Calculate penalty for program cumulative rules ( Min/Max combined length rules )
+      programtyperules := this.GetCumulativeRulesForProgramType( tips.ProgramType().ProgramTypeConfiguration(), previousoperation, characteristic );
+      doruleprogram := tips.GetRuleDataObjectForConstraintPrecondition( characteristic, false, 0.0 );
+      penalty := penalty
+                 + sum( programtyperules, Elements, rule, 
+                        not rule.IsHardConstraintForOptimizer()
+                        and rule.CharacteristicMain() = characteristic,
+                        rule.RuleSubType().GetPenaltyForPreferenceRuleViolation( rule, 
+                                                                                 previousoperation, 
+                                                                                 this, 
+                                                                                 doruleprogram ) );
+    
+      // Calculate penalty for program phase cumulative rules ( Min/Max combined length rules )
+      if( not isnull( tips.ProgramPhase() ) )
+      {
+        programphaserules := this.GetCumulativeRulesForProgramPhase( tips.ProgramPhase().ProgramPhaseConfiguration(), previousoperation, characteristic ); 
+        doruleprogramphase := tips.GetRuleDataObjectForConstraintPrecondition( characteristic, true, 0.0 );
+        penalty := penalty
+                   + sum( programphaserules, Elements, rule, 
+                          not rule.IsHardConstraintForOptimizer()
+                          and rule.CharacteristicMain() = characteristic,
+                          rule.RuleSubType().GetPenaltyForPreferenceRuleViolation( rule, 
+                                                                                   previousoperation, 
+                                                                                   this, 
+                                                                                   doruleprogramphase ) );
+      }
+    }
+    
+    return penalty;
+  *]
+}

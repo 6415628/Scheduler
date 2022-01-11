@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update (Shutdown shutdown)
+{
+  Description: 'Update demo data shutdown task based on Shutdown object'
+  TextBody:
+  [*
+    CopyCorresponding::CopyFrom( shutdown ).CopyTo( this );
+    
+    // Update attributes from relations
+    this.ResourceID( guard( shutdown.Resource_SC().ResourceID(), '' ) );
+    this.AfterOperationID( guard( shutdown.Task_SC().Previous().GetOperation().OperationID(), '' ) );
+    this.ShutdownTypeID( guard( shutdown.ResponsibleShutdownType().ShutdownTypeID(), '' ) );
+    this.IsFrozenByUser( guard( shutdown.Task_SC().IsFrozenByUser(), false ) );
+    
+    // Update archived attributes
+    this.ArchivedAfterShutdownCumulativeCharacteristic( Characteristic::GetCumulativeValueStringForNumberVector( shutdown.ArchivedAfterShutdownCumulativeCharacteristic() ) );
+    this.ArchivedAfterShutdownCumulativeRealValues( Characteristic::GetCumulativeValueStringForRealVector( shutdown.ArchivedAfterShutdownCumulativeRealValues() ) );
+  *]
+}

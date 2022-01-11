@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcParallelismNumberWithoutWaiting
+{
+  TextBody:
+  [*
+    // jps1 May-28-2020 (created)
+    
+    waitingTime := sum( this, 
+                        SnapshotCapacity.Blocks, 
+                        block, 
+                        block.Start() >= this.StartedOn() 
+                        and block.Start() < this.StartedOn() + this.Duration()
+                        and block.Amount() = 0, 
+                        block.Duration() )
+    
+    totalComponentTime := sum( this, 
+                               SnapshotCapacity.Blocks, 
+                               block, 
+                               block.Start() >= this.StartedOn() 
+                               and block.Start() < this.StartedOn() + this.Duration()
+                               and block.Amount() > 0, 
+                               block.Amount() * block.Duration() );
+    
+    value := 0.0;
+    totaltime := this.Duration() - waitingTime;
+    
+    if( totaltime > Duration::Zero() )
+    {
+      value := totalComponentTime / totaltime;
+    }
+    
+    this.ParallelismNumberWithoutWaiting( value );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

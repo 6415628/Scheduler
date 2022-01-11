@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateDataHolderProgramDefinitionShadow (Resource_SC owner, Task_SC aftertask) id:Method_DialogCreateEditProgramChange_UpdateDataHolderProgramDefinitionShadow
+{
+  #keys: '[143388.0.1951200853]'
+  Body:
+  [*
+    // Create shadow data for ProgramDefinitionConfiguration when open the dialog
+    progdefinition := shadow( owner.ProgramDefinitionConfiguration() );
+    
+    // Traverse all the program set
+    traverse( progdefinition, ProgramSetConfiguration, set )
+    {
+      previousprogramtype := select( aftertask, TaskInProgramSet.ProgramType.ProgramTypeConfiguration, type, 
+                                     type.ProgramSetConfiguration() = set.WrappedInstance() );
+    
+      // Removed unused data
+      traverse( set, ProgramTypeChangeConfiguration, pt )
+      {
+        if( not exists( aftertask, TaskInProgramSet.ProgramType.ProgramTypeConfiguration, from, from = pt.FromProgramTypeConfiguration() ) )
+        { 
+          pt.Delete();
+        }
+      }       
+    
+      // Add missing combination data
+      traverse( set, ProgramTypeConfiguration, to )
+      {
+        toprogramtype := to.WrappedInstance();
+        setactual := set.WrappedInstance();
+        typeconfig := select( previousprogramtype, AsFromProgramTypeConfiguration, ptc, ptc.ToProgramTypeConfiguration() = toprogramtype );
+        if( isnull( previousprogramtype ) or isnull( typeconfig ) )
+        {
+          // Create shadow combination data with default settings
+          isallowed := ProgramTypeChangeConfiguration::GetProgramTypeChangeIsAllowed( previousprogramtype, toprogramtype );
+          duration := ProgramTypeChangeConfiguration::GetProgramTypeChangeDuration( previousprogramtype, toprogramtype );
+          name := ProgramTypeChangeConfiguration::GetProgramTypeChangeName( setactual, previousprogramtype, toprogramtype );
+          set.ProgramTypeChangeConfiguration( relnew,
+                                              FromProgramDefinitionConfigurationID := guard( previousprogramtype.ProgramDefinitionConfigurationID(), '' ),
+                                              FromProgramSetConfigurationID := guard( previousprogramtype.ProgramSetConfigurationID(), '' ),
+                                              FromProgramTypeConfigurationID := guard( previousprogramtype.ProgramTypeConfigurationID(), '' ),
+                                              ToProgramDefinitionConfigurationID := toprogramtype.ProgramDefinitionConfigurationID(),
+                                              ToProgramSetConfigurationID := toprogramtype.ProgramSetConfigurationID(),
+                                              ToProgramTypeConfigurationID := toprogramtype.ProgramTypeConfigurationID(),
+                                              FromProgramTypeConfiguration := previousprogramtype, 
+                                              ToProgramTypeConfiguration := toprogramtype,
+                                              IsAllowed := isallowed,
+                                              ProgramTypeChangeDuration := duration,
+                                              Name := name );
+        }
+      }
+    }
+    
+    // Set the shadow data into DataHolder
+    DataHolderProgramDefinitionConfigurationShadow.Data( &progdefinition );
+  *]
+}

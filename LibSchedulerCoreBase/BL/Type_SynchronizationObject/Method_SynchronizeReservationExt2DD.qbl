@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeReservationExt2DD (output Fulfillments updatedinstances)
+{
+  Description: 'Synchronizing external fulfillments between external supply and dependent demands.'
+  TextBody:
+  [*
+    traverse( this, Schedule.ImportedFixedProductStock2DD, row, row.IsValidDataHard() )
+    {
+      externalsupply := ProductExternalSupply::FindProductExternalSupply( SupplyType::ProductExternalSupply(), row.ExternalSupplyId() );
+      dependentdemand := ProductDependentDemand::FindProductDependentDemand( DemandType::ProductDependentDemand(), row.DependentDemandId() );
+      
+      demands  := construct( ProductDemands );
+      supplies := construct( ProductSupplys );
+      
+      if( not isnull( dependentdemand ) )
+      {
+        demands.Add( dependentdemand );
+      }
+      if( not isnull( externalsupply ) )
+      {
+        supplies.Add( externalsupply );
+      }
+    
+      this.SynchronizeExternalFulfillments( demands, supplies, row, updatedinstances );
+    }
+  *]
+}

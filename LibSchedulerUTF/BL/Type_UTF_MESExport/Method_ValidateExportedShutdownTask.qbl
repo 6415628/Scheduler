@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValidateExportedShutdownTask (Schedule schedule, String taskType) as Boolean
+{
+  TextBody:
+  [*
+    exportedSingleTask := select( schedule, ExportedSingleTask, exportedSingleTask, true );
+    shutdownTask := select( schedule, Shutdown.Task_SC.astype( StoppageTask ), t, true );
+    shutdownType := shutdownTask.Shutdown().ShutdownType();
+    
+    value := exportedSingleTask.Duration() = shutdownTask.Duration()
+             and exportedSingleTask.End() = shutdownTask.End()
+             and exportedSingleTask.ProcessStart() = shutdownTask.ProcessStart()
+             and exportedSingleTask.Resource() = shutdownTask.Resource_SC().ResourceID()
+             and exportedSingleTask.ScheduledPrevOperationID() = ''
+             and exportedSingleTask.SchedulerStoppageTaskID() = shutdownTask.TaskID()
+             and exportedSingleTask.ShutdownTypeID() = shutdownType.ShutdownTypeID()
+             and exportedSingleTask.ShutdownTypeName() = shutdownType.Name()
+             and exportedSingleTask.Start() = shutdownTask.Start()
+             and exportedSingleTask.TaskType() = taskType;
+    
+    return value;
+  *]
+}

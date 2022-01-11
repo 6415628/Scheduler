@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOAConstraintTransitionAllowed (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata)
+{
+  Description: 'Adds the TransitionAllowed constraints (always hard) needed for the POA.'
+  TextBody:
+  [*
+    // the TransitionAllowed rules are the same on all resources, so we only need to create one POAPossible object and then set it for all paths.
+    // create the POAPossible:
+    default_allowed := true;
+    poapossible := POAPossible::NN( poa, SuboptimizerSequencingPOA::NamePOAPossibleTransitionAllowed(), default_allowed );
+    // allow all transitions except the following exception.
+    // For each in-span operations o that has its IsAllowedToPlanAfter=false, disallow any transition from o to any other operation (except the one currently planned after it, if that exists and is in the total scope)
+    traverse( transientdata,
+              OperationInSuboptimizerSequencing,
+              spanop,
+              spanop.IsInSpan() and
+              not spanop.OperationScopeElement().IsAllowedToPlanAfterSpan( transientdata.Task() ) )
+    {
+      // disallow any transition from spanop to any other operation (except the one currently planned after it, if that exists and is in the total scope)
+      traverse( transientdata, OperationInSuboptimizerSequencing, other_operation, other_operation <> spanop.Next() )
+      {
+        poapossible.Set( poa.Node( spanop ), poa.Node( other_operation ), false );
+      }
+    }
+    
+    // now set that POAPossible for all resource(group) paths:
+    traverse( transientdata.GetPOAPathTypeResources(), Elements, resource )
+    {
+      resources_in_pathtype := null( ResourceInSuboptimizerSequencings );
+      if( resource.ResourceGroup().IsExchangable() )
+      {
+        // this path type represents multiple resources:
+        resources_in_pathtype := selectset( resource.ResourceGroup(), Resource, r, true );
+      }
+      else
+      {
+        // this path type represents a single resource:
+        resources_in_pathtype := construct( ResourceInSuboptimizerSequencings );
+        resources_in_pathtype.Add( resource );
+      }
+      
+      traverse( resources_in_pathtype, Elements, res )
+      {
+        traverse( transientdata, OperationInSuboptimizerSequencing, operation, true )
+        {
+          poapossible.Set( poa.Node( res ), poa.Node( operation ), false ); 
+        }
+      
+        pathtype := poa.PathType( this.GetPathTypeName( res ) );
+        pathtype.TransitionAllowed( poapossible );
+      }
+    }
+  *]
+}

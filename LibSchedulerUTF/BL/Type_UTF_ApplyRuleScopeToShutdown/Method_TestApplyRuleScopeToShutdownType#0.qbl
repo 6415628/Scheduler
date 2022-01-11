@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestApplyRuleScopeToShutdownType (Schedule schedule)
+{
+  Description: 'Test apply rule scope to shutdown type'
+  TextBody:
+  [*
+    // Get variant attribute
+    hasShutdownInScope := false;
+    hasNoConstraintViolation := false;
+    
+    this.GetTestVariant( hasShutdownInScope,
+                         hasNoConstraintViolation );
+    
+    // Propagate declarative attribute
+    Transaction::Transaction().Propagate( attribute( Task_SC, TaskID ) );
+    
+    isTask2HasNoViolateConstraint := exists(  schedule, Operation_SC.Task_SC, t, 
+                                              t.TaskID() = 'Operation2',
+                                              t.IsAllHighPriorityRulesOK() and t.IsAllLowPriorityRulesOK() );
+    
+    isTask3HasNoViolateConstraint := exists(  schedule, Operation_SC.Task_SC, t, 
+                                              t.TaskID() = 'Operation3',
+                                              t.IsAllHighPriorityRulesOK() and t.IsAllLowPriorityRulesOK() );
+    
+    value := isTask2HasNoViolateConstraint and isTask3HasNoViolateConstraint;
+    
+    this.Run().AssertEqual( hasNoConstraintViolation, value );
+  *]
+}

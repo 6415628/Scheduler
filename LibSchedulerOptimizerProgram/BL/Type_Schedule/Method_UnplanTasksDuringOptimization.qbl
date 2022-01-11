@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method UnplanTasksDuringOptimization (Task_SCs tasks)
+{
+  Description: 'Unplan / delete all selected tasks, ignore the optimization locking status'
+  TextBody:
+  [*
+    traverse( tasks, Elements, task, task.CanUnplanHardDuringOptimization() )
+    {
+      if( task.Resource_SC().IsPlanRelatedOperations() )
+      {
+        // unplan related operations
+        traverse( task, OperationInTask, op ) 
+        {
+          op.UnplanRelatedOperations();
+        }
+      }
+      
+      task.Unplan();
+    }
+    
+    this.AutomaticProductBasedMaterialReservationBySorting();
+  *]
+}

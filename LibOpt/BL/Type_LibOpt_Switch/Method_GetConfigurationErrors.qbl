@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetConfigurationErrors () declarative as owning Strings
+{
+  TextBody:
+  [*
+    result := super.GetConfigurationErrors();
+    
+    branches := this.GetOutgoingLinks();
+    nr := branches.Size();
+    
+    if( nr = 0 )
+    {
+      result.Add( Translations::LibOpt_ComponentConfiguration_Switch_NoBranches() );
+    }
+    else if( nr = 1 )
+    {
+      result.Add( Translations::LibOpt_ComponentConfiguration_Switch_SingleBranch() );
+    }
+    
+    link_result := selectvalues( branches, Elements, link, link.HasConstraintViolations(), this.FormatLinkConfigurationErrors( link ) );
+    result := result.Union( link_result );
+    
+    return & result;
+  *]
+}

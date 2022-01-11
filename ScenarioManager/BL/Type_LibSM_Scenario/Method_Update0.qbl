@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update (String scenarioName, String comment, Boolean isLive, 
+  String storagestate, LibSM_KnowledgeProfile knowledgeProfile, LibSM_MetaDatas metadata, 
+  String timezoneID) as LibSM_Scenario
+{
+  Description: 'Update the attributes of LibSM_Scenario (For timezone supported)'
+  TextBody:
+  [*
+    this.Name( scenarioName );
+    this.Comment( comment );
+    this.TimezoneID( timezoneID );
+    this.IsLive( isLive );
+    this.UpdateLastChanged();
+    
+    this.MetaDataInScenario( relflush );
+    traverse( metadata, Elements, md )
+    {
+      this.MetaDataInScenario( relnew, MetaData := md );
+    }
+                       
+    this.KnowledgeProfile( relset, knowledgeProfile );
+    
+    if( this.Dataset().StorageState() <> storagestate )
+    {
+      DatasetController::Change( this.Dataset().DatasetMDSID(), DatasetState::FromString( storagestate ) );
+      this.Dataset().StorageState( storagestate );
+    }
+    
+    this.ScenarioManager().UpdateDataset( this );
+    this.UpdateLastChanged();
+    
+    return this;
+  *]
+}

@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method GotoNext (Boolean isMakeCurrent, Boolean isSkipped) as LibWiz_InitElement
+{
+  TextBody:
+  [*
+    next := null( LibWiz_InitElement );
+    
+    if( not isMakeCurrent )
+    {
+      this.IsSkipped( isSkipped );
+      this.IsCompleted( not isSkipped );
+      if( this.Children( relsize ) > 0 and isSkipped )
+      {
+        this.SetRecursiveStatus( true );
+      }
+    }
+    
+    if( not isnull( this.Parent() ) )
+    {
+      isSkipped := exists( this, Parent.Children, c, c.IsEnabled(), c.IsSkipped() );
+      next := this.Parent().GotoNext( this, isMakeCurrent, isSkipped );
+    }
+    else
+    {
+      this.Owner().Current( relflush ); 
+    }
+    
+    return next;
+  *]
+}

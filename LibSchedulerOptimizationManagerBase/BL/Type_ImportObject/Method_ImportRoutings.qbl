@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportRoutings (String jsonString) #extension
+{
+  TextBody:
+  [*
+    jsonTree := JSON::Parse( jsonString );
+    schedule := this.Schedule();
+    
+    // Get Routings JSON
+    routingsJSON := guard( jsonTree.Get( Constants::JSON_Processes() ), null( JSON, owning ) );
+    
+    if( not isnull( routingsJSON ) )
+    {
+      // Create Routings
+      for( i := 0; i < routingsJSON.Size(); i ++ )
+      { 
+        routingJSON := routingsJSON.Get( i );
+        importedRouting := ImportedRouting_SC::ParseFCjson( schedule, routingJSON );
+        
+        // Get Routing Steps JSON
+        routingStepsJSON := guard( routingJSON.Get( Constants::JSON_Process_Operations() ), null( JSON, owning ) );
+        
+        if( not isnull( routingStepsJSON ) )
+        {
+          // Create Routing Steps
+          for( j := 0; j < routingStepsJSON.Size(); j ++ )
+          {
+            routingStepJSON := routingStepsJSON.Get( j );
+            importedRoutingStep := ImportedRoutingStep_SC::ParseFCjson( schedule, importedRouting.RoutingId(), j, routingStepJSON );
+            
+            // Get Capable Resources JSON
+            capableResourcesJSON := guard( routingStepJSON.Get( Constants::JSON_CapableResources() ), null( JSON, owning ) );
+            
+            if( not isnull( capableResourcesJSON ) )
+            {
+              for ( k := 0; k < capableResourcesJSON.Size(); k ++ )
+              {
+                // Create Capable Resource
+                capableResourceJSON := capableResourcesJSON.Get( k );
+                ImportedCapableResource::ParseFCjson( schedule, capableResourceJSON, importedRoutingStep );
+              }
+            }
+          }
+        }
+      }
+    }
+    else
+    {
+      logfile( Translations::Lib3DSpace_NoProcess() ); 
+    }
+  *]
+}

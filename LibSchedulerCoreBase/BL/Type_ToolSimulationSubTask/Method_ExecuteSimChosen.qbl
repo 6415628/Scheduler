@@ -1,0 +1,75 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExecuteSimChosen () declarative
+{
+  Description: 'When the simulation has selected a subtask (based on score), this method will be triggered.'
+  TextBody:
+  [*
+    // alexandern Oct-27-2015 (created)
+    /*
+    The start time of a subtask is determined by get earliest start.
+    When the start time is more or less known, the start of the tool tasks can be calculated.
+    NOTE: The start time of get earliest start is the start of the subtask(s) using a Tool
+    */
+    
+    // 1. Calculate earliest start of the subtask.
+    subtask  := this.SubTask();
+    start    := subtask.GetSimEarliestStartAndAssignTool();
+    this.SimulatedEarliestStart( start ) // set the earliest start on the simulated tool
+    resourcecalendar := subtask.Resource_SC().ResourceCalendar();
+    //Ensure that whenever a change in score resource throughput will trigger simulation
+    this.Task_SC().Resource_SC().ScoreResourceThroughPut();
+    
+    // 2. Update start/end for each of the tool task.
+    traverse( subtask, ToolTask, tooltask )
+    {
+      tool      := select( tooltask, ToolTaskOnTool.Tool, tool,
+                           tool.ToolID() = tooltask.ToolID() );
+    
+      if( not isnull( tool ) )
+      {
+        toolcalendar  := tool.ToolCalendar();
+        toolstart := DateTime::MinDateTime();
+    
+        if( tooltask.Offset() > Duration::Zero() )
+        {
+          toolstart := resourcecalendar.Add( start, tooltask.Offset() );
+        }
+        else // the start of the tool will start earlier than the start of the subtask as long as the Offset duration
+        {
+          toolstart := toolcalendar.Subtract( start, - tooltask.Offset() );
+        }
+    
+        toolstart := toolcalendar.NextAvailable( toolstart );
+    
+        /* AlexanderNg 26-Oct-2015 QP #5806 considered two calendar of the tool's resource and its own tool
+           because in default calendar strategy when a subtask is extended because of its calendar downtime,
+           the duration of the tool should still be used by that subtask until that subtask is done.
+        */
+    
+        query := Calendar::Query();
+        query.AddCalendar( toolcalendar );
+        // resource calendar is needed to ensure the end of the tool task is lengthen when there is downtime
+        query.AddCalendar( resourcecalendar );
+    
+        toolend := query.Add( toolstart, tooltask.Duration() );
+        toolduration := toolend - toolstart;
+    
+        subtaskend := resourcecalendar.Add( start, tooltask.Duration() );
+        subtaskduration := subtaskend - start;
+    
+        // Considering offset
+        if( toolduration > subtaskduration )// if the tool task's duration is larger than the subtask's duration
+        {
+          toolend := toolcalendar.Subtract( toolend, - tooltask.Offset() );
+        }
+    
+        tooltask.Start( toolstart );
+        tooltask.End( toolend );
+        tool.SimAvailableTime( toolend ); // update the available time of the tool.
+        tool.IsBlocked( false );
+        this.BlockTool( tool, tooltask ); // AlexanderNg 5-Jan-2015 QP #6081
+      }
+    }
+  *]
+}

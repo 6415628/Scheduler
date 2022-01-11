@@ -1,0 +1,100 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllTestVariantsForKPIDeliveryPerformance (output Booleans isdummy, output Booleans hasfeedback, output Booleans hasfinished, 
+  output Booleans isplanned, output Booleans isdue, output Booleans isontime, 
+  output Reals kpideliveryperformance) as owning Strings
+{
+  Description: 'Return all test variants, variant output arguments (columns) will be used in data creation logic for constraint checking.'
+  TextBody:
+  [*
+    variants := construct( Strings );
+    //Default value for kpi
+    allOps := 5;
+    
+    //Default value for argument used in KPI, but kept as similar in all variant
+    isdummy_arg := false;
+    hasfinished_arg := false;
+    
+    // Scenario 1.1: Test KPI DeliveryPerformance with no feedback, is planned, is due in scheduling horizon and is scheduled on time ( 100% KPI )
+    nrontime := allOps;    // variant is on itme
+    nrinhorizon := allOps; // variant has no feedback and is due in scheduling horizon
+    kpi := ( nrontime / nrinhorizon ) * 100;
+    this.SetTestVariant( 'Test KPI DeliveryPerformance with no feedback, is planned, is due in scheduling horizon and is scheduled on time ( 100% KPI )',
+                          isdummy_arg,
+                          false, //hasfeedback
+                          hasfinished_arg,
+                          true,  //isplanned
+                          kpi,
+                          //output arg
+                          isdummy, hasfeedback, hasfinished, isplanned, kpideliveryperformance, &variants );
+    
+    isdue.Add( true );
+    isontime.Add( true );
+    
+    // Scenario 1.2: Test KPI DeliveryPerformance with feedback, is planned, is due in scheduling horizon and is scheduled on time ( 100% KPI )
+    nrontime := allOps - 1; // variant has feedback
+    nrinhorizon := allOps - 1; // variant has feedback, excluded from kpi
+    kpi := ( nrontime / nrinhorizon ) * 100;
+    this.SetTestVariant( 'Test KPI DeliveryPerformance with feedback, is planned, is due in scheduling horizon and is scheduled on time ( 100% KPI )',
+                          isdummy_arg,
+                          true, //hasfeedback//
+                          hasfinished_arg,
+                          true, //isplanned
+                          kpi,
+                          //output arg
+                          isdummy, hasfeedback, hasfinished, isplanned, kpideliveryperformance, &variants );
+    
+    isdue.Add( true );
+    isontime.Add( true );
+    
+    // Scenario 1.3: Test KPI DeliveryPerformance with no feedback, is not planned, is due in scheduling horizon and is scheduled on time ( 80% KPI )
+    nrontime := allOps - 1; // variant is not planned
+    nrinhorizon := allOps;  // variant is due in scheduling horizon, included in kpi
+    kpi := ( nrontime / nrinhorizon ) * 100;
+    this.SetTestVariant( 'Test KPI DeliveryPerformance with no feedback, is not planned, is due in scheduling horizon and is scheduled on time ( 80% KPI )',
+                          isdummy_arg,
+                          false, //hasfeedback
+                          hasfinished_arg,
+                          false, //isplanned//
+                          kpi,
+                          //output arg
+                          isdummy, hasfeedback, hasfinished, isplanned, kpideliveryperformance, &variants );
+    
+    isdue.Add( true );
+    isontime.Add( true );
+    
+    // Scenario 1.4: Test KPI DeliveryPerformance with no feedback, is planned, is not due in scheduling horizon and is scheduled on time ( 100% KPI )
+    nrontime := allOps - 1;    // variant is not due in scheduling horizon
+    nrinhorizon := allOps - 1; // variant is not due in scheduling horizon, excluded from kpi
+    kpi := ( nrontime / nrinhorizon ) * 100;
+    this.SetTestVariant( 'Test KPI DeliveryPerformance with no feedback, is planned, is not due in scheduling horizon and is scheduled on time ( 100% KPI )',
+                          isdummy_arg,
+                          false, //hasfeedback
+                          hasfinished_arg,
+                          true,  //isplanned
+                          kpi,
+                          //output arg
+                          isdummy, hasfeedback, hasfinished, isplanned, kpideliveryperformance, &variants );
+    
+    isdue.Add( false );//
+    isontime.Add( true );
+    
+    // Scenario 1.5: Test KPI DeliveryPerformance with no feedback, is planned, is due in scheduling horizon and is not scheduled on time ( 80% KPI )
+    nrontime := allOps - 1;// variant is not on time
+    nrinhorizon := allOps; // variant is not on time, included in kpi
+    kpi := ( nrontime / nrinhorizon ) * 100;
+    this.SetTestVariant( 'Test KPI DeliveryPerformance with no feedback, is planned, is due in scheduling horizon and is not scheduled on time ( 80% KPI )',
+                          isdummy_arg,
+                          false, //hasfeedback
+                          hasfinished_arg,
+                          true,  //isplanned
+                          kpi,
+                          //output arg
+                          isdummy, hasfeedback, hasfinished, isplanned, kpideliveryperformance, &variants );
+    
+    isdue.Add( true );
+    isontime.Add( false );//
+    
+    return &variants;
+  *]
+}

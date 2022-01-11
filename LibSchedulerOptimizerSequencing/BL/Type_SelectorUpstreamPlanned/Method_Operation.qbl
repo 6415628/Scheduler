@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Operation (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    // select all unplanned operations of the input scope all of whose upstream operations are planned or out of scope.
+    snapshot := SnapshotSelectorOperations::Create( task.Run() );
+    
+    // do this by negation: remove the operations that don't meet the requirements:
+    
+    // GetUpstreamOperations is used. This is a relatively costly methods as it looks at all upstream operations where we
+    // are only interested in the inscope upstream operations.
+    // If this causes performance issues, possible solution is to create a shadow world where only the relevant operations
+    // are taken into account. 
+    
+    // Select the operations that should be removed from scope:
+    to_remove := selectset( task.Scope().ScopeElements( typeof( ScopeElementOperation ) ),
+                            Elements.astype( ScopeElementOperation ),
+                            se,
+                            // Exclude operations that have no allowed resource
+                            not se.Operation_SC().HasAllowedResources()
+                            or 
+                            // Not all upstream operations are planned
+                            // and there is at least one unplanned upstream operation that is in scope (and that is not the current operation)
+                            ( not se.Operation_SC().IsAllPreviousPlanned() 
+                              and exists( se.Operation_SC().GetUpstreamOperations(), 
+                                          Elements, 
+                                          upop, 
+                                          upop <> se.Operation_SC()
+                                          and task.Scope().Contains( upop.ScopeElementOperation() )
+                                          and not upop.IsPlanned() ) )
+                            // Or this operation is already planned and the selector is set to exclude planned operations
+                            or ( not this.IncludePlanned() and se.Operation_SC().IsPlanned() ) );
+    
+    // keep all except to_remove:
+    scope_elements := task.Scope().ScopeElementsNotLocked().Difference( to_remove );
+    scope := LibOpt_Scope::Create( task.Run(), scope_elements );
+    
+    // report:
+    snapshot.NrOfOperationsSelected( scope.Operations().Size() );
+    snapshot.RecordScope( scope_elements );
+    
+    return this.Continue( task, scope );
+  *]
+}

@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod AssertOutputScopeIsSubsetOf (LibOpt_ScopeElements subscope, LibUTF_IterationRun utf_run, LibOpt_Component component)
+{
+  Description:
+  [*
+    asserts that the given component has successfully executed exactly once and that its output scope is a subset of the given subscope.
+    
+    the optimizer run has to have finished and run with scope debugging enabled.
+  *]
+  TextBody:
+  [*
+    // mbr23 Feb-14-2020 (created)
+    Transaction::Transaction().Propagate();
+    utf_run.AssertEqual( 1, component.NrTimesCalled(), 'The component ' + component.Name() + ' should have executed exactly once.' );
+    utf_run.AssertEqual( 1, counter( component, SnapshotComponent, snap, true ), 'The component ' + component.Name() + ' should have exactly one snapshot.' );
+    snapshot := select( component, SnapshotComponent, snap, true );
+    out_scope := snapshot.OutputScope();
+    utf_run.AssertTrue( guard( subscope.ContainsAll( out_scope.ScopeElements() ), false ), 'The output scope of component ' + component.Name() + ' contains more than the expected elements.' );
+  *]
+}

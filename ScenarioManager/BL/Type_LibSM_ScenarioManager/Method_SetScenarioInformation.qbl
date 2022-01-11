@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetScenarioInformation (Key planningDatasetMDSID, String information)
+{
+  Description: 'Set the generic-purpose String attribute in scenario'
+  TextBody:
+  [*
+    dataset  := select( this, ScenarioNode.astype( LibSM_Scenario ).Dataset, dataset,
+                        dataset.DatasetMDSID() = planningDatasetMDSID );
+    scenario := guard( dataset.Scenario(), null( LibSM_Scenario ) );
+    
+    if( not isnull( scenario ) )
+    {
+      scenario.SetInformation( information );
+    }
+    else
+    {
+      message := "Cannot set scenario's Information. Scenario for dataset with MDSID '" + [String]planningDatasetMDSID + "' does not exist.";  
+      LibSM_Util::LogInfo( message );  
+    }
+  *]
+}

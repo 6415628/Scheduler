@@ -1,0 +1,85 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllTestVariantsForKPIQuantityDueNotScheduled (output Booleans isdummy, output Booleans hasfeedback, output Booleans hasfinished, 
+  output Booleans isdue, output Booleans isplanned, output Reals kpiquantityduenotscheduled) as owning Strings
+{
+  Description: 'Return all test variants, variant output arguments (columns) will be used in data creation logic for constraint checking.'
+  TextBody:
+  [*
+    variants := construct( Strings );
+    // Default urgency 2.
+    urgency := 2;
+    
+    kpiincreamentforoneoperation := pow( urgency, 3 ) * 100.0;
+    // Kpi from 4 main operations, with same quantity 100
+    kpifrommainoperations := kpiincreamentforoneoperation*4;
+    
+    //Default value for argument used in KPI, but kept as similar in all variant
+    isdummy_arg := false;
+    
+    // Scenario 1.1: Test KPI QuantityDueNotScheduled with no feedback, has not finished, is due in scheduling horizon and is not planned ( increase KPI )
+    kpi := kpiincreamentforoneoperation + kpifrommainoperations;
+    this.SetTestVariant( 'Test KPI QuantityDueNotScheduled with no feedback, has not finished, is due in scheduling horizon and is not planned ( increase KPI )',
+                          isdummy_arg,
+                          false, //hasfeedback
+                          false, //hasfinished
+                          false, //isplanned
+                          kpi,
+                          //output arg
+                          isdummy, hasfeedback, hasfinished, isplanned, kpiquantityduenotscheduled, &variants );
+    
+    isdue.Add( true );
+    
+    // Scenario 1.2: Test KPI QuantityDueNotScheduled with feedback, has not finished, is due in scheduling horizon and is not planned ( no change KPI )
+    kpi := kpifrommainoperations;
+    this.SetTestVariant( 'Test KPI QuantityDueNotScheduled with feedback, has not finished, is due in scheduling horizon and is not planned ( no change KPI )',
+                          isdummy_arg,
+                          true,  //hasfeedback//
+                          false, //hasfinished
+                          false, //isplanned
+                          kpi,
+                          //output arg
+                          isdummy, hasfeedback, hasfinished, isplanned, kpiquantityduenotscheduled, &variants );
+    
+    isdue.Add( true );
+    
+    // Scenario 1.3: Test KPI QuantityDueNotScheduled with no feedback, but has finished, and is due in scheduling horizon and is not planned ( no change KPI )
+    kpi := kpifrommainoperations;
+    this.SetTestVariant( 'Test KPI QuantityDueNotScheduled with no feedback, but has finished, and is due in scheduling horizon and is not planned ( no change KPI )',
+                          isdummy_arg,
+                          false, //hasfeedback
+                          true,  //hasfinished//
+                          false, //isplanned
+                          kpi,
+                          //output arg
+                          isdummy, hasfeedback, hasfinished, isplanned, kpiquantityduenotscheduled, &variants );
+    
+    isdue.Add( true );
+    
+    // Scenario 1.4: Test KPI QuantityDueNotScheduled with no feedback, has not finished, not due in scheduling horizon and is not planned ( no change KPI )
+    kpi := kpifrommainoperations;
+    this.SetTestVariant( 'Test KPI QuantityDueNotScheduled with no feedback, has not finished, not due in scheduling horizon and is not planned ( no change KPI )',
+                          isdummy_arg,
+                          false, //hasfeedback
+                          false, //hasfinished
+                          false, //isplanned
+                          kpi,
+                          //output arg
+                          isdummy, hasfeedback, hasfinished, isplanned, kpiquantityduenotscheduled, &variants );
+    
+    isdue.Add( false );//
+    // Scenario 1.5: Test KPI QuantityDueNotScheduled with no feedback, has not finished, is due in scheduling horizon and is planned ( no change KPI )
+    kpi := kpifrommainoperations;
+    this.SetTestVariant( 'Test KPI QuantityDueNotScheduled with no feedback, has not finished, is due in scheduling horizon and is planned ( no change KPI )',
+                          isdummy_arg,
+                          false, //hasfeedback
+                          false, //hasfinished
+                          true,  //isplanned//
+                          kpi,
+                          //output arg
+                          isdummy, hasfeedback, hasfinished, isplanned, kpiquantityduenotscheduled, &variants );
+    
+    isdue.Add( true );
+    return &variants;
+  *]
+}

@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: GanttChartResourceSchedule_925
+Response OnDrop (structured[Operation_SC] source, SingleResourceBase droprow, Task_SC droptarget, 
+  Task_SC beforedroptarget, Task_SC afterdroptarget) id:Response_GanttChartResourceSchedule_925_OnDrop_338
+{
+  #keys: '[142956.0.658683029]'
+  DefinitionID: 'Responsedef_WebGanttChart_OnDrop'
+  GroupServerCalls: true
+  Precondition:
+  [*
+    isallowedhard := true;
+    aftertask    := afterdroptarget;
+    ctrlkey      := actionmodifier.IsControl();
+    ctrlshift := actionmodifier.IsControl() and actionmodifier.IsShift();
+    beforeTask   := beforedroptarget;
+    
+    // We check droprow.droprow.LastFeedback() because in the case where last feedback task is only started or has FSPL bound then it's task is preserved but hidden   
+    // hence only need this special handling and user can only plan after the last feedback task.
+    if( isnull( beforeTask ) and guard( not isnull( droprow.LastFeedbackTaskInSchedule().Task_SC() ), false ) 
+        and droprow.LastFeedbackTaskInSchedule().Task_SC().End() < droptime )
+    {
+      beforeTask := droprow.First();
+    }
+    
+    if( not isnull( droptarget ) )
+    {
+      aftertask := droptarget;
+    }
+    else if( not isnull( beforedroptarget ))
+    {
+      aftertask := beforedroptarget.astype( SingleTaskBase ).Next();
+    }
+    
+    return Scheduler.AllowedScheduling( droprow,
+                                        source,
+                                        ctrlkey,
+                                        ctrlshift,
+                                        beforeTask,
+                                        aftertask,
+                                        Operation_SC::GetSelectedObjects( source ),
+                                        feedback,
+                                        isallowedhard );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // OnDrop structured[Operation] --> SingleResourceBase
+      
+      targetTask := droptarget;
+      
+      if( isnull( droptarget ) )
+      {
+        targetTask := afterdroptarget;
+      }
+      
+      droprow.PlanBefore( source, targetTask.astype( SingleTaskBase ) );
+    *]
+  }
+}

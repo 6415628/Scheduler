@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetSnapshot (String action, String scenarioName) as stream[NamedValueTree]
+{
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    snapshot := this.CreateSnapshotData( DateTime::Now(), schedule.Time() );
+    
+    this.GetSnapshotBase( snapshot, schedule );
+    this.GetSnapshotIndustryLayer( snapshot, schedule );
+    this.GetSnapshotProject( snapshot, schedule );
+    
+    // Add labels for context.
+    label := ifexpr( action = Constants::KPI_Action_CompareKPIs(),
+                     Constants::KPI_Prefix_CompareKPIs(),
+                     Constants::KPI_Prefix_TrackKPIs() );
+    
+    snapshot.CreateLabel( label, scenarioName );
+    
+    // Add retention policy 
+    retentionPolicy := ifexpr( action = Constants::KPI_Action_CompareKPIs(),
+                               KpiRetentionPolicy::POLICY_TEMPORARY(),
+                               KpiRetentionPolicy::POLICY_INDEFINITE() );
+    
+    snapshot.RetentionPolicyIdentification( retentionPolicy );
+    
+    // Convert the constructured structure into an NVT and return it.
+    nvt := KpiSnapshotGenerator::ConvertSnapshotDataObjectToTransportFormatNvt( snapshot );
+    return emit( nvt );
+  *]
+}

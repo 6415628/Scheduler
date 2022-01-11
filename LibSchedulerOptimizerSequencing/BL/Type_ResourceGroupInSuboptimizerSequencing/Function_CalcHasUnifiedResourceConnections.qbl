@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcHasUnifiedResourceConnections
+{
+  TextBody:
+  [*
+    // mbr23 Jan-27-2020 (created)
+    
+    resourceconnections_enabled := this.TransientData().Component().Optimization().astype( Optimization ).Schedule().TechnicalConfiguration().IsResourceConnectionEnabled();
+    
+    value := true;
+    
+    if( resourceconnections_enabled and this.Resource( relsize ) > 0 )
+    {
+      // check all resource connection of resources:
+      anyresource := select( this, Resource, r, true );
+      downstreamshash := anyresource.AllowedToResourcesHash();
+      downstreamhashesmatch := forall( this, Resource, r, true, r.AllowedToResourcesHash() = downstreamshash );
+      upstreamshash := anyresource.AllowedFromResourcesHash();
+      upstreamhashesmatch := forall( this, Resource, r, true, r.AllowedFromResourcesHash() = upstreamshash );
+      if( not downstreamhashesmatch or not upstreamhashesmatch )
+      {
+        // resource connections are not unified.
+        value := false;
+      }
+      else
+      {
+        // Matching hashes are an indication of equality, but not a proof. Test proper equality:
+        allowed_downstream_resources := anyresource.GetAllowedToResources();
+        allowed_upstream_resources := anyresource.GetAllowedFromResources();
+        traverse( this, Resource, resource, value )
+        {
+          if( not ResourceGroupInSuboptimizerSequencing::IsEqualSets( resource.GetAllowedToResources(), allowed_downstream_resources ) or
+              not ResourceGroupInSuboptimizerSequencing::IsEqualSets( resource.GetAllowedFromResources(), allowed_upstream_resources ) )
+          {
+            value := false;
+          }
+        }
+      }
+    }
+    
+    this.HasUnifiedResourceConnections( value );
+  *]
+}

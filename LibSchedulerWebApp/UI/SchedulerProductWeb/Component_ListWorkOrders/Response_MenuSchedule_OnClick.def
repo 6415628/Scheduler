@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[WorkOrder] selection) id:Response_ListWorkOrders_MenuSchedule_OnClick
+{
+  #keys: '[142956.2.322685527]'
+  CanBindMultiple: false
+  DefinitionID => /Responsedef_ListWorkOrders_WebMenu_OnClick
+  GroupServerCalls: true
+  Initiator: 'MenuSchedule'
+  Precondition:
+  [*
+    return Schedule.AllowedOptimizeWorkOrders( selection, feedback );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Optimize operations in SELECTED work orders and the existing schedule
+      
+      // Clear scoped operations
+      DataHolderOptimizerScopeOperations.Data().Flush();
+      
+      // Scope selection
+      plannedoperations := Schedule.GetAllPlannedOperations();
+      operations := selectset( selection, Elements.WorkOrderOperation.Operation_SC, op, true );
+      DataHolderOptimizerScopeOperations.Data( plannedoperations.Union( operations ) );
+      
+      // Get all allowed resources
+      resources := Operation_SC::GetAllowedResources( DataHolderOptimizerScopeOperations.Data() );
+      
+      // Optimize
+      Schedule.Optimization().OptimizerSequencing().OptimizeWithDefaultSettings( DataHolderOptimizerScopeOperations.Data(), resources );
+    *]
+  }
+}

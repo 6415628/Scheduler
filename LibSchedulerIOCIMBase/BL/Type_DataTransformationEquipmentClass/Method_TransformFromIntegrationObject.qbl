@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride TransformFromIntegrationObject (const LibDIO_IntegrationObject integrationObject_i)
+{
+  TextBody:
+  [*
+    // Cast integrationObject_i to the applicable type.
+    integrationObject := integrationObject_i.astype( LibDII_CIM_EquipmentClass );
+    
+    // Synchronize resource group
+    // Get the existing instance.
+    schedule := this.IntegrationAPI().astype( IntegrationAPI ).Schedule();
+    importedResourceGroup := select( schedule, ImportedResourceGroup_SC, importedResourceGroup, importedResourceGroup.ResourceGroup() = integrationObject.ID() );
+    
+    // Update the values.
+    if( not isnull( importedResourceGroup ) )
+    {
+      importedResourceGroup.Update( integrationObject.IsBatchResource(), integrationObject.HasFixedSequencePlanLogic(), integrationObject.HasPractice(), integrationObject.IsContinuous() );
+    }
+    
+    // Synchronize resource
+    // Get the existing instance.
+    importedResource := select( schedule, ImportedResourceGroup_SC.ImportedResource_SC, importedResource, importedResource.EquipmentClassID() = integrationObject.ID() );
+    
+    // Update the values.
+    if( not isnull( importedResource ) )
+    {
+      importedResource.Update( integrationObject.ContinuousResourceLength(), integrationObject.MaxBatchSize(), integrationObject.MaximumParallelLoadWidth(), integrationObject.MinimumGapLength(), 
+                               integrationObject.MinimumParallelLoadGap(), integrationObject.ContinuousResourceSpeed(), integrationObject.IsContinuousResourceTransverseLoading() );
+    }
+  *]
+}

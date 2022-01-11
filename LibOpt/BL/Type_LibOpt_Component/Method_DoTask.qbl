@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoTask (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    result := stream[JSON]::Success();
+    
+    if( task.CanContinue() )
+    {
+      handle_exception := true;  
+      breakpoint_stream := null( stream[Void] );
+      if( this.HasBreakpoint( LibOpt_Component::ComponentPosition_Initialize(), task, breakpoint_stream ) )
+      {
+        result := breakpoint_stream->|this->DoOperation( task );
+      }
+      else
+      {
+        reactive_calls := LibOpt_CurrentTransaction::GetSpawnedReactiveCalls();
+        result := this.DoOperation( task );
+        handle_exception := reactive_calls <> LibOpt_CurrentTransaction::GetSpawnedReactiveCalls() and not task.Run().InOneTransaction();
+      }
+      
+      if( handle_exception )
+      {
+        exception := task->HandleException( result->Exception() );
+        
+        result := stream[JSON]::Merge( exception->|stream[JSON]::Success(), result->IgnoreException() );
+      }
+    }
+    return result;
+  *]
+}

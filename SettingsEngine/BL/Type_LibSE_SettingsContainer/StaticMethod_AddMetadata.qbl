@@ -1,0 +1,67 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod AddMetadata (NamedValueTree nvt, NamedValue nv, MdlModeledAttrElement attr, 
+  Type type)
+{
+  TextBody:
+  [*
+    metadata := nv.AddChild( nvt.GetHandle( LibSE_SettingsContainer::Handle_Metadata() ) );
+    description := metadata.AddChild( nvt.GetHandle( LibSE_SettingsContainer::Handle_Description() ) );
+    description.SetValue( attr.ModeledAttribute().Description() );
+    
+    default_value := null( ModeledDefaultValue );
+    default_value_type := type;
+    while( not isnull( default_value_type ) and isnull( default_value ) )
+    {
+      default_value := guard( attr.ModeledAttribute().FindDefaultValue( default_value_type ), null( ModeledDefaultValue ) );
+      default_value_type := default_value_type.Parent();
+    }
+    
+    defined_by := Translations::LibSE_SettingsContainer_DefinedBy_QuillDefaultValue();
+    if( not isnull( default_value ) )
+    {
+      default_value_node := metadata.AddChild( nvt.GetHandle( LibSE_SettingsContainer::Handle_DefaultValue() ) );
+      type := attr.ValueType();
+      if( type = typeof( Boolean ) )
+      {
+        default_value_node.SetValue( StringToBoolean::ISOConverter().Convert( default_value.ISOValue() ) );
+      }
+      else if( type = typeof( Char ) )
+      {
+        default_value_node.SetValue( StringToChar::ISOConverter().Convert( default_value.ISOValue() ) );
+      }
+      else if( type = typeof( Date ) )
+      {
+        default_value_node.SetValue( StringToDate::ISOConverter().Convert( default_value.ISOValue() ) );
+      }
+      else if( type = typeof( DateTime ) )
+      {
+        default_value_node.SetValue( StringToDateTime::ISOConverter().Convert( default_value.ISOValue() ) );
+      }
+      else if( type = typeof( Duration ) )
+      {
+        default_value_node.SetValue( StringToDuration::ISOConverter().Convert( default_value.ISOValue() ) );
+      }
+      else if( type = typeof( Key ) )
+      {
+        default_value_node.SetValue( StringToKey::ISOConverter().Convert( default_value.ISOValue() ) );
+      }
+      else if( type = typeof( Number ) )
+      {
+        default_value_node.SetValue( StringToNumber::ISOConverter().Convert( default_value.ISOValue() ) );
+      }
+      else if( type = typeof( Real ) )
+      {
+        default_value_node.SetValue( StringToReal::ISOConverter().Convert( default_value.ISOValue() ) );
+      }
+      else if( type = typeof( String ) )
+      {
+        default_value_node.SetValue( default_value.ISOValue() );
+      }
+      defined_by := Translations::LibSE_SettingsContainer_DefinedBy_EditorDefaultValue();
+    }
+    
+    defined_by_nv := metadata.AddChild( nvt.GetHandle( LibSE_SettingsContainer::Handle_DefinedBy() ) );
+    defined_by_nv.SetValue( defined_by );
+  *]
+}

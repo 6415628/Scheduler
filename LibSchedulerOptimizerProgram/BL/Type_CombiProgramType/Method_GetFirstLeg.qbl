@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetFirstLeg () declarative remote as CombiLeg
+{
+  TextBody:
+  [*
+    firstleg := guard( this.FirstPhase().FirstLegAsLeading(), null( CombiLeg ) );
+    
+    // If the first phase does not exist, get the first leg from the first non empty phase
+    
+    // ADSC-26444: We probably should always create a combileg for each phase, even if it is currently empty
+    // ADSC-26444: If not, then we need to check if the other uses of CombiProgramType.FirstPhase() also need to be refactored to use the first non empty phase;
+    if( isnull( firstleg ) )
+    {
+      firstactivephase := minselect( this, CombiProgramPhase, phase,
+                                     exists( phase, CombiLegAsLeading, combileg, true ),
+                                     phase.SequenceNr() );
+                                             
+      firstleg := guard( firstactivephase.FirstLegAsLeading(), null( CombiLeg ) );
+    }
+    
+    return firstleg;
+  *]
+}

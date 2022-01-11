@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method BlockToolForTransferReceive (ToolTask tooltask) declarative
+{
+  Description: 'Block the tool for the connected transferring and receiving tasks.'
+  TextBody:
+  [*
+    // alexandern Jan-5-2016 (created) QP #6081
+    operation := tooltask.Task().GetOperation();
+    
+    if( not isnull( operation ) and tooltask.Task().Resource_SC().ResourceGroup_SC().HasTransfer() )
+    {
+      blockingreceivingtooltask := selectset( operation,
+                                              ToOperationDependency.ToOperation.Task_SC.ToolTask,
+                                              nexttt,
+                                              nexttt.Task().Resource_SC().ResourceGroup_SC().HasReceive()
+                                              and nexttt.ToolGroupType() = tooltask.ToolGroupType()
+                                              and nexttt.BlockID() = tooltask.BlockID()
+                                              and not nexttt.HasTool() )
+      // AlexanderNg 5-Jan-2016: block tools for all the receiving tasks that get the operation material from this operation
+      this.SetBlockedToolOfToolTask( tooltask.ToolID(), blockingreceivingtooltask );
+    
+      traverse( blockingreceivingtooltask, Elements.Task.OperationInTask, op )
+      {
+        blockingtransferringtooltask := selectset( op,
+                                                   FromOperationDependency.FromOperation.Task_SC.ToolTask,
+                                                   prevtt,
+                                                   prevtt.Task().Resource_SC().ResourceGroup_SC().HasTransfer()
+                                                   and prevtt.ToolGroupType() = tooltask.ToolGroupType()
+                                                   and prevtt.BlockID() = tooltask.BlockID() );
+        // AlexanderNg 5-Jan-2016: block the tools for all the tranferring tasks that transfer the operation material to this operation
+        this.SetBlockedToolOfToolTask( tooltask.ToolID(), blockingtransferringtooltask );
+      }
+    }
+  *]
+}

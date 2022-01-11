@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod M033_SuboptimizerMP_HandleResult_Rollback (LibOpt_Suboptimizer self, MathematicalProgram program, LibOpt_Task task, 
+  Boolean is_feasible) as LibOpt_Scope
+{
+  Description: 'A `HandleResult` method that has a rollback depending on the probability of the `LibOpt_ScopeElementProbabilities`.'
+  TextBody:
+  [*
+    scope_elements := LibOpt_TestUnit_Statistic::GetScopeElementProbability( task.Scope() );
+    probability := average( scope_elements, Elements, se, true, se.Probability() );
+    
+    if( Real::Random() < probability )
+    {
+      rollback_kpi := self.RollbackKPI().astype( LibOpt_RollbackKPIStatic )
+      kpi := rollback_kpi.GetKPI( task );
+      improvement := ifexpr( rollback_kpi.IsMinimize( 0 ), -1, 1 );
+      
+      rollback_kpi.SetKPI( 0, kpi.Get( 0 ) - improvement );
+    }
+    
+    return task.Scope();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

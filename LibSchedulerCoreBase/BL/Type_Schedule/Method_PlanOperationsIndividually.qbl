@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanOperationsIndividually (Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // project should decide whether the operations should be resorted or not
+    //operations := selectsortedset( operations, Elements, el, true, el.EarliestStart(), el.DueDate() );
+    
+    Operation_SC::SetIsPlanning( operations, true );
+    
+    traverse( operations, Elements, op, true )
+    {
+      op.Plan();
+      // Propagate needed to recalculate the times when each resource is available, so a next operation can be planned ASAP
+      Transaction::Transaction().Propagate( attribute( Resource_SC, EarliestAvailable ) );
+    }
+    
+    this.AutomaticProductBasedMaterialReservationBySorting();
+    Operation_SC::SetIsPlanning( operations, false );
+  *]
+}

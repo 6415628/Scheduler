@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: lblConfirmation
+Response OnTextChanged () id:Response_LibCal_dlgCalendarSettings_lblConfirmation_OnTextChanged
+{
+  #keys: '[146730.0.1423942076]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebLabel_OnTextChanged'
+  QuillAction
+  {
+    Body:
+    [*
+      // Trigger the update of the calendar settings based on the value that has been set
+      // by dlgCalendarSettingsConfirmation.
+      if( this.Text() <> "cancel" )
+      {
+        calendarsToUpdate := dhCalendars.Data();
+        
+        if( this.Text() = "same" )
+        {
+          // Only update calendars with the same settings, so remove the divergent calendars.
+          divergentCalendars := Form.GetDivergentCalendars( dhCalendar.Data(), dhCalendars.Data() );
+          calendarsToUpdate  := calendarsToUpdate.Difference( divergentCalendars );
+        }
+      
+        Form.UpdateCalendars( calendarsToUpdate );
+      
+        // Close the dialog when the OK-button was clicked.  
+        if( lblAction.Text() = "OK" )
+        {
+          Form.Close();
+        }
+      }
+    *]
+    GroupServerCalls: false
+  }
+}

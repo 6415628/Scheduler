@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestDemandBatchRoutingStepDelete (Schedule schedule)
+{
+  Description: 'Test the delete sync logic of demand batch routing step.'
+  TextBody:
+  [*
+    traverse( schedule, ImportedDemandBatchType.ImportedDemandBatchRoutingStep, importedDemandBatchRoutingStep )
+    {
+      importedDemandBatchRoutingStep.Delete();
+    }
+    
+    schedule.SynchronizationObject().SynchronizeDemandBatchTypes();
+    
+    noDemandBatchType := not exists( schedule, DemandBatchType.DemandBatchRoutingStep, demandBatchType, true );
+    
+    this.Run().AssertTrue( noDemandBatchType, UTFUtility::GenerateFailedMessage( 'DemandBatchRoutingStep_Delete', '' ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,77 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetTemplateFile (String exportFile_i, Object rootObject_i) as String
+{
+  Description: 'Helper method to derive a template file from an export file'
+  TextBody:
+  [*
+    // tgn3 Jun-18-2021 (created)
+    
+    // Need to check if forward or backslash used
+    forwardSlash := DMF_Utility::GetForwardSlash();
+    backslash    := DMF_Utility::GetBackslash();
+    
+    // Assumption: directory should NEVER have a mix of both back and forward slash.
+    // In the event it does, forward slash is assumed to be leading
+    delim      := ifexpr( exportFile_i.FindString( forwardSlash, 0 ) <> -1, forwardSlash, backslash );
+    underscore := DMF_Utility::Underscore();
+    
+    // Extract DataseType and Name to determine Template file name
+    fileParts     := exportFile_i.Tokenize( delim );
+    fileName      := fileParts.Element( fileParts.Size() - 1 ).ReplaceAll( DMF_DBInterface::GetDatabaseExtension(), "" );
+    fileNameParts := fileName.Tokenize( underscore );
+    
+    datasetType := Type::Resolve( "" ); // Resolve a nameless type to get a null( Type ). Directly doing null( Type doesn't seem to work)
+    partLimit   := fileNameParts.Size();
+    partIndex   := 0;
+    typeName    := "";
+    
+    // Attempt to locate the type with 'brute force'
+    // A type name can have underscores, and changing method signature could have undesired impacts
+    // Based on the time available to fix this bug, thus the poor implementation
+    // We cannot rely on root object to determine dataset kind, as it can sometimes be null
+    while( isnull( datasetType ) and partIndex < partLimit )
+    { 
+      // Parts are appended for non-zero elements   
+      if( partIndex = 0 )
+      {
+        typeName := fileNameParts.Element( partIndex ); 
+      }
+      else
+      {
+        typeName := typeName + underscore + fileNameParts.Element( partIndex ); 
+      }
+      
+      datasetType := Type::Resolve( typeName );
+        
+      partIndex++;
+    }
+    
+    // Attempt to get the template file from available information
+    templateFile := "";
+    
+    if( not isnull( datasetType ) )
+    {  
+      datasetName := fileName.ReplaceAll( datasetType.Name() + underscore, "" );
+    
+      // Debug - do not delete
+      //logfile( ">>> datasetType", datasetType.Name(), datasetName );
+    
+      templateFile := this.GetExportDatabaseFileName( datasetType, datasetName, rootObject_i );
+    }
+    else
+    {
+      // This should theoretically never happen unless DMF logic was modified incorrectly
+      // It is only a warning as a failure to locate template means DMF falls back to exporting without referring to one
+      msg := "DMF_DBInterface.GetTemplateFile failed. Could not resolve type from 'exportFile' argument";
+      
+      DMF_Utility::LogWarning( msg );
+    }
+    
+    // Debug - do not delete
+    //logfile( ">>> templateFile", templateFile);
+    
+    return templateFile;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

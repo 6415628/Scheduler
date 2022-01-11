@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateOrLoadDataset
+{
+  Description: 'Create or load DataBroker dataset based on configuration.'
+  TextBody:
+  [*
+    // Jacky CHAN Feb-25-2016 (created)
+    debuginfo( "===== Data Broker server startup starts =====" );
+    
+    datasetName := LibDEF_DataBroker::DATASET_NAME();
+    oinfo       := MDSEditor::Editor().ObjectInfo( LibDEF_DataBroker::DATASET_KIND(), LibDEF_DataBroker::DATASET_PATH(), datasetName );
+    
+    if( isnull( oinfo ) )
+    {
+      storageState := LibDEF_Util::GetSettingValueDefaultStorageState();
+    
+      if( storageState <> "" )
+      {
+        debuginfo( "Create dataset", datasetName, "with storage mode =", storageState );
+        MDSLibDEF_DataBroker::CreateMDS( datasetName, storageState );
+      }
+      else
+      {
+        // log warning
+        propertyName := LibDEF_Util::GetSettingNameDefaultStorageState();
+        LibDEF_Util::LogWarning( "Failed to retrieve configuration '" + propertyName + "'. Memory-only dataset will be created." );
+    
+        // create memory-only dataset
+        MDSLibDEF_DataBroker::CreateMDS( datasetName, MDSInterface::MemoryOnlyState() );
+      }
+      
+    }
+    else if( not oinfo.IsLoaded() )
+    {
+      debuginfo( "Load dataset", datasetName, "with storage mode =", oinfo.State() );
+      MDSLibDEF_DataBroker::LoadMDS( datasetName );
+    }
+    
+    debuginfo( "===== Data Broker server startup ends =====" );
+  *]
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_InventoryTarget (CDSchedule cdSchedule, ProductInStockingPoint productInStockingPoint)
+{
+  Description: 'Restore inventory target core data relations to planning object'
+  TextBody:
+  [*
+    cdInventoryTargets := selectset( cdSchedule, CDEntity.astype( CDInventoryTarget ), cdInventoryTarget,
+                                     cdInventoryTarget.ProductID() = productInStockingPoint.ProductId()
+                                     and cdInventoryTarget.StockingPointID() = productInStockingPoint.StockingPointId() );
+                                     
+    traverse( cdInventoryTargets, Elements, cdInventoryTarget )
+    {
+      inventoryTarget := InventoryTarget::FindInventoryTarget( cdInventoryTarget.ProductID(),
+                                                               cdInventoryTarget.StockingPointID(),
+                                                               cdInventoryTarget.TargetDate());
+    
+      if( not isnull( inventoryTarget ) )
+      {
+        // ImportedInventoryTarget, 1-1
+        importedInventoryTarget := ImportedInventoryTarget::FindImportedInventoryTarget( cdInventoryTarget.ProductID(), 
+                                                                                         cdInventoryTarget.StockingPointID(), 
+                                                                                         cdInventoryTarget.TargetDate() );
+        inventoryTarget.ImportedInventoryTarget( relset, importedInventoryTarget );
+      }                                                                      
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

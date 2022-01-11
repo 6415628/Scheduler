@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetDateOfNextOccurrence (output Date dateOfRecurrence_o, Date date_i, Number recurrenceInterval_i, 
+  Boolean isDate_i, Number day_i, String weekOfMonth_i, 
+  String dayOfWeek_i) declarative remote as Date
+{
+  TextBody:
+  [*
+    date := date_i;
+    
+    // Don't get the next recurrence the first time, it is already determined.
+    if( date_i <> dateOfRecurrence_o )
+    {
+      // Get the start of the next recurrence.
+      dateOfRecurrence_o := LibCal_RecurrencePatternYearly::GetDateOfNextRecurrence( dateOfRecurrence_o, recurrenceInterval_i );
+    }
+      
+    // Determine the applicable date.
+    // The logic that is implemented for the monthly pattern can be used here.
+    date := ifexpr( isDate_i, LibCal_RecurrencePatternMonthly::GetDateOfDayOfMonth( dateOfRecurrence_o, day_i ),
+                              LibCal_RecurrencePatternMonthly::GetDateOfDayOfMonth( dateOfRecurrence_o, weekOfMonth_i, dayOfWeek_i ) );
+    
+    return date;
+  *]
+}

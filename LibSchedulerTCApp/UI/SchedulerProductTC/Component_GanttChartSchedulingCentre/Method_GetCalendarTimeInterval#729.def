@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCalendarTimeInterval (LibCal_Calendar calendar, DateTime time) as LibCal_ExplicitTimeInterval id:Method_GanttChartSchedulingCentre_GetCalendarTimeInterval_729
+{
+  #keys: '[144548.0.193532456]'
+  Body:
+  [*
+    // Returns the LibCal_ExplicitTimeInterval that is overlapping the given time
+    timeinterval := select( calendar, TimeIntervals.astype( LibCal_ExplicitTimeInterval ), cti,
+                            // To keep things simple, exclude Default events, so that this functionality focuses on the resource's own events
+                            // This is particularly relevant because the resource calendar starts open, so there is an all-encompassing available event
+                            not cti.Participation().Event().IsDefault() and
+                            cti.Start() <= time and cti.End() >= time );
+    
+    return timeinterval;
+  *]
+}

@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod SynchronizeDisplayIndices (ResourceGroup_SC owner_i)
+{
+  Description: 'When creating and deleting campaign types, make sure that the display indices are sequential.'
+  TextBody:
+  [*
+    // ele3 Dec-28-2016 (created)
+    new_cts := selectset( owner_i, CampaignType, ct, ct.DisplayIndex() = 0 );
+    old_cts := selectsortedset( owner_i, CampaignType, ct, ct.DisplayIndex() > 0, ct.DisplayIndex() );
+    index := -1;
+    
+    // Set indices of new objects when old objects exist
+    traverse( old_cts, Elements, old_ct )
+    {
+      index++;
+      while( old_ct.DisplayIndex() <> index )
+      {
+        if( new_cts.Size() > 0 )
+        {
+          new_ct := new_cts.Element( 0 );
+          new_ct.DisplayIndex( index );
+          new_cts.Remove( new_ct );
+          index++;
+        }
+        else
+        {
+          old_ct.DisplayIndex( index );
+        }
+      }
+    }
+    
+    // If there are any new objects left, assign indices to them.
+    traverse( new_cts, Elements, new_ct )
+    {
+      index++;
+      new_ct.DisplayIndex( index );
+    }
+  *]
+}

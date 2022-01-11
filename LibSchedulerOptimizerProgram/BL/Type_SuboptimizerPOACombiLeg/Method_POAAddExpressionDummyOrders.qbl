@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddExpressionDummyOrders (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs, Operation_SCs operations)
+{
+  Description:
+  [*
+    Add an expression that counts the nr of dummy operations in combileg
+    This is a used in the goal that minimize the usage of dummy orders
+  *]
+  TextBody:
+  [*
+    dummyorderexpression := poa.NewExpression( SuboptimizerPOACombiLeg::NamePOAExpressionDummyOrders() ); 
+    
+    
+    participationdummyorders := POAParticipation::PN( poa, SuboptimizerPOACombiLeg::NamePOAParticipationDummyOrders(), 0.0 );
+    dummyorderexpression.Participation( participationdummyorders );
+    
+    
+    traverse( combilegs, Elements, combileg )
+    {
+      legpathtype := poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathCombiLeg( combileg ), combileg )
+      
+      res := combileg.GetResource(); 
+      traverse( operations, Elements, operation, operation.IsDummyWorkOrder() )
+      {
+        processduration := operation.CalculateProcessDuration( res );
+        node := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation ), operation );
+        participationdummyorders.Set( legpathtype, node, processduration.HoursAsReal() );
+      }
+    }
+  *]
+}

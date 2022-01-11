@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCleanUpFeedbackProgramRule (Schedule schedule)
+{
+  Description: 'Test clean up feedback program rule'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    ruleScope := '';
+    ruleSubtype := '';
+    characteristic := '';
+    isProgramTypeNoViolated := false;
+    isProgramPhaseHeadNoViolated := false;
+    isProgramPhaseTailNoViolated := false;
+    isfeedbackstarted := false;
+    isTask2NoViolated := false;
+    isTask3NoViolated := false;
+    
+    this.GetTestVariantForFeedbackProgram( isvariantfound, 
+                                           ruleScope,
+                                           ruleSubtype,
+                                           characteristic,
+                                           isProgramTypeNoViolated,
+                                           isProgramPhaseHeadNoViolated,
+                                           isProgramPhaseTailNoViolated,
+                                           isfeedbackstarted,
+                                           isTask2NoViolated,
+                                           isTask3NoViolated );
+    
+    isValid := true;
+    
+    if( isvariantfound )
+    {
+      // Only valid with following conditions
+      // - ProgramChange is cleaned up
+      // - Operation 0-2 feedback task is cleaned up
+      // - Operation 3 feedback task still remains because last feedback task is needed for rule framework checking
+      isprogramchangecleanup := schedule.ProgramChange( relsize ) = 0;
+      isfbtaskcleanup := schedule.FeedbackManager().FeedbackTaskInSchedule( relsize ) = 1;
+      isfbtask1exists := exists( schedule, FeedbackManager.FeedbackTaskInSchedule, feedbacktask, 
+                                 feedbacktask.OperationID() = 'Operation_3' );
+      
+      isValid := isprogramchangecleanup
+                 and isfbtaskcleanup
+                 and isfbtask1exists
+    }    
+                       
+    this.Run().AssertTrue( isValid,
+                           UTFUtility::GenerateFailedMessage( 'Test clean up feedback program rule failed.', this.Variant() ) );
+  *]
+}

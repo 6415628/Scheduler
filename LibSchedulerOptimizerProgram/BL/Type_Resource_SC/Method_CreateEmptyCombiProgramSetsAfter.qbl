@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateEmptyCombiProgramSetsAfter (Task_SC task, ProgramDefinitionConfiguration programdefinitionconf) as CombiProgramType
+{
+  TextBody:
+  [*
+    // zyi1 Jul-12-2021 (created)
+    //create empty combi programset/type after task
+    // assume we start new programtype for all the programset
+    // programtypeconfiguraiton IsSelectedByBatchCplex should be set by the batch cplex later
+    
+    leadingCombiProgramType := null( CombiProgramType ) 
+    
+    starttime := guard( task.End(), guard( this.Last().End(), this.EarliestAvailable() ) );
+    
+    combileg := null( CombiLeg );
+    traverse( programdefinitionconf, ProgramSetConfiguration, psc )
+    {
+      ps := select( this, ProgramSet, ps1, ps1.ProgramSetConfiguration() = psc );
+      combips := null( CombiProgramSet );
+      if(  isnull( ps ) )
+      {
+        combips := CombiProgramSet::Create( this, psc )
+      }
+      else
+      {
+        combips := ps.ActiveCombiProgramSet();
+      }
+      
+      selectedptc := select( psc, ProgramTypeConfiguration, ptc, ptc.IsSelectedByBatchCplex() );
+      
+      if( not isnull( selectedptc ) )
+      {
+        combipt := CombiProgramType::Create( combips, selectedptc.Name() + '_0' , selectedptc);
+        combipt.StartTime( starttime );
+        
+        firstphaseconf := selectedptc.First();
+        if( not isnull( firstphaseconf ) )
+        {
+          combiphase := combipt.CreateCombiPhases(); 
+          
+          if( psc.IsLeading() )
+          {
+            combileg := combiphase.CreateEmptyCombiLegAtEnd()
+          }
+        }
+        
+        if( psc.IsLeading() )
+        {
+          leadingCombiProgramType := combipt;
+        }
+      }
+    } 
+    
+    return leadingCombiProgramType;
+  *]
+}

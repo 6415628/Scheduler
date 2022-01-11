@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetDataset (String datasetName_i, Boolean loadIfOffline_i, Boolean createIfNotExists_i, 
+  String storageState_i, Key planningDatasetKey_i, Key integrationInstanceKey_i) as stream[LibDIF_IntegrationDataset]
+{
+  Description: 'Get the Integration-dataset, load or create it first if applicable.'
+  TextBody:
+  [*
+    // If applicable, make sure that the dataset is loaded or created...
+    trigger := datasetName_i -> LibDIF_IntegrationDataset::LoadOrCreateDataset( loadIfOffline_i, createIfNotExists_i, storageState_i,
+                                                                                planningDatasetKey_i, integrationInstanceKey_i );
+    // ... then get the dataset...
+    // GetDataset() should only be executed after LoadOrCreateDataset is finished.
+    // GetDataset() must be called reactively, otherwise it will be executed before LoadOrCreateDataset(), despite the ->| operator.
+    dataset := trigger ->| datasetName_i -> LibDIF_IntegrationDataset::GetDataset();
+    
+    // ... and return it.
+    return dataset;
+  *]
+}

@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update (WorkOrderOperation workorderoperation)
+{
+  TextBody:
+  [*
+    workorder := workorderoperation.WorkOrder();
+    
+    if( not isnull( workorder ) )
+    {
+      this.StockingPointId( workorder.StockingPointId() );
+      this.ProductId( workorder.ProductId() );
+      this.WorkOrderId( workorder.Id() );
+      this.SequenceNr( workorderoperation.SequenceNr() );
+      this.Quantity( workorder.Quantity() );
+      // the WorkOrder.ProductInStockingPoint is currently declarative, therefore requires propagation to ensure the relation is always set
+      Transaction::Transaction().Propagate( relation( WorkOrder, ProductInStockingPoint ) ); 
+      this.ProductInStockingPoint( relset, workorder.ProductInStockingPoint() );
+    }
+  *]
+}

@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsRuleApplicable (const Rule rule, const Operation_SC previousoperation, const Characteristic characteristic) const declarative remote as Boolean
+{
+  Description: "Check if the rule is applicable for this operation and the characteristic based on rule's condition checking"
+  TextBody:
+  [*
+    // Check the rule is applicable for this operation and the characteristic
+    // 1. The rule is enabled
+    // 2. The rule characteristic main is same as input characteristic if there is input characteristic
+    // 3. If there is condition enabled in rule, checks whether there is characteristic condition defined
+    // 4. If the checks above is TRUE and there is condition enabled, check the condition scope operation(s) meet the rule condition value or not
+    value := rule.IsEnabled()
+             and ( isnull( characteristic ) or ( rule.CharacteristicMain() = characteristic ) )
+             and ( not rule.IsConditionEnabled() or not isnull( rule.CharacteristicCondition() ) )
+    
+    if( value and rule.IsConditionEnabled() )
+    {
+      // Check on different conditon scope, FirstTaskOnly, SecondTaskOnly, EitherTask or BothTasks
+      if( rule.ConditionScope() = RuleConstant::ConditionScope_SecondTaskOnly() )
+      {
+        value := this.GetCharacteristicConditionBooleanValue( rule.CharacteristicCondition() ) = rule.ConditionValue();  
+      }
+      else if(  rule.ConditionScope() = RuleConstant::ConditionScope_FirstTaskOnly() )
+      {
+        value := guard( previousoperation.GetCharacteristicConditionBooleanValue( rule.CharacteristicCondition() ) = rule.ConditionValue(), false ); 
+      }
+      else
+      {
+        firsttaskvalid :=  guard( previousoperation.GetCharacteristicConditionBooleanValue( rule.CharacteristicCondition() ) = rule.ConditionValue(), false );
+        secondtaskvalid := this.GetCharacteristicConditionBooleanValue( rule.CharacteristicCondition() ) = rule.ConditionValue();  
+        value := ifexpr( rule.ConditionScope() = RuleConstant::ConditionScope_EitherTask(),
+                         firsttaskvalid or secondtaskvalid,
+                         firsttaskvalid and secondtaskvalid );
+      }
+    }
+                                   
+    return value;
+  *]
+}

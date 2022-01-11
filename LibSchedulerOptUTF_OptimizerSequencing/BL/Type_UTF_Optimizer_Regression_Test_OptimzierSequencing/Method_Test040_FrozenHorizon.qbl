@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test040_FrozenHorizon (Schedule schedule)
+{
+  Description: 'Plans a three planunits in a suboptimal sequence over two resource groups, freezes the horizon and optimizes over these three plus a fourth planunit, using only SelectorSpan and the suboptimizer.'
+  TextBody:
+  [*
+    debuginfo( schedule.MDSSchedule().Name() );
+    
+    operations := this.GetMethodOperationsInScope( this.GetCurrentMethodShortName(), schedule );
+    resources := Operation_SC::GetAllowedResources( operations );
+    scope := UTF_Optimizer_Regression_Test_OptimizerSequencing::CreateScope( operations, resources );
+    
+    run := UTF_Optimizer_Regression_Test_OptimizerSequencing::CreateSelectorSpanAndSuboptimzierPOARun( UTF_Optimizer_Regression_Test_OptimizerSequencing::Optimizer( schedule ),
+                                                                                                        scope );
+    
+    run.Start() ->| this->Asserts_Test040_FrozenHorizon( schedule, operations, resources )->Exception()->(exception) {
+      this.Run().RegisterFailure( "post-optimization assert failed:\n" + exception.Message() );
+    };
+  *]
+}

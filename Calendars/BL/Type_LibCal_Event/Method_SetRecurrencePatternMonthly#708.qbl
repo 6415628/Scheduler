@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetRecurrencePatternMonthly (Number dayOfMonth_i) as LibCal_Event
+{
+  Description: 'Set a recurrence pattern that recurs every month on a specific day.'
+  TextBody:
+  [*
+    // Use a FeedbackObject the collect the validation feedback.
+    feedback := LibCal_Validate::Event_Pattern_Monthly( dayOfMonth_i, this.GetEventInfo() );
+    
+    // Process the feedback that has been registered by the validation (if any).
+    LibCal_Util::ProcessFeedbackObject( feedback );
+    
+    // The below is only executed when no validation errors were encountered.
+    // Check if a new RecurrencePattern must be created.
+    pattern      := guard( this.RecurrencePattern().astype( LibCal_RecurrencePatternMonthly ), null( LibCal_RecurrencePatternMonthly ) );
+    changeOfType := isnull( pattern );
+    
+    isChanged := changeOfType             // There was no pattern yet, or it was not a Monthly pattern.
+              or pattern.IsDay() <> true  // The existing Monthly pattern was not a specific day.
+              or pattern.Day()   <> dayOfMonth_i;
+    
+    if( isChanged )
+    {
+      // Create the RecurrencePattern.
+      LibCal_RecurrencePatternMonthly::Create( this, dayOfMonth_i );
+      this.IsChanged( true );
+    
+      // Initialize the RecurrencePeriod of the LeadingParticipation if necessary.
+      this.InitializeRecurrencePeriod();
+    }
+    
+    // Make the API fluent.
+    return this;
+  *]
+}

@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Method Copy (LibOpt_Component start_component, LibOpt_ScopeElements scope_elements) as LibOpt_Run
+{
+  Description: 'This method copies the `LibOpt_Run`, but allows a different start component and start scope.'
+  TextBody:
+  [*
+    run := this.Optimizer().CreateRun();
+    
+    // Copy the components and contexts
+    occ := ObjectCopyComponent::Create();
+    traverse( this, Component, component )
+    {
+      component.Copy( occ, run );
+    }
+    traverse( this, RunContext, context )
+    {
+      context.Copy( occ, run );
+    }
+    
+    freeze_propagation := false;
+    occ.Execute( freeze_propagation );
+    
+    // Copy settings
+    run.DebugScope( this.DebugScope() );
+    
+    // Copy the start component
+    if( not isnull( start_component ) )
+    {
+      run.SetStartComponent( start_component.Name() );
+    }
+    
+    // Copy the start scope
+    if( not isnull( scope_elements ) )
+    {
+      scope := LibOpt_Scope::Create( run );
+      scope.Add( scope_elements );
+      run.SetStartScope( scope );
+    }
+    
+    // Some components and contexts may have overridden the default copy behavior. Execute the post-copy initialization:
+    // first context (more static data)
+    traverse( run, RunContext, context_copy )
+    {
+      context_copy.InitAsCopy( this );
+    }
+    // then components (may rely on contexts)
+    traverse( this, Component, component_original )
+    {
+      component_copy := selectobject( run, Component, c, c.Name() = component_original.Name() );
+      component_copy.InitAsCopyOf( component_original );
+    }
+    
+    return run;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method RemoveCurrentPlan (Resource_SCs resources, Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // yifei Aug-18-2021 (created)
+    oors := selectset( resources, 
+                       Elements.OperationOnResource, 
+                       oor, 
+                       not oor.Operation_SC().HasFeedback()
+                       and not oor.Operation_SC().IsFrozenInSchedule()
+                       and exists( operations, Elements, operation, operation = oor.Operation_SC() ) );
+    
+    tobeunplannedoperations := selectset( oors, Elements.Operation_SC, op, true );
+    
+    
+    //Unplan the operations                             
+    this.GetSchedule().UnplanOperations( tobeunplannedoperations );
+    traverse( resources, Elements.ProgramChange, pc )
+    {
+      pc.Remove();
+    }
+    
+    Transaction::Transaction().Propagate( attribute( CombiProgramSet, IsActive ) );
+    Transaction::Transaction().Propagate( attribute( CombiProgramType, IsActive ) );
+    
+    // Recreate the combilegs
+    traverse( resources, Elements, res )
+    {
+      res.SynchronizeCombis();
+    }
+  *]
+}

@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_ToolGroup (CDSchedule cdSchedule)
+{
+  Description: 'Restore tool group core data attributes to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdSchedule, CDEntity.astype( CDToolGroup ), cdToolGroup )
+    {
+      toolGroup := ToolGroup::Create( schedule, cdToolGroup.Type() );
+    
+      CopyCorresponding::CopyFrom( cdToolGroup ).CopyTo( toolGroup );
+      
+      // This is required to restore ToolRequirementPattern
+      cdToolGroup.RestoreToolGroupKey( [String] toolGroup.Key() );
+      
+      this.RestoreAttributes_Tool( cdSchedule, cdToolGroup, toolGroup );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

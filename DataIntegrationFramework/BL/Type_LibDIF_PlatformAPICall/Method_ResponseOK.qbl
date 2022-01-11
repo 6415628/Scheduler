@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method ResponseOK (NamedValueTree responseNVT_i) as Boolean
+{
+  Description: 'Check if the responseNVT that is received back from the QIntegrator is OK. If not, raise an error.'
+  TextBody:
+  [*
+    responseCode := LibInt_MessageAccessor::GetHeaderPropertyAsNumber( responseNVT_i, "HTTPResponseCode" );
+    ok           := responseCode = LibDIF_PlatformAPICall::HTTPRESPONSECODE_OK();
+    
+    if( not ok )
+    {
+       LibDIF_Util::Info( "Error returned by API, HTTPResponseCode = " + [String]responseCode );
+       errorInfoFound := false;
+       
+      // When the response came straight from the 3DS-endpoint it is in 'raw' JSON-format,
+      // if it has passed a JSONtoNVT converter it is in NVT-format
+      if( LibDIF_PlatformAPICall::IsRawResponse( responseNVT_i ) )
+      {
+        // Get the JSON from the Body of the response.
+        responseJSON := LibInt_MessageAccessor::GetBodyValueAsString( responseNVT_i );
+    
+        // Get rid of [ ] if necessary.
+        if( responseJSON.StartsWith( "[" ) )
+        {
+          responseJSON := responseJSON.SubString( 1, responseJSON.Length() - 2 );
+        }
+        
+        json := JSON::Parse( responseJSON );
+        errorInfoFound := this.HandleResponseError( json );
+      }
+      else
+      {
+        errorInfoFound := this.HandleResponseError( responseNVT_i )
+      }
+      
+      if( not errorInfoFound )
+      {
+        LibDIF_Util::Error( "No additional error information found" );
+      }
+    }
+    
+    return ok;
+  *]
+}

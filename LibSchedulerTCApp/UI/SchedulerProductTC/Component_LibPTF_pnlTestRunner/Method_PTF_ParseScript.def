@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_ParseScript (String lines) id:Method_LibPTF_pnlTestRunner_PTF_ParseScript
+{
+  #keys: '[102890.0.1865516243]'
+  Body:
+  [*
+    // Parse the script read from the script file
+    //First line - [ResultLogPath], [LoggingOptions]
+    firstline       := lines.Tokenize( ";" ).Element( 0 );
+    otherparameters := firstline.Tokenize( "," );
+    vhResultLogPath.Value( otherparameters.Element( 0 ) );
+    vhLogging.Value( otherparameters.Element( 1 ) );
+    
+    // Remove first line (other parameters) before parsing
+    actionscript := lines.RestString( lines.FindString( ";", 0 ) + 1 );
+    
+    actionscript := this.PTF_RemoveComment( actionscript );
+    actionscript := this.PTF_ParseLoopActions( actionscript );
+    
+    this.vhPendingActions().Value( actionscript );
+    
+    chkActionDone.Checked( false );
+    chkLoggedStartMarker.Checked( false );
+  *]
+}

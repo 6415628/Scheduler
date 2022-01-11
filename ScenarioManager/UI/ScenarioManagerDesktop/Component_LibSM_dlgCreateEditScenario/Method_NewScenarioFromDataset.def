@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+Method NewScenarioFromDataset (GUIComponent parent, LibSM_Dataset dataset) as LibSM_Scenario id:Method_LibSM_dlgCreateEditScenario_NewScenarioFromDataset
+{
+  #keys: '[107496.2.1836564022]'
+  Body:
+  [*
+    // New scenario
+    this.Title( "New scenario from dataset '" + dataset.Name() + "'" );
+    
+    // Set the default knowledge profile
+    this.SetDefaultKnowledgeProfile();
+    
+    //Disable "Import data" checkbox
+    ckbAutoCreateData.Enabled( false );
+    
+    isTimezoneIDSelectionEnabled := false;
+    this.ShowHideTimezoneUI( dataset.TimezoneID(), isTimezoneIDSelectionEnabled );
+    
+    edtScenarioName.Text( dataset.Name() );
+    
+    // so that the storage state of dataset is shown correctly in radio button option
+    Dialog.dhShadowDataset().Data( dataset );       
+    
+    result   := this.DoModal( parent );
+    scenario := null( LibSM_Scenario );
+    
+    if( result > 0 )
+    {
+      scenarioManager      := LibSM_GlobalState.GetScenarioManagerDataset();
+      knowledgeProfile     := selKnowledgeProfile.Data();
+      
+      //Add metadata to structured type
+      metadatas := construct( structured[LibSM_MetaData] );
+      this.SaveScenarioMetaData( metadatas );
+      
+      scenarioFolder := select( scenarioManager, ScenarioNode.astype( LibSM_ScenarioFolder ), folder,
+                                folder.Name() = LibSM_ScenarioManager::GetFolderRoot() );
+    
+      scenario := scenarioManager.CreateScenarioFromDataset( dataset,
+                                                             scenarioFolder,
+                                                             edtScenarioName.Text(),
+                                                             edtComment.Text(),
+                                                             ckbCannotDelete.Checked(),
+                                                             '',
+                                                             knowledgeProfile,
+                                                             metadatas,
+                                                             dataset.TimezoneID() );
+    
+      panel := LibSM_GlobalState;
+      panel.SelectKB( scenario );
+      
+      // Refresh the DataHolder that contains the ObjectInfo-data.
+      panel.dhObjectInfo().Data( ExternalMDSEditor::Editor().ObjectInfos() );
+    }
+    
+    return scenario;
+  *]
+}

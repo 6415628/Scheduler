@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCalendars (String context_i) remote as owning LibCal_Calendars
+{
+  TextBody:
+  [*
+    // Override this method in order to implement additional contexts if necessary
+    // (for example to get only calendars of a specific type, e.g. "MachineCalendars").
+    
+    calendars := null( LibCal_Calendars, owning );
+    
+    if( context_i = "" )  // No specific context, get all calendars.
+    {
+      calendars := this.Calendar( relget );
+    }
+    
+    else if( context_i = "CommonCalendar" )  // Specific case
+    {
+      calendars.Add( this.CommonCalendar() );
+    }
+    
+    else
+    {
+      info( ">>> " + this.DefinitionName() + ".GetCalendars() : unexpected context '" + context_i + "' encountered" ); 
+    }
+    
+    // In case of an override, first try to match the specific context and end with an else-statement in which
+    //
+    //   calendars := super.GetCalendars( context_i );
+    //
+    // is done.
+    
+    return &calendars;
+  *]
+}

@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitializeCapacity () id:Method_LibCal_dlgEvent_InitializeCapacity
+{
+  #keys: '[131094.1.420576130]'
+  Body:
+  [*
+    event     := this.Data(); 
+    eventType := event.Type();
+    
+    // Extensible method USE_PARTIAL_CAPACITY indicates if partial capacity is allowed.
+    useParticalCapacity := LibCal_Event::USE_PARTIAL_CAPACITY();
+    
+    // Show an additional radiobutton + editfield or the capacity when applicable.
+    if( useParticalCapacity )
+    {
+      rbgEventType.ButtonLabels( rbgEventType.ButtonLabels() + "   ;Capacity" );
+      rbgEventType.ButtonValues( rbgEventType.ButtonValues() + ";" + LibCal_Event::TYPE_PARTIAL() );
+    }
+    else
+    {
+      // Partial capacity should not be used. Convert it to Unavailable or Available.
+      // This is an edge case that can only happen via import, or when using partial capacity was first enabled and later disabled.
+      if( eventType = LibCal_Event::TYPE_PARTIAL() )
+      {
+        if( event.PartialCapacity() = 0.0 )
+        {
+          eventType := LibCal_Event::TYPE_UNAVAILABLE();
+        }
+        else
+        {
+          eventType := LibCal_Event::TYPE_AVAILABLE();
+        }
+        
+        this.UserData( 1 );  // Register that a message should be shown to inform the user that the EventType and Capacity is changed.
+                             // The message is triggered in the OnCreated-response of the Dialog.
+      }
+    }
+    
+    // Set the value of the radiobutton.
+    rbgEventType.BoundValue( eventType );
+    
+    // Always set the value in the editfield for the capacity...
+    capacity := this.RealToString( event.PartialCapacity() ); 
+    edtCapacity.Text( capacity );
+    
+    // ... but only show the editfield if applicable.
+    edtCapacity.Visible( useParticalCapacity );
+  *]
+}

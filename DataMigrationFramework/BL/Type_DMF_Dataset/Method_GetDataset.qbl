@@ -1,0 +1,75 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetDataset () as stream[Object]
+{
+  Description: 'Retrieve a stream of the dataset to perform reactive operations'
+  TextBody:
+  [*
+    // tgn3 Apr-13-2021 (created)
+    datasetFindOptionsOnline  := DatasetFindOptions::Construct( this.Name() ).Kind( this.DatasetKind() ).Path( this.Folder() );
+    datasetFindOptionsOffline := DatasetFindOptions::Construct( this.Name() ).Kind( this.DatasetKind() ).Path( this.Folder() ).IncludeOffline( true );
+    ds_onlinekey              := DatasetController::FindUnique( datasetFindOptionsOnline );
+    ds_offlinekey             := DatasetController::FindUnique( datasetFindOptionsOffline );
+    ds_s                      := stream[Object]::Success();
+    
+    // Debug - do not delete
+    //logfile( ">>> GetDataset", this.DatasetKind(), this.Name(), this.Folder() );
+    
+    // Resolve dataset stream if key is valid
+    if( this.DatasetMDSID() <> Key::ZeroKey() and 
+        ( ds_onlinekey = this.DatasetMDSID() or ds_offlinekey = this.DatasetMDSID() ) )
+    {
+      if( ds_onlinekey <> this.DatasetMDSID() )
+      {
+        ds_s := DatasetController::Load( this.DatasetMDSID() );
+      }
+      else
+      {
+        ds_s := DatasetController::Root( this.DatasetMDSID() )->( obj )
+        {
+          //to lose the owning
+          return obj;
+        }
+      }
+      
+      //log exception while retrieving the original dataset
+      ds_s->Exception()->( ex )
+      {
+        DMF_Utility::LogWarning( ex.Message() );
+      }
+    }
+    else
+    {
+      hasException := true;
+      //this one is to cater for temporary dataasets
+      if( this.DatasetMDSID() <> Key::ZeroKey() )
+      {
+        try
+        {
+          ds_s := DatasetController::Root( this.DatasetMDSID() )->( obj )
+          {
+            //to lose the owning
+            return obj;
+          }
+          hasException := false;
+        }
+        onerror
+        {
+          //do nth handling is outside the if block
+        }
+      }
+      
+      if( hasException )
+      {
+        msg := "DMF_Dataset.GetDataset failed for dataset [" + this.Name() + 
+               "]. Reason: Invalid dataset key " + [String]this.DatasetMDSID();
+        
+        DMF_Utility::LogWarning( msg );
+        ds_s := stream[Object]::Exception( msg );
+      }    
+    }
+    
+    return ds_s;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

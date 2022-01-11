@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericContinuousTask (const GenericContinuousResource genericContinuousResource)
+{
+  Description: 'Backup continuous task core data'
+  TextBody:
+  [*
+    traverse( genericContinuousResource, SingleTaskBase.astype( GenericContinuousTask ), genericContinuousTask )
+    {
+      cdGenericContinuousTask := this.CDEntity( relnew, CDGenericContinuousTask );
+      CopyCorresponding::CopyFrom( genericContinuousTask ).CopyTo( cdGenericContinuousTask );
+      
+      // Additonal attribute in core data to persist the resource that this continuous task belongs
+      cdGenericContinuousTask.ResourceID( genericContinuousResource.ResourceID() ); 
+      
+      // Additional attribute in core data to be used to find the corresponding task during restore
+      cdGenericContinuousTask.BackupTaskID( genericContinuousTask.TaskID() ); 
+      
+      // Additonal attribute in core data to persist the operation that this continuous task relates to
+      cdGenericContinuousTask.PlanUnitID( guard ( genericContinuousTask.OperationAsSingleTask().PlanUnitId(), '' ) );
+      cdGenericContinuousTask.OperationID( guard( genericContinuousTask.OperationAsSingleTask().OperationID(), '' ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: SCListResources
+Response OnDrop (structured[PlanUnit_SC] information, BatchResource target) id:Response_SCListResources_OnDrop_7
+{
+  #keys: '[12910.0.1177572469]'
+  Body:
+  [*
+    // OnDrop structured[PlanUnit] --> BatchResource
+    operations := selectset( information, Elements.Operation_SC, op, op.Type() = target.Type() );
+    target.CreateBatchAssignOperationsPlanBatch( operations, target.Last().astype( BatchTask ) );
+    
+    
+    /*
+    target.CreateBatchAssignPlanUnitPlanBatch( information, target.Last() );
+  *]
+  DefinitionID: 'Responsedef_GUIComponent_OnDrop'
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey       := dropaction.IsControl();
+    ctrlshiftkey  := dropaction.IsControlShift();
+    
+    operations := selectset( information, Elements.Operation_SC, op, op.Type() = target.Type() );
+    
+    return  ApplicationScheduler.AllowedScheduling( target,             //batchresource
+                                                    operations,         //structured operations
+                                                    ctrlkey,            //skip soft check
+                                                    ctrlshiftkey,       //ctrl shift key
+                                                    target.Last(),      //before task
+                                                    null( Task_SC ),    //after task
+                                                    PlanUnit_SC::GetSelectedObjects( information ),
+                                                    feedback,
+                                                    isallowedhard )
+  *]
+  UserRequiresReadWrite: true
+}

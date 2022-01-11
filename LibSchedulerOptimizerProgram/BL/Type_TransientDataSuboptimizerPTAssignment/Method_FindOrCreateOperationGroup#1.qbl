@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method FindOrCreateOperationGroup (OperationInOptimizerProgram operation, SettingsProgramPTAssignment settings, LibOpt_ScopeElements programTypes, 
+  TransientDataSuboptimizerPTAssignment transientData) as PTAssignmentOperationGroup
+{
+  Description: 'Assign an operation to an operation group if the operation is compatible with the operation group. If no such operationgroup exists, create a new one.'
+  TextBody:
+  [*
+    // jkr8 Jul-21-2021 (created)
+    operationIsSet := false
+    selectedOperationGroup := null( PTAssignmentOperationGroup );
+    traverse( this, OperationGroup, operationGroup, operationGroup.IsOperationCompatible( operation, settings, programTypes ) and  not operationIsSet )
+    {
+      //Assign operation to group.
+      operation.OperationGroup( relset, operationGroup );
+      selectedOperationGroup := operationGroup;
+      operationIsSet := true;
+      operationGroup.PropagateDeclarativeData();
+    }
+    
+    if( not operationIsSet )
+    {
+      //Create a new operationGroup
+      number := ( this.OperationGroup( relsize ) + 1 );
+      identifier := "GroupNumber " + [String] number;
+      operationGroup := PTAssignmentOperationGroup::Create( transientData, identifier );
+      operation.OperationGroup( relset, operationGroup );
+      selectedOperationGroup := operationGroup;
+      operationGroup.PropagateDeclarativeData();
+    }
+    
+    return selectedOperationGroup;
+  *]
+}

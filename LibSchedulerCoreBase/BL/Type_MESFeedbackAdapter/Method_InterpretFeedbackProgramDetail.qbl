@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method InterpretFeedbackProgramDetail
+{
+  Description: 'Convert feedback program detail and link the right program type to program change'
+  TextBody:
+  [*
+    importedprogramdetails := selectset( this.Schedule(),
+                                         ImportedFeedbackProgramDetail,
+                                         ipd,
+                                         ipd.IsValidData()
+                                         and ipd.ImportedFeedbackStartedProgram().IsValidData() );
+    
+    feedbackmanager := this.FeedbackManager();
+    
+    if( not isnull( feedbackmanager ) )
+    {                      
+      traverse( importedprogramdetails, Elements, importedprogramdetail )
+      {
+        // If program change is internal, it will use scheduler program id. If not, it will use external program id.
+        programchange := select( this.Schedule(), ProgramChange, pc, pc.ProgramChangeID() = importedprogramdetail.SchedulerStoppageTaskID()
+                                                                     or pc.ProgramChangeID() = importedprogramdetail.ImportedFeedbackStartedProgram().ExternalStoppageTaskID() );
+        
+        if( not isnull( programchange ) )
+        {           
+          feedbackprogramtype := FeedbackProgramType::Create( programchange, importedprogramdetail );  
+          feedbackprogramtype.Update( importedprogramdetail.ResourceID() ); 
+          feedbackprogramtype.SynchronizeFeedbackProgramPhase();
+          
+          // Propagate to make sure reference to ProgramTypeConfiguration can be used to update ProgramChange
+          Transaction::Transaction().Propagate( relation( FeedbackProgramType, ProgramTypeConfiguration ) );
+          
+          toprogramtypeconfigurations := selectset( programchange, FeedbackProgramType.ProgramTypeConfiguration, ptc, true );    
+          programchange.Update( toprogramtypeconfigurations, false, Duration::Zero() );                       
+        }
+      }
+    }
+  *]
+}

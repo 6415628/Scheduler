@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDrop (structured[DemandBatch] source, SingleResourceBase droprow, Task_SC beforedroptarget, 
+  Task_SC afterdroptarget) id:Response_GanttChartSchedulingCentre_OnDrop_898
+{
+  #keys: '[134372.0.82350888]'
+  Body:
+  [*
+    // OnDrop structured[DemandBatch] --> SingleResourceBase
+    
+    sourceoperations := selectset( source, Elements.BatchWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, operation,
+                                   operation.Type() = droprow.Type() );
+    
+    if( isnull( beforedroptarget) 
+        and guard( not isnull( droprow.LastFeedbackTaskInSchedule().Task_SC() ), false ) )
+    {
+      beforedroptarget := droprow.LastFeedbackTaskInSchedule().Task_SC();
+    }
+    
+    droprow.PlanAfter( sourceoperations, beforedroptarget.astype( SingleTaskBase ) );
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GanttChart_OnDrop'
+  Precondition:
+  [*
+    isallowedhard := true;
+    
+    aftertask    := droprow.First();
+    ctrlkey      := dropaction.IsControl();
+    ctrlshiftkey := dropaction.IsControlShift();
+    
+    if( isnull( beforedroptarget) 
+        and guard( not isnull( droprow.LastFeedbackTaskInSchedule().Task_SC() ), false ) )
+    {
+      beforedroptarget := droprow.LastFeedbackTaskInSchedule().Task_SC();
+    }
+    
+    if( not isnull( beforedroptarget ))
+    {
+      aftertask := beforedroptarget.astype( SingleTaskBase ).Next();
+    }
+    
+    sourceoperations := selectset( source, Elements.BatchWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, operation,
+                                   operation.Type() = droprow.Type() );
+    
+    return ApplicationScheduler.AllowedScheduling( droprow,
+                                                   sourceoperations,
+                                                   ctrlkey,
+                                                   ctrlshiftkey,
+                                                   beforedroptarget,
+                                                   aftertask,
+                                                   Operation_SC::GetSelectedObjects( sourceoperations ),
+                                                   feedback,
+                                                   isallowedhard );
+  *]
+}

@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateExportedOperationBatchContents
+{
+  TextBody:
+  [*
+    resourceID := guard( this.Batch().BatchTask().Resource_SC().ResourceID(), '' );
+    batchID := this.BatchID();
+    
+    traverse( this, Batch.BatchSequenceElement.Operation_SC, operation )
+    {
+      exbatchcontent := GenericExportedOperationBatchContent::FindGenericExportedOperationBatchContent( batchID, 
+                                                                                                        operation.WorkOrderId(), 
+                                                                                                        operation.PlanUnitId(), 
+                                                                                                        operation.WorkOrderSequenceNr() );
+      
+      if( isnull( exbatchcontent ) )
+      {
+        exbatchcontent := GenericExportedOperationBatchContent::Create( this, operation );
+      }
+      
+      exbatchcontent.Update( batchID, this.Batch().Size(), resourceID, operation );
+    }
+  *]
+}

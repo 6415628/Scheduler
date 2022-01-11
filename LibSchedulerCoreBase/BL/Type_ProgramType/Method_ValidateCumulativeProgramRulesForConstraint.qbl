@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValidateCumulativeProgramRulesForConstraint (Boolean ishardconstraintforoptimizer) declarative remote as Boolean
+{
+  Description: 'Validate cumulative program rules for constraint checking'
+  TextBody:
+  [*
+    // Validate cumulative program rules for constraint checking
+    isvalid := true;
+    
+    lasttaskinprogram := guard( this.LastTaskInProgramSet(), null( TaskInProgramSet ) );
+    
+    if( not isnull( lasttaskinprogram ) )
+    {
+      // Get all the rules related to program scope
+      ruleswithprogramscope := selectset( this.ProgramTypeConfiguration(), RuleScopeInProgramType.Rule, rule,
+                                          rule.IsHardConstraintForOptimizer() = ishardconstraintforoptimizer
+                                          and rule.RuleSubType().IsCumulativeValueNeeded()
+                                          and rule.IsEnabled() );
+    
+      traverse( ruleswithprogramscope, Elements, rule, isvalid )
+      {
+        // Construct rule data object
+        dosequencingrule := lasttaskinprogram.GetRuleDataObjectForConstraintPrecondition( rule.CharacteristicMain(), false, 0.0 );
+        isvalid := rule.RuleSubType().Validate( rule, dosequencingrule );
+      }  
+    }
+    
+    return isvalid;
+  *]
+}

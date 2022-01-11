@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Feedback (ExportedOperationBatchContents exportedbatchcontents) as owning ImportedFeedbackBatchs
+{
+  Description: 'Create a feedback batch and assigned selected operations to the batch.'
+  TextBody:
+  [*
+    // Create ImportedFeedbackBatch and assign the exportedtasks into it
+    importedfeedbackbatch := null( ImportedFeedbackBatch );
+    feedbackbatches       := construct( ImportedFeedbackBatchs );
+    
+    if( exportedbatchcontents.Size() > 0 )
+    {
+      exportedbatchcontent  := exportedbatchcontents.Element( 0 );
+      
+      importedfeedbackbatch := guard( exportedbatchcontent.ExportedOperationBatch().ImportedFeedbackBatch(), null( ImportedFeedbackBatch ) );
+      
+      if( isnull( importedfeedbackbatch ) )
+      {
+        importedfeedbackbatch := ImportedFeedbackBatch::Create( exportedbatchcontent.Schedule() ); 
+        exportedbatchcontent.ExportedOperationBatch().ImportedFeedbackBatch( relset, importedfeedbackbatch );
+      }
+      
+      importedfeedbackbatch.InsertFeedbackBatchContent( exportedbatchcontents );  
+      feedbackbatches.Add( importedfeedbackbatch );
+    }                                                      
+    
+    return &feedbackbatches;
+  *]
+}

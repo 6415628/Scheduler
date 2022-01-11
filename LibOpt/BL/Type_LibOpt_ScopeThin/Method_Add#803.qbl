@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Add (LibOpt_ScopeElement element) as Boolean
+{
+  TextBody:
+  [*
+    shared := element.ScopeShared();
+    
+    new_shared := null( LibOpt_ScopeShared );
+    if( isnull( shared ) )
+    {
+      new_shared := this.FindScopeShared( element.DefinitionName() );
+    }
+    else
+    {
+      new_shared := shared.FindSharedWith( this );
+    }
+    
+    if( isnull( new_shared ) )
+    {
+      scopes := selectset( shared, ScopeSharedOnScope.ScopeThin, scope, true );
+      scopes.Add( this );
+      new_shared := LibOpt_ScopeShared::Create( scopes, element.DefinitionName() );
+    }
+    element.ScopeShared( relset, new_shared );
+    
+    return shared <> new_shared;
+  *]
+}

@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeOptimizerSettingsProgram
+{
+  Description: 'Synchronizes the imported optimizer settings with the internal ones.'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    optimizer := schedule.Optimization().OptimizerProgram();
+    
+    allinstances := selectset( optimizer, Settings, setting, true );  
+    updatedinstances := construct( SettingsPrograms );
+    
+    
+    
+    
+    traverse( schedule, ImportedSettingsProgram, importedSettings, importedSettings.IsValidDataHard() )
+    {
+      id := importedSettings.Id();
+      settings := SettingsProgram::FindTypeIndexSettingsProgram( id );
+      
+      if( isnull( settings ) )
+      {
+        settings := SettingsProgram::Create( optimizer, id );
+      }
+      
+      settings.Update( importedSettings );
+      updatedinstances.Add( settings );
+    }
+    
+    // Delete settings objects that do not exist anymore
+    oldinstances := allinstances.Difference( updatedinstances );
+    traverse( oldinstances, Elements, setting )
+    {
+      setting.Delete();
+    }
+  *]
+}

@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedStockingPoint (CDIntegration cdintegration)
+{
+  Description: 'Restore imported stocking point core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedStockingPoint
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedStockingPoint ), cdsp )
+    {
+      importedStockingPoint := ImportedStockingPoint_SC::Create( schedule, cdsp.Id() );
+      CopyCorresponding::CopyFrom( cdsp ).CopyTo( importedStockingPoint );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

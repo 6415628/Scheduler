@@ -1,0 +1,116 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod DetermineFilter (Strings attributes, Strings attributetypes, LibGUIFiltering_TermGroup group, 
+  output String warnings) remote as String
+{
+  TextBody:
+  [*
+    // per Oct-4-2016 (created)
+    filter := '';
+    
+    traverse( group, LibGUIFiltering_Term, term )
+    {                            
+      valuetype    := term.ValueType();
+      modifier     := term.Modifier();
+      attrmodifier := term.AttributeModifier();
+      tokenfilter  := '';
+      tokenused    := false;
+      
+      for ( x := 0; x < attributes.Size(); x++ )
+      {
+        // Token and operand are assigned inside the loop since they may get changed to account for differences in type
+        token    := term.Token();
+        operand  := term.Operand();
+        attr     := attributes.Element( x );
+        attrtype := attributetypes.Element( x );
+    
+        if ( attrmodifier = ''
+          or attrmodifier ~ attr )
+        {
+          colfilter := attrtype = valuetype;
+    
+          if ( not colfilter )
+          {
+            if ( attrtype  = 'DateTime'
+             and valuetype = 'Date' )
+            {
+              modifier  := '.Date()' + modifier;
+              colfilter := true;
+            }
+            else if ( attrtype  = 'Real'
+                  and valuetype = 'Number' )
+            {
+              colfilter := true;
+            }
+            else if ( attrtype  = 'DateTime'
+                  and valuetype = 'Duration' )
+            {
+              colfilter := true;
+              modifier  := '.TimeOfDay()';          
+            }      
+            else if ( attrtype = 'String'
+                  and not term.IsRange()
+                  and operand = '~'
+                  and (   valuetype = 'Number'
+                       or valuetype = 'Real' ) )
+            {
+              colfilter := true;
+              token     := LibGUIFiltering_Helper::AddQuotes( token );
+              operand   := '~';
+            }
+          }
+          
+          if ( attrtype <> 'String' )
+          {
+            if ( operand = '~' )
+            {
+              operand := '=';
+            }
+          }
+    
+          if ( colfilter )
+          {
+            if ( tokenfilter.Length() > 0 )
+            {
+              tokenfilter := tokenfilter + ' or ';
+            }
+            
+            if ( term.IsRange() )
+            {
+              tokenfilter := tokenfilter + '(object.' + attr.Tokenize( '.' ).Concatenate( '().' ) + '()' + modifier + ' >= ' + ifexpr( attrtype = 'String', LibGUIFiltering_Helper::AddQuotes( term.RangeStart() ), term.RangeStart() ) + ' and ' +
+                                            'object.' + attr.Tokenize( '.' ).Concatenate( '().' ) + '()' + modifier + ' <= ' + ifexpr( attrtype = 'String', LibGUIFiltering_Helper::AddQuotes( term.RangeEnd()   ), term.RangeEnd()   ) + ')';
+            }
+            else
+            {
+              tokenfilter := tokenfilter + 'object.' + attr.Tokenize( '.' ).Concatenate( '().' ) + '()' + modifier + ' ' + operand + ' ' + ifexpr( attrtype = 'String', LibGUIFiltering_Helper::AddQuotes( token ), token );
+            }
+          }
+          
+          tokenused := tokenused or colfilter;
+        }
+      }
+      
+      if ( not tokenused )
+      {
+        if ( warnings <> '' )
+        {
+          warnings := warnings + String::NewLine();
+        }
+        
+        warnings := warnings + 'unused filter token ' + LibGUIFiltering_Helper::AddQuotes( term.OriginalToken() );
+      }
+    
+      if ( tokenfilter <> '' )
+      {
+        if ( filter <> '' )
+        {
+          filter := filter + ' and ';
+        }
+    
+        filter := filter + '( ' + tokenfilter + ' )';
+      }
+    }
+    
+    return filter;
+  *]
+}

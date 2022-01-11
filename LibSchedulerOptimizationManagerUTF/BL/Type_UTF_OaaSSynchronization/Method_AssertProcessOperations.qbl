@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method AssertProcessOperations (Schedule schedule, JSON processOperationsArray)
+{
+  Description: 'Checks whether the schedule has routing steps that matches the JSON input data.'
+  TextBody:
+  [*
+    for( i := 0; i < processOperationsArray.Size(); i++ )
+    {
+      processOperationJSON := processOperationsArray.Get( i ); // Get to grab array's first instance
+      id := ImportedRoutingStep_SC::GetProcessOperationID( processOperationJSON );
+      routingStep := select( schedule, Routing.RoutingStep, routingStep, routingStep.ID() = id );
+      
+      if( this.Run().AssertTrue( not isnull( routingStep ), Translations::LibSchedulerOptMgrUTF_RoutingStep_NotCreated( id ) ) )
+      {
+        this.Run().AssertTrue( ImportedRoutingStep_SC::GetInterruptible( processOperationJSON ) = routingStep.Interruptible() );
+        this.Run().AssertTrue( ImportedRoutingStep_SC::GetProportionalToQty( processOperationJSON ) = routingStep.ProportionalToQty() );
+        this.Run().AssertEqual( ImportedRoutingStep_SC::GetPreparationTime( processOperationJSON ), routingStep.PreparationTime().TotalInSeconds() );
+        this.Run().AssertEqual( ImportedRoutingStep_SC::GetTomBefore( processOperationJSON ), routingStep.TomBefore().TotalInSeconds() );
+        this.Run().AssertEqual( ImportedRoutingStep_SC::GetTomAfter( processOperationJSON ), routingStep.TomAfter().TotalInSeconds() );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

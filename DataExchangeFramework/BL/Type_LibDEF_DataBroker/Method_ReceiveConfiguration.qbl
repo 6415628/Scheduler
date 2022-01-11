@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveConfiguration (owning NamedValueTree nvt_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive Configuration message.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-21-2016 (created)
+    // retrieve kind
+    kind := LibDEF_DataAccessor::GetHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_KIND() );
+    
+    // extract body
+    nvBody := LibDEF_DataAccessor::GetConfigurationBody( nvt_i );
+    
+    if( kind = LibDEF_DataAccessor::KIND_REQUEST() )
+    {
+      this.ReceiveConfigurationRequest( &nvt_i, nvBody, event_i );
+    }
+    else if( kind = LibDEF_DataAccessor::KIND_SUCCESS() )
+    {
+      this.ReceiveConfigurationSuccess( nvt_i, nvBody, event_i );
+    }
+    else
+    {
+      LibDEF_Util::EventLogError( event_i, 
+                                  "Failed to process Configuration message",
+                                  "Failed to process Configuration message, no handler defined for the Kind '" + kind + "'." );
+    }
+  *]
+}

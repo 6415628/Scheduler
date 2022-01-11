@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride FSPLUpdateGraph (BatchSequenceElement oldbatchsequenceelement)
+{
+  Description: 'Updates PrecedenceGraph for NoBufferAction subtasks.'
+  TextBody:
+  [*
+    //traverses the resources of all downstream tasks
+    traverse( this.Task_SC(), FSPLOperationInTask.ToOperationDependency.ToOperation.AsFSPLOperationInTask.Resource_SC, resource )
+    {
+      //grabs downstream Process subtask with highest FSPL Seq Nr in the traversed resource
+      latest_process_subtask := maxselect( this.Task_SC(),
+                                           FSPLOperationInTask.ToOperationDependency.ToOperation.AsFSPLOperationInTask.ProcessSubTask,
+                                           down_process_subtask,
+                                           down_process_subtask.Task_SC().Resource_SC() = resource,
+                                           down_process_subtask.Task_SC().FSPLSequenceNr() );
+    
+      //grabs existing edge to current NoBufferAction subtask from Process subtask (definitely Process subtask) in current resource
+      existing_edge_from_latest_downstream_task_in_same_resource := select( this.PrecedenceNode(),
+                                                                            Inputs,
+                                                                            in_edge,
+                                                                            in_edge.Type() = Constants::PrecedenceRelation_Met_By()
+                                                                            and in_edge.Input().SubTask().Task_SC().Resource_SC() = resource );
+    
+      //checks if there is NO existing edge to upstream NoBufferAction OR if the existing edge's node's subtask is NOT the latest Process subtask
+      if( isnull( existing_edge_from_latest_downstream_task_in_same_resource ) or ( existing_edge_from_latest_downstream_task_in_same_resource.Input().SubTask() <> latest_process_subtask ) )
+      {
+        //create the edge from the downstream Process subtask to current NoBufferAction subtask
+        PrecedenceEdge::Create( latest_process_subtask.PrecedenceNode(), this.PrecedenceNode(), Constants::PrecedenceRelation_Met_By(), false );
+        
+        //checks if there is an existing edge to current NoBufferAction
+        if( not isnull( existing_edge_from_latest_downstream_task_in_same_resource ) )
+        {
+          PrecedenceEdge::Delete( existing_edge_from_latest_downstream_task_in_same_resource );
+        }
+      }
+    }
+  *]
+}

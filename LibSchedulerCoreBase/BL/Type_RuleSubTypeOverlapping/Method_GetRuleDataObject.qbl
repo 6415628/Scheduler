@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetRuleDataObject (const Rule rule, const Operation_SC previousoperation, const Operation_SC currentoperation) const declarative remote as owning DORule_DataObjectSequencingRule
+{
+  TextBody:
+  [*
+    // Construct rule data object
+    dosequencingrule := construct( DORule_DataObjectSequencingRule );
+    
+    // Set has previous operation
+    dosequencingrule.HasPreviousOperation( not isnull( previousoperation ) );
+    
+    // Get current min/max value
+    currentmin := 0.0;
+    currentmax := 0.0;
+    currentoperation.GetCharacteristicMinMaxRealValue( rule.CharacteristicMain(), currentmin, currentmax );
+    
+    // Get previous min/max value
+    previousmin := 0.0;
+    previousmax := 0.0;
+    if( not isnull( previousoperation ) )
+    {
+      previousoperation.GetCharacteristicMinMaxRealValue( rule.CharacteristicMain(), previousmin, previousmax );
+    }
+    
+    // Set current and previous min/max values 
+    dosequencingrule.CurrentMinRealValue( currentmin );
+    dosequencingrule.CurrentMaxRealValue( currentmax );
+    dosequencingrule.PreviousMinRealValue( previousmin );
+    dosequencingrule.PreviousMaxRealValue( previousmax );
+    
+    return &dosequencingrule;
+  *]
+}

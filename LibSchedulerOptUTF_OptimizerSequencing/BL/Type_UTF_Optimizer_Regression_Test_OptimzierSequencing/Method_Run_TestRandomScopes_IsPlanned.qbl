@@ -1,0 +1,115 @@
+Quintiq file version 2.0
+#parent: #root
+Method Run_TestRandomScopes_IsPlanned (Schedule schedule) as stream[JSON]
+{
+  Description:
+  [*
+    Runs the SelectorSpan->Suboptimizer components of the optimizer twice in sequence:
+    * First, starting from the empty plan, select 20 random operations from 10 random plan units in scope
+    * Second, select 10 random planned operations from 5 random plan units, and 10from5 unplanned ones in scope
+    Asserts that there all operations are planned and there are no optimizer errors.
+  *]
+  TextBody:
+  [*
+    debuginfo( schedule.MDSSchedule().Name() );
+    
+    // Create an empty scenario
+    schedule.UnplanAll();
+    
+    random_pus1 := this.GetRandomPUs( schedule, 10 );
+    num_ops_in_pus := counter( random_pus1, Elements.Operation_SC, op, true );
+    
+    operations1 := construct( Operation_SCs );
+    while( operations1.Size() < 20 and operations1.Size() < num_ops_in_pus )
+    {
+      random_pu := maxselect( random_pus1, Elements, pu, pu.IsDueInSchedulingHorizon(), Real::Random() );
+      op := maxselect( random_pu, Operation_SC, op, true, Real::Random() );
+      if( operations1.Find( op ) = -1 )
+      {
+        operations1.Add( op );
+      }
+    }
+    
+    this.Run().AssertGreater( 9, operations1.Size(), "Too few random operations selectable." );
+    
+    resources1 := Operation_SC::GetAllowedResources( operations1 );
+    scope := UTF_Optimizer_Regression_Test_OptimizerSequencing::CreateScope( operations1, resources1 );
+    
+    run1 := UTF_Optimizer_Regression_Test_OptimizerSequencing::CreateSelectorSpanAndSuboptimzierPOARun( UTF_Optimizer_Regression_Test_OptimizerSequencing::Optimizer( schedule ),
+                                                                                                        scope );
+    
+    result1 := run1.Start();
+    result2 := void->After( result1 )->() {
+      this.Asserts_LastRunTerminatedStatus( schedule );
+      this.Asserts_Test_IsPlanned( schedule, operations1, resources1 );
+    
+      Transaction::Transaction().Propagate();
+      
+      // second optimizer run:
+      operations2 := construct( Operation_SCs );
+      // add 10from5 planned operations:
+      random_pus2 := construct( PlanUnit_SCs );
+      while( random_pus2.Size() < 5 )
+      {
+        pu := maxselect( operations1, Elements.PlanUnit_SC, pu, true, Real::Random() );
+        if( random_pus2.Find( pu ) = -1 )
+        {
+          random_pus2.Add( pu );
+        }
+      }
+      num_planned_ops_in_pus := counter( random_pus2, Elements.Operation_SC, op, op.IsPlanned() );
+      
+      while( operations2.Size() < 10 and operations2.Size() < num_planned_ops_in_pus )
+      {
+        random_pu := maxselect( random_pus2, Elements, pu, true, Real::Random() );
+        op := maxselect( random_pu, Operation_SC, op, op.IsPlanned(), Real::Random() );
+        if( operations2.Find( op ) = -1 )
+        {
+          operations2.Add( op );
+        }
+      }
+      
+      // add 10from5 unplanned operations:
+      random_pus2 := construct( PlanUnit_SCs );
+      while( random_pus2.Size() < 5 )
+      {
+        pu := maxselect( schedule, PlanUnit_SC, pu,
+                         not pu.IsPlanned()
+                         and pu.IsDueInSchedulingHorizon(),
+                         Real::Random() );
+    
+        if( random_pus2.Find( pu ) = -1 )
+        {
+          random_pus2.Add( pu );
+        }
+      }
+      num_unplanned_ops_in_pus := counter( random_pus2, Elements.Operation_SC, op, not op.IsPlanned() );
+      
+      while( operations2.Size() < 20 and operations2.Size() < num_planned_ops_in_pus + num_unplanned_ops_in_pus )
+      {
+        random_pu := maxselect( random_pus2, Elements, pu, true, Real::Random() );
+        op := maxselect( random_pu, Operation_SC, op, not op.IsPlanned(), Real::Random() );
+        if( operations2.Find( op ) = -1 )
+        {
+          operations2.Add( op );
+        }
+      }
+      
+      resources2 := Operation_SC::GetAllowedResources( operations2 );
+      scope := UTF_Optimizer_Regression_Test_OptimizerSequencing::CreateScope( operations2, resources2 );
+      
+      run2 := UTF_Optimizer_Regression_Test_OptimizerSequencing::CreateSelectorSpanAndSuboptimzierPOARun( UTF_Optimizer_Regression_Test_OptimizerSequencing::Optimizer( schedule ),
+                                                                                                          scope );
+      
+      result2 := run2.Start();
+      assert1 := this->After( result2 )->Asserts_LastRunTerminatedStatus( schedule );
+      assert2 := this->After( result2 )->Asserts_Test_IsPlanned( schedule, operations2, resources2 );
+      assert1->Exception()->Merge( assert2->Exception() )->( exception ) {
+        this.Run().RegisterFailure( "post-optimization checks failed:\n" + exception.Message() );
+      };
+      
+      return result2->After( assert1, assert2 );
+    }
+    return result1->Merge( result2 );
+  *]
+}

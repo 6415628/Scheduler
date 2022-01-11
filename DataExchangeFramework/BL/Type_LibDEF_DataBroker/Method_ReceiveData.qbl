@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveData (NamedValueTree nvt_i, LibDEF_System sender_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive Data message, to be handled by the System of the sender, or the System representing local.'
+  TextBody:
+  [*
+    // Jacky CHAN May-26-2016 (created)
+    if( this.VerifyChannelCompatibility( nvt_i, event_i ) )
+    {
+      // retrieve kind
+      kind := LibDEF_DataAccessor::GetHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_KIND() );
+    
+      if( kind = LibDEF_DataAccessor::KIND_REQUEST() )
+      {
+        this.ReceiveDataRequest( nvt_i, sender_i, event_i );
+      }
+      else if( kind = LibDEF_DataAccessor::KIND_SUCCESS() )
+      {
+        this.ReceiveDataSuccess( nvt_i, sender_i, event_i );
+      }
+      else
+      {
+        LibDEF_Util::EventLogError( event_i,
+                                    "Failed to process Data message",
+                                    "Failed to process Data message, no handler defined for the Kind '" + kind + "'." );
+      }
+    }
+  *]
+}

@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedOnSupply (Supply supply, Boolean skipsoftcheck, Boolean isrequirefeedback, 
+  output String feedback_o, output Boolean isallowedhard_o) declarative remote as Boolean
+{
+  Description: 'Checks the allowed rules for product based material reservation.'
+  TextBody:
+  [*
+    // WOI1 Aug-24-2016 (created)
+    
+    // Hard rules
+    value := this.CheckIsDemandAvailable( isrequirefeedback, feedback_o ) 
+             and this.CheckIsSupplyAvailable( supply, isrequirefeedback, feedback_o )
+             and this.CheckIsValidDemand( isrequirefeedback, feedback_o )
+             and supply.CheckIsValidSupply( this, isrequirefeedback, feedback_o );
+             
+    value := value and this.AllowedRulesHard( supply, isrequirefeedback, feedback_o );
+    value := value and this.CheckIsDemandActive( isrequirefeedback, feedback_o );
+    
+    isallowedhard_o := isallowedhard_o and value;
+    
+    // Soft rules
+    if( value and not skipsoftcheck )
+    {
+      value := this.AllowedRulesSoft( supply, isrequirefeedback, feedback_o ) and value;
+      // CreatePlannedFulfillments calls the Hard and Soft logic
+      // We want to allow automatic reservation of frozen demands when user overrides the precondition
+      // Adding this into the Soft logic will prevent ANY automatic reservations for frozen demands even with override
+      value := this.CheckIsNotInFrozenPeriod( isrequirefeedback, feedback_o ) and value; 
+      value := this.CheckIsNotLockedByOptimizer( feedback_o ) and value; 
+    }
+    return value;
+  *]
+}

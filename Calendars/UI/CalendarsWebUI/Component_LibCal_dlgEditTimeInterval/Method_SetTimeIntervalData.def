@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetTimeIntervalData () id:Method_LibCal_dlgEditTimeInterval_SetTimeIntervalData
+{
+  #keys: '[131094.0.2073189978]'
+  Body:
+  [*
+    // Initialize the DataHolders that are related to the TimeInterval.
+    sTimeInterval := dhExplicitTimeInterval.Data();
+    timezone      := Form.GetCalendarTimeZone();
+    
+    // Split the date and the time.
+    // Start
+    date      := sTimeInterval.Start().Date( timezone );
+    timeOfDay := sTimeInterval.Start().TimeOfDay( timezone );
+    
+    dhStartDate.Data( date );
+    dhStartTimeOfDay.Data( timeOfDay );
+    
+    dsStartDate.Date( date );
+    durStartTimeOfDay.Duration( timeOfDay );
+    
+    // End
+    date      := sTimeInterval.End().Date( timezone );
+    timeOfDay := sTimeInterval.End().TimeOfDay(  timezone );
+    
+    dhEndDate.Data( date );
+    dhEndTimeOfDay.Data( timeOfDay );
+    
+    dsEndDate.Date( date );
+    durEndTimeOfDay.Duration( timeOfDay );
+    
+    // In principle the dialog can also be used for 'generic' ExplicitTimeIntervals;
+    // in that case there is no participation available.
+    if( sTimeInterval.istype( shadow[LibCal_ExplicitTimeInterval] ) )
+    {
+      event := sTimeInterval.astype( shadow[LibCal_ExplicitTimeInterval] ).Participation().Event();
+      lblSubject.Text( event.Subject() );
+      lblSubject.Tooltip( event.Info() );
+      
+      isAllDay := event.IsAllDay()
+              and sTimeInterval.Start().TimeOfDay( timezone ) = Duration::Zero()
+              and sTimeInterval.End()  .TimeOfDay( timezone ) = Duration::Zero();    
+      ckbIsAllDay.Checked( isAllDay );
+    }
+    
+    durationInDays := ( sTimeInterval.End() - sTimeInterval.Start() ).Ceil( Duration::Days( 1 ) );
+    npDuration.Number( durationInDays.Days() );  // Is only used when running in days only mode,
+                                                 // but set it anyway.
+    
+    edtComment.Text( sTimeInterval.Comment() );
+  *]
+}

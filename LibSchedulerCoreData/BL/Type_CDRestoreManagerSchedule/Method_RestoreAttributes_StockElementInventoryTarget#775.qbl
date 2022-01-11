@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_StockElementInventoryTarget (CDSchedule cdSchedule, StockingPointStock stockingpointstock)
+{
+  Description: 'Restore attributes for stock element inventory target core data attributes to planning object'
+  TextBody:
+  [*
+    cdStockElementInventoryTargets := selectset( cdSchedule, CDEntity.astype( CDStockElementInventoryTarget ), cdStockElementInventoryTarget, 
+                                                 cdStockElementInventoryTarget.ProductID() = '',
+                                                 cdStockElementInventoryTarget.StockingPointID() = stockingpointstock.StockingPointID()
+                                               );
+    
+    traverse( cdStockElementInventoryTargets, Elements, cdStockElementInventoryTarget )
+    {
+      stockElementInventoryTarget := StockElementInventoryTarget::Create( stockingpointstock );
+      CopyCorresponding::CopyFrom( cdStockElementInventoryTarget ).CopyTo( stockElementInventoryTarget );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

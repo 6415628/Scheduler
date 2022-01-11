@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test132_OnRollbackOrError_NoErrorOrRollback (LibOpt_TestDataset dataset)
+{
+  Description:
+  [*
+    Check if the `LibOpt_DatasetCopyOnRollbackOrError` type deletes a dataset copy when no error or rollback takes place on a component. 
+    We place a `LibOpt_DatasetCopyOnRollbackOrError` dataset copy on all normal component positions of all components that are created with the `CreateComponents` method. We expect that all these dataset copies will be deleted.
+  *]
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( true );
+    
+    // For each component in 'CreateAllComponents', a run is created that only contains that component.
+    runs := opt.CreateAllComponents();
+    se := dataset.ScopeElementMock( relnew );
+    
+    strs := construct( structured[stream[JSON]] );
+    traverse( runs, Elements, run )
+    {
+      scope := LibOpt_ScopeFat::Create( run );
+      scope.Add( se );
+      run.SetStartScope( scope );
+    
+      startcomponent := run.StartComponent();
+      // Attach a 'LibOpt_DatasetCopyOnRollbackOrError' dataset copy to the 'Initialize', 'Continue' and 'Finalize' component positions of the 'startcomponent' component.
+      // Note: the 'Continue' component position of iterator components is skipped.
+      LibOpt_TestUnit_DatasetCopy::CreateDatasetCopiesForNormalComponentPositions( startcomponent, 
+                                                                                   // The LibOpt_DatasetCopyOnRollbackOrError type will always create a dataset copy.
+                                                                                   // This dataset copy will only be deleted if no rollbacks and no errors occur.
+                                                                                   // We haven't scheduled any errors or rollbacks in this unit test, so we expect that all dataset copies will be deleted.
+                                                                                   typeof( LibOpt_DatasetCopyOnRollbackOrError ).Name() );  
+      strs.Add( run.Start() );  
+    }
+    
+    str := stream[JSON]::Merge( strs )
+    ->|stream[Void]::Wait( this.MDSEditorUpdateTime() ) // Wait some time to ensure that the dataset copies have been created and that MDSEditor::Editor().ObjectInfos() is updated. 
+    ->|void->() // Start a reactive call to handle the created dataset copies.
+    {
+      traverse( runs,
+                Elements.Component.ComponentPosition,
+                componentposition,
+                not isnull( componentposition.DatasetCopyConditional() ) 
+                )
+      {
+        LibOpt_TestUnit_DatasetCopy::AssertsForComponentPositionDeletedDataset( this, componentposition );
+      }
+    }   
+    
+    this.NoException( str );
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

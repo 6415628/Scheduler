@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SynchronizePlannedSupplyConversion
+{
+  TextBody:
+  [*
+    allinstances := selectset( this, PlannedSupply2Material, plannedSupply2Material, true );
+    updatedinstances := construct( PlannedSupply2Materials );
+    
+    this.ZeroQuantityConvertedForValidConversions(); // Reset all FulfillmentConversion.Quantity so that fulfillmentToReplace.GetQuantity() is accurate
+    
+    traverse( this, ImportedMaterial_SC.ImportedPlannedSupply2Material_SC, row, row.IsValidDataHard() )
+    {
+      externalWorkOrderOutputMaterial := ExternalWorkOrderOutputMaterial::FindExternalWorkOrderOutputMaterial( row.WorkOrderOutputMaterialID() );
+      importedQtyConverted := row.Quantity();
+      
+      if( not isnull( externalWorkOrderOutputMaterial ) )
+      {
+        // This API can be customized by project teams to have different sorting criteria
+        plannedsupplies := externalWorkOrderOutputMaterial.GetSortedPlannedSupplies();
+        
+        traverse( plannedsupplies, Elements, plannedsupply, importedQtyConverted > 0 )
+        {
+          plannedSupply2Material := PlannedSupply2Material::FindPlannedSupply2Material( row.MaterialID(), plannedsupply.SupplyID() );
+          
+          if( isnull( plannedSupply2Material ) )
+          {
+            plannedSupply2Material := GenericPlannedSupply2Material::Create( this, plannedsupply );
+          }
+          
+          qty := minvalue( importedQtyConverted, plannedsupply.Quantity() );
+          plannedSupply2Material.Update( qty, row );
+          plannedSupply2Material.SynchronizeFulfillmentsByPlannedSupplytoExternalSupply();
+          importedQtyConverted := importedQtyConverted - qty; // Update importedQtyConverted for next traversed planned supply
+          updatedinstances.Add( plannedSupply2Material );
+        }
+      }
+    }
+    
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, old, old.CheckCanDelete() )
+    {
+      old.Delete();
+    }
+  *]
+}

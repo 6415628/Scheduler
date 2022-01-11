@@ -1,0 +1,68 @@
+Quintiq file version 2.0
+#parent: #root
+Method CompareCalendarData (Schedule schedule, LibCIM_Calendar calendar, LibCIM_Event event, 
+  LibCIM_Participation participation)
+{
+  TextBody:
+  [*
+    resourceHM := select( schedule, ResourceGroup_SC.Resource_SC, resource,
+                          resource.ResourceID() = 'HM' );
+    
+    // Check for calendar
+    resourceHMCalendar := resourceHM.ResourceCalendar();
+    
+    isCalendarCorrect := calendar.CalendarID() = resourceHMCalendar.CalendarID()
+                         and calendar.CalendarType() = resourceHMCalendar.CalendarType()
+                         and calendar.History() = resourceHMCalendar.History()
+                         and calendar.IsAlwaysAvailable() = exists( resourceHMCalendar, Participation, p, true, p.Event().IsAlwaysAvailableEvent() )
+                         and calendar.OwnerID() = resourceHMCalendar.GetOwnerID()
+                         and calendar.UpdateInterval() = resourceHMCalendar.UpdateInterval()
+                         and calendar.Window() = resourceHMCalendar.Window();
+    
+    // Check for event
+    resourceHMEvent := select( resourceHMCalendar, Event, resourceEvent, true );
+    
+    isEventCorrect := event.CalendarID() = resourceHMEvent.Calendar().CalendarID()
+                      and event.CalendarType() = resourceHMEvent.Calendar().CalendarType()
+                      and event.EventID() = resourceHMEvent.EventID()
+                      and event.Category() = resourceHMEvent.EventCategory().Name()
+                      // and event.Description() --> There is no 'Description' attribute in LibCal_StagingEvent object. 
+                      and event.Duration() = resourceHMEvent.Duration()
+                      and event.IsAllDay() = resourceHMEvent.IsAllDay()
+                      and event.IsDefault() = resourceHMEvent.IsDefault()
+                      and event.IsRecurring() = ( not isnull( resourceHMEvent.RecurrencePattern() ) )
+                      and event.PartialCapacity() = resourceHMEvent.PartialCapacity()
+                      and event.PatternMonthly_Day() = guard( resourceHMEvent.RecurrencePattern().astype( LibCal_RecurrencePatternMonthly ).Day(), 0 )
+                      and event.PatternMonthly_DayOfWeek()  = guard( resourceHMEvent.RecurrencePattern().astype( LibCal_RecurrencePatternMonthly ).PatternDayOfWeek(), '')
+                      and event.PatternMonthly_IsDay() = guard( resourceHMEvent.RecurrencePattern().astype( LibCal_RecurrencePatternMonthly ).IsDay(), false )
+                      and event.PatternMonthly_WeekOfMonth() = guard( resourceHMEvent.RecurrencePattern().astype( LibCal_RecurrencePatternMonthly ).PatternWeekOfMonth(), '' )
+                      and event.PatternType() = guard( resourceHMEvent.RecurrencePattern().PatternType(), '' )
+                      and event.PatternWeekly_Weekdays() = ifexpr( guard( resourceHMEvent.RecurrencePattern().astype( LibCal_RecurrencePatternWeekly ).Monday(), false ), 'Mon;', '' )
+                      and event.PatternYearly_Day() = guard( resourceHMEvent.RecurrencePattern().astype( LibCal_RecurrencePatternYearly ).Day(), 0 )
+                      and event.PatternYearly_DayOfWeek() = guard( resourceHMEvent.RecurrencePattern().astype( LibCal_RecurrencePatternYearly ).PatternDayOfWeek(), '' )
+                      and event.PatternYearly_IsDay() = guard( resourceHMEvent.RecurrencePattern().astype( LibCal_RecurrencePatternYearly ).IsDay(), false )
+                      and event.PatternYearly_Month() = guard( resourceHMEvent.RecurrencePattern().astype( LibCal_RecurrencePatternYearly ).Month(), 0 )
+                      and event.PatternYearly_WeekOfMonth() = guard( resourceHMEvent.RecurrencePattern().astype( LibCal_RecurrencePatternYearly ).PatternWeekOfMonth(), '' )
+                      and event.RecurrenceInterval() = guard( resourceHMEvent.RecurrencePattern().RecurrenceInterval(), 0 )
+                      and event.StartTimeOfDay() = resourceHMEvent.StartTimeOfDay()
+                      and event.Subject() = resourceHMEvent.Subject()
+                      and event.Type() = resourceHMEvent.Type();
+    
+    // Check for participant
+    resourceHMParticipation := select( resourceHMEvent, Participation, resourceParticipation, true );
+    
+    isParticipantCorrect := participation.CalendarID() = resourceHMParticipation.Calendar().CalendarID()
+                            and participation.CalendarType() = resourceHMParticipation.Calendar().CalendarType()
+                            and participation.EventID() = resourceHMParticipation.Event().EventID()
+                            and participation.EventIsRecurring() = resourceHMParticipation.IsRecurring()
+                            // and participation.HasSpecificPeriod() --> // This attribute required module accessibility attribute in LibCal_Participation hence it is commented out.
+                            and participation.IsSubscription() = resourceHMParticipation.IsSubscription()
+                            // and participation.ParticipationID() --> // This attribute is module accessibility in LibCal_Participation hence it is commented out.
+                            and participation.PeriodEndDate() = guard( resourceHMParticipation.RecurrencePeriod().astype( LibCal_RecurrencePeriodWithEndDate ).EndDateSet(), Date::MinDate() )
+                            and participation.PeriodStartDate() = guard ( resourceHMParticipation.RecurrencePeriod().StartDate(), Date::MinDate() )
+                            and participation.PeriodType() = guard( resourceHMParticipation.RecurrencePeriod().PeriodType(), '' )
+                            and participation.StartDate() = resourceHMParticipation.StartDate();
+    
+    this.Run().AssertTrue( isCalendarCorrect and isEventCorrect and isParticipantCorrect, UTFUtility::GenerateFailedMessage( 'Synchronize to calendar', '' ) );
+  *]
+}

@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ConvertScenarioNameToIdentifier (String scenarioName) declarative remote as String
+{
+  Description: 'Converts the specified Scenario Name (which can contain any character) to a valid identifier.'
+  TextBody:
+  [*
+    // The generated dataset name could start with a prefix to 
+    // to make sure the start of the name is 'identifier-safe'.
+    prefix := LibSM_ModelExtensions::GetDatasetNamePrefix();
+    
+    newName := scenarioName;
+    
+    if ( not newName.IsIdentifier() )
+    {
+      // the supplied name is not an identifier 
+      newName := "";
+      // see if we need to add a prefix so we can keep e.g. a numeric start for the new name.
+      firstChar := guard( scenarioName.TrimBoth().SubString( 0, 1 ), '' );
+      if ( not firstChar.IsIdentifier() 
+           and ( prefix + firstChar ).IsIdentifier() )
+      {
+        newName := prefix;
+      }
+      
+      for ( i := 0; i < scenarioName.Length(); i++ )
+      {
+        char := scenarioName.SubString( i, 1 );
+        
+        if ( ( newName + char ).IsIdentifier() )
+        {
+          newName := newName + char;
+        }
+      }
+      
+    }
+    
+    return newName;
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

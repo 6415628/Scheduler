@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: lstScenario
+Response OnClick (structured[LibSM_ScenarioNode] selection) id:Response_lstScenario_MenuRestoreItemAll_OnClick
+{
+  #keys: '[131464.0.2094218601]'
+  Body:
+  [*
+    // Restore deleted items to root folder
+    scenarioManager  := LibSM_GlobalState.GetScenarioManagerDataset();
+    recyclebinFolder := scenarioManager.RecycleBinFolder(); 
+    scenarioNodesInRecyclebin := select( recyclebinFolder, Children, child, true );
+         
+    scenarioManager.RestoreScenarioNodesFromRecycleBin();
+    LibSM_GlobalState.AutoExpandSelection( this, scenarioNodesInRecyclebin );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /lstScenario/Responsedef_lstScenario_Menu_OnClick
+  Initiator: 'MenuRestoreItemAll'
+  Precondition:
+  [*
+    return LibSM_GlobalState.HasScenarioManagerDataset()
+           and LibSM_ScenarioManager.CanRestoreScenarioNodesFromRecycleBin();
+  *]
+}

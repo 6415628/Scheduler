@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateResourceScopeData () id:Method_DialogCreateEditShutdownType_UpdateResourceScopeData
+{
+  #keys: '[143388.0.1754530195]'
+  Body:
+  [*
+    // Update shutdown type in resource for shadow shutdown type object
+    
+    allinstances := selectset( Dialog.Data(), ShutdownTypeInResource, stir, true );
+    updateinstances := construct( structured[shadow[ShutdownTypeInResource]] );
+    traverse( DataHolderSelectedResourcesInResourceScope.Data(), Elements, e )
+    {
+      stir := select( allinstances, Elements, stir, stir.Resource_SC() = e );
+      if( isnull( stir ) )
+      {                                     
+        stir := Dialog.Data().ShutdownTypeInResource( relnew, 
+                                                      Resource_SC := e,
+                                                      ResourceID := e.ResourceID(),
+                                                      ShutdownTypeID := Dialog.Data().ShutdownTypeID() );
+      }
+      updateinstances.Add( stir );
+    }
+    
+    tobedeleted := allinstances.Difference( updateinstances );
+    traverse( tobedeleted, Elements, e )
+    {
+      e.Delete();
+    }
+  *]
+}

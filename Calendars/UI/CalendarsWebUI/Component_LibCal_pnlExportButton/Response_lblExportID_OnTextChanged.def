@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: lblExportID
+Response OnTextChanged () id:Response_LibCal_pnlExportButton_lblExportID_OnTextChanged
+{
+  #keys: '[131094.0.2121042712]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebLabel_OnTextChanged'
+  QuillAction
+  {
+    Body:
+    [*
+      exportSource := dhExportSource.Data();
+      if( not isnull( exportSource ) )
+      {
+        // Only do something if the current Client has triggered the export.
+        if( lblMyExportID.Text() <> "" and 
+            this.Text() = lblMyExportID.Text() )
+        {
+          // Get the ExportData right away to prevent that it might be overwritten by next export-action
+          // while the user is selecting a file.
+          binData := exportSource.GetExportData().AsBinaryData();
+      
+          // Write the data to a file on the Client-machine.
+          // It is either written directly in the download-folder of the browser, or there is asked where the file should be written,
+          // depending on the settings of the browser.
+          Application.Download( LibCal_pnlExportButton.GetFileName(), binData );
+      
+          // Reset
+          lblMyExportID.Text( "" );
+        }
+      }
+    *]
+    GroupServerCalls: false
+  }
+}

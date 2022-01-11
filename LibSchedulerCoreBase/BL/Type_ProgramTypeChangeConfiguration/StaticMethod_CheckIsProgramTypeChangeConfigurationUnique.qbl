@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsProgramTypeChangeConfigurationUnique (ProgramSetConfiguration owner, ProgramTypeChangeConfiguration programtypechangeconfiguration, ProgramTypeConfiguration fromprogramtypeconfiguration, 
+  ProgramTypeConfiguration toprogramtypeconfiguration) remote as Boolean
+{
+  Description: 'Perform checking to ensure the program type change configuration from and to is unique.'
+  TextBody:
+  [*
+    // Perform checking to ensure the program type change configuration from and to is unique.
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    value := not exists( owner,
+                         ProgramTypeChangeConfiguration,
+                         ptc,
+                         ptc <> programtypechangeconfiguration,
+                         ptc.FromProgramTypeConfiguration() = fromprogramtypeconfiguration
+                         and ptc.ToProgramTypeConfiguration() = toprogramtypeconfiguration );
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      name := ProgramTypeChangeConfiguration::GetProgramTypeChangeName( owner, fromprogramtypeconfiguration, toprogramtypeconfiguration );
+      feedbackobject.AddHard( Translations::ProgramTypeChangeConfiguration_AlreadyExists( name ) );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

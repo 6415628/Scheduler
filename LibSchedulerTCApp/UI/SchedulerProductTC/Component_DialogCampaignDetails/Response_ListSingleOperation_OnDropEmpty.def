@@ -1,0 +1,61 @@
+Quintiq file version 2.0
+#parent: ListSingleOperation
+Response OnDropEmpty (structured[Operation_SC] information) id:Response_ListSingleOperation_OnDropEmpty
+{
+  #keys: '[105706.1.1891979365]'
+  Body:
+  [*
+    // OnDropEmpty structured[Operation]
+    resource    := DataHolderSingleResource.Data();
+    beforetask  := DialogCampaignDetails.Data().LastOperationCampaign().Task_SC();
+    
+    if( resource.istype( SingleResourceBase ) )
+    {
+      resource.astype( SingleResourceBase ).PlanAfter( information, beforetask.astype( SingleTaskBase ) );
+    }
+    else
+    {
+      resource.astype( BatchResource ).CreateBatchAssignOperationsPlanBatch( information, beforetask.astype( BatchTask ));
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_List_OnDropEmpty'
+  Precondition:
+  [*
+    resource      := DataHolderSingleResource.Data();
+    isallowedhard := true;
+    ctrlkey       := dropaction.IsControl();
+    ctrlshiftkey  := dropaction.IsControlShift();
+    identifier    := Operation_SC::GetSelectedObjects( information )
+    beforetask    := DialogCampaignDetails.Data().LastOperationCampaign().Task_SC();
+    
+    value := true;
+    if( resource.istype( SingleResourceBase ) )
+    {
+      value := ApplicationScheduler.AllowedScheduling( resource.astype( SingleResourceBase ),//single resource
+                                                       information, //structured operations
+                                                       ctrlkey,     //skip soft check
+                                                       ctrlshiftkey,
+                                                       beforetask, //before task
+                                                       null( Task_SC ), //after task
+                                                       identifier,
+                                                       feedback,
+                                                       isallowedhard );
+    }
+    else
+    {
+      value := ApplicationScheduler.AllowedScheduling( resource.astype( BatchResource ),           //batchresource
+                                                       information,        //structured operations
+                                                       ctrlkey,            //skip soft check
+                                                       ctrlshiftkey,       //ctrl shift key
+                                                       beforetask,    //before task
+                                                       null( Task_SC ),    //afterbatch
+                                                       identifier,
+                                                       feedback,
+                                                       isallowedhard )
+    }
+    
+    return value;
+  *]
+  UserRequiresReadWrite: true
+}

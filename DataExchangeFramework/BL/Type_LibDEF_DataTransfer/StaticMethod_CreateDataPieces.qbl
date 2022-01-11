@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateDataPieces (LibDEF_DataTransfers dataTransfers_i, NamedValueTree nvt_i)
+{
+  Description:
+  [*
+    This is for creating data pieces for multiple data transfers using the given NVT (so 1 NVT for all the given data transfers).
+    Each data transfer might have different chunk size limit, so this means different number of chunks of the NVT (the NVT will be chunked differently).
+    The algorithm used here is to save performance cost by avoiding redundant NVT chunking for data transfers with the same chunk size limit (by reusing the previous NVT chunking result).
+  *]
+  TextBody:
+  [*
+    // Create the data pieces for every data transfer.
+    // To save performance on chunking, first sort the dataTransfers based on the
+    // totalContentLength and ChunkSizeLimit (they are possible to be different for each target),
+    // Then only do chunking if any of them is different. Else reuse the previous one
+    dataTransfersSorted := selectsortedset( dataTransfers_i, Elements, dt, true,
+                                            dt.TotalContentLength(),
+                                            dt.ChunkSizeLimit() );
+    previousDt := null( LibDEF_DataTransfer );
+    nvtContainerFromPrev := null( LibDEF_NamedValueTreeContainer, owning );
+    traverse( dataTransfersSorted, Elements, dt )
+    {
+      LibDEF_Util::EventLog( dt.IntegrationEvent(), "Preparing data pieces (chunking NVT)." );
+      
+      if( isnull( previousDt )
+          or isnull( nvtContainerFromPrev )
+          or previousDt.TotalContentLength() <> dt.TotalContentLength()
+          or previousDt.ChunkSizeLimit() <> dt.ChunkSizeLimit() )
+      {
+        nvtContainerFromPrev := dt.CreateDataPieces( nvt_i );
+      }
+      else
+      {
+        dt.CreateDataPieces( nvtContainerFromPrev );
+      }
+      previousDt := dt;
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

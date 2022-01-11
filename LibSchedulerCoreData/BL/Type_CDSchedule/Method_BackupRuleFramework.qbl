@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupRuleFramework (const Schedule schedule)
+{
+  Description: 'Backup rule framework core data'
+  TextBody:
+  [*
+    // Backup rule
+    traverse( schedule, Rule, rule )
+    {
+      cdRule := this.CDEntity( relnew, CDRule );
+      CopyCorresponding::CopyFrom( rule ).CopyTo( cdRule );
+      
+      cdRule.RuleTypeName( guard( rule.RuleType().Name(), '' ) );
+      cdRule.RuleSubTypeName( guard( rule.RuleSubType().Name(), '' ) );
+      cdRule.CharacteristicMainID( guard( rule.CharacteristicMain().ID(), '' ) );
+      cdRule.CharacteristicConditionID( guard( rule.CharacteristicCondition().ID(), '' ) );
+      cdRule.CharacteristicScopeID( guard( rule.CharacteristicScope().ID(), '' ) );
+      
+      // Backup RuleScope for the rule
+      this.BackupRuleScope( rule );
+      
+      // Backup RuleDetails for the rule ( RuleChangeOver, RuleRange, RuleValueString )
+      this.BackupRuleDetail( rule );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateDimensions (SetupDurations_SCRowSet setup_rows)
+{
+  Description: 'Deletes and recreates the owned dimensions and all of their coordinates of this setup address data, based on the given setup duration KT. Also deletes all setup addresses.'
+  TextBody:
+  [*
+    // delete addresses, as they refer to the old coordinates:
+    this.Address( relflush );
+    
+    // recreate dimensions:
+    this.Dimension( relflush );
+    // there are four dimensions along which setup addresses are defined:
+    this.Dimension( relnew, ProductSetupDimension, Id := typeof( ProductSetupDimension ).FullName(), KeyRunContext := this.Key() );
+    this.Dimension( relnew, ProductTypeSetupDimension, Id := typeof( ProductTypeSetupDimension ).FullName(), KeyRunContext := this.Key() );
+    this.Dimension( relnew, SetupGroupSetupDimension, Id := typeof( SetupGroupSetupDimension ).FullName(), KeyRunContext := this.Key() );
+    this.Dimension( relnew, PracticeSetupDimension, Id := typeof( PracticeSetupDimension ).FullName(), KeyRunContext := this.Key() );
+    this.Dimension( relnew, OperationSetupDimension, Id := typeof( OperationSetupDimension ).FullName(), KeyRunContext := this.Key() );
+    
+    // initialize dimensions by createing all their coordinates that appear in the setup duration KT:
+    traverse( this, Dimension, dim )
+    {
+      dim.CreateCoordinates( setup_rows );
+    }
+  *]
+}

@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride TestUpdateWorkOrderOperation (Schedule schedule)
+{
+  TextBody:
+  [*
+    ori := this.GetJSONInputData_WorkOrdersArray().Build().Size();
+    
+    // Only the first 2 work orders are NORMAL work orders with FIRM maturity status
+    for( i := ori + 1; i <= ori + 2; i++ )
+    {
+      this.AssertWorkOrderOperations( schedule, this.GetJSONInputData_WorkOrderOperationsArray_Updated( i ).Build() );
+    }
+    
+    // Only consider non cancelled imported work order operations and cancelled imported work orders
+    cancelledMaturity := Constants::MaturityStatus_CANCELLED();
+    
+    nrOfImportedWorkOrderOperations := counter( schedule, 
+                                                ImportedWorkOrderOperation.astype( ImportedExternalWorkOrderOperation ),
+                                                operaton,
+                                                operaton.Maturity() <> cancelledMaturity
+                                                and operaton.ImportedWorkOrder().astype( ImportedExternalWorkOrder ).Maturity() <> cancelledMaturity );
+    
+    // Non-cancelled work order and their work order operations will still exist
+    nrOfWorkOrderOperations := counter( schedule, WorkOrder.WorkOrderOperation, workOrderOperation, true );
+    
+    this.Run().AssertTrue( nrOfImportedWorkOrderOperations = nrOfWorkOrderOperations,
+                           Translations::LibSchedulerOptMgrUTF_Update_NotAllWorkOrderOperationsCreated() );
+  *]
+}

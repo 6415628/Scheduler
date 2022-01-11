@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleTaskStartException_DifferentResource (Operation_SC operation, DateTime start, Resource_SC resource, 
+  String remark, String scheduledprevopid)
+{
+  Description: 'Exception check for Task has started on a different resource than scheduled'
+  TextBody:
+  [*
+    // jiex Sep-1-2016 (created)
+    
+    if( not isnull( resource ) and not isnull( operation.Task_SC() ))
+    {     
+       plannedresource := operation.Task_SC().Resource_SC();
+       
+       if( plannedresource <> resource )
+       { 
+         this.Exception_HasReportedOnDifferentResource( true );
+         
+         this.UpdateFeedbackStart( start, resource.ResourceID(), Constants::StatusStart(), remark, '', '', scheduledprevopid );
+       }      
+    }
+  *]
+}

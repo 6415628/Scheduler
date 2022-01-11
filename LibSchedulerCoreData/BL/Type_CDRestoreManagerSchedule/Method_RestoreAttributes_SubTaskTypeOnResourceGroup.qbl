@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_SubTaskTypeOnResourceGroup (CDSchedule cdschedule)
+{
+  Description: 'Restore attributes for subtask type on resource group core data to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdschedule, CDEntity.astype( CDSubTaskTypeOnResourceGroup ), cdsttorg )
+    {
+      resourcegroup := select( schedule, ResourceGroup_SC, rg, rg.Name() = cdsttorg.ResourceGroup() );
+      
+      if( not isnull( resourcegroup ) )
+      {
+        subTaskTypeOnRG := SubTaskTypeOnResourceGroup::Create( resourcegroup );
+        CopyCorresponding::CopyFrom( cdsttorg ).CopyTo( subTaskTypeOnRG ); 
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

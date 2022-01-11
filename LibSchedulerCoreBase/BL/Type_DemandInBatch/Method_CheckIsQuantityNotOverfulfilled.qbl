@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsQuantityNotOverfulfilled (Real newquantity) const declarative remote as Boolean
+{
+  Description: 'Checks if the quantity specified does not make the total quantity of the batch over fulfilled.'
+  TextBody:
+  [*
+    feedbackobject := FeedbackObject::LocalFeedback();
+    demand         := this.Demand();
+    quantityopen   := this.Quantity() + demand.QuantityOpen();
+    value          := newquantity <= quantityopen;
+    
+    if( not feedbackobject.CheckSoft( value ) )
+    {
+      feedbackobject.AddSoft( Translations::SC_DemandInBatchOverAssign( demand.DemandID(), newquantity, quantityopen ) );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

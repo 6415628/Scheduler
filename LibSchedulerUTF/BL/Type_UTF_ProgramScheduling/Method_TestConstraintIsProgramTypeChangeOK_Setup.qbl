@@ -1,0 +1,79 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestConstraintIsProgramTypeChangeOK_Setup (Schedule schedule)
+{
+  Description: 'Test constraint IsProgramTypeChangeOK - setup'
+  TextBody:
+  [*
+    // Get variant data
+    resourceType := '';
+    leadTimeStrategy := '';
+    hasResourceProgramDefinition := false;
+    isaftertaskprogramchange := false;
+    isValidForPreconInsert := false;
+    hasProgramChange := false;
+    hasFeedback := false;
+    isValidForPreconDelete := false;
+    hasProgramType := false;
+    isValidForPreconCreateEdit := false;
+    isallowedtypechangeonprogramtypelevel := false;
+    isallowedtypechangeonprogramtypechangelevel := false;
+    isValidForConstraintProgramTypeChange := false;
+    
+    this.GetTestVariant( resourceType,
+                         leadTimeStrategy,
+                         hasResourceProgramDefinition,
+                         isaftertaskprogramchange,
+                         isValidForPreconInsert,
+                         hasProgramChange,
+                         hasFeedback,
+                         isValidForPreconDelete,
+                         hasProgramType,
+                         isValidForPreconCreateEdit,
+                         isallowedtypechangeonprogramtypelevel,
+                         isallowedtypechangeonprogramtypechangelevel,
+                         isValidForConstraintProgramTypeChange );
+    
+    // Create resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Single Resource' );
+    
+    programconfigurationID := 'Program configuration ID';
+    programconfigurationName := 'Name';
+    
+    // Create program definition
+    programdefinition := ProgramDefinitionConfiguration::Create( schedule, programconfigurationID );
+    programdefinition.Name( programconfigurationName );
+    
+    // Assign program definition to resource
+    resource.AssignProgramDefinitionConfiguration( programdefinition );
+    
+    // Create program set
+    programset := ProgramSetConfiguration::Create( programdefinition, programconfigurationID );
+    programset.Name( programconfigurationName );
+    programset.IsProgramTypeChangeAllowed( true );
+    
+    // Create program type
+    programtype := ProgramTypeConfiguration::Create( programset, programconfigurationID );
+    programtype.Name( programconfigurationName );
+    programtype.IsProgramTypeChangeSettingOverruled( true );
+    programtype.IsProgramTypeChangeAllowedOverruled( isallowedtypechangeonprogramtypelevel );
+    
+    // Create program phase
+    programphase := ProgramPhaseConfiguration::Create( programtype, programconfigurationID );
+    programphase.Name( programconfigurationName );
+    
+    // Create program type change
+    if( not isallowedtypechangeonprogramtypechangelevel )
+    {
+      programtypechange := ProgramTypeChangeConfiguration::Create( programset, programconfigurationID, programconfigurationID );
+      programtypechange.IsAllowed( isallowedtypechangeonprogramtypechangelevel );
+    }
+    
+    // Insert 2nd program change
+    programtypes := selectset( programset, ProgramTypeConfiguration, pt, true );
+    task := resource.InsertProgramChange( null( Task_SC ), programtypes, false, Duration::Zero() );
+    
+    // Insert 1st program change plan before 2nd program change task
+    resource.InsertProgramChange( task, programtypes, false, Duration::Zero() );
+  *]
+}

@@ -1,0 +1,91 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test110_UpdateReplannableSnapshots (LibOpt_TestDataset dataset)
+{
+  Description: 'Check if the `LibOpt_Optimization.UpdateReplannableSnapshots` method properly updates the status of the snapshots.'
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( true );
+    run := opt.CreateRun();
+    
+    // Create any component and set a LibOpt_DatasetCopyConditional to a component position of that component.
+    switch := opt.SwitchRoundRobin( run, 'Round robin' );
+    initializeposition := select( switch, ComponentPosition, cp, cp.Name() = LibOpt_Component::ComponentPosition_Initialize() );
+    initializeposition.SetDatasetCopy();
+    
+    str := run->Start()
+    ->|stream[Void]::Wait( this.MDSEditorUpdateTime() ) // Wait some time to ensure that the dataset copy has been created and that MDSEditor::Editor().ObjectInfos() is updated. 
+    ->|void->() // Start a reactive call to handle the dataset copy
+    {
+      snapshotcopydataset := select( switch,
+                                     SnapshotComponent.Children.astype( LibOpt_SnapshotReplannableCopyDataset ), 
+                                     snapshot,
+                                     true );
+      objectinfos := MDSEditor::Editor().ObjectInfos();
+      datasetcopy := objectinfos.Find( snapshotcopydataset.DatasetName() );
+      this.Run().AssertTrue( not isnull( datasetcopy ),
+                             "Expected to find a dataset named '" 
+                             + snapshotcopydataset.DatasetName()
+                             + "' in the dataset store, but the dataset could not be found" );
+      streamdatasetcopy := stream[Void]::Success();                       
+      if( not isnull( datasetcopy ) )
+      {
+        // Load the dataset that is attached to snapshotcopydataset
+        options := DatasetFindOptions::Construct( snapshotcopydataset.DatasetName() ).IncludeOffline( true ); 
+        mdskey := DatasetController::FindUnique( options );
+        streamdatasetcopy := mdskey->DatasetController::Load()->( dataset )
+        {
+          // Update the status of the created snapshot.
+          opt.Optimization().UpdateReplannableSnapshots();
+          // Check if the snapshot correctly shows that the dataset is loaded. 
+          this.Run().AssertTrue( snapshotcopydataset.IsDatasetLoaded(),
+                                 "Expected that the '" 
+                                 + typeof( LibOpt_SnapshotReplannableCopyDataset ).Name()
+                                 + '.' 
+                                 + attribute( LibOpt_SnapshotReplannableCopyDataset, IsDatasetLoaded ).Name()
+                                 + "' attribute would be 'true'. However, the attribute is 'false'."
+                                 + " This implies that the attribute isn't updated correctly." );
+          // Return the key, so that DatasetController::Unload() can reactively receive the key. 
+          return dataset.MDSID();
+        // Unload the dataset that is attached to snapshotcopydataset.  
+        }->DatasetController::Unload()->( key )
+        {
+          // Update the status of the created snapshot.
+          opt.Optimization().UpdateReplannableSnapshots();
+          // Check if the snapshot correctly shows that the dataset is unloaded. 
+          this.Run().AssertFalse( snapshotcopydataset.IsDatasetLoaded(),
+                                  "Expected that the '" 
+                                  + typeof( LibOpt_SnapshotReplannableCopyDataset ).Name()
+                                  + '.' 
+                                  + attribute( LibOpt_SnapshotReplannableCopyDataset, IsDatasetLoaded ).Name()
+                                  + "' attribute would be 'false'. However, the attribute is 'true'."
+                                  + " This implies that the attribute isn't updated correctly." );   
+          // Return the key, so that DatasetController::Delete() can reactively receive the key.                            
+          return key; 
+        // Delete the dataset that is attached to snapshotcopydataset.     
+        }->DatasetController::Delete()->|void->()
+        {
+          // Update the status of the created snapshot.
+          opt.Optimization().UpdateReplannableSnapshots();
+          // Check if the snapshot correctly shows that the dataset is deleted. 
+          this.Run().AssertTrue( snapshotcopydataset.IsDatasetDeletedUnspecifiedReason(),
+                                 "Expected that the '" 
+                                 + typeof( LibOpt_SnapshotReplannableCopyDataset ).Name()
+                                 + '.' 
+                                 + attribute( LibOpt_SnapshotReplannableCopyDataset, IsDatasetDeletedUnspecifiedReason ).Name()
+                                 + "' attribute would be 'true'. However, the attribute is 'false'."
+                                 + " This implies that the attribute isn't updated correctly." ); 
+        }     
+      }
+      // Return streamdatasetcopy, so that 'str' waits until streamdatasetcopy is finished.
+      return streamdatasetcopy;  
+    };
+    
+    this.NoException( str );
+    // Make sure that any dataset that is created during this method is deleted. Even when any exception occured during any parts of this method.
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

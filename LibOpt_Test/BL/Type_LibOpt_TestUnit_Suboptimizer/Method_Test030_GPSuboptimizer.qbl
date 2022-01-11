@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test030_GPSuboptimizer (LibOpt_TestDataset dataset) as Stream
+{
+  Description: 'Checks whether the GPSuboptimizer returns the correct snapshot type, and also handles error correctly.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    suboptimizers := construct( LibOpt_MyGPSuboptimizers );
+    for( i := 0; i < 4; i++ )
+    {
+      run := opt.CreateRun();
+      run.DebugScope( true );
+      start_scope  := LibOpt_Scope::Create( run );
+      result_scope := LibOpt_Scope::Create( run );
+      run.SetStartScope( start_scope );
+      runcontextforutf := LibOpt_MyRunContextForUTF::Create( run );
+      runcontextforutf.Scope( relset, result_scope );
+      suboptimizers.Add( opt.GPSuboptimizer( run, 'GP-' + [String] i, runcontextforutf ) );
+    }
+    
+    suboptimizers.Element( 0 ).RunContextForUTF().ErrorAtInitialize( true );
+    suboptimizers.Element( 1 ).RunContextForUTF().ErrorAtExecute( true );
+    suboptimizers.Element( 2 ).RunContextForUTF().ErrorAtHandleResult( true );
+    suboptimizers.Element( 3 );
+    
+    this.Run().AssertGreater( 0, suboptimizers.Size() );
+    
+    str := stream[Void]::Success();
+    traverse( suboptimizers, Elements, suboptimizer )
+    {
+      finish_init          :=                    suboptimizer <> suboptimizers.Element( 0 );
+      finish_execute       := finish_init    and suboptimizer <> suboptimizers.Element( 1 );
+      finish_handle_result := finish_execute and suboptimizer <> suboptimizers.Element( 2 );
+      
+      types := construct( Strings );
+      this.AddIf( true,                     types, typeof( LibOpt_SnapshotComponent ) );
+      this.AddIf( finish_execute,           types, typeof( LibOpt_SnapshotGP ) );
+      this.AddIf( finish_execute,           types, typeof( LibOpt_SnapshotKPI ) );
+      this.AddIf( finish_handle_result,     types, typeof( LibOpt_SnapshotKPI ) );
+      this.AddIf( finish_handle_result,     types, typeof( LibOpt_SnapshotSuboptimizer ) );
+      this.AddIf( not finish_handle_result, types, typeof( LibOpt_SnapshotError ) );
+      
+      this.CheckSnapshotType( suboptimizer, types );
+    }
+    
+    return str;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

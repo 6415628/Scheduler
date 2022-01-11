@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method RelinkChildNodes
+{
+  Description: 'Relink child nodes to the parent node they had before they where moved to or restored from the recycle bin.'
+  TextBody:
+  [*
+    /* 
+    Logic:
+    1. If the node is deleted (moved to recycle bin), then relink its original children that are already in the recycle bin.
+    2. If the node is restored from the recycle bin (moved back to "All scenarios" root folder), then relink its original children that are already outside of the recycle bin.
+    
+    More info: Perform relink operation for all children of current node to take care of situation below:
+    1. Folders hierarchy: Folder 1 -> Folder 2 -> Folder 3
+    2. Folder 3 is deleted 1st. Hence Folder 3 is moved to Recycle bin
+       - Folder 3's ParentBeforeMoveToRecycleBin is Folder 2 
+    3. Then Folder 1 is deleted later. Hence Folder 1 and Folder 2 are moved to Recycle bin
+    4. At this point, it is important for Folder 2, as child of Folder 1, to re-link its child nodes, in this case Folder 3, in Recycle bin
+    
+    When a node is restored from Recycle bin, the case described above is also applicable, but in different direction -> from Recycle bin to Root folder.
+    */
+    
+    traverse( this, Children, child )
+    {
+      child.RelinkChildNodes();
+    }
+    
+    traverse( this, DetachedChildren, child, child.IsDeleted() <> this.IsDeleted() )
+    {
+      this.MoveAfter( child, null( LibSM_ScenarioNode ) );
+    }
+  *]
+}

@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcEarliestEnd
+{
+  Description: 'Calculate earliest possible end of operation based on operation end time  or OperationFeedback.ReportedEnd.'
+  TextBody:
+  [*
+    end := maxvalue( this.EarliestStart() + this.LeadTime(), this.PlanUnit_SC().Schedule().Time() );
+    
+    if( this.IsPlanned() )
+    {
+      end := this.Task_SC().OperationEarliestEnd();
+    }
+    // Issue 4759 Added 25/10
+    // When HeatingTask has feedback that is not finished. The earliest start will be EarliestStart + Duration ( Schedule.Time + ProcessDuration )
+    // thus the HotRolling task will have a Routing earliest start will be ( Schedule.Time + ProcessDuration ) which is not we wanted. It should start
+    // as early as the end of the feedback or Schedule time depending on which is later.
+    else if ( this.HasFeedback() )
+    {
+      end := this.ActiveOperationFeedback().ReportedEnd();
+    }
+    
+    this.EarliestEnd( end );
+  *]
+}

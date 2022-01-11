@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+KPI KPIOperationsOnTime
+{
+  #keys: '2[109706.2.630240019][109706.2.630240025]'
+  Body:
+  [*
+    // Auto conversion: verify the code as it is not properly guarded and runtime errors may occur
+    // The final value was set to Real::MinReal()
+    // MODELING HANDLE SC
+    // FOR DEMO
+    // this KPI is demo specific. Please change this for project specific KPI.
+    // Chris 20141117 #4857: Quantus KPI - KPI Operations On Time
+    // By default the value will be 0.0
+    value := 0.0;
+    
+    // Count total number of operation is due in scheduling horizon
+    totaloperationsinschedulinghorizon := counter( this,
+                                                   PlanUnit_SC.Operation_SC,
+                                                   op,
+                                                   op.IsEligibleForKPICalculation(),
+                                                   op.IsDueInSchedulingHorizon() );
+    
+    // Count total number of operation is on time
+    totaloperationsontime := counter( this,
+                                      PlanUnit_SC.Operation_SC,
+                                      op,
+                                      op.IsEligibleForKPICalculation(),
+                                      op.IsDueInSchedulingHorizon() and op.IsOnTime() );
+    
+    // If  there is no operation whose due date order is in scheduling, the calculation of operations on time is skipped
+    if( totaloperationsinschedulinghorizon > 0 )
+    {
+      // Calculate the percentage of operations is on time and due date order is in scheduling horizon
+      value := ( totaloperationsontime / totaloperationsinschedulinghorizon ) * 100;
+    }
+    
+    return value.Round( 2 );
+  *]
+  Description: 'Number of operations, whose DueDate_Order is in scheduling horizon, is finished on time or scheduled on time/ Total nr of operations whose DueDate_Order is in scheduling horizon.'
+  ValueType: Real
+}

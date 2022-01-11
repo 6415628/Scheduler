@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride ValidationLogic (const Rule rule, DORule_DataObjectSequencingRule do_rule) const declarative remote as Boolean
+{
+  TextBody:
+  [*
+    value := true;
+    
+    // Only perform checkings if has previous operation
+    if( do_rule.HasPreviousOperation() )
+    {
+      // Check whether change over exists
+      changeoverexists := exists( rule, RuleChangeOver, rco,
+                                  rco.From() = do_rule.PreviousStringValue()
+                                  and rco.To() = do_rule.CurrentStringValue() );
+      
+      // Perform checkings based on IsAllowed flag
+      // If IsAllowed = TRUE, changeover must exists
+      // If IsAllowed = FALSE, changeover must NOT exists
+      value := ifexpr( this.IsAllowed(),
+                       changeoverexists,
+                       not changeoverexists );
+    }
+    
+    return value;
+  *]
+}

@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod DoFinalizeDatasetCopyChangeToStandAlone (LibOpt_Task task)
+{
+  Description:
+  [*
+    Changes the dataset state of memory only datasets (that were created for the current task) to standalone.
+    Then unloads the dataset to reduce memory usage.
+    This method can be called right before an error. Therefore, don't start any reactive transactions in this method.
+  *]
+  TextBody:
+  [*
+    // evr3 Jun-30-2020 (created)
+    traverse( task,
+              SnapshotComponent.Children.astype( LibOpt_SnapshotReplannableCopyDataset ), 
+              snapshot, 
+              snapshot.IsMemoryOnly()
+              and not snapshot.IsDatasetDeletedByOptimizer() 
+              and not snapshot.HasFailedToCreateDataset()
+              )
+    { 
+      editor := MDSEditor::Editor();
+      infos := editor.LoadedObjectInfos();
+      datasetinfo := infos.Find( snapshot.DatasetName() );
+      if( not isnull( datasetinfo ) )
+      {
+        mdsid := datasetinfo.MDSID();     
+        // Changing the storage state can fail if the name of the dataset causes Windows' maximum path length to be exceeded. 
+        // It is not possible to catch this failure by using reactive quill, because DatasetCopyChangeToStandAlone can be called right before an error is thrown.
+        // This error would mean that any new transactions are reverted.
+        editor.ChangeState( mdsid, DatasetState::StandAloneStorage().AsString(), false );
+        editor.UnloadMDS( mdsid );
+        
+        snapshot.IsMemoryOnly( false ); 
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetObjectDefinitionClosureOwner (ObjectDefinition objectDefinition_i) as ObjectDefinition
+{
+  TextBody:
+  [*
+    //Recursively get the final owner (eg. Company if the root object pass in is not Company but Company.XXX)
+    ownerRelation := select( objectDefinition_i, RelationSides, rel, rel.OtherSide().OwningSideBool() );
+    
+    // Return input argument by default (assuming it's already the root)
+    objectDefinition := objectDefinition_i;
+    
+    if( not isnull( ownerRelation ) )
+    {
+      ownerRecursive   := DMF_Utility::GetObjectDefinitionClosureOwner( ownerRelation.OtherSide().ObjectDefinition() );
+      objectDefinition := ifexpr( not isnull( ownerRecursive ), ownerRecursive, ownerRelation.ObjectDefinition() );
+    }
+    
+    return objectDefinition;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

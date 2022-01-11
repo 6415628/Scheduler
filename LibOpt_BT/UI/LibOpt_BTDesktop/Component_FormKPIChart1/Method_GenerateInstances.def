@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenerateInstances () id:Method_FormKPIChart_GenerateInstances
+{
+  #keys: '[145136.0.62364416]'
+  Body:
+  [*
+    owner := DataHolderOwner.Data();
+    if ( not isnull( owner ) ) // happens sometimes the first time the form is loaded. Might be because this is created before the DataHolderShadowChartKPI is created;
+    {
+      owner.UIChartKPI( relflush );
+      traverse( DataHolderKPIS.Data(), Elements, kpi )
+      {
+        datetimes := RealVector::Construct( kpi.DateTime() );
+        vector := RealVector::Construct( kpi.Values() );
+    
+        for ( x:=0; x < datetimes.Size(); x++ )
+        {
+          value := vector.Get( x );
+    
+          owner.UIChartKPI( relnew , 
+                            X := Duration::Minutes( datetimes.Get( x ) ), 
+                            Y := value, 
+                            Name := [String] kpi.BTS().RunNr() );
+        }
+      }
+      
+      all_targets := selectset( DataHolderKPIS.Data(), Elements.TargetKPI, target, true );
+      min_x := min( owner, UIChartKPI, kpi, true, kpi.X() );
+      max_x := max( owner, UIChartKPI, kpi, true, kpi.X() );
+      target_values := selectuniquevalues( all_targets, Elements, target, true, target.Value() );
+      traverse( target_values, Elements, target_value )
+      {
+        targets := selectset( all_targets, Elements, target, target.Value() = target_value );
+        name := '';
+        if( target_values.Size() > 1 )
+        {
+          name := selectvalues( DataHolderKPIS.Data(), Elements, kpi, targets.Find( kpi.TargetKPI() ) >= 0, kpi.BTS().RunNr() ).Sort().ToString( ', ' );    
+        }
+        owner.UIChartKPI( relnew ,
+                      X := min_x,
+                      Y := target_value,
+                      Name := name,
+                      Group := 'Target' );
+        owner.UIChartKPI( relnew ,
+                      X := max_x,
+                      Y := target_value,
+                      Name := name,
+                      Group := 'Target' );
+      }
+    }
+  *]
+}

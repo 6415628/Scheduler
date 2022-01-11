@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CanModify (String userName, Boolean isAdministrator) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    // A user is allowed to modify his own scenarios, and scenarios that have been created by the System.
+    if( not feedback.CheckHard( this.IsAuthorized( userName ) or isAdministrator ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_CanModify( this.Name(), this.CreatedBy() ) );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

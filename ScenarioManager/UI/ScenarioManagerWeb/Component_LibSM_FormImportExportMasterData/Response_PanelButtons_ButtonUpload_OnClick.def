@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: PanelButtons/ButtonUpload
+Response OnClick () id:Response_PanelButtons_ButtonUpload_OnClick
+{
+  #keys: '[146450.1.1013989027]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebButton_OnClick'
+  Precondition:
+  [*
+    Form.HasScenarioManager();
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Import XLS
+      file := Application.GetFile( ".xlsx" );
+      
+      if( file <> '' )
+      {
+        json := JSON::Parse( file );
+        value := json.Get( "data" ).GetString();
+        filename := json.Get( "name" ).GetString();
+        exceldata := BinaryValue::FromBase64EncodedString( value );
+        datasetname := LibSM_StagingSet::EnsureDatasetForImport();
+        Form.SelectImportDataset( datasetname );
+        // send the Excel data as binary values to the server to process.
+        LibSM_StagingSet.ImportDataFromXLS( filename, exceldata );
+      }
+      DataHolderStagingSetMetaData.Data( LibSM_StagingSet );
+    *]
+    GroupServerCalls: false
+  }
+}

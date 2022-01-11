@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: listContextMenuTasks/MenuUnplan
+Response OnClick (structured[Task_SC] selection) id:Response_listContextMenuTasks_MenuUnplan_OnClick
+{
+  #keys: '[142956.0.659779375]'
+  CanBindMultiple: false
+  DefinitionID => /listContextMenuTasks/Responsedef_listContextMenuTasks_MenuUnplan_OnClick
+  GroupServerCalls: true
+  Precondition:
+  [*
+    return Scheduler.AllowedUnplanTasks( selection, feedback );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Unplan structured[Task]
+      feedback_o := '';
+      hasNoSoftViolation := Task_SC::CanUnplanSoft( selection, feedback_o );
+      
+      if( Scheduler.ConstructMessageBoxForSoftPrecondition( not hasNoSoftViolation, feedback_o ) )
+      {
+        Schedule.UnplanTasks( selection );
+      }
+    *]
+  }
+}

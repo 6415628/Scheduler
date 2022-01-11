@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericProgramChangeTask (const Resource_SC resource)
+{
+  Description: 'Backup generic program change task core data'
+  TextBody:
+  [*
+    traverse( resource, Task_SC.astype( GenericProgramChangeTask ), task )
+    {
+      cdProgramChangeTask := this.CDEntity( relnew, CDGenericProgramChangeTask );
+      CopyCorresponding::CopyFrom( task ).CopyTo( cdProgramChangeTask );  
+      
+      // Additonal attribute in core data to persist the resource that this shutdown task belongs
+      cdProgramChangeTask.ResourceID( resource.ResourceID() ); 
+      
+      // Additional attribute in core data to be used to find the corresponding task during restore
+      cdProgramChangeTask.BackupTaskID( task.TaskID() );
+      
+      // Additonal attribute in core data to persist the operation that this shutdown task relates to
+      cdProgramChangeTask.ProgramChangeID( guard( task.ProgramChange().ProgramChangeID(), '' ) );
+      
+      // Additonal attribute in core data to persist the original sequence that this program change task reside in the resource
+      cdProgramChangeTask.PreviousTaskBackupTaskID( guard( task.Previous().TaskID(), '' ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

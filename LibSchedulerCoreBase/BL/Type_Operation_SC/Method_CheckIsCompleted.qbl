@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsCompleted (output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Check if the operation is completed, then the operation cannot be planned or replanned.'
+  TextBody:
+  [*
+    // jiex Feb-9-2017 (created)
+    
+    value := not this.IsCompleted(); 
+    
+    if( not value )
+    {
+      Utility_SC::Concat( feedback_o, Translations::SC_Operation_UnnecessaryOperationScheduled( this.OperationID() ) );  
+    }                                                                                                                                                 
+    
+    // Added to allow its usage in feedback object
+    feedbackObject := FeedbackObject::LocalFeedback();
+    feedbackObject.AddHard( value, Translations::SC_Operation_UnnecessaryOperationScheduled( this.OperationID() ) );
+    
+    return value;
+  *]
+}

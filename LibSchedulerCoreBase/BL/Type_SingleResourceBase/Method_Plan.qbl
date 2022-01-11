@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Plan (Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // project should decide whether the operations should be resorted or not
+    //operations := selectsortedset( operations, Elements, el, true, el.EarliestStart(), el.DueDate() );
+    
+    Operation_SC::SetIsPlanning( operations, true );  
+    
+    traverse( operations, Elements, op, true )
+    {
+      if( this.IsPlanRelatedOperations() )
+      {
+        Schedule::PlanRelatedOperationsBefore( op, this, null( SingleTaskBase ), true, false );
+      }
+      
+      this.PlanLast( op );
+    }
+    
+    this.Schedule().AutomaticProductBasedMaterialReservationBySorting();
+    Operation_SC::SetIsPlanning( operations, false );
+  *]
+}

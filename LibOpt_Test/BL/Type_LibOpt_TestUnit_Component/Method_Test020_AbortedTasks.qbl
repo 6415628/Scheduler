@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test020_AbortedTasks (LibOpt_TestDataset dataset)
+{
+  Description: 'Check whether each component is not executed if it is fed an aborted task.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    
+    runs := opt.CreateAllComponents();
+    
+    se := dataset.ScopeElementMock( relnew );
+    
+    strs := construct( structured[stream[JSON]] );
+    traverse( runs, Elements, run )
+    {
+      scope := LibOpt_ScopeFat::Create( run );
+      scope.Add( se );
+      run.SetStartScope( scope );
+      strs.Add( run.Start() );
+    }
+    
+    // Abort all tasks
+    traverse( runs, Elements.Task, task )
+    {
+      task.Abort();
+    }
+    
+    merge := stream[JSON]::Merge( strs );
+    merge->Exception()->( exception )
+    {
+      this.Run().RegisterFailure( 'Exception was thrown: ' + exception.Message() );
+    }
+    merge->|this->( v )
+    {
+      traverse( runs, Elements.Component, component )
+      {
+        this.Run().AssertEqual( 1, component.SnapshotComponent( relsize ), 'A snapshot should be created for every component' );
+        this.Run().AssertEqual( 1, counter( component, SnapshotComponent.Children.astype( LibOpt_SnapshotWarning ), sn, sn.Description() = Translations::LibOpt_Component_Aborted() ), 'A warning snapshot should be created for each aborted task.' );
+      }
+    }
+    this.Run()->AssertEqual( 0, merge->GroupAll()->Size() );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

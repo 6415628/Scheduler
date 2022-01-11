@@ -1,0 +1,78 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestTimeLogicBatchTaskReportedStart_Setup (Schedule schedule)
+{
+  Description: 'Setup by creating the required mock and dependent objects.'
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    testinstance := this.GetTestInstanceMain( variant );
+    testinstanceoperations := this.GetTestInstanceOperations( variant );
+    
+    // Set company time
+    schedule.Time( UTFUtility::GetCompanyTime() );
+    
+    // Create UTF resource
+    resource := UTFMockObjectFactory::CreateBatchResource( schedule, testinstance.TestInstanceID() );
+    LeadTimeStrategy_SC::Create( resource, Duration::Zero(), testinstance.ResourceStrategy() );
+    
+    // Create an empty batch
+    batch := Batch::Create( schedule, UTFUtility::UTF() );
+    
+    // Plan the batch
+    batchtask := resource.GenericPlanLastUTF( batch );   
+    
+    // Create Orders, PlanUnits, operations and assign operations to batch
+    traverse( testinstanceoperations, Elements, op )
+    {
+      // Create operations
+      id := UTFUtility::ConcatWithHyphen( op.TestInstanceID(), op.ID() );
+      operation := UTFMockObjectFactory::CreateOperation( schedule, id, 1.0 );
+      operation.Update( op );
+    
+      // Create input om
+      UTFMockObjectFactory::CreateInputOperationMaterial( operation, id );
+    
+      batch.AddOperation( operation );
+      
+      // Create feedbacks
+      if( op.HasFeedback() )
+      {
+        // FeedbackBatchInSchedule
+        fbmanager := schedule.FeedbackManager();
+        fbbatch := FeedbackBatchInSchedule::FindFeedbackBatchInSchedule( op.FeedbackBatchID() );
+        
+        if( isnull( fbbatch ) )
+        {
+          fbbatch := FeedbackBatchInSchedule::Create( fbmanager, op.FeedbackBatchID(), operation.BatchSequenceElement().Batch().BatchTask() );
+          fbbatch.ResourceReadIn( resource.ResourceID() );
+        }
+        
+        fbbatch.StartReadIn( op.FeedbackBatchStartReadIn() );
+        fbbatch.EndReadIn( op.FeedbackBatchEndReadIn() );
+        
+        // FeedbackBatchContentInSchedule
+        fbcontent := FeedbackBatchContentInSchedule::FindFeedbackBatchContentInSchedule( op.FeedbackBatchID(), operation.WorkOrderId(), operation.PlanUnitId(), operation.WorkOrderSequenceNr() );
+        
+        if( isnull( fbcontent ) )
+        {
+          fbcontent := FeedbackBatchContentInSchedule::Create( fbbatch, operation );
+          fbcontent.Task_SC( relset, batchtask );
+        }
+        
+        fbcontent.TimeStamp( op.FeedbackBatchContentTimeStamp() );
+      }
+    }
+    
+    // Propagate all declarative attributes/relations operationonresource                                      
+    Transaction::Transaction().Propagate();
+    
+    // Create subtasktypeonresourcegroup and set the duration
+    UTFMockObjectFactory::CreateSubTaskTypeOnResourceGroup( testinstance.TestInstanceID(), resource );
+    
+    // Propagate all declarative attributes/relations prior to assertion in the actual test method.                                       
+    Transaction::Transaction().Propagate();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

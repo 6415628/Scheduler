@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoOkCreateResource () id:Method_DialogCreateEditResource_DoOkCreateResource
+{
+  #keys: '[145930.1.1923151707]'
+  Body:
+  [*
+    // Only be executed when creating a new resource
+    
+    // Category tab
+    if( DataHolderContentResource.Data().ResourceGroup_SC().HasBatches() )
+    {
+      DataHolderContentResource.Data().astype( shadow[BatchResource] ).MaximumBatchSize( NumberPickerMaxBatchSize.Number() );
+    }
+    
+    // Lead Time Strategy tab
+    leadTimeStrategy := minselect( DataHolderContentResource.Data(), LeadTimeStrategy_SC, 
+                                   lts, true, lts.MinDistance() );
+    
+    if( isnull( leadTimeStrategy ) )
+    {
+      leadTimeStrategy := DataHolderContentResource.Data().LeadTimeStrategy_SC( relnew,
+                                                                                ResourceID := EditFieldResourceID.Text(),
+                                                                                MinDistance := Duration::Zero() );
+    }
+    
+    leadTimeStrategy.StrategyName( DropDownStringListLeadTimeStrategy.Text() );
+    
+    // Capacity tab
+    capacityName := ifexpr( RadioButtonGroupCapacityResource.BoundValue() = Translations::SC_DialogResource_CapacityOverview_UserDefined(),
+                            EditFieldCapacityResource.Text(),
+                            DropDownListNameofCapacityResource.Data().Name() );
+    
+    DataHolderContentResource.Data().CapacityResourceName( capacityName );
+    
+    // Frozen Horizon tab
+    if ( CheckboxFrozenHorizon.Visible() = true )
+    {
+      CheckboxFrozenHorizonOnResource.Enabled( true, "" )
+    }
+  *]
+}

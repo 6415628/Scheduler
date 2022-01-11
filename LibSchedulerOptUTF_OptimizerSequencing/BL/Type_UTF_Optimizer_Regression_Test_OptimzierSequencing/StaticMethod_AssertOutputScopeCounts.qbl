@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod AssertOutputScopeCounts (Number expected_count, Type countable_type, LibUTF_IterationRun utf_run, 
+  LibOpt_Component component)
+{
+  Description:
+  [*
+    asserts that the given component has successfully executed exactly once and that its output scope contains the given number of scope elements of the given type.
+    
+    the optimizer run has to have finished and run with scope debugging enabled.
+  *]
+  TextBody:
+  [*
+    // mbr23 Feb-17-2020 (created)
+    assert( countable_type.IsDerivedFrom( typeof( LibOpt_ScopeElement ) ) );
+    Transaction::Transaction().Propagate();
+    utf_run.AssertEqual( 1, component.NrTimesCalled(), 'The component ' + component.Name() + ' should have executed exactly once.' );
+    utf_run.AssertEqual( 1, counter( component, SnapshotComponent, snap, true ), 'The component ' + component.Name() + ' should have exactly one snapshot.' );
+    snapshot := select( component, SnapshotComponent, snap, true );
+    out_scope := snapshot.OutputScope();
+    
+    utf_run.AssertEqual( expected_count,
+                         out_scope.ScopeElements( countable_type ).Size(),
+                         'The output scope of component ' + component.Name() + ' does not contain the expected number of instances of type ' + countable_type.FullName() );
+  *]
+}

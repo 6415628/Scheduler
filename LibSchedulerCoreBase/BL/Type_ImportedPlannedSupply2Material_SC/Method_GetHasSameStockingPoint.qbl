@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasSameStockingPoint (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Checks if stocking point for work order output material and stock material are the same.'
+  TextBody:
+  [*
+    isvalid := isnull( this.ImportedWorkOrderOutputMaterial() ) // We don't want to fire this sanity check if the work order output material can't be found
+               or guard( this.ImportedWorkOrderOutputMaterial().ImportedStockingPoint_SC() = this.ImportedMaterial_SC().ImportedStockingPoint_SC(), false );
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedPlannedSupply2Material_Instance( name ),
+                                                               Translations::SC_ImportedPlannedSupply2Material_ViolateHasSameStockingPoint() ) );
+    }
+    
+    return isvalid;
+  *]
+}

@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendMetadataSuccessGetChannelsMetadata (Strings channelNames_i, LibDEF_System target_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Send a Metadata message for replying with Metadata of the requested Channels.'
+  TextBody:
+  [*
+    // Jacky CHAN May-13-2016 (created)
+    dataBroker := this.DataBroker();
+    
+    // This message could be send as a reply of a request, or is triggered by another message.
+    // In the latter case, a new Event should be created (in which the argument event_i should be null)
+    if( isnull( event_i ) )
+    {
+      event_i := dataBroker.EventCreate( target_i, false );
+    }
+    
+    nvt := LibDEF_DataAccessor::CreateMessageMetadata();
+    
+    // define Type
+    LibDEF_DataAccessor::SetMetadataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_TYPE(), LibDEF_DataAccessor::TYPE_METADATA_GETCHANNELSMETADATA() );
+    
+    // export SetTypeMetas, only for matching channels
+    nvBody := LibDEF_DataAccessor::GetMetadataBody( nvt );
+    traverse( this, SetTypeMeta, setTypeMeta,
+              exists( channelNames_i, Elements, channelName, setTypeMeta.ChannelName() = channelName ) )
+    {
+      // ShallowCopy is used to prevent owned objects to be exported into NVT.
+      setTypeCopy := setTypeMeta.ShallowCopy();
+      NamedValueTreeIO::Export( setTypeCopy, nvt, nvBody, false );
+    }
+    // export SetMetas, only for matching channels
+    traverse( this, SetTypeMeta.SetMeta, setMeta,
+              exists( channelNames_i, Elements, channelName, setMeta.ChannelName() = channelName ) )
+    {
+      // ShallowCopy is used to prevent owned objects to be exported into NVT.
+      setCopy := setMeta.ShallowCopy();
+      NamedValueTreeIO::Export( setCopy, nvt, nvBody, false );
+    }
+    
+    LibDEF_Util::EventLog( event_i, "Sending system metadata" );
+    
+    dataBroker.SendMessage( target_i, nvt, LibDEF_DataAccessor::KIND_SUCCESS(), event_i );
+  *]
+}

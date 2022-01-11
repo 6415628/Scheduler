@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestAllowedValuesRule (Schedule schedule)
+{
+  Description: 'Test ( not ) allowed values rule check'
+  TextBody:
+  [*
+    // Get variant attribute
+    characteristicType := '';
+    isAllowedValue := false;
+    ruleValueString := '';
+    operationAttributeValue := '';
+    hasConstraintViolation := false;
+    
+    this.GetTestVariant( characteristicType,
+                         isAllowedValue,
+                         ruleValueString,
+                         operationAttributeValue,
+                         hasConstraintViolation );
+    
+    task := select( schedule, Operation_SC.Task_SC, task, true );
+    
+    // Propoagete constraint isAllLowPriorityRulesOK and isAllHighPriorityRulesOK
+    Transaction::Transaction().Propagate( constraint( Task_SC, IsAllLowPriorityRulesOK ) );
+    Transaction::Transaction().Propagate( constraint( Task_SC, IsAllHighPriorityRulesOK ) );
+    
+    value := task.IsAllLowPriorityRulesOK() and 
+             task.IsAllHighPriorityRulesOK();
+    
+    this.Run().AssertEqual( hasConstraintViolation, not value,
+                            UTFUtility::GenerateFailedMessage( 'Applying allowed values on resource failed.',
+                                                               this.Variant() ) );
+  *]
+}

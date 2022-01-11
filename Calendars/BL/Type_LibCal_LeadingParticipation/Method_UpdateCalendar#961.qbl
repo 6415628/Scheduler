@@ -1,0 +1,69 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateCalendar (Boolean onlyWhenChanged_i)
+{
+  Description:
+  [*
+    Trigger an update of the calendar.
+    onlyWhenChanged_i indicates if the calendar should always be updated, or only when the event was changed.
+    Updating when the event was not changed should typically be done when the calendar window has changed.
+  *]
+  TextBody:
+  [*
+    //info( ">>> UpdateCalendar:", this.Calendar().CalendarID(), this.Event().Initiator() + "." + this.Event().Subject() );
+    //info( "    onlyWhenChanged_i =", onlyWhenChanged_i, "HasChangedRecurrencePeriod =", this.HasChangedRecurrencePeriod() );
+    //info( "    IsChanged =", this.IsChanged(), "EventIsChanged =", this.Event().IsChanged() );
+    
+    // See if the capacity of the event is changed by comparing it with the capacity of one of the occurrences.
+    this.Event().CalcCapacity();
+    capacityIsChanged := guard( this.Event().Capacity() <> select( this, ExplicitTimeInterval, eti, true, true ).Capacity(), false );
+    
+    if( capacityIsChanged )
+    {
+      // Update the capacity of the occurrences.
+      traverse( this, ExplicitTimeInterval, timeInterval )
+      {
+        timeInterval.Capacity( this.Event().Capacity() );
+        
+        // Also for the subscripitons.
+        traverse( timeInterval, SubscribingETI, subscribingETI )
+        {
+          subscribingETI.Capacity( this.Event().Capacity() );
+        }
+      }
+    }
+    
+    // Only update the calendar (i.e. re-generate the TimeIntervals) when something is changed,
+    // or when onlyWhenChanged_i = FALSE, which indicates that the calendar should always be updated.
+    // This is typically the case when the window of the calendar has been updated.
+    // In that caae the event itself has not been changed, but TimeIntervals should be generated based on the changed window.
+    if(    this.IsChanged()
+        or this.HasChangedRecurrencePeriod()
+        or this.Event().IsChanged()
+        or not onlyWhenChanged_i )
+    {
+      // Make sure that the revelant attributes are calculated.
+      Transaction::Transaction().Propagate( attribute( LibCal_Participation, IsRecurring ) );
+      this.CalcStartTime();
+      this.CalcEndTime();
+      
+      //info( ">>> UpdateCalendar: ", this.Calendar().CalendarID(), this.Event().Initiator() + "." + this.Event().Subject(), [String]this.StartTime() + " - " + [String]this.EndTime(),
+      //      "IsRecurring =", this.IsRecurring() );
+      
+      if( this.IsRecurring() )
+      {
+        // Generate occurrences (i.e. ExplicitTimeIntervals) according to the specified RecurrencePattern and RecurrencePeriod.
+        this.GenerateOccurrences();
+      }
+      else
+      {
+        // Non-recurring, just one occurrence required.
+        this.GenerateOccurrence();
+      }
+    
+      // Register that the changes have been processed.
+      this.Event().IsChanged( false );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

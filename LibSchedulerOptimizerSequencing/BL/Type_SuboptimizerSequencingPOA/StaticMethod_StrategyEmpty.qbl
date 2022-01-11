@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod StrategyEmpty (SuboptimizerSequencingPOA_SequencingPOA poa)
+{
+  Description: 'Empty strategy that can be used for debugging purposes'
+  TextBody:
+  [*
+    // mbr23, 2020-01-16 (copied from MRS optimizer)
+    strategy := poa.Strategy();
+    
+    // -------------------//
+    //   Empty Strategy   //
+    // -------------------//
+    
+    
+    // Toggle info statements
+    isprintinfo := true;
+    if ( isprintinfo )
+    {
+     // Print parameter values and initial score
+     info( 'Executing empty POA strategy' );
+     info( 'initial score', strategy.BestSolution().TotalScore());
+     info( 'Nr Nodes:', poa.PlanElements( relsize ) );
+     info( 'Nr Path:', poa.PathTypes( relsize ) );
+    }
+    
+    // The only step used in the iterative strategy.
+    emptystrategy := strategy.NewMetaStrategy( 'emptystrategy' );
+    emptystep := emptystrategy.NewStep( 'emptystep' );
+    
+    // Room for one start solution
+    emptystep.StartSolutionPool().Capacity( 1 );
+    
+    // Use the current solution as the starting solution for this single thread
+    emptystep.StartSolutionPool().Add( poa.Solution() );
+  *]
+}

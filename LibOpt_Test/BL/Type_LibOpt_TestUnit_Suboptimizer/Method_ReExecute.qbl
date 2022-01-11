@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReExecute (LibOpt_Run run, LibOpt_Suboptimizer subopt, LibOpt_MyRunContextForUTF runcontextforutf)
+{
+  TextBody:
+  [*
+    runcontextforutf.NrExecutions( Number::Random( 1, 9 ) );
+    
+    utf_iterationrun := this.Run();
+    
+    this.RegisterError( run.Start()->|void->()
+                        {
+                          utf_iterationrun.AssertEqual( 1, subopt.SnapshotComponent( relsize ), 'Nr of snapshots for the suboptimizer' );
+                          
+                          actual_count := counter( subopt, SnapshotComponent.Children.astype( LibOpt_SnapshotInfo ), s, s.Description() = LibOpt_OptimizerTest::ReExecuteString() );
+                          utf_iterationrun.AssertEqual( runcontextforutf.NrExecutions() - 1, actual_count, 'Nr of re-executes' );
+                          
+                          traverse( run, Snapshot.astype( LibOpt_SnapshotError ), snapshot )
+                          {
+                            utf_iterationrun.RegisterFailure( 'Error: ' + snapshot.Description() );
+                          }
+                          
+                          traverse( run, Snapshot.astype( LibOpt_SnapshotWarning ), snapshot )
+                          {
+                            utf_iterationrun.RegisterFailure( 'Warning: ' + snapshot.Description() );
+                          }
+                        }
+                      );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

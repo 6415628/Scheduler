@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method DisableContextMenuForFeedbackTaskInSchedule (structured[FeedbackTaskInSchedule] feedbacktaskinschedules) as Boolean id:Method_ApplicationScheduler_DisableContextMenuForFeedbackTaskInSchedule
+{
+  #keys: '[143388.0.1823835276]'
+  Body:
+  [*
+    // Disable context menu for feedback task in schedule
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    value := false;
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      traverse( feedbacktaskinschedules, Elements, fbtask )
+      {
+        // Disable context menu with feedback text
+        feedbackobject.AddHard( Translations::SC_CannotUnplan_TaskHasFeedbackTask( fbtask.OperationID() ) );
+      }
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

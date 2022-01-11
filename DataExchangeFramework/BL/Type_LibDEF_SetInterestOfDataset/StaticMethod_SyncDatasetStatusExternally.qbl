@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod SyncDatasetStatusExternally (LibDEF_DataBroker dataBroker_i)
+{
+  Description: 'Check and update the interest status (online/offline) for all the planning datasets, synchronize with the respective external DataBrokers.'
+  TextBody:
+  [*
+    // Jacky CHAN Feb-8-2017 (created)
+    traverse( LibDEF_SetInterestOfDataset::GetAllDatasetInterests( dataBroker_i ), Elements, di )
+    {
+      // check if can sync
+      if( LibDEF_Util::GetSettingValueConnectOnStartup() )
+      {
+        // offline, making assumption that permanent deletion should only be executed by calling LibDEF_API::DatasetsDelete()
+        if( di.IsDatasetOffline() )
+        {
+          di.Delete( true );
+        }
+        // online
+        else
+        { 
+          setMeta := di.SetMeta();
+          // only if it has no other online dataset interest
+          if( not setMeta.HasOtherOnlineDatasetInterest( di.DatasetMDSID() ) )
+          {
+            // Send a 'SetInterest-Created' message to the Set owner
+            setMeta.GetSystem().SendMetadataRequestSetInterestCreated( di, setMeta );
+          }
+        }
+      }
+    }
+  *]
+}

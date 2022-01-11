@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method DeleteDatasetAllowed (structured[LibOpt_SnapshotReplannableCopyDataset] snapshots) as Boolean id:Method_LibOpt_GlobalState_DeleteDatasetAllowed
+{
+  #keys: '[141860.2.581292619]'
+  Body:
+  [*
+    // Precondition method to check if the DeleteDataset method can be executed.  
+    
+    feedbackobj := FeedbackObject::LocalFeedback();
+                   
+    hasCreatedAnyDataset := exists( snapshots,
+                                    Elements,
+                                    snapshot,
+                                    snapshot.HasCreatedDataset()
+                                    );                                
+    
+    hasNotDeletedDataset := exists( snapshots,
+                                    Elements,
+                                    snapshot,
+                                    not snapshot.IsDatasetDeleted()
+                                    );
+    
+    if( not feedbackobj.CheckHard( hasCreatedAnyDataset ) )
+    {
+      feedbackobj.AddHard( Translations::LibOpt_SnapshotReplannable_Precondition_DatasetBeingCreated() );
+    }
+    else if( not feedbackobj.CheckHard( hasNotDeletedDataset ) )
+    {
+      feedbackobj.AddHard( Translations::LibOpt_SnapshotReplannable_Precondition_DeleteDataset() );
+    }
+    
+    return feedbackobj.IsAllowed();
+  *]
+}

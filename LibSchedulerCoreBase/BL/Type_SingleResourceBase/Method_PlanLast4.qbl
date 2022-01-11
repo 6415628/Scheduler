@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride PlanLast (Task_SCs tasks)
+{
+  Description: 'Move all tasks to last'
+  TextBody:
+  [*
+    // Replan if there exists a task with mismatching type
+    isreplan := exists( tasks, Elements, task,
+                        not this.IsTaskTypeMatching( task ) );
+    
+    if( isreplan )
+    {
+      operations := this.GetSortedOperationsFromTasks( tasks );
+    
+      traverse( operations, Elements, operation )
+      {
+        operation.Unplan();
+      }
+      
+      this.PlanLast( operations );
+    }
+    else
+    {
+      singleTasks := selectset( tasks, Elements.astype( SingleTaskBase ), st, true, true )
+      this.PlanLast( singleTasks );
+    }
+  *]
+}

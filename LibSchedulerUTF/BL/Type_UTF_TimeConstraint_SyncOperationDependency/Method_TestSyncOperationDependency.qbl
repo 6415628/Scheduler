@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestSyncOperationDependency (Schedule schedule)
+{
+  Description: 'Test synchronize operation dependencies.'
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    isDataDrivenTimeConstraintMode := false;
+    hasProductFlow := false;
+    this.GetTestVariant( isDataDrivenTimeConstraintMode, hasProductFlow );
+    
+    Transaction::Transaction().Propagate();
+    
+    // Assert if operation materials are created correctly.
+    nrOfOperationMaterial := counter( schedule, PlanUnit_SC.Operation_SC.ToOperationDependency.astype( OperationMaterial ), operationMaterial, true );
+    value := ifexpr( not isDataDrivenTimeConstraintMode or hasProductFlow,
+                     nrOfOperationMaterial > 0,
+                     nrOfOperationMaterial = 0 );
+    
+    this.Run().AssertTrue( value, UTFUtility::GenerateFailedMessage( 'TestSyncOperationDependency', variant ) );
+    
+    // Assert if time constraints are created correctly.
+    nrOfTimeConstraint := counter( schedule, PlanUnit_SC.Operation_SC.ToOperationDependency.astype( TimeConstraint ), timeConstraint, true );
+    value := ifexpr( isDataDrivenTimeConstraintMode,
+                     nrOfTimeConstraint > 0,
+                     nrOfTimeConstraint = 0 );
+    
+    this.Run().AssertTrue( value, UTFUtility::GenerateFailedMessage( 'TestSyncOperationDependency', variant ) );
+  *]
+}

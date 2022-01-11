@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_DemandBatchRoutingStep (CDSchedule cdSchedule, GenericDemandBatchType genericDemandBatchType)
+{
+  Description: 'Restore demand batch routing step core data attributes to planning object'
+  TextBody:
+  [*
+    cdDemandBatchRoutingSteps := selectset( cdSchedule, CDEntity.astype( CDDemandBatchRoutingStep ), cdDemandBatchRoutingStep,
+                                            cdDemandBatchRoutingStep.BatchType() = genericDemandBatchType.BatchType() );
+    
+    traverse( cdDemandBatchRoutingSteps, Elements, cddemandbatchroutingstep )
+    {
+      demandBatchRoutingStep := DemandBatchRoutingStep::Create( genericDemandBatchType,
+                                                                cddemandbatchroutingstep.BatchType(),
+                                                                cddemandbatchroutingstep.SequenceNr() );
+      
+      CopyCorresponding::CopyFrom( cddemandbatchroutingstep ).CopyTo( demandBatchRoutingStep );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

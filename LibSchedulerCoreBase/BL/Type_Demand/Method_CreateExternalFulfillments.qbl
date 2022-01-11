@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateExternalFulfillments (Supplys supplies, output Real quantity_keep) as owning Fulfillments
+{
+  Description: 'Create external fulfillment for the demand based on the available supplies that passed in. Only returns NEW fulfillments.'
+  TextBody:
+  [*
+    demandqty := minvalue( this.GetQuantityOpenForFixedFulfillment(), quantity_keep ); // Keep material reservation quantity, if not - it will be equal to Demand.QuantityOpen
+    
+    createdFulfillments := construct( Fulfillments );
+    
+    traverse( supplies, Elements, supply, 
+              demandqty > 0 
+              and supply.GetQuantityOpenForFixedFulfillment() > 0 ) // No need to do hard/soft checks because fixed fulfillments don't consider rules
+    {
+      fulfillment := select( this, Fulfillment, f, f.CheckIsFixedReservation() and f.Supply() = supply );       
+    
+      supplyqty := supply.GetQuantityOpenForFixedFulfillment() + guard( fulfillment.QuantityDecision(), 0.0 );
+      demandqty := demandqty + guard( fulfillment.QuantityDecision(), 0.0 );
+    
+      suggestedqty := this.GetSuggestedQuantity( demandqty, supply, supplyqty ); 
+    
+      if( suggestedqty > 0 )
+      {
+        this.PreprocessingReserveMaterial();
+        
+        if( isnull( fulfillment ) )
+        {
+          fulfillment := this.CreateExternalFulfillment( supply );
+          createdFulfillments.Add( fulfillment );  
+          // Updates the FSPL graph after material reservation
+          this.FSPLUpdateGraph();
+        }
+    
+        fulfillment.UpdateQuantity( suggestedqty );
+      }
+      
+      quantity_keep := quantity_keep - demandqty; // for the next demand to reuse when splitting 
+      demandqty := demandqty - suggestedqty; // removes the suggested quantity from the demand quantity
+    }
+    
+    // Calls fix circularity logic if it is a planned operation to fix any possible circularity
+    this.FSPLFixCircularity();
+    
+    return &createdFulfillments;
+  *]
+}

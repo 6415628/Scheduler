@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeCPFeedbackOperation (PlanUnit_SC planunit, SC2MPS_PlanUnit sc2c_planunit)
+{
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // FOR DEMO
+    // Demo specific method. Project should remove this method.
+    // wooi zhi Sep-10-2012 (created)
+    
+    mdsdatasetid := guard( this.IntegrationConfiguration().MPSDatasetID(), '' );
+    allinstances := selectset( sc2c_planunit, SC2MPS_Operation, operation, true ); 
+    updatedinstances := construct( SC2MPS_Operations );
+    //traverse( planunit, Operation_SC, operation, operation.IsPlanned() )
+    // DvtK 24.05.2013 Also already feedbacked Operations
+    traverse( planunit, Operation_SC, operation, 
+              // Filter out operations without reference to routing step when export to MP
+              ( this.IntegrationConfiguration().MPSSourceName() = Constants::GetMPSSourceAsCP() or operation.MPSRoutingStepSequenceNr() <> -1 )
+              and ( ( operation.IsPlanned() and guard( operation.Task_SC().IsStartInSchedulingHorizon(), false ) ) or operation.HasFeedback() ) )
+    {
+      op := operation.SC2MPS_Operation();
+      
+      if( isnull( op ) )
+      {
+        op := SC2MPS_Operation::Create( this,
+                                       sc2c_planunit,
+                                       planunit,
+                                       operation );
+      }
+      
+      op.Update( operation.Type(),
+                 operation.Finished(),
+                 operation.IsPlanned(),
+                 operation.Start(),
+                 operation.End(),
+                 guard( operation.Task_SC().Resource_SC().ResourceID(), '' ),
+                 mdsdatasetid,
+                 operation.PlanUnit_SC().Quantity(),
+                 operation.RoutingID(),
+                 operation.MPSRoutingStepSequenceNr() );
+                 
+      updatedinstances.Add( op );
+    }
+    
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, old )
+    {
+      old.Delete();
+    }
+  *]
+}

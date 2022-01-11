@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: CustomDrawComponentResourceView
+Response OnClick () id:Response_CustomDrawComponentResourceView_MenuImportFromXML_OnClick
+{
+  #keys: '[134650.0.161070941]'
+  Body:
+  [*
+    //Import view from xml
+    filename := Application.GetOpenFileName();
+    
+    if( filename <> '' )
+    {
+      feedback := '';
+      xml := Application.ReadTextFile( filename );
+      resourceviews := construct( ResourceViews );  
+      resourceviews.Add( DataHolderSelectedResourceView.Data() );
+      
+      if( not ResourceView::ImportFromXML( resourceviews, xml, feedback ) )
+      {
+        MessageBox::Warning( this, feedback, '&Ok' );
+      }
+    }
+    Form.ReloadShadowResourceView();
+  *]
+  CanBindMultiple: false
+  DefinitionID => /CustomDrawComponentResourceView/Responsedef_CustomDrawComponentResourceView_Menu_OnClick
+  Initiator: 'MenuImportFromXML'
+  Precondition:
+  [*
+    existview := not isnull( DataHolderSelectedResourceView.Data() );
+    
+    if( not existview )
+    {
+      feedback := Translations::SC_ResourceViewNotSelected()
+    }
+    
+    return existview;
+  *]
+}

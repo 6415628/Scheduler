@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeData (String dataTransformationID_i) as stream[LibDIF_IntegrationAPI]
+{
+  Description:
+  [*
+    Trigger the synchronization of integration objects to model objects in the planning-dataset, using the DataTransformation with the provided ID.
+    Can be extended to call more specific synchronization logic instead.
+  *]
+  TextBody:
+  [*
+    return this.ExecuteDataSynchronization( dataTransformationID_i );
+    
+    /* Example of extension: Library DII_Calendars implements specific logic for synchronizing calendar data.
+     * NOTE that when the specific logic is not applicable the generic logic should be used!
+    api := null( stream[LibDIF_IntegrationAPI] );
+    
+    // Use specific synchronization for calendar data, otherwise use the generic logic.
+    dataTransformation := this.GetDataTransformation( dataTransformationID_i );
+    
+    if( guard( dataTransformation.istype( LibDII_CalendarDataTransformation ), false ) )
+    {
+      api := this.SynchronizeCalendarData( dataTransformationID_i );
+    }
+    else
+    {
+      api := this.ExecuteDataSynchronization( dataTransformationID_i );
+    }
+    
+    // Return a stream that can be reacted on.
+    return api;
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

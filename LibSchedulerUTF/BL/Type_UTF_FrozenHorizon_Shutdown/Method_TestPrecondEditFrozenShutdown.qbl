@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPrecondEditFrozenShutdown (Schedule schedule)
+{
+  Description: 'Test edit frozen shutdown precondition checking'
+  TextBody:
+  [*
+    // Do not allow edit frozen shutdown but allow edit not frozen shutdown
+    shutdown1 := minselect( schedule, Shutdown, st, guard( st.Task_SC().SequenceNr(), 0 ) );
+    shutdown2 := maxselect( schedule, Shutdown, st, guard( st.Task_SC().SequenceNr(), 0 ) );
+    
+    // Do not allow edit frozen shutdown 1
+    value := not Shutdown::CheckIsValid( shutdown1.ShutdownType(), shutdown1.ShutdownDuration(), shutdown1, false )// Do not allow edit frozen shutdown 1      
+             and Shutdown::CheckIsValid( shutdown2.ShutdownType(), shutdown2.ShutdownDuration(), shutdown2, false ) // Allow edit not frozen shutdown 2
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Test precondition edit frozen shutdown failed.', 
+                           this.Variant() ) );
+    
+    // Gantt chart
+    // | Task1(Frozen) | ShutdownTask1(Frozen) | Task 2(Frozen) | ShutdownTask2 | Task 3 |
+  *]
+}

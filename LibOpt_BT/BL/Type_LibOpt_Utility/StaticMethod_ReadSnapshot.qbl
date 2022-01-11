@@ -1,0 +1,76 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ReadSnapshot (LibOpt_SnapshotKPI snapshot) as owning JSON
+{
+  TextBody:
+  [*
+    result := JSON::Array();
+    
+    nvt := NamedValueTreeIO::Export( snapshot );
+    nv := nvt.Root().Child( nvt.GetHandle( snapshot.DefinitionName() ) );
+    
+    type := typeofexpression( snapshot );
+    tv := type.TypeView();
+    traverse( nv.Children(), Elements, child, LibOpt_BT_KPI::IsIncludedAttribute( child, tv ) )
+    {
+      children := child.Children();
+      
+      if( children.Size() = 0 )
+      {
+        attr := null( MdlModeledAttrElement )
+        attr_type := type;
+        while( isnull( attr ) and not isnull( attr_type ) )
+        {
+          attr := select( attr_type, MdlAttrElements.astype( MdlModeledAttrElement ), a, a.Name() = child.Name() );
+          attr_type := attr_type.Parent();
+        }
+        
+        if( not isnull( attr ) )
+        {
+          value_type :=  attr.ValueType();
+          correct_value_type := value_type = typeof( Number )
+                                or value_type = typeof( Boolean )
+                                or value_type = typeof( Real )
+                                or value_type = typeof( BinaryValue )
+          
+          if( correct_value_type )
+          {
+            if( value_type = typeof( BinaryValue ) )
+            {
+              binary_value := child.GetValueAsBinaryValue();
+              real_vector := RealVector::Construct( binary_value );
+              component := snapshot.GetComponent();
+              rollbackkpi_name := guard( component.astype( LibOpt_Suboptimizer ).RollbackKPI().Name(), '' );
+              for ( x:= 0; x < real_vector.Size(); x ++ )
+              {
+                name := child.Name() + "[" + [String]x + "]" + " " + rollbackkpi_name ;
+                result.Add( LibOpt_BT_RunSequenceElement::JSON_Attribute( typeof( Real ), name, real_vector.Get( x ) ) );
+              }
+            }
+            else
+            {
+              value := 0.0;
+              if ( value_type = typeof( Number ) )
+              {
+                value := [Real] child.GetValueAsNumber();
+              }
+              else if ( value_type = typeof( Boolean ) )
+              {
+                value :=  [Real] [Number]child.GetValueAsBoolean();
+              }
+              else if ( value_type = typeof( Real ) )
+              {
+                value :=  child.GetValueAsReal();
+              }
+              
+              result.Add( LibOpt_BT_RunSequenceElement::JSON_Attribute( value_type, child.Name(), value ) );
+            }
+          }
+        }
+      }
+    }
+    
+    return & result.Build();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

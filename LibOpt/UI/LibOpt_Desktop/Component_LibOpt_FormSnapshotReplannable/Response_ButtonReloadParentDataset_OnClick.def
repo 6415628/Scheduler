@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: ButtonReloadParentDataset
+Response OnClick () id:Response_LibOpt_FormSnapshotReplannable_ButtonReloadParentDataset_OnClick
+{
+  #keys: '[141860.2.529990648]'
+  Body:
+  [*
+    // Load the 'parent' dataset of the current dataset.
+    // This parent dataset is the dataset from which the current dataset was created at some point during the run. 
+    datasetinfo := ExternalMDSEditor::Editor().ObjectInfo( LibOpt_FormSnapshotReplannable.Optimization().MDSKeyParentDataset() );
+    LibOpt_GlobalState.LoadDataset( datasetinfo );
+    
+    if( not isnull( datasetinfo ) )
+    {
+      LibOpt_GlobalState.LoadDataset( datasetinfo );
+    }
+    else
+    {
+      MessageBox::Warning( this,
+                           Translations::LibOpt_SnapshotReplannable_Precondition_DatasetDeleted( LibOpt_FormSnapshotReplannable.Optimization().MDSKeyParentDataset() ),
+                           Translations::LibOpt_MessageBox_OK()
+                           );
+      // The parent dataset doesn't exist, so we should reset the IsOptimizerDatasetCopy attribute. This disables the button.
+      optimization := LibOpt_FormSnapshotReplannable.Optimization();
+      optimization.IsOptimizerDatasetCopy( false );            
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIButtonBase_OnClick'
+  Precondition:
+  [*
+    // The LibOpt_FormSnapshotReplannable.Optimization() object is null after unloading a dataset
+    optimization := LibOpt_FormSnapshotReplannable.Optimization();
+    return LibOpt_GlobalState.LoadDatasetAllowedSnapshotForm( optimization );
+  *]
+}

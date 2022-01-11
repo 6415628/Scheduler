@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestConstraintPreconForInvalidSubtaskInTimeConstraints (Schedule schedule)
+{
+  Description: 'Test constraint and precondition for having invalid subtask assigned to resource group in time constraint mode.'
+  TextBody:
+  [*
+    // Validate that subtask type not allowed in time constraint mode have constraint violation.
+    feedback_o := '';
+    value := forall( schedule, ResourceGroup_SC.SubTaskTypeOnResourceGroup, subtask, subtask.IsSupportedSubtaskType() = subtask.SubTaskType().IsAllowedInDataDrivenTimeConstraintsMode() );
+    
+    // Validate that import ERP button is now disabled.
+    value := value and not schedule.CheckHasOnlyValidSubtasksOnAllResourceGroups( feedback_o );
+    
+    // Assert the result
+    this.Run().AssertTrue( value, UTFUtility::GenerateFailedMessage( 'UTF_TimeConstraint_InvalidSubtaskAssignedConstraintPrecon', this.Variant() ) );
+  *]
+}

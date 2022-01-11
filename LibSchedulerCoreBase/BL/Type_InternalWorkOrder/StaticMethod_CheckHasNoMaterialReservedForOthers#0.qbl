@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckHasNoMaterialReservedForOthers (InternalWorkOrders plannedOrders, Boolean isSplit) declarative remote
+{
+  Description: 'Check if all planned orders has no material reserved for others.'
+  TextBody:
+  [*
+    value := not exists( plannedOrders, Elements.Order_SC.PlanUnit_SC.Supply.Fulfillment, fulfillment, true );
+    feedback := Translations::InternalWorkOrder_CannotJoinPlannedOrdersWithMaterialReservedForOthers();
+    
+    if( isSplit )
+    {
+      feedback := Translations::InternalWorkOrder_CannotSplitPlannedOrdersWithMaterialReservedForOthers();
+    }
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    feedbackobject.AddHard( value, feedback );
+  *]
+}

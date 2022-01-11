@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreatePlannedSupplyForPlannedOrderLastOperation (Schedule schedule)
+{
+  Description: "Create planned supplt for planned order's last operation"
+  TextBody:
+  [*
+    planUnits := selectset( schedule, PlanUnit_SC, planUnit, true );
+    runningSupplyProductNr := 1;
+    
+    traverse( planUnits, Elements, planUnit )
+    {
+      operation := UTFMockObjectFactory::CreateOperation( planUnit );
+      supply := GenericProductExternalSupply::Create( schedule, SupplyType::ProductPlannedSupply(), 'Supply' + [String] runningSupplyProductNr );
+      supply.ProductId( 'Product' + [String] runningSupplyProductNr );
+      supply.Operation_SC( relset, operation );
+      
+      runningSupplyProductNr := runningSupplyProductNr + 1;
+    }
+    // Propagate relation PlanUnit_SC.Supply which is used for precon check.
+    Transaction::Transaction().Propagate( relation( PlanUnit_SC, Supply ) );
+  *]
+}

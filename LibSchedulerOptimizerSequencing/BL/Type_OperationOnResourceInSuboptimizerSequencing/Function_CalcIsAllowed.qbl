@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcIsAllowed
+{
+  TextBody:
+  [*
+    // mbr23 Jan-24-2020 (created)
+    
+    // The optimizer is only allowed to plan an operation on a resource if it is both hard and soft allowed
+    // We exclude the resource connection check here since the optimizer may change the upstream/downstream assignment as well 
+    value := guard( this.OperationOnResource().IsAllowedHard(), false )
+             and guard ( this.OperationOnResource().IsAllowedSoftExcludingResourceConnection(), false );
+    
+    if( this.Operation().IsInSpan() or this.Operation().IsFrozenInSchedule() ) // span and frozen operations may not be reassigned
+    {
+      value := guard( this.Operation().Operation().SelectedOperationOnResource() = this.OperationOnResource(), false );
+    }
+    //todo := "In DQS-1521, better restrictions on the allowed logic will be implemented. These should be reflected here.";
+    
+    this.IsAllowed( value );
+  *]
+}

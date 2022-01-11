@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method ShowSubscriptions () id:Method_LibCal_gcResourceCalendars_ShowSubscriptions
+{
+  #keys: '[146730.0.882351815]'
+  Body:
+  [*
+    // Set the FixedFilter of ndSubscription according to the setting in the ActionBarPage of the gantt chart.
+    // The FixedFilter must be set to 'true' or 'false'. This can however not be done (yet?) via Quill.
+    // Workaround: use a DataHolder as FilterArgument for the NodeDefinition. Using a DataHolder of type Boolean however results in errors :-(
+    // Therefore, dhShowSubscriptions is of type LibCal_CalendarRegistry, and it is filled with the CalendarRegistry-instance when
+    // btnShowSubscriptions is toggled on (i.e. pressed), and cleared otherwise.
+    // In this way, showOccurrences := not isnull( dhShowOccurrences.Data() ).
+    
+    registry := ifexpr( btnShowSubscriptions.IsPressed(), LibCal_GlobalState.dhGlobalCalendarRegistry().Data(),
+                                                          null( LibCal_CalendarRegistry ) );
+    dhShowSubscriptions.Data( registry );
+    
+    // Show a different image when the button is pressed on or not.
+    image := ifexpr( btnShowSubscriptions.IsPressed(), "CHECKEDCHECKBOX", "EMPTYCHECKBOX" );
+    btnShowSubscriptions.Image( image );
+  *]
+}

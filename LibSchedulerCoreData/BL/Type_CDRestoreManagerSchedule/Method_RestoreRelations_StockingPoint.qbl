@@ -1,0 +1,75 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_StockingPoint (CDSchedule cdSchedule)
+{
+  Description: 'Restore relations for stocking point, stocking point stock, product in stocking point stock core data attributes to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    // Restore stocking point
+    traverse( cdSchedule, CDEntity.astype( CDStockingPoint ), cdStockingPoint )
+    {
+      stockingpoint := StockingPoint::FindStockingPoint( cdStockingPoint.Id() );
+      
+      if( not isnull( stockingpoint ) )
+      {
+        // ImportedStockingPoint, 1-1
+        importedstockingpoint := ImportedStockingPoint_SC::FindImportedStockingPoint_SC( cdStockingPoint.Id() ); 
+        stockingpoint.ImportedStockingPoint_SC( relset, importedstockingpoint );
+      }
+    }
+    
+    // Restore stocking point stock
+    traverse( cdSchedule, CDEntity.astype( CDStockingPointStock ), cdStockingPointStock )
+    {
+      stockingPointStock := select( schedule, ScheduleStock.astype( StockingPointStock ), stockingPointStock, 
+                                    stockingPointStock.StockingPointID() = cdStockingPointStock.StockingPointID()
+                                  );
+      
+      if( not isnull( stockingPointStock ) )
+      {
+        // StockingPoint, 1-1
+        stockingPoint := StockingPoint::FindStockingPoint( cdStockingPointStock.StockingPointID() );
+        stockingPointStock.StockingPoint( relset, stockingPoint ); 
+        
+        // Restore stock element demand
+        this.RestoreRelations_StockElementDemand( cdSchedule, stockingPointStock );
+        
+        // Restore stock element inventory target
+        this.RestoreRelations_StockElementInventoryTarget( cdSchedule, stockingPointStock );
+        
+        // Restore stock element supply 
+        this.RestoreRelations_StockElementSupply( cdSchedule, stockingPointStock );
+      }
+    }
+    
+    // Restore product in stocking point stock
+    traverse( cdSchedule, CDEntity.astype( CDProductInStockingPointStock ), cdProductInStockingPointStock )
+    {
+      productInStockingPointStock := select( schedule, ScheduleStock.astype( ProductInStockingPointStock ), productInStockingPointStock, 
+                                             productInStockingPointStock.ProductID() = cdProductInStockingPointStock.ProductID(),
+                                             productInStockingPointStock.StockingPointID() = cdProductInStockingPointStock.StockingPointID()
+                                           );
+      
+      if( not isnull( productInStockingPointStock ) )
+      {
+        // ProductInStockingPoint, 1-1
+        productInStockingPoint := ProductInStockingPoint::FindProductInStockingPoint( cdProductInStockingPointStock.StockingPointID(),
+                                                                                      cdProductInStockingPointStock.ProductID()
+                                                                                    );
+        productInStockingPointStock.ProductInStockingPoint( relset, productInStockingPoint ); 
+        
+        // Restore stock element demand
+        this.RestoreRelations_StockElementDemand( cdSchedule, productInStockingPointStock );
+      
+        // Restore stock element inventory target
+        this.RestoreRelations_StockElementInventoryTarget( cdSchedule, productInStockingPointStock );
+        
+        // Restore stock element supply 
+        this.RestoreRelations_StockElementSupply( cdSchedule, productInStockingPointStock );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

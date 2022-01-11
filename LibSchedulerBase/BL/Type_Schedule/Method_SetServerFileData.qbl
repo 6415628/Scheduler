@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetServerFileData (String folderpath, String filename, BinaryValue data)
+{
+  Description: 'Receive file data in binary value and set file data into the server'
+  TextBody:
+  [*
+    // If directory does not exist, create director
+    isDirectoryExists := OS::IsDirectory( folderpath );
+    
+    folderpath := folderpath + ifexpr( folderpath.EndsWith( '/' ), '', '/' );
+    if( not isDirectoryExists )
+    {
+      OS::CreateDirectory( folderpath );
+    }
+    
+    file := OSFile::Construct();
+    file.Open( folderpath + filename, 'Write', true );
+    file.WriteBinary( data );
+    file.Close();
+  *]
+}

@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsAfterShutdownRuleCheckingNeeded () declarative remote as Boolean
+{
+  Description: 'Get after shutdown previous cumulative characteristic'
+  TextBody:
+  [*
+    // Check whether after shutdown rule checking needed
+    // 1. If there is previous shutdown
+    // 2. Either the following conditions meet
+    //    2(a). Previous feedback task in schedule is within after shutdown scope 
+    //          And if previous feedback task is program change, need to check whether IsSequenceRulesEnabled
+    //    2(b). Previous shutdown has archived last task is in shutdown scope
+    
+    value := not isnull( this.PreviousShutdown() );
+    
+    if( value )
+    {
+      if( not isnull( this.PreviousFeedback() ) 
+          and this.PreviousFeedback().PreviousShutdown() = this.PreviousShutdown() )
+      {                     
+        value := this.PreviousFeedback().IsWithinAfterShutdownScope()
+                 and ( guard( this.Resource_SC().LastFeedbackProgramChange().ReportedStart() <= this.PreviousFeedback().Start(), true )
+                       or this.Resource_SC().LastFeedbackProgramChange().IsSequenceRulesEnabled() );  
+      }
+      else
+      {
+        value := not this.PreviousShutdown().HasArchivedData()
+                 or this.PreviousShutdown().ArchivedLastFeedbackTaskIsInShutdownScope();
+      }
+    }
+    
+    return value;
+  *]
+}

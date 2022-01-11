@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericProductExternalSupply (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic product external supply core data attributes to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdSchedule, CDEntity.astype( CDGenericProductExternalSupply ), cdGenericProductExternalSupply )
+    {
+      genericProductExternalSupply := ProductExternalSupply::FindProductExternalSupply( cdGenericProductExternalSupply.SupplyType(),
+                                                                                        cdGenericProductExternalSupply.SupplyID() );
+                                                                                        
+      if( not isnull( genericProductExternalSupply ) )
+      {  
+        // DemandBatch, M-1
+        demandBatch := DemandBatch::FindDemandBatch( cdGenericProductExternalSupply.BatchID() );
+        genericProductExternalSupply.DemandBatch( relset, demandBatch );
+                              
+        // Operation, M-1
+        operation := select( schedule, PlanUnit_SC.Operation_SC, operation, operation.OperationID() = cdGenericProductExternalSupply.OperationID() );
+        genericProductExternalSupply.Operation_SC( relset, operation );
+        
+        // Restore relation GenericPlannedSupply2ExternalSupply
+        this.RestoreRelations_GenericPlannedSupply2ExternalSupply( cdSchedule, genericProductExternalSupply.astype( GenericProductExternalSupply ) );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

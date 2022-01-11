@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetScenarioCopyName (String scenarioName) remote as String
+{
+  Description: 'CAN EXTEND | Returns the name for a copy of the specified Scenario.'
+  TextBody:
+  [*
+    // Returns a translation where the original name is pasted into. Will by default return 'Copy of [scenarioName]'. 
+    copiedScenarioName := Translations::LibSM_ScenarioName_Copy( scenarioName );
+    // The duplicated Scenario name will start with 2.
+    nr := 1;
+    while( exists( this, ScenarioManager.ScenarioNode.astype( LibSM_Scenario ), scenario, scenario.Name() = copiedScenarioName ) )
+    {
+      nr++;
+      copiedScenarioName := Translations::LibSM_ScenarioName_Copy( scenarioName ) + " (" + [String]nr + ")";
+    }
+    return copiedScenarioName;
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

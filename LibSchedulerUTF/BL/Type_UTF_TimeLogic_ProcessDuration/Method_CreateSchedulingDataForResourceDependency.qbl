@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateSchedulingDataForResourceDependency (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Create resources
+    resource1 := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource1' );
+    resource2 := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource2' );
+    UTFMockObjectFactory::CreateSingleResource( schedule, 'resource3' );
+    
+    // Propagate declarative attribute to be used to assign operation type
+    Transaction::Transaction().Propagate( attribute( Resource_SC, Type ) );
+    
+    // Create work order
+    workOrder := GenericExternalWorkOrder::Create( schedule, 'WorkOrder' );
+    
+    // Create 1 operation
+    order := UTFMockObjectFactory::CreateOrder( schedule, 'Order' );
+    planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'PlanUnit', 1.0 );
+    operation := GenericOperation::Create( planUnit, resource1.Type() );
+    operation.OperationID( 'Operation' );
+    
+    // Create work order operation
+    workOrderOperation := workOrder.CreateWorkOrderOperation( 1 );
+    operation.WorkOrderOperation( relset, workOrderOperation );
+    
+    // Create work order operation resource for each resource of this operation
+    workOrderOperationResource := WorkOrderOperationResource::Create( workOrderOperation, resource1.ResourceID() );
+    workOrderOperationResource.FixedProcessDuration( Duration::Construct( 0, 1, 0, 0 ) );
+    workOrderOperationResource.ProcessDurationPerQuantity( Duration::Construct( 0, 1, 0, 0 ) );
+                                                     
+    workOrderOperationResource := WorkOrderOperationResource::Create( workOrderOperation, resource2.ResourceID() );
+    workOrderOperationResource.FixedProcessDuration( Duration::Construct( 0, 2, 0, 0 ) );
+    workOrderOperationResource.ProcessDurationPerQuantity( Duration::Construct( 0, 2, 0, 0 ) );
+  *]
+}

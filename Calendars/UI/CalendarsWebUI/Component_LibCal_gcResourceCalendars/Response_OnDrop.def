@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDrop (LibCal_ExplicitTimeInterval source, LibCal_Calendar droprow) id:Response_LibCal_gcResourceCalendars_OnDrop
+{
+  #keys: '[131094.1.994983169]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebGanttChart_OnDrop'
+  QuillAction
+  {
+    Body:
+    [*
+      // ExplicitTimeInterval -> Row  (SubscribeToEvent)
+      subscriber := droprow;
+      occurrence := source;
+      event      := occurrence.Participation().Event();
+      
+      if( not occurrence.Participation().IsRecurring() )
+      {
+        subscriber.SubscribeToEvent( event );
+      }
+      else
+      {
+        // Ask if only this occurrence or all occurrences should be subscribed to.
+        selection := WebMessageBox::Question( this, Translations::MessageBox_SubscribeToQuestion(),
+                                                    Translations::MessageBox_SubscribeToOptions() );
+        
+        if( selection = 0 )
+        {
+          subscriber.SubscribeToOccurrence( occurrence );
+        }
+        else if( selection = 1 )
+        {
+          dlg := construct( LibCal_dlgSubscription );
+          dlg.CreateSubscription( subscriber, occurrence.Participation().Event().LeadingParticipation() );
+        }
+      }
+    *]
+    GroupServerCalls: false
+  }
+}

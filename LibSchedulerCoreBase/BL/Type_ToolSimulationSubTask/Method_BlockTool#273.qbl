@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method BlockTool (Tool tool, ToolTask tooltask) declarative
+{
+  Description: 'Process the blocking mechanism of tool task(s) to block the tool.'
+  TextBody:
+  [*
+    // alexandern Jan-5-2016 (created) QP #6081
+    if( tooltask.HasBlockID() )
+    {
+      tooltask.BlockedToolID( tooltask.ToolID() );
+      tooltask.HasBlockedToolID( true );
+    
+      nexttooltasks := selectset( tooltask.Task(),
+                                  OperationInTask.PlanUnit_SC.Operation_SC.Task_SC.ToolTask,
+                                  tt,
+                                  tt.ToolGroupType() = tooltask.ToolGroupType()
+                                  and tt.BlockID() = tooltask.BlockID()
+                                  and not tt.HasTool() );
+    
+      // AlexanderNg 8-Nov-2015 QP #5829
+      traverse( nexttooltasks, Elements.Task.astype( BatchTask ).OperationInTask, batchoperation )
+      {
+        prevblockingtooltasks := selectset( batchoperation,
+                                            PlanUnit_SC.Operation_SC.Task_SC.ToolTask,
+                                            tt,
+                                            tt.Task().GetOperation().SequenceNr() < batchoperation.SequenceNr()
+                                            and tt.ToolGroupType() = tooltask.ToolGroupType()
+                                            and tt.BlockID() = tooltask.BlockID() );
+    
+        this.SetBlockedToolOfToolTask( tooltask.ToolID(), prevblockingtooltasks );
+      }
+    
+      // AlexanderNg 8-Nov-2015 QP #5830
+      this.BlockToolForTransferReceive( tooltask );
+    
+      if( nexttooltasks.Size() > 0 )
+      {
+        tool.IsBlocked( true );
+        this.SetBlockedToolOfToolTask( tooltask.ToolID(), nexttooltasks );
+      }
+    }
+  *]
+}

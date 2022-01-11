@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetEndOfPeriod () id:Method_LibCal_dlgEventParticipation_SetEndOfPeriod_549
+{
+  #keys: '[131092.1.1284157]'
+  Body:
+  [*
+    // When this method is called from response dtStartOfPeriod.OnChanged() because the value is set during
+    // InitializeRecurrencePeriod(), the value of ckbEndOfPeriod.Checked() is *always* 'false', even when it is
+    // explicitly set to 'true' during the initialization. This seems to be a bug in the Software.
+    // As a workaround, the value of lblWorkaround.Text() is set to "initialized" when the value of ckbEndOfPeriod.Checked() is set.
+    // When this method is called during initialization, the value of the label is still "" (which is WRONG, it should have been set!).
+    // This can be used to let this method not be executed with a value of ckbEndOfPeriod.Checked() that is not
+    // properly initialized.
+    if( lblWorkaround.Text() <> "" )
+    {
+      if( this.ValuesRecurrenceOK() )
+      {
+        if( btnNoRecurrence.IsPressed() )
+        {
+          dtEndOfPeriod.DateTime( dtStartOfPeriod.DateTime() );
+        }
+        else
+        {
+          // Set the end of the period based on the start of the period and the #occurrences
+          // IFF the end of the period is not manually set.
+          if( not ckbEndOfPeriod.Checked() )
+          {
+            nrOfOccurrences := 1;                        // By default 1 occurrence.
+            timezone        := TimeZone::UTCTimeZone();  // Use UTC-timezone here to keep the same date, don't correct for a specific timezone.
+            
+            endDate := this.DetermineEndDate( dtStartOfPeriod.DateTime().Date( timezone ), nrOfOccurrences );
+            dtEndOfPeriod.DateTime( endDate.DateTime( timezone ) );
+          }
+        }
+      }
+      
+      // else keep the value as it is, setting it to MinDate looks 'strange'.
+    }
+  *]
+}

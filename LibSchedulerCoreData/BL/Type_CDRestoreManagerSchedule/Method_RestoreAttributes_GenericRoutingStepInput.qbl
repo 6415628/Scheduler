@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericRoutingStepInput (CDSchedule cdschedule, RoutingStep routingStep)
+{
+  Description: 'Restore attributes for routing step input core data to planning object'
+  TextBody:
+  [*
+    // Restore RoutingStepInput
+    cdRoutingStepInputs := selectset( cdschedule, CDEntity.astype( CDGenericRoutingStepInput ), cdrsi, 
+                                      cdrsi.RoutingId() = routingStep.RoutingId(),
+                                      cdrsi.RoutingStepSequenceNr() = routingStep.SequenceNr()
+                                    );
+    traverse( cdRoutingStepInputs, Elements, cdrsi )
+    {
+      routingStepInput := GenericRoutingStepInput::Create( routingStep, 
+                                                           cdrsi.RoutingId(), 
+                                                           cdrsi.RoutingStepSequenceNr(),
+                                                           cdrsi.StockingPointId(),
+                                                           cdrsi.ProductId()
+                                                         );
+      CopyCorresponding::CopyFrom( cdrsi ).CopyTo( routingStepInput ); 
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

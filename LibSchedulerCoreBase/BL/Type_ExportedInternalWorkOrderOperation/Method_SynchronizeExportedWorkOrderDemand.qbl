@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SynchronizeExportedWorkOrderDemand
+{
+  TextBody:
+  [*
+    allinstances := selectset( this, ExportedInternalWorkOrderDemand, exportedwod, true );
+    updatedinstances := construct( ExportedInternalWorkOrderDemands );
+    
+    traverse( this, InternalWorkOrderOperation.WorkOrderDemand.astype( InternalWorkOrderDemand ), wod )
+    {
+      id := wod.Id();
+      exportedwod := ExportedInternalWorkOrderDemand::FindExportedInternalWorkOrderDemand( id );
+    
+      if( isnull( exportedwod ) )
+      {
+        exportedwod := ExportedInternalWorkOrderDemand::Create( this, id );
+      }
+    
+      exportedwod.Update( wod );
+      updatedinstances.Add( exportedwod );
+    }
+    
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, old )
+    {
+      old.Delete();
+    }
+  *]
+}

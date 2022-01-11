@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: ListTasks
+Response OnDrop (structured[Operation_SC] source, BatchTask target, BatchResource resource) id:Response_ListTasks_OnDrop_844
+{
+  #keys: '[142956.1.1508378879]'
+  CanBindMultiple: false
+  DefinitionID => /ListTasks/Responsedef_ListTasks_OnDrop
+  GroupServerCalls: true
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey       := actionmodifier.IsControl();
+    ctrlshiftkey  := actionmodifier.IsControl() and actionmodifier.IsShift();
+    
+    operations := construct( Operation_SCs );
+    aftertask := target;
+    
+    if( not ctrlshiftkey ) //when ctrlshiftkey = false and not isnull droptarget, the intention is to merge all operations into the droptarget
+    {
+      operations  := selectset( target, OperationInTask, op, true, true ); //operations from the drop target
+      aftertask := target.Next().astype( BatchTask );
+    }
+    
+    information := source.Union( operations );
+    
+    return Scheduler.AllowedScheduling( resource,           //batchresource
+                                        information,        //structured operations
+                                        ctrlkey,            //skip soft check
+                                        ctrlshiftkey,       //ctrl shift key
+                                        target.Previous(),  //before task
+                                        aftertask,          //afterbatch
+                                        Operation_SC::GetSelectedObjects( information ),
+                                        feedback,
+                                        isallowedhard )
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // OnDrop structured[Operation] --> BatchTask on BatchResource
+      ctrlshift := actionmodifier.IsControl() and actionmodifier.IsShift();
+      
+      if( not isnull( target ) and not ctrlshift )
+      {
+        // (Add operation to batch)
+        target.Batch().AddOperations( source );
+      }
+      else
+      {
+        resource.CreateBatchAssignOperationsPlanBatch( source, target.Previous().astype( BatchTask ) );
+      }
+    *]
+  }
+}

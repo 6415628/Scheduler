@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update (MDSObjectInfos objectinfos, MDSObjectInfo infocurrentdataset)
+{
+  Description:
+  [*
+    The attributes of `this` might be outdated, because the status of the dataset that is attached to `this` might have changed while user was working in another dataset.
+    The attributes of `this` that are updated in this method are mainly used for the 'Status' image attribute column. This image attribute column is used in the 'Snapshots' and 'Replannable snapshots' forms.
+  *]
+  TextBody:
+  [*
+    datasetinfo := objectinfos.Find( this.DatasetName() );
+    if( isnull( datasetinfo ) )
+    {
+      // The snapshot of a quick dataset copy is created before the dataset copy creation method is called, because this method is called reactively.
+      // Therefore, objectinfos.Find( snapshot.DatasetName() ) will be null when it is called between the creation of the snapshot and the reactive dataset copy call. 
+      // Without the below if-statement, snapshot.IsDatasetDeletedUnspecifiedReason() would be set to true, which would result in various issues.
+      // For example, a precondition would be set on the 'Select dataset' context menu item of a snapshot.
+      if( this.HasCreatedDataset() 
+          // Dataset copy transactions have a higher priority than normal transactions, so the dataset copy creation method should typically be called after a few seconds have passed.
+          or DateTime::ActualTime() - this.TimeStamp() > this.Run().Optimization().UpdateReplannableSnapshotsDelayDuration() 
+          )  
+      {
+        // The dataset has been deleted. This might have happened in other datasets. The current dataset does not know why.
+        this.IsDatasetDeletedUnspecifiedReason( true );
+        this.IsDatasetLoaded( false );
+      }
+    }
+    else
+    {
+      this.IsDatasetLoaded( datasetinfo.IsLoaded() );
+      // When two datasets are being copied at the same time, then the HasCreatedDataset attribute of the first dataset is false when opening the second dataset.
+      // Therefore, the HasCreatedDataset attribute should be updated. 
+      this.HasCreatedDataset( true );
+    }  
+    this.IsDatasetSelected( infocurrentdataset.Name() = this.DatasetName() );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

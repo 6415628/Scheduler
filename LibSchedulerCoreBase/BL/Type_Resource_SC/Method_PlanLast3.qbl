@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanLast (CampaignTask campaigntask) as CampaignTask
+{
+  Description: 'Move all tasks of campaigntask to last'
+  TextBody:
+  [*
+    ops := selectset( campaigntask, OperationCampaign.Operation_SC, op,
+                      op.Task_SC().Resource_SC().IsPlanRelatedOperations() );
+    
+    traverse( ops, Elements, op )
+    {
+      Schedule::PlanRelatedOperationsBefore( op, this, null( Task_SC ), true, false );
+    }
+    
+    result := this.PlanBefore( campaigntask, null( Task_SC ) );
+    
+    return result;
+  *]
+}

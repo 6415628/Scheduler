@@ -1,0 +1,80 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRuleCheckOnOptimizer_Setup (Schedule schedule)
+{
+  Description: "Test rule check setting 'Optimizer' - setup"
+  TextBody:
+  [*
+    // Get variant attribute
+    isHardConstraintForOptimizer := false;
+    isAllHighPriorityRulesOk := false;
+    isAllLowPriorityRulesOk := false;
+    
+    this.GetTestVariant( isHardConstraintForOptimizer,
+                         isAllHighPriorityRulesOk,
+                         isAllLowPriorityRulesOk );
+    
+    // Create rule
+    rule := Rule::Create( schedule, 1 );
+    
+    // Create rule type
+    ruleType := UTFMockObjectFactory::CreateRuleType( schedule,
+                                                      RuleConstant::RuleType_AllowedDifferenceJump() );
+    
+    rule.RuleType( relset, ruleType );
+    
+    // Create rule subtype - Allowed Absolute Difference Upwards
+    ruleSubtype := UTFMockObjectFactory::CreateRuleSubtypeDifferenceJump( ruleType, 
+                                                                          RuleConstant::RuleSubType_AllowedAbsoluteDifferenceUpwards(),
+                                                                          true,
+                                                                          RuleConstant::Direction_Upwards(), 
+                                                                          RuleConstant::Limit_Allowed() );
+    
+    rule.RuleSubType( relset, ruleSubtype );
+    
+    // Create characteristic main - Operation Width
+    characteristicMain := UTFMockObjectFactory::CreateCharacteristic( schedule,
+                                                                      RuleConstant::Characteristic_OperationWidth(),
+                                                                      false, 
+                                                                      true, 
+                                                                      false, 
+                                                                      RuleConstant::ValueType_Real(), 
+                                                                      true, 
+                                                                      false );
+    
+    rule.CharacteristicMain( relset, characteristicMain );
+    
+    // Set normal attribute in rule
+    rule.IsEnabled( true );
+    rule.IsMultipleRangesEnabled( false );
+    rule.RuleValue( 1.0 )
+    rule.RuleScopeSelected( RuleConstant::RuleScope_AllTasksOnResource() );
+    
+    // Setting isHardConstraintForOptimizer attribute based on variant
+    rule.IsHardConstraintForOptimizer( isHardConstraintForOptimizer );
+    
+    // Create a resource and apply rule scope to rule
+    UTFMockObjectFactory::CreateRuleScopeInSingleResource( schedule, rule, 'Single Resource' );
+    
+    // Create first operation and plan it
+    order1 := UTFMockObjectFactory::CreateOrder( schedule, 'Order1' );
+    planUnit1 := UTFMockObjectFactory::CreatePlanUnit( order1, 'Plan Unit 1', 1.0 );
+    operation1 := UTFMockObjectFactory::CreateOperation( planUnit1 );
+    operation1.OperationID( 'Operation1' );
+    
+    // Create second operation and plan it
+    order2 := UTFMockObjectFactory::CreateOrder( schedule, 'Order2' );
+    planUnit2 := UTFMockObjectFactory::CreatePlanUnit( order2, 'Plan Unit 2', 1.0 );
+    operation2 := UTFMockObjectFactory::CreateOperation( planUnit2 );
+    operation2.OperationID( 'Operation2' );
+    
+    // Define width for operation1 and operation2
+    operation1.Width( 100.0 );
+    operation2.Width( 200.0 );
+    
+    // Schedule operation1 and operation2
+    Transaction::Transaction().Propagate( relation( Operation_SC, AllowedOperationOnResource ) );
+    operation1.Plan();
+    operation2.Plan();
+  *]
+}

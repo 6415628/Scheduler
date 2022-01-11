@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidShutdownType (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if the imported feedback task has a valid shutdown type if it is a shutdown task'
+  TextBody:
+  [*
+    isvalid := not this.IsStoppageTask()                                    // Do not check if it is not a stoppage task
+               or ( this.IsStoppageTask() and not this.IsShutdownTask() )   // Do not check if it is not a shutdown task
+               or ( this.ShutdownTypeID() <> ''                             // Is valid if shutdown type is not empty and exists
+                    and not isnull( this.ShutdownType() ) );
+    
+    if( not isvalid and not isnull(  feedback_o ) )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedFeedbackTask_Instance( name ),
+                                                               Translations::SC_ImportedFeedbackTask_ViolateHasValidShutdownType( this.ShutdownTypeID() ) ) );
+    }
+    
+    return isvalid;
+  *]
+}

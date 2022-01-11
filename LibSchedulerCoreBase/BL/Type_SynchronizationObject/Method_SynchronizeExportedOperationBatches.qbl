@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExportedOperationBatches
+{
+  Description: 'Synchronizes exported demo data operation batches that will be reused to recreate batches and plan their batch tasks.'
+  TextBody:
+  [*
+    exportedschedule := this.Schedule().FeedbackManager().GetSchedule();
+    allInstances := selectset( exportedschedule, ExportedOperationBatch.astype( ExportedDemoDataOperationBatch ), exportedDemoDataOperationBatch, true );
+    updatedInstances := construct( ExportedDemoDataOperationBatchs );
+    
+    traverse( this, Schedule.Batch, batch )
+    {
+      batchID := batch.BatchID();
+      exportedbatch := ExportedDemoDataOperationBatch::FindExportedDemoDataOperationBatch( batchID );  
+      
+      if( isnull( exportedbatch ) )
+      {
+        exportedbatch := ExportedDemoDataOperationBatch::Create( exportedschedule, batchID );
+      }
+      
+      exportedbatch.Update( batch );
+      exportedbatch.CreateExportedOperationBatchContents();
+      updatedInstances.Add( exportedbatch );
+    }
+    
+    oldInstances := allInstances.Difference( updatedInstances );
+    
+    traverse( oldInstances, Elements, old )
+    {
+      old.Remove();
+    }
+  *]
+}

@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateBatchAssignOperations (Operation_SCs operations, Schedule owner) as Batch
+{
+  Description: 'Create batch and assign selected operations to batch'
+  TextBody:
+  [*
+    batch := null( Batch );
+    
+    if( operations.Size() > 0 )
+    {
+      firstoperation := operations.Element( 0 );
+    
+      batch := Batch::Create( owner, firstoperation.Type() );
+    
+      operationsInBatch := selectset( operations, Elements, op, not isnull( op.BatchSequenceElement() ) );
+      Operation_SC::RemoveFromBatch( operationsInBatch );
+    
+      batch.AddOperations( operations );
+    }
+    
+    return batch;
+  *]
+}

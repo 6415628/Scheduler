@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizePracticeFromRoutingStep (output Practices updatedInstances)
+{
+  Description: 'Synchronize practices based on routing step information.'
+  TextBody:
+  [*
+    practiceStrings := selectuniquevalues( this, 
+                                           Schedule.Routing.RoutingStep, 
+                                           routingStep, 
+                                           routingStep.BatchPractice().TrimBoth().Length() > 0, 
+                                           routingStep.BatchPractice().TrimBoth() );
+    
+    traverse( practiceStrings, Elements, practiceString )
+    {
+      practice := Practice::FindPracticeIndex( practiceString );
+      
+      if( isnull( practice ) )
+      {
+        practice := this.Schedule().CreatePractice( practiceString );
+      }
+      
+      updatedInstances.Add( practice );
+    }
+  *]
+}

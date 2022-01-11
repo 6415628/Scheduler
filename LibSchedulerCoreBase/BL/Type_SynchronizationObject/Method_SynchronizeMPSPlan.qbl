@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeMPSPlan
+{
+  Description: 'Synchronize MPS plan.'
+  TextBody:
+  [*
+    // Proceed with synchronization only when we all ImportedMPSPlan is valid -> which is when there is only ONE, VALID MPS plan
+    // For example, if data contains multiple published MPS plans, then all rows will have IsValidDataHard. In this case, we don't perform any synchronization
+    if( exists( this, Schedule.ImportedMPSPlan, row, row.IsValidDataHard() ) and this.Schedule().CheckHasNewMPSPlan() )
+    {
+      allInstances := selectset( this.Schedule(), MPSPlan, mpsPlan, true )
+      updatedInstances := construct( MPSPlans );
+      
+      traverse( this.Schedule(), ImportedMPSPlan, row, row.IsValidDataHard() )
+      {
+        mpsPlan := MPSPlan::FindMPSPlan( row.MPSPlanID() );
+      
+        if( isnull( mpsPlan ) )
+        {
+          mpsPlan := this.Schedule().ObjectFactory().CreateMPSPlan( row.MPSPlanID() );
+        }
+      
+        mpsPlan.Update( row );
+        mpsPlan.SynchronizeMPSPlannedOrders();
+        
+        // Propagate relation MPSPlannedOrder - Routing which is needed for synchronization of MPSPlannedOrderStockElement
+        Transaction::Transaction().Propagate( relation( MPSPlannedOrder, Routing ) );
+        Transaction::Transaction().Propagate( relation( MPSPlannedOrder, Product_SC ) );
+        
+        mpsPlan.SynchronizeMPSPlanChartElementsByRouting();
+        mpsPlan.SynchronizeMPSPlanChartElementsByProduct();
+        updatedInstances.Add( mpsPlan );
+      }
+      
+      oldInstances := allInstances.Difference( updatedInstances );
+      
+      traverse( oldInstances, Elements, mpsPlan )
+      {
+        mpsPlan.Remove();
+      }
+    }
+  *]
+}

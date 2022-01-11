@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method AssembleDataPiecesString () as String
+{
+  Description: 'Re-assemble the payload from all the DataPieces in sequence, to be processed.'
+  TextBody:
+  [*
+    // FSP1: useless
+    // Jacky CHAN Aug-3-2016 (created)
+    payload := "";
+    
+    dataPieces := selectsortedset( this, DataPiece, piece,
+                                   piece.IsCompleted(),
+                                   piece.SequenceNr() );
+    
+    traverse( dataPieces, Elements, dataPiece )
+    {
+      payload := payload + dataPiece.Payload().AsBase64EncodedString() ;
+    }
+    
+    if( not this.VerifyChecksum( payload ) )
+    {
+      LibDEF_Util::EventLogError( this.IntegrationEvent(), "Reassembling payload from buffer.",
+                                                           "Error reassembling payload, the DataTransfer checksum does not match." );
+      payload := "";
+    }
+    
+    return payload;
+  *]
+}

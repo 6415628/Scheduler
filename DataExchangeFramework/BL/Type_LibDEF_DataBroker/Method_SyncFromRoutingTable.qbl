@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Method SyncFromRoutingTable (NamedValueTree nvt_i, NamedValue body_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Synchronize from routing table, create or update System and ChannelMeta records, except the local system.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-22-2016 (created)
+    this.SyncSystemsFromRoutingTable( nvt_i, body_i, event_i );
+    
+    // only sync ChannelMetas for external Systems
+    systems := this.GetOtherPeers( true );
+    this.SyncChannelMetasFromRoutingTable( nvt_i, body_i, systems, "", event_i );
+    
+    LibDEF_Util::EventLog( event_i, "Routing table updated." );
+  *]
+}

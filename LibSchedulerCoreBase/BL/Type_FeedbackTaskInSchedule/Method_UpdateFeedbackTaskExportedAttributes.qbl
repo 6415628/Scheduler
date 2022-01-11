@@ -1,0 +1,63 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateFeedbackTaskExportedAttributes (Task_SC task, Operation_SC operation, String resourceid)
+{
+  Description: 'Updates the exported attributes based on received arguments synchronization of feedback task.'
+  TextBody:
+  [*
+      // MODELING HANDLE SC
+    // To add additional arguments according to model requirements.
+    
+    // Synchronize exported feedback task attributes
+    this.OperationID( operation.OperationID() );
+    if( not isnull( task ) )
+    {
+      //Get from scheduled task
+      this.ExportedResource( task.Resource_SC().ResourceID() );
+      this.ExportedStart( task.Start() );
+      this.ExportedProcessStart( task.ProcessStart() );
+      this.ExportedEnd( task.End() );
+      this.ExportedSetupDuration( task.SetupDuration() );
+      this.ExportedProcessDuration( task.ProcessDuration() );
+      this.ExportedDuration( task.Duration() );
+      
+      if( task.istype( ContinuousTask ) )
+      {
+        continuoustask := task.astype( ContinuousTask );
+        this.ExportedCumulativeChargeLength( continuoustask.CumulativeChargeLength() );
+        this.ExportedCumulativeDischargeLength( continuoustask.CumulativeDischargeLength() );
+        this.ExportedPreviousCumulativeDischargeLength( guard( continuoustask.Previous().astype( ContinuousTask ).CumulativeDischargeLength(), 0 ) );
+        this.ExportedCumulativeLoadWidth( continuoustask.CumulativeLoadWidth() );
+        this.ExportedParallelMaxLength( continuoustask.ParallelMaxLength() );
+        this.ExportedDischargeDuration( continuoustask.DischargeDuration() ); 
+        this.ExportedChargeLength( continuoustask.ChargeLength() );
+        this.ExportedDischargeLength( continuoustask.DischargeLength() );
+        this.ExportedHasSetupDuration( continuoustask.HasSetupDuration() );   
+        this.ExportedIsFirstAfterDownTime( continuoustask.IsFirstAfterDownTime() );
+        gap := 0.0
+        if( isnull( continuoustask.AsFirstTaskInParallel() ) )
+        {
+          gap := guard( this.Resource_SC().LastFeedbackTaskInSchedule().ExportedGapToPrevious(), 0.0 );
+        }                                                                                              
+        else 
+        {
+          gap := continuoustask.AsFirstTaskInParallel().GapToPrevious();
+        }
+        this.ExportedGapToPrevious( gap );
+       
+        traverse( continuoustask, AsFirstInParallel.ParallelTasks, pt )
+        {
+          pt.IsParallelWithFeedback( pt.IsParallelWithPrevious() );
+        } 
+      }
+    }
+    else
+    {
+      //for cases where the operation is not planned and feedback is received, get from oor
+      selected_oor := select( operation, OperationOnResource, oor, oor.Resource_SC().ResourceID() = resourceid );
+      this.ExportedResource( selected_oor.Resource_SC().ResourceID() );  
+      this.ExportedProcessDuration( selected_oor.ProcessDuration() ); 
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

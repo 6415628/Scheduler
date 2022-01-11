@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method FindCreateCalendar (LibCIM_CalendarBase integrationCalendar_i) as LibCal_Calendar
+{
+  TextBody:
+  [*
+    calendar := this.GetCalendarRegistry().FindCalendar( integrationCalendar_i.CalendarType(),
+                                                         integrationCalendar_i.CalendarID() );
+    if( isnull( calendar ) )
+    {
+      // Raise an error if the CommonCalendar was not found.
+      if( integrationCalendar_i.CalendarType() = typeof( LibCal_CommonCalendar ).Name() )
+      {
+        LibDIF_Util::Error( "CommonCalendar not found" );
+      }
+      else
+      {  
+        // The calendar is not found, try to create a new one. 
+        calendar := this.CreateCalendar( integrationCalendar_i );
+        
+        if( isnull( calendar ) )
+        {
+          LibDIF_Util::Warning( ">>> " + this.DefinitionName() + ".FindCreateCalendar() : unexpected CalendarType '" + integrationCalendar_i.CalendarType() + "' encountered in integration data." ); 
+        }
+      }
+    }
+    
+    return calendar;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

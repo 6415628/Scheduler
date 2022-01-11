@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetConstraintViolationsForRollbackKPI #extension
+{
+  TextBody:
+  [*
+    // To be extended in the layers
+    // We group all hard constraints together, so we set the weight to 1.0
+    constraintweight := 1.0;
+    
+    // For the sequencing optimizer
+    // All operations that are in scope of the active optimizer run should be planned
+    // Therefore, give a penalty for each unplanned operation in an active run
+    penalty := constraintweight * counter( this, Operation_SC, operation,
+                                           not operation.IsPlanned()
+                                           and operation.IsInActiveOptimizerRun() );
+    
+    // For the program optimizer, we need to consider the hard constraint violations instead:
+    isprogramoptimizer := this.GetIsLastRunByProgramOptimizer();
+    if( isprogramoptimizer )
+    {
+    // We need to propagate, otherwise the hard constraint violations do not yet show up
+    Transaction::Transaction().Propagate();
+    // Go over all the tasks in the schedule to count the number of task with hard constraint violations
+    penalty := constraintweight * counter( this, ResourceGroup_SC.Resource_SC.Task_SC, task, not task.IsAllHighPriorityRulesOK());
+    }
+    
+    return penalty;
+  *]
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsResourceConnectionAllowed (Supply supply, output String feedback_o) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    value := true;
+    
+    if( this.Schedule().TechnicalConfiguration().IsResourceConnectionEnabled()
+        and supply.istype( MaterialPlannedSupply ) )
+    {
+      mps := supply.astype( MaterialPlannedSupply );
+      upstreamresource := guard( mps.Operation_SC().Task_SC().Resource_SC(), null( Resource_SC ) );
+      
+      if( not isnull( upstreamresource )
+          and not exists( this, Operation_SC.AllowedOperationOnResource.Resource_SC.AsAllowedToResource.AllowedFromResource, rc,
+                           rc = upstreamresource ) )
+      {
+        value := false;
+        Utility_SC::Concat( feedback_o, Translations::SC_Fulfillment_NoResourceConnection( supply.SupplyID(),
+                                                                                                             guard( mps.Operation_SC().OperationID(), '' ),
+                                                                                                             this.DemandID(),
+                                                                                                             guard( this.Operation_SC().OperationID(), '' ) ) );
+      }
+    }
+    
+    return value;
+  *]
+}

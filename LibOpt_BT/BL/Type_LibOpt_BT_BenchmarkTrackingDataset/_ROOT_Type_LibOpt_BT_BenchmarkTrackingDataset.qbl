@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#root
+#parent: #DomainModel
+Type LibOpt_BT_BenchmarkTrackingDataset
+{
+  #keys: '5[138586.1.110019051][138586.1.110019049][0.0.0][138586.1.110019050][138586.1.110019052]'
+  BaseType: Object
+  Description: 'Dataset that contains benchmark run information'
+  OnCommit:
+  [*
+    // Start more runs (that are currently in queue) in case the `MaxParallelRuns` value was increased.
+    if( not isnull( this.RunSequence() ) )
+    {
+      this.RunSequence().NotifyNewElements();
+    }
+  *]
+  OnCreate:
+  [*
+    if(  isnull( this.RunSequence() ) )
+    {
+       this.RunSequence( relnew );
+    }
+    
+    // Set default dataset backup path
+    qfs := LibOpt_BT_BTS::BasePathQFS() + '/' + defaultvalue( LibOpt_BT_BenchmarkTrackingDataset, DatasetBackupLocationDEPRECATED );
+    path := FileSystems::QFSPathToHardwarePath( qfs );
+    this.DatasetBackupPathDEPRECATED( path );
+    this.DatasetBackupPathNeedsMigration( false );
+  *]
+  StructuredName: 'LibOpt_BT_BenchmarkTrackingDatasets'
+}

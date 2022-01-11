@@ -1,0 +1,16 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod AssertOutputScopeDoesNotContains (LibOpt_ScopeElements subscope, LibUTF_IterationRun utf_run, LibOpt_Component component)
+{
+  TextBody:
+  [*
+    // jkr8 Nov-30-2020 (created)
+    Transaction::Transaction().Propagate();
+    utf_run.AssertEqual( 1, component.NrTimesCalled(), 'The component ' + component.Name() + ' should have executed exactly once.' );
+    utf_run.AssertEqual( 1, counter( component, SnapshotComponent, snap, true ), 'The component ' + component.Name() + ' should have exactly one snapshot.' );
+    snapshot := select( component, SnapshotComponent, snap, true );
+    out_scope := snapshot.OutputScope();
+    
+    utf_run.AssertTrue( guard( out_scope.ScopeElements().Intersect( subscope ).Size() = 0 , false ), 'The output scope of component ' + component.Name() + ' includes elements that are not expected.' );
+  *]
+}

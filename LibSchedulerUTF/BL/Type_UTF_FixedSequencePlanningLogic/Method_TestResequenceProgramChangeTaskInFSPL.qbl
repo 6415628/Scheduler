@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestResequenceProgramChangeTaskInFSPL (Schedule schedule)
+{
+  Description: 'Resequence program change task in FSPL resource'
+  TextBody:
+  [*
+    // Expected outcome in Gantt chart
+    // Resource1 : | Program Change Task | Task1_10  | Task2_10 |
+    // Resource2 : | Task1_20 | Task2_20 |
+    
+    resource1 := select( schedule, ResourceGroup_SC.Resource_SC, r, r.ResourceID() = 'resource1' );
+    resource2 := select( schedule, ResourceGroup_SC.Resource_SC, r, r.ResourceID() = 'resource2' );
+    task1_10 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'operation1_10' );
+    task1_20 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'operation1_20' );
+    task2_10 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'operation2_10' );
+    task2_20 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'operation2_20' );
+    programchangetask := select( schedule, ResourceGroup_SC.Resource_SC.Task_SC.astype( ProgramChangeTask ), t, true );
+    
+    value := resource1.First() = programchangetask and programchangetask.Next() = task1_10 and resource1.Last() = task2_10
+             and resource2.First() = task1_20 and resource2.Last() = task2_20;
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Resequence task in FSPL failed.', this.Variant() ) );
+  *]
+}

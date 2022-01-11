@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetLastLockedOperationEnd (LibOpt_Run run, ResourceGroup_SC resourcegroup) declarative as DateTime
+{
+  Description:
+  [*
+    returns the end time of the last locked operation of the given optimizer run's start scope on the input resource group
+    `Locked` here means as defined on the scope, not in the manual DSS.
+  *]
+  TextBody:
+  [*
+    value := max( run.StartScope().ScopeElements( typeof( ScopeElementOperation ) ),
+                  Elements.astype( ScopeElementOperation ),
+                  seo,
+                  exists( seo, Operation_SC.OperationOnResourceGroup.ResourceGroup_SC, rg, rg = resourcegroup )
+                  and guard( seo.OnRunConstRemote( run ).IsLocked(), false ),
+                  seo.Operation_SC().End() );
+    
+    return value;
+  *]
+}

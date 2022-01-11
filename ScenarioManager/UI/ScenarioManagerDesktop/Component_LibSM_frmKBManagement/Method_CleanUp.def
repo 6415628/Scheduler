@@ -1,0 +1,76 @@
+Quintiq file version 2.0
+#parent: #root
+Method CleanUp (LibSM_KnowledgeBranch selection) id:Method_LibSM_frmKBManagement_CleanUp
+{
+  #keys: '[110852.0.487157746]'
+  Body:
+  [*
+    //clean up branches
+    dlg := construct( LibSM_dlgNumberOfChangesToKeep );
+    dlg.Title( "Knowledge base management cleanup" );
+    dlg.Data( selection );
+    
+    // Store branch name and KB name 1st because selection object got relflush-ed later in RefreshKnowledgeBranches()
+    branchName              := selection.Name();
+    branchKnowledgeBaseName := selection.KnowledgeBaseName();
+    
+    result := dlg.DoModal(  this );
+    
+    scenarioManagerDataset := LibSM_GlobalState.GetScenarioManagerDataset();
+    
+    if( result > 0 and not isnull( scenarioManagerDataset ) )
+    {
+      nr := LibSM_GlobalState.FormatStringToReal( dlg.edtNrOfChanges().Text() );
+    
+      if( nr >= 0 )
+      {
+        // refresh KB branch before perform cleanup
+        this.RefreshKnowledgeBranches();           
+        
+        editor             := CKBEditor::Create();
+        scenarioManagerMDS := LibSM_GlobalState.GetScenarioManagerMDS();
+    
+        kb       := select( scenarioManagerMDS, MDSKBs, kb, kb.Name().ToUpper() = branchKnowledgeBaseName.ToUpper() );
+        kbfullid := KBFullID::Create( kb.Domain(), kb.Name(), kb.Branch(), kb.Version(), kb.ChangeNr() );
+    
+        infos     := editor.GetKBStructure( kbfullid.KBID() );
+        highestid := max( infos, Elements.KBFullID, i,
+                          i.Branch() = branchName
+                          and i.ChangeNr().IsFinite()
+                          and i.ChangeNr() > 0, i.ChangeNr() );
+    
+        if( highestid.IsFinite() and highestid > 0 )
+        {
+          toBeRemoved    := highestid - nr;
+          toBeDeletedSet := selectset( infos, Elements.KBFullID, i,
+                                       i.Branch() = branchName and i.ChangeNr() <= toBeRemoved, true );
+          hasDeletion := false;
+    
+          traverse( toBeDeletedSet, Elements, el )
+          {
+            knowledgeBranch := select( scenarioManagerDataset, KnowledgeBranch, branch,
+                                       branch.KnowledgeBaseName() = el.Name()
+                                       and branch.Name()          = el.Branch()
+                                       and branch.Version()       = el.Version()
+                                       and branch.ChangeNr()      = el.ChangeNr() );
+    
+           // delete branch only if the branch is not used by KnowledgeProfile or Scenario/dataset
+           if( isnull( knowledgeBranch )
+               or not knowledgeBranch.IsUsed() )
+            {
+              editor.DeleteKBChange( el );
+              hasDeletion := true;
+            }
+          }
+    
+         if( hasDeletion )
+          {
+            Form.RefreshKnowledgeBranches();
+          }
+        }
+      }
+    
+      Application.RemoveHistory();
+    }
+  *]
+}

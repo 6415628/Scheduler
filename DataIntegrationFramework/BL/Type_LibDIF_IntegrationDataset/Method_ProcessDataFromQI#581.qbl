@@ -1,0 +1,61 @@
+Quintiq file version 2.0
+#parent: #root
+Method ProcessDataFromQI (NamedValueTree responseNVT_i, String integratorID_i) as LibDIF_IntegrationDataset
+{
+  Description: 'Trigger ProcessDataFromQI using the QIntegrator(-route) with the provided ID.'
+  TextBody:
+  [*
+    // Retrieve the data from the Body of the replied NVT.
+    bodyNode := responseNVT_i.Root().Child( responseNVT_i.GetHandle( "Body" ) );
+    
+    // Remove the appendix "As3DSpace" from the IntegratorID if applicable.
+    integratorID := ifexpr( integratorID_i.EndsWith( LibDIF_IntegrationDataset::AS_3DSPACE() ), 
+                            integratorID_i.SubString( 0, integratorID_i.Length() - LibDIF_IntegrationDataset::AS_3DSPACE().Length() ),
+                            integratorID_i ); 
+    
+    // See if the response is 'raw' JSON or a NVT.
+    if( LibDIF_PlatformAPICall::IsRawResponse( responseNVT_i ) )
+    {
+      // See if the data should be processed.
+      doProcess := this.DoNotProcessDataFromQI().Find( integratorID ) < 0;
+      if( doProcess )
+      {
+        // Get the JSON-data from the body and parse it.
+        json := JSON::Parse( bodyNode.GetValueAsString() );
+    
+        // Call the method that must be overridden and implemented at the Implementation Level.
+        if( this.DoProcessDataFromQI( json, integratorID ) )
+        {
+          // All OK...
+        }
+        else
+        {
+          // Raise an error if the QIntegrator(-route) was not found.
+          LibDIF_Util::Error( this.DefinitionName() + ".DoProcessDataFromQI( json_i, integratorID_i ) is not implemented for QIntegrator(-route) | IntegratorID = '" + integratorID + "'. "
+                            + "Either implement the method for the IntegratorID, or add the IntegratorID to method DoNotProcessDataFromQI()." );
+        }
+      }
+    }
+    else
+    {
+      datasetNode := bodyNode.Child( responseNVT_i.GetHandle( this.DefinitionName() ) );
+      
+      // Import the NVT as a temporary instance of the Integration-dataset that owns the imported integration objects.
+      tempIntegrationDataset := NamedValueTreeIO::ImportObject( responseNVT_i, datasetNode, typeofexpression( this ) );
+      
+      // Call the method that must be overridden and implemented at the Implementation Level.
+      if( this.DoProcessDataFromQI( tempIntegrationDataset, integratorID ) )
+      {
+        // All OK...
+      }
+      else
+      {
+        // Raise an error if the QIntegrator(-route) was not found.
+        LibDIF_Util::Error( this.DefinitionName() + ".DoProcessDataFromQI( tempIntegrationDataset_i ) is not implemented for QIntegrator(-route) | IntegratorID = '" + integratorID + "'" );
+      }
+    }
+    
+    // Return a stream that can be reacted on.
+    return this;
+  *]
+}

@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetMinimalPractice () declarative as Practice
+{
+  Description: 'Get the practice with the lowest score is chosen as the actual practice'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // The actual practice of a batch is the practice that results in the lowest score
+    // The score function should be overloaded to represent the batch selection (for instance the shortest proces time)
+    practice := null( Practice );
+    
+    if( this.ManualPractice() = '' )
+    {
+      minallowed := minselect( this,
+                               BatchAllowedPractice,
+                               allowed,
+                               true,
+                               allowed.Score() );
+    
+      if( not isnull( minallowed ) )
+      {
+        practice := minallowed.Practice();
+      }
+    }
+    else
+    {
+      practice := select( this, BatchAllowedPractice.Practice, prac, prac.UsedPractice() = this.ManualPractice() );
+    }
+    
+    return practice;
+  *]
+}

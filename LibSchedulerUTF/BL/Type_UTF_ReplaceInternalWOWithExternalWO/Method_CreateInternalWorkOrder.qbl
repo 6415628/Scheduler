@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateInternalWorkOrder (Schedule schedule)
+{
+  Description: 'Create internal work order instance.'
+  TextBody:
+  [*
+    variant := this.Variant();
+    testInstanceInternalWorkOrders := this.GetInternalWorkOrderTestInstances( variant );
+    
+    traverse( testInstanceInternalWorkOrders, Elements, row )
+    {
+      internalWorkOrder := select( schedule, WorkOrder.astype( InternalWorkOrder ), internalWorkOrder, internalWorkOrder.Id() = row.WorkOrderID() );
+      routing := select( schedule, Routing, routing, routing.RoutingId() = row.RoutingID() );
+      pisp := select( schedule, Product_SC.ProductInStockingPoint, productInStockingPoint, productInStockingPoint.StockingPointId() = row.StockingPointID()
+                      and productInStockingPoint.ProductId() = row.ProductID() );
+      
+      if( isnull( internalWorkOrder ) )
+      {
+        internalWorkOrder := GenericInternalWorkOrder::Create( routing.Schedule(), row.WorkOrderID() );
+        internalWorkOrder.IsCreatedInScheduler( true );
+        internalWorkOrder.Update( pisp, row.Quantity(), 1, row.DueDate(), routing, false );
+        
+        // create work order operations for this work order
+        routingsteps := selectset( routing, RoutingStep, routingstep, true );
+        internalWorkOrder.CreateWorkOrderOperationsFromRouting( routingsteps );
+        
+        order := internalWorkOrder.CreateOrder_SC();
+        order.CreatePlanUnit( order.GetLastPlanUnitNr(), row.Quantity(), 1 );  
+        }
+    }
+  *]
+}

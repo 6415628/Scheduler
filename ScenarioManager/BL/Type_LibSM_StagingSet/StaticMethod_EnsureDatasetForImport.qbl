@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod EnsureDatasetForImport () as String
+{
+  Description: 'Makes sure that an instance of this dataset exists for reading an import.'
+  TextBody:
+  [*
+    // TODO: Clean up use of literals.
+    
+    datasetName := "LibSM_StagingSet_Import"
+    editor      := MDSEditor::Editor();
+    
+    loadedInfo := editor.LoadedObjectInfo( "LibSM_StagingSet", "/root", datasetName );
+    
+    if( isnull( loadedInfo ) )
+    {
+      unloadedInfo := editor.ObjectInfo( "LibSM_StagingSet", "/root", datasetName);
+      if( isnull( unloadedInfo ) )
+      {
+        params := MDSParameters::Create();
+        params.State( MDSInterface::MemoryOnlyState() );
+        MDSLibSM_StagingSet::CreateMDS( datasetName, params );
+      }
+      else
+      {
+        MDSLibSM_StagingSet::Load( unloadedInfo.MDSID().MDSKey() );
+      }
+    }
+    
+    return datasetName;
+  *]
+}

@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetDefaultDirectoryPath () as String
+{
+  Description: 'Gets the default directory full path storing the temporary IntegrationEvent files.'
+  TextBody:
+  [*
+    // Get the IntegrationEvents data directory path
+    eventsDataDirectoryName := LibDEF_IntegrationEvent::DEFAULTDIRECTORYNAME();
+    dataDirectory           := DomainModel::GetDataDirectory(); 
+    directorySeparator      := '/';
+    
+    // Check if IntegrationEvents data directory exists
+    eventDirectory := selectobject( dataDirectory, Children, dir, true,
+                                    dir.Name() = eventsDataDirectoryName );
+    
+    // Create the IntegrationEvents data directory if it does not exist
+    if( isnull( eventDirectory ) )
+    {
+      eventDirectory := dataDirectory.CreateDir( eventsDataDirectoryName );
+    }
+    
+    // Get the absolute path of the IntegrationEvents data directory
+    eventsDataDirectoryPath := FileSystems::QFSPathToHardwarePath( eventDirectory.Path() );
+    
+    // Append a directory separator if needed
+    if( eventsDataDirectoryPath.SubString( eventsDataDirectoryPath.Length() - 1, 1 ) <> directorySeparator )
+    {
+      eventsDataDirectoryPath := eventsDataDirectoryPath + directorySeparator;
+    }
+    
+    return eventsDataDirectoryPath;
+  *]
+}

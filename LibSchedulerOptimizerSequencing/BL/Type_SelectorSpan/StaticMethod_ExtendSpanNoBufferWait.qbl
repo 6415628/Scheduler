@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ExtendSpanNoBufferWait (output owning LibOpt_ScopeElementOnRuns span, LibOpt_Scope scope) as Boolean
+{
+  Description:
+  [*
+    Extends the given span by the following rule:
+    If an operation is in scope (either focus scope or span) and has a NoBufferWait subtask that links to a downstream operation that is out of scope, then add the downstream operation to the span. If the in scope operation has an upstream operation that is out of scope and that has a NoBufferWait subtask then also add the upstream operation to the span.
+    Returns whether the span has been extended.
+  *]
+  TextBody:
+  [*
+    focus_scope_operations := scope.OperationsExSpan();
+    has_changed := false;
+    total_scope_operations := scope.Operations().Union( selectset( span, Elements.ScopeElement.astype( ScopeElementOperation ).Operation_SC, op, true ) );
+    
+    traverse( total_scope_operations,
+              Elements,
+              total_scope_operation )
+    {
+      // if the operation has a no buffer wait subtask
+      if( total_scope_operation.GetHasNoBufferWaitSubtask() )
+      {
+        // Then check if there are any downstream operations that are out of scope and if so add them to the span
+        traverse( total_scope_operation, DownstreamOperations, downstreamop )
+        {
+          scopeelement := downstreamop.GetOrCreateScopeElement();
+          seor := scopeelement.OnRunOrCreate( scope.Run() );
+          if( focus_scope_operations.Find( downstreamop ) < 0
+              and span.Find( seor ) < 0 )
+          {
+            // not yet in the scope or span, so add it:
+            span.Add( seor );
+            has_changed := true;
+          }
+        }
+      }
+      // If this operation has an upstream operation with a NoBufferWait Subtask
+      traverse( total_scope_operation, UpstreamOperations, upstreamop,
+                upstreamop.GetHasNoBufferWaitSubtask() )
+      {
+        // Then check if these upstream operations are in scope and if not add them to the span
+        scopeelement := upstreamop.GetOrCreateScopeElement();
+        seor := scopeelement.OnRunOrCreate( scope.Run() );
+        if( focus_scope_operations.Find( upstreamop ) < 0
+            and span.Find( seor ) < 0 )
+        {
+          // not yet in the scope or span, so add it:
+          span.Add( seor );
+          has_changed := true;
+        }
+      }
+    }
+    
+    return has_changed;
+  *]
+}

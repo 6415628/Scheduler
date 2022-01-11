@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateScenarioFromDataset (LibSM_Dataset dataset, LibSM_ScenarioNode scenarioNode, String scenarioName, 
+  String comment, Boolean isLive, String scenarioDescription, 
+  LibSM_KnowledgeProfile knowledgeProfile, LibSM_MetaDatas metadata, String timezoneID) as LibSM_Scenario
+{
+  Description: 'Create a scenario only, do not create dataset (For timezone supported)'
+  TextBody:
+  [*
+    currentUsername := LibSM_Util::GetCurrentUserName();
+    
+    // Create a new scenario
+    // Pass in folder in case Model needs to create different scenario subtype per folder subtype, for example in Service Planner.
+    // Model can Override CreateScenario( folder ) method to create scenario based on folder type
+    scenario := this.CreateScenario( scenarioNode.astype( LibSM_ScenarioFolder ) );
+    
+    scenario.Dataset( relset, dataset );
+    scenario.IsScenario( true );
+    scenario.CreatedBy( currentUsername );
+    scenario.CreatedOn( DateTime::Now() );
+    
+    scenario := this.ScenarioManager().AddLeaf( scenarioNode, &scenario ).astype( LibSM_Scenario );
+    
+    scenario.Update( scenarioName, 
+                     comment, 
+                     isLive,
+                     dataset.StorageState(),
+                     knowledgeProfile,
+                     metadata,
+                     timezoneID );
+    
+    
+    // Call a post-processing method on the created scenario, and specify that NO new dataset was created.
+    scenario.CreationPostProcessCustom( false );
+    
+    return scenario;
+  *]
+}

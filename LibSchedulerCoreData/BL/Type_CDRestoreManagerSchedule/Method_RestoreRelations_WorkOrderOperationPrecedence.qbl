@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_WorkOrderOperationPrecedence (CDSchedule cdSchedule)
+{
+  Description: 'Restore work order operation precedence  core data to planning object'
+  TextBody:
+  [*
+    traverse( cdSchedule, CDEntity.astype( CDWorkOrderOperationPrecedence ), cdWorkOrderOperationPrecedence )
+    {
+      workOrderOperationPrecedence := WorkOrderOperationPrecedence::FindWorkOrderOperationPrecedence( cdWorkOrderOperationPrecedence.ID() );
+      
+      if( not isnull( workOrderOperationPrecedence ) )
+      {  
+        // AsFromWOOP, M-1
+        workOrderOperationPrecedence.AsFromWOOP( relset, WorkOrderOperation::FindWorkOrderOperation( cdWorkOrderOperationPrecedence.FromWorkOrderId(),
+                                                                                                     cdWorkOrderOperationPrecedence.FromSequenceNr() ) );
+                                                 
+        // AsToWOOP, M-1
+        workOrderOperationPrecedence.AsToWOOP( relset, WorkOrderOperation::FindWorkOrderOperation( cdWorkOrderOperationPrecedence.ToWorkOrderId(),
+                                                                                                   cdWorkOrderOperationPrecedence.ToSequenceNr() ) );
+      }                                                                                               
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

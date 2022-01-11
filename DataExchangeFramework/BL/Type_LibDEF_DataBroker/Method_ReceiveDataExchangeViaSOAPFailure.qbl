@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveDataExchangeViaSOAPFailure
+{
+  Description: 'Post processing when failed to receive data-exchange via SOAP'
+  TextBody:
+  [*
+    // Determine whether there are temporary IntegrationEvents files to be imported
+    // There are no files to be imported when the setting 'usefilesforintegrationeventserrorlog' is set to false
+    if( LibDEF_Util::GetSettingValueUseFilesForIntegrationEventsErrorLog() )
+    {
+      LibDEF_IntegrationEvent::ImportFromTempDirectory( this );
+    }
+    else
+    {
+      // Creates a generic IntegrationEvent indicating some error has happened.
+      event := LibDEF_IntegrationEvent::Create( this, true );
+    
+      // Use warning here (to not trigger an error)
+      LibDEF_Util::EventLogWarning( event, "Encountered some error when processing the Data-Exchange message. For more information on the error, please refer to the Quintiq log files." );
+    }
+  *]
+}

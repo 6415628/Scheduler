@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method Move (LibSM_ScenarioNodes scenarioNodes)
+{
+  Description: 'Move scenario folder'
+  TextBody:
+  [*
+    before := null( LibSM_ScenarioNode );
+    isMoveToRecycleBin := this.IsFolder()
+                          and this.astype( LibSM_ScenarioFolder ).IsRecycleBin()
+    
+    traverse( scenarioNodes, Elements, node, node <> this )
+    {  
+      if( isMoveToRecycleBin      // delete from recycle bin
+          and node.IsDeleted() )
+      {
+        node.DeleteFromRecycleBin();
+      }
+        else // Move into either Recycle bin or other normal folder
+      {    
+        if( isMoveToRecycleBin )          // Where the nodes are explicitly deleted
+        {
+          node.RelinkChildNodes();        // relink (if any) detached child nodes that are already in recycle bin      
+          node.RememberDetachedParent();  // Remember detached parent before moving to recycle bin
+        }
+        else
+        {       
+          if( not this.IsDeleted() )      // if move to a folder in root folder
+          {
+            node.DetachedParent( relflush );  
+            
+            if( node.IsDeleted() )
+            {
+              node.RelinkChildNodes();
+            }   
+          }
+          else // explicitly moving a node into this folder which is in recycle bin, so need to remember this node as parent before move to recycle bin
+          {
+             node.DetachedParent( relset, this );
+          }
+        }
+        
+        this.MoveAfter( node, before );
+        before := node;
+      }
+    }
+  *]
+}

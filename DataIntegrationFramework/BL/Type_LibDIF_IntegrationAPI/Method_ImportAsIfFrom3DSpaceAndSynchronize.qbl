@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportAsIfFrom3DSpaceAndSynchronize (String fileRef_i, String dataTransformationID_i) as stream[LibDIF_IntegrationAPI]
+{
+  Description:
+  [*
+    Trigger the import the objects of which the IDs are part of the provided file as integration objects,
+    followed by triggering the synchronization of the integration objects to model objects in the planning-dataset, using the DataTransformation with the provided ID.
+  *]
+  TextBody:
+  [*
+    dataTransformation := this.GetDataTransformation( dataTransformationID_i );
+    
+    // Get the Integration-dataset and trigger its ImportWithQI,
+    // followed by triggering synchronization of the data.
+    api := this.GetIntegrationDataset() ->  ImportAsIfFrom3DSpace( fileRef_i, dataTransformation )
+                                        ->| this -> SynchronizeData( dataTransformationID_i ) -> ( api ) { return api; }
+    
+    // Return a stream that can be reacted on.
+    return api;
+  *]
+}

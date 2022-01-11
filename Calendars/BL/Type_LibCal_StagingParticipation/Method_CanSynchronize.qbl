@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CanSynchronize () as Boolean
+{
+  TextBody:
+  [*
+    canSynchronize := not this.HasError();
+    
+    if( not canSynchronize )
+    {
+      LibCal_Util::Logfile( "Participation '" + this.StagingParticipationID() + "' " +
+                            'cannot be synchronized. "' + this.Validation() + '"' );
+    }
+    else
+    {
+      // Also the StagingCalendar is not allowed to have an error.
+      canSynchronize := not this.StagingCalendar().HasError();
+      
+      if( not canSynchronize )
+      {
+        LibCal_Util::Logfile( "Participation '" + this.StagingParticipationID() + "' " +
+                              "cannot be synchronized because calendar '" + this.CalendarType() + "'.'" + this.CalendarID() + "' has an error." );
+      }
+      else
+      {
+        if( not isnull( this.StagingEvent() ) )
+        {
+          // Also the StagingEvent is not allowed to have an error.
+          canSynchronize := not this.StagingEvent().HasError();
+          
+          if( not canSynchronize )
+          {
+            LibCal_Util::Logfile( "Participation '" + this.StagingParticipationID() + "'" +
+                                  "cannot be synchronized because event '" + this.StagingEvent().CalendarID() + "'.'" + this.StagingEvent().Subject() + "' has an error." );
+          }
+          else
+          {
+            // And finally also the StagingCalendar of the StagingEvent is not allowed to have an error.
+            stagingEventCalendar := this.StagingEvent().StagingCalendar();
+            canSynchronize := not stagingEventCalendar.HasError();
+            
+            if( not canSynchronize )
+            {
+              LibCal_Util::Logfile( "Participation '" + this.StagingParticipationID() + "'" +
+                                    "cannot be synchronized because calendar '" + stagingEventCalendar.CalendarType() + "'.'" + stagingEventCalendar.StagingCalendarID() + "' " +
+                                    "of event '" + stagingEventCalendar.StagingCalendarID() + "'.'" + this.StagingEvent().Subject() + "' has an error." );
+            }
+          }
+        }
+      }
+    }
+    
+    return canSynchronize;
+  *]
+}

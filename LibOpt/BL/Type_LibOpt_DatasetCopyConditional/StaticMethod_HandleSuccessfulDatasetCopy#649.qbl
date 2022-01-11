@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod HandleSuccessfulDatasetCopy (LibOpt_Run run, String namenewdataset)
+{
+  Description:
+  [*
+    This method should be called reactively after a dataset has been created.
+    If `LibOpt_DatasetCopyConditional::DoFinalizeDatasetCopyDelete` has already been executed and if the dataset has been marked for deletion (by setting `LibOpt_SnapshotReplannableCopyDataset.HasToBeDeleted` to `true`) in `DoFinalizeDatasetCopyDelete`, then the dataset is deleted.
+    If `LibOpt_DatasetCopyConditional::DoFinalizeDatasetCopyDelete` has not been executed yet, then the dataset will be deleted in `DoFinalizeDatasetCopyDelete` (if needed) and no action is required in this method.
+    The `LibOpt_SnapshotReplannableCopyDataset.HasCreatedDataset` attribute is used to change the Status column of the Snapshot form.
+  *]
+  TextBody:
+  [*
+    // evr3 Apr-28-2020 (created)
+    
+    // Note, we cannot use task.SnapshotComponent because task might be deleted in LibOpt_Component::DoFinalizeCurrentComponent.
+    // Similarly, we cannot pass a snapshot to this method, because that snapshot might have been deleted and re-created during a rollback.
+    snapshot := LibOpt_SnapshotReplannableCopyDataset::GetSnapshotReplannableCopyDataset( run, namenewdataset );
+    
+    // It might happen that this method is executed right after all snapshots are serialized, but before all snapshots are deserialized.
+    // The snapshot attributes that are set in this method might therefore be overwritten by the attributes on the serialized snapshots. 
+    // Therefore, any snapshot attribute that is set in this method should also be set in LibOpt_SnapshotReplannableCopyDataset::Deserialize. 
+    snapshot.HasCreatedDataset( true );
+    
+    options := DatasetFindOptions::Construct( namenewdataset );
+    mdskey := DatasetController::FindUnique( options );
+    
+    // We unload the dataset to reduce the memory usage. The dataset could still be deleted in LibOpt_DatasetCopyConditional::DoFinalizeDatasetCopyDelete
+    unloadstr := mdskey->DatasetController::Unload();
+    
+    // If the LibOpt_DatasetCopyConditional::DeleteDatasetCopy method has already been executed for this dataset, then the snapshot.HasToBeDeleted attribute has been set to true.
+    // The dataset could not be deleted in LibOpt_DatasetCopyConditional::DeleteDatasetCopy, because it was not yet created. Therefore, we delete the dataset here.
+    // If snapshot.HasToBeDeleted() is false, then that might mean that the LibOpt_DatasetCopyConditional::DeleteDatasetCopy method still needs to be executed. 
+    // If this is the case, then the LibOpt_DatasetCopyConditional::DeleteDatasetCopy method will delete the dataset. 
+    if( snapshot.HasToBeDeleted() )
+    { 
+      unloadstr->DatasetController::Delete();
+      snapshot.IsDatasetDeletedByOptimizer( true );  
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

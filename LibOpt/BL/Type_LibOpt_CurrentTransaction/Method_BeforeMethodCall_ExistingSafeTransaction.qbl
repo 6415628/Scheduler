@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method BeforeMethodCall_ExistingSafeTransaction (LibOpt_Task task) as Boolean
+{
+  Description:
+  [*
+    This method should only be used if the `IsSafe` method returns `true`. If the `IsSafe` method returns `false`, then a new safe transaction should be started first by using a `try{...}` block. 
+    To be more precise, this method should be called before some method that could throw errors and before the `AfterMethodCall_ExistingSafeTransaction` method are called. 
+    The method will first try to force any propagation errors (if they exist), so that these propagation errors are nicely handled. 
+    If the previous `LibOpt_Task` introduced propagation errors, then these errors will show up as a child of the `LibOpt_SnapshotComponent` snapshot that belongs to the previous `LibOpt_Task` in the 'Snapshots' form. 
+    The `LibOpt_Task` is registered to the `LibOpt_CurrentTransaction`. By registering the `LibOpt_Task`, we ensure that any errors in this `LibOpt_Task` will show up as a child of the `LibOpt_Task.SnapshotComponent` snapshot.
+  *]
+  TextBody:
+  [*
+    // A propagation issue might have been introduced since the previous time 'PropagateToFindPropagationErrors' was called.
+    // If this is the case, then calling 'PropagateToFindPropagationErrors' will result in a propagation error.
+    // This method should be called from a safe transaction. A transaction is safe when transaction.IsSafe() is true. 
+    // This implies that it is called from a try{...}onfailure{...}. Therefore, the propagation error is handled gracefully.
+    // A LibOpt_SnapshotError is created and placed under the component of the last registered task. (Which is why we call 'PropagateToFindPropagationErrors' before calling 'this.RegisterTask( task )').
+    // Automatic propagation is disabled by default. It can be enabled in the context menu of the Optimizer and Run forms
+    LibOpt_CurrentTransaction::PropagateToFindPropagationErrors( task.Run() );  
+    
+    // If the current task hasn't been registered yet by the current transaction, then we should do so. 
+    istaskregistered := this.RegisterTask( task );
+    
+    return istaskregistered;
+  *]
+}

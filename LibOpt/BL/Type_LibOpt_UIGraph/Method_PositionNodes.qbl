@@ -1,0 +1,127 @@
+Quintiq file version 2.0
+#parent: #root
+Method PositionNodes
+{
+  Description: 'Position the nodes on the X axis.'
+  TextBody:
+  [*
+    program := LibOpt_Utility::ConstructMathematicalProgramWithoutAnalysis();
+    
+    nodes := selectset( this, UIGraphRow.UIGraphNode, node, true );
+    
+    // In this algorithm we use abs dist parts.
+    // To calculate |x| (the absolute value of x) we do create 2 new variables x_pos and x_neg
+    // Then we add the following constraints:
+    // x = x_pos - x_neg
+    // x_pos, x_neg >= 0
+    // Either x_pos = x and x_neg = 0, or x_neg = x and x_pos = 0.
+    // With this, we know that |x| = x_pos + x_neg
+    
+    // We use |x| for the distance to the average parent and the average child.
+    // The average parent is the average of the position of all its parents.
+    // Similarly, the average child is the average of the positions of all its children.
+    
+    abs_dist_parts := construct( Strings );
+    abs_dist_parts.Add( LibOpt_UIGraph::VarDistParents( true ) );
+    abs_dist_parts.Add( LibOpt_UIGraph::VarDistParents( false ) );
+    abs_dist_parts.Add( LibOpt_UIGraph::VarDistChildren( true ) );
+    abs_dist_parts.Add( LibOpt_UIGraph::VarDistChildren( false ) );
+    
+    traverse( nodes, Elements, node )
+    {
+      var := program.NewContinuousVariable( LibOpt_UIGraph::VarX(), node );
+      var.LowerBound( node.Width() / 2 );
+      var.UpperBound( Real::MaxReal() );
+      
+      traverse( abs_dist_parts, Elements, abs_dist_part )
+      {
+        var_abs_dist_part := program.NewContinuousVariable( abs_dist_part, node );
+        var_abs_dist_part.LowerBound( 0.0 );
+        var_abs_dist_part.UpperBound( Real::MaxReal() );
+      }
+    }
+    
+    // Constraint on order of nodes, making sure nodes do not overlap.
+    traverse( nodes, Elements, node, not isnull( node.Previous() ) )
+    {
+      var_prev := program.Variable( LibOpt_UIGraph::VarX(), node.Previous() );
+      var := program.Variable( LibOpt_UIGraph::VarX(), node );
+      constr := program.NewConstraint( LibOpt_UIGraph::ConstrChain(), node );
+      constr.NewTerm( 1.0, var );
+      constr.NewTerm( -1.0, var_prev );
+      constr.Sense( MPConstraintSense::GreaterOrEqual().AsString() );
+      constr.RHSValue( node.Previous().Width() / 2 + node.Width() / 2 + this.Offset() );
+    }
+    
+    // Calculate the abs( dist ) w.r.t. the average parent
+    traverse( nodes, Elements, node )
+    {
+      parents := selectset( node, Incoming.Origin, n, not isnull( n.UIGraphRow() ) );
+      LibOpt_UIGraph::NewAbsConstraint( program, node, parents,
+                                        LibOpt_UIGraph::ConstrCalcDistParents(),
+                                        LibOpt_UIGraph::VarDistParents( true ),
+                                        LibOpt_UIGraph::VarDistParents( false ),
+                                        average( node, Incoming, arc, not isnull( arc.Origin().UIGraphRow() ), arc.First().X() ) );
+    }
+    
+    // Calculate the abs( dist ) w.r.t. the average child
+    traverse( nodes, Elements, node )
+    {
+      children := selectset( node, Outgoing.Destination, n, not isnull( n.UIGraphRow() ) );
+      LibOpt_UIGraph::NewAbsConstraint( program, node, children,
+                                        LibOpt_UIGraph::ConstrCalcDistChildren(),
+                                        LibOpt_UIGraph::VarDistChildren( true ),
+                                        LibOpt_UIGraph::VarDistChildren( false ),
+                                        average( node, Outgoing, arc, not isnull( arc.Destination().UIGraphRow() ), arc.Last().X() ) );
+    }
+    
+    // Goal
+    goal := program.Goal();
+    traverse( nodes, Elements, node )
+    {
+      goal.NewTerm( 1.0, program.Variable( LibOpt_UIGraph::VarDistParents( true ), node ) );
+      goal.NewTerm( 1.0, program.Variable( LibOpt_UIGraph::VarDistParents( false ), node ) );
+      goal.NewTerm( 1.0, program.Variable( LibOpt_UIGraph::VarDistChildren( true ), node ) );
+      goal.NewTerm( 1.0, program.Variable( LibOpt_UIGraph::VarDistChildren( false ), node ) );
+    }
+    
+    program.Execute();
+    
+    {
+      constr := program.NewConstraint( LibOpt_UIGraph::ConstrGoal() );
+      constr.Sense( MPConstraintSense::LessOrEqual().AsString() );
+      constr.RHSValue( program.GoalValue() );
+      traverse( goal.Terms(), Elements, term )
+      {
+        constr.NewTerm( term.Coefficient(), term.Variable() );
+        term.Coefficient( 0.0 );
+      }
+      
+      width := program.NewContinuousVariable( LibOpt_UIGraph::VarWidth() );
+      traverse( this, UIGraphRow, row, row.UIGraphNode( relsize ) > 0 )
+      {
+        constr := program.NewConstraint( LibOpt_UIGraph::ConstrMaxWidth(), row );
+        constr.NewTerm( 1.0, width );
+        constr.NewTerm( -1.0, program.Variable( LibOpt_UIGraph::VarX(), row.Last() ) );
+        constr.Sense( MPConstraintSense::GreaterOrEqual().AsString() );
+        constr.RHSValue( 0.0 );
+      }
+      
+      program.Goal().NewTerm( 1.0, width );
+      
+      if( not program.Execute() )
+      {
+        epsilon := 0.0001;
+        constr.RHSValue( constr.RHSValue() + epsilon );
+        program.Execute();
+      }
+    }
+    // Handle result
+    traverse( nodes, Elements, node )
+    {
+      var := program.Variable( LibOpt_UIGraph::VarX(), node );
+      node.X( var.OptimalValue() );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

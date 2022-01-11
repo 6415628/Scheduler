@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetDatasetCopyContinueAllowed () remote as Boolean
+{
+  Description:
+  [*
+    It is not allowed to place a `LibOpt_DatasetCopyConditional` on the 'Continue' `LibOpt_BreakpointPosition` of a `LibOpt_Iterator`. 
+    If it would be allowed, then the `LibOpt_SnapshotComponent` of a `LibOpt_Iterator` can have multiple `LibOpt_DatasetCopyConditionals` that belong to the 'Continue' `LibOpt_BreakpointPosition`.
+    All other `LibOpt_SnapshotComponent` can have at most 1 `LibOpt_DatasetCopyConditional` per `LibOpt_BreakpointPosition`. This mismatch can result in issues. For example, the snapshots in the 'Snapshot' form can get harder to interpret.
+  *]
+  TextBody:
+  [*
+    // evr3 Jun-19-2020 (created)
+    feedbackobj := FeedbackObject::LocalFeedback();
+    
+    component := this.Component();
+    if( not feedbackobj.CheckHard( component.IsDatasetCopyOnContinueAllowed()
+                                   or not this.Name() = LibOpt_Component::ComponentPosition_Continue() 
+                                   )
+        )
+    {
+      feedbackobj.AddHard( Translations::LibOpt_BreakpointPosition_Precondition_NoDatasetContinue( component ) ); 
+    }
+    
+    return feedbackobj.IsAllowed();
+  *]
+}

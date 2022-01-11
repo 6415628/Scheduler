@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride ComputeTimingMismatches
+{
+  TextBody:
+  [*
+    // stn4 Apr-23-2016 (created)
+    
+    //Propagate to have the actual durations
+    Transaction::Transaction().Propagate();
+    
+    suboptimizer := this.SnapshotMRSPOA().GetComponent().astype( SuboptimizerMRSPOA );
+    poa_parameters := guard( suboptimizer.Settings(), null( SettingsMRSPOAForSuboptimizer ) );
+    optimizerstrategy := null( OptimizerStrategy );
+    optimizerstrategy := this.GetSchedule().OptimizerStrategyInSchedule();
+    if( not isnull( suboptimizer ) )
+    {
+      optimizerstrategy := suboptimizer.Strategy();
+    }
+    
+    /* Traverse the resources*/
+    if ( not isnull( poa_parameters ) )
+    {
+      traverse( this, OptimizerPOARunPlanElement.astype( SnapshotPOARunOperation ), planelement, 
+                not isnull( planelement.OperationInSuboptimizer() ) )
+      {
+         operation_in_suboptimizer := planelement.OperationInSuboptimizer();
+         operation := operation_in_suboptimizer.Operation_SC();
+    
+         planelement.EndInModel( operation.OptimizerMRS_ActualEnd() );
+    
+         if( poa_parameters.UseEarliestStart() )
+         {
+            planelement.EarliestStartPOA( operation_in_suboptimizer.EarliestStart() );
+         }
+         if( guard( optimizerstrategy.MRS_KPIUseConstraintLatestEnd(), true ) )
+         {
+           planelement.LatestEndPOA( operation_in_suboptimizer.LatestEnd() );
+         }
+         endmismatch := abs( planelement.EndInPOAIteration() - planelement.EndInModel() );
+         planelement.EndMismatch( endmismatch );
+    
+         startmismatch := abs( planelement.ProcessStartPOAIteration() - operation.OptimizerMRS_ActualStart() );
+         planelement.StartMismatch( startmismatch );
+    
+         durationmismatch := abs( planelement.DurationInPOAIteration() - operation.OptimizerMRS_ActualDuration() );
+         planelement.DurationMismatch( durationmismatch );
+      }
+    }
+  *]
+}

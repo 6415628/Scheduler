@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoPreconditionCheckOnQuantity () id:Method_DialogSplitInternalWorkOrder_DoPreconditionCheckOnQuantity
+{
+  #keys: '[144246.0.161397545]'
+  Body:
+  [*
+    // Checks if split quantity is allowed
+    
+    feedbackObject := FeedbackObject::LocalFeedback();
+    
+    // Need to add this because text collection is disabled by default when calling FeedbackObject from any logic 
+    // that isn't executed in the scope of a precondition (i.e. server-side logic as well as response bodies)
+    feedbackObject.EnableLocalFeedbackText();
+    
+    InternalWorkOrder::CheckSplitQuantityIsValid( DialogSplitInternalWorkOrder.DataHolderPlannedOrder().Data(), 
+                                                  DialogSplitInternalWorkOrder.NumberPickerQuantity().Number(),
+                                                  false );  
+      
+    NumberPickerQuantity.HintClear();
+        
+    if( feedbackObject.HasHardViolations() )
+    {
+      NumberPickerQuantity.HintError( feedbackObject.HardFeedbackStrings().ToString( String::NewLine()));
+    }
+    else if ( feedbackObject.HasSoftViolations() )
+    {
+      NumberPickerQuantity.HintWarn( feedbackObject.SoftFeedbackStrings().ToString( String::NewLine())
+                                     + String::NewLine()
+                                     + Translations::SC_CheckBoxToOverride() );
+    }
+  *]
+}

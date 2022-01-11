@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddExpressionNonAllowedOnResource (SuboptimizerMRSPOA_POAOneResourceGroup poa, LibOpt_Task task)
+{
+  Description: 'Add the expression which count the number of operation which are scheduled on a non allowed resource'
+  TextBody:
+  [*
+    // stn4 Mar-18-2016 (created)
+    ///////////////////////////////////////////////////////////////////////////
+    //  EXPRESSION
+    ///////////////////////////////////////////////////////////////////////////
+    notallowedonresourceexpression := poa.NewExpression( SuboptimizerMRSPOA::NamePOAMinimizeNonAllowedResourceExpression() );
+    notallowedresourceparticipation := POAParticipation::PN( poa, 'NotAllowedOnResource', 0.0 );
+    notallowedonresourceexpression.Participation( notallowedresourceparticipation )
+    
+    traverse( task.Scope().ResourceGroups(), Elements.Resource_SC.astype( SingleResourceBase ), resource )
+    {
+      pathtype := poa.PathType( SuboptimizerMRSPOA::POANamePathResource( resource ), resource );
+    
+      traverse( task.Scope().Operations(),
+                Elements,
+                operation,
+                SuboptimizerMRSPOA::IsAllowedOnResourceButPenlized( operation, resource ) )
+      {
+      //  debuginfo( element.astype(MRSAPlanOperation ).SingleOperation().OperationID(), "not allowed on ", resource.ResourceID() );
+        node := poa.Node( SuboptimizerMRSPOA::POANameNodeOperation( operation ), operation );
+        notallowedresourceparticipation.Set( pathtype, node, 1.0 );
+      }
+    }
+  *]
+}

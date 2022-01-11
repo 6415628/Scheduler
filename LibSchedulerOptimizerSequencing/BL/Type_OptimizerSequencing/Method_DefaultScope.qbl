@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride DefaultScope () as owning LibOpt_ScopeElements
+{
+  TextBody:
+  [*
+    // by default, optimize on all resources and all operations, and all resource groups:
+    
+    schedule := this.GetSchedule();
+    
+    operations := selectset( schedule, Operation_SC, op, true );
+    resourcegroups := selectset( schedule, ResourceGroup_SC, rg, true );
+    resources := selectset( resourcegroups, Elements.Resource_SC, r, true );
+    
+    scope := OptimizerMRS::CreateScope( resourcegroups, operations, resourcegroups ); // also creates all FocusResourceGroups
+    
+    // add resources:
+    traverse( resources, Elements, resource )
+    {
+      element := resource.GetOrCreateScopeElement();
+      scope.Add( element );
+    }
+    
+    return & scope;
+  *]
+}

@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoPreconditionCheckOnQuantity (InternalWorkOrder internalWorkOrder, Routing routing, Product_SC product, 
+  Real quantity) id:Method_DialogCreateEditInternalWorkOrder_DoPreconditionCheckOnQuantity
+{
+  #keys: '[143768.0.1019878370]'
+  Body:
+  [*
+    // Checks if input quantity is allowed
+    feedback := '';
+    
+    if( not isnull( routing ) and not isnull( product ) )
+    {
+      // Hard check
+      isAllowedHard_o := routing.CheckQuantityHard( [String]quantity, feedback );
+      
+      // Soft check
+      isAllowedSoft_o := isAllowedHard_o and InternalWorkOrder::CheckCanChangeQuantitySoft( internalWorkOrder,
+                                                                                            routing,
+                                                                                            product, 
+                                                                                            quantity, 
+                                                                                            feedback );
+      
+      npQuantity.HintClear();
+    
+      if( not isAllowedHard_o )
+      {
+        npQuantity.HintError( feedback );
+      }
+      else if( not isAllowedSoft_o )
+      {
+        npQuantity.HintWarn( feedback );
+      }
+    }
+  *]
+}

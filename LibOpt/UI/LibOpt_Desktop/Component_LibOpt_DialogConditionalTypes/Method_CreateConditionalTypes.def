@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateConditionalTypes (internal[Type] roottype, internal[Type] excludetype) id:Method_LibOpt_DialogConditionalTypes_CreateConditionalTypes
+{
+  #keys: '[143908.0.730126732]'
+  Body:
+  [*
+    // Adds a shadow LibOpt_UIConditionalType for almost every subtype of LibOpt_BreakpointConditional/LibOpt_DatasetCopyConditional into the data holder owner. 
+    // The LibOpt_Breakpoint type and all LibOpt_DatasetCopyConditionalNotSelectable subtypes (e.g. LibOpt_DatasetCopyUnconditional) are excluded
+    
+    owner := Dialog.DataHolderOwner().Data(); 
+    
+    leaftypes := this.GetLeafTypes( roottype, excludetype );
+    
+    traverse( leaftypes, Elements, conditionaltype )
+    {
+      // create a shadow[LibOpt_UIConditionalType] for each leaf. To fill the Name you can use type.Name(). To get the Description you can do type.TypeView().Description().
+      uitype := construct( shadow[ LibOpt_UIConditionalType ] );
+      uitype.Name( conditionaltype.Name() );
+      uitype.Description( conditionaltype.TypeView().Description() );  
+      owner.UIConditionalType( relinsert, & uitype );
+    }
+  *]
+}

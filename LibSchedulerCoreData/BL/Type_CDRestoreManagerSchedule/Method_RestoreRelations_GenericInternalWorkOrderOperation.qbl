@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericInternalWorkOrderOperation (CDSchedule cdSchedule, WorkOrder workOrder)
+{
+  Description: 'Restore generic internal work order operation core data relations to planning object'
+  TextBody:
+  [*
+    cdGenericInternalWorkOrderOperations := selectset( cdSchedule, CDEntity.astype( CDGenericInternalWorkOrderOperation ), cdGenericInternalWorkOrderOperation, 
+                                                       cdGenericInternalWorkOrderOperation.WorkOrderId() = workOrder.Id() );
+    
+    traverse( cdGenericInternalWorkOrderOperations, Elements, cdGenericInternalWorkOrderOperation )
+    {
+      genericInternalWorkOrderOperation := InternalWorkOrderOperation::FindInternalWorkOrderOperation( cdGenericInternalWorkOrderOperation.WorkOrderId(),
+                                                                                                       cdGenericInternalWorkOrderOperation.SequenceNr() ).astype( GenericInternalWorkOrderOperation );
+     
+      
+      if( not isnull( genericInternalWorkOrderOperation ) )
+      {
+        // ImportedInternalWorkOrderOperation, 1-1 and ImportedWorkOrderOperation, 1-1   
+        importedInternalWorkOrderOperation := ImportedInternalWorkOrderOperation::FindImportedInternalWorkOrderOperation( cdGenericInternalWorkOrderOperation.WorkOrderId(),
+                                                                                                                          cdGenericInternalWorkOrderOperation.SequenceNr() );                                                                                                              
+        genericInternalWorkOrderOperation.ImportedWorkOrderOperation( relset, importedInternalWorkOrderOperation );                           
+        genericInternalWorkOrderOperation.ImportedInternalWorkOrderOperation( relset, importedInternalWorkOrderOperation );
+        
+        // RoutingStep, M-1
+        genericInternalWorkOrderOperation.RoutingStep( relset, RoutingStep::FindRoutingStep( cdGenericInternalWorkOrderOperation.RoutingId(),
+                                                                                             cdGenericInternalWorkOrderOperation.RoutingStepSequenceNr() ) );
+      
+        /* 
+        Restore the following objects
+        1. InternalWorkOrderOutputMaterial
+        2. InternalWorkOrderInputMaterial
+        3. InternalWorkOrderSupply
+        4. InternalWorkOrderDemand
+        */
+             
+        this.RestoreRelations_GenericInternalWorkOrderInputMaterial( cdSchedule, genericInternalWorkOrderOperation );
+        this.RestoreRelations_GenericInternalWorkOrderOutputMaterial( cdSchedule, genericInternalWorkOrderOperation );
+        this.RestoreRelations_GenericInternalWorkOrderSupply( cdSchedule, genericInternalWorkOrderOperation );
+        this.RestoreRelations_GenericInternalWorkOrderDemand( cdSchedule, genericInternalWorkOrderOperation );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

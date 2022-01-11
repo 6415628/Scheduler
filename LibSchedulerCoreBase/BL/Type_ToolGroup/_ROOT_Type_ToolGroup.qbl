@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#root
+#parent: #DomainModel
+Type ToolGroup
+{
+  #keys: '5[109706.2.938028487][109706.2.938028485][0.0.0][109706.2.938028486][109706.2.938028488]'
+  BaseType: Object
+  Description: 'Groupping for same type of tools.'
+  OnCommit:
+  [*
+    // Setting index for ToolGroup
+    if( isnew )
+    {
+      index := 0; // Start with 0
+      
+      toolgroups := selectsortedset( this, Schedule.ToolGroup, t, t <> this, t.Index() );
+      toolgroupsaresequential := true;
+      // A loop to get unused indexes when they are not sequential
+      traverse( toolgroups, Elements, toolgroup, toolgroupsaresequential )
+      {
+        currentindex := toolgroup.Index();
+        
+        if( index = currentindex )
+        {
+          index := index + 1;
+        }
+        else if( index <> currentindex - 1 )
+        {
+          toolgroupsaresequential := false; // To end the loop
+        }
+      }
+      // Use next available/unused index
+      this.Index( index );
+    }
+  *]
+  OnDelete:
+  [*
+    // James Kwapien Sep-26-2016 #7937 New tool group index = the number of existing tool groups - 1
+    toolgroups := selectset( this.Schedule(),
+                             ToolGroup,
+                             tg,
+                             tg.Index() > this.Index() );
+    
+    traverse( toolgroups, Elements, toolgroup )
+    {
+      toolgroup.Index( toolgroup.Index() - 1 );
+    }
+  *]
+  StructuredName: 'ToolGroups'
+}

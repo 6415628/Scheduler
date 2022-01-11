@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleChildJobFailureExecuteStrategy (OptimizerRun childrun)
+{
+  Description: 'Handle the failure of a execute strategy job of a child run.'
+  TextBody:
+  [*
+    // default behavior: rollback child as if nothing happened, and continue
+    
+    this.OptimizerScope().ReleaseSubscope( childrun.OptimizerScope() );
+    rollbacksuccessful := true;
+    
+    try
+    {
+      this.RollBack( this.GetScopeForRollback() );
+      childrun.HasBeenRolledBack( true );
+    }
+    onerror
+    {
+      rollbacksuccessful := false;
+    } 
+    
+    if( rollbacksuccessful )
+    {
+      this.DetermineNextStep();
+    }
+    else if ( not rollbacksuccessful ) 
+    {
+      parent := this.Parent();
+      if( not isnull( parent ) )
+      {
+        parent.HandleChildJobFailureExecuteStrategy( this );
+      }
+      else
+      {
+        this.FinalizeRun();
+      } 
+    }
+  *]
+}

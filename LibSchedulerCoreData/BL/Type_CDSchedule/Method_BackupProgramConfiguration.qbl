@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupProgramConfiguration (const Schedule schedule)
+{
+  Description: 'Backup program configuration core data'
+  TextBody:
+  [*
+    // Backup program configuration 
+    traverse( schedule, ProgramDefinitionConfiguration, programdefinition )
+    {
+      cdprogramdefinition := this.CDEntity( relnew, CDProgramDefinitionConfiguration );
+      CopyCorresponding::CopyFrom( programdefinition ).CopyTo( cdprogramdefinition );
+      
+      // Backup program set
+      traverse( programdefinition, ProgramSetConfiguration, programset )
+      {
+        cdprogramset := this.CDEntity( relnew, CDProgramSetConfiguration );
+        CopyCorresponding::CopyFrom( programset ).CopyTo( cdprogramset );   
+        
+        // Backup program type
+        traverse( programset, ProgramTypeConfiguration, programtype )
+        {
+          cdprogramtype := this.CDEntity( relnew, CDProgramTypeConfiguration );
+          CopyCorresponding::CopyFrom( programtype ).CopyTo( cdprogramtype );  
+          
+          // Backup program phase
+          traverse( programtype, ProgramPhaseConfiguration, programphase )
+          {
+            cdprogramphase := this.CDEntity( relnew, CDProgramPhaseConfiguration );
+            CopyCorresponding::CopyFrom( programphase ).CopyTo( cdprogramphase );         
+          }     
+        } 
+        
+        // Backup program type change   
+        traverse( programset, ProgramTypeChangeConfiguration, programtypechange  )
+        {
+          cdprogramtypechange := this.CDEntity( relnew, CDProgramTypeChangeConfiguration );
+          CopyCorresponding::CopyFrom( programtypechange ).CopyTo( cdprogramtypechange );         
+        }    
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,68 @@
+Quintiq file version 2.0
+#parent: #root
+Method RefreshScriptInformation
+{
+  Description: 'Refresh information about currently available scripts'
+  TextBody:
+  [*
+    // tgn3 Jul-12-2021 (created)
+    
+    // Flush existing scripts
+    this.SQLScript( relflush );
+    
+    // Scan scripts directory for existing scripts
+    settings    := this.Settings();
+    scriptsPath := settings.DataUpgradeScriptsDirectory();
+    underscore  := DMF_Utility::Underscore();
+    
+    // Create scripts directory if it doesn't exist yet
+    // DevNote: related to CTQC-3103, can clean up if this is done elsewhere
+    if( not OS::IsDirectory( scriptsPath ) )
+    {
+      OS::CreateDirectory( scriptsPath );
+    }
+    
+    // Search only for SQL files
+    files := OS::ScanDirectory( scriptsPath, DMF_DBInterface::GetPatternSQLFile() );
+    
+    traverse( files, Elements, file )
+    {
+      // Remove script path and extension, then split it into parts
+      fileName  := file.ReplaceAll( scriptsPath, "" );
+      fileName  := fileName.Tokenize( "." ).Element( 0 );
+      fileParts := fileName.Tokenize( DMF_Utility::Underscore() );
+      
+      // Debug - do not delete
+      //logfile( ">>> fileName", fileName );
+      
+      // Verify file naming convention
+      // Must be a dataset kind followed by string that can be cast to number
+      // Dataset kind can have underscore in it's name... so the version number is expected to be the final element
+      // e.g. <LibName>_<TypeName>_<VersionNr>.sql
+      str2num     := StringToNumber::StandardConverter();
+      partCount   := fileParts.Size();
+      fromVersion := fileParts.Element( partCount - 1 );
+      isValidFile := partCount >= 2 and
+                     str2num.CanConvert( fromVersion );
+                     
+      if( isValidFile )
+      {
+        datasetKind := fileName.ReplaceAll( underscore + fromVersion, "" );
+        contents    := DMF_SQLScript::GetScript( file );
+        
+        // Debug - do not delete
+        //logfile( ">>>", datasetKind, fromVersion );
+        //logfile( contents );
+        
+        DMF_SQLScript::Create( this, datasetKind, fromVersion, contents, file, fileName );
+      }
+      else
+      {
+        msg := "Skipped script file with unrecognized format '" + file + "'";
+        
+        DMF_Utility::LogWarning( msg );  
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

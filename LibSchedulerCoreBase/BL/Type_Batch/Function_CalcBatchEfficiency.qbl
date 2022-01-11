@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcBatchEfficiency
+{
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // Project should define how batch efficiency is calculated. below is example for reference.
+    value := 0.0;
+    
+    // If batch is planned, batch efficiency will be calculated from the selected resource
+    if( not isnull( this.BatchTask() ) )
+    {
+      batchonresource := select( this, BatchOnResource, bor,
+                                 bor.BatchResource() = this.BatchTask().Resource_SC() );
+    
+      // Derived the batch efficiency from BatchOnResource
+      value := guard( batchonresource.BatchEfficiency(), value );
+    }
+    else // Take the minimum batch efficiency for all allowed resources
+    {
+      value := min( this, AllowedBatchOnResource, bor,
+                    true,
+                    bor.BatchEfficiency() );
+    
+      // Cap to 100%
+      value := minvalue( value, 100 );
+    }
+    
+    this.BatchEfficiency( value );
+  *]
+}

@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test030_AnchorPickerRandomized (LibOpt_TestDataset dataset)
+{
+  Description: 'Checks if the anchor pickers pick from the set of anchors.'
+  TextBody:
+  [*
+    // Run randomized tests
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    iterator := opt.IteratorForEachLink( run, 'Iterator' );
+    selector_random := opt.SelectorAnchor( run, 'SelectorRandom',
+                                           opt.AnchorSetAll(),
+                                           opt.AnchorPickerRandom(),
+                                           opt.NeighborhoodCreatorAnchorOnly() );
+    
+    selector_round_robin := opt.SelectorAnchor( run, 'SelectorRoundRobin',
+                                                opt.AnchorSetAll(),
+                                                opt.AnchorPickerRoundRobin(),
+                                                opt.NeighborhoodCreatorAnchorOnly() );
+                                  
+    
+    iterator.Fork( selector_random );
+    iterator.Fork( selector_round_robin );
+    
+    scope := LibOpt_ScopeFat::Create( run, this.CreateScopeElements( dataset, Number::Random( 20, 40 ) ) );
+    
+    run.SetStartScope( scope );
+    opt.ConfigureForOneTransaction( run );
+    Transaction::Transaction().Propagate();
+    run.DebugScope( true );
+    run.Start();
+    
+    anchors := scope.ScopeElements();
+    if( this.Run().AssertEqual( 1, selector_random.SnapshotComponent( relsize ), 'AnchorPickerRandom: no scope received' ) )
+    {
+      output_scope := select( selector_random, SnapshotComponent.OutputScope, s, true );
+      ass := anchors.ContainsAll( output_scope.ScopeElements() );
+      this.Run().AssertTrue( ass, 'AnchorPickerRandom: Anchor not from the original set of anchors' );
+    }
+    
+    if( this.Run().AssertEqual( 1, selector_round_robin.SnapshotComponent( relsize ), 'AnchorPickerRoundRobin: no scope received' ) )
+    {
+      output_scope := select( selector_round_robin, SnapshotComponent.OutputScope, s, true );
+      ass := anchors.ContainsAll( output_scope.ScopeElements() );
+      this.Run().AssertTrue( ass, 'AnchorPickerRoundRobin: Anchor not from the original set of anchors' );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

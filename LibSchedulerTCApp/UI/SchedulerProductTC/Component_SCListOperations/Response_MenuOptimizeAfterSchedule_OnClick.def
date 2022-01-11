@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[Operation_SC] selection) id:Response_SCListOperations_MenuOptimizeAfterSchedule_OnClick
+{
+  #keys: '[109706.1.1811935688]'
+  Body:
+  [*
+    // Optimize selected operations after current schedule
+    ApplicationScheduler.OptimizeAfterSchedule( selection );
+  *]
+  CanBindMultiple: false
+  DefinitionID => //FilteredList/Responsedef_FilteredList_Menu_OnClick
+  Initiator: 'MenuOptimizeAfterSchedule'
+  Precondition:
+  [*
+    // Kyle 8-July-2015 QP #5632
+    // Check if system contains batch and is optimizer enabled.
+    allowed := Schedule.AllowedOptimize( feedback );
+    
+    if( allowed )
+    {
+      //check if there are more than one operation selected.
+      allowed := selection.Size() > 1;
+      if( not allowed )
+      {
+        feedback := Translations::SC_InvalidOperationSelectionSize();
+      }
+    }
+    
+    if( allowed )
+    {
+      // Check whether allow optimize based on selected resources and optimizer setting
+      resources := Operation_SC::GetAllowedResources( selection );
+      allowed := Schedule.AllowedOptimizeBasedOnResources( resources, feedback );
+    }
+    
+    return allowed;
+  *]
+  UserRequiresReadWrite: true
+}

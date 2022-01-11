@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetDetailInformations () as owning Strings
+{
+  Description: 'Helper method to retrieve aggregate of all detail information for this type'
+  TextBody:
+  [*
+    // tgn3 Apr-14-2021 (created)
+    
+    // NVT is used to dynamically retrieve attribute name value pairs, then iterate them
+    nvt := NamedValueTreeIO::Export( this );
+    
+    typeHandle  := nvt.GetHandle( typeof( DMF_UpgradeabilityMetaData ).Name() );
+    metadataNVT := nvt.Root().Child( typeHandle );
+    
+    // Populate detailInfos using NVT
+    // Need to use ValueToString because some child NamedValues are Number, others are String
+    // There doesn't seem to be a convenient way to determine the type of the value stored
+    delim       := DMF_UpgradeabilityMetaData::GetDetailInfoDelimeter();
+    detailInfos := selectvalues( metadataNVT.Children(), Elements, child, true,
+                                 child.Name() + delim + child.ValueToString() );
+    
+    detailInfos := DMF_UpgradeabilityMetaData::FixVersionSequence( &detailInfos, delim );
+    
+    return &detailInfos;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

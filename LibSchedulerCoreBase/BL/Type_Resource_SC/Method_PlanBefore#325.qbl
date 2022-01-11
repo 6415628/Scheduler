@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanBefore (Task_SC task, Task_SC beforetask)
+{
+  Description: 'Move a task  to a spot before the task'
+  TextBody:
+  [*
+    // When there is linked preceding task, call the plan before for linked preceding task first
+    // Replan preceding task will replan the succeeding task which is current task
+    linkedprecedingtask := guard( task.astype( StoppageTask ).LinkedPrecedingNonStoppageTask(), null( Task_SC ) );
+    if( not isnull( linkedprecedingtask ) )
+    {
+      this.PlanBeforeLinkedPrecedingTask( linkedprecedingtask, beforetask );
+    }
+    // When there is no linked preceding task, then replan current task
+    else
+    {
+      // Get old previous/next task
+      oldprev := task.Previous();
+      oldnext := task.Next();
+    
+      // Move a task  to a spot before the task
+      this.MoveBefore( task, beforetask );
+      
+      // Update FSPL operation in task and FSPL graph
+      this.UpdateFSPLOperationInTaskAndGraph( task, oldprev, oldnext, null( BatchSequenceElement ) );
+    }
+  *]
+}

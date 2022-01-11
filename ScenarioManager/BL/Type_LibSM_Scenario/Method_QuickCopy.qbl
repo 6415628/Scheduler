@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method QuickCopy (Boolean isCopyAsMemoryOnly) as LibSM_Scenario
+{
+  Description: 'Creates a quick copy of the scenario, loaded or unloaded.'
+  TextBody:
+  [*
+    /* Quick copy dataset (even if the source dataset is offline) based on origin scenario's storage state */
+    
+    // Get a new name.
+    newName := this.ScenarioManager().ScenarioFactory().GetScenarioCopyName( this.Name() );
+    
+    // Determine the storage state to use.
+    originalStorageState := this.Dataset().StorageState();
+    storageStateToBeUsed := ifexpr( isCopyAsMemoryOnly, DatasetState::MemoryOnly(), DatasetState::FromString( originalStorageState ) );
+    
+    // Add metadata to structure type
+    metadata := construct( structured[ LibSM_MetaData ] );
+    metadata.Add( this.GetMetaDataByName( LibSM_MetaData::METADATA_PLANNINGLEVEL() ) );
+    metadata.Add( this.GetMetaDataByName( LibSM_MetaData::METADATA_PLANTYPE() ) );
+    metadata.Add( this.GetMetaDataByName( LibSM_MetaData::METADATA_LIFECYCLESTATUS() ) );
+    
+    // Call on the regular copy functionality to create a copy of 
+    // both the scenario and the underlying dataset.
+    newScenario := this.Copy( this.ParentNode(), 
+                              newName, 
+                              this.Comment(),                                
+                              storageStateToBeUsed.AsString(),
+                              this.KnowledgeProfile(), 
+                              metadata,
+                              this.ScenarioManager().GlobalParameter().IsCopiesAreChildrenOfSource() );
+    
+    return newScenario;
+  *]
+}

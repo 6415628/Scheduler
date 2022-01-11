@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericBatchWorkOrderOperation (CDSchedule cdSchedule, GenericBatchWorkOrder genericBatchWorkOrder)
+{
+  Description: 'Restore generic batch work order operation core data attributes to planning object'
+  TextBody:
+  [*
+    cdgenericbatchworkorderoperations := selectset( cdSchedule, CDEntity.astype( CDGenericBatchWorkOrderOperation ), cdGenericBatchWorkOrderOperation,
+                                                    cdGenericBatchWorkOrderOperation.WorkOrderId() = genericBatchWorkOrder.Id() );
+    
+    traverse( cdgenericbatchworkorderoperations, Elements, cdGenericBatchWorkOrderOperation )
+    {
+      genericBatchWorkOrderOperation := GenericBatchWorkOrderOperation::Create( genericBatchWorkOrder, cdGenericBatchWorkOrderOperation.SequenceNr() );
+      CopyCorresponding::CopyFrom( cdGenericBatchWorkOrderOperation ).CopyTo( genericBatchWorkOrderOperation );
+      
+      // Restore GenericBatchWorkOrderOutputMaterial
+      this.RestoreAttributes_GenericBatchWorkOrderOutputMaterial( cdSchedule, genericBatchWorkOrderOperation );
+      
+      // Restore GenericBatchWorkOrderSupply
+      this.RestoreAttributes_GenericBatchWorkOrderSupply( cdSchedule, genericBatchWorkOrderOperation );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

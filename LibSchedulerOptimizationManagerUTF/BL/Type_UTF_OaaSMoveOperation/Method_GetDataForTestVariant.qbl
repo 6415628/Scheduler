@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetDataForTestVariant (String variant, output String operationID, output String resourceID, 
+  output DateTime insertionTime, output Boolean result)
+{
+  Description: 'Return data for test variant.'
+  TextBody:
+  [*
+    // Get data for all variants
+    operationIDs := construct( Strings );
+    resourceIDs := construct( Strings );
+    insertionTimes := construct( DateTimes );
+    results := construct( Booleans );
+    variants := construct( Strings );
+    
+    this.GetDataForAllTestVariants( &variants, operationIDs, resourceIDs, insertionTimes, results );
+    
+    // Look for data for specified variant
+    variantNr := variants.Find( variant );
+    operationID := guard( operationIDs.Element( variantNr ), Constants::EmptyString() );
+    resourceID := guard( resourceIDs.Element( variantNr ), Constants::EmptyString() );
+    insertionTime := guard( insertionTimes.Element( variantNr ), DateTime::MinDateTime() );
+    result := guard( results.Element( variantNr ), false );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

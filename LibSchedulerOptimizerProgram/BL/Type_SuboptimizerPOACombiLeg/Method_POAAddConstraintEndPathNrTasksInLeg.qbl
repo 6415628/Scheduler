@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintEndPathNrTasksInLeg (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs)
+{
+  Description: 'There should be at least one task in each leg, otherwise POA will not see the transitions correctly.'
+  TextBody:
+  [*
+    valueset := POAValueSet::P( poa, SuboptimizerPOACombiLeg::NamePOAValueSetNrTaskInLeg(), Real::MaxReal() );
+    endlegconstraint := poa.NewEndPathConstraint( SuboptimizerPOACombiLeg::NamePOAConstraintEndPathNrTasksInLeg() );
+    endlegconstraint.ValueSet( valueset );
+    optimizer_factor := this.Settings().PenaltyForHardConstraints(); // should basically be a hard constraint
+    endlegconstraint.Factor( optimizer_factor);
+    
+    // We should apply this for all combilegs
+    traverse( combilegs, Elements, combileg )
+    {
+     
+      expression := poa.Expression( SuboptimizerPOACombiLeg::NamePOAExpressionNrTasksInLeg() );
+      endlegconstraint.Expression( expression ); 
+      pathtype := poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathCombiLeg( combileg ), combileg );
+        
+      // For minimum combined length rules, we set the end value to its negative since we want to ensure at least this many operations being scheduled
+      endvalue := -1.0;
+      valueset.Set( pathtype, endvalue );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

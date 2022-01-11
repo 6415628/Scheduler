@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateToolHorizonParameter (shadow[Resource_SC] resource) id:Method_PanelResourceSettings_UpdateToolHorizonParameter
+{
+  #keys: '[132916.0.166691113]'
+  Body:
+  [*
+    istoolhashorizon := CheckBoxIsToolSimulationHasHorizon.Checked();
+    strategy := DataHolderStrategyAfterToolSimulation.Data();
+    
+    if( istoolhashorizon and not isnull( resource ) )
+    {
+      if( isnull( strategy ) )
+      {
+        strategy := resource.LeadTimeStrategy_SC( relnew, ResourceID := resource.ResourceID() );
+      }
+      else if( not isnull( strategy ) )
+      {
+        strategy := maxselect( resource, LeadTimeStrategy_SC, lts, lts.MinDistance() > Duration::Zero(), lts.MinDistance() );
+      }
+      
+      DataHolderStrategyAfterToolSimulation.Data( strategy );
+    }
+    else if( not istoolhashorizon and not isnull( strategy ) )
+    {
+      strategy.Delete();
+    }
+    
+    CheckBoxIsToolSimulationHasHorizon.Enabled( not CheckBoxApplyIsToolSimulationHasHorizon.Visible() or CheckBoxApplyIsToolSimulationHasHorizon.Checked() );
+    LabelStrategyAfterToolSimulation.Enabled( istoolhashorizon );
+    GUIDurationSelectorToolSimulationHorizon.Enabled( istoolhashorizon );
+    StringSelectionStrategyAfterToolSimulation.Enabled( istoolhashorizon );
+    ImageStrategyAfterToolSimulationDescription.Enabled( istoolhashorizon );
+  *]
+}

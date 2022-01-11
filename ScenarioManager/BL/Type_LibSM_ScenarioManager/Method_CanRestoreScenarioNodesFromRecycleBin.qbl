@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method CanRestoreScenarioNodesFromRecycleBin () remote as Boolean
+{
+  TextBody:
+  [*
+    // NOTE: Restore menu in Scenarios list is only applicable when
+    // 1. the 1st selected item is ScenarioFolder type and
+    // 2. it is recycle bin folder, or it is deleted ( = in recycle bin folder )
+    // check OnContextMenu1 event in lstScenario in Scenarios form
+    
+    feedback := FeedbackObject::LocalFeedback();
+    recycleBinHasItems := guard( this.RecycleBinFolder().ChildCount() > 0, true );
+    
+    if( not feedback.CheckHard( recycleBinHasItems ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioManager_RestoreScenarioNodesFromRecycleBinNotAllowed_NoNodes() );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

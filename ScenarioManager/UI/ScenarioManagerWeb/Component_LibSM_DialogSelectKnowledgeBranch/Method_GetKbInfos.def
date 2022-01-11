@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetKbInfos (String kbDefinitionName) as internal[KBInfos] id:Method_LibSM_DialogSelectKnowledgeBranch_GetKbInfos
+{
+  #keys: '[136402.0.1219453157]'
+  Body:
+  [*
+    editor := CKBEditor::Create();
+    
+    componentMDS := ApplicationScope.ComponentMDS();
+    mdsInstance  := selectobject( componentMDS, ComponentMDSKinds.ComponentMDSInstances, m, m.MDSID().Equals( LibSM_ScenarioManager.MDSID() ) );
+    mdsHandle    := mdsInstance.GetMDSHandle();
+    infos        := editor.GetMDSKBs( mdsHandle );
+    
+    
+    kbFullID := select( infos, Elements.KBFullID, kbFullID, true,
+                        kbFullID.Name() = kbDefinitionName );
+     
+    
+    kbId := kbFullID.KBID();
+     
+    // Set input data for list
+    kbinfos  := editor.GetKBStructure( kbId );
+    
+    
+    return &kbinfos;
+  *]
+  ReturnsOwning: true
+}

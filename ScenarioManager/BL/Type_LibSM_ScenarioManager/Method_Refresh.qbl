@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method Refresh
+{
+  TextBody:
+  [*
+    recycleBin := this.RecycleBinFolder();
+    
+    editor      := MDSEditor::Editor();
+    objectInfos := editor.ObjectInfos( LibSM_ModelExtensions::GetPlanningDatasetKind() );
+    
+    traverse( this, ScenarioNode.astype( LibSM_Scenario ), scenario )
+    {
+      objectInfo := objectInfos.Find( guard( scenario.Dataset().DatasetMDSID(), Key::ZeroKey() ) );
+    
+      // Move scenario to recycle bin if its dataset has been deleted
+      if( not guard( scenario.Dataset().IsLoadingInProgress(), false ) and ( not scenario.HasDataset() or isnull( objectInfo ) ) )
+      {
+        // Couldn't find the objectinfo, so that must mean the dataset has been deleted.
+        recycleBin.MoveAfter( scenario, null( LibSM_ScenarioNode ) );
+      }
+      else if( not isnull( scenario.Dataset() ) )
+      {
+        // Pass the already fetched ObjectInfo to use to update the dataset state with.
+        scenario.Dataset().UpdateState( objectInfo );
+      }
+    }
+  *]
+}

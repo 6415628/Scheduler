@@ -1,0 +1,66 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestExportRule_Setup (Schedule schedule)
+{
+  Description: 'Test export rule - setup'
+  TextBody:
+  [*
+    // Create characteristic
+    characteristicCondition := Characteristic::Create( schedule, 'Characteristic Condition', 1 );
+    characteristicMain := Characteristic::Create( schedule, 'Characteristic Main', 2 );
+    characteristicScope := Characteristic::Create( schedule, 'Characteristic Scope', 3 );
+    
+    // Create rule type and rule sub type
+    ruleType := RuleType::Create( schedule, 'Rule Type' );
+    ruleSubtype := RuleSubTypeDifferenceJump::Create( ruleType, 'Rule Subtype' );
+    
+    // Create rule
+    rule := schedule.Rule( relnew,
+                           RuleID := 1,
+                           ConditionValue := true,
+                           IsBeforeShutdown := true,
+                           IsConditionEnabled := true,
+                           IsEnabled := true,
+                           IsHardConstraintForOptimizer := true,
+                           Name := 'Rule',
+                           NeedManualPreconditionCheck := true,
+                           RuleScopeSelected := RuleConstant::RuleScope_AllTasksOnResource(),
+                           RuleScopeShutdownAggregateThreshold := 1.0,
+                           IsProgramPhaseTransitionRule := true,
+                           ConditionScope := RuleConstant::ConditionScope_BothTasks(),
+                           PenaltyParameterSlope_a := 10,
+                           PenaltyParameterPower_b := 20,
+                           PenaltyParameterOffset_c := 30,
+                           StrategyMultipleRange := RuleConstant::StrategyMultipleRange_Smallest() );
+    
+    // Set characteristic relation
+    rule.CharacteristicCondition( relset, characteristicCondition )
+    rule.CharacteristicMain( relset, characteristicMain );
+    rule.CharacteristicScope( relset, characteristicScope );
+    
+    // Create rule scope in resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Resource' );
+    ruleScopeInResource := rule.RuleScopeInResource( relnew );
+    ruleScopeInResource.Resource_SC( relset, resource );
+    
+    // Create shutdown type
+    shutdownType := ShutdownType::Create( schedule, 'ShutdownType' );
+    
+    // Create rule scope in shutdown type
+    ruleScopeInShutdownType := rule.RuleScopeInShutdownType( relnew );
+    ruleScopeInShutdownType.ShutdownType( relset, shutdownType );
+    
+    // Set rule type relation
+    rule.RuleType( relset, ruleType );
+    rule.RuleSubType( relset, ruleSubtype );
+    
+    // Create rule jump range
+    rule.RuleRange( relnew,
+                    From := 0.0,
+                    To := 100.0,
+                    RuleRangeValue := 5.0 );
+    
+    // Export rule configurations
+    schedule.ExportObject().SyncAndExportRuleConfigurations();
+  *]
+}

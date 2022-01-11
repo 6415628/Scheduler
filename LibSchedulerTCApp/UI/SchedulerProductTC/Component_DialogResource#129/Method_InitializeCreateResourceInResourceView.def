@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitializeCreateResourceInResourceView (ResourceGroup_SC owner_i) id:Method_DialogResource_InitializeCreateResourceInResourceView
+{
+  #keys: '[134650.0.137818242]'
+  Body:
+  [*
+    if( not isnull( owner_i ) )
+    {
+      // James Kwapien 20160830 #7644 Default value of CapacityResourceUtilization
+      EditorCapacityResourceUtilization.Text( [String]owner_i.Schedule().CapacityDefault() );
+      
+      this.InitializeNonBatchEdit();
+      
+      // Check which subclass we need to shadow
+      if( owner_i.HasBatches() )
+      {
+        data := owner_i.Resource_SC( relshadow, GenericBatchResource, ResourceID := EditorResourceID.Text() );
+        Dialog.Data( &data );
+      }
+      else
+      {
+        if( owner_i.IsContinuous() )
+        {
+          data2 := owner_i.Resource_SC( relshadow, GenericContinuousResource, ResourceID := EditorResourceID.Text() );
+          Dialog.Data( &data2 );
+        }
+        else
+        {
+          data2 := owner_i.Resource_SC( relshadow, GenericSingleResource, ResourceID := EditorResourceID.Text() );
+      
+          Dialog.Data( &data2 );
+        }
+        // Disable MaximumBatchSize editor if SingleResourceBase
+        EditorMaxBatchSize.Enabled( false );
+        DialogResource.SetMaxBatchSizeTooltip();
+      }
+      
+      // Show owner in ResourceGroup
+      SelectionResourceGroup.Data( owner_i );
+      SelectionResourceGroup.Enabled( true );
+      
+      TabPageContinuous.Enabled( owner_i.IsContinuous() );
+      // James Kwapien 20160831 #7650 Create default LeadTimeStrategy if none exist
+      Dialog.Data().LeadTimeStrategy_SC( relnew,
+                                         MinDistance := Duration::Zero(),
+                                         MaxDistance := Duration::MaxDuration(),
+                                         StrategyName := Constants::SC_LeadTimeStrategy_Name_ASAP() );
+    
+    }
+  *]
+}

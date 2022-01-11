@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateMembers
+{
+  Description:
+  [*
+    (Re)creates the necessary member graphs for this metric to work.
+    There is one member graph for each of the following distance dimensions (if their respective closeness as defined in the WeightSettings is greater than zero):
+    •	ResourceGroup: a resource is connected to a resource group on this dimension if it belongs to that resource group.
+    •	Scheduled: links two operations to one another that are currently scheduled next to each other on the same resource. These two scope elements are 1 unit apart.
+    •	AllowedOn: links an operation to a resource. If an operation is allowed on a resource, these two scope elements are 1 unit apart.
+    •	Direct upstream / downstream operation pair: links two operations to one another. These two scope elements are 1 unit apart.
+    •	Product: an operation is connected to a product on this dimension if it produces that product.
+    •	ProductType: products are connected to one another if they share the same product type.
+    •	Practice: an operation is connected to a practice on this dimension if it uses that practice.
+    •	SetupGroup: operations are connected to one another on this dimension if they belong to the same setup group.
+  *]
+  TextBody:
+  [*
+    // mbr23 Feb-6-2020 (created)
+    // only create member graphs for dimensions that have a non-zero closeness setting, for otherwise the edges are uselessly infitine.
+    if( this.WeightSettings().ClosenessByAllowedOn() > 0 )
+    {
+      this.OwnedMember( relnew, MetricGraphAllowedOn );
+    }
+    if( this.WeightSettings().ClosenessByPractice() > 0 )
+    {
+      this.OwnedMember( relnew, MetricGraphPractice );
+    }
+    if( this.WeightSettings().ClosenessByPrecedence() > 0 )
+    {
+      this.OwnedMember( relnew, MetricGraphPrecedence );
+    }
+    if( this.WeightSettings().ClosenessByProduct() > 0 )
+    {
+      this.OwnedMember( relnew, MetricGraphProduct );
+    }
+    if( this.WeightSettings().ClosenessByProductType() > 0 )
+    {
+      this.OwnedMember( relnew, MetricGraphProductType );
+    }
+    if( this.WeightSettings().ClosenessByResourceGroup() > 0 )
+    {
+      this.OwnedMember( relnew, MetricGraphResourceGroup );
+    }
+    if( this.WeightSettings().ClosenessByScheduled() > 0 )
+    {
+      this.OwnedMember( relnew, MetricGraphScheduled );
+    }
+    if( this.WeightSettings().ClosenessBySetupGroup() > 0 )
+    {
+      this.OwnedMember( relnew, MetricGraphSetupGroup );
+    }
+    if( this.WeightSettings().ClosenessBySimilarTiming() > 0 )
+    {
+      this.OwnedMember( relnew, MetricGraphSimilarTiming );
+    }
+  *]
+}

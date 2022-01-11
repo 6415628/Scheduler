@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method EnableDisableExportDataDaemon
+{
+  TextBody:
+  [*
+    // Timothy G Nov-21-2017 (created)
+    
+    settings := this.Settings();
+    
+    /* Default daemon parameters.
+    Start delay is intended to allow daemon to execute once in the near future.
+    */
+    startDelay := Duration::Minutes( 1 );
+    startTime  := startDelay;
+    frequency  := Duration::Zero();
+    
+    // Assumption: if auto-backup is enabled
+    // The start time will be the floored time at which the flag was enabled, plus 1 minute
+    if( settings.IsAutoBackup() )
+    {
+      tz        := TimeZone::DeductedDatasetTimezone();
+      startTime := settings.TimestampLastSynchronize().Floor( Duration::Minutes( 1 ) ).TimeOfDay( tz ) + startDelay;  // 1 minute for testing
+      frequency := settings.AutoBackupFrequency();
+    }
+    
+    // Debug - do not delete
+    //logfile( ">>>", startTime, frequency );
+    
+    // Update the daemon
+    this.UpdateDaemon( DMF_ConvertorDataset::DAEMON_EXPORTDATA(), startTime, frequency );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

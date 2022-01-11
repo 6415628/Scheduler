@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#root
+#parent: #DomainModel
+Type LibOpt_RunContext
+{
+  #keys: '5[139164.3.1907715082][139164.3.1907715080][0.0.0][139164.3.1907715081][139164.3.1907715083]'
+  BaseType: Object
+  Description:
+  [*
+    The `LibOpt_RunContext` can be used to add shared information to components in the same `LibOpt_Run`.
+    To do so, subclass this type and add a 1:N relation for every component type.
+    
+    Example:
+    Component A and B want to share a setting and component B and C also want to share a setting.
+    We subclass `LibOpt_RunContext` in `LibOpt_RunContextAB` and `LibOpt_RunContextBC`.
+    In `LibOpt_RunContextAB` we create a 1:N relation to A and a 1:N relation to B.
+    In `LibOpt_RunContextBC` we create a 1:N relation to B and a 1:N relation to C.
+    Now, on `LibOpt_RunContextAB` and `LibOpt_RunContextBC` we add the attributes we wanted to share.
+    Then we must update the constructors of the components so it is clear that the components require this information.
+    In the constructor method for component A on the `LibOpt_Optimizer` subtype, we add the parameter `LibOpt_RunContextAB`.
+    In the constructor method for component B on the `LibOpt_Optimizer` subtype, we add the parameters `LibOpt_RunContextAB` and  `LibOpt_RunContextBC`.
+    In the constructor method for component C on the `LibOpt_Optimizer` subtype, we add the parameter `LibOpt_RunContextBC`.
+    Finally we need to create an instance of the `LibOpt_RunContext` subtypes in the `LibOpt_Optimizer.CreateComponents` method in the dataset and provide it to the component constructor methods.
+    You can do so with `run.RunContext( relnew, MyRunContext );`. We advise you to also create a constructor method for this.
+    
+    Note: Use this pattern only when necessary. It is recommended to use attributes on the specific components instead of a `LibOpt_RunContext`.
+  *]
+  StructuredName: 'LibOpt_RunContexts'
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

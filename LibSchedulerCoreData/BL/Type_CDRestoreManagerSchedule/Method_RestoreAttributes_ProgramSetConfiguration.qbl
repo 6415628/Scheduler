@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_ProgramSetConfiguration (CDSchedule cdSchedule, ProgramDefinitionConfiguration programDefinitionConfiguration)
+{
+  Description: 'Restore program set configuration core data attributes to planning object'
+  TextBody:
+  [*
+    cdProgramSetConfigurations := selectset( cdSchedule, CDEntity.astype( CDProgramSetConfiguration ), cdProgramSetConfiguration,
+                                             cdProgramSetConfiguration.ProgramDefinitionConfigurationID() = programDefinitionConfiguration.ProgramDefinitionConfigurationID() );
+    
+    traverse( cdProgramSetConfigurations, Elements, cdProgramSetConfiguration )
+    {
+      programSetConfiguration := ProgramSetConfiguration::Create( programDefinitionConfiguration, cdProgramSetConfiguration.ProgramSetConfigurationID() );
+      CopyCorresponding::CopyFrom( cdProgramSetConfiguration ).CopyTo( programSetConfiguration );
+      
+      // Restore program type configuration
+      this.RestoreAttributes_ProgramTypeConfiguration( cdSchedule, programSetConfiguration );
+      
+      // Restore program type change configuration
+      this.RestoreAttributes_ProgramTypeChangeConfiguration( cdSchedule, programSetConfiguration );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

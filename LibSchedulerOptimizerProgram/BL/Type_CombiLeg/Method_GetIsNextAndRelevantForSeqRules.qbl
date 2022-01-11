@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetIsNextAndRelevantForSeqRules (CombiLeg othercombileg) declarative remote as Boolean
+{
+  Description: 'Checks whether the input CombiLeg is the next CombiLeg and whether it is relevant for sequence rules'
+  TextBody:
+  [*
+    // The two (combi)legs must be consecutive
+    value := not isnull( this.Next() )
+             and this.Next() = othercombileg;
+    
+    // There should not be a shutdown that ignores sequence rules in between the two combilegs
+    if( not isnull( this.Leg() ) )
+    {
+      value := value
+               and ( not this.Leg().GetIsLastLegBeforeShutdown()
+                     or this.Leg().NextShutdown().ShutdownType().IsSequenceRulesEnabled() );
+    }
+    
+    // And at least one program to which this first combileg belongs,
+    value := value and ( exists( this, CombiLegOnCombiPhase.CombiProgramPhase.CombiProgramType, firstprogram,
+                                 // also contains the second combileg
+                                 exists( othercombileg, CombiLegOnCombiPhase.CombiProgramPhase.CombiProgramType, secondprogram, 
+                                         firstprogram = secondprogram ) )
+                         // Or the second leg belongs to a program set that looks across the program boundaries        
+                         or exists( othercombileg, CombiLegOnCombiPhase.CombiProgramPhase.CombiProgramType.CombiProgramSet, cps, cps.ProgramSetConfiguration().IsSequenceRulesEnabled() ) );
+    
+    return value;
+  *]
+}

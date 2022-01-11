@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method Synchronize (LibCal_StagingCalendar stagingCalendar_i)
+{
+  Description: 'Synchronize the calendar with the data that has been imported in a staging object.'
+  TextBody:
+  [*
+    /*
+    LibCal_Util::Info( "LibCalendar.Synchronize() : updating calendar '" + this.CalendarID()   + "' with stagingCalendar '"    + stagingCalendar_i.StagingCalendarID() + "'; " +
+                       "#StagingEvents = " + [String]stagingCalendar_i.StagingEvent( relsize ) + ", #StagingParticipations = " + [String]stagingCalendar_i.StagingParticipation( relsize ) );
+    */
+    
+    // First validate the settings.
+    // If something is wrong the validation results in an error so that the actual update below will not be executed.
+    // this.Update( ... ) is not called here, in order to postpone re-generation of occurrences only at the end of the synchronization.
+    this.Validate( stagingCalendar_i.Base(), stagingCalendar_i.UpdateInterval(), stagingCalendar_i.Window(), stagingCalendar_i.History() );
+    
+    this.Base(           stagingCalendar_i.Base()           );
+    this.Window(         stagingCalendar_i.Window()         );
+    this.History(        stagingCalendar_i.History()        );
+    this.UpdateInterval( stagingCalendar_i.UpdateInterval() );
+    
+    // Subscribe to / unsubscribe from Event "Always available" if applicable.
+    this.SetIsAlwaysAvailable( stagingCalendar_i.IsAlwaysAvailable() );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

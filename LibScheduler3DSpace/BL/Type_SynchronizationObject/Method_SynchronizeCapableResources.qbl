@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeCapableResources
+{
+  Description: 'Synchronizes capable resources based on received 3DSpace data.'
+  TextBody:
+  [*
+    allinstances := selectset( this.Schedule(), Routing.RoutingStep.CapableResource, capResource, true );
+    updatedinstances := construct( CapableResources );
+    
+    // Select all importedRoutingSteps that owns a CapableResource. 
+    importedRoutingSteps := selectset( this, Schedule.ImportedCapableResource.ImportedRoutingStep_SC, row, row.IsValidDataHard() ); 
+    
+    traverse( importedRoutingSteps, Elements, row )
+    {
+      routingStep := row.RoutingStep();
+                           
+      traverse( row, ImportedCapableResource, importedCapableResource, importedCapableResource.IsValidDataHard() )
+      {
+        assetID := importedCapableResource.AssetID();
+        
+        if( isnull( routingStep ) )
+        {
+          debuginfo( Translations::Lib3DSpace_CapableResource_RoutingStepNotFound( assetID, routingStep.ID() ) );
+        }
+        else
+        {
+          capableResource := select( routingStep, CapableResource, capableResource, capableResource.AssetID() = assetID );
+          
+          if( isnull( capableResource ) )
+          {
+            capableResource := CapableResource::Create( routingStep );  
+          }
+          
+          capableResource.Update( importedCapableResource ); 
+          updatedinstances.Add( capableResource ); 
+        }
+      } 
+    }
+    
+    // Delete capableResources if they do not exist in the import
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, capableResource )
+    {
+      capableResource.Delete();
+    }
+  *]
+}

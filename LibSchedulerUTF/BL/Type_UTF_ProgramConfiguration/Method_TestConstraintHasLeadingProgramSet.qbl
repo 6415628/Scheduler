@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestConstraintHasLeadingProgramSet (Schedule schedule)
+{
+  Description: 'Test constraint HasLeadingProgramSet'
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    hasLeadingProgramSet := false;
+    isViolatedLeadingProgramSetConstraint := false;
+    
+    this.GetTestVariantForConstraintHasLeadingProgramSet( isvariantfound,
+                                                          hasLeadingProgramSet,
+                                                          isViolatedLeadingProgramSetConstraint );
+    value:= false;
+    if( isvariantfound )
+    {
+      programdefinition := select( schedule, ProgramDefinitionConfiguration, pt, true )
+      
+      // Propagate declarative constraint
+      Transaction::Transaction().Propagate( constraint( ProgramDefinitionConfiguration, HasLeadingProgramSet ) );
+      value := not programdefinition.HasLeadingProgramSet();
+    }
+    
+    this.Run().AssertEqual( isViolatedLeadingProgramSetConstraint, value,
+                            UTFUtility::GenerateFailedMessage( 'Program definition constraint "HasLeadingProgramSet" failed', this.Variant() ) );
+  *]
+}

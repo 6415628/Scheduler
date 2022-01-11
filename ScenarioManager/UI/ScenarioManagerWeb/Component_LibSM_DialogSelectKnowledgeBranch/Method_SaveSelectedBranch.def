@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method SaveSelectedBranch () id:Method_LibSM_DialogSelectKnowledgeBranch_SaveSelectedBranch
+{
+  #keys: '[136402.0.1242038694]'
+  Body:
+  [*
+    // Get a reference to the LibSM_KnowledgeBaseBranchInProfile that we're editing here. 
+    selection := this.DataHolderSelectedBranch().Data();
+    
+    // Recreate the list of KbInfo objects that was used when creating the list,
+    // so we know what the user really chose.
+    kbinfos := this.GetKbInfos( selection.KBDefinitionName() );
+    
+    // Can't put this selectsortedset in a method because then the KBInfo references will be dead. 
+    filteredInfos  := selectsortedset( kbinfos, Elements, inf, 
+                                       inf.KBFullID().ChangeNr() = max( kbinfos, Elements, el, 
+                                                                        el.KBFullID().Branch() = inf.KBFullID().Branch()
+                                                                    and el.KBFullID().Version() = inf.KBFullID().Version(),
+                                                                        el.KBFullID().ChangeNr() ),
+                                       inf.KBFullID().Branch(), inf.KBFullID().Version(), inf.KBFullID().ChangeNr() )
+    
+    selecteditem := DropDownStringListSelectKnowledge.Text();
+    selectedinfo := null( internal[KBInfo] );
+    
+    traverse( filteredInfos, Elements, kbinfo, isnull( selectedinfo ) )
+    {
+      if ( selecteditem = this.RenderKbInfoForDropDown( kbinfo ) )
+      {
+        selectedinfo := kbinfo;    
+      }
+    }
+    
+    if ( not isnull( selectedinfo ) )
+    {
+      selection.Update( selectedinfo.KBFullID().Branch(), 
+                        selectedinfo.KBFullID().Version() );
+      
+      // Revalidate the KnowledgeProfile to remove/add errors. 
+      LibSM_GlobalState.ValidateKBBranchExistence_SingleProfile( selection.KnowledgeProfile() );
+    
+      
+      // Now update all the Scenarios using the KnowledgeProfile that owns this 'branch' object.
+      knowledgeProfile := selection.KnowledgeProfile();
+      traverse( knowledgeProfile, Scenario, scenario )
+      {
+        LibSM_GlobalState.SelectKB( scenario );
+      }
+      
+    }
+  *]
+}

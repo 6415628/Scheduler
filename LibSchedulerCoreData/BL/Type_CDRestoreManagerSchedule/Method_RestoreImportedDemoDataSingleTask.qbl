@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedDemoDataSingleTask (CDIntegration cdintegration)
+{
+  Description: 'Restore imported demo data single task core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedDemoDataSingleTask
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedDemoDataSingleTask ), cdddst )
+    {
+      importedDemoDataSingleTask := schedule.ImportedDemoDataSingleTask( relnew, 
+                                                                         OperationID := cdddst.OperationID(),
+                                                                         PlanUnitId := cdddst.PlanUnitId()
+                                                                        );
+      CopyCorresponding::CopyFrom( cdddst ).CopyTo( importedDemoDataSingleTask );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

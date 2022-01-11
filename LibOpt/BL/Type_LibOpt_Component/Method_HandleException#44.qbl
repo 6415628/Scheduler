@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleException (Exception exception, LibOpt_Task task, Boolean wait_for_breakpoint) as stream[Void]
+{
+  TextBody:
+  [*
+    is_captured := false;
+    err := LibOpt_SnapshotError::Read( exception, task, is_captured );
+    
+    breakpoint_name := this.HandleException( err, task, is_captured );
+    
+    result := null( stream[Void] ); 
+    if( wait_for_breakpoint and not task.IsAborted() )
+    {
+      this.HasBreakpoint( breakpoint_name, task, result );
+      result := this->HandleException( result->Exception(), task, false );
+    }
+    else
+    {
+      result := stream[Void]::Success();
+    }
+    
+    return result;
+  *]
+}

@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride UpdateLatestEnd
+{
+  TextBody:
+  [*
+    maxtime := DateTime::MaxDateTime();
+    
+    nextoperation := minselect( this, Operation_SC.PlanUnit_SC.Operation_SC, operation,
+                                operation.SequenceNr() > this.Operation_SC().SequenceNr()
+                                and operation.IsPlanned(),
+                                operation.SequenceNr() );
+    
+    //The operation should end before the start of the process subtask of the downstream operation (otherwise the downstream operation is pushed).
+    startprocessnextoperation := guard( nextoperation.Task_SC().ProcessStart(),  DateTime::MaxDateTime() );
+    
+    //debuginfo( "ATTENTION MATERIAL AVAILABLE REMOVED" )
+    value := minvalue( maxtime,
+                       startprocessnextoperation );
+    
+    value := maxvalue( value, this.Operation_SC().PlanUnit_SC().Schedule().Time() );
+    
+    this.LatestEnd( value );
+  *]
+}

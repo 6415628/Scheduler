@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedScheduling (Batches batches, Task_SC beforetask, Task_SC aftertask, 
+  Boolean skipsoftcheck, output String feedback_o, output Boolean isallowedhard_o) declarative remote as Boolean
+{
+  Description: 'Checks machine allowed rules and sequencing rules'
+  TextBody:
+  [*
+    // janer Jun-27-2014 (created)
+    allowed := batches.Size() > 0;
+    
+    //Traverse each batch and check whether it is allowed to be planned based on the selected sequence.
+    traverse( batches, Elements, batch )
+    {
+      operations := selectset( batch, BatchSequenceElement.Operation_SC, bo, true, true );
+    
+      allowed := this.AllowedScheduling( operations, beforetask, aftertask, skipsoftcheck, feedback_o, isallowedhard_o )
+                 and allowed;
+    }
+    
+    return allowed;
+  *]
+}

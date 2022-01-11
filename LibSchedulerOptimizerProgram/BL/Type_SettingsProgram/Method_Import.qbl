@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Import (NamedValueTree nvt) as LibOpt_Settings
+{
+  TextBody:
+  [*
+    // When a user edits the optimzier parameters in the LibOpt-UI, LibOpt actually creates a copy. This would result in a duplicate type index because LibOpt isn't aware that this settings has a type index on 'Id'.
+    // As a remedy, when importing the NVT as a setting here, we rename the NVT's 'Id' value if it's not unique, by adding a special character at its end.
+    
+    id_namedvalue := SettingsProgram::GetId( nvt );
+    while( not isnull( SettingsProgram::FindTypeIndexSettingsProgram( id_namedvalue.GetValueAsString() ) ) )
+    {
+      newname := id_namedvalue.GetValueAsString() + Constants::DuplicationExtensionChar();
+      id_namedvalue.SetValue( newname );
+    }
+    
+    return super.Import( nvt );
+  *]
+}

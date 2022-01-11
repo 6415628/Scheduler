@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[WorkOrder] selection) id:Response_ListWorkOrders_MenuSelectInScope_OnClick
+{
+  #keys: '[142956.2.222985570]'
+  CanBindMultiple: false
+  DefinitionID => /Responsedef_ListWorkOrders_WebMenu_OnClick
+  GroupServerCalls: true
+  Initiator: 'MenuSelectInScope'
+  Precondition:
+  [*
+    operations := selectset( selection, Elements.WorkOrderOperation.Operation_SC, op, true );
+    Scheduler.CanAddToOptimizerScope( operations );
+    
+    feedbackObject := FeedbackObject::CurrentFeedback();
+    feedback := feedbackObject.Feedback();
+    
+    return feedbackObject.IsAllowed();
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Add operations in selected work orders to optimizer scope
+      mandatoryOperations := DataHolderOptimizerScopeOperations.Data();
+      
+      operations := selectset( selection, 
+                               Elements.WorkOrderOperation.Operation_SC, 
+                               op, 
+                               op.HasAllowedResources() );
+      
+      DataHolderOptimizerScopeOperations.Data( mandatoryOperations.Union( operations ) );
+    *]
+  }
+}

@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateBatchResourceWithPlannedBatchTask (Schedule schedule, Number nrOfOperationInBatch) as UTFBatchTask
+{
+  TextBody:
+  [*
+    // Create order and plan unit
+    planUnit := UTFMockObjectFactory::CreateOrderAndPlanUnit( schedule, "plan unit", 1.0 );
+    
+    // Create batch
+    batch := UTFMockObjectFactory::CreateBatch( schedule );
+    
+    // Create practice
+    practice := UTFPractice::Create( schedule, "practice" );
+    
+    // Create operations in batch
+    for( i := 1; i <= nrOfOperationInBatch; i++ )
+    {
+      operation := UTFMockObjectFactory::CreateOperation( planUnit );
+      operation.OperationID( 'Operation_' + [String]i );
+      batch.AddOperation( operation );
+      
+      // Assign practice to operation batch 
+      operation.Practice( practice.UsedPractice() );
+    }
+    
+    // Create batch resource
+    UTFMockObjectFactory::CreateBatchResource( schedule, 'batch resource' );
+    
+    // Propagate the method because it is using declarative relation and attributes
+    Transaction::Transaction().Propagate( method( Batch, Plan ) );
+    
+    // Plan the batch
+    batchTask := batch.Plan();
+    
+    return batchTask.astype( UTFBatchTask );
+  *]
+}

@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: dhUserGroup
+Response OnCreated () id:Response_LibSM_GlobalState_dhUserGroup_OnCreated
+{
+  #keys: '[107496.2.1436416403]'
+  Body:
+  [*
+    // Get user group
+    currentuser := ApplicationScope.Session().CurrentUser();
+    ug  := selectset( Domain, UserGroupDefinitions.Elements, ug, currentuser.IsMemberOfGroup( ug.Name() ), true );
+    ugs := '';
+    traverse( ug, Elements, u )
+    {
+      ugs := ugs + ';' + u.Name();
+    }
+    
+    vhUserGroup.Value( ugs );
+    
+    // The info statement below is a workaround for the issue where the user groups are not properly read before the context menu preconditions require them,
+    // and thus will never allow access to e.g. the copy functionality.
+    // ToDo: this info statement can be removed once the software issue has been resolved.
+    info( ' >>> User ', currentuser.Name(), ' has the following functionalities: ', selectvalues( ug, Elements.UserGroupsFunctionalities.Functionality, fun, true, fun.Name() ).ToString( ', ' ) );
+    
+    this.Data( &ug );
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIComponent_OnCreated'
+}

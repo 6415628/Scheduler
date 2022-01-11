@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanOperations (Resource_SC resource)
+{
+  Description: 'Plans all operations in the batch. If a resource is specified, only allowed operation on the resource will be planned.'
+  TextBody:
+  [*
+    if( not isnull( resource ) )
+    {
+      operations := selectset( this, BatchWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, operation, resource.AllowedOnResource( operation, false ).Length() = 0 );
+      this.Schedule().PlanOperations( operations, resource );
+    }
+    else
+    {
+      operations := selectset( this, BatchWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, operation, true );
+      this.Schedule().PlanOperations( operations );
+    }
+  *]
+}

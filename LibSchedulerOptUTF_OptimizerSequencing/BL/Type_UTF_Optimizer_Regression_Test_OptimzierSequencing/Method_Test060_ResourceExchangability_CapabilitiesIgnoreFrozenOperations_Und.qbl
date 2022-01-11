@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test060_ResourceExchangability_CapabilitiesIgnoreFrozenOperations_UndoChanges (Schedule schedule)
+{
+  Description: 'Reverts the changes to operation-on-resource allowedness done in the previous test.'
+  TextBody:
+  [*
+    resource := null( Resource_SC );
+    traverse( schedule, Operation_SC.OperationOnResource, oor, oor.Operation_SC().IsPlanned() )
+    {
+      if( not oor.UTF_IsAllowedHard() )
+      {
+        resource := oor.Resource_SC();
+        oor.UTF_IsAllowedHard( true );
+      }
+    }
+    this.Run().AssertFalse( isnull( resource ), "no OOR of a planned operation found that has beed disallowed by previous UTF method" );
+    Transaction::Transaction().Propagate();
+    
+    transientdata := UTF_Optimizer_Regression_Test_OptimizerSequencing::GetLastTransientData( schedule );
+    this.Run().AssertFalse( isnull( transientdata ), "Transient Data not saved by optimizer" );
+    td_rg := select( transientdata, ResourceGroup, td_rg, td_rg.ResourceGroup() = resource.ResourceGroup_SC() );
+    this.Run().AssertTrue( td_rg.IsExchangable(),
+                           "The optimizer does not recognize that resource group " + td_rg.ResourceGroup().Name() + " is again exchangable." );
+  *]
+}

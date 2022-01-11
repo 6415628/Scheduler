@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: EditorReservedQuantity
+Response OnInputIdle () id:Response_EditorQuantity_OnInputIdle
+{
+  #keys: '[139604.0.1759296724]'
+  Body:
+  [*
+    // Update demand and supply open quantity
+    reservedQuantity := ApplicationScheduler.GetEditorRealValue( EditorReservedQuantity );
+    quantity         := guard( Dialog.Data().WrappedInstance().Quantity(), 0.0 );
+    
+    demandOpenQuantity := DataHolderDemand.Data().QuantityOpen() 
+                          + quantity
+                          - reservedQuantity;
+    
+    supplyOpenQuantity := DataHolderSupply.Data().QuantityOpen() 
+                          + quantity
+                          - reservedQuantity;
+    
+    ApplicationScheduler.UpdateLabelTextWithRealValue( demandOpenQuantity, LabelDemandOpenQuantityValue );
+    ApplicationScheduler.UpdateLabelTextWithRealValue( supplyOpenQuantity, LabelSupplyOpenQuantityValue );
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_Editor_OnInputIdle'
+}

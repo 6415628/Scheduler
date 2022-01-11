@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetInvalidRulesFeedbackMessageForProgramRules (Resource_SC resource, Operation_SC previousoperation, Boolean ishardconstraintforoptimizer) declarative remote as String
+{
+  Description: 'Get invalid rules feedback message for program rules'
+  TextBody:
+  [*
+    // Get invalid rules feedback message
+    
+    feedbacks := construct( Strings );
+    
+    // Get invalid rules feedback message for program and phase cumulative rules ( Min/Max combined length rules )
+    traverse( this, Task_SC.TaskInProgramSet, tips, not isnull( tips.ProgramType() ) )
+    {  
+      // Get program and phase non cumulative rules feedback message ( Min/Max value, Allowed/Not Allowed value, Difference Jump, Value Jump, Overlapping Range )
+      programrules := tips.GetNonCumulativeRules( tips.GetPreviousTaskInProgramSet(), previousoperation );
+      traverse( programrules, Elements, rule, 
+                this.CheckIsRuleApplicable( rule, previousoperation, null( Characteristic ) ) 
+                and rule.IsHardConstraintForOptimizer() = ishardconstraintforoptimizer )
+      {
+        if( not rule.RuleSubType().Validate( rule, previousoperation, this ) )
+        { 
+          feedbacks.Add( rule.RuleSubType().GetFeedbackMessage( rule, previousoperation, this ) ); 
+        }
+      }  
+      
+      // Get program cumulative rules feedback message ( Min/Max combined length rules )
+      programtyperules := this.GetCumulativeRulesForProgramType( tips.ProgramType().ProgramTypeConfiguration(), previousoperation, null( Characteristic ) );
+      traverse( programtyperules, Elements, programtyperule,
+                programtyperule.IsHardConstraintForOptimizer() = ishardconstraintforoptimizer )
+      {
+        ruleobject := tips.GetRuleDataObjectForConstraintPrecondition( programtyperule.CharacteristicMain(), false, 0.0 );
+        if( not programtyperule.RuleSubType().Validate( programtyperule, ruleobject ) )
+        { 
+          feedbacks.Add( programtyperule.RuleSubType().FeedbackMessage( programtyperule, ruleobject ) ); 
+        }    
+      }
+    
+      // Get program phase feedback message ( Min/Max combined length rules )
+      if( not isnull( tips.ProgramPhase() ) )
+      {
+        programphaserules := this.GetCumulativeRulesForProgramPhase( tips.ProgramPhase().ProgramPhaseConfiguration(), previousoperation, null( Characteristic ) );
+        traverse( programphaserules, Elements, programphaserule,
+                  programphaserule.IsHardConstraintForOptimizer() = ishardconstraintforoptimizer )
+        {
+          ruleobject := tips.GetRuleDataObjectForConstraintPrecondition( programphaserule.CharacteristicMain(), true, 0.0 );
+          if( not programphaserule.RuleSubType().Validate( programphaserule, ruleobject ) )
+          {  
+            feedbacks.Add( programphaserule.RuleSubType().FeedbackMessage( programphaserule, ruleobject ) ); 
+          }    
+        } 
+      }                  
+    }
+    
+    return feedbacks.ToString( String::NewLine() );
+  *]
+}

@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestJoinPlannedOrderPrecondition (Schedule schedule)
+{
+  Description: 'Test joining firm planned orders precondition logic.'
+  TextBody:
+  [*
+    workOrders := selectset( schedule, WorkOrder, workorder, true );
+    testInstance := this.GetTestInstance( this.Variant() );
+    
+    // Join planned order sanity check
+    WorkOrder::CheckCanJoin( workOrders );
+    canJoin := FeedbackObject::CurrentFeedback().IsAllowed();
+    
+    this.Run().AssertTrue( testInstance.CanJoin() = canJoin,
+                           UTFUtility::GenerateFailedMessage( 'Precondition check for join planned order failed', '' ) );
+  *]
+}

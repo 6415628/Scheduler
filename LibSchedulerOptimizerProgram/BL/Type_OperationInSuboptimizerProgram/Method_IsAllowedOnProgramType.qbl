@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method IsAllowedOnProgramType (ProgramTypeConfiguration programType) as Boolean
+{
+  TextBody:
+  [*
+    // jkr8 Jul-19-2021 (created)
+    
+    operation := this.Operation_SC();
+    
+    rules := selectset( programType, RuleScopeInProgramType.Rule, rule, 
+                        not rule.RuleSubType().IsCheckOnPreviousOperation(), 
+                        not rule.RuleSubType().IsCumulativeValueNeeded() );
+    
+    value := not exists( rules, Elements, rule, 
+                         operation.CheckIsRuleApplicable( rule, null( Operation_SC), null( Characteristic ) ) and not isnull( rule.RuleSubType() ),
+                         not rule.RuleSubType().Validate( rule, null( Operation_SC ), operation ) );
+    
+    return value;
+  *]
+}

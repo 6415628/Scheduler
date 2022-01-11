@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDrop (structured[Batch] source, BatchResource droprow, Batch droptarget, 
+  Batch beforedroptarget) id:Response_GanttChartSchedulingCentre_OnDrop_17
+{
+  #keys: '[109706.2.149480227]'
+  Body:
+  [*
+    // OnDrop structured[Batch] --> Batch on Batch Resource
+    
+    droprow.PlanAfter( source, guard( beforedroptarget.BatchTask(), null( BatchTask )));
+  *]
+  DefinitionID: 'Responsedef_GanttChart_OnDrop'
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey   := dropaction.IsControl();
+    ctrlshiftkey  := dropaction.IsControlShift();
+    
+    return ApplicationScheduler.AllowedScheduling( droprow, //batchresource
+                                                   source,  //structured batches
+                                                   ctrlkey, //skip soft check
+                                                   ctrlshiftkey, //ctrl shift key
+                                                   guard( beforedroptarget.BatchTask(), null( BatchTask ) ), //beforetask
+                                                   guard( droptarget.BatchTask(), null( BatchTask ) ), //aftertask
+                                                   Batch::GetSelectedObjects( source ),
+                                                   feedback,
+                                                   isallowedhard );
+  *]
+}

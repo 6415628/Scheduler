@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CanAssignToProfile (LibSM_Scenarios scenarios, LibSM_KnowledgeProfile knowledgeProfile) remote as Boolean
+{
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    if( not feedback.CheckHard( not exists( scenarios, Elements, scenario, not scenario.IsOnline() ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_NotAllowedToAssignToProfile_ScenarioOffline() );
+    }
+    
+    if( not feedback.CheckHard( not knowledgeProfile.HasValidContent() ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_NotAllowedToAssignToProfile_ProfileHasInvalidContent( knowledgeProfile.Name(),
+                                                                                                           knowledgeProfile.FullErrorMessage() ) );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

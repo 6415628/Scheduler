@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsShutdownTypeAllowedInResource (Resource_SC resource) declarative remote as Boolean
+{
+  Description: 'Check whether shutdown type of this task is allowed in this resource.'
+  TextBody:
+  [*
+    // Check whether shutdown type of this task is allowed in this resource.
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    value := exists( resource, ShutdownTypeInResource.ShutdownType, st, 
+                     st = this.GetShutdownType() );
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      feedbackobject.AddHard( Translations::ShutdownType_NotSupportedInThisResource( this.GetShutdownType(), resource ) );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

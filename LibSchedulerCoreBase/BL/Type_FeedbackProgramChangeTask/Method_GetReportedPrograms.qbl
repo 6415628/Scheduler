@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetReportedPrograms () as owning ProgramTypeConfigurations
+{
+  Description: 'Returns reported program type configurations from feedback'
+  TextBody:
+  [*
+    configurations := construct( ProgramTypeConfigurations );
+    
+    stringconfigs := this.ReportedPrograms().Tokenize( '|' );
+    
+    traverse( stringconfigs, Elements, config )
+    {
+      ids := config.Tokenize( ';' );
+      if( ids.Size() >= 3 )
+      {
+        programdefinitionid := ids.Element( 0 );
+        programsetid := ids.Element( 1 );
+        programtypeid := ids.Element( 2 );
+        
+        programtypeconfig := ProgramTypeConfiguration::FindProgramTypeConfiguration( programdefinitionid, programsetid, programtypeid );
+        configurations.Add( programtypeconfig );
+      }
+    }
+    
+    return &configurations;
+  *]
+}

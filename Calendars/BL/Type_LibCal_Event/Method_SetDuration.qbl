@@ -1,0 +1,69 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetDuration (Duration duration_i) as LibCal_Event
+{
+  Description: 'Set the duration of the event.'
+  TextBody:
+  [*
+    // Ignore seconds.
+    duration := duration_i.Round( Duration::Minutes( 1 ) );
+    
+    // Use a FeedbackObject the collect the validation feedback.
+    feedback := LibCal_Validate::FeedbackObject();
+    
+    moreInfo := this.GetEventInfo() + ", Duration = " + duration_i.Format( Translations::DurationFormat() );
+    LibCal_Validate::RegisterError( LibCal_Validate::Event_Duration( duration ), moreInfo );
+    
+    // Process the feedback that has been registered by the validation (if any).
+    LibCal_Util::ProcessFeedbackObject( feedback );
+    
+    // The below is only executed when no validation errors were encountered.
+    leadPart := this.LeadingParticipation();
+    if( not isnull( leadPart ) )
+    {
+      isAllDay := this.IsAllDay();
+      
+      if( this.Duration() <> duration )
+      {
+        this.IsChanged( true );
+      }
+    
+      // Set the Duration and the EndTimeOfDay of the Event...
+      this.Duration( duration );
+      
+      endTimeOfDay := ( this.StartTimeOfDay() + duration ) mod Duration::Hours( 24 );
+      this.EndTimeOfDay( endTimeOfDay );
+      
+      // ...and the EndDate of the LeadingParticicpation.
+      endDate := leadPart.StartDate() + ( ( this.StartTimeOfDay() + duration ) div Duration::Hours( 24 ) );
+      leadPart.Update( leadPart.StartDate(), endDate );
+      
+      // Validate the resulting StartTime and EndTime.
+      leadPart.CalcStartTime();
+      leadPart.CalcEndTime();
+      
+      startTime := leadPart.StartTime();
+      endTime   := leadPart.EndTime();
+      timezone  := this.Calendar().GetTimeZone();
+      convOps   := ConversionOptions::ISO()
+      moreInfo  := this.GetEventInfo() + ", StartTime = " + startTime.Format( Translations::DateTimeFormat(), convOps )
+                                       + ", EndTime = "   + endTime  .Format( Translations::DateTimeFormat(), convOps );
+      LibCal_Validate::RegisterError( LibCal_Validate::Event_StartTime_EndTime( startTime, endTime ), moreInfo );
+    
+      // See if isAllDay was and still is applicable.  
+      isAllDay := isAllDay
+              and startTime.TimeOfDay( timezone ) = Duration::Zero()
+              and endTime.TimeOfDay( timezone )   = Duration::Zero()
+              and duration                        > Duration::Zero();
+      
+      // Process the feedback that has been registered by the validation (if any).
+      LibCal_Util::ProcessFeedbackObject( feedback );
+      
+      // The below is only executed when no validation errors were encountered.
+      this.IsAllDay( isAllDay );
+    }
+    
+    // Make the API fluent.
+    return this;
+  *]
+}

@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateOperationDependencies
+{
+  Description: 'Assuming that the shadow objects of all in-scope operations, OperationOnResources, and resources have already been created in this transient data, creates the OperationMaterial shadow objects of all operation materials where both endpoints are in the total scope.'
+  TextBody:
+  [*
+    // mbr23 Jan-24-2020 (created)
+    dependencies_as_input := selectset( this, OperationInSuboptimizerSequencing.Operation.FromOperationDependency, m, true );
+    dependencies_as_output := selectset( this, OperationInSuboptimizerSequencing.Operation.ToOperationDependency, m, true );
+    dependencies := dependencies_as_input.Intersect( dependencies_as_output );
+    traverse( dependencies, Elements.astype( OperationMaterial ), material )
+    {
+      OperationMaterialInSuboptimizerSequencing::Create( this, material );
+    }
+    
+    if( this.Task().Run().Optimization().astype( Optimization ).Schedule().TechnicalConfiguration().IsDataDrivenTimeConstraintsMode() )
+    {
+      traverse( dependencies, Elements.astype( TimeConstraintFinishToStart ), tcfs )
+      {
+        TimeConstraintFinishToStartInSuboptimizerSequencing::Create( this, tcfs );
+      }
+    }
+  *]
+}

@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method CalculateExpectedDate_Batch_General () declarative remote as DateTime
+{
+  Description: 'General calculation of the expected date, used to calculate the final expected date when the operation is planned in batch.'
+  TextBody:
+  [*
+    value := DateTime::MinDateTime();
+    
+    if( this.IsPlanned() or this.Finished() )
+    {
+      value := this.End();
+    }
+    else
+    {
+      // TG updated to IOM
+      // Kyle 11-05-2015 #5344 Use TotalOffsetDuration instead of TransportCoolingDuration
+      value := max( this,
+                    FromOperationDependency,
+                    iom,
+                    iom.HasFromOperation(),
+                    iom.FromOperation().ExpectedDate_Batch()
+                      + iom.TotalOffsetDuration()
+                  )
+    
+      value := value + this.LeadTime() + this.ExpectedDuration();
+    }
+    
+    return value
+  *]
+}

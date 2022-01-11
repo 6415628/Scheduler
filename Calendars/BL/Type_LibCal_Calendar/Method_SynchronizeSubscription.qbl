@@ -1,0 +1,64 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeSubscription (String participationID_i, String eventID_i, String calendarType_i, 
+  String calendarID_i, Boolean eventIsRecurring_i, Boolean eventIsAllDay_i, 
+  Duration eventStartTimeOfDay_i, Duration eventDuration_i, Date startDate_i, 
+  Boolean hasSpecificPeriod_i, String periodType_i, Date periodStartDate_i, 
+  Date periodEndDate_i) as LibCal_Subscription
+{
+  Description: 'Synchronize the a subscription, typically with the data of an integration object.'
+  TextBody:
+  [*
+    // Get the subscription that must be synchronized.
+    subscription := select( this.Subscriptions(), Elements, subscr, true, subscr.ParticipationID() = participationID_i );
+    
+    // Get the event that is subscribed to.
+    event := LibCal_Event::FindByEventID( eventID_i );
+    
+    if( not isnull( event ) )
+    {
+      useLeadingPeriod := not hasSpecificPeriod_i;  // HasSpecificPeriod is easier to understand
+                                                    // in the source (e.g. Excelsheet) from which the data is imported.
+      if( not isnull( subscription ) )
+      {
+        if( event <> subscription.Event() )
+        {
+          // Change the event to which is subscribed.
+          // Very unlikely to happen, is not supported in the UI.
+          // Can happen though if IsAlwaysAvailable is changed from FALSE to TRUE (or vice versa).
+          subscription.Event().RemoveSubscriber( this );
+          subscription := event.AddSubscriber( this, useLeadingPeriod );
+          subscription.ParticipationID( participationID_i );
+        }
+      }
+      else  // Subscription does not exist.
+      {
+        // Add the calendar as subcriber to the event from another calendar.
+        subscription := event.AddSubscriber( this, useLeadingPeriod );
+        subscription.ParticipationID( participationID_i );
+        subscription.IsCreatedByImport( true );
+      }
+    
+      // Synchronize the data.
+      subscription.Synchronize( participationID_i,
+                                calendarType_i,
+                                calendarID_i,
+                                eventIsRecurring_i,
+                                eventIsAllDay_i,
+                                eventStartTimeOfDay_i,
+                                eventDuration_i,
+                                startDate_i,
+                                hasSpecificPeriod_i,
+                                periodType_i,
+                                periodStartDate_i,
+                                periodEndDate_i );
+    }
+    else
+    {
+      LibCal_Util::Warning( "LibCal_Calendar.SynchronizeSubscription() : Event with ID '" + eventID_i + "' not found for IntegrationParticipation with ID '" + participationID_i + "'." );
+    }
+    
+    return subscription;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

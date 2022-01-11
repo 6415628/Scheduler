@@ -1,0 +1,95 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenerateDatasetsFromUpgradePath
+{
+  Description:
+  [*
+    Scans the upgrade path for sqlite datasets, and populates them into the UI
+    Template files should not be imported (can be identified by having no core dataset instance)
+  *]
+  TextBody:
+  [*
+    // Scan only '*.db' files previously exported to "Export" folder
+    settings              := this.ConvertorDataset().Settings();
+    upgradedDataDirectory := settings.DataUpgradeUpgradedDataDirectory();
+    exportDataDirectory   := settings.DataUpgradeExportDirectory();
+    dbFiles               := OS::ScanDirectory( exportDataDirectory, DMF_DBInterface::GetPatternDBFile() );
+    toBeRemovedDBFiles    := OS::ScanDirectory( upgradedDataDirectory, DMF_DBInterface::GetPatternDBFile() );
+    datasetKind           := this.Name();
+    dbInterface           := this.ConvertorDataset().DBInterface();
+    
+    /* Debug - do not delete
+    logfile( ">>> searchParams", settings.DataUpgradeExportDirectory(), DMF_DBInterface::GetPatternDBFile() );
+    logfile( ">>> dbFiles", dbFiles.Size() );
+    */
+    
+    //delete all the existing file in upgrade data path, as the targeted database will be copied to the upgrade data path from export data path
+    traverse( toBeRemovedDBFiles, Elements, toRemoveFileName, toRemoveFileName.FindString( datasetKind + "_", 0 ) <> -1 )
+    {
+      OS::RemoveFile( toRemoveFileName );  
+    }
+    
+    // Only handle files that are prefixed by the dataset kind
+    // This is a basic implementation and may require improvement in future
+    traverse( dbFiles, Elements, fileName, fileName.FindString( datasetKind + "_", 0 ) <> -1 )
+    {   
+      // Debug - do not delete
+      //logfile( ">>> fileName", fileName );
+      
+      duio := dbInterface.FindCreateTemplateDB( fileName );
+      
+      // Skip files that are templates or with a different dataset kind 
+      // (identified by having no root dataset, or a failed query)
+      isCoreData := dbInterface.CheckIsCoreData( duio, datasetKind );
+     
+      if( isCoreData )
+      {
+        // Use dummy metadata object to derive inputs
+        metadata      := construct( DMF_UpgradeabilityMetaData );
+        tableMetadata := metadata.DefinitionName();
+        
+        // Retrieve columns in specific order from 'Metadata' table
+        // It's easier to retrieve the version strings this way
+        keyDatasetName   := attribute( DMF_UpgradeabilityMetaData, DatasetName ).Name();
+        keyDatasetFolder := attribute( DMF_UpgradeabilityMetaData, DatasetFolder ).Name();
+            
+        // Key is always returned by default, which we don't need
+        excludeColumns  := "Key".Tokenize( "," );
+        requiredColumns := dbInterface.GetTableColumns( duio, tableMetadata, excludeColumns );
+        
+        results   := dbInterface.GetRecordsInSingleColumn( duio, tableMetadata, requiredColumns );
+        keyValues := guard( results.Element( 0 ), "" ).Tokenize( DMF_DBInterface::GetValueDelimiter() );
+        
+        // Values to extract (Dataset Name, Folder and Version strings)
+        datasetName   := dbInterface.GetValueByKey( keyValues, keyDatasetName );
+        datasetFolder := dbInterface.GetValueByKey( keyValues, keyDatasetFolder );
+        
+        if( datasetName <> "" )
+        {
+          dataset              := DMF_Dataset::Create( this, Key::ZeroKey(), datasetName, datasetFolder );
+          initializedDataset   := dataset.CreateAndUpdateDatasetMDSID();
+          upgradedDataFileName := upgradedDataDirectory + fileName.RestString( exportDataDirectory.Length() );
+          
+          //initialize root object if the dataset itself is not the root object for core data
+          initializedDataset->DMF_ConvertorDataset::GetRootObjectExtensible()->( rootobject )
+          {
+            if( isnull( rootobject ) )
+            {
+              DMF_ConvertorDataset::CreateAndInitializeRootObjectExtensible( rootobject );
+            }
+          }
+                
+          // Detail information is a dump of metadata from DB
+          dataset.UpdateDetailsForUpgrade( keyValues );
+          
+          // Copy the file to upgrade directory      
+          DMF_Utility::CopyAndReplaceFileTo( fileName, upgradedDataDirectory, upgradedDataFileName );
+          
+          // Database path updated to the dataset for upgrade purpose
+          dataset.UpdateDatabasePath( upgradedDataFileName );
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

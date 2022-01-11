@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method AssertWorkOrderOperations (Schedule schedule, JSON workOrderOperatonsArray)
+{
+  Description: 'Checks whether the schedule has work order operations that matches the JSON input data.'
+  TextBody:
+  [*
+    for( i := 0; i < workOrderOperatonsArray.Size(); i++ )
+    {
+      workOrderOperationJSON := workOrderOperatonsArray.Get( i );// Get to grab array's first instance
+      maturity := ImportedExternalWorkOrderOperation::GetMaturity( workOrderOperationJSON );
+      
+      // Only test for FIRM operations, we have other checks for other maturity statuses
+      if( maturity = Constants::MaturityStatus_FIRM() )
+      {
+        id := ImportedExternalWorkOrderOperation::GetID( workOrderOperationJSON );
+        workOrderOperation := select( schedule, WorkOrder.WorkOrderOperation.astype( ExternalWorkOrderOperation ), workOrderOperation,
+                                      workOrderOperation.ExternalOperationID() = id );
+        
+        if( this.Run().AssertTrue( not isnull( workOrderOperation ), Translations::LibSchedulerOptMgrUTF_WorkOrderOperation_NotCreated( id ) ) )
+        {
+          this.Run().AssertEqual( ImportedExternalWorkOrderOperation::GetProcessOperationID( workOrderOperationJSON ), workOrderOperation.ProcessOperationID() );
+          this.Run().AssertEqual( ImportedExternalWorkOrderOperation::GetStartTime( workOrderOperationJSON ), workOrderOperation.StartTime() );
+          this.Run().AssertEqual( ImportedExternalWorkOrderOperation::GetEndTime( workOrderOperationJSON ), workOrderOperation.EndTime() );
+          this.Run().AssertEqual( ImportedExternalWorkOrderOperation::GetScheduledAssetID( workOrderOperationJSON ), workOrderOperation.ResourceID() );
+          this.Run().AssertEqual( maturity, workOrderOperation.Maturity() );
+          this.Run().AssertEqual( ImportedExternalWorkOrderOperation::GetPriority( workOrderOperationJSON ), workOrderOperation.Priority() );
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

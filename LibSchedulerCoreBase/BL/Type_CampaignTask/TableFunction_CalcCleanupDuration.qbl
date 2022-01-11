@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+TableFunction CalcCleanupDuration
+{
+  DefaultOutputFunction:
+  [*
+    // James Kwapien Dec-28-2016 (created)
+    
+    value := Duration::Zero();
+    this.CleanupDuration( value );
+  *]
+  OutputFunction:
+  [*
+    // James Kwapien Dec-28-2016 (created)
+    value := CleanupDuration;
+    this.CleanupDuration( value );
+  *]
+  TableDefinition: CampaignSetupAndCleanup_SC
+  FunctionColumnMatch
+  {
+    ColumnDefinition: CampaignFrom
+    MatchExpression: 'this.Campaign()'
+    Operator: '='
+  }
+  FunctionColumnMatch
+  {
+    ColumnDefinition: CampaignTo
+    MatchExpression: 'guard( ifexpr( this.NextCampaignTask().CampaignTypeName() = this.CampaignTypeName(), this.NextCampaignTask().Campaign(), "" ), "" )'
+    Operator: '='
+  }
+  FunctionColumnMatch
+  {
+    ColumnDefinition: CampaignType
+    MatchExpression: 'guard( this.CampaignType().Name(), "" )'
+    Operator: '='
+  }
+  FunctionColumnMatch
+  {
+    ColumnDefinition: Resource
+    MatchExpression: 'guard( this.Resource_SC().ResourceID(), "" )'
+    Operator: '='
+  }
+  FunctionColumnMatch
+  {
+    ColumnDefinition: ResourceGroup
+    MatchExpression: 'guard( this.Resource_SC().ResourceGroupName(), "" )'
+    Operator: '='
+  }
+}

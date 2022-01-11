@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: SCListTask
+Response OnClick (structured[Task_SC] selection) id:Response_SCListTask_MenuDeleteShutdown_OnClick
+{
+  #keys: '[143388.0.1846718206]'
+  Body:
+  [*
+    // Delete structured[Task] which has shutdown
+    value := true;
+    feedback_o := '';
+    // Reuse unplan soft checking method on tasks
+    hasNoSoftViolation := Task_SC::CanUnplanSoft( selection, feedback_o );
+    
+    if( not hasNoSoftViolation )
+    {
+      value := MessageBox::Question( this, feedback_o, '&Yes|&No' ) = 0
+    }
+    
+    if( value )
+    {
+      Task_SC::DeleteShutdown( selection );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => /SCListTask/Responsedef_SCListTask_OnClick
+  Initiator: 'MenuDeleteShutdown'
+  Precondition:
+  [*
+    return Task_SC::CanDeleteShutdownHard( selection );
+  *]
+}

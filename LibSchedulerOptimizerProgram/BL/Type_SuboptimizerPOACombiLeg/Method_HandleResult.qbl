@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride HandleResult (POAAlgorithm poa, LibOpt_Task task) as LibOpt_Scope
+{
+  TextBody:
+  [*
+    combilegs := this.GetCombiLegsInScope( task );
+    this.HandleResultCombiLegs( poa.astype( SuboptimizerPOACombiLeg_SequenceCombiLeg ), combilegs );
+    
+    // If this is a pure poa iteration, then Schedule the updated combilegs
+    if( not this.IsCombiGeneration() )
+    {                                 
+      // Select and unplann all scope operations that have not been scheduled on the scope combilegs
+      unplannedoperations := selectset( task.Scope().Operations(), Elements, operation,
+                                      not exists( operation, OperationInCombiLeg.CombiLeg, combileg,
+                                                  exists( combilegs, Elements, scopecombileg,
+                                                          scopecombileg = combileg ) ) );
+      traverse( unplannedoperations, Elements, operation )
+      {
+        operation.Unplan();
+      }
+                                                          
+      // Sort the combilegs by sequence number
+      sortedcombilegs := selectsortedset( combilegs, Elements, combileg,
+                                          combileg.SequenceNr() );
+    
+      // and plan them to their resource
+      isresyncactive := false;
+      traverse( sortedcombilegs, Elements, combileg )
+      {
+        isresyncactive := combileg.PlanToResource( combileg.GetOperationsInCLInScope( task ) ) or isresyncactive;
+      }
+      //synchronize the active combi
+      if( isresyncactive )
+      {
+        traverse( sortedcombilegs, Elements.LeadingCombiProgramPhase.CombiProgramType, cpt )
+        {
+          Transaction::Transaction().Propagate( relation( TaskInProgramSet, ProgramPhase ) );
+          cpt.SynchronizeActiveProgramTypeCombiElements();
+        }
+      }
+    }
+    
+    return task.Scope();
+  *]
+}

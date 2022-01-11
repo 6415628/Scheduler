@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateFeedback (Boolean hasUserReportedStart, DateTime userReportedStart, Boolean hasUserReportedEnd, 
+  DateTime userReportedEnd, Boolean hasUserReportedShutdownType, ShutdownType userReportedShutdownType)
+{
+  Description: 'Update feedback task'
+  TextBody:
+  [*
+    this.HasUserReportedStart( hasUserReportedStart );
+    this.HasUserReportedEnd( hasUserReportedEnd );
+    
+    userReportedStart := ifexpr( hasUserReportedStart, userReportedStart, DateTime::MinDateTime() );
+    this.UserReportedStart( userReportedStart );
+    
+    userReportedEnd := ifexpr( hasUserReportedEnd, userReportedEnd, DateTime::MinDateTime() );
+    this.UserReportedEnd( userReportedEnd );
+    
+    shutdownType := ifexpr( hasUserReportedShutdownType, userReportedShutdownType, null( ShutdownType ) );
+    shutdown := this.Shutdown();
+    if( not isnull( shutdown ) )
+    {
+      shutdown.HasShutdownTypeUserFeedback( hasUserReportedShutdownType );
+      shutdown.UserFeedbackShutdownType( relset, shutdownType );
+    }
+  *]
+}

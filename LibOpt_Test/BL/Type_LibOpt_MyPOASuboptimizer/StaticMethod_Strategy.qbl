@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Strategy (POAAlgorithm poa, Duration duration, Boolean should_error, 
+  String algorithm_store_key)
+{
+  Description: 'The mock strategy used to test the POA suboptimizer'
+  TextBody:
+  [*
+    LibOpt_SuboptimizerPOA::StrategyStart( poa );
+    
+    // Store a counter of the amount of times the strategy is called
+    algorithm := AlgorithmStore::Retrieve( algorithm_store_key );
+    
+    count := guard( algorithm.RetrieveReal( LibOpt_MyPOASuboptimizer::GetExecuteStrategyCounterName() ), 0 );
+    algorithm.StoreReal( LibOpt_MyPOASuboptimizer::GetExecuteStrategyCounterName(), count + 1 );
+    
+    AlgorithmStore::Store( algorithm_store_key, & algorithm );
+    
+    
+    OS::Sleep( ceil( duration.MinutesAsReal() * 60 * 1000 ) );
+    strategy := poa.Strategy();
+    
+    strategy.NewActions( 'actions' );
+    
+    if( should_error )
+    {
+      error( 'Expected error at strategy' );
+    }
+    LibOpt_SuboptimizerPOA::StrategyFinish( poa );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod HandleBatchStartExceptions (Operation_SCs content, FeedbackBatchInSchedule fbbatch, Boolean isfirstfeedback, 
+  String resource_id, DateTime start, String remark, 
+  String practice)
+{
+  TextBody:
+  [*
+    // jiex Sep-8-2016 (created)
+    resource := Resource_SC::FindResource_SC( resource_id );
+    
+    if( isfirstfeedback )
+    {
+      batch := guard( content.Element( 0 ).Task_SC().astype( BatchTask ).Batch(), null(Batch) );
+      //Exceptions to be checked only for first time receiving task start event
+      fbbatch.HandleBatchStartException_PrecedingTaskWithoutReportedStart( batch, start, resource, remark, practice );
+     
+      fbbatch.HandleBatchStartException_PrecedingTaskWithoutReportedEnd( start, resource, remark, practice );
+    
+      fbbatch.HandleBatchStartException_DifferentResource( content, start, resource, remark, practice );
+     
+      fbbatch.HandleBatchStartException_NotScheduled( content, start, resource, remark, practice );
+    }
+    else
+    {
+      fbbatch.HandleBatchStartException_HasEarlierReportedStart( start, resource, remark, practice );
+      
+      fbbatch.HandleBatchStartException_InconsistentExecutionFeedback( start, resource, remark, practice );
+    }
+  *]
+}

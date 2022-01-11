@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOAConstraintMakespanDependency (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata)
+{
+  Description: 'Adds the POA dependencies that ensure that the makespan end node starts after all operation nodes'
+  TextBody:
+  [*
+    dependency := poa.NewDependency( SuboptimizerSequencingPOA::NamePOADependencyMakespanEnd() );
+    makespanendnode := poa.Node( this );
+    
+    // For all operations that are in scope
+    
+    traverse( transientdata, ResourceGroup.Resource, resource )
+    {
+      node := poa.Node( resource );
+      dependency.Add( node, makespanendnode );
+    }
+    
+    dependencyconstr := poa.NewDependencyConstraint( SuboptimizerSequencingPOA::NamePOAConstraintMakespanDependency() );
+    dependencyconstr.Dependency( dependency );
+    dependencyconstr.Expression( poa.Expression( SuboptimizerSequencingPOA::NamePOAExpressionTime() ) );
+    // node 1 has to end before makespanendnode can start with its participation
+    dependencyconstr.MatchKind( 'EP' );
+  *]
+}

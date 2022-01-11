@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddInitial (SuboptimizerMRSPOA_POAOneResourceGroup poa, LibOpt_Task task)
+{
+  Description: 'Add the initial solution of POA'
+  TextBody:
+  [*
+    // stn4 Mar-18-2016 (created)
+    debuginfo( 'Adding initial solution...' );
+    
+    //add initial solution
+    traverse( task.Scope().ResourceGroups(), Elements.Resource_SC, resource )
+    {
+      pathtype := poa.PathType( SuboptimizerMRSPOA::POANamePathResource( resource ), resource );
+      path := poa.InstantiatePath( pathtype );
+    
+      dummystart := poa.Node( SuboptimizerMRSPOA::POANameDummyStart( resource ), resource );
+      path.AddNode( dummystart );
+      dummystart.IsFrozen( true );
+    
+      // Add all operations that are in scope and planned on this resource to the path
+      traverse( resource,
+                Task_SC.astype( SingleTaskBase ).OperationAsSingleTask,
+                operation,
+                task.Scope().Contains( operation.ScopeElementOperation() ) )
+      {
+        node := poa.Node( SuboptimizerMRSPOA::POANameNodeOperation( operation ), operation );
+        path.AddNode( node );
+        
+        // Freeze the operations that are locked in scope
+        isfrozen := guard( operation.ScopeElementOperation().OnRunConst( task.Run() ).IsLocked(), false );
+        node.IsFrozen( isfrozen );
+      }
+    
+    }
+  *]
+}

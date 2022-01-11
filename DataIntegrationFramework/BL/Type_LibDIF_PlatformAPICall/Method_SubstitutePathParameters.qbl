@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method SubstitutePathParameters (String pathParameters_i) as String
+{
+  Description: 'Substitute the PathParameters in the EndpointPath.'
+  TextBody:
+  [*
+    endpointPath := this.EndpointPath();
+    
+    // If applicable, substitute the values of the path parameters in the endpointPath. 
+    // pathParameters_i is expected to be a concatenation of <Name>=<Value> pairs, separated by "&"s,
+    // for example "name1=value1&name2=value2".
+    if( pathParameters_i <> "" )
+    {
+      pathParameters := pathParameters_i.Tokenize( "&" );
+      
+      traverse( pathParameters, Elements, pathParameter )
+      {
+        nameValuePair := pathParameter.Tokenize( "=" );
+        if( nameValuePair.Size() = 2 )
+        {
+          name  := nameValuePair.Element( 0 );
+          value := nameValuePair.Element( 1 );
+          
+          if( endpointPath.FindString( name, 0 ) >= 0 )
+          {
+            endpointPath := endpointPath.ReplaceAll( name, value );
+          }
+          else
+          {
+            LibDIF_Util::Error( "Parameter '" + name + "' not found in EndpointPath '" + endpointPath + "'" );
+          }
+        }
+        else
+        {
+          LibDIF_Util::Error( "Parameter '" + pathParameter + "' has an incorrect format. Expected format: <name>=<value>" );
+        }
+      }
+    }
+    
+    // Check if all parameters have been substituted.
+    idx := endpointPath.FindString( "{", 0 );
+    if( idx >= 0 )
+    {
+      idy       := endpointPath.FindString( "}", idx );
+      parameter := endpointPath.SubString( idx, idy - idx + 1 );
+      LibDIF_Util::Error( "No substitution found for parameter '" + parameter + "' in EndpointPath '" + this.EndpointPath() + "'" );
+    }
+    
+    return endpointPath;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

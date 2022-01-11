@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeCalendars (LibDIO_IntegrationObjects integrationCalendars_i) as owning LibCal_Calendars
+{
+  Description: 'Use the synchronization mechanism that is implemented in the Calendar Library to synchronize the integration data to the planning-dataset.'
+  TextBody:
+  [*
+    synchronizedCalendars := construct( LibCal_Calendars );
+    
+    LibDIF_Util::Info( this.DefinitionName() + ".SynchronizeCalendars: #IntegrationCalendars = " + [String]integrationCalendars_i.Size() );
+    
+    traverse( integrationCalendars_i, Elements.astype( LibCIM_CalendarBase ), integrationCalendar )
+    {
+      calendar := null( LibCal_Calendar );
+    
+      // Synchronize the calendar if there are no errors.
+      //if( stagCal.CanSynchronize() )
+      {
+        // Find the calendar, create a new one if necessary.
+        calendar := this.FindCreateCalendar( integrationCalendar );
+        
+        if( not isnull( calendar ) )
+        {
+          calendar.Synchronize( integrationCalendar.Base(),
+                                integrationCalendar.UpdateInterval(),
+                                integrationCalendar.Window(),
+                                integrationCalendar.History(),
+                                integrationCalendar.IsAlwaysAvailable() );
+        }
+      }
+      /*
+      else
+      {
+        // Still find the calendar, so the attempt to synchronize the calendar can be registered,
+        // in order to prevent the calendar from being deleted.
+        calendar := importExport_i.CalendarRegistry().FindCalendar( stagCal.CalendarType(), 
+                                                                    stagCal.StagingCalendarID() );    
+      }
+      */
+        
+      if( not isnull( calendar ) )
+      {
+        synchronizedCalendars.Add( calendar );
+      }
+    }
+    
+    // The Windows of the calendars can be have been changed during the synchronization.
+    // Make sure that the Start and End of the calendars is recalculated before synchronizing the events and subscriptions.
+    Transaction::Transaction().Propagate();
+    
+    // Deletion of calendars is postponed until the end of the synchronization of all data.
+    return &synchronizedCalendars;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

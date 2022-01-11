@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method VerifyChannelCompatibility (NamedValueTree nvt_i, LibDEF_IntegrationEvent event_i) as Boolean
+{
+  Description: 'Checks if the Channel-Major version of a Data-Message from another system matches with that of the Channel in this System.'
+  TextBody:
+  [*
+    // Timothy G May-25-2016 (created)
+    channelName := LibDEF_DataAccessor::GetDataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_CHANNELNAME() );
+    channel     := LibDEF_ChannelMeta::FindChannelMeta( this, this.SystemLocal().GUID(), channelName );
+    
+    value := false;
+    if( not isnull( channel ) )
+    {
+      majorVersionNVT     := LibDEF_DataAccessor::GetDataHeaderPropertyAsNumber( nvt_i, LibDEF_DataAccessor::HEADER_CHANNELMAJORVERSION() );
+      majorVersionChannel := channel.MajorVersion();
+    
+      value := majorVersionChannel = majorVersionNVT;
+    
+      // log security
+      if( not value )
+      {
+        LibDEF_Util::EventLogError( event_i,
+                                    "Verifying Channel version compatibility",
+                                    "The message is rejected due to a major Channel '" + channelName + "' version mismatch, please contact Support as soon as possible: " +
+                                    "Message from other System has Channel Major version '" + [String]majorVersionNVT + "', " +
+                                    "this System has Channel Major version '" + [String]majorVersionChannel + "'." );
+      }
+    }
+    else
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  "Verifying Channel version compatibility",
+                                  "Unable to verify compatibility of Channel, Channel '" + channelName + "' cannot be found." );
+    }
+    
+    return value;
+  *]
+}

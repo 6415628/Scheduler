@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcFirstRespectRoutingSubTask
+{
+  Description: 'Calculate the first subtask with routing dependency as set by the user; however, if there is a receive subtask in the sequence then it will be the receive subtask.'
+  TextBody:
+  [*
+    // khang chuen Jul-31-2015 (created)
+    //James Kwapien Sep-14-2016 #7717 Dialogs set first respect routing sub task, must account for priority of all inputs
+    value := '';
+    uservalue := this.FirstRespectRoutingSubTaskUser();
+    rgvalue := this.ResourceGroup_SC().FirstRespectRoutingSubTaskType();
+    
+    // AlexanderNg 19-Aug-2015 QP #5715, JamesK Sep-14-2016
+    // Overrides user defined, imported and dialog defined first subtask with routing dependency if there is a receive subtask defined.
+    if( this.ResourceGroup_SC().HasReceive() )
+    {
+      value := Constants::SubTask_Receive();
+    }
+    // If not HasReceive then resource group value if it exists 
+    else if( rgvalue <> '' )
+    {
+      value := rgvalue;
+    }
+    // If resource group value does not exist then user value if it exists
+    else if( uservalue <> '' )
+    {
+      value := uservalue;
+    }
+    // If no otherwise defined value exists then use first sub task of sub task sequence
+    else
+    {
+      value := this.ResourceGroup_SC().FirstSubTask();
+    }
+    
+    this.FirstRespectRoutingSubTask( value );
+  *]
+}

@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericPlannedSupply2Material (CDSchedule cdSchedule, GenericMaterialExternalSupply genericMaterialExternalSupply)
+{
+  Description: 'Restore generic planned supply to material core data attributes to planning object'
+  TextBody:
+  [*
+    cdGenericPlannedSupply2Materials := selectset( cdSchedule, CDEntity.astype( CDGenericPlannedSupply2Material ), cdGenericPlannedSupply2Material,
+                                                   cdGenericPlannedSupply2Material.MaterialID() = genericMaterialExternalSupply.SupplyID()
+                                                  )
+    
+    traverse( cdGenericPlannedSupply2Materials, Elements, cdGenericPlannedSupply2Material )
+    {
+      genericPlannedSupply2Material := GenericPlannedSupply2Material::Create( genericMaterialExternalSupply,
+                                                                              cdGenericPlannedSupply2Material.WorkOrderOutputMaterialID() );
+    
+      CopyCorresponding::CopyFrom( cdGenericPlannedSupply2Material ).CopyTo( genericPlannedSupply2Material );
+      
+      // Restore FulfillmentConversion
+      this.RestoreAttributes_FulfillmentConversion( cdSchedule, genericPlannedSupply2Material );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

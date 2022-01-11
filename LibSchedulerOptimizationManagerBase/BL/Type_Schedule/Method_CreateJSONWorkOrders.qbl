@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateJSONWorkOrders () as owning JSONBuilder
+{
+  Description: 'Creates work orders in JSON from the current dataset.'
+  TextBody:
+  [*
+    workOrders := JSON::Object();
+    
+    // Add workOrders array
+    workOrdersArray := JSON::Array();
+    
+    traverse( this, WorkOrder.astype( ExternalWorkOrder ), externalWorkOrder )
+    {
+      id := externalWorkOrder.Id();
+      // Assume each work order is unique and is its own routing if there is no original routingID
+      // This assumption is reused when creating processes, where we create a routing per work order
+      routingID := ifexpr( externalWorkOrder.RoutingID().Length() > 0, externalWorkOrder.RoutingID(), id );
+      dueDate := DateTimeToString::ISOConverter().Convert( externalWorkOrder.DueDate() );
+      qty := floor( externalWorkOrder.Quantity() );
+      maturity := externalWorkOrder.GetMaturityStatus();
+      
+      workOrder := JSON::Object();
+      workOrder.Add( Constants::JSON_WorkOrder_ID(), id );
+      workOrder.Add( Constants::JSON_WorkOrder_ProcessID(), routingID );
+      workOrder.Add( Constants::JSON_WorkOrder_DueDate(), dueDate );
+      workOrder.Add( Constants::JSON_WorkOrder_Quantity(), qty );
+      workOrder.Add( Constants::JSON_WorkOrder_Maturity(), maturity );
+      workOrder.Add( Constants::JSON_WorkOrder_Priority(), 1 );
+    
+      // Adding operations to workOrder
+      operations := externalWorkOrder.CreateJSONWorkOrderOperations();
+      workOrder.Add( Constants::JSON_WorkOrder_Operations(), operations );
+      
+      // Adding workOrder to workOrders (array)
+      workOrdersArray.Add( workOrder );
+    }
+    
+    // Adding workOrders (array) to workOrders (container)
+    workOrders.Add( Constants::JSON_WorkOrders(), workOrdersArray );
+    
+    // Adding flows to workOrders (container)
+    flows := this.CreateJSONFlows();
+    workOrders.Add( Constants::JSON_Flows(), flows );
+    
+    // There is no creation for workOrderFlows from any current Schedule dataset because we can't differentiate between workOrderFlows and the normal flows
+    // But we still need to create an empty JSON structure for it because the logic is expecting it
+    workOrders.Add( Constants::JSON_WorkOrderFlows(), JSON::Array() );
+    
+    return &workOrders;
+  *]
+}

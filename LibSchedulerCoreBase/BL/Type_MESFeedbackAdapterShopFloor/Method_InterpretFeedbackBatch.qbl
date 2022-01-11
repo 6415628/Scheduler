@@ -1,0 +1,78 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride InterpretFeedbackBatch
+{
+  TextBody:
+  [*
+    // process handle feedback batches
+    
+    fbbatches := selectset( this.Schedule(),
+                            ImportedFeedbackBatch,
+                            importedfeedbackbatch,
+                            true,
+                            importedfeedbackbatch.HasFeedback() 
+                            );
+    
+    traverse( fbbatches, Elements, fbbatch )
+    {
+      status := fbbatch.Status();
+      batchid := fbbatch.BatchID();
+      remark := fbbatch.Remark();
+      resource_id := fbbatch.Resource();
+      practice := fbbatch.Practice();
+      // sort the batch operations so that there is minimal movement in their downstream replan by FSPL
+      batchoperations := selectsortedset( fbbatch, 
+                                          ImportedFeedbackBatchContent.ExportedOperationBatchContent.Operation_SC, 
+                                          operation, 
+                                          true, 
+                                          guard( operation.BatchSequenceElement().SequenceNr(), Number::MinNumber() ) ); // guard added for the case where the batch operation is not in a batch yet
+      
+      if( status = Constants::StatusStart() )
+      {
+        this.FeedbackManager().BatchStart( batchid, batchoperations, resource_id, fbbatch.Start(), fbbatch.ProcessStartReadIn(), practice, remark);
+      }
+      
+      if( status = Constants::StatusEnd() )
+      {
+        fbbatchinschedule := FeedbackBatchInSchedule::FindFeedbackBatchInSchedule( batchid );    
+        
+        if( isnull( fbbatchinschedule ) and fbbatch.StartReadIn().IsFinite()) 
+        {
+            //When shopfloor give feedback start and end. Import is done after feedback end.
+            //So, when import, the status is End, but actually both Start and End is executed.
+            this.FeedbackManager().BatchStart( batchid, batchoperations, resource_id, fbbatch.Start(), fbbatch.ProcessStartReadIn(), practice, remark );
+        }
+      
+        this.FeedbackManager().BatchEnd( batchid, resource_id, fbbatch.StartReadIn(), fbbatch.ProcessStartReadIn(), fbbatch.End(), remark );
+      }
+      
+      if( status = Constants::StatusCancelled() )
+      {
+        this.FeedbackManager().BatchCancelled( batchid, resource_id, fbbatch.End(), remark );
+        traverse( fbbatch, ImportedFeedbackBatchContent, fbcontent )
+        {
+          exportedbatchcontent := fbcontent.ExportedOperationBatchContent();
+          if( not isnull( exportedbatchcontent ) )
+          { 
+            exportedbatchcontent.Delete();
+          }
+          fbcontent.Delete();
+        }      
+      }
+      
+      if( status = Constants::StatusAborted() )
+      {
+        fbbatchinschedule := FeedbackBatchInSchedule::FindFeedbackBatchInSchedule( batchid );    
+        
+        if( isnull( fbbatchinschedule ) and fbbatch.StartReadIn().IsFinite()) 
+        {
+            //When shopfloor give feedback start and end. Import is done after feedback end.
+            //So, when import, the status is End, but actually both Start and End is executed.
+            this.FeedbackManager().BatchStart( batchid, batchoperations, resource_id, fbbatch.Start(), fbbatch.ProcessStartReadIn(), practice, remark );
+        }
+        
+        this.FeedbackManager().BatchAborted( batchid, resource_id, fbbatch.End(), remark );
+      }
+    }
+  *]
+}

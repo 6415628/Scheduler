@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitConsecutiveBucketsConstraints (LibOpt_Task task, SuboptimizerMPPTAssignment_PTAssignmentMP program, TransientDataSuboptimizerPTAssignment transientData) as SuboptimizerMPPTAssignment_PTAssignmentMP
+{
+  TextBody:
+  [*
+    // jkr8 Jul-16-2021 (created)
+    
+    /////////////////////////////////////////////////
+    // IsUsed_b <= IsUsed_(b-1), forall b = 2,...,B//
+    /////////////////////////////////////////////////
+    // The following bucket is only allowed to be used if the previous bucket is used as well.
+    
+    traverse( transientData, Bucket, bucket, bucket.SequenceNr() <> 0 )
+    {
+      constr := program.ConsecutiveBucketsConstraints().New( bucket );
+      
+      constr.NewTerm( 1.0, program.IsUsedVariables().Get( bucket ) );
+      
+      constr.NewTerm( -1.0, program.IsUsedVariables().Get( bucket.PreviousBucket() ) );
+      
+      constr.RHSValue( 0.0 );
+      
+    }
+    
+    return program;
+  *]
+}

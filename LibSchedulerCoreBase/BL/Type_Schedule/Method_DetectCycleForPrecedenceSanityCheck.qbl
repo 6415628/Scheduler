@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method DetectCycleForPrecedenceSanityCheck
+{
+  Description:
+  [*
+    Executes the graph program cycle detection algorithm on the imported work order operation precedences and fires sanity check if cycle is detected.
+    
+    Limited to detecting just a single cycle.
+  *]
+  TextBody:
+  [*
+    // Initialize graph program
+    graphProgram := construct( GraphProgram );
+    
+    // Build graph from imported work order operation precedences
+    graph := graphProgram.NewDirectedGraph( typeof( ImportedWorkOrderOperationPrecedence ).Name().Concat( '-Graph' ), this );
+    graph := this.BuildGraphFromPrecedences( graph );
+    
+    // Build upon graph with sequenced operations within imported work orders
+    // Uses this if check because we have not run any synchronization
+    if( not this.IsOptimizationService() and not this.ImportedTechnicalConfiguration().IsDataDrivenTimeConstraintsMode() )
+    {
+      graph := this.BuildGraphFromWorkOrders( graph );
+    }
+    
+    // Detect cycle
+    graphProgramCycleDetection := graphProgram.NewCycleDetectionAlgorithm( 'Cycle Detection Program', graph );
+    graphProgramCycleDetection.ReportResult( true );
+    graphProgram.Execute();
+    
+    // Retrieve cycle & Fire sanity check violation
+    if( graphProgramCycleDetection.Result().IsCyclic() )
+    {
+      // Print & store cyclic graph
+      this.SaveCyclicGraph( graphProgramCycleDetection );
+      
+      // Fire violation on all work order operation precedences in cycle
+      traverse( graphProgramCycleDetection.Result().ReportCycle(), Edges, edge )
+      {
+        importedWorkOrderOperationPrecedence := edge.Object().astype( ImportedWorkOrderOperationPrecedence );
+        
+        if( not isnull( importedWorkOrderOperationPrecedence ) )
+        {
+          importedWorkOrderOperationPrecedence.IsPartOfCircularPrecedence( true );
+        }
+      }
+    }
+  *]
+}

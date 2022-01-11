@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateOrLoadDataset
+{
+  Description: 'Create or load DataRepository dataset based on configuration.'
+  TextBody:
+  [*
+    // Jacky CHAN Feb-25-2016 (created)
+    debuginfo( "===== Data Repository server startup starts =====" );
+    
+    datasetName := LibDEF_DataRepository::DATASET_NAME();
+    oinfo       := MDSEditor::Editor().ObjectInfo( LibDEF_DataRepository::DATASET_KIND(), LibDEF_DataRepository::DATASET_PATH(), datasetName );
+    
+    if( isnull( oinfo ) )
+    {
+      storageState := LibDEF_Util::GetSettingValueDefaultStorageState();
+    
+      if( storageState <> "" )
+      {
+        debuginfo( "Create dataset", datasetName, "with storage mode =", storageState );
+        MDSLibDEF_DataRepository::CreateMDS( datasetName, storageState );
+      }
+      else
+      {
+        // log warning
+        propertyName := LibDEF_Util::GetSettingNameDefaultStorageState();
+        LibDEF_Util::LogWarning( "Failed to retrieve configuration '" + propertyName + "'. Memory-only dataset will be created." );
+    
+        // create memory-only dataset
+        MDSLibDEF_DataRepository::CreateMDS( datasetName, MDSInterface::MemoryOnlyState() );
+      }
+      
+    }
+    else if( not oinfo.IsLoaded() )
+    {
+      debuginfo( "Load dataset", datasetName, "with storage mode =", oinfo.State() );
+      MDSLibDEF_DataRepository::LoadMDS( datasetName );
+    }
+    
+    debuginfo( "===== Data Repository server startup ends =====" );
+  *]
+}

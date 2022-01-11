@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeTechnicalConfigurations
+{
+  Description: 'Synchronizes technical configurations.'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    importedTechnicalConfiguration := schedule.ImportedTechnicalConfiguration();
+    technicalConfiguration := schedule.TechnicalConfiguration();
+    
+    if( guard( importedTechnicalConfiguration.IsValidDataHard(), false ) )
+    {
+      if( isnull( technicalConfiguration ) )
+      {
+        technicalConfiguration := schedule.CreateTechnicalConfiguration( importedTechnicalConfiguration.ID() );
+      }
+    
+      technicalConfiguration.Update( importedTechnicalConfiguration );
+    }
+    
+    // Update default selected optimizer if it is empty
+    if( guard( this.Schedule().Optimizer().SelectedOptimizer() = '', false ) )
+    {
+      this.Schedule().Optimizer().UpdateDefaultSelectedOptimizer();
+    }
+  *]
+}

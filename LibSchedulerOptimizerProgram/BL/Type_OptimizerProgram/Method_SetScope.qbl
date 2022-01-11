@@ -1,0 +1,69 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetScope (Resource_SCs resources, Operation_SCs operations, Boolean isdefaultscope) as owning LibOpt_ScopeElements
+{
+  Description: 'set scope for resource'
+  TextBody:
+  [*
+    // zyi1 Jul-6-2021 (created)
+    // Select the default scope if necessary
+    if( isdefaultscope)
+    {
+      traverse( resources, Elements, res )
+      {
+        // Select everything that is currently planned on the resource and that is not frozen
+        traverse( res, Task_SC.OperationInTask, op, 
+                  not op.IsFrozenInSchedule() )
+        {
+          operations.Add( op )
+        }
+        
+        // Select all unplanned operations that are allowed on the resource
+        traverse( res.ProgramOptimizerGetNotPlannedOperations(), Elements, op )
+        {
+          operations.Add( op );
+        }
+      }
+    }
+    
+    // We do not allow partial scopes. Any operation planned after an in scope operation should also be in scope
+    traverse( resources, Elements, resource )
+    {
+      firstinscopeoperation := minselect( operations, Elements, op, op.Start() );
+      additionaloperations := selectset( resource, Task_SC.OperationInTask, op, op.Start() > firstinscopeoperation.Start() );
+      operations := operations.Merge( additionaloperations );
+    }
+    
+    operations := operations.Unique();
+    
+    scope := construct( structured[LibOpt_ScopeElement] );
+    // add resources:
+    traverse( resources, Elements, resource )
+    {
+      element := resource.GetOrCreateScopeElement();
+      scope.Add( element );
+      
+      traverse( resource, ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration, ptc )
+      {
+        e := ptc.GetOrCreateScopeElement();
+        scope.Add( e );
+      }
+    }
+    
+    // Add the operations to the scope
+    traverse( operations, Elements, operation )
+    {
+      element := operation.GetOrCreateScopeElement();
+      scope.Add( element );
+    }
+    
+    // Add the currently existing combilegs to the scope
+    traverse( operations, Elements.OperationInCombiLeg.CombiLeg, combileg )
+    {
+      element := combileg.GetOrCreateScopeElement();
+      scope.Add( element );
+    }
+    
+    return & scope;
+  *]
+}

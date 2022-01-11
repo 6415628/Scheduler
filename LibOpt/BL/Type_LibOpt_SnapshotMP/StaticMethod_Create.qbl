@@ -1,0 +1,102 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (LibOpt_Run owner, MathematicalProgram program) as LibOpt_SnapshotMP
+{
+  Description: 'Create a new MP snapshot.'
+  TextBody:
+  [*
+    // Define CPLEX consts
+    CPX_MULTIOBJ_BESTOBJVAL := 15;
+    
+    goals := program.Goals( relget );
+    priorities := selectuniquevalues( goals, Elements, goal, true, goal.Priority() );
+    priorities := priorities.Sort().Reverse();
+    
+    goal_values := RealVector::Construct( priorities.Size() );
+    bounds := RealVector::Construct( priorities.Size() );
+    
+    if( goals.Size() = 1 and goals.First().Name() = '' ) // Non hierarchical goals
+    {
+      bound := program.GoalValue() + ifexpr( program.GoalSense() = MPGoalSense::Maximize(), 1, -1 ) * program.AbsoluteGap();
+      bounds.Set( 0, bound );
+      goal_values.Set( 0, program.GoalValue() );
+    }
+    else // Hierarchical goals
+    {
+      for( i := priorities.Size() - 1; i >= 0; i-- )
+      {
+        priority := priorities.Element( i );
+        value := sum( goals, Elements, goal, goal.Priority() = priority, goal.Weight() * goal.OptimalValue() );
+        goal_values.Set( i, value );
+        
+        bounds.Set( i, guard( program.Statistics().MultiObjGetRealInfo( i, CPX_MULTIOBJ_BESTOBJVAL ), value ) );
+      }
+    }
+    
+    // Calculate gap
+    absolute_gaps := bounds.Minus( goal_values ).Abs();
+    relative_gaps := null( RealVector );
+    if( goal_values.Equals( 0.0 ).IsAllFalse() )
+    {
+      relative_gaps := absolute_gaps.Div( goal_values ).Abs();
+    }
+    else
+    {
+      // Solve division by zero error
+      relative_gaps := RealVector::Construct( bounds.Size() );
+      for( i := 0; i < relative_gaps.Size(); i++ )
+      {
+        goal := goal_values.Get( i );
+        relative_gaps.Set( i, ifexpr( goal = 0.0,
+                                      ifexpr( absolute_gaps.Get( i ) = 0,
+                                              0.0,
+                                              Real::MaxReal() ),
+                                      abs( absolute_gaps.Get( i ) / goal ) ) );
+      }
+    }
+    
+    // Set whether the MIP is fixed
+    fixed := program.IsFixedMixedIntegerProblem()
+          or program.IsFixedMixedIntegerQuadraticProblem();
+          
+    // Set whether the problem is MIP
+    mip := program.IsFixedMixedIntegerProblem()
+        or program.IsFixedMixedIntegerQuadraticProblem()
+        or program.IsMixedIntegerProblem()
+        or program.IsMixedIntegerQuadraticallyConstrainedProblem()
+        or program.IsMixedIntegerQuadraticProblem()
+          
+    // Set whether the problem is quadratically constrained
+    qconstr := program.IsQuadraticallyConstrainedProblem()
+            or program.IsMixedIntegerQuadraticallyConstrainedProblem()
+    
+    // Set whether the problem is quadratic
+    quadr := program.IsQuadraticProblem()
+          or program.IsMixedIntegerQuadraticProblem()
+          or program.IsFixedMixedIntegerQuadraticProblem()
+    
+    snapshot := owner.Snapshot( relnew, LibOpt_SnapshotMP,
+                                AbsoluteGap := program.AbsoluteGap(),
+                                AbsoluteGaps := absolute_gaps.AsBinaryValue(),
+                                RelativeGap := program.RelativeGap(),
+                                RelativeGaps := relative_gaps.AsBinaryValue(),
+                                GoalScore := goal_values.Get( 0 ),
+                                GoalScores := goal_values.AsBinaryValue(),
+                                Bound := bounds.Get( 0 ),
+                                Bounds := bounds.AsBinaryValue(),
+                                IsFeasible := LibOpt_SuboptimizerMP::CheckIsFeasible( program ),
+                                IsOptimal := program.Optimal(),
+                                NumberOfSolutions := program.NumberOfSolutions(),
+                                NrVariables := program.Variables( relsize ),
+                                NrConstraints := program.Constraints( relsize ),
+                                NrGoalLevels := priorities.Size(),
+                                IsFixed := fixed,
+                                IsMIP := mip,
+                                IsQuadraticallyConstrained := qconstr,
+                                IsQuadratic := quadr,
+                                Kappa := program.Statistics().Kappa() );
+    snapshot.Capture( program );
+    
+    return snapshot;
+  *]
+}

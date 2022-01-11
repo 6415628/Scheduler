@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod MergeNvt (LibDEF_NamedValueTrees nvtObjects_i) as owning NamedValueTree
+{
+  Description: 'Merge the given NVTs into a single NVT. Will take care of duplicated nodes amongst NVT as well (merge them into one).'
+  TextBody:
+  [*
+    // First can just simply clone the first NVT as take it as the merged NVT result.
+    anchorNvtObj := nvtObjects_i.Element( 0 );
+    nvtMerged := anchorNvtObj.GetNamedValueTree().Clone();
+    
+    // Then get the rest of the NVTs as the "NVTs to be merged" to the merge point.
+    nvtObjsToMerge := nvtObjects_i.Difference( anchorNvtObj );
+    
+    // Collect the NVTs to be merged into a single NVT.
+    nvtOfNvtObjsToBeMerged := NamedValueTree::Create();
+    nvtOfNvtObjsToBeMergedRoot := nvtOfNvtObjsToBeMerged.Root();
+    traverse( nvtObjsToMerge, Elements, nvtObject )
+    {
+      nvt := nvtObject.GetNamedValueTree();
+      nvt.Root().Copy( nvtOfNvtObjsToBeMergedRoot, true );
+    }
+    
+    // The concept here is that we are merging the "roots" of the NVTs to the target NVT root.
+    LibDEF_NamedValueTreeProcessor::MergeNodesTo( nvtOfNvtObjsToBeMergedRoot.Children(), nvtMerged.Root() );
+    
+    return &nvtMerged;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

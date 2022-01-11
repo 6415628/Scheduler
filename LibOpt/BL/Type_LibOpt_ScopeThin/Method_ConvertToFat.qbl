@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method ConvertToFat () as LibOpt_ScopeFat
+{
+  Description:
+  [*
+    This will delete the curent `LibOpt_ScopeThin` and return a `LibOpt_ScopeFat` that contains represents the same scope.
+    Note that after using this method, all variable references to the current `LibOpt_ScopeThin` will be null.
+  *]
+  TextBody:
+  [*
+    result := LibOpt_ScopeFat::Create( this.Run(), this.ScopeElements() )
+    
+    traverse( this, AsInputScope, ais )
+    {
+      result.AsInputScope( relinsert, ais );
+    }
+    traverse( this, AsOutputScope, aos )
+    {
+      result.AsOutputScope( relinsert, aos );
+    }
+    result.AsStartScope( relset, this.AsStartScope() );
+    traverse( this, Task, task )
+    {
+      result.Task( relinsert, task );
+    }
+    
+    this.Delete();
+    
+    return result;
+  *]
+}

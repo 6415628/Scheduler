@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddPathPlanPaths (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs)
+{
+  TextBody:
+  [*
+    // Resource Path
+    // We only use the resource path to define the expressions
+    // The constraints for these expressions are applied per combileg plan path
+    // And when we end a phase/program, the expression is reset at the start of the combileg
+    // This means that we do need to have an expression per program set (And potentially both a program type one and a program phase one)
+    // that has a cummulative length rule on that characteristic
+    // For example, if program set 1 has 1 program type with 1 program phase with a max nr operations
+    // and program set 2, has two program types, one with a max nr of operation and one with two program phases with each a max nr of operations
+    // Then we'll need a max nr operation expression for set 1 - phase, set 2 - program type, set 2 - program phase
+    // If a combileg is the end of a program phase of set 2, then the nr operation of set 2 - program phase should be reset to 0 
+    traverse( combilegs, Elements.LeadingCombiProgramPhase.CombiProgramType.CombiProgramSet.Resource_SC, resource )
+    {
+      pathtype := poa.NewPathType( SuboptimizerPOACombiLeg::NamePOAPathResource( resource ), resource );
+      if( this.Run().DebugScope() )
+      {
+        pathtype.CacheId( pathtype.Role() );
+      }
+      pathtype.MinCount( 1 );
+      pathtype.MaxCount( 1 );
+    }
+    
+    // Combi leg Plan Paths
+    traverse( combilegs, Elements, combileg )
+    {
+      pathtype := poa.NewPathType( SuboptimizerPOACombiLeg::NamePOAPathCombiLeg( combileg ), combileg );
+      if( this.Run().DebugScope() )
+      {
+        pathtype.CacheId( pathtype.Role() );
+      }
+      pathtype.MinCount( 1 );
+      pathtype.MaxCount( 1 );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

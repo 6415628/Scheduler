@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeReservationExt2COL (output Fulfillments updatedinstances)
+{
+  Description: 'Synchronizing external fulfillments between external supply and customer order lines.'
+  TextBody:
+  [*
+    traverse( this, Schedule.ImportedFixedProductStock2COL, row, row.IsValidDataHard() )
+    {
+      demandid := ProductCustomerOrderLine::GetDemandID( row.OrderNr(), row.OrderLineNr() );
+      externalsupply := ProductExternalSupply::FindProductExternalSupply( SupplyType::ProductExternalSupply(), row.ExternalSupplyId() );
+      customerorderline := ProductCustomerOrderLine::FindProductCustomerOrderLine( DemandType::ProductCustomerOrderLine(), demandid );
+      
+      demands  := construct( ProductDemands );
+      supplies := construct( ProductSupplys );
+      
+      if( not isnull( customerorderline ) )
+      {
+        demands.Add( customerorderline );
+      }
+      if( not isnull( externalsupply ) )
+      {
+        supplies.Add( externalsupply );
+      }
+    
+      this.SynchronizeExternalFulfillments( demands, supplies, row, updatedinstances );
+    }
+  *]
+}

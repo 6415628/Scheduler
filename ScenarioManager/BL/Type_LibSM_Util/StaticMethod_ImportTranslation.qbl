@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ImportTranslation (String filePath)
+{
+  TextBody:
+  [*
+    /* Import translation from file
+    1. Tokenize the translation file with NewLine string 
+    2. Then, each element in entry line is separated by "|"
+    3. Add translation elements into LibSM_ScenarioManager 
+    */
+    
+    try
+    {
+      file := OSFile::Construct();
+      file.Open( filePath, LibSM_Util::GetFileAccess_Read(), true );
+    
+      if( file.IsOpen() )
+      {
+        translationsFile := file.ReadTextToEnd();
+        entries := translationsFile.Tokenize( String::NewLine() );
+        count   := 0;
+    
+        traverse( entries, Elements, row )
+        {
+          elements  := row.Tokenize( LibSM_Util::GetTranslationSeparator_1() );
+    
+          if( elements.Size() >= 3 )
+          {
+            LibSM_Util::AddTranslation( elements );
+            count++;
+          }
+        }
+      }
+    }
+    onerror
+    {
+      LibSM_Util::LogError( filePath + ": " + e.GeneralInformation() );
+    }
+  *]
+}

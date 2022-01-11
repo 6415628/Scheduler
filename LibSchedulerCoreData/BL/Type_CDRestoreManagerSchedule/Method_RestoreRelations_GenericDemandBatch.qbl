@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericDemandBatch (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic demand batch core data attributes to planning object'
+  TextBody:
+  [*
+    traverse( cdSchedule, CDEntity.astype( CDGenericDemandBatch ), cdGenericDemandBatch )
+    {
+      genericDemandBatch := DemandBatch::FindDemandBatch( cdGenericDemandBatch.BatchID() );
+      
+      if( not isnull( genericDemandBatch ) )
+      {
+        // BatchWorkOrder, 1-1
+        batchWorkOrder := WorkOrder::FindWorkOrder( cdGenericDemandBatch.BatchWorkOrderID() );
+      
+        genericDemandBatch.BatchWorkOrder( relset, batchWorkOrder.astype( BatchWorkOrder ) );
+                                                                
+        // ImportedDemoDataDemandBatch, 1-1
+        importedDemoDataDemandBatch := ImportedDemoDataDemandBatch::FindImportedDemoDataDemandBatch( cdGenericDemandBatch.BatchID() );
+        genericDemandBatch.ImportedDemoDataDemandBatch( relset, importedDemoDataDemandBatch );
+       
+        // Restore GenericDemandInBatch
+        this.RestoreRelations_GenericDemandInBatch( cdSchedule, genericDemandBatch.astype( GenericDemandBatch ) );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

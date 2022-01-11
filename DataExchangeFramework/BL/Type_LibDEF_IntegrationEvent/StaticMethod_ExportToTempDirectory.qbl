@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ExportToTempDirectory (LibDEF_DataBroker dataBroker_i)
+{
+  Description:
+  [*
+    Export the IntegrationEvents that are executed in the current transaction into directory specified.
+    If the setting 'customintegrationeventsfilespath' is not found, or if the value is empty, the default directory: data directory will be used instead.
+  *]
+  TextBody:
+  [*
+    extensionXML        := LibDEF_IntegrationEvent::EXTENSIONXML();
+    eventsDirectoryPath := LibDEF_Util::GetSettingValueCustomIntegrationEventsFilesPath();
+    
+    // If the setting 'customintegrationeventsfilespath' is not found, or if the value is empty, the default directory: data directory will be used instead.
+    if( eventsDirectoryPath = "" )
+    {
+      eventsDirectoryPath := LibDEF_IntegrationEvent::GetDefaultDirectoryPath();
+    }
+    
+    // Checks validity of the path
+    if( OS::IsDirectory( eventsDirectoryPath ) )
+    {
+      // Export "incomplete" IntegrationEvents into file
+      traverse( dataBroker_i,
+                IntegrationEvent,
+                event,
+                not event.IsCompletedInTransaction()
+                and event.IsReceive() )                // Sending messages transaction error event are not capable of being re-import now (due to missing OnFailure handling)
+      {
+        event.XMLExportIntegrationEventXML( eventsDirectoryPath + [String]event.Key() + extensionXML );
+      }
+    }
+    else
+    {
+      // Does not need an IntegrationEvent since we are now exporting IntegrationEvents to file due to an error
+      LibDEF_Util::LogError( "Unable to export temporary IntegrationEvents file(s). Invalid directory: '" + eventsDirectoryPath + "'" );
+    }
+  *]
+}

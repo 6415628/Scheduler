@@ -1,0 +1,14 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckSplitDiscreteProductSupplyQuantityAllowed (Real quantity) declarative remote as Boolean
+{
+  Description: 'Checks whether the split quantity causes the discrete product supply to become indiscrete.'
+  TextBody:
+  [*
+    return forall( this, 
+                   Supply.astype( ProductPlannedSupply ), 
+                   productplannedsupply, 
+                   productplannedsupply.IsDiscrete(), 
+                   Utility_SC::CheckIsInteger( productplannedsupply.GetNewQuantity( quantity, guard( productplannedsupply.WorkOrderSupply().Quantity(), 0.0 ) ) ) ); // checks whether the new split quantity causes the product supply quantity to become fractional
+  *]
+}

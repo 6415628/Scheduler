@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test042_MPSuboptimizer_HierarchicalGoals (LibOpt_TestDataset dataset)
+{
+  Description: 'Checks whether the hierarchical goals work in the MP suboptimizer'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    runcontextforutf := LibOpt_MyRunContextForUTF::Create( run );
+    subopt := opt.MPSuboptimizer( run, 'MPSuboptimizer', runcontextforutf );
+    subopt.HasHierarchicalGoal( true );
+    
+    exec := run.Start();
+    
+    this.NoException( exec );
+    
+    this.NoException( exec->|void->( )
+    {
+      this.Run().AssertEqual( 0, counter( run, Snapshot.astype( LibOpt_SnapshotError ), sn, true ), 'More error snapshots than expected' );
+      this.Run().AssertEqual( 2, sum( run, Snapshot.astype( LibOpt_SnapshotMP ), sn, true, RealVector::Construct( sn.GoalScores() ).Size() ), 'RealVector size' );
+    });
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

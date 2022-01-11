@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcCampaignCleanupDuration
+{
+  Description: "A task's campaign cleanup duration is calculated to be the maximum of all campaign setup durations of its owned campaign tasks."
+  TextBody:
+  [*
+    value := Duration::Zero();
+    
+    if( this.OperationCampaign( relsize ) > 0 )
+    {
+      value := max( this, OperationCampaign, operationCampaign, 
+                    operationCampaign.IsLastInCT(), 
+                    guard( operationCampaign.CampaignTask().CleanupDuration(), Duration::Zero() ) );
+      
+      value := maxvalue( value, Duration::Zero() );
+    }
+    
+    this.CampaignCleanupDuration( value );
+  *]
+}

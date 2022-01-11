@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CheckTaskHasFeedbackAllowedSequence (Task_SC beforetask, Task_SC aftertask, output String feedback_o) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    // dropping before the sequence (i.e., beforetask & aftertask are empty) is not allowed if the first task on the resource has feedback
+    value := not isnull( beforetask ) or not isnull( aftertask ) or guard( not this.First().HasFeedbackTask(), true );
+    
+    if( not value )
+    {
+      Utility_SC::Concat( feedback_o, Translations::SC_BatchHasFeedback( this.First().astype( BatchTask ).Batch().BatchID() ) ) ;
+    }
+    
+    return value;
+  *]
+}

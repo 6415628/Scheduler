@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeRoutings
+{
+  Description: 'Synchronizes routings imported from external ERP/MES systems.'
+  TextBody:
+  [*
+    // WOI1 Oct-27-2016 (created)
+    allinstances := selectset( this.Schedule(), Routing, routing, true );
+    updatedinstances := construct( Routings );
+    
+    traverse( this.Schedule(), ImportedRouting_SC, row, row.IsValidDataHard() )
+    {
+      routingid := row.RoutingId();
+      routing := Routing::FindRouting( routingid );
+    
+      if( isnull( routing ) )
+      {
+        routing := this.Schedule().CreateRouting( routingid );
+      }
+    
+      routing.Update( row );
+      
+      // Synchronize routing steps
+      importedroutingsteps := selectsortedset( row, ImportedRoutingStep_SC, irs, irs.IsValidDataHard(), irs.SequenceNr() ); // sorted to make sure the routing steps are created in order
+      routing.SynchronizeRoutingSteps( importedroutingsteps );
+      routing.UpdateRoutingStepYields(); // update the routing step yields after all steps have been synchronized because it can only be calculated AFTER
+    
+      updatedinstances.Add( routing );
+    }
+    
+    //Delete routings if they do not exist in ERP
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, routing, routing.CheckCanBeDeleted() )
+    {
+      routing.Delete();
+    }
+  *]
+}

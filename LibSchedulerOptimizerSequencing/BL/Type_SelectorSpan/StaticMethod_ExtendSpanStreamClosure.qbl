@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ExtendSpanStreamClosure (output LibOpt_ScopeElementOnRuns span, LibOpt_Scope scope) as Boolean
+{
+  Description:
+  [*
+    Extends the given span by the following rule:
+    If operations o_1 and o_3 are in scope and operation o_2 lies on the dependency graph on a path  between o_1 and o_3, then o_2 is in the span (“spanning stream closure”).
+    Returns whether the span has been extended.
+    This rule is span-agnostic: given a scope, it always adds the same elements to the span.
+    This rule has since its introcution been removed from the span definition in the OSD, because it is not necessary for the POA suboptimizer. It is not used anymore, but kept for reference.
+  *]
+  TextBody:
+  [*
+    // mbr23 Jan-10-2020 (created)
+    scope_operations := scope.OperationsExSpan();
+    // scope_operations_project_upstream removes those operations that have a proper upstream operation that is also in `scope_operations`.
+    scope_operations_project_upstream := selectset( scope_operations, Elements, op, op.GetUpstreamOperations().Difference( op ).Intersect( scope_operations ).Size() = 0 );
+    // scope_operations_project_downstream removes those operations that have a proper downstream operation that is also in `scope_operations`.
+    scope_operations_project_downstream := selectset( scope_operations, Elements, op, op.GetDownstreamOperations().Difference( op ).Intersect( scope_operations ).Size() = 0 );
+    has_changed := false;
+    traverse( scope_operations_project_upstream, Elements, o1 )
+    {
+      downstream_operations := o1.GetDownstreamOperations().Intersect( scope_operations_project_downstream );
+      traverse( downstream_operations, Elements, o3 )
+      {
+        in_between_operations := o1.GetDownstreamOperations().Intersect( o3.GetUpstreamOperations() );
+        traverse( in_between_operations, Elements, op, scope_operations.Find( op ) < 0 )
+        {
+          scopeelement := op.GetOrCreateScopeElement();
+          seor := scopeelement.OnRunOrCreate( scope.Run() );
+          if( span.Find( seor ) < 0 )
+          {
+            // not yet in the span. add it:
+            span.Add( seor );
+            has_changed := true;
+          }
+        }
+      }
+    }
+    
+    return has_changed;
+  *]
+}

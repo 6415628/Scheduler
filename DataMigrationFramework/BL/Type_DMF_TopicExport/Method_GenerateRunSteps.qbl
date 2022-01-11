@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GenerateRunSteps (DMF_Datasets selectedDatasets_i)
+{
+  TextBody:
+  [*
+    topicStepPreprocessing  := select( this, TopicStep.astype( DMF_TopicStep_ExportPreprocessing  ), topicStep, true );
+    topicStepMain           := select( this, TopicStep.astype( DMF_TopicStep_ExportMain           ), topicStep, true );
+    topicStepPostprocessing := select( this, TopicStep.astype( DMF_TopicStep_ExportPostprocessing ), topicStep, true );
+    
+    traverse( selectedDatasets_i, Elements, dataset )
+    {
+      // Create Preprocessing for dataset
+      previousRunStep := DMF_RunStep::FindCreateRunStep( this, topicStepPreprocessing, null( DMF_RunStep ), dataset );
+      
+      // Create Main for dataset (there should only be single version for Export)
+      version := dataset.FirstDatasetInConverterVersion();
+      previousRunStep := DMF_RunStep::FindCreateRunStep( this, topicStepMain, previousRunStep, dataset, version );
+      
+      // Create Postprocessing for dataset
+      DMF_RunStep::FindCreateRunStep( this, topicStepPostprocessing, previousRunStep, dataset );
+    }
+  *]
+}

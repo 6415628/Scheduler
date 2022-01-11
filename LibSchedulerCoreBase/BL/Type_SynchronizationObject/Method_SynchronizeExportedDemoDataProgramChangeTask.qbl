@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExportedDemoDataProgramChangeTask
+{
+  Description: 'Synchronize exported demo data for program change task'
+  TextBody:
+  [*
+    allInstances := selectset( this, Schedule.FeedbackManager.ExportedSchedule.ExportedDemoDataProgramChangeTask, 
+                               exporteddemodataprogramchangetask, true );
+    updatedInstances := construct( ExportedDemoDataProgramChangeTasks );
+    
+    traverse( this, Schedule.ProgramChange, programchange )
+    {
+      exporteddemodataprogramchangetask := ExportedDemoDataProgramChangeTask::FindExportedDemoDataProgramChangeTaskTypeIndex( programchange.ProgramChangeID() );
+      
+      if( isnull( exporteddemodataprogramchangetask ) )
+      {
+        exporteddemodataprogramchangetask := ExportedDemoDataProgramChangeTask::Create( this.Schedule().FeedbackManager().ExportedSchedule(),
+                                                                                        programchange.ProgramChangeID() );
+      }
+      
+      exporteddemodataprogramchangetask.Update( programchange );
+      updatedInstances.Add( exporteddemodataprogramchangetask );
+    }
+    
+    oldInstances := allInstances.Difference( updatedInstances );
+    
+    traverse( oldInstances, Elements, old )
+    {
+      old.Remove();
+    }
+  *]
+}

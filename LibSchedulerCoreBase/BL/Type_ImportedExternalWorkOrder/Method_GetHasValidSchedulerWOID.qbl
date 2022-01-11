@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidSchedulerWOID (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if Scheduler WOID is a valid referral to an internal work order.'
+  TextBody:
+  [*
+    isvalid := this.HasReplacedInternalWorkOrder()
+               or not isnull( this.InternalWorkOrder() );
+               
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedWorkOrder_Instance( name ),
+                                                               Translations::ImportedWorkOrder_NotLinkedToAValidInternalWorkOrder() ) );
+    }
+    
+    return isvalid;
+  *]
+}

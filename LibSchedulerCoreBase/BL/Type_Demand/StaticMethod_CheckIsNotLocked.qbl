@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsNotLocked (Demands demands, String action, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Check if demands of selected supplies is not locked by optimization.'
+  TextBody:
+  [*
+    value := not exists( demands, Elements, demand, demand.IsLocked() );
+    
+    if( not value )
+    {
+      if( action = Constants::Action_UnreserveMaterialForDemand() )
+      {
+        feedback_o := feedback_o + String::NewLine() + Translations::Demand_UnreserveConfirmation();
+      }
+      else if( action = Constants::Action_ReserveMaterialForDemand() )
+      {
+        feedback_o := feedback_o + String::NewLine() + Translations::Demand_MaterialReservationConfirmation();
+      }
+    }
+    
+    return value;
+  *]
+}

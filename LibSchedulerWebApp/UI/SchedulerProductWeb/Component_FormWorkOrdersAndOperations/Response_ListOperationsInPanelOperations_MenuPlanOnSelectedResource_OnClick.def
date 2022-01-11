@@ -1,0 +1,62 @@
+Quintiq file version 2.0
+#parent: ListOperationsInPanelOperations
+Response OnClick (structured[Operation_SC] selection) id:Response_ListOperationsInPanelOperations_MenuPlanOnSelectedResource_OnClick
+{
+  #keys: '[151084.0.260436131]'
+  CanBindMultiple: false
+  DefinitionID => //ListOperations/Responsedef_ListOperations_WebMenu_OnClick
+  GroupServerCalls: true
+  Initiator: 'MenuPlanOnSelectedResource'
+  Precondition:
+  [*
+    isallowedhard := true;
+    resource := DataHolderSelectedResourceFromResourceSchedule.Data();
+    value := not isnull( resource );
+    
+    if( value )
+    {
+      if( resource.istype( SingleResourceBase ) )
+      {
+        singleResource := resource.astype( SingleResourceBase );
+        value := Scheduler.AllowedScheduling( singleResource,
+                                              selection,
+                                              false,
+                                              false,
+                                              resource.Last(),
+                                              null( Task_SC ),
+                                              Operation_SC::GetSelectedObjects( selection ),
+                                              feedback,
+                                              isallowedhard );
+      }
+      else
+      {
+        batchResource := resource.astype( BatchResource );
+        value := Scheduler.AllowedScheduling( batchResource,    //batchresource
+                                              selection,        //structured operations
+                                              false,            //skip soft check
+                                              false,            //ctrl shift key
+                                              resource.Last(),  //before task
+                                              null( Task_SC ),  //afterbatch
+                                              Operation_SC::GetSelectedObjects( selection ),
+                                              feedback,
+                                              isallowedhard )
+      }
+    }
+    else
+    {
+      feedback := Translations::SC_NoResourceSelected();
+    }
+    
+    return value;
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Schedule Ops on Selected Resource
+      resource := DataHolderSelectedResourceFromResourceSchedule.Data()
+      
+      Schedule.PlanOperations( selection, resource );
+    *]
+  }
+}

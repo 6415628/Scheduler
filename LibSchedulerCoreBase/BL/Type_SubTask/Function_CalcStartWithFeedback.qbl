@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcStartWithFeedback
+{
+  TextBody:
+  [*
+    feedbackBatch := guard( this.Task_SC().astype( BatchTask ).FeedbackBatchInSchedule(), null( FeedbackBatchInSchedule ) );
+    feedbackTask := this.Task_SC().LastFeedbackTask();
+    
+    value := guard( guard( feedbackBatch.Start(), feedbackTask.Start() ),
+                    this.Start() );
+    
+    if( not isnull( this.Previous() ) )
+    {
+      value := this.Previous().StartWithFeedback() + this.Previous().DurationWithFeedback();
+    }
+    
+    this.StartWithFeedback( value );
+  *]
+}

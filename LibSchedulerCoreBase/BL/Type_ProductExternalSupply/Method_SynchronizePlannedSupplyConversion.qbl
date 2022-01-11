@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SynchronizePlannedSupplyConversion
+{
+  TextBody:
+  [*
+    allinstances := selectset( this, PlannedSupply2ExternalSupply, plannedSupply2ExternalSupply, true );
+    updatedinstances := construct( PlannedSupply2ExternalSupplys );
+    
+    this.ZeroQuantityConvertedForValidConversions();
+    
+    traverse( this, ImportedExternalSupply_SC.ImportedPlannedSupply2ExternalSupply_SC, row, row.IsValidDataHard() )
+    {
+      externalWorkOrderSupply := ExternalWorkOrderSupply::FindExternalWorkOrderSupply( row.WorkOrderSupplyID() );
+      importedQtyConverted := row.Quantity();
+      
+      if( not isnull( externalWorkOrderSupply ) )
+      {
+        // This API can be customized by project teams to have different sorting criteria
+        plannedsupplies := externalWorkOrderSupply.GetSortedPlannedSupplies();
+        
+        traverse( plannedsupplies, Elements, plannedsupply, importedQtyConverted > 0 )
+        {
+          plannedSupply2ExternalSupply := PlannedSupply2ExternalSupply::FindPlannedSupply2ExternalSupply( row.ExternalSupplyID(), plannedsupply.SupplyID() );
+          
+          if( isnull( plannedSupply2ExternalSupply ) )
+          {
+            plannedSupply2ExternalSupply := GenericPlannedSupply2ExternalSupply::Create( this, plannedsupply );
+          }
+          
+          qty := minvalue( importedQtyConverted, plannedsupply.Quantity() );
+          plannedSupply2ExternalSupply.Update( qty, row );
+          plannedSupply2ExternalSupply.SynchronizeFulfillmentsByPlannedSupplytoExternalSupply();
+          importedQtyConverted := importedQtyConverted - qty; // Update importedQtyConverted for next traversed planned supply
+          updatedinstances.Add( plannedSupply2ExternalSupply );
+        }
+      }
+    }
+    
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, old, old.CheckCanDelete() )
+    {
+      old.Delete();
+    }
+  *]
+}

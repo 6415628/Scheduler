@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateAndSynchronizeOrder_SC (ProductInStockingPoint pisp, Real quantity, Number nroflots, 
+  DateTime duedate, Routing routing, Boolean isdummy)
+{
+  Description: 'Updates the work order, synchronizes Order_SC.'
+  TextBody:
+  [*
+    // WOI1 Nov-16-2016 (created)
+    
+    oldrouting := this.Routing();
+    // update this work order's attributes
+    this.Update( pisp, quantity, nroflots, duedate, routing, isdummy );
+    
+    issamerouting := oldrouting = routing;
+    
+    if( issamerouting ) // if this is same routing, update as usual
+    {
+      // proceed to update the Order_SC created from this work order
+      this.SynchronizeOrder_SC();
+    }
+    else // if this is a different routing, delete all work order operations, create new operations from new routing steps, basically updating the work order's operations
+    {
+      // UPDATING THE WORK ORDER'S WORK ORDER OPERATIONS
+      // delete all its work order operations, demands supplies
+      this.WorkOrderOperation( relflush ); 
+      // create new work order operations, demands, supplies based on new routing
+      routingsteps := selectset( routing, RoutingStep, routingstep, true );
+      this.CreateWorkOrderOperationsFromRouting( routingsteps );
+      
+      // SYNCHRONIZING ORDER_SC
+      // grabs the old order removes old Order_SC, its plan units, their operations, supplies and demands
+      oldorder := this.Order_SC();
+      this.Order_SC( relflush ); // flush to delete the relation, to prevent the work order from being updated when plan units are deleted, work order updated with each plan unit deleted
+      oldorder.Delete(); 
+      // creates new Order_SC
+      order := this.CreateOrder_SC(); // can only create after deleting because the old Order_SC has the same order id
+      order.CreatePlanUnit( order.GetLastPlanUnitNr(), this.Quantity(), this.NrOfLots() );
+    }
+  *]
+}

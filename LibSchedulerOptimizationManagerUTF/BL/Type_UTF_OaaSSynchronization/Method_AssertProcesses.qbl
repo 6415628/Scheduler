@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method AssertProcesses (Schedule schedule, JSON processArray)
+{
+  Description: 'Checks whether the schedule has routings that matches the JSON input data.'
+  TextBody:
+  [*
+    for( i := 0; i < processArray.Size(); i++ )
+    {
+      processJSON := processArray.Get( i ); // Get to grab array's first instance
+      routingID := ImportedRouting_SC::GetProcessID( processJSON );
+      routing := select( schedule, Routing, routing, routing.RoutingId() = routingID );
+      
+      if( this.Run().AssertTrue( not isnull( routing ), Translations::LibSchedulerOptMgrUTF_Routing_NotCreated( routingID ) ) )
+      {
+        this.Run().AssertEqual( ImportedRouting_SC::GetName( processJSON ), routing.Name() );
+        this.Run().AssertEqual( ImportedRouting_SC::GetLabel( processJSON ), routing.Label() );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

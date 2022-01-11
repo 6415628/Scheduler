@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExportedCalendarPeriod
+{
+  Description: 'Traverse all resource calendar period and create exported instance for it.'
+  TextBody:
+  [*
+    exportedSchedule := this.Schedule().FeedbackManager().ExportedSchedule();
+    allinstances := selectset( this, Schedule.FeedbackManager.ExportedSchedule.ExportedCalendarPeriod, exportedCalendarPeriod, true );
+    updatedinstances := construct( ExportedCalendarPeriods );
+    
+    traverse( this, Schedule.ResourceGroup_SC.Resource_SC.ResourceCalendar.Periods, period )
+    {
+      exportedCalendarPeriod := ExportedCalendarPeriod::FindExportedCalendarPeriod( [String]period.Key() );
+      
+      if( isnull( exportedCalendarPeriod ) )
+      {
+        exportedCalendarPeriod := ExportedCalendarPeriod::Create( exportedSchedule, [String]period.Key() );
+      }
+      
+      if( not isnull( exportedCalendarPeriod ) )
+      {
+        exportedCalendarPeriod.Update( period );
+      }
+      
+      updatedinstances.Add( exportedCalendarPeriod );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, exportedCalendarPeriod )
+    {
+      exportedCalendarPeriod.Remove();
+    }
+  *]
+}

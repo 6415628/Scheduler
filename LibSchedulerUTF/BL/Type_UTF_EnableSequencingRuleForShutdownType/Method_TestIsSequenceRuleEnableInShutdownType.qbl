@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestIsSequenceRuleEnableInShutdownType (Schedule schedule)
+{
+  Description: "Test shutdown type  setting 'Is Sequence Rule Enabled'"
+  TextBody:
+  [*
+    // Get variant data
+    isSequenceRulesEnabled := false;
+    hasViolatedRules := false;
+    
+    this.GetTestVariant( isSequenceRulesEnabled,
+                         hasViolatedRules );
+    
+    task2 := select( schedule, ResourceGroup_SC.Resource_SC.Last, t, true );
+    
+    // Check if task2 has violated the rule
+    // Propagete constraint 
+    Transaction::Transaction().Propagate( constraint( Task_SC, IsAllHighPriorityRulesOK ) );
+    Transaction::Transaction().Propagate( constraint( Task_SC, IsAllLowPriorityRulesOK ) );
+    violated := not( task2.IsAllHighPriorityRulesOK() and task2.IsAllLowPriorityRulesOK() );
+    
+    this.Run().AssertEqual( hasViolatedRules, violated,
+                            UTFUtility::GenerateFailedMessage( 'Shutdown type setting "IsSequenceRuleEnable" failed.', this.Variant() ) );
+  *]
+}

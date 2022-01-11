@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanAllOperations
+{
+  Description: 'Plan all operations that has no feedback and not planned. These operations will be planned  to the earliest available resource'
+  TextBody:
+  [*
+    // soon hwee Dec-23-2014 (created)
+    
+    // Sort operations by operation sequence number, due date, operation id in ascending order
+    operations := selectsortedset( this.Schedule(),
+                                   PlanUnit_SC.Operation_SC,
+                                   op,
+                                   not op.HasFeedback() and not op.IsPlanned(),
+                                   op.SequenceNr(),
+                                   op.DueDate(),
+                                   op.OperationID() );
+    
+    // Plan sorted operations on earliest available resource
+    this.Schedule().PlanOperations( operations );
+  *]
+}

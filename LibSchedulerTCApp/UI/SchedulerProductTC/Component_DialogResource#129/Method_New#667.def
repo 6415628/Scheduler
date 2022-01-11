@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method New (internal[GUIComponent] parent_i, Boolean isbatchedit) as Resource_SC id:Method_DialogResource_New_667
+{
+  #keys: '[134650.0.137817105]'
+  Body:
+  [*
+    // Create method for resource overview - Jian Giang 2017-07-20
+    
+    // James Kwapien 20160826 #7628 New Resource dialog, must determine single or batch resource
+    // We do this by taking ownership of shadow(Resource_SC) and creating a subclass relshadow binding
+    this.Title( Translations::SC_DialogResource_NewTitle() );
+    
+    resource := null( Resource_SC );
+    
+    if( isbatchedit )
+    {
+      this.InitializeCreateResourceInResourceView( SelectionResourceGroup.Data() );
+    }
+    else
+    {
+      this.InitializeNonBatchEdit();
+    }
+    
+    if( Dialog.DoModal( parent_i ) > 0 )
+    {
+      Dialog.Data().Image( LabelImageString.Text() );
+      Dialog.Data().Commit();
+      resource := Dialog.Data().WrappedInstance();
+    }
+    
+    return resource;
+  *]
+}

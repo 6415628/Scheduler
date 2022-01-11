@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcLoadEnd
+{
+  TextBody:
+  [*
+    // jiex Nov-8-2016 (created)
+    
+    value := this.End();
+    
+    //Get the first task in that resource that is without feedback.
+    firsttask := minselect( this.Resource_SC(), Task_SC, task, not task.HasFeedbackTask(), task.SequenceNr() );
+    
+    if( not isnull( this.NextFeedback() ) )
+    {
+      value := minvalue( value, this.NextFeedback().Start() );
+    }
+    else if( not isnull( firsttask ) )// If there is no next feedback, we need to consider the first task of the resource that is without feedback
+    {
+      // load end should not exceed the start time of the first (non feedbacked) task of the resource.
+      value := minvalue( value, firsttask.Start() )
+    }
+    
+    
+    this.LoadEnd( value );
+  *]
+}

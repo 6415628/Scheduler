@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method Execute () as stream[Void]
+{
+  Description: 'Execute the topic step'
+  TextBody:
+  [*
+    // Topic step is subclassed to call the real dataset job
+    // we need to pass in the target dataset MDSID, 
+    // our ConvertorDataset MDSID (so that they can use convertor job to report back to us)
+    // and also the runstep ID (so that they report to the correct runstep)
+    
+    // It is very important to return stream[Void] in this method
+    // because we want to run OnFinished after Execute, and stream
+    // ensures the methods called reactively after this method
+    // will depend on it.
+    dataset    := guard( this.DatasetInConvertorVersion().Dataset(), this.Dataset() );
+    datasetKey := Key::ZeroKey();
+    
+    if( not isnull( dataset ) )
+    {
+      datasetKey := dataset.DatasetMDSID();
+    }
+    
+    return this.TopicStep()->Execute( datasetKey, dataset, this );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

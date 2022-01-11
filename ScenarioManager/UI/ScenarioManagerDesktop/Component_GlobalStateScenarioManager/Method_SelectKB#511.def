@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectKB (LibSM_KnowledgeProfile knowledgeProfile, String kbDefinitionName, String kbBranchName, 
+  String kbBranchVersion) id:Method_LibSM_GlobalState_SelectKB_511
+{
+  #keys: '[136398.1.587826939]'
+  Body:
+  [*
+    if( knowledgeProfile.IsUsed() )
+    {
+      componentMDS := ComponentMDS::CreateForLoadedMDSsOnly( Application );
+      editor       := CKBEditor::Create();
+      kbIDs        := editor.GetKBs();
+    
+      traverse( knowledgeProfile, Scenario, scenario )
+      {
+        mdsInstance := select( componentMDS, ComponentMDSKinds.ComponentMDSInstances, m,
+                               m.MDSID().Equals( scenario.Dataset().DatasetMDSID() ) );
+    
+        if( not isnull( mdsInstance ) )
+        {
+          this.SelectKB( mdsInstance, scenario, kbIDs, kbDefinitionName, kbBranchName, kbBranchVersion );
+        }
+      }
+    }
+  *]
+}

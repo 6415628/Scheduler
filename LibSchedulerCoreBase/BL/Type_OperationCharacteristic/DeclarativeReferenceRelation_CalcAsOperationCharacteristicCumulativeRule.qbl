@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+DeclarativeReferenceRelation CalcAsOperationCharacteristicCumulativeRule
+{
+  #keys: '1[143388.0.2102590724]'
+  Expression:
+  [*
+    op := null( Operation_SC );
+    
+    // Only set this relation
+    // 1. The operation is planned or has feedback
+    // 2. The characteristic is used in program cumulative rules
+    // 3. The characteristic is used in program phase cumulative rules
+    if( ( this.Operation_SC().IsPlanned() or this.Operation_SC().HasFeedback() )
+        and ( exists( this, Operation_SC.PlannedResource.ProgramChange.ProgramType.ProgramTypeConfiguration.RuleScopeInProgramType.Rule, rule,
+                      rule.IsEnabled()
+                      and rule.RuleSubType().IsCumulativeValueNeeded()
+                      and rule.CharacteristicMain() = this.Characteristic() )
+              or exists( this, Operation_SC.PlannedResource.ProgramChange.ProgramType.ProgramTypeConfiguration.ProgramPhaseConfiguration.RuleScopeInProgramPhase.Rule, rule,
+                         rule.IsEnabled()
+                         and rule.RuleSubType().IsCumulativeValueNeeded()
+                         and rule.CharacteristicMain() = this.Characteristic() ) ) )
+    {
+      op := this.Operation_SC(); 
+    }
+    
+    return op;
+  *]
+  Relation: AsOperationCharacteristicCumulativeRule
+}

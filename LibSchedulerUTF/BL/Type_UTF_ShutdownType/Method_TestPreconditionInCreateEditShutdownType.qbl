@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionInCreateEditShutdownType (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    hasDuplicateID := false;
+    shutdownTypeID := '';
+    shutdownTypeName := '';
+    defaultduration := Duration::Zero();
+    isValidForPreconCreateEdit := false;
+    hasResourceScopeInShutdownType := false;
+    isViolatedResourceScopeConstraint := false;
+    hasPlannedShutdownTask := false;
+    isValidForPreconDelete := false;
+    
+    this.GetTestVariant( hasDuplicateID,
+                         shutdownTypeID,
+                         shutdownTypeName,
+                         defaultduration,
+                         isValidForPreconCreateEdit,
+                         hasResourceScopeInShutdownType,
+                         isViolatedResourceScopeConstraint,
+                         hasPlannedShutdownTask,
+                         isValidForPreconDelete );
+    
+    shutdownType := select( schedule, ShutdownType, st, true );
+    
+    if( hasDuplicateID )
+    {
+      shutdownType := ShutdownType::Create( schedule, 'ShutdownType' );
+    }
+    
+    value := ShutdownType::CheckIsValid( schedule, shutdownType, shutdownTypeID, shutdownTypeName, defaultduration );
+    
+    this.Run().AssertEqual( isValidForPreconCreateEdit, value,
+                            UTFUtility::GenerateFailedMessage( 'Precondition in creating shutdown type failed.', this.Variant() ) );
+  *]
+}

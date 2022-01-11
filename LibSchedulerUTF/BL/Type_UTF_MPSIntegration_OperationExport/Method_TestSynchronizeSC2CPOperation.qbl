@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestSynchronizeSC2CPOperation (Schedule schedule)
+{
+  Description: 'Test the synchronization of SC2CP_Operation from operation instances.'
+  TextBody:
+  [*
+    joinPlannedOrderTestInstance := this.GetExportOperationToMPSTestInstance( this.Variant() );
+    numberOfExportedOperation := counter( schedule, SC2MPS_Operation, sc2cpOperation, true );
+    
+    this.Run().AssertEqual( joinPlannedOrderTestInstance.ExpectedNrOfExportedOperations(),
+                            numberOfExportedOperation,
+                            UTFUtility::GenerateFailedMessage( 'Incorrect number of synchronized SC2CP_Operations.', '' ) );
+    
+    value := forall( schedule, SC2MPS_Operation, sc2CP_Operation, true, 
+                     sc2CP_Operation.Quantity() =sc2CP_Operation.Operation_SC().PlanUnit_SC().Quantity()
+                     and sc2CP_Operation.RoutingID() =sc2CP_Operation.Operation_SC().RoutingID()
+                     and sc2CP_Operation.RoutingStepSequenceNr() =sc2CP_Operation.Operation_SC().MPSRoutingStepSequenceNr() );
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'SC2CP_Operations Quantity, RoutingID and RoutingStepSequenceNr not synchronized correctly.', '' ) );
+  *]
+}

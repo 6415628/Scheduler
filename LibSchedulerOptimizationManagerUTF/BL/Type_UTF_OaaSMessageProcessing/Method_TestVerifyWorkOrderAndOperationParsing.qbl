@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestVerifyWorkOrderAndOperationParsing (Schedule schedule)
+{
+  Description: 'Simulate test of parsing work orders and operations data for given initialization request.'
+  TextBody:
+  [*
+    // -- Work Order --
+    workOrderJSON := this.GetJSONInputData_WorkOrdersArray().Build().Get( 0 ); // Get to grab array's first instance
+    workorder := ImportedExternalWorkOrder::ParseFCjson( schedule, workOrderJSON );
+    
+    this.Run().AssertEqual( ImportedExternalWorkOrder::GetID( workOrderJSON ), workorder.Id() );
+    this.Run().AssertEqual( ImportedExternalWorkOrder::GetProcessID( workOrderJSON ), workorder.RoutingID() );
+    this.Run().AssertEqual( ImportedExternalWorkOrder::GetDueDate( workOrderJSON ), workorder.DueDate() );
+    this.Run().AssertEqual( ImportedExternalWorkOrder::GetQuantity( workOrderJSON ), workorder.Quantity() ); 
+    this.Run().AssertEqual( ImportedExternalWorkOrder::GetMaturity( workOrderJSON ), workorder.Maturity() );
+    this.Run().AssertEqual( ImportedExternalWorkOrder::GetPriority( workOrderJSON ), workorder.Priority() );
+    
+    // -- Operation --
+    operationJSON := this.GetJSONInputData_WorkOrderOperationsArray( 1 ).Build().Get( 0 ); // Get to grab array's first instance
+    operation := ImportedExternalWorkOrderOperation::ParseFCjson( schedule, operationJSON, workorder.Id() );
+    
+    this.Run().AssertEqual( ImportedExternalWorkOrderOperation::GetID( operationJSON ), operation.ID() );
+    this.Run().AssertEqual( ImportedExternalWorkOrderOperation::GetProcessOperationID( operationJSON ), operation.ProcessOperationID() );
+    this.Run().AssertEqual( ImportedExternalWorkOrderOperation::GetStartTime( operationJSON ), operation.StartTime() );
+    this.Run().AssertEqual( ImportedExternalWorkOrderOperation::GetEndTime( operationJSON ), operation.EndTime() );
+    this.Run().AssertEqual( ImportedExternalWorkOrderOperation::GetScheduledAssetID( operationJSON ), operation.ScheduledAssetID() );
+    this.Run().AssertEqual( ImportedExternalWorkOrderOperation::GetMaturity( operationJSON ), operation.Maturity() );
+    this.Run().AssertEqual( ImportedExternalWorkOrderOperation::GetPriority( operationJSON ), operation.Priority() );
+    
+    operation.Delete(); 
+    workorder.Delete();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

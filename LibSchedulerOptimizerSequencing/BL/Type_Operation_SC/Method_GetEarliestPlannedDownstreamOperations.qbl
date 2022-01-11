@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetEarliestPlannedDownstreamOperations () as owning Operation_SCs
+{
+  Description: "o' is the earliest planned downstream operation of o if and only if o' is planned and o' is a downstream operation of o and there are no other planned operations on the dependency graph between o and o'."
+  TextBody:
+  [*
+    // mbr23 Jan-10-2020 (created)
+    operations := construct( Operation_SCs );
+    
+    traverse( this, ToOperationDependency.ToOperation, nextoperation )
+    {
+      if( nextoperation.IsPlanned() )
+      {
+        operations.Add( nextoperation );
+      }
+      else
+      {
+        operations := operations.Union( nextoperation.GetEarliestPlannedDownstreamOperations() );
+      }
+    }
+    
+    return &operations;
+  *]
+}

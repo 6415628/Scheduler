@@ -1,0 +1,81 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride InterpretFeedbackTask
+{
+  TextBody:
+  [*
+    // jx 25-Aug-2016
+    // process handle feedback tasks  
+    importedfbtasks := selectsortedset( this.Schedule(),
+                                        ImportedFeedbackTask,
+                                        fbtask,
+                                        fbtask.IsValidDataHard() and fbtask.HasFeedback(),
+                                        fbtask.Start() );
+    
+    feedbackmanager := this.FeedbackManager();
+    
+    if( not isnull( feedbackmanager ) )
+    {
+      // plans all tasks for continuous operations before handling their feedback
+      this.PlanAllFeedbackContinuousOperations( importedfbtasks );
+                                   
+      traverse( importedfbtasks, Elements, importedfeedbacktask, importedfeedbacktask.HasOperationInScheduler() ) // HasOperationInScheduler already checks whether we have an operation
+      {
+        operation := importedfeedbacktask.Operation_SC();
+    
+        // updates the estimated end on operation from feedback, to be used by FeedbackTaskInSchedule
+        operation.UpdateEstimatedEnd( importedfeedbacktask );
+        
+        status := importedfeedbacktask.Status();
+        resource := importedfeedbacktask.Resource();
+        remark := importedfeedbacktask.Remark();
+        reportedStart := importedfeedbacktask.ReportedStart();
+        reportedEnd := importedfeedbacktask.ReportedEnd();
+        reportedActualProcessStart := importedfeedbacktask.ReportedProcessStart();
+        
+        if( status = Constants::StatusStart() )
+        {
+          feedbackmanager.TaskStart( operation, resource, reportedStart, reportedActualProcessStart, remark );
+        }
+        
+        if( status = Constants::StatusEnd() )
+        {
+          if( reportedStart.IsFinite() and not operation.HasStarted() ) 
+          {
+            //When shopfloor give feedback start and end. Import is done after feedback end.
+            //So, when import, the status is End, but actually both Start and End is executed.
+            feedbackmanager.TaskStart( operation, resource, reportedStart, reportedActualProcessStart, remark );
+          }
+          
+          feedbackmanager.TaskEnd( operation, resource, reportedStart, reportedActualProcessStart, reportedEnd, remark );
+        }
+        
+        if( status = Constants::StatusAborted() )
+        {
+          if( reportedStart.IsFinite() and not operation.HasStarted() ) 
+          {
+            //When shopfloor give feedback start and abort. Import is done after feedback abort.
+            //So, when import, the status is Aborted, but actually both Start and Abort is executed.
+            feedbackmanager.TaskStart( operation, resource, reportedStart, importedfeedbacktask.ReportedProcessStart(), remark );
+          }
+          
+          feedbackmanager.TaskAborted( operation, resource, reportedEnd, remark );
+        }
+        
+        if( status = Constants::StatusCancelled() )
+        {
+          feedbackmanager.TaskCancelled( operation, resource, reportedEnd, remark );
+    
+          exportedtask := importedfeedbacktask.ExportedSingleTask();
+          
+          if( not isnull( exportedtask ) )
+          { 
+            exportedtask.Delete();
+          }
+          
+          importedfeedbacktask.Delete();      
+        }
+      }  
+    }
+  *]
+}

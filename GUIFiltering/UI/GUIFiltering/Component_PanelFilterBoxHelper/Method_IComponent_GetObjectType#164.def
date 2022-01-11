@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method IComponent_GetObjectType (internal[GanttChartNodesDefinition] nodesdef) as String id:Method_LibGUIFiltering_PanelFilterBoxHelper_IComponent_GetObjectType_164
+{
+  #keys: '[128900.0.423131369]'
+  Body:
+  [*
+    parent     := nodesdef.Parent();
+    parenttype := '';
+    nodestype  := '';
+    
+    if ( parent.istype(GanttChartNodesDefinition) )
+    {
+      parenttype := this.IComponent_GetObjectType( parent.astype(GanttChartNodesDefinition) );
+    }
+    else if ( parent.istype(GanttChartRowDefinition) )
+    {
+      parenttype := parent.astype(GanttChartRowDefinition).Sorter().TypeInterface().Type().Name();
+    }
+    
+    if ( parenttype <> '' )
+    {
+      typeview  := ApplicationScope.ResolveType( parenttype ).TypeView();
+      nodespath := nodesdef.GetProperty( 'Nodes' ).Tokenize( '.' );
+    
+      traverse( nodespath, Elements, relname )
+      {
+        rel := select( typeview, Relations, r, r.Name() = relname );
+        if ( not isnull(rel) )
+        {
+          typeview := rel.ToType().TypeView();
+        }
+        else
+        {
+          typeview := null(TypeView, owning);
+        }
+      }
+    
+      if ( not isnull(typeview) )
+      {
+        nodestype := typeview.Type().Name();
+      }
+    }
+    
+    return nodestype;
+  *]
+}

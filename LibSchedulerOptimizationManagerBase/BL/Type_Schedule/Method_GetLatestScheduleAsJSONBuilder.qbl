@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetLatestScheduleAsJSONBuilder () as owning JSONBuilder
+{
+  TextBody:
+  [*
+    output := JSON::Object();
+    
+    // Add lastScheduledEnd
+    lastScheduledEnd := max( this, Operation_SC, operation, operation.End() );
+    output.Add( Constants::JSON_Read_LastScheduledEnd(), DateTimeToString::ISOConverter().Convert( lastScheduledEnd ) );
+    
+    // Add operations
+    operations := JSON::Array();
+    
+    // Only return FIRM and WORK_IN_PROGRESS (Start feedback) operations 
+    traverse( this, WorkOrder.WorkOrderOperation.astype( ExternalWorkOrderOperation ), externalWorkOrderOperation, 
+              externalWorkOrderOperation.Maturity() = Constants::MaturityStatus_FIRM()
+              or externalWorkOrderOperation.Maturity() = Constants::MaturityStatus_WORK_IN_PROGRESS() )
+    {
+      operation := select( externalWorkOrderOperation, Operation_SC, operation, true );
+      
+      if( not isnull( operation ) )
+      {
+        operationJSON := JSON::Object();
+        operationJSON.Add( Constants::JSON_Read_Operation_ID(), externalWorkOrderOperation.ExternalOperationID() );
+        operationJSON.Add( Constants::JSON_Read_Operation_StartDate(), DateTimeToString::ISOConverter().Convert( operation.Start() ) );
+        operationJSON.Add( Constants::JSON_Read_Operation_EndDate(), DateTimeToString::ISOConverter().Convert( operation.End() ) );
+        operationJSON.Add( Constants::JSON_Read_Operation_AssetId(), guard( operation.PlannedResource().ResourceID(), '' ) );
+        operations.Add( operationJSON );
+      }
+      else
+      {
+        debuginfo( Translations::LibSchedulerOptMgr_MissingOperation( externalWorkOrderOperation.ExternalOperationID() ) );
+      }
+    }
+    
+    output.Add( Constants::JSON_Read_Operations(), operations );
+    
+    return &output;
+  *]
+}

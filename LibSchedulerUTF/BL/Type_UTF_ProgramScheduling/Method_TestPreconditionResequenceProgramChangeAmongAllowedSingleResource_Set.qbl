@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionResequenceProgramChangeAmongAllowedSingleResource_Setup (Schedule schedule)
+{
+  Description: 'Test precondition resequence program change among allowed single resource - setup'
+  TextBody:
+  [*
+    // Create resource
+    resource1 := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource1' );
+    resource2 := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource2' );
+    
+    // Assign ASAP lead time strategy
+    LeadTimeStrategy_SC::Create( resource1, Duration::Zero(), Constants::StrategyASAP() );
+    LeadTimeStrategy_SC::Create( resource2, Duration::Zero(), Constants::StrategyASAP() );
+    Transaction::Transaction().Propagate( attribute( Resource_SC, StrategyName ) );
+    
+    // Create program definition
+    programdefinition := UTFMockObjectFactory::CreateProgramDefinitionData( schedule, 'Program definition id', false );
+    
+    // Assign program definition to both resource 1 and 2
+    resource1.AssignProgramDefinitionConfiguration( programdefinition );
+    resource2.AssignProgramDefinitionConfiguration( programdefinition );
+    
+    // Insert program change 
+    programtype := selectset( programdefinition, ProgramSetConfiguration.ProgramTypeConfiguration, pt, true );
+    resource1.InsertProgramChange( null( Task_SC ), programtype, false, Duration::Zero() );
+  *]
+}

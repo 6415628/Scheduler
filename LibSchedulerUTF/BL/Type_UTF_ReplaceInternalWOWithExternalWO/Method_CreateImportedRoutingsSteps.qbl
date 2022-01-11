@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateImportedRoutingsSteps (Schedule schedule)
+{
+  Description: 'Create imported routing steps.'
+  TextBody:
+  [*
+    variant := this.Variant();
+    testInstanceRoutingSteps := this.GetRoutingStepTestInstances( variant );
+    
+    traverse( testInstanceRoutingSteps, Elements, row )
+    {
+      importedRoutingStep := ImportedRoutingStep_SC::FindImportedRoutingStep_SC( row.RoutingID(), row.SequenceNr() );
+      
+      if( isnull( importedRoutingStep ) )
+      {
+        importedRoutingStep := schedule.ImportedRoutingStep_SC( relnew, RoutingId := row.RoutingID(), SequenceNr := row.SequenceNr(), OperationType := row.OperationType(), Yield := 1 );
+        schedule.ImportedResourceGroup_SC( relnew, ResourceGroup := row.OperationType() + [String]row.SequenceNr(), ResourceType := row.OperationType(), EquipmentClassID := '' );
+      }
+    }
+  *]
+}

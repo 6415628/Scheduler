@@ -1,0 +1,63 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateDemandBatches (Demands demands, DemandBatchType demandbatchtype)
+{
+  TextBody:
+  [*
+    lastdemandassignedquantity := 0.0;
+    maxbatchsize := ifexpr( demandbatchtype.MaxBatchSize() > 0.0,
+                            demandbatchtype.MaxBatchSize(),
+                            Real::MaxReal() );
+    
+    // Sort demand by due date first, followed by demand ID and key (tie breakers)
+    demands := selectsortedset( demands, Elements, demand,
+                                demand.QuantityOpen() > 0.0,
+                                demand.DueDate(),
+                                demand.DemandID(),
+                                demand.Key() );
+    
+    // while there are still remaining demands
+    while( demands.Size() > 0 )
+    {
+      // Create a batch
+      demandbatch := this.CreateDemandBatch( demandbatchtype );
+      openquantity := maxbatchsize;
+    
+      // Loop through all remaining demands until batch is full
+      while( demands.Size() > 0
+             and openquantity > 0.0 )
+      {
+         // Locate demand to be assigned
+         demand := demands.Element( 0 );
+         
+         // Compute assign quantity (minimum of remaining demand open quantity and batch open quantity)
+         assignquantity := minvalue( demand.QuantityOpen() - lastdemandassignedquantity, openquantity );
+         
+         // Assign demand to batch
+         demandbatch.AddDemand( demand, assignquantity );
+         
+         // Update open quantity
+         openquantity := openquantity - assignquantity;
+         
+         // Remember quantity that has been assigned
+         lastdemandassignedquantity := lastdemandassignedquantity + assignquantity;
+         
+         // If demand has been fully assigned
+         if( lastdemandassignedquantity >= demand.QuantityOpen() )
+         {
+           // Remove demand from list
+           demands.Remove( demand );
+           
+           // Reset cumulative assigned demand quantity
+           lastdemandassignedquantity := 0.0;
+         }
+      }
+    
+      // Propagate relation to demand batch type. This is required to retrieve correct routing.
+      Transaction::Transaction().Propagate( relation( DemandBatch, DemandBatchType ) );
+    
+      // Synchronize demand batch
+      demandbatch.Synchronize();
+    }
+  *]
+}

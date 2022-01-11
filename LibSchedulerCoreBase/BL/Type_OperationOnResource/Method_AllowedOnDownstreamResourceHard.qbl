@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedOnDownstreamResourceHard (output String feedback_o) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    value := true;
+    
+    // Only check downstream resources if plan related operation is true
+    if( this.Resource_SC().IsPlanRelatedOperations() )
+    {
+      // Get downstream operation
+      downstream_op := select( this, Operation_SC.ToOperationDependency.ToOperation, op,
+                             op.PlanUnit_SC() = this.Operation_SC().PlanUnit_SC() );
+    
+      // Do not check further if operation has feedback
+      if( not isnull( downstream_op ) and not downstream_op.HasFeedback() )
+      {
+        // Check if downstream operation resources requires plan related operation
+        isdownstreamplanrelated := exists( downstream_op, OperationOnResourceGroup.ResourceGroup_SC, rg,
+                                           rg.IsPlanRelatedOperations() );
+      
+        if( isdownstreamplanrelated )
+        {
+          // Find allowed resources
+          downstream_oors := selectset( downstream_op, OperationOnResource, oor,
+                                        oor.Resource_SC().IsPlanRelatedOperations()
+                                        and oor.IsAllowedHard()
+                                        and oor.IsAllowedDownstreamHard() );
+      
+          // If resource connection is enabled, include only connected resources
+          if( guard( this.Operation_SC().Schedule().TechnicalConfiguration().IsResourceConnectionEnabled(), false ) )
+          {
+            downstream_connected_oors := selectset( this, Resource_SC.AsAllowedFromResource.AllowedToResource.OperationOnResource, oor, true );
+            downstream_oors := downstream_oors.Intersect( downstream_connected_oors );
+          }
+      
+          // Allowed when downstream operation is allowed on at least 1 resource
+          value := downstream_oors.Size() > 0;
+        }
+      }
+    }
+    
+    if( not value )
+    {
+      Utility_SC::Concat( feedback_o, Translations::SC_Operation_RelatedDownstreamNotAllowedOnAnyResources() );  
+    }
+    
+    return value;
+  *]
+}

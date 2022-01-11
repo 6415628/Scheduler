@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod SetTimeStampDoFinalizeDone (LibOpt_SnapshotComponent snapshot, LibOpt_Run run)
+{
+  Description:
+  [*
+    Set the `PrecisionTimeStampDoFinalizeDone` attribute.
+    This method should be called after all 'Finalize' methods of the `LibOpt_SnapshotComponent.Task` have been executed. This includes `LibOpt_Component.OnFinalize`, which is called when a `LibOpt_Task` is deleted.
+    This method is also called by the `LibOpt_Task.HandleExceptionFinalize` method, to ensure that the execution time of the finalize part of a component is also correct after an exception.
+  *]
+  TextBody:
+  [*
+    // evr3 Sep-14-2020 (created)
+    
+    // It shouldn't be possible that the PrecisionTimeStampDoFinalize attribute is not yet set. 
+    // However, this method can also be called by HandleExceptionFinalize right after an exception occurs.
+    // Therefore, it doesn't hurt to do check this anyway.
+    if( run.HasSnapshots() and snapshot.PrecisionTimeStampDoFinalize() > 0 )
+    {
+      snapshot.PrecisionTimeStampDoFinalizeDone( OS::PrecisionCounter() / OS::PrecisionCounterFrequency() );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

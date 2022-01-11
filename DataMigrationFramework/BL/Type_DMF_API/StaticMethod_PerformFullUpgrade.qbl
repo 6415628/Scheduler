@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod PerformFullUpgrade (Key mdsid_i)
+{
+  Description: 'Performs the full upgrade flow for DMF'
+  TextBody:
+  [*
+    // tgn3 May-10-2021 (created)
+    
+    // DevNote: We don't expect this to be called by end-users. It is only for testing
+    isExport := false;
+    
+    /* DevNote:
+    For static methods, it's not possible to reliably use the ->| operator.
+    This is because reactive quill will think the methods should be run
+    in parallel if the argument of one static doesn't feed into the other.
+    With normal methods, this is not the case, and such a chain works fine
+    
+    The full flow needs to Refresh, Prepare, then Execute
+    */
+    refreshDone_s := mdsid_i->DMF_API::RefreshDatasetInformation( isExport );
+    prepareDone_s := refreshDone_s->|mdsid_i->DMF_API::PrepareAllStructures( isExport );
+    
+    // Perform the execution
+    prepareDone_s->|mdsid_i->DMF_API::ExecutePlan();
+    
+    // There is no explicity exception handling here, as it is already handled in each
+    // of the individual methods
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

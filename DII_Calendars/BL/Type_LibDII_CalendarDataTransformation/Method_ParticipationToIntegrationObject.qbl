@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method ParticipationToIntegrationObject (LibCIM_CalendarBase owner_i, LibCal_Participation participation_i)
+{
+  TextBody:
+  [*
+    hasSpecificPeriod := participation_i.IsLeading()
+                      or not participation_i.astype( LibCal_Subscription ).UseLeadingPeriod();
+    
+    integrationPart := owner_i.CIM_Participation( relnew,
+                                                  ParticipationID   := participation_i.ParticipationID(),
+                                                  CalendarType      := owner_i.CalendarType(),
+                                                  CalendarID        := owner_i.CalendarID(),
+                                                  EventID           := participation_i.Event().EventID(),
+                                                  IsSubscription    := participation_i.IsSubscription(),
+                                                  EventIsRecurring  := participation_i.IsRecurring(),
+                                                  StartDate         := participation_i.StartDate(),
+                                                  HasSpecificPeriod := hasSpecificPeriod );
+    
+    // If applicable, fill the appropriate attributes for the RecurrencePeriod.
+    // This is in case of recurrence, for the LeadingParticipation and for the non-LeadingParticipations (i.e. subscribers)
+    // that don't follow the RecurrencePeriod of the LeadingParticipation.
+    if( participation_i.IsRecurring() and hasSpecificPeriod )
+    {
+      period := participation_i.GetRecurrencePeriod();
+    
+      integrationPart.PeriodType(       period.PeriodType() );
+      integrationPart.PeriodStartDate(  period.StartDate()  );
+      
+      if( period.istype( LibCal_RecurrencePeriodWithEndDate ) )
+      {
+        integrationPart.PeriodEndDate( period.astype( LibCal_RecurrencePeriodWithEndDate ).EndDateSet() );    
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

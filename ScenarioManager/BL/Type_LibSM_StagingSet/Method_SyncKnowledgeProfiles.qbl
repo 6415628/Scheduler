@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method SyncKnowledgeProfiles (LibSM_ScenarioManager scenarioManager, Boolean overwrite)
+{
+  Description: 'Overwrites/appends the staging knowledge profiles to the specified Scenario Manager dataset.'
+  TextBody:
+  [*
+    realKBs := selectvalues( scenarioManager.MDSLibSM_ScenarioManager(), MDSKBs, mdsKB, true, mdsKB.Name() );
+    
+    oldProfiles := selectset( scenarioManager, KnowledgeProfile, profile, true );
+    oldBranches := selectset( scenarioManager, KnowledgeProfile.KnowledgeBaseBranchInProfile, branch, true );
+    
+    traverse( this, Staging_KnowledgeProfile, staging, not staging.HasConstraintViolations() )
+    {
+      isValidKBDefinition := realKBs.Find( staging.KBDefinitionName() ) >= 0;
+    
+      if( isValidKBDefinition )
+      {
+        profile := select( scenarioManager, KnowledgeProfile, profile, profile.Name() = staging.ProfileName() );
+        if( isnull( profile ) )
+        {
+          profile := LibSM_KnowledgeProfile::Create( scenarioManager, staging.ProfileName() );
+        }
+        oldProfiles.Remove( profile );
+    
+        branch := select( profile, KnowledgeBaseBranchInProfile, branch, branch.KBDefinitionName() = staging.KBDefinitionName() );
+        if( isnull( branch ) )
+        {
+          branch := profile.AddKnowledgeBaseBranch( staging.KBDefinitionName(), staging.BranchName(), staging.BranchVersion() );
+        }
+        else
+        {
+          branch.Update( staging.BranchName(), staging.BranchVersion() );
+        }
+        oldBranches.Remove( branch );
+      }
+    }
+    
+    if( overwrite )
+    {
+      // Remove the objects that are not part of the imported set, unless they are used.
+      usedProfiles := selectset( scenarioManager, KnowledgeProfile, profile, profile.IsUsed() );
+      oldProfiles  := oldProfiles.Difference( usedProfiles );
+      LibSM_KnowledgeProfile::Remove( oldProfiles );
+      
+      usedBranches := selectset( scenarioManager, KnowledgeProfile.KnowledgeBaseBranchInProfile, branch, branch.KnowledgeProfile().IsUsed() );
+      oldBranches  := oldBranches.Difference( usedBranches );
+      LibSM_KnowledgeBaseBranchInProfile::Remove( oldBranches );
+    }
+  *]
+}

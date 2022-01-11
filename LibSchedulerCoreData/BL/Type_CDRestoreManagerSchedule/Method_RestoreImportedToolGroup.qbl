@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedToolGroup (CDIntegration cdintegration)
+{
+  Description: 'Restore imported tool group core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedToolGroup_SC
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedToolGroup ), cdtg )
+    {
+      importedToolGroup := schedule.ImportedToolGroup_SC( relnew, Type := cdtg.Type() );
+      CopyCorresponding::CopyFrom( cdtg ).CopyTo( importedToolGroup );
+      
+      // Restore ImportedTool_SC
+      this.RestoreImportedTool( cdintegration, importedToolGroup );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

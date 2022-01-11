@@ -1,0 +1,69 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetIdentifier (Task_SC task, Boolean appendMoreInfo) const declarative remote as String
+{
+  Description: 'Get ID for task.'
+  TextBody:
+  [*
+    /*
+    GetIdentifier received boolean argument to determine if additional info needs to be appended behind TaskID.
+    Currently if received 'true' for appendMoreInfo, we add Operation, Campaign, and Batch info behind the task.
+    But this can be customized. If more info had been returned through Task::CalTaskID, additional info should be removed from this static method.
+    
+    Example: If Task::GetTaskID returned something like 'ColdRolling Task for Cold Rolling Operation, Order 1234', then we can removed operation
+    from additional information.
+    */
+    
+    identifier := Translations::SC_NullTask();
+    
+    if( not isnull( task ) and task.TaskID() <> Constants::EmptyString() )
+    {
+      identifier := task.TaskID();
+    }
+    
+    //if required to add more info behind the task.
+    if( appendMoreInfo )
+    {
+      value := Constants::BracketOpen();
+    
+      if( not isnull( task.GetOperation() ) )
+      {
+        value := value + task.GetOperation().OperationID();
+      }
+    
+      // JK 12-16-2016 QP 8382 
+      // Changed relational logic to work with updated object model to support multiple campaigns
+      campaigns := selectset( task, OperationCampaign.CampaignTask, ct, true );
+      if( campaigns.Elements( relsize ) > 0 )
+      {
+        traverse( campaigns, Elements, campaign )
+        {
+          if( value <> Constants::BracketOpen() )
+          {
+            value := value + Constants::CommaString();
+          }
+    
+          value := value + campaign.CampaignTaskID();
+        }
+      }
+    
+      if( task.istype( BatchTask ) )
+      {
+        if( value <> Constants::BracketOpen() )
+        {
+          value := value + Constants::CommaString();
+        }
+        value := value + task.astype( BatchTask ).Batch().BatchID();
+      }
+    
+      value := value + Constants::BracketClose();
+    
+      if( value <> Constants::BracketOpenClosePair() )
+      {
+        identifier := identifier + Constants::EmptySpaceString() +  value;
+      }
+    }
+    
+    return identifier;
+  *]
+}

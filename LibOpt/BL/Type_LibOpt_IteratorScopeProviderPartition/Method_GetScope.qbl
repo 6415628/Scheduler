@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetScope (LibOpt_Task task) as LibOpt_Scope
+{
+  Description:
+  [*
+    This method returns a scope from the set of scopes that can be used for the next iteration.
+    
+    When entered for the first time, the set of scopes is created.
+  *]
+  TextBody:
+  [*
+    context := task.TaskContext().astype( LibOpt_TaskContextIterator );
+    scope := null( LibOpt_Scope );
+    
+    // Enter if this is the first time a task 
+    if( context.CurrentIteration() = 0 )
+    {
+      scopes := this.GetPartition( task );
+      
+      traverse( scopes, Elements, sc )
+      {
+        sc.TaskContextIterator( relset, context );
+      }
+    }
+    
+    if( context.Scope( relsize ) > 0 )
+    {
+      scope := select( context, Scope, sc, true );
+      //When scope is selected, delete relation such that it cannot be selected again.
+      scope.TaskContextIterator( relflush );
+    }
+    
+    return scope
+  *]
+}

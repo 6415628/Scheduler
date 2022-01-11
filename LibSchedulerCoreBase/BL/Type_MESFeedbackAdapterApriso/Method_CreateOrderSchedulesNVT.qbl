@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateOrderSchedulesNVT () as owning NamedValueTree
+{
+  Description: 'Creates the OrderScheduels xml to Apriso in NVT format.'
+  TextBody:
+  [*
+    // woi1 Feb-13-2017 (created)
+    
+    // create empty nvt message
+    nvt := LibInt_MessageAccessor::CreateEmptyMessage();
+    
+    // Gets the body handle of NVT
+    body_handle := nvt.GetHandle( Constants::NVT_Body() );
+    // Gets the first node of body
+    body_node := nvt.Root().Children( body_handle ).Element( 0 ); // select doesn't work here
+    
+    apriso_orders_handle := nvt.GetHandle( Constants::Apriso_ExportXMLEnvelopTag_OrderSchedules() );
+    apriso_orders_node := body_node.AddChild( apriso_orders_handle );
+    
+    // Order
+    traverse( this, FeedbackManager.ExportedSchedule.ExportedPlanUnit.astype( GenericExportedPlanUnit ), exportedpu )
+    {
+      // creates the nvt for exported plan unit
+      order_node := exportedpu.CreateOrderSchedulesNVT( nvt, apriso_orders_node );
+    
+      // Operation
+      traverse( exportedpu, ExportedSingleTask, extask )
+      {
+        // creates the nvt for exported task under exported plan unit
+        extask.CreateOrderSchedulesNVT( nvt, order_node );
+      }
+    }
+    
+    return &nvt;
+  *]
+}

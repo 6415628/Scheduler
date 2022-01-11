@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method Asserts_Test081_TimeConstraintFinishToStartMin (Schedule schedule, Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // jkr8 Dec-28-2020 (created)
+    
+    UTF_Optimizer_Regression_Test_OptimizerSequencing::AssertOperationsArePlanned( operations, this.Run() );
+    
+    op1 := select( schedule, Operation_SC, o, o.OperationID() = 'PU_1_000-10' );
+    op2 := select( schedule, Operation_SC, o, o.OperationID() = 'PU_1_000-20' );
+    
+    dependency := select( op1, FromOperationDependency.astype( TimeConstraintFinishToStart ), fs, true );
+    
+    assert( op2.Start() >= op1.End() + dependency.TotalOffsetDuration(),
+            'Operation 2 is scheduled too early' );
+  *]
+}

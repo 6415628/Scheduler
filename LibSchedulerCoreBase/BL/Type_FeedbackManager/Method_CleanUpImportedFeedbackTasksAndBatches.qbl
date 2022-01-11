@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method CleanUpImportedFeedbackTasksAndBatches
+{
+  Description: 'Clean up imported feedback tasks and batches after import from shop floor. This is not needed when we import feedback via EDI when External system is responsible in the clean up.'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // This method will clean up imported feedback tasks and batches.
+    // Projects that implement import feedback directly using EDI do not need to perform this step
+    
+    //
+    // Clean up ImportedFeedbackTasks
+    //            
+    traverse( this, ImportedFeedbackTask, fbtask, fbtask.CheckCanBeDeleted() )
+    {
+      fbtask.Delete();
+    }
+    
+    //
+    // Clean up ImportedFeedbackBatchContents
+    //
+    traverse( this, ImportedFeedbackBatch.ImportedFeedbackBatchContent, fbcontent, fbcontent.CanBeDeleted() )
+    {
+      fbcontent.Delete();
+    }
+    //
+    // Clean up ImportedFeedbackBatches
+    //
+    traverse( this, ImportedFeedbackBatch, fbbatch, fbbatch.ImportedFeedbackBatchContent( relsize ) = 0 )
+    {
+      fbbatch.Delete();
+    }
+  *]
+}

@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: pnlActionsButtons_891/btnOK
+Response OnClick () id:Response_pnlActionsButtons_891_btnOK_OnClick
+{
+  #keys: '[143768.0.1025947668]'
+  DefinitionID: 'Responsedef_WebButton_OnClick'
+  GroupServerCalls: true
+  Precondition:
+  [*
+    feedback := dtsOrderDueDate.HintDescription();
+    Utility_SC::Concat( feedback, ddlProductRouting.HintDescription() );
+    Utility_SC::Concat( feedback, npQuantity.HintDescription() );
+    
+    return not DialogCreateEditInternalWorkOrder.HasErrors() 
+           and ( cbOverrideSoftPreconditions.Checked() or not DialogCreateEditInternalWorkOrder.HasWarnings() );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Create or update work order
+      if( isnull( DataHolderWorkOrder.Data() ) )
+      {
+        DialogCreateEditInternalWorkOrder.CreateWorkOrderInDialog();
+      }
+      else
+      {
+        DialogCreateEditInternalWorkOrder.EditWorkOrderInDialog();
+      }
+      
+      Form.Close();
+    *]
+  }
+}

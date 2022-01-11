@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericRouting (CDSchedule cdschedule)
+{
+  Description: 'Restore relations for routing core data to planning object'
+  TextBody:
+  [*
+    // Restore Routing
+    traverse( cdschedule, CDEntity.astype( CDGenericRouting ), cdRouting )
+    {
+      routing := Routing::FindRouting( cdRouting.RoutingId() );
+      if( not isnull( routing ) )
+      {  
+        // ImportedRouting_SC, 1-1
+        importedRouting := ImportedRouting_SC::FindImportedRouting_SC( cdRouting.RoutingId() );
+        routing.ImportedRouting_SC( relset, importedRouting );  
+      }
+      
+      // Restore RoutingStep
+      cdRoutingSteps := selectset( cdschedule, CDEntity.astype( CDGenericRoutingStep ), cdRoutingStep, cdRoutingStep.RoutingId() = cdRouting.RoutingId() );
+      traverse( cdRoutingSteps, Elements, cdRoutingStep )
+      {
+        routingStep := RoutingStep::FindRoutingStep( cdRoutingStep.RoutingId(), cdRoutingStep.SequenceNr() );
+        if( not isnull( routingStep ) )
+        {  
+          // ImportedRoutingStep_SC, 1-1
+          importedRoutingStep := ImportedRoutingStep_SC::FindImportedRoutingStep_SC( cdRoutingStep.RoutingId(), cdRoutingStep.SequenceNr() );
+          routingStep.ImportedRoutingStep_SC( relset, importedRoutingStep );  
+        }
+      
+        // Restore RoutingStepInput
+        this.RestoreRelations_GenericRoutingStepInput( cdschedule, routingStep );
+        
+        // Restore RoutingStepOutput
+        this.RestoreRelations_GenericRoutingStepOutput( cdschedule, routingStep );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

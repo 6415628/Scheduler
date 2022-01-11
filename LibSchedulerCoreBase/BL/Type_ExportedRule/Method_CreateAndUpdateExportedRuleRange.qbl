@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateAndUpdateExportedRuleRange (Rule rule)
+{
+  Description: 'Create and update exported rule range.'
+  TextBody:
+  [*
+    allinstances := selectset( this, ExportedRuleRange, exportedrr, true );
+    updatedinstances := construct( ExportedRuleRanges );
+    
+    traverse( rule, RuleRange, rulerange )
+    {
+      exportedrr := select( this, ExportedRuleRange, err, 
+                            err.RuleID() = rulerange.Rule().RuleID()
+                            and err.From() = rulerange.From() 
+                            and err.To() = rulerange.To() );
+      
+      if( isnull( exportedrr ) )
+      {
+        exportedrr := ExportedRuleRange::Create( this, rulerange );
+      }
+      exportedrr.Update( rulerange );
+      updatedinstances.Add( exportedrr );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, exportedrr )
+    {
+      exportedrr.Delete();
+    }
+  *]
+}

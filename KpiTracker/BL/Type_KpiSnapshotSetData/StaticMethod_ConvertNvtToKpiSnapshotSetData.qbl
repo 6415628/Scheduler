@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ConvertNvtToKpiSnapshotSetData (NamedValueTree transport) as owning KpiSnapshotSetData
+{
+  Description: 'Converts a transport type (NVT) containing one or more KpiSnapshotData intstances to a KpiSnapshotSetData with corresponding KpiSnapshotData objects.'
+  TextBody:
+  [*
+    setData        := construct( KpiSnapshotSetData );
+    snapshotHandle := transport.GetHandle( "KpiSnapshotData" );
+    root           := transport.Root()
+    
+    traverse( root.Children( snapshotHandle ), Elements, snapshotNvt )
+    {
+      snapshotData := NamedValueTreeIO::ImportObject( transport, snapshotNvt, typeof( KpiSnapshotData ) ).astype( KpiSnapshotData );
+      setData.SnapshotData( relinsert, &snapshotData );
+    }
+    
+    return &setData;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,15 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcIsLockedByDownstream
+{
+  TextBody:
+  [*
+    value := exists( this, 
+                     Task_SC.OperationInTask.ToOperationDependency.ToOperation, 
+                     downstreamOperation, 
+                     downstreamOperation.IsLockedByOptimizer() // Checks if upstream operation is locked without considering FSPL to avoid circularity
+                     or downstreamOperation.IsLockedByDownstream() ); // Checks if downstream operation is also locked by its downstream operation
+    
+    this.IsLockedByDownstream( value );
+  *]
+}

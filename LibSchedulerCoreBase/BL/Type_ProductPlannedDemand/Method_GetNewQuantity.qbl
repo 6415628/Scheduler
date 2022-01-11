@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetNewQuantity (Real quantity) declarative remote as Real
+{
+  TextBody:
+  [*
+    value := quantity;
+    
+    if( not isnull( this.Operation_SC() ) )
+    {
+      pu := this.Operation_SC().PlanUnit_SC();
+      puquantity := pu.Quantity();
+      value := this.GetNewQuantity( puquantity, quantity ); // calculates the ratio of plan unit quantity to order quantity
+      
+      // for scenarios where the demand is created for a work order created in schedule from routing
+      routingstepinput := guard( this.WorkOrderDemand().astype( InternalWorkOrderDemand ).RoutingStepInput(), null( RoutingStepInput ) );
+      
+      if( not isnull( routingstepinput ) ) // if this was created in Schedule, the quantity calculation is dependent on plan unit quantity, output factor and yield
+      { 
+        value := routingstepinput.GetInputQuantity( puquantity );
+      }
+    }
+    
+    return value;
+  *]
+}

@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Deserialize (JSON json)
+{
+  Description:
+  [*
+    The `LibOpt_DatasetCopyConditional::HandleSuccessfulDatasetCopy` method might be executed right after all snapshots are serialized, but before all snapshots are deserialized.
+    The snapshot attributes that are set in the `LibOpt_DatasetCopyConditional::HandleSuccessfulDatasetCopy` method might therefore be overwritten by the attributes on the serialized snapshots. 
+    Therefore, any snapshot attribute that is set in `LibOpt_DatasetCopyConditional::HandleSuccessfulDatasetCopy` should also be set in this `Deserialize` method.
+  *]
+  TextBody:
+  [*
+    super.Deserialize( json );
+    
+    // There might exist a duplicate of this snapshot. This duplicate might contain newer information than this deserialized snapshot. 
+    // We copy some attributes from the duplicate snapshot to the deserialized snapshot, before the duplicate snapshot is deleted
+    duplicatesnapshot := select( this,
+                                 Run.Snapshot.astype( LibOpt_SnapshotReplannableCopyDataset ),
+                                 snapshot,
+                                 snapshot.DatasetName() = this.DatasetName()
+                                 and snapshot <> this );
+    
+    if( not isnull( duplicatesnapshot ) )
+    {
+      this.HasCreatedDataset( duplicatesnapshot.HasCreatedDataset() );
+      // The this.IsDatasetDeletedByOptimizer attribute can be set both in HandleSuccessfulDatasetCopy and in DoFinalizeDatasetCopyDelete.
+      // In both methods the dataset is irrevocably deleted. Therefore, if any of the methods sets the attribute to true, then the attribute should also be true after the rollback.
+      this.IsDatasetDeletedByOptimizer( this.IsDatasetDeletedByOptimizer() 
+                                        or duplicatesnapshot.IsDatasetDeletedByOptimizer() );
+      
+    }
+    
+    // Restore the this.DatasetCopyConditional relation.
+    json_key := LibOpt_Message::Get( json,
+                                     typeof( LibOpt_DatasetCopyConditional ).Name() 
+                                     + attribute( LibOpt_DatasetCopyConditional, Key ).Name()
+                                     );
+    if( json_key.IsString() )
+    {
+      conditionalkey_asstring := json_key.GetString();
+      conditionalkey := [Key] conditionalkey_asstring;
+      condtional := select( this.Run().Optimization(), 
+                            Conditional.astype( LibOpt_DatasetCopyConditional ),
+                            conditional,
+                            conditional.Key() = conditionalkey
+                            );
+                            
+      this.DatasetCopyConditional( relset, condtional );
+    }
+  *]
+}

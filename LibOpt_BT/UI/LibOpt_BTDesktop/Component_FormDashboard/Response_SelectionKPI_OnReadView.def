@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: SelectionKPI
+Response OnReadView () id:Response_SelectionKPI_OnReadView
+{
+  #keys: '[139544.1.1215197832]'
+  Body:
+  [*
+    json := JSON::Parse( viewdata.Data() );
+    if( json.IsObject() )
+    {
+      name := json.Get( attribute( LibOpt_BT_KPIDefinition, Name ).Name() ).GetString();
+      kpi_type := json.Get( attribute( LibOpt_BT_KPIDefinition, KPIType ).Name() ).GetString();
+      value_type := json.Get( attribute( LibOpt_BT_KPIDefinition, ValueType ).Name() ).GetString();
+      kpi_definition := select( LibOpt_BT_BenchmarkTrackingDataset, KPIDefinition, kpi_def,
+                                kpi_def.Name() = name
+                                and kpi_def.KPIType() = kpi_type
+                                and kpi_def.ValueType() = value_type );
+      this.Data( kpi_definition );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIComponent_OnReadView'
+}

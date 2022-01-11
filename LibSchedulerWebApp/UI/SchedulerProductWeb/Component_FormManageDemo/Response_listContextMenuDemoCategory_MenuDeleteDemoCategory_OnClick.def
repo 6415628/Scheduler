@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: listContextMenuDemoCategory/MenuDeleteDemoCategory
+Response OnClick (structured[DemoCategory] selection) id:Response_listContextMenuDemoCategory_MenuDeleteDemoCategory_OnClick
+{
+  #keys: '[143768.1.1431280684]'
+  CanBindMultiple: false
+  DefinitionID => /listContextMenuDemoCategory/Responsedef_listContextMenuDemoCategory_MenuDeleteDemoCategory_OnClick
+  GroupServerCalls: true
+  Precondition:
+  [*
+    DemoCategory::CheckCanChange( selection );
+    
+    feedbackObject := FeedbackObject::CurrentFeedback();
+    feedback := feedbackObject.Feedback();
+    
+    return feedbackObject.IsAllowed();
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Delete demo category
+      value := WebMessageBox::Question( this,
+                                        Translations::DemoCategory_DeleteConfirmation(),
+                                        'Yes|No' ) = 0;
+      
+      if( value )
+      {
+        DemoCategory::RemoveAndCleanupFolder( selection );
+      }
+    *]
+  }
+}

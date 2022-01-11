@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericOperationMaterial (const PlanUnit_SC planunit)
+{
+  Description: 'Backup operation material core data'
+  TextBody:
+  [*
+    traverse( planunit, OperationMaterial.astype( GenericOperationMaterial ), om )
+    {
+      cdOperationMaterial := this.CDEntity( relnew, CDGenericOperationMaterial );
+      CopyCorresponding::CopyFrom( om ).CopyTo( cdOperationMaterial );  
+      
+      // Additonal attribute in core data to persist the plan unit that this operation material belongs
+      cdOperationMaterial.PlanUnitID( planunit.PlanUnitID() );
+      
+      // Additional attribute in core data to persist the operation that this operation material relates to
+      cdOperationMaterial.FromOperationID( guard( om.FromOperation().OperationID(), '' ) );
+      cdOperationMaterial.ToOperationID( guard( om.ToOperation().OperationID(), '' ) );
+      
+      // Additional attribute in core data to persist the input/output operation material fulfillment that this operation material relates to
+      cdOperationMaterial.AsInputOperationMaterialFulfillmentPlanUnitID( guard( om.AsInputOperationMaterialFulfillment().PlanUnitId(), '' ) );
+      cdOperationMaterial.AsOutputOperationMaterialFulfillmentPlanUnitID( guard( om.AsOutputOperationMaterialFulfillment().PlanUnitId(), '' ) );
+      cdOperationMaterial.AsInputOperationMaterialFulfillmentOperationID( guard( om.AsInputOperationMaterialFulfillment().OperationID(), '' ) );
+      cdOperationMaterial.AsOutputOperationMaterialFulfillmentOperationID( guard( om.AsOutputOperationMaterialFulfillment().OperationID(), '' ) );
+      
+      // Additional attribute in core data to persist the work order operation precedence that this operation material relates to
+      cdOperationMaterial.WorkOrderOperationPrecedenceID( guard( om.WorkOrderOperationPrecedence().ID(), '' ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

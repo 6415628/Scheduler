@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOAConstraintDependencySmallSpan (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata)
+{
+  Description: 'Adds a constraint that creates a dependency between two span nodes on the same resource such that the current plan is portrayed correctly'
+  TextBody:
+  [*
+    dependency := poa.NewDependency( SuboptimizerSequencingPOA::NamePOADependencySmallSpan() );
+    dependencyconstr := poa.NewDependencyConstraint( SuboptimizerSequencingPOA::NamePOAConstraintDependencySmallSpan() );
+    dependencyconstr.Dependency( dependency );
+    dependencyconstr.Expression( poa.Expression( SuboptimizerSequencingPOA::NamePOAExpressionTime() ) );
+    
+    dependencyconstr.MatchKind( 'ET' );
+    transition := POATransition::NN( poa, SuboptimizerSequencingPOA::NamePOAConstraintDependencySmallSpan(), 0.0 );
+    dependencyconstr.Transition( transition );
+    
+    traverse( transientdata.GetPOAPathTypeResources(), Elements, resource )
+    {
+      
+      traverse( resource, AllowedOperationOnResourceUnification.Operation.SetupAddress, address1 )
+      {
+        operation1 := select( address1, OperationInSuboptimizerSequencing, op, true, op.TransientData().Key() = transientdata.Key() );
+        if( not isnull( operation1.Next() ) and operation1.IsInSpan() and operation1.Next().IsInSpan() )
+        {
+          operation2 := operation1.Next();
+          smallspantransition := this.GetDurationBetweenSpanOperations( operation1, operation2, resource );
+          from_node := poa.Node( operation1 );
+          to_node := poa.Node( operation2 );
+          dependency.Add( from_node, to_node );
+          transition.Set( from_node, to_node, smallspantransition );
+        }
+      }
+    }
+  *]
+}

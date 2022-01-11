@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Method SyncSetMeta (NamedValueTree nvt_i, NamedValue body_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Synchronize SetType from NVT.'
+  TextBody:
+  [*
+    // Jacky CHAN May-16-2016 (created)
+    
+    traverse( body_i.Children(), Elements, setMeta,
+              setMeta.Name() = typeof( LibDEF_SetMeta ).Name() )
+    {
+      syncSM := NamedValueTreeIO::ImportObject( nvt_i, setMeta, typeof( LibDEF_SetMeta ) ).astype( LibDEF_SetMeta );
+    
+      // find if already exists
+      dataBroker := this.DataBroker();
+      matchedSM  := LibDEF_SetMeta::FindSetMeta( dataBroker, this.GUID(), syncSM.ChannelName(), syncSM.SetTypeName(), syncSM.Name() );
+    
+      // check the GUID
+      if( not isnull( matchedSM ) and
+          matchedSM.GUID() <> syncSM.GUID() )
+      {
+        matchedSM.Delete();
+        matchedSM := null( LibDEF_SetMeta );
+      }
+    
+      if( isnull( matchedSM ) )
+      {
+        setTypeMeta := LibDEF_SetTypeMeta::FindSetTypeMeta( dataBroker, this.GUID(),
+                                                            syncSM.ChannelName(), syncSM.SetTypeName() );
+    
+        if( isnull( setTypeMeta ) )
+        {
+          LibDEF_Util::EventLogError( event_i,
+                                      "Failed to synchronize SetMeta",
+                                      "Error synchronizing SetMeta, SetTypeMeta " +
+                                      LibDEF_SetTypeMeta::GetInstanceKeyAsString( this.GUID(), syncSM.ChannelName(), syncSM.SetTypeName() ) +
+                                      " cannot be found." );
+        }
+        else
+        {
+          matchedSM := LibDEF_SetMeta::Create( setTypeMeta,
+                                               syncSM.Name(),
+                                               syncSM.GUID() );
+        }
+      }
+    
+      matchedSM.IsSoftDeleted( false );  
+    
+      // update other attributes
+      matchedSM.Update( syncSM.LastUpdated() );
+      
+      // create set interest of dataset(s) (if there is already dataset interest in set type level)
+      matchedSM.SetTypeMeta().CreateSetInterestOfDatasets( matchedSM );
+    }
+  *]
+}

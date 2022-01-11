@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetTypeNames (Type type) const declarative remote as owning Strings
+{
+  TextBody:
+  [*
+    // There is incomplete binding in this method; the structured.Add.
+    // We expect this not to be an issue, as the type system that we bind to should not change in production.
+    // Therefore we have hidden the warning.
+    
+    result := construct( Strings );
+    
+    abstr_types := construct( structured_Type );
+    abstr_types.Add( type );
+    for( i := 0; i < abstr_types.Size(); i++ )
+    {
+      traverse( abstr_types.Element( i ), Specializations, subtype )
+      {
+        if( subtype.Specializations( relsize ) = 0 )
+        {
+          result.Add( subtype.Name() );
+        }
+        else
+        {
+          abstr_types.Add( subtype );
+        }
+      }
+    }
+    
+    return & result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+  SuppressedModelError
+  {
+    ElementKey: '[1.2.2512]'
+    ErrorKey: '[1.12.376]'
+  }
+}

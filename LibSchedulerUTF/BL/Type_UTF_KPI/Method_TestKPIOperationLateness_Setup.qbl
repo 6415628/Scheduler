@@ -1,0 +1,64 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestKPIOperationLateness_Setup (Schedule schedule)
+{
+  Description: 'Test KPI OperationLateness - setup'
+  TextBody:
+  [*
+    isvariantfound := false;
+    isdummy := false;
+    hasfeedback := false;
+    hasfinished := false;
+    isplanned := false;
+    islate := false;
+    kpioperationlateness := 0.0;
+    
+    this.GetTestVariantForKPIOperationLateness( isvariantfound,
+                                                isdummy,
+                                                hasfeedback,
+                                                hasfinished,
+                                                isplanned,
+                                                islate,
+                                                kpioperationlateness );
+    
+    if( isvariantfound )
+    {  
+      // Create resource
+      resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Resource' );
+      
+      duedate := schedule.Time() + Duration::Days( 10 );
+      
+      // Create 5 operations, 4 operation not based on variant
+      for( i := 1; i<=4; i++ )
+      {
+        // Create operation
+        order := UTFMockObjectFactory::CreateOrder( schedule, 'Order ' + [String]i );
+        planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'Plan Unit ' + [String]i , 100.0 );
+        operation := UTFMockObjectFactory::CreateOperation( planUnit );
+    
+        // update UTFOperation attributes
+        this.SetUTFOperationAttributesForKPI( operation, resource, duedate,
+                                              false,  //isdummy
+                                              false,  //hasfeedback,
+                                              false,  //hasfinished
+                                              true ); //isplanned
+        this.SetUTFOperationAttributesForKPI_OperationLateness( operation,
+                                                                true ); //islate
+      }
+      
+      // Create operation5 based on variant
+      order5 := UTFMockObjectFactory::CreateOrder( schedule, 'Order 5' );
+      planUnit5 := UTFMockObjectFactory::CreatePlanUnit( order5, 'Plan Unit 5', 100.0 );
+      operation5 := UTFMockObjectFactory::CreateOperation( planUnit5 );
+      
+      // update UTFOperation attributes
+      this.SetUTFOperationAttributesForKPI( operation5, resource, duedate,
+                                            isdummy,
+                                            hasfeedback,
+                                            hasfinished,
+                                            isplanned );
+      this.SetUTFOperationAttributesForKPI_OperationLateness( operation5,
+                                                              islate );
+    }
+  *]
+}

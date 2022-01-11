@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method EditToolRequirementBase (internal[GUIComponent] parent, ToolRequirementPattern selection) id:Method_DialogToolRequirementPattern_EditToolRequirementBase
+{
+  #keys: '[129856.0.88829466]'
+  Body:
+  [*
+    // James Kwapien Oct-2-2016 #7935 Edit dialog
+    // Use edit dialog title
+    this.Title( Translations::SC_DialogEditToolRequirementBase() );
+    data := shadow( selection );
+    if( isnull( selection.SubTaskTypeOnResourceGroup() ) ){
+      data.SubTaskTypeOnResourceGroup( relset, select( selection.FromResourceGroup_SC(), SubTaskTypeOnResourceGroup, s, true ) );}
+    Dialog.Data( &data );
+    
+    Dialog.Data().ToResource_SC()
+    if ( Dialog.DoModal( parent ) > 0 )
+    { 
+      // This can be removed when apply changes is fixed for the selection component
+      Dialog.Data().ToResourceGroup_SC( relset, SelectionToResourceGroup.Data() );
+      Dialog.Data().ToResource_SC( relset, SelectionToResource.Data() );
+      
+      Dialog.Data().Commit();
+    }
+  *]
+}

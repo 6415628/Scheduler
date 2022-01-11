@@ -1,0 +1,115 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenerateOccurrences (Date dateOfFirstRecurrence_i, Date endDate_i, Date startOverlap_i, 
+  Date endOverlap_i, Boolean preserveOccurrences_i)
+{
+  Description: 'Generate TimeIntervals for the occurrences of an Event, given the RecurrencePattern of the Event and the RecurrencePeriod of the Participation.'
+  TextBody:
+  [*
+    calendar := this.Calendar();
+    pattern  := this.RecurrencePattern();
+    timezone := this.Calendar().GetTimeZone();
+    
+    // For debugging
+    //showInfo := this.Event().Subject() = "TEST";
+    //showInfo := true;
+    //mask     := "dd D-M-Y H:m";
+    //convOps  := ConversionOptions::ISO();
+    
+    // Get the date of the first occurrence to be generated.
+    dateOfRecurrence := dateOfFirstRecurrence_i;
+    date             := pattern.GetDateOfNextOccurrence( dateOfRecurrence, dateOfRecurrence );
+    
+    // Remember the first existing occurrence for a check later on.
+    firstOccurrence := minselect( this, ExplicitTimeInterval, eti, true, eti.Start() );
+    
+    //if( showInfo ){ info( ">>> Generate from", date, "to", endDate_i, "| preserve =", preserveOccurrences_i ) };
+    //if( showInfo ){ info( ">>> startOverlap =", startOverlap_i.Format( mask ), "endOverlap =", endOverlap_i.Format( mask ) ) };
+    //if( showInfo ){ info( ">>> startOfWindowMovedForward =", calendar.StartDate() > calendar.PreviousStartDate() ); }
+    //if( showInfo ){ info( ">>> startOfWindowMovedBackward =", calendar.StartDate() < calendar.PreviousStartDate() ); }
+    
+    // Generate the TimeIntervals.
+    while( date <= endDate_i )
+    {
+      // Calculate start and end, taking timezone and DSL into account.
+      start := LibCal_Util::CalculateStartTime( timezone, date, this.Event().StartTimeOfDay() );
+      end   := LibCal_Util::CalculateEndTime(   timezone, date, this.Event().StartTimeOfDay(), this.Event().Duration() );
+      
+      //if( showInfo ){ info( ">>>", start.Format( mask, convOps ), "-", end.Format( mask, convOps ), "preserve =", preserveOccurrences_i ); }
+    
+      // If end is at midnight, one day should be subtracted in order to not take the next day into account.
+      startDate := start.Date( timezone );
+      endDate   := end.Date( timezone ) - ifexpr( end = end.StartOfDay( timezone ), 1, 0 );
+      
+      // Ignore TimeIntervals outside of the CalendarWindow.
+      isInCalendarWindow := end   > calendar.Start() and
+                            start < calendar.End();  
+      if( isInCalendarWindow )
+      {
+        // See if the TimeInterval already exists.
+        // NOTE: if the times of an occurrence were changed it is not found here anymore,
+        //       as a result of which it will be removed...!
+        // ToDo: see how this can be solved.
+        timeInterval := select( this, ExplicitTimeInterval, eti, true,
+                                eti.Start() = start and
+                                eti.End()   = end );
+    
+        // When occurrences must be preserved, TimeIntervals that were already part of the existing window should be ignored;
+        // they must be used 'as-is' and not be re-generated. This concerns the TimeIntervals that are part of the overlap between the old and the new window.
+        // Note that a TimeInterval is considered to be part of the overlap when its *StartDate* is part of the overlapping period.
+        isPartOfOverlap := startDate >= startOverlap_i and
+                           startDate <= endOverlap_i;
+                           
+        //if( showInfo ){ info( ">>> isPartOfOverlap =", isPartOfOverlap ); }
+    
+        if( not preserveOccurrences_i or
+            ( calendar.Window() > 0 and
+              not isPartOfOverlap ) )
+        {
+          //if( showInfo ){ info( "startDate < startOverlap_i : ", startDate.Format( mask ), "<", startOverlap_i.Format( mask ), "-->", startDate < startOverlap_i ); }
+          //if( showInfo ){ info( "endDate   > endOverlap_i   : ", endDate.  Format( mask ), ">", endOverlap_i.  Format( mask ), "-->", endDate   > endOverlap_i   ); }
+          
+          // Reuse the TimeInterval if it already exists, otherwise create a new one.
+          if( not isnull( timeInterval ) )
+          {
+            timeInterval.IsSoftDeleted( false );
+          }
+          else
+          {
+            if( this.DoGenerateOccurrence( start, end, firstOccurrence ) )
+            {
+              leadingETI := this.CreateTimeInterval( start, end, this.Event().Capacity() );
+              
+              if( not isnull( leadingETI ) )
+              {
+                // Also generate a new occurrence for the Subscripions.
+                // Take the CalendarWindow of the subscribing Calendar and, if applicable, 
+                // the specific RecurrencePeriod of the Subscription into account.
+                traverse( this, Subscription, subscription,
+                          startDate <= subscription.Calendar().EndDate()   and
+                          endDate   >= subscription.Calendar().StartDate() and
+                          ( isnull( subscription.RecurrencePeriod() ) or
+                            ( startDate <= subscription.RecurrencePeriod().EndDate() and
+                              endDate   >= subscription.RecurrencePeriod().StartDate() ) ) )
+                {
+                  subscribingETI := subscription.CreateTimeInterval( start, end, this.Event().Capacity() );
+                  
+                  if( not isnull( subscribingETI ) )
+                  {
+                    // Register the occurrence (i.e. the ExplicitTimeInterval) as SubscribingETI of the LeadingETI.
+                    subscribingETI.LeadingETI( relset, leadingETI );
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    
+      // Get the date of the next occurrence.
+      // When there are no more occurrences within the current recurrence, dateOfRecurrence is updated to the next recurrence.
+      date := pattern.GetDateOfNextOccurrence( dateOfRecurrence, date + 1 );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

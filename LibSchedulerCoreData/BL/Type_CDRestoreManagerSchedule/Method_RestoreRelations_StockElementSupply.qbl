@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_StockElementSupply (CDSchedule cdSchedule, ProductInStockingPointStock productInStockingPointStock)
+{
+  Description: 'Restore relations for stock element supply core data attributes to planning object'
+  TextBody:
+  [*
+    cdStockElementSupplys := selectset( cdSchedule, CDEntity.astype( CDStockElementSupply ), cdStockElementSupply, 
+                                        cdStockElementSupply.ProductID() = productInStockingPointStock.ProductID(),
+                                        cdStockElementSupply.StockingPointID() = productInStockingPointStock.StockingPointID()
+                                      );
+    
+    traverse( cdStockElementSupplys, Elements, cdStockElementSupply )
+    {
+      stockElementSupply := select( productInStockingPointStock, ScheduleStockElement.astype( StockElementSupply ), stockElementSupply, 
+                                    stockElementSupply.SupplyID() = cdStockElementSupply.SupplyID(),
+                                    stockElementSupply.SupplyType() = cdStockElementSupply.SupplyType()
+                                  );
+      if( not isnull( stockElementSupply ) )
+      {
+        // Supply, 1-1
+        supply := Supply::FindSupply( cdStockElementSupply.SupplyType(), cdStockElementSupply.SupplyID() );
+        stockElementSupply.Supply( relset, supply );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

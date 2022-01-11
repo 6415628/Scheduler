@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcOptimisticStart
+{
+  TextBody:
+  [*
+    // mbr23 Jan-23-2020 (created)
+    
+    value := this.Start();
+    if( value.IsInfinite() )
+    {
+      // it's unplanned. Use optimistics: the latest across all its input material’s optimistic availability times
+      value := max( this, FromOperationDependency.astype( OperationMaterial ), om, om.OptimisticAvailableTime() );
+      // but at least the Schedule time:
+      value := maxvalue( value, this.Schedule().Time() );
+    }
+    
+    this.OptimisticStart( value );
+  *]
+}

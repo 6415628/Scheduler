@@ -1,0 +1,80 @@
+Quintiq file version 2.0
+#parent: #root
+Method RefreshDatasetInformation (Boolean isExport_i, Strings excludeTypes_i) as stream[Boolean]
+{
+  Description: "Refreshes information on available datasets, depending on whether running in 'Export' or 'Upgrade' mode"
+  TextBody:
+  [*
+    // tgn3 Apr-12-2021 (created)
+    
+    // Note: we expect this to be called either on server startup, or from the UI
+    
+    /* This method should
+    1) Re-generate DatasetTypes and set their priorities/dependents
+    2) Re-create VersionLookup and VersionPaths (upgrade only)
+    3) ConverterVersion (for 'Export' handled by Dataset reactively, for 'Upgrade' handled by VersionLookup) 
+    4) Re-generate TopicSteps as necessary
+    Assumption: if this is run after 'PrepareStructure' was run, any existing DICV and RunSteps
+    created will be lost when 'ConvertorVersion' instances are flushed.
+    Additionally, 'CustomLogic' context will also NOT automatically switch with this action.
+    The user is expected to explicitly trigger 'PrepareStructure' to re-create custom logic
+    */
+    // Flush data that should be re-created
+    this.DatasetType( relflush );
+    this.VersionLookup( relflush );
+    
+    // Create dataset types, dependents and datasets
+    // For upgrade, VersionLookup information is also created
+    this.GenerateDatasetTypes( excludeTypes_i );
+    this.SetPriorityAndDependentExtensible();
+    
+    // Generate 'Datasets', this requires a reactive block for exports
+    // We must wait for this stream to resolve before returning this method
+    // as 'ConvertorVersions' in the export flow are created via reactive
+    // ToDo (Nice to have): add a flag to track completion progress. This flag should prevent another instance of
+    // 'RefreshInformation' to run from the UI
+    isComplete := this.GenerateDatasets( isExport_i )->( isComplete )
+    {  
+      // ToDo (Nice to have): Handle tracking logic here
+    
+      // If custom logic already exists, helper relations need to be updated
+      // This is because the datasetType information could have changed
+      customLogic := this.CustomLogic();
+      
+      expectedLogicType := ifexpr( isExport_i, typeof( DMF_CustomLogicExport ).Name(), typeof( DMF_CustomLogicUpgrade ).Name() );
+      isSameType        := guard( customLogic.DefinitionName(), "" ) = expectedLogicType;
+      
+      if( not isnull( customLogic ) and isSameType )
+      {
+        customLogic.UpdateHelperRelations( false );
+      }
+      else if( not isSameType )
+      {
+        // Special case - clean up convertor versions
+        // This it simply to keep 'Refresh' behavior consistent as if 'Prepare' wasn't run yet
+        this.ConvertorVersion( relflush );
+      }
+    
+      // RunSteps should always be cleaned up after datasets are (re)generated
+      // This is because any existing run steps would have their dataset relation broken (if any)
+      traverse( this, Topic, topic, topic.RunStep( relsize ) > 0 )
+      {
+        topic.RunStep( relflush );
+      }
+    
+      // Update last run time (from beginning of transaction) and precision ticks
+      this.TimestampLastRefresh( DateTime::Now() );
+      this.PrecisionLastRefresh( OS::PrecisionCounter() );
+    
+      return true;  
+    }
+    
+    // Update current mode for UI
+    currentMode := ifexpr( isExport_i, DMF_ConvertorDataset::MODE_EXPORT(), DMF_ConvertorDataset::MODE_UPGRADE() );
+    
+    this.CurrentMode( currentMode );
+    
+    return isComplete;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

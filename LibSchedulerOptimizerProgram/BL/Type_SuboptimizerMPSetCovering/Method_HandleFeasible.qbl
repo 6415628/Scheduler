@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleFeasible (SuboptimizerMPSetCovering_SelectCombis program, CombiLegs combilegs)
+{
+  TextBody:
+  [*
+    // yifei Aug-10-2021 (created)
+    
+    cpts := selectset( combilegs, Elements.LeadingCombiProgramPhase.CombiProgramType.MasterCombiProgramType, cpt, cpt.IsActive() );
+    
+    traverse( cpts, Elements, cpt )
+    {
+      selectedcombis := construct( CombiLegs );
+      
+      sortedlegs := selectsortedset( cpt, 
+                                     ProgramTypeAsActiveCombi.ProgramPhase.LegAsLeadingProgramPhase, 
+                                     leg, 
+                                     true, 
+                                     leg.ProgramPhaseLeading().SequenceNr(), leg.SequenceNr() );
+      
+      traverse( sortedlegs, Elements, leg )
+      {
+        traverse( combilegs, Elements, combileg, combileg.Leg() = leg )
+        {
+          var := program.IsCombiLegSelectedVariables().Get( combileg );
+          
+          if( var.OptimalValue() > 0.5 )
+          {
+            combileg.IsSelected( true );
+            selectedcombis.Add( combileg );
+          }
+        }
+      }
+    }
+  *]
+}

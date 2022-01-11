@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericExternalWorkOrderSupply (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic external work order supply core data attributes to planning object'
+  TextBody:
+  [*
+    traverse( cdSchedule, CDEntity.astype( CDGenericExternalWorkOrderSupply ), cdGenericExternalWorkOrderSupply )
+    {
+      externalWorkOrderOperation := ExternalWorkOrderOperation::FindExternalWorkOrderOperation( cdGenericExternalWorkOrderSupply.WorkOrderId(),
+                                                                                                cdGenericExternalWorkOrderSupply.SequenceNr() );
+                                                                                                       
+      if( not isnull( externalWorkOrderOperation ) )
+      {                                                                                                   
+        genericExternalWorkOrderSupply := GenericExternalWorkOrderSupply::Create( externalWorkOrderOperation, cdGenericExternalWorkOrderSupply.Id() );
+        CopyCorresponding::CopyFrom( cdGenericExternalWorkOrderSupply ).CopyTo( genericExternalWorkOrderSupply );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

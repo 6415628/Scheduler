@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateProgramTypeAfter (Task_SC task, ProgramDefinitionConfiguration programdefinitionconf)
+{
+  TextBody:
+  [*
+    // yifei Aug-11-2021 (created)
+    cpt := this.CreateEmptyCombiProgramSetsAfter( task, programdefinitionconf );
+    
+    ops := this.ProgramOptimizerGetNotPlannedOperations();
+    cpt.FirstPhase().FirstLegAsLeading().FillFullProgramRandomly( ops, false ); 
+    
+    Transaction::Transaction().Propagate( attribute( OperationInCombiLeg, SequenceNr ) );
+    Transaction::Transaction().Propagate( attribute( OperationInCombiLeg, IsPhaseChanged ) );
+    Transaction::Transaction().Propagate( attribute( OperationInCombiLeg, IsLeadingPhaseChanged ) );
+    
+    cpt.FirstPhase().FirstLegAsLeading().Split();
+    
+    combiphase := cpt.FirstPhase();
+    
+    while( not isnull( combiphase ) )
+    {
+      combileg := combiphase.FirstLegAsLeading();
+      while( not isnull( combileg ) )
+      {
+        combileg.SequenceByPOA( ops );
+        combileg := combileg.NextLegAsLeading();
+      }
+      combiphase := combiphase.NextPhase();
+    }
+    
+    operations := construct( Operation_SCs );
+    traverse( cpt, CombiProgramPhase.CombiLegAsLeading, combileg )
+    {
+      operations := operations.Merge( selectset( combileg, OperationInCombiLeg.Operation_SC, op, true ) );
+    }
+    
+    cpt.PlanToResource( operations );
+  *]
+}

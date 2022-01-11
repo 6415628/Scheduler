@@ -1,0 +1,58 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedScheduling (SingleResourceBase resource, structured[Task_SC] tasks, Boolean skipsoftcheck, 
+  Boolean ctrlshiftkey, Task_SC beforetask, Task_SC aftertask, 
+  String identifier, output String feedback_o, output Boolean isallowedhard_o) as Boolean id:Method_ApplicationScheduler_AllowedScheduling_1
+{
+  #keys: '[109706.1.2106715370]'
+  Body:
+  [*
+    /*
+    This precondition covers the use cases of rescheduling campaign task of single resources
+    1. OnDrop structured[Task]/[CampaignTask] --> SingleResourceBase ( GanttChart )
+    2. OnDrop structured[Task]/[CampaignTask] --> SingleResourceBase ( Resource List )
+    3. OnDrop structured[Task]/[CampaignTask] --> SingleResourceBase ( Task List )
+    4. OnDrop structured[Task]/[CampaignTask] --> SingleResourceBase ( Campaign List )
+    This precondition checks whether the selection are allowed to be replanned
+    and are allowed to be planned between the before and after task
+    */
+    
+    operations := selectset( tasks, Elements.OperationInTask, op, true );
+    
+    // Reassign the local variable "operations" when a batch task is dropped on different resource 
+    // to allow planning of the sibling operation of batch task.
+    if( this.IsPlanSiblingOperations( tasks, resource ) )
+    {
+      // Use the sibling operation instead of the batch task operation for checking.
+      operations := selectset( tasks, 
+                               Elements.astype( BatchTask ).Batch.BatchSequenceElement.Operation_SC.PlanUnit_SC.Operation_SC, 
+                               op, 
+                               true, 
+                               op.Type() = resource.Type() );
+    }
+                                             
+    // Performs checkings on operations allowed scheduling rules
+    value := this.AllowedScheduling( resource, 
+                                     operations, 
+                                     skipsoftcheck, 
+                                     ctrlshiftkey, 
+                                     beforetask, 
+                                     aftertask, 
+                                     identifier, 
+                                     feedback_o, 
+                                     isallowedhard_o ); 
+    
+    // Performs checkings on stoppage tasks allowed scheduling rules
+    value := this.AllowedSchedulingStoppageTasks( resource, 
+                                                  tasks, 
+                                                  skipsoftcheck, 
+                                                  ctrlshiftkey, 
+                                                  beforetask, 
+                                                  aftertask, 
+                                                  identifier, 
+                                                  feedback_o, 
+                                                  isallowedhard_o ) and value;
+                                                  
+    return value;
+  *]
+}

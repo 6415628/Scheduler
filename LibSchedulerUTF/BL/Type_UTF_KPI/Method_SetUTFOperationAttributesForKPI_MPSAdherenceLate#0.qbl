@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetUTFOperationAttributesForKPI_MPSAdherenceLate (UTFOperation operation, Boolean isfinite_mpswindowend, Boolean isdue, 
+  Boolean isadherenceCPPlannedEnd)
+{
+  Description: 'Update UTFOperation attributes for KPI, specific for KPI MPSAdherenceLate'
+  TextBody:
+  [*
+    // kjn10 Jul-7-2021 (created)
+    // Default value for kpi mpsAdherenceLate
+    mpsAdherenceLateDeviation := 2;
+    a := 2; //PenaltyParameterMPSAdherenceLateSlope_a
+    b := 2; //PenaltyParameterMPSAdherenceLatePower_b
+    c := 2; //PenaltyParameterMPSAdherenceLateOffset_c
+    
+    schedule := operation.PlanUnit_SC().Schedule();
+    scheduletime := schedule.Time();
+    mpswindowend := scheduletime + Duration::Days( 14 );
+    if( isfinite_mpswindowend )
+    {
+      operation.UseMPS_WindowEnd_UTF( true );
+      operation.MPS_WindowEnd_UTF( mpswindowend );
+    }
+                                     
+    operation.UseIsDueInSchedulingHorizon_UTF( true );
+    operation.IsDueInSchedulingHorizon_UTF( isdue );
+    
+    operation.UseEnd_UTF( true );
+    if( not isadherenceCPPlannedEnd )
+    {
+      operation.End_UTF( mpswindowend + Duration::Hours( mpsAdherenceLateDeviation ) );
+    }
+    else
+    {
+      operation.End_UTF( mpswindowend - Duration::Hours( mpsAdherenceLateDeviation ) );
+    }
+    
+    // the following value will be reset in tear down method
+    optimizerstrategy := schedule.OptimizerStrategyInSchedule();
+    this.PenaltyParameterMPSAdherenceKPISlope_a( optimizerstrategy.PenaltyParameterMPSAdherenceLateSlope_a() );
+    this.PenaltyParameterMPSAdherenceKPIPower_b( optimizerstrategy.PenaltyParameterMPSAdherenceLatePower_b() );
+    this.PenaltyParameterMPSAdherenceKPIOffset_c( optimizerstrategy.PenaltyParameterMPSAdherenceLateOffset_c() );
+    
+    optimizerstrategy.PenaltyParameterMPSAdherenceLateSlope_a( a );
+    optimizerstrategy.PenaltyParameterMPSAdherenceLatePower_b( b );
+    optimizerstrategy.PenaltyParameterMPSAdherenceLateOffset_c( c );
+  *]
+}

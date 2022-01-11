@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeStockElements
+{
+  TextBody:
+  [*
+    schedule := this.Schedule()
+    
+    // Synchronize supply quantities
+    traverse( schedule, Supply, s )
+    {                                                            
+      s.SynchronizeStockElement();  
+    }
+    
+    // Synchronize demand quantities
+    traverse( schedule, Demand, d )
+    {                                                            
+      d.SynchronizeStockElement();  
+    }
+    
+    // Synchronize inventory target stock elements to plot in chart
+    traverse( schedule, Product_SC.ProductInStockingPoint.InventoryTarget, inventoryTarget )
+    {
+      inventoryTarget.SynchronizeStockElement();
+    }
+    
+    // Remove instance when its corresponding supply/demand is deleted
+    traverse( schedule, ScheduleStock.ScheduleStockElement, element, element.CheckCanBeDeleted() )
+    {
+      element.Delete();
+    }
+  *]
+}

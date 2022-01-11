@@ -1,0 +1,62 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcCumulativeCharacteristic
+{
+  TextBody:
+  [*
+    // Construct vectors 
+    cumulativecharacteristic := BinaryValue::Construct();
+    cumulativerealvalue := BinaryValue::Construct();
+    // Only calculate the phase sequence number if there is program type
+    if( not isnull( this.ProgramType() ) 
+        and not isnull( this.ProgramType().ProgramTypeConfiguration() ) )
+    {
+      previoustaskinprogramtype := this.GetPreviousTaskInProgramType();
+      previoustaskcummulativecharacteristic := guard( previoustaskinprogramtype.CumulativeCharacteristic(), BinaryValue::Construct( ) );
+      previoustaskcummulativerealvalue := guard( previoustaskinprogramtype.CumulativeRealValues(), BinaryValue::Construct( ) );
+      
+      // Check whether there is previous feedback task
+      previousfeedbacktask := guard( this.ProgramType().GetLastFeedbackTask(), null( FeedbackTaskInFeedbackProgramType ) );
+      if( isnull( previoustaskinprogramtype ) )
+      {
+        if( not isnull( previousfeedbacktask ) )
+        {
+          previoustaskcummulativecharacteristic := previousfeedbacktask.CumulativeCharacteristic();
+          previoustaskcummulativerealvalue := previousfeedbacktask.CumulativeRealValues();
+        }
+        // Checks whether there is feedback program type archived cumulative values
+        else if( not isnull( this.ProgramType().FeedbackProgramType() ) )
+        {
+          previoustaskcummulativecharacteristic := this.ProgramType().FeedbackProgramType().ArchivedCumulativeCharacteristic();
+          previoustaskcummulativerealvalue := this.ProgramType().FeedbackProgramType().ArchivedCumulativeRealValues();      
+        }
+      }  
+      
+      // If there is feedback task, just use back previous cumulative values as current cumulative values
+      if( this.Task_SC().HasFeedbackTask() )
+      {
+        cumulativecharacteristic := previoustaskcummulativecharacteristic;
+        cumulativerealvalue := previoustaskcummulativerealvalue;
+      }
+      else
+      {
+        // Get program start time based on current program or feedback program start
+        programstart := guard( this.ProgramType().FeedbackProgramType().Start(),
+                               this.ProgramType().Start() );
+        
+        // Calculate cumulative characteristic binary value
+        TaskInProgramSet::GetCumulativeCharacteristicBinaryValue( this.ProgramType().ProgramTypeConfiguration(),
+                                                                  this.Task_SC().GetOperation(),
+                                                                  previoustaskcummulativecharacteristic,
+                                                                  previoustaskcummulativerealvalue,
+                                                                  programstart,
+                                                                  this.Task_SC().End(),
+                                                                  cumulativecharacteristic,
+                                                                  cumulativerealvalue );
+      }
+    }
+                                                                
+    this.CumulativeCharacteristic( cumulativecharacteristic );
+    this.CumulativeRealValues( cumulativerealvalue );
+  *]
+}

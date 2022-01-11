@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_RuleDetail (CDSchedule cdschedule, CDRule cdrule, Rule rule)
+{
+  Description: 'Restore rule detail core data attributes to planning object ( RuleChangeOver, RuleRange and RuleValueString )'
+  TextBody:
+  [*
+    // Restore RuleChangeOver
+    cdrulechangeovers := selectset( cdschedule, CDEntity.astype( CDRuleChangeOver ), cdrulechangeover, 
+                                    cdrulechangeover.RuleID() = cdrule.RuleID() );
+    traverse( cdrulechangeovers, Elements, cdrulechangeover )
+    {
+      rulechangeover := RuleChangeOver::Create( rule );
+      CopyCorresponding::CopyFrom( cdrulechangeover ).CopyTo( rulechangeover );   
+    } 
+    
+    // Restore RuleRange
+    cdruleranges := selectset( cdschedule, CDEntity.astype( CDRuleRange ), cdrulerange, 
+                               cdrulerange.RuleID() = cdrule.RuleID() );
+    traverse( cdruleranges, Elements, cdrulerange )
+    {
+      rulerange := RuleRange::Create( rule );
+      CopyCorresponding::CopyFrom( cdrulerange ).CopyTo( rulerange );   
+    } 
+    
+    // Restore RuleValueString
+    cdrulevaluestrings := selectset( cdschedule, CDEntity.astype( CDRuleValueString ), cdrulevaluestring, 
+                                     cdrulevaluestring.RuleID() = cdrule.RuleID() );
+    traverse( cdrulevaluestrings, Elements, cdrulevaluestring )
+    {
+      rulevaluestring := RuleValueStrings::Create( rule );
+      CopyCorresponding::CopyFrom( cdrulevaluestring ).CopyTo( rulevaluestring );   
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,78 @@
+Quintiq file version 2.0
+#parent: GanttChartResourceSchedule_925
+Response OnDrop (structured[Operation_SC] source, BatchResource droprow, Task_SC droptarget, 
+  Task_SC beforedroptarget, Task_SC afterdroptarget) id:Response_GanttChartResourceSchedule_925_OnDrop_836
+{
+  #keys: '[142956.0.658683027]'
+  DefinitionID: 'Responsedef_WebGanttChart_OnDrop'
+  GroupServerCalls: true
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey       := actionmodifier.IsControl() and not actionmodifier.IsShift();
+    ctrlshiftkey  := actionmodifier.IsControl() and actionmodifier.IsShift();
+    
+    // Workaround for https://jira.delmia.dsone.3ds.com/browse/CTAS-109841, precondition trigger twice causing droptarget becomes null on second trigger.
+    droptarget := select( Schedule, Operation_SC.Task_SC, task,
+                          task.Resource_SC() = droprow,
+                          droptime >= task.Start()
+                          and droptime <= task.End() )
+    
+    operations := construct( Operation_SCs );
+    aftertask := droptarget;
+    beforeTask := beforedroptarget;
+    
+    // When ctrlshiftkey = false and not isnull droptarget, the intention is to merge all operations into the droptarget.
+    if( not ctrlshiftkey ) 
+    {
+      operations  := selectset( droptarget, OperationInTask, op, true, true ); //operations from the drop target
+      aftertask := afterdroptarget;
+    }                                                                                                                             
+    
+    // We check droprow.droprow.LastFeedback() because in the case where last feedback task is only started or has FSPL bound then it's task is preserved but hidden   
+    // Hence only need this special handling and user can only plan after the last feedback task.
+    if( isnull( beforeTask ) 
+        and guard( not isnull( droprow.LastFeedbackBatchInSchedule().BatchTask() ), false ) )
+    {
+      beforeTask := droprow.LastFeedbackBatchInSchedule().BatchTask();
+    }
+    
+    source := source.Union( operations );
+    
+    return  Scheduler.AllowedScheduling( droprow,            //batchresource
+                                         source,             //structured operations
+                                         ctrlkey,            //skip soft check
+                                         ctrlshiftkey,       //ctrl shift key
+                                         beforeTask,         //before task
+                                         aftertask,          //afterbatch
+                                         Operation_SC::GetSelectedObjects( source ),
+                                         feedback,
+                                         isallowedhard );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // OnDrop structured[Operation] --> Batch Task on BatchResource
+      ctrlshift := actionmodifier.IsControl() and actionmodifier.IsShift();
+      beforeTask := beforedroptarget;
+      
+      if( isnull( beforeTask ) and 
+          guard( not isnull( droprow.LastFeedbackBatchInSchedule().BatchTask() ), false ) )
+      {
+        beforeTask := droprow.LastFeedbackBatchInSchedule().BatchTask();
+      }
+      
+      if( not isnull( droptarget.astype( BatchTask ) ) and not ctrlshift )
+      {
+        // (Add operation to batch)
+        droptarget.astype( BatchTask ).Batch().AddOperations( source );
+      }
+      else
+      {
+        // OnDrop structured[Operation] --> BatchResource (Create new batch)
+        droprow.CreateBatchAssignOperationsPlanBatch( source, guard( beforeTask.astype( BatchTask ), null( BatchTask ) ) );
+      }
+    *]
+  }
+}

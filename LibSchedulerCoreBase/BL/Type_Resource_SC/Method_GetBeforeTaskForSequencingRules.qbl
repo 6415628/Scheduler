@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetBeforeTaskForSequencingRules (Task_SC beforetask) declarative remote as Task_SC
+{
+  Description:
+  [*
+    Get before task based on shutdown type
+    Only used during sequencing rules to get the right before task
+  *]
+  TextBody:
+  [*
+    // Get before task based on shutdown type
+    
+    task := beforetask;
+    
+    // Checks whether beforetask is stoppage task, if yes, then need to update beforetask based on shutdown type configuration
+    if( guard( beforetask.IsStoppageTask(), false ) )
+    {
+      stoppagetask := beforetask.astype( StoppageTask );
+      if( ( stoppagetask.IsProgramChangeTask() 
+            and guard( stoppagetask.astype( ProgramChangeTask ).ProgramChange().IsSequenceRulesEnabled(), false ) )
+          or ( stoppagetask.IsShutdownTask()
+               and forallexists( stoppagetask, PreviousNonStoppageTask.NextStoppageTask.Shutdown.ResponsibleShutdownType, st, 
+                                 true, 
+                                 st.IsSequenceRulesEnabled() ) ) )
+      {
+        task := stoppagetask.PreviousNonStoppageTask();    
+      }
+    }
+    
+    return task;
+  *]
+}

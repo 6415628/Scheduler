@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestConstraintIsProgramTypeChangeOK (Schedule schedule)
+{
+  Description: 'Test constraint IsProgramTypeChangeOK'
+  TextBody:
+  [*
+    // Get variant data
+    resourceType := '';
+    leadTimeStrategy := '';
+    hasResourceProgramDefinition := false;
+    isaftertaskprogramchange := false;
+    isValidForPreconInsert := false;
+    hasProgramChange := false;
+    hasFeedback := false;
+    isValidForPreconDelete := false;
+    hasProgramType := false;
+    isValidForPreconCreateEdit := false;
+    isallowedtypechangeonprogramtypelevel := false;
+    isallowedtypechangeonprogramtypechangelevel := false;
+    isValidForConstraintProgramTypeChange := false;
+    
+    this.GetTestVariant( resourceType,
+                         leadTimeStrategy,
+                         hasResourceProgramDefinition,
+                         isaftertaskprogramchange,
+                         isValidForPreconInsert,
+                         hasProgramChange,
+                         hasFeedback,
+                         isValidForPreconDelete,
+                         hasProgramType,
+                         isValidForPreconCreateEdit,
+                         isallowedtypechangeonprogramtypelevel,
+                         isallowedtypechangeonprogramtypechangelevel,
+                         isValidForConstraintProgramTypeChange );
+    
+    // Transaction propagate the related information which needed for the checking
+    Transaction::Transaction().Propagate( relation( ProgramChange, ProgramType ) );
+    Transaction::Transaction().Propagate( attribute( ProgramChange, TaskSequenceNr ) );
+    Transaction::Transaction().Propagate( constraint( ProgramType, IsProgramTypeChangeOK ) );
+    
+    lastprogramtype := maxselect( schedule, ProgramChange.ProgramType, pt, true, pt.ProgramChange().TaskSequenceNr() )
+    
+    value := guard( lastprogramtype.IsProgramTypeChangeOK(), true );
+    
+    this.Run().AssertEqual( isValidForConstraintProgramTypeChange, value,
+                            UTFUtility::GenerateFailedMessage( 'Program type constraint "IsProgramTypeChangeOK" failed', this.Variant() ) );
+  *]
+}

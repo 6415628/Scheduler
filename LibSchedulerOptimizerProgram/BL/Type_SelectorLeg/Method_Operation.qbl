@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Operation (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    legs := task.Scope().Legs();
+    //select the earliest not handled leg
+    selectedleg := minselect( legs, 
+                              Elements, 
+                              leg, 
+                              leg.NrTimesSelected() = 0,
+                              leg.ProgramPhaseLeading().ProgramType().Start(),
+                              leg.ProgramPhaseLeading().SequenceNr(),
+                              leg.SequenceNr() ) 
+    
+    scope := LibOpt_Scope::Create( task.Run() );
+    
+    traverse( task.Scope().ScopeElements(), Elements, ele, not ele.istype( ScopeElementLeg )  )
+    {
+      scope.Add( ele );
+    }
+    
+    
+    if( not isnull( selectedleg ) )
+    {
+      scope.Add( selectedleg.ScopeElementLeg() ); 
+      selectedleg.NrTimesSelected( selectedleg.NrTimesSelected() + 1 );
+      selectedleg.SetCombiProgramTypeToBeTobeExtendedFlag();
+    }
+    
+    return this.Continue( task, scope );
+  *]
+}

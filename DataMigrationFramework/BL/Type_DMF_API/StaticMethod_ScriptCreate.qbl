@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ScriptCreate (Key mdsid_i, String datasetKind_i, Number toVersionMajor_i, 
+  Number toVersionMinor_i, Number toVersionBuild_i, Number toVersionPatch_i) as stream[Void]
+{
+  Description:
+  [*
+    API to create a new script. 
+    Mind: this is intentionally module accessibility, as it's intended only for DMF tests
+  *]
+  TextBody:
+  [*
+    // tgn3 Jul-21-2021 (created)
+    
+    // This API only supports the basic script versions.
+    // To include custom versions, you will need to add them manually.
+    ret_s := mdsid_i->DMF_ConvertorDataset::GetDMFDataset()->( dmf )
+    {
+      // File name should be derived
+      // Path is not important, as 'AddBasicScript' will determine it based on settings
+      toVersions := construct( Numbers );
+      
+      toVersions.Add( toVersionMajor_i );
+      toVersions.Add( toVersionMinor_i );
+      toVersions.Add( toVersionBuild_i );
+      toVersions.Add( toVersionPatch_i );
+        
+      extension := DMF_DBInterface::GetScriptFileExtension();
+      fileName  := datasetKind_i + DMF_Utility::Underscore() + toVersions.ToString( "" ) + extension;
+    
+      DMF_SQLScript::AddBasicScript( dmf, fileName, datasetKind_i, toVersions );
+    }
+    
+    ret_s->Exception()->( ex )
+    {
+      msg := "DMF_API.ScriptCreate failed. Reason: ";
+      
+      DMF_Utility::LogException( msg, ex ); 
+    }
+    
+    return ret_s;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

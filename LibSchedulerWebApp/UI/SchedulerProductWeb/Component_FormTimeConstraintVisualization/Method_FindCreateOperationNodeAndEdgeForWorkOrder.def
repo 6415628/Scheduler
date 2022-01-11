@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method FindCreateOperationNodeAndEdgeForWorkOrder (shadow[CustomDrawNodeOperation] startingNode, Operation_SC nextOperation, Boolean isUpstream, 
+  output Number depth) as shadow[CustomDrawNodeOperation] id:Method_FormTimeConstraintVisualization_FindCreateOperationNodeAndEdgeForWorkOrder
+{
+  #keys: '[142956.3.575251818]'
+  Body:
+  [*
+    // Create a node and link it with the starting node
+    // Modified from FindCreateOperationNodeAndEdge
+    // The logic here changes the current and next node to ensure it is always creating edges according to the time constraint
+    
+    // Create node
+    node := this.GetCustomDrawNode( nextOperation, isUpstream, startingNode.Depth() + 1 );
+    
+    // Create Edge between both nodes
+    // Force node owner to always be the 'upstream' node
+    if( isUpstream )
+    {
+      this.CreateCustomDrawEdgesForWorkOrder( node, startingNode, isUpstream );
+    }
+    else
+    {
+      this.CreateCustomDrawEdgesForWorkOrder( startingNode, node, isUpstream );
+    }
+    
+    owner := DataHolderCustomDrawConfiguration.Data(); // DataHolder is set in GenerateTree
+    
+    // Update the depth as we create more edges
+    depth := ifexpr( isUpstream, owner.UpstreamDepthLimit(), owner.DownstreamDepthLimit() ) - node.Depth();
+    
+    // Update status of meeting depth limit on node
+    // If limit is met, this will stop node generation for next upstream/downstream 'level' of operations
+    node.IsDepthLimitMet( ifexpr( isUpstream,
+                                  node.Depth() >= owner.UpstreamDepthLimit(),
+                                  node.Depth() >= owner.DownstreamDepthLimit() ) );
+    
+    return node;
+  *]
+}

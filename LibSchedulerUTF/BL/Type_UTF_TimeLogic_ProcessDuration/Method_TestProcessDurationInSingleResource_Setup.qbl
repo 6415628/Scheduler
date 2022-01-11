@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestProcessDurationInSingleResource_Setup (Schedule schedule)
+{
+  Description: 'Test process duration in single resource - setup'
+  TextBody:
+  [*
+    // Get variant data
+    isexternalwooresourceallowed := false;
+    ispositiveexternalprocessduration := false;
+    processduration := Duration::Zero();
+    
+    this.GetTestVariant( isexternalwooresourceallowed,
+                         ispositiveexternalprocessduration,
+                         processduration );
+    
+    // Create resources
+    resource1 := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource1' );
+    
+    // Propagate declarative attribute to be used to assign operation type
+    Transaction::Transaction().Propagate( attribute( Resource_SC, Type ) );
+    
+    // Create work order
+    workOrder := GenericExternalWorkOrder::Create( schedule, 'WorkOrder' );
+    
+    // Create 1 operation
+    order := UTFMockObjectFactory::CreateOrder( schedule, 'Order' );
+    planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'PlanUnit', 5.0 );
+    operation := GenericOperation::Create( planUnit, resource1.Type() );
+    operation.OperationID( 'Operation' );
+    
+    // Create work order operation
+    workOrderOperation := workOrder.CreateWorkOrderOperation( 1 );
+    operation.WorkOrderOperation( relset, workOrderOperation );
+    
+    // Create work order operation resource for each resource of this operation
+    workOrderOperationResource := WorkOrderOperationResource::Create( workOrderOperation, resource1.ResourceID() );
+    workOrderOperationResource.IsAllowed( isexternalwooresourceallowed );
+    workOrderOperationResource.UseIsAllowed( true );
+    
+    if( ispositiveexternalprocessduration )
+    {
+      workOrderOperationResource.FixedProcessDuration( Duration::Hours( 1 ) );
+      workOrderOperationResource.ProcessDurationPerQuantity( Duration::Hours( 1 ) );
+    }
+  *]
+}

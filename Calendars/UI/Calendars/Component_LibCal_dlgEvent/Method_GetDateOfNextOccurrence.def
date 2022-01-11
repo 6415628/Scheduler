@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetDateOfNextOccurrence (output Date dateOfRecurrence_o, Date date_i) as Date id:Method_LibCal_dlgEvent_GetDateOfNextOccurrence
+{
+  #keys: '[131094.0.1729519603]'
+  Body:
+  [*
+    date     := date_i;
+    timezone := this.GetCalendarTimeZone();
+    
+    if( btnWeekly.Pressed() )
+    {
+      earliestStart := date_i;
+      
+      date := LibCal_RecurrencePatternWeekly::GetDateOfNextOccurrence( timezone, dateOfRecurrence_o, date_i, 
+                                                                       durStartTimeOfDay.Duration(), durEndTimeOfDay.Duration(), vhDuration.Data(), earliestStart,
+                                                                       [Number]edtEveryNrOfWeeks.Text(),
+                                                                       btnMonday   .Pressed(),
+                                                                       btnTuesday  .Pressed(),
+                                                                       btnWednesday.Pressed(),
+                                                                       btnThursday .Pressed(),
+                                                                       btnFriday   .Pressed(),
+                                                                       btnSaturday .Pressed(),
+                                                                       btnSunday   .Pressed() );  
+    }
+    
+    else if( btnMonthly.Pressed() )
+    {
+      // Make sure that the entered day of the month is valid.
+      day := guard( [Number]edtMonthlyDay.Text(), 0 );
+      
+      if( day > 0 )
+      {
+        everyNrOfMonths := ifexpr( ckbMonthlyDay.Checked(), edtMonthlyDayEveryNrOfMonths.Text(),
+                                                            edtMonthlyPatternEveryNrOfMonths.Text() );
+                                                            
+        date := LibCal_RecurrencePatternMonthly::GetDateOfNextOccurrence( dateOfRecurrence_o, date_i, [Number]everyNrOfMonths,
+                                                                          ckbMonthlyDay.Checked(), day,
+                                                                          ssMonthlyPatternWeekOfMonth.BoundValue(), ssMonthlyPatternDayOfWeek.BoundValue() );
+      }                                                                    
+    }
+    
+    else if( btnYearly.Pressed() )
+    {
+      date := LibCal_RecurrencePatternYearly::GetDateOfNextOccurrence( dateOfRecurrence_o, date_i, [Number]edtEveryNrOfYears.Text(),
+                                                                       ckbYearlyDay.Checked(), [Number]ssYearlyDayOfMonth.BoundValue(),
+                                                                       ssYearlyPatternWeekOfMonth.BoundValue(), ssYearlyPatternDayOfWeek.BoundValue() );
+    }
+    
+    return date;
+  *]
+}

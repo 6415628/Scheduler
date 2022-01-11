@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestSplitPlannedOrderPrecondition (Schedule schedule)
+{
+  Description: 'Test split firm planned order precondition logic.'
+  TextBody:
+  [*
+    workOrders := selectset( schedule, WorkOrder, workorder, true );
+    testInstance := this.GetTestInstance( this.Variant() );
+    
+    // Join planned order sanity check
+    WorkOrder::CheckCanSplit( workOrders );
+    canSplit := FeedbackObject::CurrentFeedback().IsAllowed();
+    
+    this.Run().AssertTrue( testInstance.CanSplit() = canSplit,
+                           UTFUtility::GenerateFailedMessage( 'Precondition check for split planned order failed', '' ) );
+  *]
+}

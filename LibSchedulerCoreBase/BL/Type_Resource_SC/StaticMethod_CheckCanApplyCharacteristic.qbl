@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckCanApplyCharacteristic (Resource_SCs resources, Characteristic characteristic) declarative remote as Boolean
+{
+  Description: 'Checks whether can apply the characteristic in one of the resources'
+  TextBody:
+  [*
+    // Checks whether can apply the characteristic in one of the resources
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    value := exists( resources, Elements, res, res.CheckCanApplyCharacteristic( characteristic ) );
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      // Rules cannot be created for continuous resource
+      if( exists( resources, Elements, res, res.IsContinuous() ) )
+      {
+        feedbackobject.AddHard( Translations::Rule_CannotBeCreatedForContinuousResource() );
+      }
+      // Characteristic cannot be used in batch resource if it is not linked to batch
+      if( not characteristic.IsApplicableForBatchResource()
+          and exists( resources, Elements.astype( BatchResource ), batchresource, true ) )
+      {
+        feedbackobject.AddHard( Translations::Characteristic_CannotBeUsedForBatchResources( characteristic ) );
+      }
+      // Characteristic cannot be used in single resource if it is not linked to operation
+      if( not characteristic.IsApplicableForSingleResource()
+          and exists( resources, Elements.astype( SingleResourceBase ), singleresource, true ) )
+      {
+        feedbackobject.AddHard( Translations::Characteristic_CannotBeUsedForSingleResources( characteristic ) );
+      }
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

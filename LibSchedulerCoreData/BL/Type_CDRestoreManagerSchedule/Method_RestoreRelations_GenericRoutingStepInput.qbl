@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericRoutingStepInput (CDSchedule cdschedule, RoutingStep routingStep)
+{
+  Description: 'Restore relations for routing step input core data to planning object'
+  TextBody:
+  [*
+    // Restore RoutingStepInput
+    cdRoutingStepInputs := selectset( cdschedule, CDEntity.astype( CDGenericRoutingStepInput ), cdRoutingStepInput, 
+                                      cdRoutingStepInput.RoutingId() = routingStep.RoutingId(),
+                                      cdRoutingStepInput.RoutingStepSequenceNr() = routingStep.SequenceNr()
+                                    );
+    traverse( cdRoutingStepInputs, Elements, cdRoutingStepInput )
+    {
+      routingStepInput := RoutingStepInput::FindRoutingStepInput( cdRoutingStepInput.RoutingId(), 
+                                                                  cdRoutingStepInput.RoutingStepSequenceNr(),
+                                                                  cdRoutingStepInput.ProductId(),
+                                                                  cdRoutingStepInput.StockingPointId()
+                                                                );
+      if( not isnull( routingStepInput ) )
+      {  
+        // ImportedRoutingStepInput_SC, 1-1
+        importedRoutingStepInput := ImportedRoutingStepInput_SC::FindImportedRoutingStepInput_SC( cdRoutingStepInput.RoutingId(), 
+                                                                                                  cdRoutingStepInput.RoutingStepSequenceNr(),
+                                                                                                  cdRoutingStepInput.ProductId(),
+                                                                                                  cdRoutingStepInput.StockingPointId()
+                                                                                                );
+        routingStepInput.ImportedRoutingStepInput_SC( relset, importedRoutingStepInput );  
+        
+        // ProductInStockingPoint, M-1
+        productInStockingPoint := ProductInStockingPoint::FindProductInStockingPoint( cdRoutingStepInput.StockingPointId(), 
+                                                                                      cdRoutingStepInput.ProductId()
+                                                                                    );
+        routingStepInput.ProductInStockingPoint( relset, productInStockingPoint );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

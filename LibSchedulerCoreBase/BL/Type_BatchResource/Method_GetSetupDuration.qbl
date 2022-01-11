@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetSetupDuration (Batch frombatch, Batch tobatch) declarative as Duration
+{
+  Description: 'Gets the setup duration required between batches.'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // This method should be implemented by the QS for each specialization of BatchResource
+    value := Duration::Zero();
+    
+    if( this.ResourceGroup_SC().HasSetup() and not isnull( tobatch ) )
+    {
+      from_order_type := '';
+      from_product_id := '';
+      from_practice := ''; 
+      from_setupgroup := '';
+      to_order_type := tobatch.First().Operation_SC().PlanUnit_SC().ProductType();
+      to_product_id := tobatch.First().Operation_SC().PlanUnit_SC().ProductId();
+      to_practice := guard( tobatch.Practice().UsedPractice(), '' ); // Guard in case user did not configure any practices
+      to_setupgroup := tobatch.First().Operation_SC().SetupGroup();
+      
+      if( not isnull( frombatch ) )
+      {
+        from_order_type := frombatch.First().Operation_SC().PlanUnit_SC().ProductType();
+        from_product_id := frombatch.First().Operation_SC().PlanUnit_SC().ProductId();
+        from_practice := guard( frombatch.Practice().UsedPractice(), '' ); // Guard in case user did not configure any practices
+        from_setupgroup := frombatch.First().Operation_SC().SetupGroup();
+      }
+      else
+      {
+        //no previous batch, then get from last feedback batch
+        lastfeedbackbatch := this.LastFeedbackBatchInSchedule();    
+        if( not isnull( lastfeedbackbatch ))
+        {      
+          lastfeedbackbatchcontent := select( lastfeedbackbatch, FeedbackBatchContentInSchedule, content, true );
+          from_order_type := guard( lastfeedbackbatchcontent.OperationBatchFeedback().Operation_SC().PlanUnit_SC().ProductType(), '' );
+          from_product_id := guard( lastfeedbackbatchcontent.OperationBatchFeedback().Operation_SC().PlanUnit_SC().ProductId(), '' ); 
+          from_practice := guard( lastfeedbackbatchcontent.OperationBatchFeedback().Operation_SC().Practice(), '' ); 
+          from_setupgroup := guard( lastfeedbackbatchcontent.OperationBatchFeedback().Operation_SC().SetupGroup(), '' );
+        }
+      }
+      
+      
+      setuprow := this.GetSetupRow( from_order_type, from_product_id, to_order_type, to_product_id, from_practice, to_practice, from_setupgroup, to_setupgroup );
+       
+      if( not isnull( setuprow ) )
+      {
+        value := setuprow.SetupDuration();
+      } 
+    }
+    
+    return value;
+  *]
+}

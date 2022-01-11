@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeProgramTypeChangeConfiguration (ImportedProgramSetConfiguration importedprogramsetconfiguration)
+{
+  Description: 'Synchronize program type change configuration from imported data'
+  TextBody:
+  [*
+    // Synchronize program type change configuration from imported data
+    allinstances := selectset( this, ProgramTypeChangeConfiguration, programtypechange, true );
+    updatedinstances := construct( ProgramTypeChangeConfigurations );
+    
+    traverse( importedprogramsetconfiguration, ImportedProgramTypeChangeConfiguration, importedprogramtypechange )
+    {
+      programtypechange := ProgramTypeChangeConfiguration::FindProgramTypeChangeConfiguration( importedprogramtypechange.FromProgramDefinitionConfigurationID(),
+                                                                                               importedprogramtypechange.FromProgramSetConfigurationID(),
+                                                                                               importedprogramtypechange.FromProgramTypeConfigurationID(),
+                                                                                               importedprogramtypechange.ToProgramDefinitionConfigurationID(),
+                                                                                               importedprogramtypechange.ToProgramSetConfigurationID(),
+                                                                                               importedprogramtypechange.ToProgramTypeConfigurationID() );
+      
+      if( isnull( programtypechange ) )
+      {
+        programtypechange := ProgramTypeChangeConfiguration::Create( this, 
+                                                                     importedprogramtypechange.FromProgramTypeConfigurationID(),
+                                                                     importedprogramtypechange.ToProgramTypeConfigurationID() );
+      }
+      programtypechange.Update( importedprogramtypechange );
+    
+      updatedinstances.Add( programtypechange );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    traverse( oldinstances, Elements, e )
+    {
+      e.Remove();
+    }
+  *]
+}

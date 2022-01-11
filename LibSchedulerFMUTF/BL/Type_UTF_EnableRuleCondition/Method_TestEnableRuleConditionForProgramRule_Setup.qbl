@@ -1,0 +1,84 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestEnableRuleConditionForProgramRule_Setup (Schedule schedule)
+{
+  Description: 'Test rule with enabled rule condition for program rule - setup'
+  TextBody:
+  [*
+    // Get variant attributes
+    programscope := '';
+    istransitionrule := false;
+    isvariantfound := false;
+    isconditionenable := false;
+    conditionScope := '';
+    conditionValue := false;
+    previousOperationAttributeValue := false;
+    operationAttributeValue := false;
+    hasNoViolateConstraint := false;
+    
+    this.GetProgramTestVariant( isvariantfound,
+                                programscope,
+                                istransitionrule,
+                                isconditionenable,
+                                conditionScope,
+                                conditionValue,
+                                previousOperationAttributeValue,
+                                operationAttributeValue,
+                                hasNoViolateConstraint );
+    
+    if( isvariantfound )
+    {
+      // Initialize rule framework and characteristic
+      schedule.InitializeRuleFramework();
+      schedule.InitializeCharacteristic();
+      
+      // Create program scheduling data
+      this.CreateProgramSchedulingData( schedule );
+      
+      // Set rule subtype to NotAllowedJumpValue, Main characteristic = OperationPractice, Condition characteristic = NeedsEdgeTrimming
+      rulesubtype := RuleConstant::RuleSubType_NotAllowedJumpValue();
+      characteristic := RuleConstant::Characteristic_OperationPractice();
+      characteristiccondition := select( schedule, Characteristic, char, char.ID() = RuleConstant::Characteristic_OperationNeedsEdgeTrimming() );
+      
+      // Set the program phase
+      i := 0;
+      traverse( schedule, ProgramDefinitionConfiguration.ProgramSetConfiguration.ProgramTypeConfiguration.ProgramPhaseConfiguration, programphase, 
+                programphase.ProgramPhaseConfigurationID() = 'HEAD' or programphase.ProgramPhaseConfigurationID() = 'BODY' )
+      { 
+        // Create transition rule
+        this.CreateProgramPhaseTransitionRule( schedule, programphase, i );
+        i ++;
+      
+        // Create program rule
+        rule := this.CreateProgramRule( schedule, programphase, i, rulesubtype, characteristic, programscope, istransitionrule ); 
+        rule.IsConditionEnabled( isconditionenable );
+        // Set the condition details if the condition checking is enabled
+        if( isconditionenable )
+        {
+          rule.ConditionScope( conditionScope );
+          rule.ConditionValue( conditionValue ); 
+          rule.CharacteristicCondition( relset, characteristiccondition );
+        }
+        i ++;
+           
+        // Set the operation 5 & 10 width with different value based on variant, these 2 operations will be transition/violated operation
+        transitionops := selectset( schedule, PlanUnit_SC.Operation_SC, op, op.OperationID() = 'Operation_5' or op.OperationID() = 'Operation_10' );
+        traverse( transitionops, Elements, transitionop )
+        {
+          transitionop.Practice( 'CO' );
+          transitionop.NeedsEdgeTrimming( operationAttributeValue );
+        }
+        
+        // Set the operation 4 & 9 width with different value based on variant
+        previosops := selectset( schedule, PlanUnit_SC.Operation_SC, op, op.OperationID() = 'Operation_4' or op.OperationID() = 'Operation_9' );
+        traverse( previosops, Elements, prevop )
+        {
+          prevop.NeedsEdgeTrimming( previousOperationAttributeValue );
+        }
+      }
+      
+      // Transaction propagate is needed to propagate program/program phase instances which instantiated declaratively
+      Transaction::Transaction().Propagate();
+    }
+  *]
+}

@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod EnsureKpiTrackerDataset (String path, String name, String state) as stream[KpiTracker]
+{
+  Description: 'Loads or creates a KpiTracker dataset, using the parametes specified in the ModelExtensions class.'
+  TextBody:
+  [*
+    info( '>>> KpiTracker: EnsureKpiTrackerDataset -- trying to revive a KpiTracker dataset, otherwise create one. ' );
+    
+    dataset := null( stream[KpiTracker] );
+    editor  := MDSEditor::Editor();
+    kind    := "KpiTracker";
+    
+    // First try to find an existing, loaded KpiTracker dataset.
+    loadedObjectInfo := editor.LoadedObjectInfo( kind, path, name );
+    
+    if ( isnull( loadedObjectInfo ) ) 
+    {
+      // objectInfo is null, so that means that the dataset could not be found as 'loaded'. So lets
+      // try to find it 'unloaded'.
+      unloadedObjectInfo := editor.ObjectInfo( kind, path, name );
+      
+      if ( isnull( unloadedObjectInfo ) ) 
+      {
+        // Ha! unloadedObjectInfo also is null, so it really doesn't exists. Let's create it.
+        info( '>>> KpiTracker: Creating new KpiTracker dataset. ' );
+        dataset := MDSKpiTracker::Create( DatasetCreateOptions::Construct( name )
+                                          .State( DatasetState::FromString( state ) )
+                                         )->Initialize();
+    
+      }
+      else
+      {
+        // So it's unloaded. Interesting! Let's load the dataset then.
+        info( '>>> KpiTracker: Loading existing KpiTracker dataset. ' );
+        dataset := MDSKpiTracker::Load( unloadedObjectInfo.MDSID().MDSKey() );
+      }
+    }
+    else
+    {
+      info( '>>> KpiTracker: Found loaded KpiTracker dataset. ' );
+      dataset := MDSKpiTracker::Root( loadedObjectInfo.MDSID().MDSKey() );
+    }
+    
+    return dataset;
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

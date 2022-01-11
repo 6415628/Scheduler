@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method Setup (Schedule schedule)
+{
+  Description: 'Setup logic for all tests related to operation batching.'
+  TextBody:
+  [*
+    // Crate order and plan unit
+    planUnit_1 := UTFMockObjectFactory::CreateOrderAndPlanUnit( schedule, "PlanUnit_1", 1.0 );
+    
+    // Create operations
+    operation_1 := UTFMockObjectFactory::CreateOperation( planUnit_1 );
+    operation_1.OperationID( "operation_1" );
+    
+    operation_2 := UTFMockObjectFactory::CreateOperation( planUnit_1 );
+    operation_2.OperationID( "operation_2" );
+    
+    operation_3 := UTFMockObjectFactory::CreateOperation( planUnit_1 );
+    operation_3.OperationID( "operation_3" );
+    
+    // Create batches
+    batch_1 := UTFMockObjectFactory::CreateBatch( schedule );
+    
+    // Add operations into batch
+    batch_1.AddOperation( operation_1 );
+    batch_1.AddOperation( operation_2 );
+    batch_1.AddOperation( operation_3 );
+    
+    // Propogate sequence nr because it is set declaratively.
+    Transaction::Transaction().Propagate( attribute( BatchSequenceElement, SequenceNr ) );
+  *]
+}

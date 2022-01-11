@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveMetadataRequestSetInterestCreated (owning NamedValueTree nvt_i, LibDEF_System requestor_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive a Metadata message for requesting a SetInterest to be created for certain Set.'
+  TextBody:
+  [*
+    LibDEF_Util::EventLog( event_i, "Receiving Set Interest created request" );
+    
+    setTypeGUID := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SETTYPEGUID() );
+    setGUID     := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SETGUID()     );
+    
+    actionFeedbackText := "Set Interest cannot be created. ";
+    
+    setMeta := this.FindSetMeta( setTypeGUID, setGUID, actionFeedbackText, event_i );
+    
+    if( not isnull( setMeta ) )
+    {
+      // Creates the System-level SetInterest if it has not been created yet.  
+      LibDEF_SetInterestFromSystem::FindCreate( setMeta, requestor_i );
+    
+      // Inform the requestor about the successful interest subscription
+      this.SendMetadataSuccessSetInterestCreated( &nvt_i, requestor_i, event_i );
+    }
+    else
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  actionFeedbackText,
+                                  actionFeedbackText + "The Set with GUID '" + setGUID + "' is not found in the DataBroker." );
+    }
+  *]
+}

@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (Object row) id:Response_LibCal_gcCalendar_mnuRowNewEvent_OnClick
+{
+  #keys: '[131094.0.605214145]'
+  Body:
+  [*
+    // Create a new event.
+    // The row is either an EventCategory or a Participation.
+    category := ifexpr( row.istype( LibCal_EventCategory ), row.astype( LibCal_EventCategory ),
+                                                            row.astype( LibCal_Participation ).Event().EventCategory() );
+                                                            
+    LibCal_GlobalState.CreateEvent( this, dhCalendar.Data(), category, this.ContextMenuTime() );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /Responsedef_LibCal_gcCalendar_Menu_OnClick
+  Initiator: 'mnuRowNewEvent'
+  Precondition:
+  [*
+    feedback := Translations::Calendar_DoesNotExist();
+    return not isnull( dhCalendar.Data() );
+  *]
+}

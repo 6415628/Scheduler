@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllTestVariantsForFeedbackShutdown (output Strings measures, output Reals thresholds, output Booleans isfeedbackstarteds, 
+  output Booleans isTask2Valids) as owning Strings
+{
+  Description: 'Return all test variants, variant output arguments (columns) will be used in data creation logic for feedback shutdown'
+  TextBody:
+  [*
+    variants := construct( Strings );
+    
+    characteristics := construct( Strings );
+    characteristics.Add( RuleConstant::Characteristic_NumberOfTasks() );
+    characteristics.Add( RuleConstant::Characteristic_OperationLength() );
+    characteristics.Add( RuleConstant::Characteristic_PlanUnitQuantity() );
+    characteristics.Add( RuleConstant::Characteristic_DurationInHours() );
+    
+    traverse( characteristics, Elements, characteristic )
+    {
+      // Scenario 1.1: Test with rule scope that affects the NUMBER of TASKS of 2 AFTER shutdown
+      variants.Add( 'Test end feedback shutdown with rule scope that affects the ' + characteristic + ' of 2 AFTER shutdown (VALID)' );
+      measures.Add( characteristic );
+      thresholds.Add( 2.0 );
+      isfeedbackstarteds.Add( false );
+      isTask2Valids.Add( true );
+      
+      // Scenario 1.2: Test with rule scope that affects the NUMBER of TASKS of 3 AFTER shutdown
+      variants.Add( 'Test end feedback shutdown with rule scope that affects the ' + characteristic + ' of 3 AFTER shutdown (VIOLATED)' );
+      measures.Add( characteristic );
+      thresholds.Add( 3.0 );
+      isfeedbackstarteds.Add( false );
+      isTask2Valids.Add( false );
+      
+      // Scenario 1.3: Test with rule scope that affects the NUMBER of TASKS of 2 AFTER shutdown
+      variants.Add( 'Test start feedback shutdown with rule scope that affects the ' + characteristic + ' of 2 AFTER shutdown (VALID)' );
+      measures.Add( characteristic );
+      thresholds.Add( 2.0 );
+      isfeedbackstarteds.Add( true );
+      isTask2Valids.Add( true );
+      
+      // Scenario 1.4: Test with rule scope that affects the NUMBER of TASKS of 3 AFTER shutdown
+      variants.Add( 'Test start feedback shutdown with rule scope that affects the ' + characteristic + ' of 3 AFTER shutdown (VIOLATED)' );
+      measures.Add( characteristic );
+      thresholds.Add( 3.0 );
+      isfeedbackstarteds.Add( true );
+      isTask2Valids.Add( false );
+    }
+    
+    return &variants;
+  *]
+}

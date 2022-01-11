@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateImportedRoutings (Schedule schedule) as owning ImportedRouting_SCs
+{
+  Description: 'Create imported routings.'
+  TextBody:
+  [*
+    importedRoutings := construct( ImportedRouting_SCs );
+    
+    variant := this.Variant();
+    lotSize := 10.0;
+    minSize := lotSize * 1;
+    maxSize := lotSize * 2;
+    
+    // Create ImportedRouting based on hardcoded data
+    importedRouting := ImportedRouting_SC::FindImportedRouting_SC( variant );
+    
+    if( isnull( importedRouting ) )
+    {
+      importedRouting := ImportedRouting_SC::Create( schedule, variant );
+    }
+    
+    importedRouting.Update( variant, lotSize, minSize, maxSize );
+    importedRoutings.Add( importedRouting );
+    
+    return &importedRoutings;
+  *]
+}

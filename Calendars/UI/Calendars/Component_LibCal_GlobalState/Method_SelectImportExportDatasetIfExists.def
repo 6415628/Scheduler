@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectImportExportDatasetIfExists () id:Method_LibCal_GlobalState_SelectImportExportDatasetIfExists
+{
+  #keys: '[131094.1.1095801689]'
+  Body:
+  [*
+    // Get the name of the ImportExport-dataset based on the name of planning-dataset.
+    componentMDS := null( ComponentMDSBase, owning );
+    mdsInstance  := null( ComponentMDSInstance );
+    importExport := dhImportExport.Data();
+    
+    if( not isnull( importExport ) )
+    {
+      // Get the full name of the dataset.
+      datasetName := LibCal_ImportExportDataset::GetFullName( dhImportExport.Data().GetDatasetName() );
+    
+      // Find the ImportExport-dataset.
+      // Create a handle to the componentMDS, refresh it and get the LoadedMDSes again.
+      // An explicit refresh is required to see the ImportExport-dataset when it was just loaded by EnsureImportExportDataset().
+      componentMDS := ComponentMDS::CreateForLoadedMDSsOnly( Application );
+    
+      componentMDS.Refresh();
+      componentMDS := ComponentMDS::CreateForLoadedMDSsOnly( Application );
+    
+      mdsInstance  := select( componentMDS, ComponentMDSKinds.ComponentMDSInstances, instance,
+                              instance.ComponentMDSKind().Kind() = LibCal_ImportExportDataset::DATASETKIND()   and
+                              instance.Parent().Name()           = LibCal_ImportExportDataset::DATASETFOLDER() and
+                              instance.Name()                    = datasetName );
+    }
+    
+    // Select the dataset if it exists...
+    if( not isnull( mdsInstance ) )
+    {
+      mdsInstance.ComponentMDSKind().SelectInstance( mdsInstance );
+      componentMDS.Apply();
+    }
+    else
+    {
+      // ... deselect the currenly selected ImportExport-dataset otherwise, because it belongs to a different planning-dataset.
+      mdsInstance := select( componentMDS, ComponentMDSKinds.ComponentMDSInstances, instance,
+                             instance.ComponentMDSKind().Kind() = LibCal_ImportExportDataset::DATASETKIND() and
+                             instance.IsSelected() );
+      if( not isnull( mdsInstance ) )
+      {
+        mdsInstance.ComponentMDSKind().DeselectAll();
+        componentMDS.Apply();
+      }
+    }
+  *]
+}

@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExecutePlan
+{
+  Description: 'Executes the currently prepared export of upgrade plan'
+  TextBody:
+  [*
+    // tgn3 May-3-2021 (created)
+    
+    // Reset status to change every dataset to 'Initial'
+    // The 'Initial' state indicates a dataset is prepared for exeucution,
+    // but the execution requires some other dependencies to be resolved first
+    // Once its dependencies are resolved, it should become 'Not started'
+    // Datasets with no runsteps shouldn't be handled (will result in error)
+    traverse( this, DatasetType.Dataset, dataset, 
+              dataset.HasRunSteps() and
+              not dataset.GetIsFinished() )
+    {  
+      dataset.StatusNr( DMF_Utility::ID_Initial() );//reset to initial stage
+    }
+    
+    // Update start time and conversion status
+    this.UpdateStart( DateTime::Now() );
+    this.UpdateIsConversionMode( true );
+    
+    // Start conversion by looking for datasets that has isn't at the latest version
+    this.CustomLogic().Topic().ExecuteRunPoints();
+    
+    // Update last run time (from beginning of transaction) and precision ticks
+    this.TimestampLastExecute( DateTime::Now() );
+    this.PrecisionLastExecute( OS::PrecisionCounter() );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

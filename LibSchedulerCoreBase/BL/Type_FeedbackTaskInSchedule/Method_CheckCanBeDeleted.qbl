@@ -1,0 +1,15 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CheckCanBeDeleted () declarative as Boolean
+{
+  TextBody:
+  [*
+    // Feedbacktask with ReportedEnd and end time that past history days can be cleaned up
+    // Last feedback task in schedule cannot be deleted because it might be used in rule framework for difference/value jump
+    // For example, the first planned task in the resource need to check difference jump with previous operation which is last feedback task
+    return this.HasReportedEnd()
+           and this.End().IsFinite()
+           and this.End() + this.FeedbackManager().ShopFloorHistory() <= this.FeedbackManager().Schedule().Time()
+           and isnull( this.AsLastFeedback() );
+  *]
+}

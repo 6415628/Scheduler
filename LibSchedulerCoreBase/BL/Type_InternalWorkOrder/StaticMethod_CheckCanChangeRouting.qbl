@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckCanChangeRouting (InternalWorkOrder existingworkorder, Routing newrouting, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Checks if this work order can change its routing.'
+  TextBody:
+  [*
+    // checks if there is an existing work order
+    // checks if the new routing is the same as the current routing used
+    value := guard( existingworkorder.CheckSameRouting( newrouting ), true );
+    
+    // checks if the routing can be changed, if the work order can be deleted - no feedback, no planned operations, no reserved material
+    if( not value )
+    {
+      Utility_SC::Concat( feedback_o, Translations::SC_WorkOrder_CannotChangeRouting( existingworkorder.Routing().RoutingId() ) );
+      
+      value := existingworkorder.CheckUsedInSchedule( feedback_o );
+    }
+    
+    return value;
+  *]
+}

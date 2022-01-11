@@ -1,0 +1,103 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeProgramCombi
+{
+  Description: "synchronize it's relation in active program combis"
+  TextBody:
+  [*
+    // yifei Aug-2-2021 (created)
+    //evaluate this task should be in same combileg as previous one or not
+    //if not,  then we should get or create a new CombiLeg after the previous combileg
+    // 1), if no previous task in leading programtype,  then create/get a new combi as first leg and add OperationInCombiLeg
+    // 2), if prev in leading programtype not null,  and there is any phase difference or previous leg is a shutdown task,  then create or get a new combi leg
+    // 3), if prev in leading programtype not null, and there is not phase difference, then add the opertion into preveious combileg
+    
+    leadingtaskinpt := select( this, TaskInProgramSet, tips, tips.ProgramSet().ProgramSetConfiguration().IsLeading() );
+    prevleadingtaskinpt := leadingtaskinpt.GetPreviousTaskInProgramType();
+    
+    //incase it's a shutdown task
+    if( guard( prevleadingtaskinpt.Task_SC().IsShutdownTask(), false ) )
+    {
+      prevleadingtaskinpt := prevleadingtaskinpt.GetPreviousTaskInProgramType();
+    }
+    
+    prevcombileg := guard( prevleadingtaskinpt.Task_SC().Leg().ActiveCombiLeg(), null( CombiLeg ) );
+    
+    isanyphasechanged := exists( this, 
+                                 TaskInProgramSet, 
+                                 tips,
+                                 guard( tips.GetPreviousTaskInProgramType().SelectedPhaseSequenceNr() <> tips.SelectedPhaseSequenceNr(), true ) );
+    
+    prevtask := guard( prevleadingtaskinpt.Task_SC().astype( SingleTask ), null( Task_SC ) );
+    
+    applicable_shutdown_rule_changed := false;
+    applicable_shutdown_rules := this.GetAfterShutdownApplicableRules();
+    
+    isaftershutdown := false;
+    if( this.CheckIsAfterShutdownRuleCheckingNeeded() and not isnull( prevtask ) )
+    {
+      prev_applicable_rules := prevtask.GetAfterShutdownApplicableRules();
+      applicable_shutdown_rule_changed := prev_applicable_rules.Size() <> applicable_shutdown_rules.Size(); 
+      isaftershutdown := true;
+    }
+    
+    //assume that shutdowns wont interfere with each other, no two shutdowns are so close that the after shutdown area of previous shutdown will overlap with previous shutdown's after shutdown area
+    // so now we check before shutdown rules
+    if( not applicable_shutdown_rule_changed
+        and this.CheckIsBeforeShutdownRuleCheckingNeeded()
+        and not isnull( prevtask ) )
+    {
+      prev_applicable_rules := prevtask.GetBeforeShutdownApplicableRules();
+      applicable_shutdown_rules := this.GetBeforeShutdownApplicableRules();
+      applicable_shutdown_rule_changed := applicable_shutdown_rules.Size() <> prev_applicable_rules.Size();
+    }
+     
+    
+    targetcombileg := prevcombileg;
+    leg := null( Leg );
+    
+    settings := select( this.Schedule(), Optimization.OptimizerProgram.Settings.astype( SettingsProgram ), settings, settings.IsActive() );
+    
+    if( isnull( prevleadingtaskinpt ) 
+        or prevleadingtaskinpt.Task_SC().IsProgramChangeTask() 
+        or isanyphasechanged 
+        or this.Previous().IsShutdownTask()
+        or targetcombileg.OperationInCombiLeg( relsize ) >= guard( settings.MaxOperationsInLeg(), 100 ) 
+        or applicable_shutdown_rule_changed )
+    {
+      leadingphasecombi := leadingtaskinpt.ProgramPhase().ActiveCombiProgramPhase();
+      combiphases := selectset( this, TaskInProgramSet.ProgramPhase.ActiveCombiProgramPhase, pp, true );
+      targetcombileg := CombiLeg::Create( leadingphasecombi, combiphases );
+      
+      if( applicable_shutdown_rule_changed )
+      {
+        if( isaftershutdown )
+        {
+          targetcombileg.StoppageTask( relset, this.PreviousShutdown().Task_SC().astype( ShutdownTask ) );
+        }
+        else
+        {
+          targetcombileg.StoppageTask( relset, this.NextShutdown().Task_SC().astype( ShutdownTask ) );
+        }
+      }
+      
+      /*if( guard( this.Previous().IsStoppageTask(), false ) )
+      {
+        targetcombileg.StoppageTask( relset, this.Previous().astype( StoppageTask ) );
+      }*/
+    
+      prevtask := null( Task_SC ); 
+      
+      leg := targetcombileg.GetOrCreateLeg();
+      leg.SynchronizeRules( applicable_shutdown_rules );
+    }
+    else
+    {
+      leg := targetcombileg.GetOrCreateLeg();
+    }
+    
+    oicl := targetcombileg.AddCandidateAtEnd( this.astype( SingleTask ).OperationAsSingleTask(), true );  
+    oicl.SynchronizeOperationInCombiProgramSets( true );
+    leg.AddTaskAfter( prevtask, this );
+  *]
+}

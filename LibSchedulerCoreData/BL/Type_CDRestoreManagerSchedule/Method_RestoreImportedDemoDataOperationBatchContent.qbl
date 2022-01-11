@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedDemoDataOperationBatchContent (CDIntegration cdintegration, ImportedDemoDataOperationBatch importeddemodataoperationbatch)
+{
+  Description: 'Restore imported demo data operation batch content core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedDemoDataDemandBatchContent
+    cdImportedDemoDataOperationBatchContents := selectset( cdintegration, CDEntity.astype( CDImportedDemoDataOperationBatchContent ), cdddobc, 
+                                                           cdddobc.BatchID() = importeddemodataoperationbatch.BatchID()
+                                                         );
+    
+    traverse( cdImportedDemoDataOperationBatchContents, Elements, cdddobc )
+    {
+      importedDemoDataOperationBatchContent := importeddemodataoperationbatch.ImportedDemoDataOperationBatchContent( relnew, 
+                                                                                                                     BatchID := cdddobc.BatchID(),
+                                                                                                                     OperationID := cdddobc.OperationID(),
+                                                                                                                     PlanUnitId := cdddobc.PlanUnitId()
+                                                                                                                    );
+      CopyCorresponding::CopyFrom( cdddobc ).CopyTo( importedDemoDataOperationBatchContent );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

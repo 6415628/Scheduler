@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ExecutePlan (Key mdsid_i)
+{
+  Description:
+  [*
+    Executes the currently prepared plan, if one is available.
+    Note: this is called by the UI and the automation flow
+  *]
+  TextBody:
+  [*
+    // tgn3 May-10-2021 (created)
+    
+    // We don't need to return void stream for this method
+    // It can be "fired and forgotten"
+    DMF_ConvertorDataset::GetDMFDataset( mdsid_i )->( dmf )
+    {
+      // Debug - do not delete
+      //logfile( ">>> ExecutePlan" );
+      
+      // We don't need to chain this, fire and forget
+      dmf.ExecutePlan();
+    }->Exception()->( ex )
+    {
+      // If exception occurs, will be throw upward exception stack
+      msg := "DMF_API::ExecutePlan failed. Reason: ";
+      
+      DMF_Utility::LogException( msg, ex );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

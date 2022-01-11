@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method RemoveDeclarative (const Type type, NamedValueTree nvt, NamedValue nv)
+{
+  Description:
+  [*
+    Exporting a type to NamedValueTree also exports values that cannot be set: KPIs, Constraints and declarative attributes.
+    This method will remove these attributes.
+  *]
+  TextBody:
+  [*
+    traverse( nv.Children(), Elements, child )
+    {
+      // Find if it is a relation node
+      rel := constnull( MdlModeledRelSideElement );
+      if( child.GetValue().istype( Key ) )
+      {
+        rel := select( LibOpt_Utility::GetTypeAncestors( type ), Elements.MdlRelSideElements.astype( MdlModeledRelSideElement ), r, r.Name() = child.Name() );
+      }
+      
+      if( isnull( rel ) )
+      {
+        // This needs to be an attribute
+        att := select( LibOpt_Utility::GetTypeAncestors( type ), Elements.MdlAttrElements.astype( MdlModeledAttrElement ), att, att.Name() = child.Name() );
+        
+        if( isnull( att ) or att.IsDerived() )
+        {
+          child.Delete( true );
+        }
+      }
+      else
+      {
+        this.RemoveDeclarative( rel.OtherSide().Type(), nvt, child );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

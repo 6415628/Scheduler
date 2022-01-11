@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method IComponent_GetObjectType (shadow[LibGUIFiltering_RegisteredComponent] registeredcomponent) as String id:Method_LibGUIFiltering_PanelFilterBoxHelper_IComponent_GetObjectType
+{
+  #keys: '[128900.0.373927393]'
+  Body:
+  [*
+    userfiltering := this.IGetUserFiltering( registeredcomponent );
+    objecttype    := guard( userfiltering.TargetType().Name(), '' );
+    
+    if ( objecttype = '' )
+    {
+      containercomponent := this.IComponent_FindByPath( registeredcomponent.ComponentPath() );
+      filteredcomponent  := this.IComponent_FindByPath( registeredcomponent.FilterComponentPath() );
+      userfiltering      := null(GEBObjectsFilter);
+      
+      if ( containercomponent.istype(List) )
+      {                        
+        toplevel   := this.IComponent_GetLevel( containercomponent.astype(List), filteredcomponent.astype(GUIDataSetLevel) );
+        objecttype := toplevel.TypeInterface().Type().Name();
+      }
+      else if ( containercomponent.istype(GanttChart) )
+      {
+        if ( filteredcomponent.istype(GanttChartRowDefinition) )
+        {
+          objecttype := filteredcomponent.astype(GanttChartRowDefinition).Sorter().TypeInterface().Type().Name();
+        }
+        else if ( filteredcomponent.istype(GanttChartNodesDefinition) )
+        {
+          objecttype := this.IComponent_GetObjectType( filteredcomponent.astype(GanttChartNodesDefinition) );
+        }
+      }
+      else if ( filteredcomponent.istype(GUIDataExtractor) )
+      {
+        objecttype := this.IComponent_GetObjectType( filteredcomponent.astype(GUIDataExtractor) );
+      }
+    }
+    
+    return objecttype;
+  *]
+}

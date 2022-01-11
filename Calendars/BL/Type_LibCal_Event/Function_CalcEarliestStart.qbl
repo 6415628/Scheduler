@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcEarliestStart
+{
+  TextBody:
+  [*
+    // Use the LeadingParticipation to determine the EarliestStart.
+    leadingParticipation := this.LeadingParticipation();
+    
+    if( not isnull( leadingParticipation ) )
+    {
+      // Don't start before the start of the calendar.
+      earliestStart := this.Calendar().StartDate();
+      
+      // If the event is recurring, don't start before the StartDate of the RecurrencePeriod.
+      if( leadingParticipation.IsRecurring() )
+      {
+        earliestStart := maxvalue( earliestStart, leadingParticipation.RecurrencePeriod().StartDate() );
+      }
+      
+      this.EarliestStart( earliestStart );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

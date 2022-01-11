@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateFromRepository (LibDEF_SetTypeMeta owner_i, const LibDEF_Set set_i, output Boolean isNew_o) as LibDEF_SetMeta
+{
+  Description: 'Create using Repository object.'
+  TextBody:
+  [*
+    // Jacky CHAN May-6-2016 (created)
+    isNew_o := false;
+    
+    // find existing SetMeta
+    dataBroker := owner_i.System().DataBroker();
+    setMeta    := LibDEF_SetMeta::FindSetMeta( dataBroker,
+                                               owner_i.SystemGUID(), owner_i.ChannelName(), owner_i.Name(),
+                                               set_i.Name() );
+    
+    // make sure the GUID matches
+    if( not isnull( setMeta ) and
+        setMeta.GUID() <> set_i.GUID() )
+    {
+      setMeta.Delete();
+      setMeta := null( LibDEF_SetMeta );
+    }
+    
+    if( isnull( setMeta ) )
+    {
+      setMeta := LibDEF_SetMeta::Create( owner_i,
+                                         set_i.Name(),
+                                         set_i.GUID() );
+      isNew_o := true;
+    }
+    
+    return setMeta;
+  *]
+}

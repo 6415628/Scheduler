@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateOperation (WorkOrderOperation workorderoperation, Operation_SC previousoperation, Number stepsize, 
+  Number operationseqnr) as Operation_SC
+{
+  Description: 'Create or update the operations of a plan unit'
+  TextBody:
+  [*
+    // AlexanderNg Feb-1-2016 (created)
+    operationid := Operation_SC::GenerateOperationID( this.PlanUnitID(), workorderoperation.SequenceNr() );
+    operation := select( this, Operation_SC, op, op.OperationID() = operationid and op.Type() = workorderoperation.OperationType() );
+    resourcetype := workorderoperation.OperationType();
+    
+    //if operation has different resource type, routing has changed. Remove all operations after it.
+    if( not isnull( operation ) and operation.Type() <> resourcetype )
+    {
+      downstreamoperations := selectset( this, Operation_SC, op,
+                                         op.SequenceNr() > operation.SequenceNr() );
+    
+      traverse( downstreamoperations, Elements, op )
+      {
+        op.RemoveItselfDemandAndSupplies();
+      }
+    }
+    
+    if( isnull( operation ) )
+    {
+      operation := this.CreateOperation( resourcetype );
+    }
+    operation.Update( operationid, operationseqnr, resourcetype, workorderoperation );
+    
+    // James Kwapien 02-15-2017 QP #8624 Synchronize operation campaigns based on routing step campaigns
+    operation.SynchronizeOperationCampaigns();
+    // Synchronize product planned demands and supplies
+    operation.SynchronizeProductPlannedDemands();
+    operation.SynchronizeProductPlannedSupplies();
+    // Synchronize material planned demands and supplies
+    operation.SynchronizeMaterialPlannedDemands();
+    operation.SynchronizeMaterialPlannedSupplies();
+    
+    return operation;
+  *]
+}

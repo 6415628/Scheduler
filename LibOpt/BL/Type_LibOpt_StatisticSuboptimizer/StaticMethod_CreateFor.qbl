@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateFor (LibOpt_Run run)
+{
+  Description: 'Create `LibOpt_StatisticSuboptimizers` for the given "run" (`LibOpt_Run`).'
+  TextBody:
+  [*
+    // lle13 Sep-20-2020 (created)
+    
+    traverse( run, Component.astype( LibOpt_Suboptimizer ), suboptimizer )
+    {
+      // Create `LibOpt_StatisticSuboptimizerRollback`.
+      LibOpt_Statistic::Create( run, typeof( LibOpt_StatisticSuboptimizerRollback ), suboptimizer );
+      
+      nrkpilevels_max := max( suboptimizer, SnapshotSuboptimizer, snapshotsuboptimizer,
+                              // FILTER
+                              true,
+                              // VALUE
+                              snapshotsuboptimizer.NrKPILevels()
+                            );
+      
+      // Create `LibOpt_StatisticSuboptimizerKPIImprovement` for each KPI level.
+      for( kpilevel := 1; kpilevel <= nrkpilevels_max; kpilevel++ )
+      {
+        LibOpt_StatisticSuboptimizerKPIImprovement::Create( run, suboptimizer, kpilevel );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

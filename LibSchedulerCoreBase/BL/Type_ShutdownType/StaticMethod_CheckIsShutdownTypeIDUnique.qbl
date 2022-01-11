@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsShutdownTypeIDUnique (Schedule schedule, ShutdownType shutdowntype, String shutdowntypeid) remote as Boolean
+{
+  Description: 'Perform checking to ensure the shutdown type ID is unique.'
+  TextBody:
+  [*
+    // Perform checking to ensure the shutdown type ID is unique.
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    value := not exists( schedule,
+                         ShutdownType,
+                         st,
+                         st <> shutdowntype,
+                         st.ShutdownTypeID() = shutdowntypeid );
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      feedbackobject.AddHard( Translations::ShutdownType_IDMustBeUnique() );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

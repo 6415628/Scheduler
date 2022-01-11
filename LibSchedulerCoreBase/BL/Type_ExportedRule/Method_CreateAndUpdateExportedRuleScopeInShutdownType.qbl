@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateAndUpdateExportedRuleScopeInShutdownType (Rule rule)
+{
+  Description: 'Create and update exported rule scope in shutdown type.'
+  TextBody:
+  [*
+    allinstances := selectset( this, ExportedRuleScopeInShutdownType, exportedrsist, true );
+    updatedinstances := construct( ExportedRuleScopeInShutdownTypes );
+    
+    traverse( rule, RuleScopeInShutdownType, rulescopeinshutdowntype )
+    {
+      exportedrulescopeinshutdowntype := select( this, ExportedRuleScopeInShutdownType, ersist, 
+                                                ersist.RuleID() = rule.RuleID()                                      
+                                                and ersist.ShutdownTypeID() = guard( rulescopeinshutdowntype.ShutdownType().ShutdownTypeID(), '' ) );
+                      
+      if( isnull( exportedrulescopeinshutdowntype ) )
+      {
+        exportedrulescopeinshutdowntype := ExportedRuleScopeInShutdownType::Create( this, rulescopeinshutdowntype );
+      }
+      
+      updatedinstances.Add( exportedrulescopeinshutdowntype );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, exportedrulescopeinshutdowntype )
+    {
+      exportedrulescopeinshutdowntype.Remove();
+    }
+  *]
+}

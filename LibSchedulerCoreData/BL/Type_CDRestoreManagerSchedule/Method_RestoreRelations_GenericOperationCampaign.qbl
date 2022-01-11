@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericOperationCampaign (CDSchedule cdSchedule)
+{
+  Description: 'Restore operation campaign core data relations to planning object'
+  TextBody:
+  [*
+    traverse( cdSchedule, CDEntity.astype( CDGenericOperationCampaign ), cdGenericOperationCampaign )
+    {
+      genericOperationCampaign := OperationCampaign::FindOperationCampaign( cdGenericOperationCampaign.WorkOrderId(),
+                                                                            cdGenericOperationCampaign.OperationID(),
+                                                                            cdGenericOperationCampaign.SeqNr(),
+                                                                            cdGenericOperationCampaign.ResourceGroupName(),
+                                                                            cdGenericOperationCampaign.CampaignTypeName()
+                                                                          );
+      
+      
+      if( not isnull( genericOperationCampaign ) )
+      {
+        // ImportedOperationCampaign, M-1
+        importedOperationCampaign := ImportedOperationCampaign::FindImportedOperationCampaign( cdGenericOperationCampaign.WorkOrderId(),
+                                                                                               cdGenericOperationCampaign.SeqNr(),
+                                                                                               cdGenericOperationCampaign.ResourceGroupName(),
+                                                                                               cdGenericOperationCampaign.CampaignTypeName() );
+        
+        genericOperationCampaign.ImportedOperationCampaign( relset, importedOperationCampaign );
+        
+        // RoutingstepCampaign, M-1
+        routingstepCampaign := RoutingStepCampaign::FindRoutingStepCampaignTypeIndex( cdGenericOperationCampaign.RoutingStepCampaignRoutingID(),
+                                                                                      cdGenericOperationCampaign.SeqNr(),
+                                                                                      cdGenericOperationCampaign.ResourceGroupName(),
+                                                                                      cdGenericOperationCampaign.CampaignTypeName(),
+                                                                                      cdGenericOperationCampaign.CampaignNameImp() );
+                                                                                      
+        genericOperationCampaign.RoutingStepCampaign( relset, routingstepCampaign );   
+      }                                                                             
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

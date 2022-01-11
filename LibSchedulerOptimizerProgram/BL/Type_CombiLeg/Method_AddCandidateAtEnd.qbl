@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddCandidateAtEnd (Operation_SC op, Boolean createoicls) as OperationInCombiLeg
+{
+  TextBody:
+  [*
+    // zyi1 Jul-12-2021 (created)
+    oldlast_oicl := this.LastOperation();
+    oicl := OperationInCombiLeg::Create( this, op )
+    
+    this.LeadingCombiProgramPhase()
+    if( createoicls )
+    {
+      traverse( this, CombiLegOnCombiPhase.CombiProgramPhase.CombiProgramType.CombiProgramSet, ps )
+      {
+        oicps := OperationInCombiProgramSet::Create( ps, oicl );
+        prev_oicps := select( oldlast_oicl, OperationInCombiProgramSet, oicps1, oicps1.CombiProgramSet() = ps );
+        
+        if( isnull( prev_oicps ) )  //empty leg,  then get the previous leg on the CombiProgramSet,  the new oicps should be planned after the oicps of the last operation of the previous combileg
+        {
+          prevleg := this.GetPrevCombiLegOnLeadingCombiProgramSet();
+          
+          if( not isnull( prevleg ) )
+          {
+            prev_oicps := select( prevleg, LastOperation.OperationInCombiProgramSet, oicps1, oicps1.CombiProgramSet() = ps );
+          }
+        }
+          
+        if( not isnull( prev_oicps ) )
+        {
+          ps.MoveAfterOperation( oicps, prev_oicps );
+        }
+        else
+        {
+          ps.MoveFirstOperation( oicps );
+        }
+        traverse( this, CombiLegOnCombiPhase.CombiProgramPhase.CombiProgramType, cpt )
+        {
+          oicps.CombiProgramType( relset, cpt );
+        }
+      }
+    }
+    
+    //set duration characteristic value need to use this relation:
+    Transaction::Transaction().Propagate( relation( OperationInCombiLeg, OperationOnResource ) );
+    oicl.SetCumulativeCharacteristicsAndValues();
+    
+    return oicl;
+  *]
+}

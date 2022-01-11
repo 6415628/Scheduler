@@ -1,0 +1,16 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcIsLockedByFSPLUpstream
+{
+  TextBody:
+  [*
+    value := this.HasFSPL() and exists( this, 
+                                        AsFSPLOperationInTask.FSPLOperationInTask.InputOperationMaterialWOFulfillment.AsOutputOperationMaterialWOFulfillment, 
+                                        upstreamOperation, 
+                                        upstreamOperation.HasFSPL(), // Only upstream FSPL operations are considered
+                                         upstreamOperation.IsLockedByOptimizer() // Checks if upstream operation is frozen without considering FSPL to avoid circularity
+                                        or upstreamOperation.IsLockedByFSPLUpstream() ); // Checks if upstream operation is also frozen by its upstream operation
+    
+    this.IsLockedByFSPLUpstream( value );
+  *]
+}

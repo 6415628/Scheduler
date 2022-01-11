@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method IsParallelLoadAllowedWidth () declarative as Boolean
+{
+  Description: 'Check width allowed rule for continuous task parallel load'
+  TextBody:
+  [*
+    // jiex Nov-4-2016 (created)
+    
+    isallowed := false;
+    
+    if( not isnull( this.Previous() ) )
+    {
+      isallowed := this.Previous().astype( ContinuousTask ).CumulativeLoadWidth() 
+                   + this.Resource_SC().MinimumParallelLoadGap()
+                   + this.GetTaskWidth() 
+                   <= this.Resource_SC().MaximumParallelLoadWidth();
+    
+    } 
+    else
+    {
+      lastfeedback := this.Resource_SC().LastFeedbackTaskInSchedule();
+      if( not isnull( lastfeedback ) )
+      {
+        isallowed := lastfeedback.ExportedCumulativeLoadWidth() 
+                     + this.Resource_SC().MinimumParallelLoadGap()
+                     + this.GetTaskWidth() 
+                     <= this.Resource_SC().MaximumParallelLoadWidth();
+      }
+    }
+    
+    return isallowed
+  *]
+}

@@ -1,0 +1,15 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoOnDelete #extension
+{
+  TextBody:
+  [*
+    //delete dummy programs if this is the last generic task on a dummy program
+    // dummy programs are programs created by program optimizer for non-program resources
+    programsetstodelete := selectset( this, TaskInProgramSet.ProgramSet, ps, ps.IsDummy() and counter( ps, TaskInProgramSet.Task_SC, task, not task.IsProgramChangeTask() ) <= 1 );
+    
+    ptchangetasks := selectset( programsetstodelete, Elements.ProgramType.ProgramChange.ProgramChangeTask, pct, true );
+    
+    Task_SC::DeleteProgramChange( ptchangetasks );
+  *]
+}

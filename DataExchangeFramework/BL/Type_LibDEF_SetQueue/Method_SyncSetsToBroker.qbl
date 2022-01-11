@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method SyncSetsToBroker (Number batchSize_i)
+{
+  TextBody:
+  [*
+    batch := construct( LibDEF_Sets );
+    nr    := 0;
+    
+    // Create a batch of sets...
+    traverse( this, SetToBroker, set, nr < batchSize_i )
+    {
+      set.SetQueueToBroker( relflush );
+      batch.Add( set );
+      
+      nr++;
+    }
+    
+    // ...and trigger synchronization to the DataBroker.
+    if( batch.Size() > 0 )
+    {
+      isDatasetConstructed := false;
+      LibDEF_DataRepository::SyncSetsToDataBroker( batch, isDatasetConstructed );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

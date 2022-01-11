@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetSortedOperationsFromTasks (Task_SCs tasks) as owning Operation_SCs
+{
+  TextBody:
+  [*
+    // Operations should be planned according to the following sequence:
+    // 1. Planned start time
+    // 2. Resource group index
+    // 3. Resource index
+    // 4. Batch sequence
+    // 5. Operation key (tie breaker)
+    operations := selectsortedset( tasks, Elements.OperationInTask, operation,
+                                   true,
+                                   operation.Start(),
+                                   operation.Task_SC().Resource_SC().ResourceGroup_SC().Index(),
+                                   operation.Task_SC().Resource_SC().Index(),
+                                   guard( operation.BatchSequenceElement().SequenceNr(), 0 ),
+                                   operation.Key() );
+    
+    return &operations;
+  *]
+}

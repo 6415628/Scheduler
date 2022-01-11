@@ -1,0 +1,72 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRuleSubtypeOverlappingRange_Setup (Schedule schedule)
+{
+  Description: 'Test rule subtype overlapping range - setup'
+  TextBody:
+  [*
+    // Get variant attribute
+    minTemperature1 := 0.0;
+    maxTemperature1 := 0.0;
+    minTemperature2 := 0.0;
+    maxTemperature2 := 0.0;
+    ruleValue := 0.0;
+    isValid := false; 
+    
+    this.GetTestVariant( minTemperature1,
+                         maxTemperature1,
+                         minTemperature2,
+                         maxTemperature2,
+                         ruleValue,
+                         isValid );
+    
+    // Create rule
+    rule := Rule::Create( schedule, 1 );
+    
+    // Create rule type
+    ruleType := UTFMockObjectFactory::CreateRuleType( schedule, 
+                                                      RuleConstant::RuleType_OverlappingRange() );
+    
+    rule.RuleType( relset, ruleType );
+    
+    
+    // Create rule subtype - Overlapping Range
+    ruleSubType := UTFMockObjectFactory::CreateRuleSubtypeOverlappingRange( ruleType,
+                                                                            RuleConstant::RuleType_OverlappingRange() );
+    
+    rule.RuleSubType( relset, ruleSubType );
+    
+    // Create characteristic main - Operation Temperature Range
+    this.CreateCharacteristicMain( schedule, rule );
+    
+    // Enable rule
+    rule.IsEnabled( true );
+    
+    // Assign rule threshold attribute based on variant
+    rule.RuleValue( ruleValue );
+    
+    // Apply rule to resource
+    rule.RuleScopeSelected( RuleConstant::RuleScope_AllTasksOnResource() );
+    UTFMockObjectFactory::CreateRuleScopeInSingleResource( schedule, rule, 'Single Resource' );
+    
+    // Create first operation
+    order1 := UTFMockObjectFactory::CreateOrder( schedule, 'Order1' );
+    planUnit1 := UTFMockObjectFactory::CreatePlanUnit( order1, 'Plan Unit 1', 1.0 );
+    operation1 := UTFMockObjectFactory::CreateOperation( planUnit1 );
+    operation1.OperationID( 'Operation1' );
+    
+    // Create second operation
+    order2 := UTFMockObjectFactory::CreateOrder( schedule, 'Order2' );
+    planUnit2 := UTFMockObjectFactory::CreatePlanUnit( order2, 'Plan Unit 2', 1.0 );
+    operation2 := UTFMockObjectFactory::CreateOperation( planUnit2 );
+    operation2.OperationID( 'Operation2' );
+    
+    // Assign min/max temperature for operations based on variant
+    this.AssignOperationCharacteristicAttribute( operation1, operation2 );
+    
+    // Schedule operations in Gantt chart
+    Transaction::Transaction().Propagate( relation( Operation_SC, AllowedOperationOnResource ) );
+    operation1.Plan();
+    operation2.Plan();
+  *]
+}

@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateImportedExternalWorkOrder (Schedule schedule)
+{
+  Description: 'Create imported external work order instance.'
+  TextBody:
+  [*
+    variant := this.Variant();
+    testInstanceExternalWorkOrders := this.GetExternalWorkOrderTestInstances( variant );
+    
+    traverse( testInstanceExternalWorkOrders, Elements, row )
+    {
+      importedExternalWorkOrder := ImportedExternalWorkOrder::FindImportedExternalWorkOrder( row.WorkOrderID() );
+      
+      if( isnull( importedExternalWorkOrder ) )
+      {
+        importedExternalWorkOrder := schedule.ImportedWorkOrder( relnew, ImportedExternalWorkOrder, Id := row.WorkOrderID(), DueDate := row.DueDate(), 
+                                                                 ProductId := row.ProductID(), Quantity := row.Quantity(), RoutingID := row.RoutingID(), 
+                                                                 SchedulerWOID := row.SchedulerWOID(), StockingPointID := row.StockingPointID() );
+      }
+    }
+  *]
+}

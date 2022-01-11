@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SynchronizeWorkOrderSupplies
+{
+  TextBody:
+  [*
+    allinstances := selectset( this, WorkOrderSupply, workordersupply, true )
+    updatedinstances := construct( WorkOrderSupplys );
+    
+    traverse( this, ImportedExternalWorkOrderOperation.ImportedWorkOrderSupply.astype( ImportedExternalWorkOrderSupply ), row, row.IsValidDataHard() )
+    {
+      workordersupply := ExternalWorkOrderSupply::FindExternalWorkOrderSupply( row.Id() );
+      
+      if( isnull( workordersupply ) )
+      {
+        workordersupply := this.CreateWorkOrderSupply( row.Id() ).astype( ExternalWorkOrderSupply );
+      }
+       else if( workordersupply.WorkOrderId() <> this.WorkOrderId() )
+      {
+        newoperation := WorkOrderOperation::FindWorkOrderOperation( row.WorkOrderId(), row.SequenceNr() );
+        
+        if( not isnull( newoperation ) )
+        {
+          newoperation.WorkOrderSupply( relmove, workordersupply );
+        }
+      }
+      
+      workordersupply.Update( row );
+      updatedinstances.Add( workordersupply );
+    }
+    
+    //Delete work order supplies if they do not exist in KT
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, workordersupply, workordersupply.CheckCanBeDeleted() )
+    {
+      workordersupply.Remove();
+    }
+  *]
+}

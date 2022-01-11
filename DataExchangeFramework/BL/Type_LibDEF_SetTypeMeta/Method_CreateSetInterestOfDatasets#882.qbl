@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateSetInterestOfDatasets (LibDEF_SetMeta setMeta_i)
+{
+  Description: 'Create set interest for all datasets that have registered interest in set type level.'
+  TextBody:
+  [*
+    isLocalSystem := this.System().IsLocalSystem();
+    
+    traverse( this, SetTypeInterestOfDataset, setTypeInterestOfDataset )
+    {
+      if( isLocalSystem
+          and not setMeta_i.HasOtherOnlineDatasetInterest( setTypeInterestOfDataset.DatasetMDSID() ) )
+      { 
+        LibDEF_SetInterestFromSystem::FindCreate( setMeta_i, this.System() );
+      }
+        
+      setInterestOfDataset := LibDEF_SetInterestOfDataset::Create( setMeta_i, setTypeInterestOfDataset );
+      setInterestOfDataset.IsCreatedFromSetTypeInterest( true ); 
+    }
+  *]
+}

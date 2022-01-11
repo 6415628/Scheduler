@@ -1,0 +1,123 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestSynchronizeCalendar (Schedule schedule)
+{
+  Description: 'Tests the synchronization of calendar.'
+  TextBody:
+  [*
+    integrationAPI := schedule.IntegrationAPI();
+    
+    // Get variant event and participant attributes
+    // Event
+    subject := '';
+    isDefault := false;
+    isRecurring := false;
+    patternType := '';
+    recurrenceInterval := 0;
+    patternWeekly_Weekdays := '';
+    patternMonthly_Day := 0;
+    patternMonthly_DayOfWeek := '';
+    patternMonthly_IsDay := false;
+    patternMonthly_WeekOfMonth := '';
+    patternYearly_Day := 0;
+    patternYearly_DayOfWeek := '';
+    patternYearly_IsDay := false;
+    patternYearly_Month := 0;
+    patternYearly_WeekOfMonth := '';
+    
+    // Participant
+    eventIsRecurring := false;
+    periodType := '';
+    periodStartDate := Date::MinDate();
+    
+    this.GetTestVariant( subject, // Event
+                         isDefault,
+                         isRecurring,
+                         patternType,
+                         recurrenceInterval,
+                         patternWeekly_Weekdays,
+                         patternMonthly_IsDay,
+                         patternMonthly_Day,
+                         patternMonthly_WeekOfMonth,
+                         patternMonthly_DayOfWeek,
+                         patternYearly_IsDay,
+                         patternYearly_Month,
+                         patternYearly_Day,
+                         patternYearly_WeekOfMonth,
+                         patternYearly_DayOfWeek,
+                         eventIsRecurring, // Participation
+                         periodType,
+                         periodStartDate );
+    
+    // Create resource.
+    UTFMockObjectFactory::CreateResourceGroup( schedule, 'HM' ).CreateResource( 'HM' );
+    
+    // Create calendar.
+    integrationAPI.GetIntegrationDataset() -> FlushAndCreateCalendar( DateTime::Construct( 2017, 1, 5, 0, 0, 0 ), // Base
+                                                                      'HM', // Calenndar ID
+                                                                      'Equipment', // Calendar type
+                                                                      10, // History
+                                                                      true, // IsAlwaysAvailable
+                                                                      'HM', // Owner ID
+                                                                      Duration::Construct( 0, 0, 0, 0 ), // Update Interval
+                                                                      70 // window 
+                                                                      ) 
+                                           -> ( calendar )
+    {
+      // Create event.
+      eventID := '[145930.4.845630313]'
+      
+      integrationAPI.GetIntegrationDataset() -> FlushAndCreateEvent( calendar,
+                                                                     eventID,
+                                                                     'Unavailable', // Category
+                                                                     '', // Description
+                                                                     Duration::Construct( 0, 24, 0 , 0 ), // Duration
+                                                                     false, // IsAllDay,
+                                                                     isDefault,
+                                                                     isRecurring,
+                                                                     0.5, // Partial Capacity,
+                                                                     patternMonthly_Day,
+                                                                     patternMonthly_DayOfWeek,
+                                                                     patternMonthly_IsDay,
+                                                                     patternMonthly_WeekOfMonth,
+                                                                     patternType,
+                                                                     patternWeekly_Weekdays,
+                                                                     patternYearly_Day,
+                                                                     patternYearly_DayOfWeek,
+                                                                     patternYearly_IsDay,
+                                                                     patternYearly_Month,
+                                                                     patternYearly_WeekOfMonth,
+                                                                     recurrenceInterval,
+                                                                     Duration::Construct( 0, 0, 0, 0 ), // StartTimeOfDay,
+                                                                     subject,
+                                                                     'Unavailable' // Type ) 
+                                                                   )
+                                              -> ( event )
+      {
+        // Create participant.
+       integrationAPI.GetIntegrationDataset() -> FlushAndCreateParticipation( calendar,
+                                                                              eventID,
+                                                                              eventIsRecurring, // EventIsRecurring,
+                                                                              true, // HasSpecificPeriod,
+                                                                              false, // IsSubscription,
+                                                                              'Participant_HM', // Participation ID,
+                                                                              Date::MinDate(), // Period EndDate,
+                                                                              periodStartDate, // Period StartDate,
+                                                                              periodType, // Period Type,
+                                                                              Date::Construct( 2017, 1, 5 ) // Start Date 
+                                                                            ) 
+                                               -> ( participation )
+        {
+          // Synchronize calendar, event and participant.
+          importStream := integrationAPI -> SynchronizeData( LibDII_CalendarDataTransformation::ID() )
+          
+          // Compare and assert result
+          assertStream := this -> After( importStream ) -> CompareCalendarData( schedule, calendar, event, participation );
+          
+          // TearDown
+          this -> After( assertStream ) -> DoTearDown( schedule );
+        }
+      }
+    }
+  *]
+}

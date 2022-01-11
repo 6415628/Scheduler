@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method ResequenceEndTask (Number nroftask)
+{
+  Description: 'Resequence task at the end of schedule'
+  TextBody:
+  [*
+    // soon hwee Dec-24-2014 (created)
+    
+    // Get the first resource of first resource group
+    firstresource := minselect( this.Schedule(), ResourceGroup_SC.Resource_SC, res, true, res.Index() );
+    
+    // Calculate the last resequence task position
+    totaskseq := firstresource.Last().SequenceNr();
+    
+    // Get the from task position
+    fromtaskseq := totaskseq - nroftask;
+    
+    selectedtasks := selectset( firstresource, Task_SC, task, true,
+                                task.SequenceNr() >= fromtaskseq
+                                and task.SequenceNr() < totaskseq )
+    
+    if( selectedtasks.Size() > 0 )
+    {
+      firstresource.PlanAfter( selectedtasks, firstresource.Last() );
+    }
+  *]
+}

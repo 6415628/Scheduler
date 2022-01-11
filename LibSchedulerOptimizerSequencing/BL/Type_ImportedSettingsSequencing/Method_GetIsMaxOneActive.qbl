@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetIsMaxOneActive (output Strings feedback_o) declarative remote as Boolean
+{
+  Description: 'Checks that at most one SettingsSequencing has IsActive=true. Only violates for objects that have IsActive=true.'
+  TextBody:
+  [*
+    // mbr23 Mar-27-2020 (created)
+    isviolated := this.IsActive() and exists( this.Schedule(), ImportedSettingsSequencing, s, s <> this and s.IsActive() );
+    isvalid := not isviolated;                                                
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {        
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( this.Id(), Translations::SC_ImportedSettingsOptimizer_MultipleActive( this.Id() ) ) );
+    }
+    
+    return isvalid;
+  *]
+}

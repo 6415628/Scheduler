@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCreateUpdatePlanningConfiguration (Schedule schedule)
+{
+  Description: 'Tests the update of planning configuration instance.'
+  TextBody:
+  [*
+    importedPlanningConfiguration := schedule.ImportedPlanningConfiguration();
+    // Updating imported data
+    updatedBoolean := true;
+    updatedDateTime := DateTime::Construct( 2019, 1, 1 );
+    updatedNumber := 100;
+    updatedDuration := Duration::Days( 2 );
+    
+    importedPlanningConfiguration.CapacityPlanningNumberOfBuckets( updatedNumber );
+    importedPlanningConfiguration.CapacityPlanningPeriodDuration( updatedDuration );
+    importedPlanningConfiguration.FSPLMaxNrOfCycles( updatedNumber );
+    importedPlanningConfiguration.HasUserTime( updatedBoolean );
+    importedPlanningConfiguration.PlanRelatedWithConstraint( updatedBoolean );
+    importedPlanningConfiguration.UserTime( updatedDateTime );
+    importedPlanningConfiguration.OnHoldPeriod( updatedDuration );
+    
+    // Synchronize data
+    Transaction::Transaction().Propagate( attribute( ImportedData_SC, IsValidDataHard ) );
+    schedule.SynchronizationObject().SynchronizePlanningConfiguration();
+    
+    // Check data
+    planningConfiguration := schedule.PlanningConfiguration();
+    hasUpdatedData := planningConfiguration.CapacityPlanningNumberOfBuckets() = updatedNumber
+                      and planningConfiguration.CapacityPlanningPeriodDuration() = updatedDuration
+                      and planningConfiguration.FSPLMaxNrOfCycles() = updatedNumber
+                      and planningConfiguration.HasUserTime() = updatedBoolean
+                      and planningConfiguration.PlanRelatedWithConstraint() = updatedBoolean
+                      and planningConfiguration.UserTime() = updatedDateTime
+                      and planningConfiguration.OnHoldPeriod() = updatedDuration;
+    
+    this.Run().AssertTrue( hasUpdatedData, UTFUtility::GenerateFailedMessage( 'PlanningConfiguration_Update', '' ) );
+  *]
+}

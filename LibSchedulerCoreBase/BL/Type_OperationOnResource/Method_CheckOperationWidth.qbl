@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckOperationWidth (output String feedback_o) declarative remote as Boolean
+{
+  Description: 'check operation width allowed rule on continuous resource'
+  TextBody:
+  [*
+    // jiex Nov-16-2016 (created)
+    // check operation width on continuous resource
+    value := not this.Resource_SC().IsContinuous()
+             or ( this.Resource_SC().astype( ContinuousResource ).MaximumParallelLoadWidth() >= this.WidthInResource()
+                  and this.Resource_SC().astype( ContinuousResource ).Length() >= this.LengthInResource() );
+    
+    if( not value )
+    {
+      if( this.Resource_SC().astype( ContinuousResource ).MaximumParallelLoadWidth() < this.WidthInResource() )
+      {
+        feedback_o := feedback_o
+                      + String::NewLine()
+                      + Translations::SC_OperationWidthNotAllowed( this.WidthInResource(),
+                                                                   this.Resource_SC().astype( ContinuousResource ).MaximumParallelLoadWidth() );
+      }
+      if( this.Resource_SC().astype( ContinuousResource ).Length() < this.LengthInResource() )
+      {
+         feedback_o := feedback_o
+                      + String::NewLine()
+                      + Translations::SC_OperationWidthLargerThanLength( this.LengthInResource(),
+                                                                         this.Resource_SC().astype( ContinuousResource ).Length() );
+      }
+    }
+    
+    return value;
+  *]
+}

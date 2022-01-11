@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ParseFCjson (Schedule owner, JSON timeinterval, String calendarResourceId) as ImportedCalendarTimeInterval
+{
+  TextBody:
+  [*
+    //Create a unique ID
+    intervalID := OS::GenerateGUIDAsString(); 
+    
+    resultInterval := select( owner, ImportedCalendarTimeInterval, interval, true, interval.ID() = intervalID );
+    
+    if( isnull( resultInterval ) )
+    {
+      resultInterval := ImportedCalendarTimeInterval::Create( owner, intervalID );
+    }
+    
+    resultInterval.Update( timeinterval, calendarResourceId );
+                                                          
+    return resultInterval;
+  *]
+}

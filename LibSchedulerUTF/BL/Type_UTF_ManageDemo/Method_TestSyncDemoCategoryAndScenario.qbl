@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestSyncDemoCategoryAndScenario (Schedule schedule)
+{
+  TextBody:
+  [*
+    targetfolder := Constants::DemoScenarioFolderPath();
+    demoCategoryFolders := Schedule::GetAllFoldersInTargetFolder( targetfolder ).Tokenize( ';' );
+    
+    targetfolder := Constants::DemoScenarioFolderPath() + Constants::DemoCategory_Sales();
+    demoScenarioFolders := Schedule::GetAllFoldersInTargetFolder( targetfolder ).Tokenize( ';' );
+    
+    salesDemoCategory := select( schedule, DemoManager.DemoCategory, demoCategory, demoCategory.Name() = Constants::DemoCategory_Sales() );
+    
+    this.Run().AssertEqual( demoCategoryFolders.Size(),
+                            counter( schedule, DemoManager.DemoCategory, demoCategory, true ),
+                            UTFUtility::GenerateFailedMessage( 'ManageDemo_TestSyncDemoCategoryAndScenario Synchronization of demo category failed', '' ) );
+                                 
+    this.Run().AssertEqual( demoScenarioFolders.Size(),
+                            counter( salesDemoCategory, DemoScenario, demoScenario, true ),
+                            UTFUtility::GenerateFailedMessage( 'ManageDemo_TestSyncDemoCategoryAndScenario Synchronization of demo scenario failed', '' ) );
+  *]
+}

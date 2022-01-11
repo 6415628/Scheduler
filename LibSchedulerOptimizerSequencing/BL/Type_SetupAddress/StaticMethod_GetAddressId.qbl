@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetAddressId (RunContextSetupAddress runcontext, const Operation_SC operation, output String address_id) as owning SetupCoordinates
+{
+  Description:
+  [*
+    Constructs the address ID of the given operation modulo the dimensions of the given run context and returns it in the output parameter `address_id`. Returns the setup coordinates (including irrelevant ones) identified to match the operation, one per dimension of the given run context, in the same order as the dimensions.
+    Precondition: the given run context must already contain all its dimensions and coordinates.
+  *]
+  TextBody:
+  [*
+    // mbr23 Mar-19-2020 (created)
+    address_id := "";
+    coordinates := construct( SetupCoordinates );
+    traverse( runcontext, Dimension, dim ) // deterministic traversal order over procedurally sorted relation
+    {
+      coordinate := dim.GetCoordinate( operation );
+      coordinates.Add( coordinate );
+      if( dim.IsRelevant() )
+      {
+        address_id := address_id + coordinate.Id() + SetupAddress::CoordinateDelimiter();
+      }
+    }
+    return & coordinates;
+  *]
+}

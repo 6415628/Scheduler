@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Simulation SimulateTools
+{
+  Description: 'Process the simulation of tool.'
+  InitializationText:
+  [*
+    traverse( this, ToolGroup.Tool, tool )
+    {
+      tool.SimAvailableTime( this.Schedule().Time() );
+      tool.IsBlocked( false );
+    }
+    
+    
+    traverse( this, ToolGroup.ToolTask, tt )
+    {
+      tt.Start( DateTime::MinDateTime() );
+      tt.End( DateTime::MinDateTime() );
+      tt.ToolID( '' );
+      tt.HasTool( false );
+      tt.BlockedToolID( '' );
+      tt.HasBlockedToolID( false );
+    }
+  *]
+  SimulationNode ToolSimulationSubTask
+  {
+    ActionText: 'this.ExecuteSimChosen();'
+    Description: 'ToolSimulationSubTask is the object to process the SimulateTools.'
+    ScoreText: 'return this.GetSimScore()'
+    TargetType: ToolSimulationSubTask
+    RelationPath
+    {
+      Path: 'Resource_SC.SubTask.ToolSimulationSubTask'
+    }
+  }
+}

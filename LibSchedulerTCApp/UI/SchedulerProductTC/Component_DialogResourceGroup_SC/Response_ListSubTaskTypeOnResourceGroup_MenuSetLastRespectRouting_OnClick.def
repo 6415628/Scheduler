@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: ListSubTaskTypeOnResourceGroup
+Response OnClick (shadow[SubTaskTypeOnResourceGroup] selection) id:Response_ListSubTaskTypeOnResourceGroup_MenuSetLastRespectRouting_OnClick
+{
+  #keys: '[129856.0.69804949]'
+  Body:
+  [*
+    // James Kwapien #7718 Set last respect routing subtask
+    // Reset previous last respect routing subtask
+    rg := Dialog.Data();
+    
+    sttorg := select( rg,
+                      SubTaskTypeOnResourceGroup,
+                      sttorg,
+                      sttorg.IsLastRespectRouting() = true );
+    
+    if( not isnull( sttorg ))
+    {
+      sttorg.IsLastRespectRouting( false );
+    }
+    
+    // Set new last respect routing subtask
+    selection.IsLastRespectRouting( true );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /ListSubTaskTypeOnResourceGroup/Responsedef_ListSubTaskTypeOnResourceGroup_Menu_OnClick
+  Initiator: 'MenuSetLastRespectRouting'
+  Precondition:
+  [*
+    return Dialog.SetLastRespectRoutingPrecondition( selection, feedback );
+  *]
+}

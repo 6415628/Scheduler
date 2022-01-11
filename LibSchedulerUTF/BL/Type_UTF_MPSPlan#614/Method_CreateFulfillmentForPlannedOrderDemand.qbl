@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateFulfillmentForPlannedOrderDemand (Schedule schedule)
+{
+  Description: 'Create fulfillment for planned order demand.'
+  TextBody:
+  [*
+    planUnit := select( schedule, PlanUnit_SC, planUnit, true );
+    demand := GenericProductPlannedDemand::Create( schedule, DemandType::ProductPlannedDemand(), 'Demand1' );
+    supply := GenericProductExternalSupply::Create( schedule, SupplyType::ProductExternalSupply(), 'Supply1' );
+    
+    demand.PlanUnit_SC( relset, planUnit );
+    fulfillment := demand.ProductFulfillment( relnew, GenericProductPlannedFulfillment, 
+                                              DemandId := demand.DemandID(), 
+                                              SupplyId := 'Supply1', 
+                                              Supply := supply,
+                                              ProductSupply := supply );
+    fulfillment.Demand( relset, demand );
+  *]
+}

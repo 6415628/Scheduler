@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestConstraintIsAllowedWithinOnHoldHorizon (Schedule schedule)
+{
+  Description: 'Test task constraint IsAllowedWithinOnHoldHorizon'
+  TextBody:
+  [*
+    // Get variant data
+    hasonholdstatus := false;
+    resourceonholdperiodend := DateTime::MinDateTime();
+    plannedstart := DateTime::MinDateTime();
+    isValid := false;
+    
+    this.GetTestVariant( hasonholdstatus,
+                         resourceonholdperiodend,
+                         plannedstart,
+                         isValid );
+    
+    task := select( schedule, ResourceGroup_SC.Resource_SC.Task_SC, task, true );
+    
+    this.Run().AssertEqual( isValid,
+                            task.IsAllowedWithinOnHoldHorizon(), 
+                            UTFUtility::GenerateFailedMessage( 'Single task constraint for IsAllowedWithinOnHoldHorizon failed.', 
+                                                               this.Variant() ) );
+  *]
+}

@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveMetadataSuccessSetTypeInterestCreated (NamedValueTree nvt_i, NamedValue body_i, LibDEF_IntegrationEvent event_i)
+{
+  TextBody:
+  [*
+    LibDEF_Util::EventLog( event_i, "Receiving Set Type Interest created acknowledgement" );
+    
+    setTypeGUID := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SETTYPEGUID() );
+    
+    actionFeedbackText := "Set Type Interest cannot be created. ";
+    
+    setTypeMeta := this.FindSetTypeMeta( setTypeGUID, actionFeedbackText, event_i );
+    
+    if( not isnull( setTypeMeta ) )
+    {
+      setTypeInterestOfDatasetHandle := nvt_i.GetHandle( typeof( LibDEF_SetTypeInterestOfDataset ).Name() );
+      setTypeInterest := NamedValueTreeIO::ImportObject( nvt_i, body_i.Child( setTypeInterestOfDatasetHandle ), 
+                                                         typeof( LibDEF_SetTypeInterestOfDataset ) ).astype( LibDEF_SetTypeInterestOfDataset );
+      
+      // Checks if the Set Type is already interested by the dataset
+      if( not setTypeMeta.IsInterestedByDataset( setTypeInterest.DatasetMDSID() ) )
+      { 
+        // The DatasetInterest can be inserted directly into the DatasetInterest relation.
+        localSetTypeInterest := setTypeMeta.SetTypeInterestOfDataset( relinsert, &setTypeInterest );
+        
+        if( not setTypeMeta.HasOtherOnlineDatasetInterest( localSetTypeInterest.MDSID() ) )
+        { 
+          LibDEF_SetTypeInterestFromSystem::FindCreate( setTypeMeta, this );
+        }
+        
+        setTypeMeta.CreateSetInterest( localSetTypeInterest );
+      }
+      
+      // End of receive metadata success set interest created
+      LibDEF_IntegrationEvent::EventComplete( event_i );
+    }
+    else
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  actionFeedbackText,
+                                  actionFeedbackText + "The Set with GUID '" + setTypeGUID + "' is not found in the DataBroker." );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

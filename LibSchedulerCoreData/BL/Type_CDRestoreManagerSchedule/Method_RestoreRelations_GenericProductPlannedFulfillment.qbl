@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericProductPlannedFulfillment (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic product planned fulfillment core data attributes to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdSchedule, CDEntity.astype( CDGenericProductPlannedFulfillment ), cdGenericProductPlannedFulfillment )
+    {
+      genericProductPlannedFulfillment := select( schedule, Demand.Fulfillment.astype( GenericProductPlannedFulfillment ), genericProductPlannedFulfillment, 
+                                                  genericProductPlannedFulfillment.DemandId() = cdGenericProductPlannedFulfillment.DemandId()
+                                                  and genericProductPlannedFulfillment.Demand().DemandType() = cdGenericProductPlannedFulfillment.DemandType()
+                                                  and genericProductPlannedFulfillment.SupplyId() = cdGenericProductPlannedFulfillment.SupplyId()
+                                                  and genericProductPlannedFulfillment.BackupSupplyType()= cdGenericProductPlannedFulfillment.SupplyType() 
+                                                 );
+                                                    
+      if( not isnull( genericProductPlannedFulfillment ) )
+      {
+        // ImportedFixedFulfillment, M-1     
+        importedFixedFulfillment := select( schedule, ImportedFulfillment.astype( ImportedFixedFulfillment ), iff, iff.BackupImportedID() = cdGenericProductPlannedFulfillment.ImportedFixedFulfillmentBackupID() );
+        genericProductPlannedFulfillment.ImportedFixedFulfillment( relset, importedFixedFulfillment );    
+            
+        // ProductSupply, M-1
+        productsupply := select( schedule, Supply.astype( ProductSupply ), ps,
+                                 ps.SupplyID() = cdGenericProductPlannedFulfillment.SupplyId()
+                                 and ps.SupplyType() = cdGenericProductPlannedFulfillment.SupplyType() );
+                                               
+        genericProductPlannedFulfillment.ProductSupply( relset, productsupply );                              
+        genericProductPlannedFulfillment.Supply( relset, productsupply );
+        
+        // OperationMaterial, 1-1
+        operationMaterial := select( schedule, PlanUnit_SC.OperationMaterial, operationMaterial, 
+                                     operationMaterial.OperationMaterialID() = cdGenericProductPlannedFulfillment.OperationMaterialID() );
+        genericProductPlannedFulfillment.OperationMaterial( relset, operationMaterial );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

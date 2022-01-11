@@ -1,0 +1,67 @@
+Quintiq file version 2.0
+#parent: #root
+Method BatchStart (String batchid, Operation_SCs content, String resource_id, 
+  DateTime start, DateTime processstart, String practice, 
+  String remark)
+{
+  Description: 'Feedback API: BatchStart event'
+  TextBody:
+  [*
+    // Find if ImportedFeedbackBatch already exists as a FeedbackBatchInSchedule using the BatchID
+    fbbatch := FeedbackBatchInSchedule::FindFeedbackBatchInSchedule( batchid );
+    
+    // If the ImportedFeedbackBatch does not already exists as a FeedbackBatchInSchedule
+    // Create a new FeedbackBatchInSchedule for it
+    isfisrtfeedback := false;
+    if( isnull( fbbatch ) )
+    {
+      batchTask := guard( content.Element( 0 ).Task_SC().astype( BatchTask ), null( BatchTask ) );
+      fbbatch := FeedbackBatchInSchedule::Create( this, batchid, batchTask );
+      isfisrtfeedback := true;
+    
+      fbbatch.UpdateFeedbackStart( start, resource_id, Constants::StatusStart(), remark, practice );
+      fbbatch.UpdateFeedbackBatchExportedAttributes( batchTask, content.Element( 0 ), resource_id );
+      
+      if( not isnull( batchTask ) )
+      {
+        batchTask.ExportSubtaskDuration();
+      }
+    }
+    
+    fbbatch.UpdateFeedbackProcessStartReadIn( processstart );
+    
+    //handle exception
+    FeedbackBatchInSchedule::HandleBatchStartExceptions( content, fbbatch, isfisrtfeedback, resource_id, start, remark, practice );
+    //fbbatch.UpdateFeedbackStart( start, resource_id, Constants::StatusStart(), remark, practice );
+    
+    // Propagate responsible resource, needed for feedback batch content handling later
+    Transaction::Transaction().Propagate( relation( FeedbackBatchInSchedule, ResponsibleBatchResource ) );
+    
+    traverse( content, Elements, operation )
+    {
+      fbcontentinschedule := FeedbackBatchContentInSchedule::FindFeedbackBatchContentInSchedule( fbbatch.BatchID(), 
+                                                                                                 operation.WorkOrderId(),
+                                                                                                 operation.PlanUnitId(),
+                                                                                                 operation.WorkOrderSequenceNr() );
+      
+      //For cases where an operation that is replanned again after receving feedback, the earlier feedback will be deleted
+      if( not isnull( fbcontentinschedule ) and operation.HasEnded() )
+      {
+        fbcontentinschedule.Delete(); 
+      }
+      
+      if( isnull( fbcontentinschedule ) )
+      {
+        //FeedbackTask for operation does not yet exist. So create one
+        fbcontentinschedule := FeedbackBatchContentInSchedule::Create( fbbatch, operation );    
+        fbcontentinschedule.UpdateFeedbackBatchContentExportedAttributes(); 
+        fbcontentinschedule.TimeStamp( DateTime::Now() );
+      }
+      
+      this.HandleFeedbackBatchContentInSchedule( operation, fbcontentinschedule );
+      
+      // Reset and update statuses with remarks
+      operation.UpdateFeedbackStatus( fbbatch.StatusReadIn(), '', '' ); // fbbatch.Status needs propagation, which actually does get propagated in CleanUpFeedbackedTask, but this means the first operation doesn't get the right value, so we use StatusReadIn instead
+    }
+  *]
+}

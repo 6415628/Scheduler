@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[ProgramType] selection) id:Response_GanttChartSchedulingCentre_MenuDeleteProgram_OnClick_542
+{
+  #keys: '[143388.0.1953520906]'
+  Body:
+  [*
+    // Delete structured[ProgramType] which has program change
+    value := true;
+    feedback_o := '';
+    
+    programchangetasks := selectset( selection, Elements.TaskInProgramSet.Task_SC, task, true );
+    
+    // Reuse unplan soft checking method on tasks
+    hasNoSoftViolation := Task_SC::CanUnplanSoft( programchangetasks, feedback_o );
+    
+    if( not hasNoSoftViolation )
+    {
+      value := MessageBox::Question( this, feedback_o, '&Yes|&No' ) = 0
+    }
+    
+    if( value )
+    {
+      Task_SC::DeleteProgramChange( selection );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => /Responsedef_GanttChartSchedulingCentre_Menu_OnClick
+  Initiator: 'MenuDeleteProgram'
+  Precondition:
+  [*
+    return Task_SC::CanDeleteProgramHard( selection );
+  *]
+}

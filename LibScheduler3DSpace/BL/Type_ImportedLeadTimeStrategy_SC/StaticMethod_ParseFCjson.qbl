@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ParseFCjson (ImportedResource_SC importedResource) as ImportedLeadTimeStrategy_SC
+{
+  Description: 'Create lead time strategy based on asset resource created from 3DSpace JSON input data.'
+  TextBody:
+  [*
+    strategy := ifexpr( importedResource.ImportedResourceGroup_SC().IsFiniteCapacity(),
+                        Constants::StrategyASAP(),
+                        Constants::StrategyInfinite() );
+    
+    minDistance := Duration::Zero();
+    
+    // We can only have ONE lead time strategy at a time
+    // So we will delete the others that are not available in imported data
+    allInstances := selectset( importedResource, ImportedLeadTimeStrategy_SC, leadTimeStrategy, true );
+    updatedInstances := construct( ImportedLeadTimeStrategy_SCs );
+    
+    leadTimeStrategy := ImportedLeadTimeStrategy_SC::FindImportedLeadTimeStrategyTypeIndex( strategy,
+                                                                                            importedResource.ResourceID(),
+                                                                                            minDistance );
+    
+    if( isnull( leadTimeStrategy ) )
+    {
+      leadTimeStrategy := ImportedLeadTimeStrategy_SC::Create( importedResource, minDistance, strategy );
+    }
+    
+    updatedInstances.Add( leadTimeStrategy );
+    
+    oldInstances := allInstances.Difference( updatedInstances );
+    
+    traverse( oldInstances, Elements, old )
+    {
+      old.Delete();
+    }
+    
+    return leadTimeStrategy;
+  *]
+}

@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanFirst (SingleTaskBases tasks)
+{
+  Description: 'Move all single tasks  to firstt'
+  TextBody:
+  [*
+    traverse( tasks, Elements, task )
+    {
+      single_op := task.OperationAsSingleTask();
+          
+      if( this.IsPlanRelatedOperations() )
+      {
+        Schedule::PlanRelatedOperationsAfter( single_op, this, null( SingleTaskBase ), true, false );
+      }
+      
+      //yl issue 228060
+      this.PlanFirst( task.OperationAsSingleTask() );
+    }
+  *]
+}

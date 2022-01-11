@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericDemandInBatch (const GenericDemandBatch genericDemandBatch)
+{
+  Description: 'Backup generic demand in batch core data'
+  TextBody:
+  [*
+    traverse( genericDemandBatch, DemandInBatch.astype( GenericDemandInBatch ), genericDemandInBatch )
+    {
+      cdGenericDemandInBatch := this.CDEntity( relnew, CDGenericDemandInBatch );
+      CopyCorresponding::CopyFrom( genericDemandInBatch ).CopyTo( cdGenericDemandInBatch );
+      
+      cdGenericDemandInBatch.BatchID( genericDemandBatch.BatchID() );
+      cdGenericDemandInBatch.DemandType( guard ( genericDemandInBatch.Demand().DemandType(), '') );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

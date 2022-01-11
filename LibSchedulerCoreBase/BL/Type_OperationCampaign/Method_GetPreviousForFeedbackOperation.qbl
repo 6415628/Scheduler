@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetPreviousForFeedbackOperation () declarative as OperationCampaign
+{
+  Description: 'Get previous operation campaign when operation has feedback.'
+  TextBody:
+  [*
+    operationCampaign := null( OperationCampaign );
+    operation := this.Operation_SC();
+    
+    previousFeedbackTask := guard( operation.Last().astype( OperationTaskFeedback ).Last().PreviousFeedback(),
+                                   null( FeedbackTaskInSchedule ) );
+    previousFeedbackBatch := guard( operation.Last().astype( OperationBatchFeedback ).Last().FeedbackBatchInSchedule().PreviousFeedbackBatchOnResource(), 
+                                    null( FeedbackBatchInSchedule ) );
+    
+    if( not isnull( previousFeedbackTask ) ) // Feedback operation, link to previous task feedback on same resource
+    {
+      operationCampaign := this.GetPrevious( previousFeedbackTask );
+    }
+    else if( not isnull( previousFeedbackBatch ) ) // Feedback operation, link to previous batch feedback on same resource
+    {
+      operationCampaign := this.GetPrevious( previousFeedbackBatch );
+    }
+    
+    return operationCampaign;
+  *]
+}

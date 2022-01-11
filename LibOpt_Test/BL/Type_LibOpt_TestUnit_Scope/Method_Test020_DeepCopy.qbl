@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test020_DeepCopy (LibOpt_TestDataset dataset)
+{
+  Description: 'Test whether a deep copy of the scope element is supported.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    se := dataset.ScopeElementMock( relnew );
+    
+    scope_fat := LibOpt_ScopeFat::Create( run );
+    scope_fat.Add( se );
+    
+    scope_thin := LibOpt_ScopeThin::Create( run );
+    scope_thin.Add( se );
+    
+    se_copy := se.DeepCopy( false ).astype( LibOpt_ScopeElementMock );
+    
+    this.Run().AssertTrue( scope_fat.Contains( se_copy ), 'scope_fat.Contains( se_copy )' );
+    this.Run().AssertTrue( scope_fat.ScopeElements().Find( se_copy ) >= 0, 'scope_fat.ScopeElements().Find( se_copy ) >= 0' );
+    
+    this.Run().AssertTrue( scope_thin.Contains( se_copy ), 'scope_thin.Contains( se_copy )' );
+    this.Run().AssertTrue( scope_thin.ScopeElements().Find( se_copy ) >= 0, 'scope_thin.ScopeElements().Find( se_copy ) >= 0' );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

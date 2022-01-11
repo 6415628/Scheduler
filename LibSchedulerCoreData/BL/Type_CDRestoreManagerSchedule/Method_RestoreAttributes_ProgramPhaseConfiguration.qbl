@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_ProgramPhaseConfiguration (CDSchedule cdSchedule, ProgramTypeConfiguration programTypeConfiguration)
+{
+  Description: 'Restore program phase configuration core data attributes to planning object'
+  TextBody:
+  [*
+    cdProgramPhaseConfigurations := selectsortedset( cdSchedule, CDEntity.astype( CDProgramPhaseConfiguration ), cdProgramPhaseConfiguration,
+                                                     cdProgramPhaseConfiguration.ProgramDefinitionConfigurationID() = programTypeConfiguration.ProgramDefinitionConfigurationID()
+                                                     and cdProgramPhaseConfiguration.ProgramSetConfigurationID() = programTypeConfiguration.ProgramSetConfigurationID()
+                                                     and cdProgramPhaseConfiguration.ProgramTypeConfigurationID() = programTypeConfiguration.ProgramTypeConfigurationID(),
+                                                     cdProgramPhaseConfiguration.SequenceNr() )
+    
+    traverse( cdProgramPhaseConfigurations, Elements, cdProgramPhaseConfiguration )
+    {
+      programPhaseConfiguration := ProgramPhaseConfiguration::Create( programTypeConfiguration, cdProgramPhaseConfiguration.ProgramPhaseConfigurationID() );
+      CopyCorresponding::CopyFrom( cdProgramPhaseConfiguration ).CopyTo( programPhaseConfiguration );
+      // Move to last position because the set is sorted ascendingly
+      programPhaseConfiguration.MoveLast();
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

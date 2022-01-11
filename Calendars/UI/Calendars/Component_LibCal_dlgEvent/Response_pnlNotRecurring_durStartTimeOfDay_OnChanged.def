@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: pnlNotRecurring/durStartTimeOfDay
+Response OnChanged () id:Response_pnlNotRecurring_durStartTimeOfDay_OnChanged
+{
+  #keys: '[131094.0.629922468]'
+  Body:
+  [*
+    // If not AllDay, adjust the EndTimeOfDay accordingly.
+    // When EndTimeOfDay is not changed, UpdateDuration must be done from here.
+    updateDuration := true;
+    
+    if( not ckbIsAllDay.Checked() )
+    {
+      delta := this.Duration() - vhStartTimeOfDay.Data();
+    
+      if( delta <> Duration::Zero() )
+      {
+        endTimeOfDay := durEndTimeOfDay.Duration() + delta;
+    
+        // Also adjust datEndDate if necessary.    
+        datEndDate     .Date(     datEndDate.Date() + endTimeOfDay.Days()                   );
+        durEndTimeOfDay.Duration( endTimeOfDay      - Duration::Days( endTimeOfDay.Days() ) );
+    
+        // Update the 'memory' for later delta-calculation, and/or setting the time back when AllDay is turned off.
+        vhStartTimeOfDay.Data( this.Duration() );
+        
+        updateDuration := false;
+      }
+    }
+    
+    if( updateDuration )
+    {
+      Dialog.UpdateDuration();
+    }
+    
+    // Keep durStartTimeRecurring on the other panel in sync.
+    durStartTimeOfDayRecurring.Duration( this.Duration() );
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIDurationSelector_OnChanged'
+}

@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_042_RecoverFailedRunFromDifferentDataset (LibOpt_TestDataset dataset)
+{
+  Description: 'This tests that a failed run cannot be recovered from another dataset'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    
+    setup := void->()
+    {
+      run := opt.CreateRun();
+     
+      opt.ComponentError( run, 'Error', LibOpt_ComponentErrorPosition::Operation() );
+      
+      opt.ConfigureForOneTransaction( run );
+      run.Start()
+    }
+    
+    
+    this.NoException( setup->IgnoreException()
+    ->|void->( ) {
+      return MDSLibOpt_TestDataset::Create( DatasetCreateOptions::Construct( 'Temp' )
+                                             .AsCopy( opt.MDSID() )
+                                             .State( DatasetState::Temporary() ) );
+    }->( dataset )
+    {
+      opt := select( dataset, Optimization.Optimizer.astype( LibOpt_OptimizerTest ), o, o.Name() = opt.Name() );
+      recovered_run := opt->RecoverLastFailedRun();
+      return recovered_run->IgnoreException()->GroupAll();
+    }->( runs )
+    {
+      this.Run().AssertEqual( 0, runs.Size(), 'Recovered run from different dataset' );
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

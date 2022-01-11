@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update () id:Method_LibOpt_FormAnalysisScopeTag_Update
+{
+  #keys: '[139164.4.800858219]'
+  Body:
+  [*
+    owner := DataHolderOwner.Data();
+    analysis := DataHolderAnalysis.Data();
+    
+    if( not isnull( owner ) and not isnull( analysis ) )
+    {
+      scope_elements := DataHolderScopeElements.Data();
+    
+      seoss := selectset( scope_elements, Elements.ScopeElementOnScope, seos, true );
+      tags := LibOpt_ScopeElementOnScope::Tags( seoss );
+    
+      existing_tags := selectvalues( owner, UIScopeTag, tag, true, tag.Name() );
+    
+      traverse( tags.Difference( existing_tags ), Elements, tag )
+      {
+        owner.UIScopeTag( relnew, Name := tag );
+      }
+    }
+  *]
+}

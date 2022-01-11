@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateBasedOnJSON (String jsonString)
+{
+  Description: 'Updates specific data based on JSON string, which may only contains updated instances, not the full dataset.'
+  TextBody:
+  [*
+    // We only reset the imported data in the Init call
+    // We may only receive updated instances in the jsonString
+    // But because we don't reset all during Update, we are always synchronizing based on the 'full state' that we retain in the imported data
+    // Therefore existing synchronization logic can be kept
+    
+    // Import the data
+    this.ImportObject().Import3DSpace( jsonString );
+    // Synchronize the data for 3DSpace
+    this.SynchronizationObject().SynchronizeAll3DSpace();
+    // We need to propagate tasks, operations and resource information before receiving feedback
+    Transaction::Transaction().Propagate();
+    // Apply feedback data according to 3DSpace (using MESFeedbackAdapter3DSpace)
+    this.ImportObject().ImportMES();
+  *]
+}

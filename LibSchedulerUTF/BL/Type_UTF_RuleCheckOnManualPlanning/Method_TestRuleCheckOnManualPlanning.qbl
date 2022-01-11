@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRuleCheckOnManualPlanning (Schedule schedule)
+{
+  Description: "Test rule check setting 'Manual Planning'"
+  TextBody:
+  [*
+    // Get variant attribute
+    needManualPreconditionCheck := false;
+    isPassValidation := false;
+    
+    this.GetTestVariant( needManualPreconditionCheck,
+                         isPassValidation );
+    
+    resource := select( schedule, ResourceGroup_SC.Resource_SC.astype( SingleResource ), resource, true );
+    operation1 := select( schedule, Operation_SC, operation, operation.OperationID() = 'Operation1' );
+    operation2 := select( schedule, Operation_SC, operation, operation.OperationID() = 'Operation2' );
+    
+    feedback := '';
+    value := resource.CheckCharacteristicSequencingRules( operation2, operation1.Task_SC(), null( Task_SC ), feedback );
+    
+    this.Run().AssertEqual( isPassValidation, value,
+                            UTFUtility::GenerateFailedMessage( 'Applying manual planning configuration to rule failed.',
+                                                               this.Variant() ) );
+  *]
+}

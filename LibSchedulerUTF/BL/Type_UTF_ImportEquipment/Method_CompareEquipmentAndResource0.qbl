@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method CompareEquipmentAndResource (Schedule schedule, LibDII_CIM_Equipment equipment, LibDII_CIM_EquipmentClass equipmentClass)
+{
+  TextBody:
+  [*
+    importedResourceGroup := select( schedule, ImportedResourceGroup_SC, importedResourceGroup, true );
+    importedResource := select( importedResourceGroup, ImportedResource_SC, importedResource, true );
+    
+    this.Run().AssertTrue( importedResourceGroup.ResourceGroup() = equipment.ID()
+                           and importedResourceGroup.EquipmentClassID() = equipment.EquipmentClassID()
+                           and importedResourceGroup.Index() = equipment.Index()
+                           and importedResourceGroup.IsBottleneck() = equipment.IsBottleneck()
+                           and importedResourceGroup.IsPlanRelatedOperations() = equipment.IsPlanRelatedOperations()
+                           and importedResourceGroup.UseConfiguredFeedbackHistory() = equipment.UseFeedbackHistory()
+                           and importedResourceGroup.ConfiguredFeedbackHistory() = equipment.FeedbackHistory()
+                           and importedResourceGroup.UseConfiguredSchedulingWindow() = equipment.UseSchedulingWindow()
+                           and importedResourceGroup.ConfiguredSchedulingWindow() = equipment.SchedulingWindow()
+                           and importedResourceGroup.UseConfiguredFrozenPeriod() = equipment.UseFrozenHorizon()
+                           and importedResourceGroup.ConfiguredFrozenPeriod() = equipment.FrozenHorizon()
+                           // Comment out the following checks as those values are not updated in time due to reactive Quill involved.
+                           // Will need to continue to explore ways to ensure those can be updated in time.
+                           /*and importedResourceGroup.HasBatches() = equipmentClass.IsBatchResource()
+                           and importedResourceGroup.HasFixedSequencePlanLogic() = equipmentClass.HasFixedSequencePlanLogic()
+                           and importedResourceGroup.HasPractice() = equipmentClass.HasPractice()
+                           and importedResourceGroup.IsContinuous()= equipmentClass.IsContinuous()*/, UTFUtility::GenerateFailedMessage( 'Synchronize to resource group', '' ) );
+                           
+    this.Run().AssertTrue( importedResource.ResourceID() = equipment.ID()
+                           and importedResource.Name() = equipment.Name()
+                           and importedResource.EquipmentClassID() = equipment.EquipmentClassID()
+                           and importedResource.UseFitStrategy() = equipment.CanOverlapCalendarBreak()
+                           and importedResource.UseFitProcessStrategy() = equipment.CanProcessOverlapCalendarBreak()
+                           // Comment out the following checks as those values are not updated in time due to reactive Quill involved.
+                           // Will need to continue to explore ways to ensure those can be updated in time.
+                           /*and importedResource.Length() = equipmentClass.ContinuousResourceLength()
+                           and importedResource.MaximumBatchSize() = equipmentClass.MaxBatchSize()
+                           and importedResource.MaximumParallelLoadWidth() = equipmentClass.MaximumParallelLoadWidth()
+                           and importedResource.MinimumGapLength() = equipmentClass.MinimumGapLength()
+                           and importedResource.MinimumParallelLoadGap() = equipmentClass.MinimumParallelLoadGap()
+                           and importedResource.Speed() = equipmentClass.ContinuousResourceSpeed()
+                           and importedResource.IsTransverse() = equipmentClass.IsContinuousResourceTransverseLoading()*/, UTFUtility::GenerateFailedMessage( 'Synchronize to resource', '' ) );
+  *]
+}

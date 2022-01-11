@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: ListTasks
+Response OnDropEmpty (structured[Operation_SC] source, SingleResourceBase resource) id:Response_ListTasks_OnDropEmpty
+{
+  #keys: '[142956.0.659779374]'
+  CanBindMultiple: false
+  DefinitionID => /ListTasks/Responsedef_ListTasks_OnDropEmpty
+  GroupServerCalls: true
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey  := actionmodifier.IsControl();
+    ctrlshiftkey := actionmodifier.IsControl() and actionmodifier.IsShift();
+    
+    return Scheduler.AllowedScheduling( resource,
+                                        source,
+                                        ctrlkey,
+                                        ctrlshiftkey,
+                                        resource.Last(),
+                                        null( Task_SC ),
+                                        Operation_SC::GetSelectedObjects( source ),
+                                        feedback,
+                                        isallowedhard );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // OnDrop structured[Operation] --> null(Task) On SingleResourceBase
+      resource.PlanLast( source );
+    *]
+  }
+}

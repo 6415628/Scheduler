@@ -1,0 +1,65 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedScheduling (BatchResource resource, structured[Operation_SC] operations, Boolean skipsoftcheck, 
+  Boolean ctrlshiftkey, Task_SC beforetask, Task_SC aftertask, 
+  String identifier, output String feedback_o, output Boolean isallowedhard_o) as Boolean id:Method_Scheduler_AllowedScheduling_549
+{
+  #keys: '[143030.0.224899109]'
+  Body:
+  [*
+    /*
+    This precondition covers the use cases of adding batch elements to a batchtask,
+    use case of creating a batch and scheduling the batch
+    or use case of merging batch elements with a batch task
+    1. OnDrop structured[Task]/[Operation]/[PlanUnit] --> BatchResource ( Ganttchart )
+    2. OnDrop structured[Operation]/[PlanUnit] --> BatchResource ( Resource List )
+    3. OnDrop structured[PlanUnit]/[Operation]/[Task] --> BatchResource( Task List )
+    4. OnDrop structured[Operation] --> Operation in Batch List
+    5. OnDrop structured[Task]/[Operation] --> BatchResource( Campaign List )
+    
+    This precondition checks whether the selection are allowed to be replanned
+    and are compatible to be batched together
+    and the batch is allowed to be planned between the before and after task.
+    */
+    
+    // The intention of pressing CTRL + SHIFT key to create a new batch is a concious decision by the planner.
+    // Hence it should not check for soft preconditions.
+    skipsoftcheck := skipsoftcheck or ctrlshiftkey;   
+    
+    batchoperations := selectset( operations, Elements, bo, true, true );
+    
+    value := Operation_SC::CanReplan( batchoperations, skipsoftcheck, feedback_o, isallowedhard_o );
+    
+    value := Operation_SC::AllowedInBatch( batchoperations,
+                                           resource,
+                                           skipsoftcheck,
+                                           feedback_o,
+                                           isallowedhard_o )
+             and value;
+    
+    value := resource.AllowedScheduling( operations,
+                                         beforetask,
+                                         aftertask,
+                                         skipsoftcheck,
+                                         feedback_o,
+                                         isallowedhard_o )
+             and value;
+    
+    if( not value and feedback_o.Length() > 0 )
+    {
+      feedback_o := Translations::SC_NotAllowedOn( identifier, resource ) + String::NewLine() + feedback_o;
+    
+      //Ctrl to override should be shown only if isallowedhard_o true and user is currently not pressing ctrlshift key
+      //because we cannot press ctrlshift key and ctrl key at the same time
+      if( isallowedhard_o and not ctrlshiftkey )
+      {
+        feedback_o := feedback_o + String::NewLine() +  Translations::SC_HoldCtrlToOverride() + 
+                      String::NewLine() +  'or ' + Translations::SC_HoldCtrlShiftToCreateNewBatch();
+      }
+    }
+    
+    feedback_o := Schedule::TrimFeedback( feedback_o );
+    
+    return value;
+  *]
+}

@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateFromModelSettings (Boolean doSyncWithDomain_i, LibDEF_IntegrationEvent event_i)
+{
+  Description:
+  [*
+    Read the configurations of local server and DEF custom parameters, then execute according to value changes.
+    A Boolean input flag determines whether to sync with the Domain, depending on where this method is called from.
+  *]
+  TextBody:
+  [*
+    // Jacky CHAN Apr-29-2016 (created)
+    // 1. Update Domain-GUID
+    this.UpdateDomainGUID( event_i );
+    
+    // 2. Update Local-System
+    this.UpdateLocalSystemConfiguration( event_i );
+    
+    // only if has Domain-GUID
+    if( this.DomainGUID().Length() > 0 )
+    {
+      // 3. Update BootNode
+      this.SetBootNode( event_i );
+    
+      if( doSyncWithDomain_i )
+      {
+        // 4. Join or broadcast
+        this.RequestJoinDomainOrBroadcast();
+      }
+    }
+    
+    LibDEF_IntegrationEvent::EventComplete( event_i );
+  *]
+}

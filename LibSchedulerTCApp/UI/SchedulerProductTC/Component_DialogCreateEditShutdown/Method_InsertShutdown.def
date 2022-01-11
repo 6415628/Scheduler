@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method InsertShutdown (internal[GUIComponent] parent, Resource_SC owner, Task_SC aftertask) id:Method_DialogCreateEditShutdown_InsertShutdown
+{
+  #keys: '[143388.0.1767237000]'
+  Body:
+  [*
+    // Set resource data holder
+    DataHolderResource.Data( owner );
+    
+    // Set default target start based on aftertask.End, if no aftertask, set to Resource.EarliestAvailable ( Rounded to minutes )
+    GUIDateTimeSelectorTargetStart.DateTime( guard( aftertask.End(), owner.EarliestAvailable() ).Round( Duration::Minutes( 1 ) ) );
+    
+    if ( Dialog.DoModal( parent ) > 0 )
+    {
+      // Insert shutdown task
+      owner.InsertShutdown( aftertask,
+                            SelectionShutdownType.Data(), 
+                            GUIDurationSelectorShutdownDuration.Duration(), 
+                            CheckBoxHasShutdownDurationUser.Checked(),
+                            CheckBoxEnableTargetStart.Checked(),
+                            GUIDateTimeSelectorTargetStart.DateTime(),
+                            GUIDurationSelectorMaxDeviation.Duration() );
+    }
+  *]
+}

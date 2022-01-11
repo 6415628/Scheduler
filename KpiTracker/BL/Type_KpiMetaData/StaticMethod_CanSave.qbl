@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CanSave (KpiMetaDataFactory factory, KpiMetaData original, String name, 
+  String displayName, String description, Boolean isMaximize, 
+  Boolean isMinimize, String unitOfMeasure) remote as Boolean
+{
+  Description: 'Checks to see if a KPI with the specified parameters would be valid. Used in preconditions. Sets the FeedbackObject.'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    isNew    := isnull( original );
+    
+    // Pre-check if we need to go checking for uniqueness (which does a lookup).
+    if ( isNew or guard( original.Name() <> name, false ) )
+    {
+      // Check uniqueness.
+      if ( not feedback.CheckHard( factory.CanCreateInstance( name ) ) )
+      {
+        feedback.AddHard( Translations::Kpi_MetaData_AlreadyExists( name ) );
+      }
+    }
+     
+    // Can't have both IsMaximize and IsMinimize
+    if ( not feedback.CheckHard( not ( isMaximize and isMinimize ) ) )
+    {
+      feedback.AddHard( Translations::Kpi_MetaData_CanHaveBothIsMaximizeAndIsMinimize() );
+    }
+    
+    // Name can't be empty
+    if ( not feedback.CheckHard( not name.TrimBoth() = "" ) ) 
+    {
+      feedback.AddHard( Translations::Kpi_MetaData_NameCantBeEmpty() );  
+    }
+    
+    // DisplayName can't be empty
+    if ( not feedback.CheckHard( not displayName.TrimBoth() = "" ) )
+    {
+      feedback.AddHard( Translations::Kpi_MetaData_DisplayNameCantBeEmpty() );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

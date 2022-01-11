@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCostSequenceViolation (CombiLeg prevcombileg, Boolean onlycheckhard) as Real
+{
+  TextBody:
+  [*
+    // yifei Aug-11-2021 (created)
+    //check the transition violation between last operation of prevcombileg and first operation of current combileg
+    // if onlycheckhard is true,  that means if returned cost > 0.0,  then it's not allowed
+    // if onlycheckhard is false, then this method really return the cost of violation any transtion rule, and it will be used in set covering goal to be minimized
+    value := 0.0;
+    
+    if( not isnull( this.FirstOperation() ) and not isnull( prevcombileg.LastOperation() ) )
+    {
+      value := this.GetCostSequenceViolation( prevcombileg, prevcombileg.LastOperation().Operation_SC(), this.FirstOperation().Operation_SC(), true );
+    }
+    
+    return value;
+  *]
+}

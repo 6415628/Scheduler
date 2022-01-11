@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCumulativeRulesForProgramType (ProgramTypeConfiguration programtype, Operation_SC previousoperation) declarative remote as owning Rules
+{
+  Description: 'Get all cumulative rules for the program type'
+  TextBody:
+  [*
+    // Get all cumulative rules for the program type
+    rules := construct( Rules );
+    
+    // Get all the rules related to program type scope
+    rules := selectset( programtype, RuleScopeInProgramType.Rule, rule,
+                        this.Operation_SC().CheckIsCumulativeRuleApplicable( rule )
+                        and this.Operation_SC().CheckIsRuleApplicable( rule, previousoperation, rule.CharacteristicMain() ) );  
+    
+    return &rules;
+  *]
+}

@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetDeltas (NamedValue old, NamedValue new, NamedValueTree path_nvt, 
+  NamedValue path) remote as Boolean
+{
+  TextBody:
+  [*
+    old_children := selectsortedset( old.Children(), Elements, elem, true, elem.Name() );
+    
+    result := false;
+    if( LibOpt_Utility::IsSettingsNode( old ) )
+    {
+      result := old.GetValue().AsQUILL() <> new.GetValue().AsQUILL()
+      if( result )
+      {
+        path.SetValue( new.GetValue() );
+      }
+    }
+    else
+    {
+      new_children := selectsortedset( new.Children(), Elements, elem, true, elem.Name() );
+      for( i := 0; i < old_children.Size(); i++ )
+      {
+        path_new := path.AddChild( path_nvt.GetHandle( old_children.Element( i ).Name() ) );
+        keep := LibOpt_BT_TrackingTableBase::GetDeltas( old_children.Element( i ), new_children.Element( i ), path_nvt, path_new );
+        if( not keep )
+        {
+          path_new.Delete( true );
+        }
+        result := result or keep;
+      }
+    }
+    
+    return result;
+  *]
+}

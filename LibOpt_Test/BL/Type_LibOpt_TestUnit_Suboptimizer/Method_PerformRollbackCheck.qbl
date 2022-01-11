@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method PerformRollbackCheck (LibOpt_Run run, Boolean level0_ismin, Boolean level1_ismin)
+{
+  TextBody:
+  [*
+    subopt := run.Component( relnew, LibOpt_MyMPSuboptimizer, Name := 'Suboptimizer' )
+    kpi_provider := subopt.RollbackKPI( relnew, LibOpt_RollbackKPIStatic );
+    kpi_provider.SetKPI( 0, 0.0, level0_ismin );
+    kpi_provider.SetKPI( 1, 0.0, level1_ismin );
+    
+    level0_ismax := not level0_ismin
+    level1_ismax := not level1_ismin
+    
+    this->DoRollbackTest( run, subopt, "0 0",  "0 0",  0 );
+    
+    this->DoRollbackTest( run, subopt, "0 0", "-1 0",  ifexpr( level0_ismin, 0, 1 ) );
+    this->DoRollbackTest( run, subopt, "0 0",  "1 0",  ifexpr( level0_ismax, 0, 1 ) );
+    
+    this->DoRollbackTest( run, subopt, "0 0", "0 -1",  ifexpr( level1_ismin, 0, 1 ) );
+    this->DoRollbackTest( run, subopt, "0 0", "0 1",   ifexpr( level1_ismax, 0, 1 ) );
+    
+    this->DoRollbackTest( run, subopt, "0 0", "-1 1",  ifexpr( level0_ismin, 0, 1 ) );
+    this->DoRollbackTest( run, subopt, "0 0", "-1 -1", ifexpr( level0_ismin, 0, 1 ) );
+    
+    this->DoRollbackTest( run, subopt, "0 0",  "1 1",  ifexpr( level0_ismax, 0, 1 ) );
+    this->DoRollbackTest( run, subopt, "0 0",  "1 -1", ifexpr( level0_ismax, 0, 1 ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

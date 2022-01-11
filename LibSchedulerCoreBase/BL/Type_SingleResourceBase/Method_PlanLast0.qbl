@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanLast (SingleTaskBases tasks)
+{
+  Description: 'Move all single tasks to last'
+  TextBody:
+  [*
+    tasks := selectsortedset( tasks, Elements, task, true, task.SequenceNr() );
+    operations := selectset( tasks, Elements.OperationAsSingleTask, op, true );
+    Operation_SC::SetIsPlanning( operations, true );
+    
+    traverse( tasks, Elements, task )
+    {
+      single_op := task.OperationAsSingleTask();
+          
+      if( this.IsPlanRelatedOperations() )
+      {
+        Schedule::PlanRelatedOperationsBefore( single_op, this, null( SingleTaskBase ), true, false );
+      }
+      
+      this.PlanLast( task.GetOperation() );
+    }
+    
+    this.Schedule().AutomaticProductBasedMaterialReservationBySorting();
+    Operation_SC::SetIsPlanning( operations, false );
+  *]
+}

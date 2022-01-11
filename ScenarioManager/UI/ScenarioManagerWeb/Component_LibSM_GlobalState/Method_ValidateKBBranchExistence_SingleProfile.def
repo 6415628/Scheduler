@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValidateKBBranchExistence_SingleProfile (LibSM_KnowledgeProfile knowledgeProfile) id:Method_LibSM_GlobalState_ValidateKBBranchExistence_SingleProfile
+{
+  #keys: '[136402.0.1246515137]'
+  Body:
+  [*
+    // This is called after other branch is selected
+    
+    editor := CKBEditor::Create();
+    kbids := editor.GetKBs();
+    
+    branches := construct( LibSM_KnowledgeBaseBranchInProfiles );
+    messageStrings := construct( Strings );
+    
+    traverse( knowledgeProfile, KnowledgeBaseBranchInProfile, branch )
+    {
+      message := '';
+      kbid := select( kbids, Elements, kbid, kbid.Name() = branch.KBDefinitionName() );
+      kbinfos := editor.GetKBStructure( kbid );
+    
+      kbfullid := select( kbinfos, Elements.KBFullID, k,
+                          k.Branch().ToUpper() = branch.KBBranchName().ToUpper()
+                          and k.Version() = branch.KBBranchVersion() );
+    
+      if( isnull( kbfullid ) )
+      {
+          message := Translations::LibSM_KnowledgeProfile_Branch_DoesNotExists( branch.KBBranchName(),
+                                                                                branch.KBBranchVersion(),
+                                                                                branch.KBDefinitionName() );
+      }
+    
+      branches.Add( branch );
+      messageStrings.Add( message );
+    }
+    scenarioManager := this.GetScenarioManagerDataset();
+    scenarioManager.SetKnowledgeBranchErrorMessageValue( branches, messageStrings );
+  *]
+}

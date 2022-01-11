@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test005_Settings_Meta (Schedule schedule)
+{
+  Description: 'Imports the default optimizer settings for Meta, changes them, tests the import/export function and then exports the original settings. Asserts that all imported settings are the same as the exported ones.'
+  TextBody:
+  [*
+    // jog2 Nov-12-2020 (created)
+    
+    metasettings := select( schedule, Optimization.Optimizer.astype( OptimizerSequencing ).Settings.astype( SettingsSequencing ).Meta, meta, true );
+    
+    // Store the current Meta settings
+    originalsettings := construct( SettingsSequencingMetaForSequencing );
+    originalsettings.UTF_StoreSettings( metasettings );
+    
+    // Change the Meta settings
+    metasettings.UTF_ChangeSettings();
+    
+    // Store them for comparison
+    storedsettings := construct( SettingsSequencingMetaForSequencing );
+    storedsettings.UTF_StoreSettings( metasettings );
+    
+    // Export the changed settings
+    schedule.ExportObject().ExportOptimizerSettingsSequencingToDataFolder();
+    
+    // Change it again
+    metasettings.UTF_ChangeSettings();
+    
+    // Import the previous changed settings
+    schedule.ImportAndSynchronizeOptimizerSettingsSequencing();
+    
+    // Check to see if the imported settings are the same as the stored ones
+    this.Run().AssertTrue( this.CheckMetaSettings( metasettings, storedsettings ), 'The imported values for the Meta settings are different from the current ones.' );
+    
+    // Reset the values to the original
+    metasettings.UTF_StoreSettings( originalsettings );
+    schedule.ExportObject().ExportOptimizerSettingsSequencingToDataFolder();
+  *]
+}

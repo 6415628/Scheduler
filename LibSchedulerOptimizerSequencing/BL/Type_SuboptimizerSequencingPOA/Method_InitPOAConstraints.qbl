@@ -1,0 +1,61 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOAConstraints (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata)
+{
+  Description: 'Add the constraints of the sequencing POA'
+  TextBody:
+  [*
+    schedule := this.GetSchedule();
+    
+    // allowed nodes on paths:
+    this.InitPOAConstraintsNodeAllowed( poa, transientdata );
+    
+    // all TransitionAllowed rules
+    this.InitPOAConstraintTransitionAllowed( poa, transientdata );
+    
+    // operation earliest start
+    this.InitPOAConstraintEarliestStart( poa, transientdata );
+    
+    //operation latest end
+    this.InitPOAConstraintLatestEnd( poa, transientdata );
+    
+    //Add the EndConstraints associated to the order due date and the suggested due dates
+    this.InitPOAConstraintOrderDueDate( poa, transientdata );
+    
+    // if the makespan KPI is active, create a constraint to minimize the makespan:
+    if( this.Settings().IsRespectMakespanKPI() )
+    {
+      this.InitPOAConstraintMakespan( poa, transientdata );
+      // Also add a dependency constraint to have the makespan end node be really after all operation nodes:
+      this.InitPOAConstraintMakespanDependency( poa, transientdata );
+    }
+    
+    //Add the 'sum completion time' constraint
+    if( guard( this.Strategy().MRS_KPIUseConstraintSumCompletionTime(), true ) )
+    {
+      this.InitPOAConstraintSumCompletionTime( poa, transientdata );
+    }
+    
+    // Add the predecence relations between the operations that are linked through an operation material
+    this.InitPOAConstraintPrecedenceOperationMaterial( poa, transientdata );
+    
+    // Add the dependency between span operations with out of scope operations in between
+    this.InitPOAConstraintDependencySmallSpan( poa, transientdata );
+    
+    // Add the constraint that ensures that POA only plans allowed resource connection
+    if( schedule.TechnicalConfiguration().IsResourceConnectionEnabled() )
+    {
+      this.InitPOAConstraintResourceConnectionsAllowed( poa, transientdata );
+    }
+    
+    // Add the NoBufferWait constraint if a resource with NoBufferWait subtasks is in scope
+    if( exists( transientdata, ResourceGroup.ResourceGroup.SubTaskTypeOnResourceGroup, subtasktype, 
+                subtasktype.SubTaskName() = Constants::SubTask_NoBufferWait_Name() ) )
+    {
+      this.InitPOAConstraintNoBufferWait( poa, transientdata );
+    }
+    
+    // The model can be extended in the following method
+    this.InitPOAConstraintsCustom( poa, transientdata );
+  *]
+}

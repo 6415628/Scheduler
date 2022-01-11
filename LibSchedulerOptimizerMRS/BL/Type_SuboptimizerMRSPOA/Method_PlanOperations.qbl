@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanOperations (SuboptimizerMRSPOA_POAOneResourceGroup poa, LibOpt_Task task)
+{
+  Description: 'Plan the solution of poa back to the model'
+  TextBody:
+  [*
+    // mbr23, 2019-08-27 (cerated): combination of legacy methods CreateElementsToPlan, POAPlanElements, OptimizerPlanOperation::PlanAtEnd
+    
+    // Disable FSPL while planning. It is set back at the end of the method.
+    schedule := this.GetSchedule();
+    legacyoptimizer := schedule.Optimizer();
+    requirefspl := legacyoptimizer.IsOptimizerRequireNoFSPL();
+    legacyoptimizer.IsOptimizerRequireNoFSPL( true );
+    
+    i := 0; // counter for debug statements
+    timeexpr := poa.Expression( SuboptimizerMRSPOA::NamePOATimeExpression() );
+    
+    traverse( task.Scope().ResourceGroups(), Elements.Resource_SC.astype( SingleResourceBase ), resource )
+    {
+      pathtype  := poa.PathType( SuboptimizerMRSPOA::POANamePathResource( resource ), resource );
+      solutionpaths := poa.Solution().PathType( pathtype );
+      debuginfo( "Resource:", resource.Name() );
+      traverse( solutionpaths, Paths, path )
+      {
+        ptime := path.Expression( timeexpr );
+    
+        traverse( ptime, Nodes, ntime )
+        {
+          debuginfo( "Node:", ntime.Node().Role() );
+          planelement := poa.AsOperation_SC( ntime.Node(), this );
+          if( not isnull( planelement ) 
+              and ( not ( planelement.IsPlanned() and planelement.IsFrozenInSchedule() ) ) )
+          {
+            printinfo :=  NumberToString::StandardConverter().Convert( i )
+                          + " Plan:"
+                          + planelement.OperationID()
+                          + " On: "
+                          + resource.Name();
+            //Plan the operation at the end of the resource
+            if( not planelement.HasFeedback() )
+            {
+              operations := construct( Operation_SCs );
+              operations.Add( planelement );
+              resource.PlanLast( operations );
+            }
+            debuginfo( printinfo );
+            i := i + 1;
+          }
+        }
+      }
+    }
+    
+    // Set back FSPL flag after planning. FSPL is disabled at the start of the method.
+    legacyoptimizer.IsOptimizerRequireNoFSPL( requirefspl );
+  *]
+}

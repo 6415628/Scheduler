@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllResourceTestVariants (output Strings conditionTypes, output Booleans conditionValues, output Booleans operationAttributeValues, 
+  output Booleans hasNoViolateConstraints) as owning Strings
+{
+  Description: 'Return resource specific variants.'
+  TextBody:
+  [*
+    variants := construct( Strings );
+        
+    allConditionTypes := construct( Strings );
+    allConditionTypes.Add( RuleConstant::Characteristic_OperationNeedsEdgeTrimming() );
+    allConditionTypes.Add( RuleConstant::Characteristic_OperationNeedsOil() );
+    
+    traverse( allConditionTypes, Elements, ct )
+    {
+      // Scenario 1: Test with rule condition = true while operation attribute = true
+      variants.Add( 'Test with resource rule condition "' + ct + '" = true while operation attribute = true ( No Constraint )' );
+      conditionTypes.Add( ct );
+      conditionValues.Add( true );
+      operationAttributeValues.Add( true );
+      hasNoViolateConstraints.Add( false );
+      
+      // Scenario 2: Test with rule condition - needs edge trimming = false while operation attribute = false
+      variants.Add( 'Test with resource rule condition "' + ct + '" = false while operation attribute = false ( No Constraint )' );
+      conditionTypes.Add( ct );
+      conditionValues.Add( false );
+      operationAttributeValues.Add( false );
+      hasNoViolateConstraints.Add( false );
+      
+      // Scenario 3: Test with rule condition - needs edge trimming = true while operation attribute = false
+      variants.Add( 'Test with resource rule condition "' + ct + '" = true while operation attribute = false ( Constraint )' );
+      conditionTypes.Add( ct );
+      conditionValues.Add( true );
+      operationAttributeValues.Add( false );
+      hasNoViolateConstraints.Add( true );
+      
+      // Scenario 4: Test with rule condition - needs edge trimming = false while operation attribute = true
+      variants.Add( 'Test with resource rule condition "' + ct + '" = false while operation attribute = true ( Constraint )' );
+      conditionTypes.Add( ct );
+      conditionValues.Add( false );
+      operationAttributeValues.Add( true );
+      hasNoViolateConstraints.Add( true );
+    }
+    
+    return &variants;
+  *]
+}

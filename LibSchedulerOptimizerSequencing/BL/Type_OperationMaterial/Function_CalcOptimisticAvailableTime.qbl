@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcOptimisticAvailableTime
+{
+  TextBody:
+  [*
+    // mbr23 Jan-23-2020 (created), logic taken from CalcAvailableTime
+    
+    value := DateTime::MinDateTime();
+    
+    fulfillment_time := DateTime::MinDateTime();
+    operation_end := DateTime::MinDateTime();
+    
+    if( this.HasFromOperation() )
+    {
+      operation_end := this.GetOptimisticInputOperationEnd();
+    }
+    
+    if( this.HasFulfillment() and this.Fulfillment().IsActive() ) // fulfillment quantity is zero during automatic material reservation, we don't want the existing reservation to affect Operation.Start
+    {
+      fulfillment_time := this.MaterialAvailableTime();
+    }
+    
+    total_offset_duration := Duration::Zero();
+    if( this.HasFromOperation() and this.FromOperation().IsPlanned() )
+    {
+      total_offset_duration := this.TotalOffsetDuration();
+    }
+    else
+    {
+      total_offset_duration := this.OptimisticTotalOffsetDuration();
+    }
+    value := maxvalue( fulfillment_time + total_offset_duration, operation_end + total_offset_duration );
+    
+    this.OptimisticAvailableTime( value );
+  *]
+}

@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_Shutdown (CDSchedule cdschedule)
+{
+  Description: 'Restore relations for shutdown core data to planning object'
+  TextBody:
+  [*
+    // Restore Shutdown
+    traverse( cdschedule, CDEntity.astype( CDShutdown ), cdShutdown )
+    {
+      shutdown := Shutdown::FindShutdown( cdShutdown.ShutdownID() );
+      
+      if( not isnull( shutdown ) )
+      {
+        shutdowntype := ShutdownType::FindShutdownType( cdShutdown.ShutdownTypeID() );
+        shutdown.ShutdownType( relset, shutdowntype );
+        
+        // UserFeedbackShutdownType, M-1
+        userfeedbackshutdowntype := ShutdownType::FindShutdownType( cdShutdown.UserFeedbackShutdownTypeID() );
+        shutdown.UserFeedbackShutdownType( relset, userfeedbackshutdowntype );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

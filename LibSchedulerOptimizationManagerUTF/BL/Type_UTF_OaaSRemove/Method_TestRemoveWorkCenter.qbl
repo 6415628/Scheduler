@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRemoveWorkCenter (Schedule schedule)
+{
+  Description: 'Test removing work centers (resource groups) based on mock 3DSpace JSON data.'
+  TextBody:
+  [*
+    workCentersArray := this.GetJSONRemove_WorkCentersArray().Build();
+    
+    for( i := 0; i < workCentersArray.Size(); i++ )
+    {
+      workCenterID := workCentersArray.Get( i ).GetString();
+      
+      isWorkCenterRemoved := not exists( schedule, 
+                                         ResourceGroup_SC, 
+                                         resourceGroup,
+                                         resourceGroup.Name() = workCenterID
+                                         // CanBeDeleted checks if all resources under this resource group have tasks
+                                         and resourceGroup.CanBeDeleted() );
+      
+      this.Run().AssertTrue( isWorkCenterRemoved,
+                             Translations::LibSchedulerOptMgrUTF_ResourceGroup_NotRemoved( workCenterID ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

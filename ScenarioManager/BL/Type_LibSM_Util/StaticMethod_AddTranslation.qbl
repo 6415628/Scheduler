@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod AddTranslation (Strings translationElements)
+{
+  TextBody:
+  [*
+    /* Add translation (as in the argument translationElements) into model
+    1. translationElements is in format <Identifier>|<translation text>|[<argumentName#argumentDataType>\*]
+    2. So, tokenize the argument accordingly and add them into model
+    */
+    identifier    := translationElements.Element( 0 );
+    text          := translationElements.Element( 1 );
+    argumentLines := translationElements.Element( 2 );
+    
+    def := select( DomainModel::Domain()
+                 , ModeledInfoMessageDefinitions.InfoMessageDefinitions
+                 , def
+                 , def.Identifier() = identifier
+                 );
+    
+    if( isnull( def ) )
+    {
+      def := DomainModel::Domain().ModeledInfoMessageDefinitions().NewDefinition();
+      def.Identifier( identifier.TrimBoth() );
+    
+      if( argumentLines.Length() > 0 )
+      {
+        argumentSets := argumentLines.Tokenize( LibSM_Util::GetTranslationSeparator_2() );
+    
+        traverse( argumentSets, Elements, set )
+        {
+          argEntries := set.Tokenize( LibSM_Util::GetTranslationSeparator_3() );
+    
+          argName := argEntries.Element( 0 );
+          argTypeString := argEntries.Element( 1 );
+    
+          type := Model::Domain().FindType( argTypeString );
+          def.AddArgumentDefinition( type, argName, false, false );
+        }
+      }
+    }
+    
+    def.DefaultText( text.TrimBoth().ReplaceAll( LibSM_Util::GetNewLine(), String::NewLine() ) );
+  *]
+}

@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddOperationToBatch (Operation_SCs batchoperations)
+{
+  Description: 'Add operations to batch'
+  TextBody:
+  [*
+    resource  := null( BatchResource );
+    batchtask := this.BatchTask();
+    
+    //Get the resource in which the batch is planned so that we can use it to check the resource allowed scheduling rules.
+    if( not isnull( batchtask ) )
+    {
+      resource := batchtask.Resource_SC().astype( BatchResource );
+    }
+    
+    if( not isnull( resource ) )
+    {
+      //Get the existing operations in this batch
+      operationsinbatch := selectset( this, BatchSequenceElement.Operation_SC, bo, true, true );
+      allowedoperations := construct( Operation_SCs );
+    
+      //Loop through the given batch operations and add the allowed ones into the group of allowedoperations
+      traverse( batchoperations, Elements, batchoperation )
+      {
+        //To perform checking, we need to combine the existing operations in batch, the group of allowedoperations and the batch operation that we are currently evaluating
+        operations := operationsinbatch.Union( allowedoperations );
+        operations.Add( batchoperation );
+    
+        feedback      := '';
+        isallowedhard := true;
+    
+        //Check whether the operations can replan, are compatible in a batch and allowed to be scheduled in the resource.
+        value := Operation_SC::CanReplan( operations, false, feedback, isallowedhard )
+                 and Operation_SC::AllowedInBatch( operations, resource, false, feedback, isallowedhard )
+                 and resource.AllowedScheduling( operations, resource.Last(), null( Task_SC ), false, feedback, isallowedhard );
+        
+        if( value )
+        {
+          //Batch operation is allowed. So add it into the group of allowedoperations.
+          allowedoperations.Add ( batchoperation );
+          //Remove this batch operation from the structured list so that the calling method will continue
+          //planning only the remaining unplanned operations
+          batchoperations.Remove( batchoperation );
+        }
+      }
+    
+      //Finally, add the group of allowedoperations to this batch
+      this.AddOperations( allowedoperations );
+    }
+  *]
+}

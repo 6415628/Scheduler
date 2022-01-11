@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcEarliestEnd
+{
+  Description: "Computes the NoBufferActionInputSubTask's EarliestEnd based on latest upstream operation's EarliestStart."
+  TextBody:
+  [*
+    batchtask := guard( this.Task_SC().astype( BatchTask ), null( BatchTask ) );
+    earliestend := this.EarliestStart();
+    
+    if( not isnull( batchtask ) )
+    {
+      earliestend := max( batchtask.Batch().GetOperations(), Elements, o, true, o.EarliestStart() );
+    }
+    
+    earliestend := maxvalue( earliestend, this.EarliestStart() );
+    this.EarliestEnd( earliestend );
+  *]
+}

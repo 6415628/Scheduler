@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcPenaltyForPreferenceRuleViolation
+{
+  TextBody:
+  [*
+    
+    value := 0.0;
+    
+    // Only calculate penalty
+    // 1. The low priority rules are invalid
+    // 2. Operation does not have feedback
+    // 3. Operation not finished
+    // 4. Operation is planned
+    if( not this.IsAllLowPriorityRulesValid()
+        and not this.Operation_SC().HasFeedback()
+        and not this.Operation_SC().Finished()
+        and this.Operation_SC().IsPlanned() )
+    {
+      resource := this.Operation_SC().Task_SC().Resource_SC();
+      value := this.Operation_SC().GetPenaltyForPreferenceRuleViolation( resource, 
+                                                                         this.Characteristic(), 
+                                                                         this.GetRuleDataObject() );
+    }
+    
+    this.PenaltyForPreferenceRuleViolation( value );
+  *]
+}

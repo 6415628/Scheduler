@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValidateCumulativeProgramPhaseRulesForPrecondition (Operation_SC operation) declarative remote as Boolean
+{
+  Description: 'Validate cumulative program phase rules for precondition checking'
+  TextBody:
+  [*
+    // Validate cumulative program phase rules for constraint checking
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    lasttaskinprogram := guard( this.LastInProgramPhase(), null( TaskInProgramSet ) );
+    
+    if( not isnull( lasttaskinprogram ) )
+    {
+      // Get all the rules related to program phase scope ( not transition program phase rules )
+      ruleswithprogramphasescope := selectset( this.ProgramPhaseConfiguration(), RuleScopeInProgramPhase.Rule, rule,
+                                               rule.NeedManualPreconditionCheck()
+                                               and rule.RuleSubType().IsCumulativeValueNeeded()
+                                               and not rule.IsProgramPhaseTransitionRule()
+                                               and rule.IsEnabled()
+                                               );
+      
+      traverse( ruleswithprogramphasescope, Elements, rule )
+      {
+        additionalvalue := ifexpr( not isnull( operation )
+                                   and not exists( operation, Task_SC.TaskInProgramSet.ProgramPhase, phase, phase = this ),
+                                   operation.GetCharacteristicAdditionalRealValue( rule.CharacteristicMain(), 
+                                                                                   lasttaskinprogram.Task_SC().Resource_SC() ),
+                                   0.0 );
+                          
+        // Construct rule data object
+        dosequencingrule := lasttaskinprogram.GetRuleDataObjectForConstraintPrecondition( rule.CharacteristicMain(), true, additionalvalue );
+        rule.RuleSubType().Validate( rule, dosequencingrule );
+      }  
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

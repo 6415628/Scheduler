@@ -1,0 +1,67 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ImportExcel (KpiTracker owner, BinaryValue excel)
+{
+  TextBody:
+  [*
+    tbgh    := TableGroupHandle::Create( 'tablegroup' );
+    tbgh     := XLS::LoadTableGroupFromBinaryData( excel.AsBinaryData(), tbgh, true, true );
+    
+    for( n := 0; n < tbgh.TableNames().Size(); n++ )
+    {
+      tablename := tbgh.TableNames().Element( n );
+      tbh       := tbgh.Table( tablename );
+      
+      xml       := TableHandle::ExportXML( tbh );
+      impl      := XMLDOMImplementation::Create();
+      xmlDoc    := impl.CreateDocumentFromString( xml );
+      
+      xmlTable  := xmlDoc.GetElementByTagName( 'table', 0 );
+      xmlColumns:= xmlTable.GetElementsByTagName( 'column' );
+      
+      if( xmlColumns.Size() > 0 )
+      {
+        rowsize := xmlColumns.Element( 0 ).GetElementsByTagName( 'cell' ).Size();
+        
+        for( i := 0; i < rowsize; i++ )
+        {
+          snapshot := construct( KpiSnapshotData );    
+          toString := StringToDateTime::ISOConverter(); 
+          toReal   := StringToReal::ISOConverter();
+          traverse( xmlColumns, Elements, xcol )
+          {
+            if(  xcol.GetElementByTagName( 'cell', i ).HasAttribute( 'value' ) )
+            {
+              name  := xcol.GetElementByTagName( 'name', 0 ).TextContent().TrimBoth();
+              value := xcol.GetElementByTagName( 'cell', i ).GetAttribute( 'value' ).TextContent().TrimBoth();
+              
+              if( name.StartsWith( "PlanDateTime" ) )
+              {
+                snapshot.PlanDateTime( toString.Convert( value ) );
+              }
+              else if( name.StartsWith ( "ServerDateTime" )   )
+              {
+                snapshot.ServerDateTime( toString.Convert( value ) );
+              }
+              else if( name.StartsWith( "RetentionPolicyID" ) )
+              {
+                snapshot.RetentionPolicyIdentification( value );
+              }
+              else if( name.StartsWith( "label" ) )
+              {
+                name := name.ReplaceAll( "label_", "" );
+                snapshot.CreateLabel( name, value );
+              }
+              else if( name.StartsWith( "kpi" ) )
+              {
+                name := name.ReplaceAll( "kpi_", "" );
+                snapshot.CreateValue( name, toReal.Convert( value ) );
+              }
+            }
+          }
+          owner.SnapshotStorage().StoreSnapshot( snapshot );
+        }
+      }
+    }
+  *]
+}

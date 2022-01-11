@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidYield (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if imported object has valid yield.'
+  TextBody:
+  [*
+    isvalid := ifexpr( this.Schedule().IsOptimizationService(),
+                       true,
+                       this.Yield() > 0 );
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedRoutingStep_Instance( name ),
+                                                               Translations::SC_ImportedRoutingStep_ViolateHasValidYield() ) );
+    }
+    
+    return isvalid;
+  *]
+}

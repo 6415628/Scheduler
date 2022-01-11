@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcProcessDuration
+{
+  Description: 'Calculate the process duration of batch. This should be implemented by QS for each specialization of batchresource'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // Gets the maximum ProcessDuration of BatchSequenceElements
+    
+    batch := this.Batch();
+    resource :=  this.BatchResource();
+    
+    value := max( batch,
+                  BatchSequenceElement.Operation_SC.OperationOnResource,
+                  oor,
+                  oor.Resource_SC() = resource,
+                  oor.ProcessDuration() );
+    
+    // To avoid negative duration when the relation is null
+    value := maxvalue( value, Duration::Zero() );
+    
+    this.ProcessDuration( value );
+  *]
+}

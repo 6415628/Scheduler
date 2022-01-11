@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeCalendar (LibCal_Calendar calendar_i, Boolean doDelete_i, Boolean keepIfNotImported_i)
+{
+  TextBody:
+  [*
+    LibCal_Util::Info( "Synchronize " + calendar_i.CalendarID() + ", #StagingCalendars = " + [String]this.StagingCalendar( relsize ) );
+    
+    // See if the imported data contains a staging object of calendar_i.
+    stagingCalendar := select( this, StagingCalendar, stagCal, true,
+                               stagCal.CalendarType()      = calendar_i.CalendarType() and
+                               stagCal.StagingCalendarID() = calendar_i.CalendarID() );
+    if( isnull( stagingCalendar ) )
+    {
+      // If there is only one staging object (which is from a different calendar),
+      // import its events and participations in calendar_i.
+      if( this.StagingCalendar( relsize ) = 1 )
+      {
+        stagingCalendar := selectobject( this, StagingCalendar, stagCal, true, true );
+      }
+    }
+    
+    if( not isnull( stagingCalendar ) )
+    {
+      LibCal_Util::Info( "Importing data from calendar " + stagingCalendar.CalendarType() + "." + stagingCalendar.StagingCalendarID() );
+      calendar_i.SynchronizeFrom( stagingCalendar, doDelete_i, keepIfNotImported_i );
+    }
+    else
+    {
+      calendarName := calendar_i.CalendarType() + "." + calendar_i.CalendarID();
+      LibCal_Util::Warning( "Imported data contains multiple calendars, but not calendar " + calendarName + String::NewLine() +
+                            "Make sure that the import file contains data of " + calendarName + ", or of only ONE other calendar." );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

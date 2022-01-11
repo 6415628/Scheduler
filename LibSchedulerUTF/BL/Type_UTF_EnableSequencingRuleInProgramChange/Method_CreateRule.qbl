@@ -1,0 +1,63 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateRule (Schedule schedule, String ruleScope, String ruleSubtype, 
+  String characteristic, ProgramSetConfiguration programSetConfig) as Rule
+{
+  TextBody:
+  [*
+    rule := Rule::Create( schedule, schedule.GetLastRuleID() );
+    rule.Name( 'UTF Rule' );
+    
+    // Set rule type/ rule subtype based on variant
+    subtype := select( schedule, RuleType.RuleSubType, rst, rst.Name() = ruleSubtype );
+    rule.RuleType( relset, subtype.RuleType() );
+    rule.RuleSubType( relset, subtype );
+    
+    // Create characteristic main based on variant
+    characteristicMain := select( schedule, Characteristic, char, char.ID() = characteristic );
+    rule.CharacteristicMain( relset, characteristicMain );
+    
+    // Enable rule 
+    rule.IsEnabled( true );
+    
+    // Set rule scope based on variant
+    rule.RuleScopeSelected( ruleScope );
+    
+    if( ruleScope = RuleConstant::RuleScope_Program() )
+    {
+      // Create rule scope in program type
+      programTypeConfig := select( programSetConfig, ProgramTypeConfiguration, ptc, true );
+      RuleScopeInProgramType::Create( rule, programTypeConfig );
+    }
+    else if( ruleScope = RuleConstant::RuleScope_AllTasksOnResource() )
+    {
+      resource := select( schedule, ResourceGroup_SC.Resource_SC, res, true );
+      rsir := RuleScopeInResource::Create( rule );
+      rsir.Resource_SC( relset, resource );
+    }
+    else if( ruleScope = RuleConstant::RuleScope_Shutdown() )
+    {
+      shutdowntype := select( schedule, ShutdownType, st, true );
+      rsist := RuleScopeInShutdownType::Create( rule );
+      rsist.ShutdownType( relset, shutdowntype );
+      rule.RuleScopeShutdownAggregateThreshold( 4 );
+      characteristicshutdownscope := select( schedule, Characteristic, char, char.ID() = RuleConstant::Characteristic_NumberOfTasks() );
+      rule.CharacteristicScope( relset, characteristicshutdownscope ); 
+    }
+    
+    if( ruleSubtype = RuleConstant::RuleSubType_NotAllowedJumpValue() )
+    {
+      // Create and assign rule changeover value
+      rule.RuleChangeOver( relnew,
+                           From := 'SH',
+                           To := 'CO' ); 
+    }
+    else if( ruleSubtype = RuleConstant::RuleSubType_NotAllowedValue() )
+    {
+      // Create and assign rule changeover value
+      rule.RuleValueStrings( relnew, Value := 'CO' );
+    }
+    
+    return rule;
+  *]
+}

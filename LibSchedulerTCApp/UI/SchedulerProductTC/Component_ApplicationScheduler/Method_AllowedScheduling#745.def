@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedScheduling (Resource_SC resource, structured[CampaignTask] campaigntasks, Boolean skipsoftcheck, 
+  Boolean ctrlshiftkey, Task_SC beforetask, Task_SC aftertask, 
+  String identifier, output String feedback_o, output Boolean isallowedhard_o) as Boolean id:Method_ApplicationScheduler_AllowedScheduling_745
+{
+  #keys: '[139424.2.588331631]'
+  Body:
+  [*
+    // Precondition for dragging and dropping CampaignTasks onto Task
+    value := CampaignTask::CanReplan( campaigntasks, feedback_o );
+    
+    if( value )
+    {
+      campaignTasksToReplan := selectset( campaigntasks, Elements, campaigntask, campaigntask.CanReplan() );
+      tasks := selectset( campaignTasksToReplan, Elements.OperationCampaign.Task_SC, t, true );
+      
+      if( resource.istype( SingleResourceBase ) )
+      {
+        value := ApplicationScheduler.AllowedScheduling( resource.astype( SingleResourceBase ),
+                                                         tasks,
+                                                         skipsoftcheck,
+                                                         ctrlshiftkey,
+                                                         beforetask,
+                                                         aftertask,
+                                                         identifier,
+                                                         feedback_o,
+                                                         isallowedhard_o );
+      }
+      else
+      {
+        value := ApplicationScheduler.AllowedScheduling( resource.astype( BatchResource ),
+                                                         tasks,
+                                                         skipsoftcheck,
+                                                         ctrlshiftkey,
+                                                         beforetask,
+                                                         aftertask,
+                                                         identifier,
+                                                         feedback_o,
+                                                         isallowedhard_o );
+      }
+    }
+    
+    return value;
+  *]
+}

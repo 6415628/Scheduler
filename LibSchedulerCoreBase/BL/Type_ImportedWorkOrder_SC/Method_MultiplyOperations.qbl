@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method MultiplyOperations (ImportedWorkOrderOperations importedwoo, Number multiplynr)
+{
+  Description: 'Synchronization method to be used in data multiplication of work order operations for multiplied work orders.'
+  TextBody:
+  [*
+    // woi1 Apr-28-2017 (created)
+    // ONLY FOR DEVELOPMENT PURPOSES ONLY
+    // ONLY USED WITH DATA MULTIPLIER ONLY
+    traverse( importedwoo, Elements, row, row.IsValidDataHard() )
+    {
+      multiplied_woo := ImportedWorkOrderOperation::FindImportedWorkOrderOperation_SC( this.Id(), row.SequenceNr() );
+      
+      if( isnull( multiplied_woo ) )
+      {
+        multiplied_woo := ImportedExternalWorkOrderOperation::Create( this.Schedule(), this.Id(), row.SequenceNr() );
+      }
+      
+      multiplied_woo.Update( row, multiplynr );
+      multiplied_woo.OriginalOperation( relset, row );
+      
+      // get imported objects
+      importedWorkOrderDemand := selectset( row, ImportedWorkOrderDemand, iwod, iwod.IsValidDataHard() );
+      importedWorkOrderSupply := selectset( row, ImportedWorkOrderSupply, iwos, iwos.IsValidDataHard() );
+      importedWorkOrderOutputMaterial := selectset( row, ImportedWorkOrderOutputMaterial, iwom, iwom.IsValidDataHard() );
+      importedWorkOrderInputMaterial := selectset( row, ImportedWorkOrderInputMaterial, iwim, iwim.IsValidDataHard() );
+    
+      // multiply work order demands, supplies, input and output materials
+      multiplied_woo.MultiplyDemand( importedWorkOrderDemand );
+      multiplied_woo.MultipleSupply( importedWorkOrderSupply );
+      multiplied_woo.MultiplyInputMaterial( importedWorkOrderInputMaterial );
+      multiplied_woo.MultiplyOutputMaterial( importedWorkOrderOutputMaterial ); 
+    }
+  *]
+}

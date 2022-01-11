@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRuleCheckOnRuleScope (Schedule schedule)
+{
+  Description: 'Test shutdown rule scope in rule'
+  TextBody:
+  [*
+    // Get variant attribute
+    isvariantfound := false;
+    isBeforeShutdown := false;
+    measure := ''
+    threshold := 0.0;
+    isTask1Valid := false;
+    isTask2Valid := false;
+    isTask3Valid := false;
+    isTask4Valid := false;
+    
+    this.GetTestVariantForPlannedShutdown( isvariantfound,
+                                           isBeforeShutdown,
+                                           measure,
+                                           threshold,
+                                           isTask1Valid,
+                                           isTask2Valid,
+                                           isTask3Valid,
+                                           isTask4Valid );
+    
+    value := true;
+    
+    // Only do checking when variant found
+    if( isvariantfound )
+    {
+      // Gantt chart
+      // | Task1 | Task2 | Shutdown Task | Task3 | Task4 |
+      
+      // Propogate declarative attribute
+      Transaction::Transaction().Propagate( attribute( Task_SC, TaskID ) );
+      task1 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'operation1' );
+      task2 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'operation2' );
+      task3 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'operation3' );
+      task4 := select( schedule, Operation_SC.Task_SC, t, t.TaskID() = 'operation4' );
+      
+      value := isTask1Valid = ( task1.IsAllHighPriorityRulesOK() and task1.IsAllLowPriorityRulesOK() )
+               and isTask2Valid = ( task2.IsAllHighPriorityRulesOK() and task2.IsAllLowPriorityRulesOK() )
+               and isTask3Valid = ( task3.IsAllHighPriorityRulesOK() and task3.IsAllLowPriorityRulesOK() )
+               and isTask4Valid = ( task4.IsAllHighPriorityRulesOK() and task4.IsAllLowPriorityRulesOK() )
+    }      
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Test shutdown rule scope failed.', 
+                           this.Variant() ) );
+  *]
+}

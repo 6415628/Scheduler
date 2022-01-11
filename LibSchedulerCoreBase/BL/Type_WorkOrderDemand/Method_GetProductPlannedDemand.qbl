@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetProductPlannedDemand (Operation_SC operation) as ProductPlannedDemand
+{
+  TextBody:
+  [*
+    schedule   := this.WorkOrderOperation().WorkOrder().Schedule();
+    demandtype := this.GetProductPlannedDemandType();
+    
+    // Find product planned demand
+    demandid             := this.GetProductPlannedDemandId( operation.OperationID() );
+    productplanneddemand := ProductPlannedDemand::FindProductPlannedDemand( demandtype, demandid );
+    
+    // If non-matching DemandID, see whether existing demand already linked to this WorkOrderDemand during work order replacement
+    // Assume only 1 created ProductPlannedDemand per Operation that is linked to same WorkOrderDemand
+    if( isnull( productplanneddemand ) )
+    {
+      productplanneddemand := minselect( operation, 
+                                         PlannedDemand.astype( ProductPlannedDemand ), 
+                                         plannedDemand, 
+                                         plannedDemand.WorkOrderDemand() = this,
+                                         plannedDemand.DemandID() );
+    }
+    
+    // If not, create new ProductPlannedDemand
+    if( isnull( productplanneddemand ) )
+    {
+      productplanneddemand := schedule.CreateDemand( demandtype, demandid ).astype( ProductPlannedDemand );
+    }
+    
+    productplanneddemand.Update( this, operation );
+    
+    return productplanneddemand;
+  *]
+}

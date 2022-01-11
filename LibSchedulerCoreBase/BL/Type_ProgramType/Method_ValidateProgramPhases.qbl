@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValidateProgramPhases () declarative remote as Boolean
+{
+  Description: 'Validate program phases in this program whether aligned with phase configuration'
+  TextBody:
+  [*
+    // Validate program phases in this program whether aligned with phase configuration
+    programphasehastasks := selectset( this, ProgramPhase, phase,
+                                       phase.HasTasks() );
+    
+    lastreportedprogramphase := guard( this.FeedbackProgramType().LastFeedbackProgramPhase().ProgramPhaseConfiguration().SequenceNr(), 
+                                       guard( this.FeedbackProgramType().ArchivedPhaseSequenceNr(), -1 ) );
+    
+    // Get phase configuration which sequence number is <= current program last phase number
+    phaseconfiguration := selectset( this, ProgramTypeConfiguration.ProgramPhaseConfiguration, phase,
+                                     phase.SequenceNr() > lastreportedprogramphase
+                                     and guard( phase.SequenceNr() <= this.LastTaskInProgramSet().ProgramPhase().SequenceNr(), false ) );
+    
+    return programphasehastasks.Size() >= phaseconfiguration.Size();
+  *]
+}

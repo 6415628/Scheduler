@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Remove (DemandInBatches demandinbatches)
+{
+  Description: 'Removes demands from batch.'
+  TextBody:
+  [*
+    removabledemandinbatches  := selectset( demandinbatches, Elements, dib, dib.RemoveAllowed() );
+    demandbatches             := selectset(  removabledemandinbatches, Elements.DemandBatch, db, true );
+    
+    traverse( removabledemandinbatches, Elements, dib )
+    {
+      dib.Remove();
+    }
+    
+    // Call synchronize for demand batch when there is element being removed
+    traverse( demandbatches, Elements, demandbatch )
+    {
+      demandbatch.Synchronize();
+    }
+  *]
+}

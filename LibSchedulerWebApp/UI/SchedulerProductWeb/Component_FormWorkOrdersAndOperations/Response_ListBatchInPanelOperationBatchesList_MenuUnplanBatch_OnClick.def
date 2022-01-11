@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: ListBatchInPanelOperationBatchesList
+Response OnClick (structured[Batch] selection) id:Response_ListBatchInPanelOperationBatchesList_MenuUnplanBatch_OnClick
+{
+  #keys: '[154390.0.427042460]'
+  CanBindMultiple: false
+  DefinitionID => //ListBatches/Responsedef_ListBatches_WebMenu_OnClick
+  GroupServerCalls: true
+  Initiator: 'MenuUnplanBatch'
+  Precondition:
+  [*
+    return Scheduler.AllowedUnplanBatches( selection, feedback );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Unplan selected batches
+      
+      feedback_o := '';
+      tasks := selectset( selection, Elements.BatchTask, task, true );
+      hasNoSoftViolation := Task_SC::CanUnplanSoft( tasks, feedback_o );
+      
+      if ( Scheduler.ConstructWarningMessageBoxOverrideSoft( hasNoSoftViolation, feedback_o ) )
+      {
+        Batch::UnplanBatches( Schedule, selection );
+      }
+    *]
+  }
+}

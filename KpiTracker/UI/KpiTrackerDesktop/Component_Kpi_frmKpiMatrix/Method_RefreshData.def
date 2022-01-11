@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method RefreshData () id:Method_SC_frmScenarioCompare_RefreshData
+{
+  #keys: '[136398.1.957240028]'
+  Accessibility: 'Extensible'
+  Body:
+  [*
+    // Queries the KPI Tracker for the KPI compare data
+    compareLabel := selKpiCompareLabel.Data();
+    compareLabels := selectset( dhSelectedCompareLabelValues.Data(), Elements, val, 
+                                val.Label() = compareLabel );
+    
+    fixedLabels := selectset( dhSelectedFilterLabelValues.Data(), Elements, val, 
+                              val.Label() <> compareLabel );
+    
+    
+    data := KpiTracker.SnapshotRetrieval().GetLastSnapshotsForCompareLabelWithLabelFilterNvt( compareLabels, fixedLabels );
+    
+    set := Kpi_GlobalState.ConvertNvtToShadowSnapshotSetData( data );
+    Kpi_GlobalState.PropagateLabel( set, compareLabel.Name() );
+    Kpi_GlobalState.PropagateTimeStamp( set, rbgTimeType.BoundValue() );
+                            
+    // Set relations
+    traverse( set, SnapshotData.Value, v ) 
+    {
+      v.UI_CompareLabel( relset, select( compareLabels, Elements, s, s.Value() = v.UI_LabelValue() ) );
+      v.UI_Kpi( relset, select( KpiTracker, MetaData, k, k.Name() = v.Name() ) );
+    }  
+     
+    dhSnapshotData.Data( &set );
+  *]
+  UseInheritedAccessibility: false
+}

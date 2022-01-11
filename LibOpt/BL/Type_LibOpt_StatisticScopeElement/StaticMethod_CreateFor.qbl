@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateFor (LibOpt_Run run)
+{
+  Description: 'Create `LibOpt_StatisticScopeElements` for the given "run" (`LibOpt_Run`).'
+  TextBody:
+  [*
+    scopeelements_run := construct( LibOpt_ScopeElements );
+    
+    // Detailed information about scope elements is only available when `DebugScope` is enabled.
+    if( run.DebugScope() )
+    {
+      // Get all `LibOpt_ScopeElements` that have been used in the `LibOpt_Run`.
+      scopeelements_run := selectset( run, Scope.astype( LibOpt_ScopeFat ).ScopeElementOnScope.ScopeElement, se, true );
+    }
+    
+    traverse( run.Suboptimizers(), Elements, suboptimizer )
+    {
+      // Create `LibOpt_StatisticScopeElements` for the `LibOpt_Suboptimizer`.
+      LibOpt_Statistic::Create( run, typeof( LibOpt_StatisticScopeElementInput ), suboptimizer );
+      LibOpt_Statistic::Create( run, typeof( LibOpt_StatisticScopeElementRollback ), suboptimizer );
+      LibOpt_Statistic::Create( run, typeof( LibOpt_StatisticScopeElementNoImprovement ), suboptimizer );
+      
+      if( run.DebugScope() )
+      {
+        // Create `LibOpt_SuboptimizerScopeElements` for the `LibOpt_Suboptimizer`.
+        LibOpt_StatisticScopeElement::CreateSuboptimizerScopeElements( suboptimizer, scopeelements_run );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

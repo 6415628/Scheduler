@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method EnterFeedback (internal[GUIComponent] parent, String status, ExportedSingleTask exportedtask) id:Method_DialogFeedbackTask_EnterFeedback
+{
+  #keys: '[12910.0.604529007]'
+  Body:
+  [*
+    this.Title( status );
+    this.Data( exportedtask );
+    
+    this.InitDialog( status );
+    this.CalculateStartTime( status );
+    
+    if( this.DoModal( parent ) > 0 )
+    {
+      if( status = Constants::StatusStart() )
+      {
+        ImportedFeedbackTask::ReportStart( exportedtask, Schedule, GUIDateTimeSelector.DateTime(), ReportedResourceSelection.Data(), '', EditorDesc.Text());
+      }
+      else if( status = Constants::StatusAborted() )
+      {
+        ImportedFeedbackTask::ReportAborted( exportedtask, Schedule, GUIDateTimeSelector.DateTime(), ReportedResourceSelection.Data(), '', EditorDesc.Text()  );
+      }
+      else if( status = Constants::StatusCancelled() )
+      {
+        ImportedFeedbackTask::ReportCancel( exportedtask, Schedule, GUIDateTimeSelector.DateTime(), ReportedResourceSelection.Data(), '', EditorDesc.Text() );
+      }
+      else
+      {
+        ImportedFeedbackTask::ReportEnd( exportedtask, Schedule, GUIDateTimeSelector.DateTime(), ReportedResourceSelection.Data(), '', EditorDesc.Text() );
+      }
+    }
+  *]
+}

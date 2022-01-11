@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupStockElementDemand (const ProductInStockingPointStock productInStockingPointStock)
+{
+  Description: 'Backup stock element demand core data'
+  TextBody:
+  [*
+    // Backup stock element demand
+    traverse( productInStockingPointStock, ScheduleStockElement.astype( StockElementDemand ), stockelementdemand )
+    {
+      cdStockElementDemand := this.CDEntity( relnew, CDStockElementDemand );
+      CopyCorresponding::CopyFrom( stockelementdemand ).CopyTo( cdStockElementDemand );
+      
+      // Persist the relation to product in stocking point stock
+      cdStockElementDemand.ProductID( productInStockingPointStock.ProductID() );
+      cdStockElementDemand.StockingPointID( productInStockingPointStock.StockingPointID() );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

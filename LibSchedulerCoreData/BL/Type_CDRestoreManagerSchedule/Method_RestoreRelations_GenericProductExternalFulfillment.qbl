@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericProductExternalFulfillment (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic product external fulfillment core data attributes to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdSchedule, CDEntity.astype( CDGenericProductExternalFulfillment ), cdGenericProductExternalFulfillment )
+    {
+      genericProductExternalFulfillment := select( schedule, Demand.Fulfillment.astype( GenericProductExternalFulfillment ), genericProductExternalFulfillment, 
+                                                   genericProductExternalFulfillment.DemandId() = cdGenericProductExternalFulfillment.DemandId()
+                                                   and genericProductExternalFulfillment.Demand().DemandType() = cdGenericProductExternalFulfillment.DemandType()
+                                                   and genericProductExternalFulfillment.SupplyId() = cdGenericProductExternalFulfillment.SupplyId()
+                                                   and genericProductExternalFulfillment.BackupSupplyType() = cdGenericProductExternalFulfillment.SupplyType() 
+                                                  );
+                                                    
+      if( not isnull( genericProductExternalFulfillment ) )
+      { 
+        // ImportedFixedFulfillment, M-1 
+        importedFixedFulfillment := select( schedule, ImportedFulfillment.astype( ImportedFixedFulfillment ), iff, iff.BackupImportedID() = cdGenericProductExternalFulfillment.ImportedFixedFulfillmentBackupID() );
+        genericProductExternalFulfillment.ImportedFixedFulfillment( relset, importedFixedFulfillment );     
+                                                                                                                                       
+        // ProductSupply, M-1
+        productsupply := select( schedule, Supply.astype( ProductSupply ), ps,
+                                 ps.SupplyID() = cdGenericProductExternalFulfillment.SupplyId()
+                                 and ps.SupplyType() = cdGenericProductExternalFulfillment.SupplyType() );
+                                                
+        genericProductExternalFulfillment.ProductSupply( relset, productsupply );                               
+        genericProductExternalFulfillment.Supply( relset, productsupply );
+        
+        // OperationMaterial, 1-1
+        operationMaterial := select( schedule, PlanUnit_SC.OperationMaterial, operationMaterial, 
+                                     operationMaterial.OperationMaterialID() = cdGenericProductExternalFulfillment.OperationMaterialID() );
+        genericProductExternalFulfillment.OperationMaterial( relset, operationMaterial );                                 
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

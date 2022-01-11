@@ -1,0 +1,61 @@
+Quintiq file version 2.0
+#parent: #root
+Method Migrate
+{
+  Description:
+  [*
+    After an update of the library, we sometimes want to change the data. For example when we created a new attribute, or moved a relation.
+    This method allows us to make these changes.
+    
+    This method is automatically called after the dataset is loaded.
+  *]
+  TextBody:
+  [*
+    traverse( this, RunSequence.RunSequenceElement, elem,
+              not isnull( elem.BTS() )
+              and elem.StartedOn().IsInfinite()
+              and elem.FinishedOn().IsInfinite() )
+    {
+      elem.StartedOn( elem.BTS().StartedOn() );
+      elem.FinishedOn( elem.BTS().FinishedOn() );
+    }
+    
+    // Update the dataset backup location to an absolute path
+    if( this.DatasetBackupPathNeedsMigration() )
+    {
+      qfs := LibOpt_BT_BTS::BasePathQFS() + '/' + this.DatasetBackupLocationDEPRECATED()
+      path := FileSystems::QFSPathToHardwarePath( qfs );
+      this.DatasetBackupPathDEPRECATED( path );
+      this.DatasetBackupPathValid( LibOpt_BT_BenchmarkTrackingDataset::CheckPath( path ) );
+      this.DatasetBackupPathNeedsMigration( false );
+    
+      traverse( this, BTS, bts )
+      {
+        files := OS::ScanDirectory( path + '/' + bts.DatasetName(), '\.qdataset$' );
+        
+        if( files.Size() = 1 )
+        {
+          // Move the existing datasets one directory up
+          file := files.Element( 0 );
+          full_dir_name := OS::GetFullDirectoryName( file );
+          new_file := file.SubString( 0, full_dir_name.Length() ) + '/../' + file.SubString( full_dir_name.Length(), file.Length() - full_dir_name.Length() );
+          OS::RenameFile( file, new_file );
+          
+          // Store the MDSID
+          mdsid_start := file.FindString( '[', 0 );
+          while( file.FindString( '[', mdsid_start + 1 ) <> -1 )
+          {
+            mdsid_start := file.FindString( '[', mdsid_start + 1 );
+          }
+          mdsid_end := file.FindString( ']', mdsid_start );
+          
+          mdsid_string := file.SubString( mdsid_start, mdsid_end - mdsid_start + 1 );
+          mdsid := StringToKey::ISOConverter().Convert( mdsid_string );
+          
+          bts.DatasetMDSID( mdsid );
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

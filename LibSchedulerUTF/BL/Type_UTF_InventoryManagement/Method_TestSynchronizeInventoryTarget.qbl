@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestSynchronizeInventoryTarget (Schedule schedule)
+{
+  Description: 'Test method that executes the unit test for synchronizing inventory target.'
+  TextBody:
+  [*
+    variant := this.Variant();
+    testInstance := this.GetTestInstance( variant );
+    
+    // Propagates everything necessary for the sanity checks of imported inventory target
+    Transaction::Transaction().PropagateAll( typeof( ImportedInventoryTarget ) );
+    
+    syncObject := schedule.SynchronizationObject();
+    syncObject.SynchronizeProducts();
+    syncObject.SynchronizeInventoryTargets();
+    
+    importedInventoryTarget := select( schedule, 
+                                       ImportedInventoryTarget, 
+                                       importedInventoryTarget, 
+                                       importedInventoryTarget.ProductID() = variant
+                                       and importedInventoryTarget.StockingPointID() = variant
+                                       and importedInventoryTarget.TargetDate() = schedule.Time() );
+    
+    inventoryTarget := guard( importedInventoryTarget.InventoryTarget(), null( InventoryTarget ) );
+    
+    isPassSanityCheck := guard( importedInventoryTarget.IsValidData(), false );
+    isSync := not isnull( inventoryTarget );
+    
+    this.Run().AssertTrue( testInstance.IsPassSanityCheck() = isPassSanityCheck, UTFUtility::GenerateFailedMessage( 'Sanity check for ImportedInventory Target failed', '' ) );
+    this.Run().AssertTrue( testInstance.IsSync() = isSync, UTFUtility::GenerateFailedMessage( 'Synchronization of InventoryTarget failed', '' ) );
+  *]
+}

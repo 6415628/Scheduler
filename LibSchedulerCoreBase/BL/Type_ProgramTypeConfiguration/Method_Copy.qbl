@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method Copy (ProgramSetConfiguration newprogramsetdefinition, String newprogramtypeid, String name, 
+  String colorcode, Boolean isprogramtypechangesettingsoverruled, Boolean isprogramtypechangeallowedoverruled, 
+  Duration programtypechangedurationoverruled) as ProgramTypeConfiguration
+{
+  Description: 'Copy program type configuration into new program type configuration'
+  TextBody:
+  [*
+    // Copy program type configuration into new program type configuration
+    newprogramtype := ProgramTypeConfiguration::Create( newprogramsetdefinition,
+                                                        newprogramtypeid );
+    newprogramtype.Update( name, colorcode, isprogramtypechangesettingsoverruled, isprogramtypechangeallowedoverruled, programtypechangedurationoverruled );
+    
+    // Copy all program phases                                    
+    traverse( this, ProgramPhaseConfiguration, programphase )
+    {
+      newprogramphase := ProgramPhaseConfiguration::Create( newprogramtype, programphase.ProgramPhaseConfigurationID() );
+      newprogramphase.ShallowCopyFrom( programphase );
+    }
+    
+    return newprogramtype;
+  *]
+}

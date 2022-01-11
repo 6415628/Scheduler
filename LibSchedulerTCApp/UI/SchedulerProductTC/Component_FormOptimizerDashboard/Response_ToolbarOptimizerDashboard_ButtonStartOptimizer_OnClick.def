@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: ToolbarOptimizerDashboard/ButtonStartOptimizer
+Response OnClick () id:Response_ToolbarOptimizerDashboard_ButtonStartOptimizer_OnClick
+{
+  #keys: '[133088.0.2054053889]'
+  Body:
+  [*
+    if( not [Boolean]ValueHolderIsOptimizing.Value() )
+    {
+      ApplicationScheduler.OptimizeSelectedOperations();
+    }
+    else
+    {
+      ApplicationScheduler.StopOptimizer( LabelSelectedOptimizerName.Text() );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIButtonBase_OnClick'
+  Precondition:
+  [*
+    // Check if system contains batch and is optimizer enabled.
+    allowed := [Boolean]ValueHolderIsOptimizing.Value();
+    
+    // Checks if schedule exists
+    if( not allowed and not isnull( Schedule ) )
+    {
+      allowed := Schedule.AllowedOptimize( feedback )
+                 and ApplicationScheduler.IsOptimizerScopeValid( feedback ); // Check if there is at least one relevant operation selected.
+    }
+    
+    return allowed;
+  *]
+}

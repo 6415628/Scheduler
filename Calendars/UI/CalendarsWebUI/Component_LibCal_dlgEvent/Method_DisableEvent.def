@@ -1,0 +1,86 @@
+Quintiq file version 2.0
+#parent: #root
+Method DisableEvent () id:Method_LibCal_dlgEvent_DisableEvent
+{
+  #keys: '[131092.0.2141068193]'
+  Body:
+  [*
+    // Disable the event-related controls if applicable, enable them otherwise.
+    sEvent         := dhEvent.Data();
+    sParticipation := dhLeadingParticipation.Data();
+    isInitiator    := sEvent.Calendar() = sParticipation.Calendar();
+    isRecurring    := not isnull( sParticipation.RecurrencePeriod() );
+    
+    // Only the initiator can change the Event.
+    // ToDo: can be simplyfied, because the dialog is not used anymore for non-initiators (e.g. subscribers).
+    feedback := ifexpr( not isInitiator, Translations::Event_CanOnlyBeChangedByInitiator( sEvent.Initiator() ), "" );
+    
+    if( feedback <> "" )
+    {
+      edtName                 .Enabled( false, feedback );
+      rbgEventType            .Enabled( false, feedback );
+      rbgEventTypeWithCapacity.Enabled( false, feedback );
+      ckbApplyToNewResources  .Enabled( false, feedback );
+      durStartTimeOfDay       .Enabled( false, feedback );
+      durEndTimeOfDay         .Enabled( false, feedback );
+      ckbIsAllDay             .Enabled( false, feedback );
+      
+      btnSubtractDay.Enabled( false, feedback );
+      btnAddDay     .Enabled( false, feedback );
+    
+      if( isRecurring )
+      {
+        this.DisablePattern( feedback );
+      }
+    
+      // Only the initiator can change the participants.
+      /* ToDo: find another way
+      btnSelectAll   .Enabled( false, feedback );
+      btnDeselectAll .Enabled( false, feedback ); 
+      lstParticipants.Enabled( isInitiator );
+      */
+    }
+    else
+    {   
+      edtName                 .Enabled( true, "" );
+      rbgEventType            .Enabled( true, "" );
+      rbgEventTypeWithCapacity.Enabled( true, "" );
+      
+      this.ShowAllDay();
+      
+      btnSubtractDay.Enabled( true, "" );
+      btnAddDay     .Enabled( true, "" );
+    
+      if( isRecurring )
+      {
+        this.EnablePattern();
+      }
+    }
+    
+    // Dates can only be changed if there is no recurrence, and only by the initiator.
+    if( isRecurring )
+    {
+      feedback := Translations::Event_IsRecurring();
+      dsStartDate.Enabled( false, feedback );
+      dsEndDate  .Enabled( false, feedback );
+    }
+    else if( not isInitiator )
+    {
+      feedback := Translations::Event_CanOnlyBeChangedByInitiator( dhEvent.Data().Initiator() );
+      dsStartDate.Enabled( false, feedback );
+      dsEndDate  .Enabled( false, feedback );
+    }
+    else
+    {
+      dsStartDate.Enabled( true, "" );
+      dsEndDate  .Enabled( true, "" );
+    }
+    
+    /* Not possible (yet?) in WebClient
+    // Also show duration as disabled when everything else is disabled.
+    color := ifexpr( isInitiator or not isRecurring, Color::Black(), Color::Gray() );
+    lblDuration         .TextColor( color );
+    lblDurationRecurring.TextColor( color );
+    lblOneDay           .TextColor( color );
+  *]
+}

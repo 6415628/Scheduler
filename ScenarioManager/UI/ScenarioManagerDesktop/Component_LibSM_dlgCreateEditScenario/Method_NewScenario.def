@@ -1,0 +1,82 @@
+Quintiq file version 2.0
+#parent: #root
+Method NewScenario (GUIComponent parent, LibSM_ScenarioFolder scenarioFolder, Boolean enableAutoCreate) as LibSM_Scenario id:Method_LibSM_dlgCreateEditScenario_NewScenario
+{
+  #keys: '[11122.0.37341038]'
+  Body:
+  [*
+    // New scenario
+    scenario := null( LibSM_Scenario );
+    
+    // Set the default knowledge profile
+    this.SetDefaultKnowledgeProfile();
+    
+    // Show/Hide Timezone ID selection if running in timezone mode
+    panel := LibSM_GlobalState;
+    scenarioManagerMDS := panel.GetScenarioManagerMDS();
+    isTimezoneIDSelectionEnabled := true;
+    this.ShowHideTimezoneUI( scenarioManagerMDS.TimezoneID(), isTimezoneIDSelectionEnabled );
+    
+    result := this.DoModal( parent );
+    
+    if( result > 0 )
+    {
+      scenarioManager      := LibSM_GlobalState.GetScenarioManagerDataset();  
+      knowledgeProfile     := selKnowledgeProfile.Data();
+      
+      //Add metadata to structured type
+      metadatas := construct( structured[LibSM_MetaData] );
+      this.SaveScenarioMetaData( metadatas );
+     
+      scenario := scenarioManager.CreateScenario( scenarioFolder,
+                                                  edtScenarioName.Text(),
+                                                  edtComment.Text(),
+                                                  ckbCannotDelete.Checked(),
+                                                  sselStorageState.BoundValue(),
+                                                  '',
+                                                  knowledgeProfile,
+                                                  metadatas,
+                                                  selTimezoneID.BoundValue() );
+    
+      panel.SelectKB( scenario );
+    
+      // Refresh the DataHolder that contains the ObjectInfo-data.
+      panel.dhObjectInfo().Data( ExternalMDSEditor::Editor().ObjectInfos() );
+      
+      
+      isSelected := panel.SelectScenario( scenario );
+      
+      
+      if( isSelected )
+      {
+        /* Is important to set active dataset on this dialog.
+           Without setting it, the auto import will import data to the previous scenario instead of the new one.
+           This happened because some propagation in Quintiq is not yet done while we trigger the import data method.    
+        */
+        panel.SelectScenario( scenario, this );
+        
+        // To make sure the data holders in Application toolbar are also refreshed (if any)
+        panel.SelectScenarioInScenarioForm( scenario );
+        
+        
+        // After auto selecting of scenario, we will check whether to auto import or not.
+        if( ckbAutoCreateData.Checked() )
+        {
+          try
+          {
+            LibSM_ModelExtensions::CreateDataAfterScenarioCreation( scenario.Dataset().DatasetMDSID() );
+            Application.RemoveHistory();
+          }
+          onerror
+          {
+            MessageBox::Information( this, "Error while import data" + e.GeneralInformation(), "&OK" );
+          }
+        }
+      }        
+      
+      
+    }
+    
+    return scenario;
+  *]
+}

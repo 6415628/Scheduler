@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method DeleteDatasetCopies (LibOpt_TestDataset dataset, Stream str)
+{
+  Description:
+  [*
+    This method deletes any datasets whose name starts with `dataset.MDSLibOpt_TestDataset().Name()`. The `dataset.MDSLibOpt_TestDataset()` dataset is not deleted.
+    This method should be called at the end of each unit test that creates datasets, to ensure that the dataset store doesn't fill up with datasets.
+    
+    Also, the `LibOpt_OptimizationTestDataset.Conditional()` relation is relflushed, which ensures that the `LibOpt_DatasetCopyConditional` objects are not influencing future tests.
+  *]
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    
+    timeout := Duration::Seconds( 10 );
+    
+    str->Exception()->|stream[Void]::Wait( this.MDSEditorUpdateTime() )->|dataset->( unused_inputargument )
+    {
+      dataset_mdsids := construct( Keys );
+      
+      traverse( MDSEditor::Editor().ObjectInfos(),
+                Elements,
+                objectinfo,
+                LibOpt_TestUnit_DatasetCopy::IsDatasetChildOfUnitTestDataset( objectinfo, dataset )
+                )
+      {
+        mdsid_key := objectinfo.MDSID().MDSKey();
+        dataset_mdsids.Add( mdsid_key );
+        
+        // Without this if-statement an error will appear in the server logs for each dataset that is already unloaded. 
+        // With the if-statement, a few errors might still occur, because objectinfo.IsLoaded() is true while a dataset is in the process of being unloaded. 
+        if( objectinfo.IsLoaded() )
+        {
+          MDSEditor::Editor().UnloadMDS( objectinfo.MDSID() ); 
+        }
+        MDSEditor::Editor().DeleteMDS( objectinfo.MDSID() ); 
+      } 
+      
+      // Delete all LibOpt_DatasetCopyConditional objects at the end of a run.
+      // This ensures that the next test methods on the LibOpt_TestUnit_DatasetCopy type 
+      // are not influenced by the LibOpt_DatasetCopyConditional objects that were created during the current test method.
+      dataset.Optimization().Conditional( relflush );
+      
+      // Wait for all dataset copies to be deleted
+      return this->WaitForDatasetCopyDeletion( dataset_mdsids, timeout );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

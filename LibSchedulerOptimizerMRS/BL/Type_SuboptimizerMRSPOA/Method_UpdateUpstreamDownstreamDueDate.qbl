@@ -1,0 +1,83 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateUpstreamDownstreamDueDate (OperationInSuboptimizers operations, LibOpt_Task task)
+{
+  Description:
+  [*
+    Calculates the given operations' EarliestStart and LatestEnd for the POA to use.
+    
+    Precondition: the given operations must only be unplanned operations or planned on one of the resource groups in scope of the given task.
+    Invariant: sequence of operations on resources
+  *]
+  TextBody:
+  [*
+    // mbr23 2019-09; copied from stn4 Mar-18-2016 and adopted to LibOpt
+    
+    // check precondition. If it is not met, the invariant will not hold.
+    assert( forall( operations,
+                    Elements,
+                    opins,
+                    not opins.Operation_SC().IsPlanned()
+                    or task.Scope().Contains( opins.Operation_SC().PlannedResourceGroup().ScopeElementResourceGroup() ) ) );
+    
+    schedule := this.GetSchedule();
+    
+    // create a temporary snapshot of the current plan s.t. we can undo our changes:
+    temporary_snapshot := construct( ScheduleMRSForSnapshotMRS ); // no real snapshot needed, just a transient ScheduleMRS.
+    // only need to save the in-scope resourcce groups plans, because these will be planned back below:
+    traverse( task.Scope().ResourceGroups(), Elements, resourcegroup )
+    {
+      temporary_snapshot.SaveSolution( schedule, resourcegroup );
+    }
+    
+    debuginfo( "temporarily unplan all the exclusively-single operations in scope of the current suboptimizer execution" )
+    ops := selectset( operations, Elements.Operation_SC, op, op.IsExclusiveSingle(),
+                      // The operation is in scope and not locked for the optimizer
+                      guard( not op.ScopeElementOperation().OnRun( task.Run() ).IsLocked(), false ) );
+    
+    schedule.UnplanOperations( ops );
+    
+    latestoperations := construct( Operation_SCs );
+    traverse( task.Scope().ResourceGroups(), Elements.Resource_SC.astype( SingleResourceBase ), resource )
+    {
+      latestoperation := task.Scope().GetLastLockedSingleOperation( resource );
+      if( not isnull( latestoperation ) )
+      {
+        latestoperations.Add( latestoperation );
+      }
+    }
+    
+    // propagate to update the end time of the downstream/upstream operation
+    Transaction::Transaction().Propagate();
+    
+    planelementssorted := selectsortedset( latestoperations.Union( selectset( operations, Elements.Operation_SC, op, true ) ), Elements, operation,
+                                           true,
+                                           -1 * operation.SequenceNr() );
+    
+    //traverse( planelements, Elements, planelement )
+    traverse( planelementssorted, Elements, planelement )
+    {
+      operation_in_suboptimizer := this.GetOperation( planelement );
+      operation_in_suboptimizer.UpdateEarliestStart();
+      operation_in_suboptimizer.UpdateLatestEnd();
+    }
+    
+    // plan back original state of the schedule:
+    // Dsable FSPL while replanning
+    legacyoptimizer := schedule.Optimizer();
+    requirefspl := legacyoptimizer.IsOptimizerRequireNoFSPL();
+    legacyoptimizer.IsOptimizerRequireNoFSPL( true );
+    
+    
+    traverse( task.Scope().ResourceGroups(), Elements, resourcegroup )
+    {
+      temporary_snapshot.PlanOnResourceGroup( resourcegroup, task );
+    }
+    
+    // Enable the FSPL again if it was active before
+    legacyoptimizer.IsOptimizerRequireNoFSPL( requirefspl );
+    temporary_snapshot.Delete();
+    
+    Transaction::Transaction().Propagate();
+  *]
+}

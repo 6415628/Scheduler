@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method LoadDatasetNewClient (internal[MDSObjectInfo] datasetinfo) id:Method_FormBTS_LoadDatasetNewClient
+{
+  #keys: '[145592.0.249101831]'
+  Body:
+  [*
+    if( not isnull( datasetinfo ) )
+    {
+      mdsid := datasetinfo.MDSID();   
+      if( not datasetinfo.IsLoaded() )
+      {
+        ExternalMDSEditor::Editor().LoadMDS( mdsid, MDSInterface::StandAloneStorageState() ); 
+      }
+      Process::Execute( 'cmd',
+                        '/C',
+                        '"' + OS::BinDir() + 'QThinClient.exe"',
+                        '/startup.autostart=false', // Start the client and present the login dialog.
+                        //'/startup.project='
+                        // The documentation gives the following warning:
+                        // "This element is part of internal infrastructure and must not be used in models."
+                        // We use this attribute anyway, because there don't seem to be any good workarounds.                    
+                       // + Application.ApplicationScope().Project().Name(),
+                        '/startup.selectdataset=' 
+                        + datasetinfo.Kind()
+                        + ':'
+                        + datasetinfo.Path()
+                        + '/'
+                        + datasetinfo.Name()//,
+                        // The ViewManager().CurrentView() relation is forbidden Quill (not an officially supported relation) 
+                        //"'/startup.view=" + ApplicationScope.ViewManager().CurrentView().Name() + "'" 
+                        );
+    }
+  *]
+}

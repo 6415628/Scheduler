@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method ChangeKeySetTypeMeta (String systemGUID_i, String channelName_i, String name_i, 
+  Boolean updateReferences_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Update primary key combination System-GUID, Channel-Name and name.'
+  TextBody:
+  [*
+    // Jacky CHAN May-16-2016 (created)
+    // raise error if not unique
+    duplicatedSetTypeMeta := LibDEF_SetTypeMeta::FindSetTypeMeta( this.System().DataBroker(), systemGUID_i, channelName_i,
+                                                                  name_i, this );
+    if( not isnull( duplicatedSetTypeMeta ) )
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  "Failed to update SetTypeMeta's primary key",
+                                  "LibDEF_SetTypeMeta::ChangeKeySetTypeMeta fails due to duplicated entry of LibDEF_SetTypeMeta" +
+                                  duplicatedSetTypeMeta.GetInstanceKeyAsString() );
+    }
+    
+    this.SystemGUID ( systemGUID_i );
+    this.ChannelName( channelName_i );
+    this.Name       ( name_i );
+    
+    if( updateReferences_i )
+    {
+      traverse( this, SetMeta, set )
+      {
+        set.ChangeKeySetMeta( systemGUID_i, channelName_i, name_i,  // modified keys
+                              set.Name(),                           // unchanged keys
+                              event_i );
+      }
+    }
+  *]
+}

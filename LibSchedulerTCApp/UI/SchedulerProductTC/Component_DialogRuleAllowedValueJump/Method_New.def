@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method New (internal[GUIComponent] parent, Schedule owner) as Rule id:Method_DialogRuleAllowedValueJump_New
+{
+  #keys: '[136602.0.2098151803]'
+  Body:
+  [*
+    data := owner.Rule( relshadow, RuleID := Schedule.LastRunningRuleID() + 1 );
+    // Update default values for shadow data based on rule type
+    ApplicationScheduler.UpdateNewRuleShadowData( data, RuleConstant::RuleType_AllowedValueJump() );
+    
+    Dialog.PreInitialize( data.RuleType() );
+    Dialog.Data( data );
+    Dialog.Initialize();
+    
+    //Update dialog title
+    Dialog.Title( ApplicationScheduler.GetRuleDialogTitle( data.RuleType(), false, false ) );
+    
+    if ( Dialog.DoModal( parent ) > 0 )
+    {
+      Dialog.UpdateRuleScopeData();
+      data.Commit();
+    }
+    
+    return data.WrappedInstance();
+  *]
+}

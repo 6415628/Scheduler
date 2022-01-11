@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateOptimizer (Type type)
+{
+  Description: 'Helper function to make it easier to update single `LibOpt_Optimizers` in the `UpdateOptimizers` method.'
+  TextBody:
+  [*
+    if( type.Name() <> 'LibOpt_OptimizerTest' )
+    {
+      if( type.Specializations( relsize ) > 0 )
+      {
+        traverse( type, Specializations, spec )
+        {
+          this.UpdateOptimizer( spec );
+        }
+      }
+      else 
+      {
+        type_name := type.Name();
+        optimizer := select( this, Optimizer, opt, true, opt.DefinitionName() = type_name );
+        if( isnull( optimizer ) )
+        {
+          optimizer := this.Optimizer( relnew, LibOpt_Optimizer, type_name );
+        }
+        optimizer.Update();
+        
+        traverse( optimizer, Settings, settings )
+        {
+          settings.Update();
+        }
+      }
+    }
+  *]
+}

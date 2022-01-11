@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestKPIProductivity (Schedule schedule)
+{
+  Description: 'Test KPI Productivity'
+  TextBody:
+  [*
+    isvariantfound := false;
+    isdummyworkorder := false;
+    
+    this.GetTestVariantForKPIProductivityAndProductionTime( isvariantfound,
+                                                            isdummyworkorder );
+    kpivalue := 0.0;
+    actualkpivalue := 0.0;
+    if( isvariantfound )
+    {
+      kpivalue := ifexpr( isdummyworkorder, 80.0, 100.0 );
+      actualkpivalue := schedule.KPIProductivity();  
+    }
+    
+    this.Run().AssertEqual( kpivalue, actualkpivalue,
+                            UTFUtility::GenerateFailedMessage( 'Test KPI checking Productivity failed', this.Variant() ) );
+  *]
+}

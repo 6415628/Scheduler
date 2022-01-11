@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcPOAEpoch
+{
+  TextBody:
+  [*
+    // jog2 Nov-10-2020 (created)
+    
+    schedule := this.GetSchedule();
+    scheduletime := schedule.Time();
+    
+    earliestopstart := minselect( this, Run.ScopeElementOnRun.ScopeElement.astype( ScopeElementOperation ), seo,
+                                  seo.Operation_SC().Start() < scheduletime
+                                  and seo.Operation_SC().End() > scheduletime
+                                  and seo.Operation_SC().IsPlanned(),
+                                  seo.Operation_SC().Start()
+                                );
+    
+    value := minvalue( guard( earliestopstart.Operation_SC().Start(), scheduletime ), scheduletime ); 
+    
+    this.POAEpoch( value );
+  *]
+}

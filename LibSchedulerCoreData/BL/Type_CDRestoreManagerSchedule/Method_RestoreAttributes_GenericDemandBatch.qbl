@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericDemandBatch (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic demand batch core data attributes to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdSchedule, CDEntity.astype( CDGenericDemandBatch ), cdGenericDemandBatch )
+    {
+      genericDemandBatch := GenericDemandBatch::Create( schedule, cdGenericDemandBatch.BatchID() );
+      
+      CopyCorresponding::CopyFrom( cdGenericDemandBatch ).CopyTo( genericDemandBatch );
+      
+      // Restore GenericDemandInBatch
+      this.RestoreAttributes_GenericDemandInBatch( cdSchedule, genericDemandBatch );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

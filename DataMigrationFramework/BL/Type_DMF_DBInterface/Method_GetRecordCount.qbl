@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetRecordCount (DataUpgradeIO duio_i, String table_i) as Number
+{
+  Description: 'Counts the number of records in the target table of a database'
+  TextBody:
+  [*
+    // tgn3 Apr-8-2021 (created)
+    
+    // Default to -1, which indicates something went wrong
+    recordCount := -1;
+    
+    results := construct( Strings );
+    msg     := "";
+    
+    query := "SELECT COUNT(*) FROM " + table_i;
+    
+    isSuccess := this.Execute( duio_i, query, results, msg );
+    
+    // Only handle result if query succeeded
+    // DevNote: if there are no rows in the table, a size 1 result is returned with an empty string
+    // This will get cast as 0 with [Number]. Guard is included as insurance
+    if( isSuccess )
+    {  
+      recordCount := guard( [Number]results.Element( 0 ), recordCount ); 
+    }
+    else
+    {
+      DMF_Utility::LogWarning( msg );
+    }
+    
+    // Debug - do not delete
+    //logfile( ">>> recordCount", recordCount );
+    
+    return recordCount;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

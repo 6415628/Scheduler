@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeTimePeriods
+{
+  Description: '3DSpace specific synchronization. Synchronizes time periods into calendar library equivalent events.'
+  TextBody:
+  [*
+    allInstances := selectset( this, Event, event, true );
+    updatedInstances := construct( LibCal_Events );
+    
+    traverse( this, ImportedShiftPattern.ImportedTimePeriod, importedTimePeriod )
+    {
+      eventSubject := importedTimePeriod.GetEventSubject();
+      event := this.GetEvent( eventSubject );
+      
+      if( isnull( event ) )
+      {
+        event := LibCal_Event::Create( this, eventSubject );
+      }
+      
+      event.Update( importedTimePeriod );
+      updatedInstances.Add( event );
+    }
+    
+    oldInstances := allInstances.Difference( updatedInstances );
+    LibCal_Event::Delete( oldInstances );
+  *]
+}

@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetIsPlannedOnValidResource (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if the imported feedback task was planned on the correct resource.'
+  TextBody:
+  [*
+    value := this.IsStoppageTask() 
+             or guard( this.Operation_SC().Type() = this.Resource_SC().Type(), false );
+    
+    if( not value and not isnull( feedback_o ) )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedFeedbackTask_Instance( name ),
+                                                               Translations::SC_ImportedFeedbackTask_ViolateIsPlannedOnValidResource( this.Resource() ) ) );  
+    }
+    
+    return value;
+  *]
+}

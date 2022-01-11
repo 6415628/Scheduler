@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Constraint IsStandardDeviationValid
+{
+  #keys: '2[151132.0.11701268][151132.0.11701269]'
+  ConstraintCondition:
+  [*
+    value := guard( this.Summary().StandardDeviation().IsInfinite()
+                    or this.Summary().StandardDeviation() < this.UpperThresholdForStandardDeviation(), true );
+    
+    return value;
+  *]
+  ConstraintKind: 'Soft'
+  ConstraintText:
+  [*
+    @Translations::LibOpt_Statistic_HighStandardDeviation( LibOpt_Utility::FormatRealWithDecimalPlaces( this.Summary().StandardDeviation() ),
+                                                                                                       LibOpt_Utility::FormatRealWithDecimalPlaces( this.UpperThresholdForStandardDeviation() ),
+                                                                                                       ifexpr( this.UOM() = Translations::LibOpt_UOM_NA(), '', this.UOM() )
+                                                                                                    )@
+  *]
+  Description:
+  [*
+    Whether the `LibOpt_StatisticSummary.StandardDeviation` among values collected by this `LibOpt_StatisticScopeElement` is within a reasonable range.
+    
+    The `UpperThreshold` and/or `LowerThreshold` of a `LibOpt_StatisticScopeElement` are derived using the "outlier" approach.
+    When the `LibOpt_StatisticSummary.StandardDeviation` is too large (indicating that the spread of the data points is large), it follows that the `LibOpt_StatisticSummary.IQR` is large too, which makes the "outlier" thresholds too large/small.
+    As a result, none of the values collected by this statistic would actually violate the "outlier" thresholds, and no `LibOpt_Issues` will be created..
+    The absence of issues gives a false impression that the aspect that this `LibOpt_StatisticScopeElement` focuses on does not require further attention.
+    Thus, if this constraint is fired for your statistic, then it might be worth to look into the values of this `LibOpt_StatisticScopeElement` even though no issues were created.
+  *]
+}

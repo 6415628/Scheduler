@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_050_StartFromSnapshot (LibOpt_TestDataset dataset)
+{
+  Description: 'Check that we can start a new run from a Snapshot.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    c1 := opt.ComponentFlow( run, 'C1', false );
+    c2 := opt.ComponentFlow( run, 'C2', false );
+    c1.To( c2 );
+    
+    opt.ComponentAbort( run, 'Abort' );
+    
+    this.RegisterError( run->Start()->|void->() {
+      
+      snapshot := select( c1, SnapshotComponent, s, true );
+      if( this.Run().AssertFalse( isnull( snapshot ), 'isnull( snapshot )' ) )
+      {
+        run_copy := snapshot.PrepareRun();
+        Transaction::Transaction().Propagate();
+        this.Compare_Runs( run, run_copy );
+      }
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateDuration () id:Method_LibCal_dlgEditTimeInterval_UpdateDuration
+{
+  #keys: '[131094.0.2073176582]'
+  Body:
+  [*
+    if( dsStartDate.Date().IsFinite() and
+        dsEndDate  .Date().IsFinite() )
+    {
+      timezone := TimeZone::UTCTimeZone();  // Use the UTC-timezone here, don't correct for a specific timezone.  
+      
+      // Don't use AddAsPeriod here, the 'nett' duration should be calculated here.
+      start    := dsStartDate.Date().Add( timezone, durStartTimeOfDay.Duration() );
+      end      := dsEndDate  .Date().Add( timezone, durEndTimeOfDay  .Duration() );
+      duration := end - start;
+      
+      // When the duration is one or more full days, the time should not be shown.
+      hideTime := LibCal_Event::USE_ONLY_DAYS() or
+                  ( duration.HourOfDay() = 0 and duration.MinuteOfHour() = 0 );
+      
+      mask := ifexpr( hideTime, "", "h:m" );
+      
+      if( abs( duration ) >= Duration::Days( 1 ) )
+      {
+        mask := "d 'day" + ifexpr( abs( duration ) >= Duration::Days( 2 ), "s'", "'" ) + "  " + mask;
+      }
+      
+      valDuration.Text( duration.Format( mask ) );
+    }
+  *]
+}

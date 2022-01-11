@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod SelectResource (Operation_SCs operations) declarative remote as BatchResource
+{
+  Description: 'Select all resources where this batch operation is allowed on and return batchresource'
+  TextBody:
+  [*
+    resource := null( BatchResource )
+    
+    if( operations.Size() > 0 )
+    {
+      feedback := '';
+      isallowedhard := true;
+    
+      resource := minselect( operations.Element( 0 ),
+                             OperationOnResourceGroup.ResourceGroup_SC.Resource_SC.astype( BatchResource ),
+                             res,
+                             res.AllowedScheduling( operations, res.Last(), null( Task_SC ), false, feedback, isallowedhard ),
+                             res.EarliestAvailable() );
+    
+    }
+    
+    return resource;
+    
+    
+    
+    /*
+    // TG 080514
+    
+    resource := null( BatchResource )
+    feedback := '';
+    hasReasonNotAllowedHard := false;
+    
+    if( operations.Size() > 0 )
+    {
+      resource := minselect( operations.Element( 0 ),
+                             ResourceGroup_SC.Resource_SC.astype( BatchResource ),
+                             res,
+                             res.Allowed( operations, false, false, null( Task_SC ), null( Task_SC ), feedback, hasReasonNotAllowedHard ),
+                             res.EarliestAvailable()
+                           );
+    }
+    
+    return resource;
+  *]
+}

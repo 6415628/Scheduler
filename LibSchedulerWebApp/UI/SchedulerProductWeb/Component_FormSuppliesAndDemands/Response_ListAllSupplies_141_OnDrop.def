@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: ListAllSupplies_141
+Response OnDrop (structured[Demand] source, structured[Supply] target) id:Response_100_ListAllSupplies_OnDrop
+{
+  #keys: '[143768.1.46731266]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebList_OnDrop'
+  GroupServerCalls: true
+  Precondition:
+  [*
+    isControl := actionmodifier.IsControl();
+    
+    return Scheduler.AllowedMaterialReservation( source, target, isControl, not CheckboxReserveFullQuantity.Checked(), feedback );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // OnDrop structured[Demand] --> Supply
+      Scheduler.CreateMaterialReservation( target, source, not CheckboxReserveFullQuantity.Checked() );
+    *]
+  }
+}

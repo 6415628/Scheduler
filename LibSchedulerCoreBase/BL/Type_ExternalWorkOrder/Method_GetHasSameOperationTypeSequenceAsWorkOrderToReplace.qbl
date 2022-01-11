@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetHasSameOperationTypeSequenceAsWorkOrderToReplace () declarative as Boolean
+{
+  TextBody:
+  [*
+    value := isnull( this.InternalWorkOrderToReplace() )
+    
+    if( not value )
+    {
+      externalWorkOrderPlanUnit := select( this, Order_SC.PlanUnit_SC, planUnit, true );
+      internalWorkOrderPlanUnit := select( this, InternalWorkOrderToReplace.Order_SC.PlanUnit_SC, planUnit, true );
+      externalWorkOrderOperations := selectvalues( externalWorkOrderPlanUnit, Operation_SC, operation, true, [String]operation.SequenceNr() + operation.Type() );
+      internalWorkOrderOperations := selectvalues( internalWorkOrderPlanUnit, Operation_SC, operation, true, [String]operation.SequenceNr() + operation.Type() );
+      
+      value := externalWorkOrderOperations.Size() = internalWorkOrderOperations.Size()
+               and externalWorkOrderOperations.Difference( internalWorkOrderOperations ).Size() = 0;
+    }
+    
+    return value;
+  *]
+}

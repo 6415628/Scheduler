@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateComponentsEndTimeApproximation (LibOpt_Run run, RunContextEndTimeApproximation runcontext) as LibOpt_Component
+{
+  Description:
+  [*
+    Creates the components of an MRS instance's preprocessing step, where MIPs approximate each resource group's end time and store it on the given RunContext.
+    Does not reset the run's root component. Instead, returns the root component of the created graph.
+  *]
+  TextBody:
+  [*
+    // mbr23 Sep-16-2019 (created)
+    
+    iterator := run.Component( relnew,
+                               LibOpt_IteratorUntil,
+                               Name := "EndTimeApproximation/Iterator",
+                               StopCriterion := construct( StopCriterionNumResourceGroups ) );
+    
+    selector := run.Component( relnew,
+                               LibOpt_SelectorAnchor,
+                               Name := "EndTimeApproximation/Selector",
+                               AnchorSet := construct( LibOpt_AnchorSetType, TypeName := typeof( ScopeElementResourceGroup ).Name() ),
+                               AnchorPicker := construct( LibOpt_AnchorPickerRoundRobin ),
+                               NeighborhoodCreator := construct( NeighborhoodCreatorAnchorAndOperations ) );
+    
+    suboptimizer := SuboptimizerApproximatorEndTime::Create( run, "EndTimeApproximation/MIP", runcontext );
+    
+    // plumbing:
+    iterator.To( selector );
+    selector.To( suboptimizer );
+    
+    return iterator;
+  *]
+}

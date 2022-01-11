@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnFailed (Exception ex)
+{
+  Description: 'Post fail dicv'
+  TextBody:
+  [*
+    status := DMF_Utility::ID_Failed();
+    this.UpdateStatus( status );
+    this.UpdateEnd( DateTime::Now() );
+    
+    // Similar to the runstep finished logic
+    // if the runstep fails, it means this Dataset in version also fails,
+    // which means the conversion fails at the end
+    if( status = DMF_Utility::ID_Failed() )
+    {
+      next := this.NextDatasetInConverterVersion();
+      if( not isnull( next ) )
+      {
+        next.OnFailed( ex );
+      }
+      else
+      {
+        this.Dataset().OnFailed( ex );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

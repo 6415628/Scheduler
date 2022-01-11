@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeLinkStock2WO (output Fulfillments updatedinstances)
+{
+  Description: 'Synchronizing characteristic based external fulfillments between external material and work order input material.'
+  TextBody:
+  [*
+    traverse( this, Schedule.ImportedFixedMaterialStock2WO, row, row.IsValidDataHard() )
+    {
+      externalsupply := MaterialExternalSupply::FindMaterialExternalSupply( SupplyType::MaterialExternalSupply(), row.StockMaterialId() );
+      workorderinputmaterial := WorkOrderInputMaterial::FindWorkOrderInputMaterial( row.WorkOrderInputMaterialId() );
+    
+      demands := selectsortedset( workorderinputmaterial, MaterialPlannedDemand, demand, true, demand.DueDate(), demand.Quantity(), demand.DemandID() );
+      supplies := construct( MaterialSupplys ); 
+      
+      if( not isnull( externalsupply ) )
+      {
+        supplies.Add( externalsupply );
+      }
+    
+      this.SynchronizeExternalFulfillments( demands, supplies, row, updatedinstances );
+    }
+  *]
+}

@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetRuleWarningMessage (String rulescope, Boolean isphasetransition, Boolean needprecondchecking, 
+  structured[Resource_SC] selectedresources, structured[ShutdownType] selectedshutdowntypes, structured[ProgramTypeConfiguration] selectedprogramtypes, 
+  structured[ProgramPhaseConfiguration] selectedprogramphases) as String id:Method_ApplicationScheduler_GetRuleWarningMessage
+{
+  #keys: '[136602.1.318850154]'
+  Body:
+  [*
+    warningmessages := construct( Strings );
+    
+    // Precond checking - Show or hide warning image icon based on precond checking selected for Shutdown or Program phase scope ( not transition rule ) 
+    iswarningimageshownforprecond := ( rulescope = RuleConstant::RuleScope_Shutdown() and needprecondchecking )
+                                     or ( rulescope = RuleConstant::RuleScope_ProgramPhase() and not isphasetransition and needprecondchecking );
+    
+    if( iswarningimageshownforprecond )
+    {
+      // Set the feedback message based on selected rule scope       
+      warningmessages.Add( Rule::GetPrecondUsedInShutdownAndProgramPhaseFeedbackMessage( rulescope ) );
+    }
+    
+    // Scope checking - Show or hide warning image icon based on DataHolderSelectedResources/ShutdownTypes/ProgramTypes/ProgramPhases 
+    iswarningimageshownforscope := ( rulescope = RuleConstant::RuleScope_AllTasksOnResource()
+                                     and selectedresources.Size() = 0 )
+                                     or ( rulescope = RuleConstant::RuleScope_Shutdown()
+                                          and selectedshutdowntypes.Size() = 0 )
+                                     or ( rulescope = RuleConstant::RuleScope_Program()
+                                          and selectedprogramtypes.Size() = 0 )
+                                     or ( rulescope = RuleConstant::RuleScope_ProgramPhase()
+                                          and selectedprogramphases.Size() = 0 );    
+    
+    // Set the feedback message based on selected rule scope
+    if( iswarningimageshownforscope )
+    {
+      warningmessages.Add( Rule::GetNoScopeSelectionFeedbackMessage( rulescope ) );
+    }
+    
+    return warningmessages.ToString( String::NewLine() + String::NewLine() );
+  *]
+}

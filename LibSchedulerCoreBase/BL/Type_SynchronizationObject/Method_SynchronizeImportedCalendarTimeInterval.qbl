@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeImportedCalendarTimeInterval
+{
+  Description: 'Synchronize imported calendar time interval and translate them to internal calendar time interval instances.'
+  TextBody:
+  [*
+    allTimeIntervalInstances := selectset( this, Schedule.ResourceGroup_SC.Resource_SC.ResourceCalendar.TimeIntervals, TimeInterval, true );
+    updatedTimeIntervalInstances := construct( structured_ExplicitTimeInterval );
+    
+    traverse( this, Schedule.ImportedResourceGroup_SC.ImportedResource_SC, importedResource )
+    {
+      resource := select( this, Schedule.ResourceGroup_SC.Resource_SC, resource, resource.ResourceID() = importedResource.ResourceID() );
+      
+      traverse( importedResource, ImportedCalendarTimeInterval, importedCalendarTimeInterval )
+      {
+        calendarTimeInterval := select( resource, ResourceCalendar.TimeIntervals, TimeInterval, TimeInterval.Start() = importedCalendarTimeInterval.Start()
+                                        and TimeInterval.End() = importedCalendarTimeInterval.End() 
+                                        and TimeInterval.Capacity() = importedCalendarTimeInterval.Capacity()
+                                        and TimeInterval.Comment() = importedCalendarTimeInterval.Comment() );
+        
+        if( isnull( calendarTimeInterval ) )
+        {
+          calendarTimeInterval := resource.ResourceCalendar().AddTimeInterval( importedCalendarTimeInterval.Start(), importedCalendarTimeInterval.End(), 
+                                                                               importedCalendarTimeInterval.Capacity(), importedCalendarTimeInterval.Comment() );
+        }
+        
+        updatedTimeIntervalInstances.Add( calendarTimeInterval );
+      }
+    }
+    
+    //Delete old instances
+    oldTimeIntervalInstances := allTimeIntervalInstances.Difference( updatedTimeIntervalInstances );
+    
+    traverse( oldTimeIntervalInstances, Elements, timeInterval )
+    {
+      timeInterval.Delete();
+    }
+  *]
+}

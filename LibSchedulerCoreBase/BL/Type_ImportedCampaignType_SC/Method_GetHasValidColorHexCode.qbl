@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidColorHexCode (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if imported campaign type has a valid color hex code.'
+  TextBody:
+  [*
+    // James Kwapien Jan-4-2017 (created)
+    isvalid := this.DefaultColor() = ''   // has no default color
+                or Utility_SC::IsColorHexCode( this.DefaultColor() ); // has valid hex code
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := this.Name();
+      resourcegroup := this.ResourceGroup();
+      displayindex := this.DisplayIndex();
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedCampaignType_Instance( name, resourcegroup, displayindex ),
+                                                               Translations::SC_ImportedCampaignType_ViolateHasValidColorHexCode( this.DefaultColor() ) ));
+    }
+    
+    return isvalid;
+  *]
+}

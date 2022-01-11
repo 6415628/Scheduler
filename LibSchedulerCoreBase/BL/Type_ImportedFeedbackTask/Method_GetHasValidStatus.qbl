@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidStatus (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if the imported feedback task has a valid status.'
+  TextBody:
+  [*
+    // ihe1 May-17-2017 (created)
+    isvalid := this.Status() = Constants::StatusStart() 
+        or this.Status() = Constants::StatusEnd()
+        or this.Status() = Constants::StatusAborted()
+        or this.Status() = Constants::StatusCancelled();
+    
+    if( not isvalid and not isnull(  feedback_o ) )
+    {
+        name := Schedule::GetSubstituteName( this.Name() );
+        feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedFeedbackTask_Instance( name ),
+                                                                 Translations::SC_ImportedFeedbackTask_ViolateHasValidStatus( this.Status() ) ) );  
+    }
+    
+    return isvalid;
+  *]
+}

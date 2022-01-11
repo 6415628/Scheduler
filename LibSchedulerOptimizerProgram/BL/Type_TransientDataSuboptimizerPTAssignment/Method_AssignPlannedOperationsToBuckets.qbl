@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method AssignPlannedOperationsToBuckets (LibOpt_Task task)
+{
+  Description: 'Assign all planned operations in scope to the fixed bucket that they belong to.'
+  TextBody:
+  [*
+    // jkr8 Jul-22-2021 (created)
+    
+    traverse( this, OperationInOptimizerProgram, operation, operation.Operation_SC().IsPlanned() )
+    {
+      //Select the program type the operation is scheduled on.
+      pt := select( operation, Operation_SC.Task_SC.TaskInProgramSet.ProgramType, tips, tips.ProgramSet().ProgramSetConfiguration().IsLeading() ); 
+      
+      fixedBuckets := selectset( this, Bucket, bucket, bucket.IsFixed() ); 
+    
+      //Select the bucket that has the same program type ID.
+      bucket := select( fixedBuckets, Elements, b, b.LeadingProgramType().ProgramType().ScheduledProgramID() = pt.ScheduledProgramID() );
+      
+      if( exists( bucket, OperationGroupInBucket, ogib, ogib.OperationGroup().Identifier() = operation.OperationGroup().Identifier() ) )
+      {
+        //If the operationgroupInBucket already exists, assign an extra operation to the bucket.
+        ogib := select(  bucket, OperationGroupInBucket, ogib, ogib.OperationGroup().Identifier() = operation.OperationGroup().Identifier() );
+        ogib.NumberOperationsAssigned( ogib.NumberOperationsAssigned() + 1 );  
+      }
+      else
+      {
+        //Create a new operationGroup in bucket
+        OperationGroupInBucket::Create( bucket, operation.OperationGroup() );
+      }
+    }
+  *]
+}

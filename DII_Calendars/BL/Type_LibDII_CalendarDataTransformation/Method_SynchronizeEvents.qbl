@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeEvents (LibDIO_IntegrationObjects integrationCalendars_i, String context_i, Boolean doDelete_i, 
+  Boolean keepIfNotCreatedByIntegration_i)
+{
+  Description: 'Synchronize the events of the integration calendars.'
+  TextBody:
+  [*
+    traverse( integrationCalendars_i, Elements.astype( LibCIM_CalendarBase ), integrationCalendar )
+    {
+      // Find the calendar (it should already exist).
+      calendar := this.FindCreateCalendar( integrationCalendar );
+      
+      if( not isnull( calendar ) )
+      {
+        // Synchronize the events. For a new event a LeadingParticipation will be created.
+        this.SynchronizeEvents( calendar, integrationCalendar, doDelete_i, keepIfNotCreatedByIntegration_i );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

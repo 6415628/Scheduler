@@ -1,0 +1,428 @@
+Quintiq file version 2.0
+#root
+#parent: CalendarsWebUI
+OrphanComponent LibCal_gcCalendar
+{
+  #keys: '[131094.1.535403773]'
+  BaseType: 'WebGanttChart'
+  Children:
+  [
+    #child: abpGanttChart
+    Component uciEventParticipation
+    {
+      #keys: '[131092.0.2119803472]'
+      BaseType: 'WebUserConfigurableInformation'
+      Properties:
+      [
+        ObjectType: 'LibCal_Participation'
+        Taborder: 6
+        Text: 'VALUE( object.Event().Subject() )'
+      ]
+    }
+    #child: cmNode
+    Component uciTimeInterval
+    {
+      #keys: '[131094.1.184310229]'
+      BaseType: 'WebUserConfigurableInformation'
+      Properties:
+      [
+        Identifier: 'TimeInterval'
+        ObjectType: 'LibCal_ExplicitTimeInterval'
+        Precondition: 'not object.Participation().Event().IsAlwaysAvailableEvent()'
+        Taborder: 7
+        Tooltip:
+        [*
+          <b>VALUE( object.Participation().Event().Subject() )</b>
+          FORMAT( object.Start() ; "dd D2-MM  H2:m" ) - FORMAT( object.End() ; "dd D2-MM  H2:m" )
+          VALUE( ifexpr( object.Participation().Event().Type() = LibCal_Event::TYPE_PARTIAL(), "Capacity = " + [String]object.Participation().Event().PartialCapacity(), "" ) )
+          VALUE( ifexpr( object.Participation().Event().NrOfSubscribers() > 0, "#Subscribers = " + [String]object.Participation().Event().NrOfSubscribers(), "" ) )
+          VALUE( ifexpr( object.Comment() <> "", "------", "" ) )
+          VALUE( ifexpr( object.Comment() <> "", object.Comment(), "" ) )
+        *]
+      ]
+    }
+    Component rdEventCategory
+    {
+      #keys: '[131094.1.534237237]'
+      BaseType: 'WebGanttChartRow'
+      Children:
+      [
+        Component rdEventParticipation
+        {
+          #keys: '[131094.1.535387880]'
+          BaseType: 'WebGanttChartRow'
+          Children:
+          [
+            Component ndTimeInterval
+            {
+              #keys: '[131094.1.535387881]'
+              BaseType: 'WebGanttChartNode'
+              Properties:
+              [
+                ContextMenu: 'cmNode'
+                End: 'object.End()'
+                FilterArguments: 'faCalendar:LibCal_gcCalendar.dhCalendar'
+                FixedFilter: 'object.Participation().Calendar() = faCalendar'
+                Relation: 'ExplicitTimeInterval'
+                Start: 'object.Start()'
+                Taborder: 0
+              ]
+            }
+          ]
+          Properties:
+          [
+            ContextMenu: 'cmRow'
+            FilterArguments: 'faCalendar:LibCal_gcCalendar.dhCalendar'
+            FixedFilter: 'object.Calendar() = faCalendar'
+            Relation: 'Event.Participation'
+            Sort: 'Event.Subject'
+            Taborder: 1
+          ]
+        }
+        Component deEventCategory
+        {
+          #keys: '[131094.1.534242758]'
+          BaseType: 'WebDataExtractor'
+          Properties:
+          [
+            DataType: 'structured[LibCal_EventCategory]'
+            Source: 'dhEventCategories'
+            Taborder: 0
+            Transformation: 'Elements'
+          ]
+        }
+      ]
+      Properties:
+      [
+        ContextMenu: 'cmRow'
+        Sort: 'Name'
+        Taborder: 2
+      ]
+    }
+    Component uciEventCategory
+    {
+      #keys: '[131094.1.535389179]'
+      BaseType: 'WebUserConfigurableInformation'
+      Properties:
+      [
+        Identifier: 'EventCategory'
+        ObjectType: 'LibCal_EventCategory'
+        Taborder: 5
+        Text: '<b>VALUE( object.Name() )</b>'
+      ]
+    }
+    Component dhCalendar id:dhCalendar_549
+    {
+      #keys: '[131094.1.535397048]'
+      BaseType: 'WebDataHolder'
+      Databinding: 'LibCal_Calendar'
+      Children:
+      [
+        Component deCalendarExtractor
+        {
+          #keys: '[131094.1.535397049]'
+          BaseType: 'WebDataExtractor'
+          Properties:
+          [
+            Taborder: 0
+          ]
+        }
+      ]
+      Properties:
+      [
+        Taborder: 0
+      ]
+    }
+    Component mrkStartOfCalendar
+    {
+      #keys: '[131094.1.1080753189]'
+      BaseType: 'WebMarker'
+      Children:
+      [
+        Component deStartOfCalendar
+        {
+          #keys: '[131094.1.1080753190]'
+          BaseType: 'WebDataExtractor'
+          Properties:
+          [
+            DataType: 'LibCal_CalendarRegistry'
+            Source: 'LibCal_GlobalState.dhGlobalCalendarRegistry'
+            Taborder: 0
+            Transformation: 'CommonCalendar'
+          ]
+        }
+      ]
+      Properties:
+      [
+        Color: 'Black'
+        LineStyle: 'dashed'
+        StartTime: 'object.Start()'
+        Taborder: 10
+      ]
+    }
+    Component mrkEndOfCalendar
+    {
+      #keys: '[131094.1.1080763233]'
+      BaseType: 'WebMarker'
+      Children:
+      [
+        Component deEndOfCalendar
+        {
+          #keys: '[131094.1.1080763234]'
+          BaseType: 'WebDataExtractor'
+          Properties:
+          [
+            DataType: 'LibCal_CalendarRegistry'
+            Source: 'LibCal_GlobalState.dhGlobalCalendarRegistry'
+            Taborder: 0
+            Transformation: 'CommonCalendar'
+          ]
+        }
+      ]
+      Properties:
+      [
+        Color: 'Black'
+        LineStyle: 'dashed'
+        StartTime: 'object.End()'
+        Taborder: 12
+      ]
+    }
+    Component mrkPlanningTime
+    {
+      #keys: '[131094.1.1080745144]'
+      BaseType: 'WebMarker'
+      Children:
+      [
+        Component dePlanningTime
+        {
+          #keys: '[131094.1.1080745145]'
+          BaseType: 'WebDataExtractor'
+          Properties:
+          [
+            DataType: 'LibCal_CalendarRegistry'
+            Source: 'LibCal_GlobalState.dhGlobalCalendarRegistry'
+            Taborder: 0
+          ]
+        }
+      ]
+      Properties:
+      [
+        StartTime: 'object.PlanningTime()'
+        Taborder: 11
+      ]
+    }
+    Component uciAlwaysAvailable
+    {
+      #keys: '[146730.0.1166800602]'
+      BaseType: 'WebUserConfigurableInformation'
+      Properties:
+      [
+        Identifier: 'AlwaysAvailable'
+        ObjectType: 'LibCal_ExplicitTimeInterval'
+        Precondition: 'object.Participation().Event().IsAlwaysAvailableEvent()'
+        Taborder: 8
+        Tooltip:
+        [*
+          <b>VALUE( object.Participation().Event().Subject() )</b>
+          VALUE( ifexpr( object.Participation().Event().NrOfSubscribers() > 0, "#Subscribers = " + [String]object.Participation().Event().NrOfSubscribers(), "" ) )
+          VALUE( ifexpr( object.Comment() <> "", "------", "" ) )
+          VALUE( ifexpr( object.Comment() <> "", object.Comment(), "" ) )
+        *]
+      ]
+    }
+    Component dhEventCategories
+    {
+      #keys: '[146730.0.1340580624]'
+      BaseType: 'WebDataHolder'
+      Databinding: 'structured[LibCal_EventCategory]*'
+      Children:
+      [
+        Component deEventCategories
+        {
+          #keys: '[146730.0.1340580664]'
+          BaseType: 'WebDataExtractor'
+          Properties:
+          [
+            DataType: 'LibCal_Calendar'
+            Source: 'dhCalendar'
+            Taborder: 0
+            Transformation: 'CalendarRegistry.EventCategory'
+          ]
+        }
+      ]
+      Properties:
+      [
+        Taborder: 1
+      ]
+    }
+    #child: cmRow
+  ]
+  Properties:
+  [
+    ContextMenu: 'cmRow'
+    NavigationRange:
+    [*
+      {
+        Name := '1 Day'
+        Interval := 2
+        Count := 1
+        Offset := 0
+        Interval := 1
+        Count := 2
+        Offset := 0
+        IntervalStartType := 2
+        Item := 0
+      }
+      {
+        Name := '2 Days'
+        Interval := 2
+        Count := 2
+        Offset := 0
+        Interval := 1
+        Count := 2
+        Offset := 0
+        IntervalStartType := 2
+        Item := 0
+      }
+      {
+        Name := '4 Days'
+        Interval := 2
+        Count := 4
+        Offset := 0
+        Interval := 1
+        Count := 2
+        Offset := 0
+        IntervalStartType := 2
+        Item := 0
+      }
+      {
+        Name := '1 Week'
+        Interval := 3
+        Count := 1
+        Offset := 0
+        Interval := 1
+        Count := 2
+        Offset := 0
+        IntervalStartType := 3
+        Item := 0
+      }
+      {
+        Name := '2 Weeks'
+        Interval := 3
+        Count := 2
+        Offset := 0
+        Interval := 2
+        Count := 1
+        Offset := 0
+        IntervalStartType := 3
+        Item := 0
+      }
+      {
+        Name := '4 Weeks'
+        Interval := 3
+        Count := 4
+        Offset := 0
+        Interval := 2
+        Count := 1
+        Offset := 0
+        IntervalStartType := 3
+        Item := 0
+      }
+      {
+        Name := '1 Month'
+        Interval := 4
+        Count := 1
+        Offset := 0
+        Interval := 2
+        Count := 2
+        Offset := 0
+        IntervalStartType := 4
+        Item := 1
+      }
+      {
+        Name := '3 Months'
+        Interval := 4
+        Count := 3
+        Offset := 0
+        Interval := 3
+        Count := 1
+        Offset := 0
+        IntervalStartType := 4
+        Item := 1
+      }
+      {
+        Name := '6 Months'
+        Interval := 4
+        Count := 6
+        Offset := 0
+        Interval := 3
+        Count := 1
+        Offset := 0
+        IntervalStartType := 4
+        Item := 1
+      }
+      {
+        Name := '1 Year'
+        Interval := 5
+        Count := 1
+        Offset := 0
+        Interval := 3
+        Count := 1
+        Offset := 0
+        IntervalStartType := 6
+        Item := 1
+      }
+      {
+        Name := '5 Years'
+        Interval := 5
+        Count := 5
+        Offset := 0
+        Interval := 4
+        Count := 1
+        Offset := 0
+        IntervalStartType := 6
+        Item := 1
+      }
+    *]
+    SynchronizationGroup: 'LibCal_sgCalendars'
+    Taborder: 1
+  ]
+  ResponseDefinitions:
+  [
+    DelegatedResponseDefinition OnClick id:Responsedef_LibCal_gcCalendar_WebMenu_OnClick
+    {
+      #keys: '[131092.0.2110926286]'
+      Initiator: 'WebMenu'
+      IsInherited: false
+      ResponseType: 'OnClick'
+      Arguments:
+      [
+        ResponseDefinitionArgument selection
+        {
+          #keys: '[1611.0.2054600]'
+          Binding: 'this.Selection()'
+        }
+        ResponseDefinitionArgument row
+        {
+          #keys: '[3741.0.2297467]'
+          Binding: 'this.ContextMenuRow()'
+        }
+      ]
+    }
+    DelegatedResponseDefinition OnClick id:Responsedef_LibCal_gcCalendar_WebButton_OnClick
+    {
+      #keys: '[131092.0.2110926287]'
+      Initiator: 'WebButton'
+      IsInherited: false
+      ResponseType: 'OnClick'
+      Arguments:
+      [
+        ResponseDefinitionArgument selection
+        {
+          #keys: '[1611.0.2054645]'
+          Binding: 'this.Selection()'
+        }
+      ]
+    }
+  ]
+}

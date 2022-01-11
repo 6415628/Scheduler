@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcCostTotal
+{
+  TextBody:
+  [*
+    // yifei Aug-4-2021 (created)
+    //Yifei TODO: note that the cost of task after shutdown is not accurate
+    //in quill model the OperationCharacteristic usually don't have previous OperationCharacteristic, so no violaiton because the previous is a shutdown task
+    // in combi we don't model shutdown as anything like shutdown task, and we will split leg according to shutdown, so will handle such cases in the splitting 
+    // leg story
+    optimizerstrategy := this.CombiLeg().OptimizerStrategyInSchedule();
+    value := 0.0;
+    
+    if( not isnull( optimizerstrategy ) )
+    {
+      value := this.CostRuleViolations()
+             + ( this.CostLateness() * optimizerstrategy.KPIWeightOperationLateness()
+             + this.CostMPSAdherenceEarly() * optimizerstrategy.KPIWeightMPSAdherenceEarly()
+             + this.CostMPSAdherenceLate() * optimizerstrategy.KPIWeightMPSAdherenceLate() ) 
+             + this.DummyWorkOrderDuration() * optimizerstrategy.KPIWeightTotalDummyWorkOrderTime()
+    }
+    
+    this.CostTotal( value );
+  *]
+}

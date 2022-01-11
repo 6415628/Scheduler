@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcStart
+{
+  Description: 'Calculate the start of operation based on task start time or OperationFeedback.ReportedStart'
+  TextBody:
+  [*
+    start := DateTime::MinDateTime();
+    
+    // Whenever there is a task exist, always use Start of task.
+    // this is to cater for case where previous planned task had been executed
+    // but failed and operation is planned again.
+    
+    if( this.Started() and this.HasReportedStart() )
+    {
+      start := this.ReportedStart();
+    }
+    else if( this.IsPlanned() )
+    {
+      firstrespectroutingsubtask := this.Task_SC().FirstRespectRoutingSubTask();
+    
+      // AlexanderNg 3-Aug-2015 QP #5691
+      // If the task is planned and there is a first respect routing subtask,
+      // use the value of first respect routing subtask start.
+       start := guard( firstrespectroutingsubtask.Start(), this.Task_SC().Start() );
+    
+    }
+    
+    this.Start( start );
+  *]
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetupDemand (Schedule schedule) as owning Demands
+{
+  Description: 'Setup by creating the required demands'
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    testinstance_demands := this.GetTestInstanceDemandInBatch( variant );
+    
+    // Set company time
+    schedule.Time( UTFUtility::GetCompanyTime() );
+    
+    demands := construct( Demands );
+    
+    // Create Demands
+    traverse( testinstance_demands, Elements, testinstance_demand )
+    {
+      demand := GenericProductDependentDemand::Create( schedule, UTFUtility::UTF(), testinstance_demand.DemandID() );
+      demand.Quantity( testinstance_demand.Quantity() );
+      
+      demands.Add( demand )
+    }                      
+    
+    return &demands;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

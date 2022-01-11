@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test024_RollbackCorrectlyHandledInOneTransactionMultipleIterations (LibOpt_TestDataset dataset)
+{
+  Description: 'Check if the rollback is correctly handled, if there are multiple iterations and the component is running in one transaction. That is; the iterator is running in one transaction and the component is too.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    runcontextforutf := LibOpt_MyRunContextForUTF::Create( run );
+    
+    // Script of the rollback KPI
+    kpi_script := opt.RollbackKPIScripted( 1 );
+    kpi_script.Enqueue( 10.0 );
+    kpi_script.Enqueue( 9.0 );
+    kpi_script.Enqueue( 8.0 );
+    kpi_script.Enqueue( 12.0 );
+    
+    iterator := opt.IteratorUntil( run, 'Iterator' );
+    iterator.SetMaxIterations( 5 );
+    subopt := opt.MPSuboptimizer( run, 'Subopt', runcontextforutf, & kpi_script );
+    subopt.InOneTransaction( true );
+    iterator.To( subopt ).AsOneTransaction( false );
+    
+    test := run.Start();
+    
+    test->|this->( v )
+    {
+      // 19 = 1 (iterator snapshot) + 6 for each suboptimizer execution (1 component, 1 algorithm, 2 kpi, 1 suboptimizer, 1 scripted rollback kpi snapshot)
+      this.Run().AssertEqual( 19, run.Snapshot( relsize ), 'Expected # snapshots' );
+      this.Run().AssertEqual( 3, subopt.SnapshotComponent( relsize ), 'Suboptimizer did not do # executions' );
+      this.Run().AssertEqual( 0, counter( run, Snapshot.astype( LibOpt_SnapshotError ), err, true ), 'No error snapshots expected' );
+      this.Run().AssertEqual( 0, counter( run, Snapshot.astype( LibOpt_SnapshotWarning ), err, true ), 'No warning snapshots expected' );
+      this.Run().AssertEqual( 3, counter( run, Snapshot.astype( LibOpt_SnapshotRollbackKPIScripted ), sn, true ), '# LibOpt_SnapshotRollbackKPIScripted' );
+      
+      this.Run().AssertEqual( 6, counter( subopt, SnapshotComponent.Children.astype( LibOpt_SnapshotKPI ), sn, true ),
+                              'Expected # child snapshots of type `LibOpt_SnapshotKPI`' );
+      
+      this.Run().AssertTrue( exists( subopt, SnapshotComponent.Children.astype( LibOpt_SnapshotSuboptimizer ), sn, sn.IsRollback() ),
+                              'Expected # child snapshots of type `LibOpt_SnapshotSuboptimizer` which represents a rollback.' )
+    };
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

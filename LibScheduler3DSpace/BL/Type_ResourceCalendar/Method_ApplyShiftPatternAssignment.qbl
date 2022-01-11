@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method ApplyShiftPatternAssignment (ImportedShiftPatternAssignment shiftPatternAssignment, DateTime recurrenceStart, DateTime recurrenceEnd, 
+  output LibCal_Participations updatedInstances)
+{
+  Description: 'Subscribe to all events of 3DSpace shift pattern for a given period (input recurrence start and end) based on the input shift pattern assignment.'
+  TextBody:
+  [*
+    calendarRegistry := this.CalendarRegistry();
+    
+    shiftPattern := calendarRegistry.FindCalendar( typeof( ShiftPattern ).Name(),
+                                                   guard( shiftPatternAssignment.ImportedShiftPattern().ID(), '' ) );
+      
+    // Subscribe to events of highest priority shift pattern for at a given time
+    traverse( shiftPattern, Event, event )
+    {
+      subscription := select( event, Participation.astype( LibCal_Subscription ), subscription,
+                               subscription.Calendar() = this, 
+                               subscription.RecurrencePeriod().StartDate() = recurrenceStart.Date()
+                               and subscription.RecurrencePeriod().EndDate() = recurrenceEnd.Date() );
+      
+      if( isnull( subscription ) )
+      {
+        subscription := this.SubscribeToEvent( event );
+      }
+      
+      // Decide what period to apply this event subscription
+      // Equiavlent to deciding what period to apply the shift pattern
+      if( recurrenceEnd.IsFinite() )
+      {
+        subscription.SetSubscriptionPeriodWithEndDate( recurrenceStart.Date(), recurrenceEnd.Date() );
+      }
+      else
+      {
+        subscription.SetSubscriptionPeriodWithoutEnd( recurrenceStart.Date() );
+      }
+      
+      updatedInstances.Add( subscription );
+    }
+  *]
+}

@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetIsAllDay (Boolean isAllDay_i) as LibCal_Event
+{
+  Description: 'Set all day on or off. When turned on, the start is set to the start of the day, and the end is set to the start of the next day.'
+  TextBody:
+  [*
+    if( not isnull( this.LeadingParticipation() ) )
+    {
+      if( not isAllDay_i )
+      {
+        this.IsAllDay( false );
+      }
+      else
+      {
+        addDay := this.IsAllDay() <> isAllDay_i
+              and this.EndTimeOfDay() <> this.EndTimeOfDay().StartOfDay();  // Don't add a day when the End is already at midnight (i.e. at the next day).
+    
+        nrOfDays := this.LeadingParticipation().EndDate() - this.LeadingParticipation().StartDate() + ifexpr( addDay, 1, 0 );  
+    
+        this.SetIsAllDay( nrOfDays );
+      }
+    }
+    
+    // Make the API fluent.
+    return this;
+  *]
+}

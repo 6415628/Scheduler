@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: ListRule
+Response OnClick (structured[Rule] selection) id:Response_ListRule_MenuEnable_OnClick
+{
+  #keys: '[136602.1.58914286]'
+  Body:
+  [*
+    // Enable rules
+    Rule::EnableDisableRules( selection, guard( not selection.Element( 0 ).IsEnabled(), false ) );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /ListRule/Responsedef_ListRule_Menu_OnClick
+  Initiator: 'MenuEnable'
+  Precondition:
+  [*
+    // Updated context menu text and image icon based on first selected rule enable/disable
+    isenabled := guard( selection.Element( 0 ).IsEnabled(), false );
+    image := ifexpr( isenabled, Constants::Icon_EmptyCheckbox(), Constants::Icon_CheckedCheckbox() );
+    text := ifexpr( isenabled, Translations::Disable(), Translations::Enable() );
+    
+    MenuEnable.Text( text );
+    MenuEnable.SetProperty( Constants::Property_Image(), image );
+    
+    return true;
+  *]
+}

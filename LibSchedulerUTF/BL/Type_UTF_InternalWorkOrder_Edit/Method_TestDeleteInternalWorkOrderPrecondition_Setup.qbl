@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestDeleteInternalWorkOrderPrecondition_Setup (Schedule schedule)
+{
+  Description: 'Setup logic to test delete work order.'
+  TextBody:
+  [*
+    // generic / shared setup
+    this.Setup( schedule );
+    
+    // specialized setup - for Edit UTF
+    editDeleteInternalWorkOrderTestInstance := this.GetEditDeleteInternalWorkOrderTestInstance( this.Variant() );
+    
+    if( editDeleteInternalWorkOrderTestInstance.IsMultipleWorkOrders() 
+        or editDeleteInternalWorkOrderTestInstance.IsMultipleWorkOrdersWithSomeWorkOrdersScheduled() )
+    {
+      routing := select( schedule, Routing, routing, true );
+      routing.CreateWorkOrder( null( ProductInStockingPoint ), 1.0, 1, DateTime::Now(), false ); // only another work order (first work order is created in this.Setup)
+      
+      if( editDeleteInternalWorkOrderTestInstance.IsMultipleWorkOrdersWithSomeWorkOrdersScheduled() )
+      {
+        this.CreateAndPlanAnOperation( schedule );
+      }
+    }
+  *]
+}

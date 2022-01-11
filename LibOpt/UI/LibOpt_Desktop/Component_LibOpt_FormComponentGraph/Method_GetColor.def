@@ -1,0 +1,69 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetColor (LibOpt_Component object) as Color id:Method_LibOpt_FormComponentGraph_GetColor
+{
+  #keys: '[140544.1.799764107]'
+  Body:
+  [*
+    color_string := object.UIColor();
+    
+    color := null( Color, owning );
+    
+    if( [Boolean]ValueHolderShowHeatMap.Value() )
+    { //use heat map
+      colorLow := Color::Color( [Number]ValueHolderHeatMapLow.Value() );
+      colorMid := Color::Color( [Number]ValueHolderHeatMapMid.Value() ); 
+      colorHi := Color::Color( [Number]ValueHolderHeatMapHigh.Value() );     
+      
+      durationZero := Duration::Zero(); 
+      
+      minDuration := durationZero; 
+      maxDuration := durationZero;
+      avgDuration := durationZero;
+      
+      objDuration := object.GetDuration( minDuration, maxDuration, avgDuration );
+      
+      if( maxDuration <> durationZero ) //check if some durations are not 0
+      {
+        if( objDuration <= avgDuration )
+        {         
+          range := avgDuration - minDuration;
+          ratio := 0.0;
+          if( range <> durationZero )
+          {
+            ratio := ( objDuration - minDuration )/ range;
+          }
+          
+          color := Color::Interpolate( colorLow, colorMid, ratio );       
+        }
+        else
+        {
+          range := maxDuration - avgDuration;
+          ratio := 0.0;
+          if( range <> durationZero )
+          {
+            ratio := ( objDuration - avgDuration ) / range;
+          }
+          
+          color := Color::Interpolate( colorMid, colorHi, ratio );       
+        }
+      }
+    }
+    else
+    { //use component colors
+      if( color_string.SubString( 0, 1 ) = '#' )
+      {
+        color_num := LibOpt_Utility::GetColorFromHex( color_string.SubString( 1, color_string.Length() - 1 ) )
+        color := Color::Color( color_num );
+      }
+      else
+      {
+        color := Color::Color( color_string );
+      }
+    }
+                          
+    return &color;
+  *]
+  Declarative: true
+  ReturnsOwning: true
+}

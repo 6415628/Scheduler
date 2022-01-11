@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetUTFOperationAttributesForKPI_OperationLateness (UTFOperation operation, Boolean islate)
+{
+  Description: 'Update UTFOperation attributes for KPI, specific for KPI OperationLateness'
+  TextBody:
+  [*
+    // kjn10 Jul-7-2021 (created)
+    schedule := operation.PlanUnit_SC().Schedule();
+    
+    // Default value for KPIs
+    dayslate := 2;
+    
+    operation.UseStart_UTF( true );
+    // set start according to islate
+    duedate := operation.PlanUnit_SC().Order_SC().DueDate();
+    if( islate and duedate.IsFinite() )
+    {
+      operation.Start_UTF( duedate + Duration::Days( dayslate ) );
+    }
+    else
+    {
+      operation.Start_UTF( schedule.Time() );
+    }
+  *]
+}

@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleExportMaterial (Operation_SC operation)
+{
+  TextBody:
+  [*
+    traverse( operation, PlannedDemand.Fulfillment, fulfillment, fulfillment.IsActive() )
+    {                                                      
+      supply := fulfillment.Supply();
+      
+      if( not isnull( supply ) )
+      {
+        exportedmaterial := this.GetExportedMaterial( supply.SupplyID(), supply.SupplyType() );
+        exportedmaterial.UpdateAttributesForSupplyConsumed( operation, fulfillment.Quantity() );
+      }  
+    }
+    
+    traverse( operation, PlannedSupply.Fulfillment, fulfillment, fulfillment.IsActive() )
+    {                                                      
+      demand := fulfillment.Demand();
+      id := demand.DemandID();
+      
+      if( not isnull( demand ) )
+      {
+        exportedmaterial := this.GetExportedMaterial( id, id ); // id_type not needed/available for Demand, so we reuse id
+        exportedmaterial.UpdateAttributesForDemandFulfilled( operation, fulfillment.Quantity() );
+      }    
+    }
+  *]
+}

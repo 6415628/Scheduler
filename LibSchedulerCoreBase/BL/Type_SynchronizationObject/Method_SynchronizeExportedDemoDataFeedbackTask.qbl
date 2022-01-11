@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExportedDemoDataFeedbackTask
+{
+  Description: 'Synchronize exported demo data for feedback task'
+  TextBody:
+  [*
+    allInstances := selectset( this, Schedule.FeedbackManager.ExportedSchedule.ExportedDemoDataFeedbackTask, 
+                               exporteddemodatafeedbacktask, true );
+    updatedInstances := construct( ExportedDemoDataFeedbackTasks );
+    
+    // Create demo data feedback task based on FeedbackTaskInSchedule
+    traverse( this, Schedule.FeedbackManager.FeedbackTaskInSchedule, feedbacktaskinschedule )
+    {
+      exporteddemodatafeedbacktask := ExportedDemoDataFeedbackTask::FindOrCreate( this.Schedule().FeedbackManager().ExportedSchedule(),
+                                                                                  feedbacktaskinschedule.WorkOrderId(),
+                                                                                  feedbacktaskinschedule.PlanUnitId(),
+                                                                                  feedbacktaskinschedule.WorkOrderOperationSequenceNr(),
+                                                                                  '' );
+      exporteddemodatafeedbacktask.Update( feedbacktaskinschedule );
+      updatedInstances.Add( exporteddemodatafeedbacktask );
+    }
+    
+    // Create demo data feedback task based on FeedbackStoppageTask
+    traverse( this, Schedule.FeedbackManager.FeedbackStoppageTask, feedbackstoppagetask )
+    {
+      exporteddemodatafeedbacktask := ExportedDemoDataFeedbackTask::FindOrCreate( this.Schedule().FeedbackManager().ExportedSchedule(),
+                                                                                  feedbackstoppagetask.WorkOrderId(),
+                                                                                  feedbackstoppagetask.PlanUnitId(),
+                                                                                  feedbackstoppagetask.WorkOrderOperationSequenceNr(),
+                                                                                  feedbackstoppagetask.ExternalStoppageTaskID() );
+      exporteddemodatafeedbacktask.Update( feedbackstoppagetask );
+      updatedInstances.Add( exporteddemodatafeedbacktask );
+    }
+    
+    oldInstances := allInstances.Difference( updatedInstances );
+    
+    traverse( oldInstances, Elements, old )
+    {
+      old.Remove();
+    }
+  *]
+}

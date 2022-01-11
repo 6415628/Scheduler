@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method New (internal[GUIComponent] parent, Schedule owner) as ResourceGroup_SC id:Method_DialogResourceGroup_SC_New
+{
+  #keys: '[129856.0.22023078]'
+  Body:
+  [*
+    // New ResourceGroup_SC method
+    this.Title( Translations::SC_DialogResourceGroups_NewResourceGroup_Title() );
+    
+    data := owner.ResourceGroup_SC( relshadow, GenericResourceGroup );
+    data.Index( owner.GetNextResourceGroupIndex() );
+    
+    // JamesK Sep-19-2016 #7841 Create defaults
+    Dialog.CreateDefaultSubTaskTypes( data );
+    
+    Dialog.Data( data );
+    this.SetDialogComponentState(); // enable/disables components based on resourcegroup
+    
+    // JamesK Sep-19-2016 Reorder defaults created
+    Dialog.ReorderSubTaskTypes();
+    
+    if ( Dialog.DoModal( parent ) > 0 )
+    {
+      data.Image( LabelImageString.Text() );
+      data.Commit();
+    }
+    
+    return data.WrappedInstance();
+  *]
+}

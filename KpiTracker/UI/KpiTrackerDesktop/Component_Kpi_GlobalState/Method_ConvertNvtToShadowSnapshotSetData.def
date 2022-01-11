@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+Method ConvertNvtToShadowSnapshotSetData (NamedValueTree nvt) as shadow[KpiSnapshotSetData] id:Method_Kpi_GlobalState_ConvertNvtToShadowSnapshotSetData
+{
+  #keys: '[136402.0.1319129634]'
+  Body:
+  [*
+    // Converts the query-result NamedValueTree to a shadow-KpiSnapshotSetData enclosure.
+    set := KpiTracker.KpiSnapshotSetData( relshadow );
+    
+    // Define handles.
+    setDataHandle  := nvt.GetHandle( "KpiSnapshotSetData" );
+    snapshotHandle := nvt.GetHandle( "KpiSnapshotData" );
+    kpivalueHandle := nvt.GetHandle( "KpiValueData" );
+    labelHandle    := nvt.GetHandle( "KpiLabelData" );
+    serverDtHandle := nvt.GetHandle( "ServerDateTime" );
+    planDtHandle   := nvt.GetHandle( "PlanDateTime" );
+    nameHandle     := nvt.GetHandle( 'Name' );
+    valueHandle    := nvt.GetHandle( 'Value' );
+    retentionHandle:= nvt.GetHandle( 'RetentionPolicyIdentification' );
+    
+    // Get to the real root (the setData).
+    root           := nvt.Root();
+    setData        := root.Child( setDataHandle );
+    
+    // Each child of setData is a SnapshotData.
+    traverse( setData.Children( snapshotHandle ), Elements, snapshotNvt )
+    {
+      snapshot := set.SnapshotData( relnew );
+      snapshot.ServerDateTime ( snapshotNvt.Child( serverDtHandle ).GetValueAsDateTime() );
+      snapshot.PlanDateTime   ( snapshotNvt.Child( planDtHandle ).GetValueAsDateTime() );
+      snapshot.RetentionPolicyIdentification( snapshotNvt.Child( retentionHandle ).GetValueAsString() );
+    
+      // Kpi values
+      traverse( snapshotNvt.Children( kpivalueHandle ), Elements, valueNvt )
+      {
+        val := snapshot.Value( relnew );
+        val.Name( valueNvt.Child( nameHandle ).GetValueAsString() );
+        val.Value( valueNvt.Child( valueHandle ).GetValueAsReal() );
+      }
+    
+      // Labels
+      traverse( snapshotNvt.Children( labelHandle ), Elements, labelNvt )
+      {
+        label := snapshot.Label( relnew );
+        label.Name( labelNvt.Child( nameHandle ).GetValueAsString() );
+        label.Value( labelNvt.Child( valueHandle ).GetValueAsString() );
+      }
+    
+    }
+    
+    return &set;
+  *]
+  ReturnsOwning: true
+}

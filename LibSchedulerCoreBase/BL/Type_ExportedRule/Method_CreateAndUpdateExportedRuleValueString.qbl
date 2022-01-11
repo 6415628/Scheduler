@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateAndUpdateExportedRuleValueString (Rule rule)
+{
+  Description: 'Create and update exported rule value string.'
+  TextBody:
+  [*
+    allinstances := selectset( this, ExportedRuleValueString, exportedrvs, true );
+    updatedinstances := construct( ExportedRuleValueStrings );
+    
+    traverse( rule, RuleValueStrings, rulevaluestring )
+    {
+      exportedrulevaluestring := select( this, ExportedRuleValueString, exportedrvs, 
+                                         exportedrvs.RuleID() = rule.RuleID()
+                                         and exportedrvs.Value() = rulevaluestring.Value() );
+                      
+      if( isnull( exportedrulevaluestring ) )
+      {
+        exportedrulevaluestring := ExportedRuleValueString::Create( this, rulevaluestring );
+      }
+      updatedinstances.Add( exportedrulevaluestring );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, exportedrulevaluestring )
+    {
+      exportedrulevaluestring.Delete();
+    }
+  *]
+}

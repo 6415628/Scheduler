@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExportToJSON (structured_Object objects_i, LibDIF_DataTransformation dataTransformation_i, String integratorID_i, 
+  Boolean isForUI_i) as String
+{
+  Description:
+  [*
+    Create integration objects based on the provided model objects, using the provided DataTransformation.
+    After that, trigger ExportToXLS for the integration objects, using the provided brokerID.
+    The exported data is either written to a file on the Server, or returned to the Client that triggered the export action.
+  *]
+  TextBody:
+  [*
+    // Create the integration objects.
+    this.CreateIntegrationObjects( objects_i, dataTransformation_i );
+    
+    // Export the integration objects using the QIntegrator.
+    json := this.ExportToJSON( integratorID_i, dataTransformation_i );
+    
+    if( json <> "" )
+    {
+      if( not isForUI_i )
+      {
+        // Write the data to a file in the Data-directory of the model on Server-side.
+        // ToDo: make configurable (?)
+        path    := FileSystems::QFSPathToHardwarePath( DomainModel::GetDataDirectory().Path() );
+        fileRef := path + "/" + dataTransformation_i.ID() + ".json";
+        
+        LibDIF_Util::WriteTextFile( fileRef, json );
+        LibDIF_Util::Info( "Data is exported to file " + fileRef );
+      }
+    }
+    else
+    {
+      LibDIF_Util::Error( "ExportToJSON could not generate JSON-data | IntegratorID = '" + integratorID_i + "'" );
+    }
+    
+    return json;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

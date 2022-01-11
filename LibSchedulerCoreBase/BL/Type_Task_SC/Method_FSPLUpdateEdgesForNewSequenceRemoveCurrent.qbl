@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method FSPLUpdateEdgesForNewSequenceRemoveCurrent
+{
+  TextBody:
+  [*
+    previous_task := this.Previous();
+    next_task := this.Next();
+    
+    if( not isnull( next_task ) and not isnull( previous_task ) )
+    {
+      last_subtask_in_previous_task := previous_task.Last();
+      first_subtask_in_next_task := next_task.First();
+    
+      if( not isnull( last_subtask_in_previous_task ) )
+      {
+        //check if there is already an edge from last subtask of the previous task to the first subtask of next task
+        edge_from_previous_to_next_subtask := last_subtask_in_previous_task.PrecedenceNode().GetEdgeToNode( first_subtask_in_next_task );
+    
+        if( not isnull( edge_from_previous_to_next_subtask ) )
+        {
+          PrecedenceEdge::Delete( edge_from_previous_to_next_subtask );
+        }
+      }
+    }
+  *]
+}

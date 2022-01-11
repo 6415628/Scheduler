@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test053_BreakpointOnExceptionTriggersOnErrorInOneTransaction (LibOpt_TestDataset dataset)
+{
+  Description: 'Test that the breakpoint on exception triggers on an error when init + handle result is in one transaction.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    // Script of the rollback KPI
+    kpi_script := opt.RollbackKPIScripted( 1 );
+    kpi_script.Enqueue( 0.0 );
+    kpi_script.Enqueue( 100.0 );
+    
+    // Make suboptimizer throw error
+    context := LibOpt_MyRunContextForUTF::Create( run );
+    context.ErrorAtHandleResult( true );
+    
+    // Create tree
+    suboptimizer := opt.MPSuboptimizer( run, 'MP', context, & kpi_script );
+    suboptimizer.InOneTransaction( true );
+    
+    // Set breakpoints
+    component_position := select( suboptimizer, ComponentPosition, bp, bp.Name() = LibOpt_Component::ComponentPosition_Error() );
+    component_position.SetBreakpoint();
+    
+    // Test
+    this.NoException( run.Start() );
+    test := this->WaitForBreakpoint( run, this.Run() )->|void->()
+    {
+      if( this.Run().AssertTrue( run.BreakpointEvent( relsize ) = 1, 'Breakpoint triggered' ) )
+      {
+        this.Run().AssertEqual( run.BreakpointEvent().Breakpoint().ComponentName(), suboptimizer.Name(), 'Wrong component' );
+      }
+    }
+    // Just in case
+    ->|run->Stop();
+    
+    this.NoException( test );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

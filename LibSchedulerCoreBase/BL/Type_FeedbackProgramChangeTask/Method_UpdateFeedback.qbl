@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateFeedback (Boolean isNew, Boolean hasUserReportedStart, DateTime userReportedStart, 
+  Boolean hasUserReportedEnd, DateTime userReportedEnd, Boolean hasUserReportedProgram, 
+  ProgramTypeConfigurations userReportedProgramTypes)
+{
+  Description: 'Update feedback task'
+  TextBody:
+  [*
+    this.HasUserReportedStart( hasUserReportedStart );
+    this.HasUserReportedEnd( hasUserReportedEnd );
+    this.HasUserReportedProgram( hasUserReportedProgram );
+    
+    userReportedStart := ifexpr( hasUserReportedStart, userReportedStart, DateTime::MinDateTime() );
+    this.UserReportedStart( userReportedStart );
+    
+    userReportedEnd := ifexpr( hasUserReportedEnd, userReportedEnd, DateTime::MinDateTime() );
+    this.UserReportedEnd( userReportedEnd );
+    
+    programchange := this.ProgramChange();
+    
+    currentprogramtypes := selectset( programchange, ProgramChangeInType.ToProgramTypeConfiguration, ptc, true );
+    
+    // When a user did not report any change in program, we reset it back to original reported program
+    // For new feedback, program type are provided
+    if( not hasUserReportedProgram and not isNew )
+    {
+      currentprogramtypes := this.GetReportedPrograms();  // Reset to previously updated programs
+    }
+    else
+    {
+      toaddprogramtypes := userReportedProgramTypes.Difference( currentprogramtypes );
+      toremoveprogramtypes := currentprogramtypes.Difference( userReportedProgramTypes );
+      
+      currentprogramtypes.Remove( toremoveprogramtypes );
+      currentprogramtypes.AddInPlace( toaddprogramtypes );
+    }
+    
+    programchange.Update( currentprogramtypes, false, Duration::Zero() );
+    
+    // Create feedback program type
+    traverse( currentprogramtypes, Elements, pt )
+    {
+      programID :=  programchange.GetScheduledProgramID( guard( pt.ProgramSetConfigurationID(), '' ) );
+      feedbackprogramtype := FeedbackProgramType::Create( programchange, pt.ProgramDefinitionConfigurationID(), pt.ProgramSetConfigurationID(), pt.ProgramTypeConfigurationID(), programID );
+      feedbackprogramtype.Update( programchange.Resource_SC().ResourceID() ); 
+      
+      feedbackprogramtype.SynchronizeFeedbackProgramPhase();
+    }
+  *]
+}

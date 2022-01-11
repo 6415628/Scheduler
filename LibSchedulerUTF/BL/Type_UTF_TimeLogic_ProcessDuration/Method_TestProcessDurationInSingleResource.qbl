@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestProcessDurationInSingleResource (Schedule schedule)
+{
+  Description: 'Test process duration in single resource'
+  TextBody:
+  [*
+    // Get variant data
+    isexternalwooresourceallowed := false;
+    ispositiveexternalprocessduration := false;
+    processduration := Duration::Zero();
+    
+    this.GetTestVariant( isexternalwooresourceallowed,
+                         ispositiveexternalprocessduration,
+                         processduration );
+    
+    oor := select( schedule, ResourceGroup_SC.Resource_SC.OperationOnResource, oor, true );
+    
+    this.Run().AssertTrue( oor.ProcessDuration() = processduration,
+                           UTFUtility::GenerateFailedMessage( 'Process duration on single resource checking failed.', 
+                                                               this.Variant() ) );
+  *]
+}

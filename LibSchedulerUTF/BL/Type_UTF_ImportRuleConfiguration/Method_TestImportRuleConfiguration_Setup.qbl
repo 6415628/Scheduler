@@ -1,0 +1,118 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestImportRuleConfiguration_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    ruleScope := '';
+    
+    this.GetTestVariant( ruleScope );
+    
+    // Create characteristic
+    characteristicCondition := Characteristic::Create( schedule, 'Characteristic Condition', 1 );
+    characteristicMain := Characteristic::Create( schedule, 'Characteristic Main', 2 );
+    characteristicScope := Characteristic::Create( schedule, 'Characteristic Scope', 3 );
+    
+    // Create imported rule
+    importedRule := schedule.ImportedRule( relnew, RuleID := 1 );
+    importedRule.ConditionValue( true );
+    importedRule.IsConditionEnabled( true );
+    importedRule.IsEnabled( true );
+    importedRule.IsHardConstraintForOptimizer( true );
+    importedRule.IsMultipleRangesEnabled( true );
+    importedRule.Name( 'Imported rule' );
+    importedRule.NeedManualPreconditionCheck( true );
+    importedRule.IsProgramPhaseTransitionRule( true );
+    importedRule.ConditionScope( RuleConstant::ConditionScope_BothTasks() );
+    importedRule.PenaltyParameterSlope_a( 10 );
+    importedRule.PenaltyParameterPower_b( 20 );
+    importedRule.PenaltyParameterOffset_c( 30 );
+    importedRule.StrategyMultipleRange( RuleConstant::StrategyMultipleRange_Smallest() );
+    
+    // Assign attribute for characteristic
+    importedRule.CharacteristicConditionID( characteristicCondition.ID() );
+    importedRule.CharacteristicMainID( characteristicMain.ID() );
+    
+    // Create imported rule range
+    importedRuleRange := importedRule.ImportedRuleRange( relnew,
+                                                         RuleID := importedRule.RuleID(),
+                                                         From := '0.0',
+                                                         To := '100.0' );
+    importedRuleRange.RuleRangeValue( 5.0 );
+    
+    // Propogate declarative attribute
+    Transaction::Transaction().Propagate( attribute( ImportedRuleRange, FromReal ) );
+    Transaction::Transaction().Propagate( attribute( ImportedRuleRange, ToReal ) );
+    
+    // Create imported rule scope
+    importedRuleScope := importedRule.ImportedRuleScope( relnew,
+                                                         RuleID := importedRule.RuleID() );
+    importedRuleScope.IsBeforeShutdown( false );
+    importedRuleScope.RuleScopeShutdownAggregateThreshold( 0.0 );
+    importedRuleScope.CharacteristicScopeID( characteristicScope.ID() );  
+    
+    // Create rule scope based on variant
+    importedRuleScope.RuleScopeSelected( ruleScope );
+    
+    if( ruleScope = RuleConstant::RuleScope_AllTasksOnResource() )
+    {
+      // Create resource
+      resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Resource' );
+      
+      // Create imported rule scope in resource
+      importedRule.ImportedRuleScopeInResource( relnew,
+                                                RuleID := importedRule.RuleID(),
+                                                ResourceID := resource.ResourceID() );
+    }
+    else if(  ruleScope = RuleConstant::RuleScope_Shutdown() )
+    {
+      // Create imported shutdown type
+      importedShutdownType := schedule.ImportedShutdownType( relnew, ShutdownTypeID := 'ShutdownType' );
+      
+      // Create imported rule scope in shutdown type
+      importedRule.ImportedRuleScopeInShutdownType( relnew,
+                                                    RuleID :=  importedRule.RuleID(),
+                                                    ShutdownTypeID := importedShutdownType.ShutdownTypeID() );
+                                                    
+      // Sync shutdown type
+      schedule.SynchronizationObject().SynchronizeShutdownConfigurations();                                                
+    }
+    else
+    {
+      importedProgramDefinitionConfiguration := UTFMockObjectFactory::CreateImportedProgramDefinitionConfiguration( schedule, 'Program Definition' );
+      importedProgramSetConfiguration := UTFMockObjectFactory::CreateImportedProgramSetConfiguration( schedule, importedProgramDefinitionConfiguration, 'Program Set' );
+      importedProgramTypeConfiguration := UTFMockObjectFactory::CreateImportedProgramTypeConfiguration( schedule, importedProgramSetConfiguration, 'Program Type' );
+      
+      if( ruleScope = RuleConstant::RuleScope_Program() )
+      {
+        // Create imported rule scope in program type
+        importedRule.ImportedRuleScopeInProgramType( relnew,
+                                                 RuleID := importedRule.RuleID(),
+                                                 ProgramDefinitionConfigurationID := importedProgramTypeConfiguration.ProgramDefinitionConfigurationID(),
+                                                 ProgramSetConfigurationID := importedProgramTypeConfiguration.ProgramSetConfigurationID(),
+                                                 ProgramTypeConfigurationID := importedProgramTypeConfiguration.ProgramTypeConfigurationID() );
+      }
+      else if(  ruleScope = RuleConstant::RuleScope_ProgramPhase() )
+      {
+        // Create imported program phase
+        importedProgramPhaseConfiguration := UTFMockObjectFactory::CreateImportedProgramPhaseConfiguration( schedule, importedProgramTypeConfiguration, 'Program Phase' );
+                                                    
+        // Create imported rule scope in program phase
+        importedRule.ImportedRuleScopeInProgramPhase( relnew,
+                                                  RuleID := importedRule.RuleID(),
+                                                  ProgramDefinitionConfigurationID := importedProgramPhaseConfiguration.ProgramDefinitionConfigurationID(),
+                                                  ProgramSetConfigurationID := importedProgramPhaseConfiguration.ProgramSetConfigurationID(),
+                                                  ProgramTypeConfigurationID := importedProgramPhaseConfiguration.ProgramTypeConfigurationID(),
+                                                  ProgramPhaseConfigurationID := importedProgramPhaseConfiguration.ProgramPhaseConfigurationID() );
+      }
+      
+      // Sync program 
+      Transaction::Transaction().Propagate( method( SynchronizationObject, SynchronizeProgramConfigurations ) );
+      schedule.SynchronizationObject().SynchronizeProgramConfigurations();
+    }
+    
+    // Sync rule framework
+    schedule.SynchronizationObject().SynchronizeRuleConfigurations();
+  *]
+}

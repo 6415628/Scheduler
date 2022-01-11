@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method Export (Key exportID_i, LibCal_Calendars calendars_i)
+{
+  Description:
+  [*
+    This method is meant to be called from the UI.
+    Only the client that recognizes the exportID_i that it has passed in will retrieve the ExportData.
+  *]
+  TextBody:
+  [*
+    // Trigger the export of the calendars using a temporary dataset.
+    tempDataset := LibCal_ImportExportDataset::CreateTemporaryDataset( this.GetDatasetName() );
+    exportData  := tempDataset->Export( calendars_i, true );  // export for UI
+    
+    // Store the data in an attribute that is 'monitored' in the Client.
+    // Setting the attribute will trigger the Client to write the data to file.
+    // Setting is done via a reactive call in order to capture the BinaryValue from the stream that is returned by Export.
+    this->SetExportData( exportID_i, exportData );
+  *]
+}

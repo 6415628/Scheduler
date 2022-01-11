@@ -1,0 +1,68 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetSeverityScaleForLowerThresholdViolation () as owning LibOpt_StatisticSeverityScale
+{
+  Description: 'Return the `LibOpt_StatisticSeverityScale` which holds `LibOpt_StatisticSeverityScaleEntrys` of (`LibOpt_StatisticSeverityScaleEntry.Threshold`, `LibOpt_StatisticSeverityScaleEntry.Severity`) values, which determines what `Severity` to set for a `LibOpt_Issue` that violates the `LowerThreshold` of this `LibOpt_Statistic`.'
+  TextBody:
+  [*
+    // To be overridden in subclasses which:
+    // - `LibOpt_Issues` are created based on the `LowerThreshold` of this statistic, and
+    // - `Severity` for `LibOpt_Issues` are to be derived from a certain scale, rather than using a fixed value.
+    
+    /*
+    If the criteria above is applicable for your statistic, then refer to the example below as to how to construct your *severity scale*.
+        
+    EXAMPLE OF *LOWER THRESHOLD* VIOLATION SCALE [Ref. 1]
+    
+          ----------------------------
+          |  THRESHOLD  |  SEVERITY  |
+          ----------------------------
+    (i)   |      15     |      1     |
+          ----------------------------
+    (ii)  |       5     |      3     |
+          ----------------------------
+    (iii) |       1     |      5     |
+          ----------------------------
+    
+    - The *lower* the `Threshold` violated by the value of a `LibOpt_Issue` of this statistic, the *higher* the `Severity` to set for the issue.
+      Using the the scale in [Ref. 1], the expected `Severity` for some examples are shown below:
+      - Value of issue =  15   -->   Severity = 1
+      - Value of issue =  10   -->   Severity = 2    // 1 + ( 3 - 1 ) * ( ( 10 - 15 ) / ( 5 - 15 ) )
+      - Value of issue =   1   -->   Severity = 5
+      - Value of issue =   0   -->   Severity = 5
+    
+    - The logic that uses the "severity scale" defined here relies on the following ASSUMPTIONS:
+      (** If any of the ASSUMPTIONS is violated, then the scale might not work as expected. **)
+      - The `Severity` values should be within the inclusive range of [ `LibOpt_Issue::Severity_1_Min()`, `LibOpt_Issue::Severity_5_Max()` ].
+      - No duplicate entries of `Threshold` or `Severities`.
+      - The trend of `Threshold` of entries should be *descending* while the trend of `Severity` of entries should be *ascending*.
+    
+    -----------------------------------------------------------------------------------------------------------------------------------------------------
+    
+    CODE EXAMPLE:
+    
+    >>>>
+    severityscale := construct( LibOpt_StatisticSeverityScale );
+    
+    severityscale.Entry( relnew,
+                         Threshold := this.LowerThreshold(),
+                         Severity := LibOpt_Issue::Severity_1_Min()
+                       );
+    
+    severityscale.Entry( relnew,
+                         Threshold := <Lower Threshold Corresponding With Max Severity>,
+                         Severity := LibOpt_Issue::Severity_5_Max()
+                       );
+    
+    return &severityscale;
+    <<<<
+    
+    NOTE:
+      For the <Lower Threshold Corresponding With Max Severity> part, check out the
+      `LibOpt_StatisticSummary::GetLowerThresholdCorrespondingWithMaxSeverityBasedOnOutlierThreshold` helper method to see if it suits your statistic.
+      If so, you can use `this.Summary().GetLowerThresholdCorrespondingWithMaxSeverityBasedOnOutlierThreshold()` for that part.
+    */
+    
+    return null( LibOpt_StatisticSeverityScale, owning );
+  *]
+}

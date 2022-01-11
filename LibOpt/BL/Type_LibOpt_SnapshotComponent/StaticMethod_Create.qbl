@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (LibOpt_Task task) as LibOpt_SnapshotComponent
+{
+  Description: 'Create a new instance of the `LibOpt_SnapshotComponent`.'
+  TextBody:
+  [*
+    component := task.Component();
+    
+    parent := guard( task.Parent().SnapshotComponent(), null( LibOpt_SnapshotComponent ) );
+    snapshot := task.Run().Snapshot( relnew, LibOpt_SnapshotComponent,
+                                     Parent := parent,
+                                     Name := component.Name(),
+                                     ComponentType := component.DefinitionName(),
+                                     Component := component );
+    
+    // Set task after the snapshot has been created, so the automatic snapshot parent setting does not create a snapshot loop.
+    // If we would put it in the relnew part, the new snapshot would point to itself as its parent, due to the code in LibOpt_Snapshot::OnCreate.
+    snapshot.Task( relset, task );
+    
+    snapshot.InputScope( relset, task.Scope() );
+    
+    return snapshot;
+  *]
+}

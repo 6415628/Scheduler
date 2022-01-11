@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod HasUniqueName (Schedule owner_i, String edit_name_i, String new_name_i, 
+  output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Checks whether a proposed Name is unique.'
+  TextBody:
+  [*
+    // James Kwapien 20160825 #7618 Precondition on whether Name is unique and non-empty, checks for edit name if instance existed previously
+    // Check for uniqueness, is_name_unique true if no instance of ResourceGroup_SC exists s.t. it's name = the proposed name, 
+    // excluding the current instance if it's an edit function
+    is_name_unique := not exists( owner_i, 
+                                  ResourceGroup_SC, 
+                                  resource_group,
+                                  edit_name_i = '' or resource_group.Name() <> edit_name_i,
+                                  resource_group.Name() = new_name_i );
+    
+    if( not is_name_unique )
+    {
+      Utility_SC::Concat( feedback_o, Translations::SC_ResourceGroup_NameNotUnique_Precondition( new_name_i ) );
+    }
+    
+    
+    return is_name_unique;
+  *]
+}

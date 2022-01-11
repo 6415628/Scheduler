@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeImportedCalendarRuleTimeInterval (ImportedCalendarRule importedCalendarRule, QuillCalendarRule calendarRule)
+{
+  Description: 'Synchronize imported calendar rule time interval and translate them to calendar KT instances.'
+  TextBody:
+  [*
+    kb := KBID::Create( Constants::GetCalendarsKnowledgeBaseID() );
+    calendar := QuillCalendar::Calendar( kb)
+    
+    allRuleTimeIntervalInstances := selectset( calendarRule, TimeIntervals, timeInterval, true );
+    updatedRuleTimeIntervalInstances := construct( structured_QuillTimeInterval );
+    
+    traverse( importedCalendarRule, ImportedCalendarRuleTimeInterval, importedCalendarRuleTimeInterval )
+    {
+      timeInterval := select( calendarRule, TimeIntervals, timeInterval, timeInterval.Offset() = importedCalendarRuleTimeInterval.Offset() );
+      
+      if( isnull( timeInterval ) )
+      {
+        timeInterval := calendarRule.TimeIntervals( relnew );
+      }
+      
+      if( not isnull( timeInterval ) )
+      {
+        timeInterval.Capacity( importedCalendarRuleTimeInterval.Capacity() );
+        timeInterval.Comment( importedCalendarRuleTimeInterval.Comment() );
+        timeInterval.Length( importedCalendarRuleTimeInterval.Length() );
+        timeInterval.Offset( importedCalendarRuleTimeInterval.Offset() );
+      }
+      
+      updatedRuleTimeIntervalInstances.Add( timeInterval );
+    }
+    
+    //Delete old instances
+    oldRuleTimeIntervalInstances := allRuleTimeIntervalInstances.Difference( updatedRuleTimeIntervalInstances );
+    
+    traverse( oldRuleTimeIntervalInstances, Elements, timeInterval )
+    {
+      timeInterval.Delete();
+    }
+    
+    calendar.Apply();
+  *]
+}

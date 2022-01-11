@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoRun () as stream[LibOpt_BT_RunSequence]
+{
+  Description: 'Start the benchmark run.'
+  TextBody:
+  [*
+    if( LibOpt_BT_ConfigurationSettings::GetSetting_ShowProgress() )
+    {
+      info( Translations::LibOpt_BT_RunSequence_ExecuteBenchmark( this.SequenceNr(), this.TrackingTableCell().GetDescription() ) );
+    }
+    
+    stream_rs := stream[Void]::Success();
+    
+    this.InitializeRun();
+    model_version := LibOpt_BT_ModelVersion::CreateFind( this.RunSequence().BenchmarkTrackingDataset() );
+    this.ModelVersion( relset, model_version );
+    stream_rs := this -> CopyAndRun() -> Exception() -> LibOpt_BT_RunSequenceElement::OnException( this )
+                      ->| this -> FinalizeRun() -> AsVoid()->IgnoreException();
+    
+    return stream_rs ->| emit( this.RunSequence() );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

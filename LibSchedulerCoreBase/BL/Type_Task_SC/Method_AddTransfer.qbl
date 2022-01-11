@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddTransfer (SubTask beforesubtask) as SubTask
+{
+  Description: 'Add the transfer subtask of a task after the inputted previous subtask.'
+  TextBody:
+  [*
+    // AlexanderNg Aug-2-2015 (created)
+    
+    sortedooms := this.GetOutputOperationMaterials(); // AlexanderNg 10-Aug-2015 QP #5679
+    
+    // Remove existing TransferSubTask
+    traverse( this, SubTask.astype( TransferSubTask ), transfersubtask )
+    {
+      transfersubtask.Delete();
+    }
+    
+    subtask := null( SubTask );
+    
+    traverse( sortedooms, Elements, oom )
+    {
+      subtask := this.AddAfter( construct( TransferSubTask ), beforesubtask );
+      subtask.astype( TransferSubTask ).OperationMaterial( relset, oom );
+      beforesubtask := subtask;
+    }
+    
+    return subtask;
+  *]
+}

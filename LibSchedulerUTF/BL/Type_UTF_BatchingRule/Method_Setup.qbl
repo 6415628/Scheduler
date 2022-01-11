@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    demand := UTFMockObjectFactory::CreateDemand( schedule, DemandType::ProductPlannedDemand(), 'D_01' );
+    demand.Quantity( 10 );
+    
+    demandBatch := UTFMockObjectFactory::CreateDemandBatch( schedule, 'DB_01', 10 );
+    Transaction::Transaction().Propagate( attribute( Demand, QuantityOpen ) );
+    Transaction::Transaction().Propagate( attribute( DemandBatch, QuantityOpen ) );
+    demandBatch.AddDemand( demand );
+    
+    planUnit := UTFMockObjectFactory::CreateOrderAndPlanUnit( schedule, 'PU_01', 1.0 );
+    operation := UTFMockObjectFactory::CreateOperation( planUnit );
+    
+    resourceGroup := UTFMockObjectFactory::CreateResourceGroup( schedule, 'RG_01' );
+    resource := UTFMockObjectFactory::CreateSingleResource( resourceGroup, 'R_01' );
+    
+    demand.Operation_SC( relset, operation );
+    
+    task := resource.PlanLast( operation );
+    
+    currentVariant := this.GetCurrentVariant();
+    if( currentVariant.IsOperationFrozenByUser() )
+    {
+      task.IsFrozenByUser( true );
+    }
+    else if( currentVariant.IsOperationFrozenByFrozenPeriod() )
+    {
+      schedule.PlanningConfiguration().FrozenPeriod( Duration::Hours( 10 ) );
+    }
+    else if( currentVariant.IsOperationLockedByOptimizer() )
+    {
+      operation.IsLockedByOptimizer( true );
+    }
+  *]
+}

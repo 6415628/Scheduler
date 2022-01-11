@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetPeriodWithoutEnd (Date startDate_i)
+{
+  Description: 'Set a non-ending recurrence period that starts at a specific date.'
+  TextBody:
+  [*
+    // Check if a new RecurrencePeriod must be created.
+    period       := guard( this.RecurrencePeriod().astype( LibCal_RecurrencePeriodWithoutEnd ), null( LibCal_RecurrencePeriodWithoutEnd ) );
+    changeOfType := isnull( period );
+    
+    isChanged := changeOfType  // There was no period yet, or it was not a PeriodWithoutEnd
+              or period.StartDate() <> startDate_i;
+    
+    if( isChanged )
+    {
+      // If applicable, get the EndDate of the RecurrencePeriod that will be replaced.
+      prevPeriod    := this.GetRecurrencePeriod(); // Can be the one from the LeadingParticipation.
+      prevStartDate := guard( prevPeriod.StartDate(), Date::MinDate() );
+      prevEndDate   := guard( prevPeriod.EndDate(),   Date::MaxDate() );
+      
+      if( changeOfType )
+      {
+        // Create a new RecurrencePeriod.
+        period := LibCal_RecurrencePeriodWithoutEnd::Create( this, startDate_i );
+      }
+      else
+      {
+        period.StartDate( startDate_i );
+      }
+    
+      // Register the previous startdate and enddate.
+      // They are used to determine which occurrences must be created / deleted for the changed period.
+      period.PreviousStartDate( prevStartDate );
+      period.PreviousEndDate(   prevEndDate   );
+    
+      this.HasChangedRecurrencePeriod( true );  
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

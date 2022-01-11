@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetIsValidID (OptimizerType owner, String id, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Returns whether the ID is valid for an optimizer parameter by checking if there is already a parameter with the ID and if the ID is not empty.'
+  TextBody:
+  [*
+    // Unique ID
+    value := not isnull( owner )
+             and not exists( owner.GetOptimizerParameters(), Elements, optparam,
+                             Utility_SC::TrimAndToLower( optparam.Id() ) = Utility_SC::TrimAndToLower( id ) );
+    
+    if( not value )
+    {
+      feedback_o := Translations::SC_OptimizerParameter_ID_NotUnique();
+    }
+    
+    // Non empty ID
+    nonemptyid := id.Length() > 0;
+    value := value and nonemptyid;
+    
+    if( not nonemptyid )
+    {
+      Utility_SC::Concat( feedback_o, Translations::SC_OptimizerParameter_EmptyID() );
+    }
+    
+    return value;
+  *]
+}

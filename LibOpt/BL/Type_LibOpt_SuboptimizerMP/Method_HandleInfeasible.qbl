@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleInfeasible (MathematicalProgram program, LibOpt_Task task) as LibOpt_Scope
+{
+  Description:
+  [*
+    Handle the infeasible result of the `MathematicalProgram` here.
+    When overriding this, the provided rollback KPI will not get worse.
+  *]
+  TextBody:
+  [*
+    // To be overridden. Handle the result of the mathematical program here.
+    // When overriding this, the rollback KPI will not get worse.
+    
+    message := '';
+    remark := program.Remark();
+    
+    if( remark = LibOpt_SuboptimizerMP::MPRemark_Infeasible() )
+    {
+      message := Translations::LibOpt_SuboptimizerMP_Infeasible( this.Name() );
+    }
+    else if( remark = LibOpt_SuboptimizerMP::MPRemark_TimeLimitExceeded() )
+    {
+      message := Translations::LibOpt_SuboptimizerMP_InfeasibleDueToTime( this.Name() );
+    }
+    else
+    {
+      message := Translations::LibOpt_SuboptimizerMP_InfeasibleRemark( this.Name(), remark );
+    }
+    
+    error( message );
+    
+    return task.Scope();
+  *]
+}

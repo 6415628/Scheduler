@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetDifferenceJumpValue (const Rule rule, DORule_DataObjectSequencingRule dorule) const declarative remote as Real
+{
+  Description: 'Get difference jump value from data object and rule'
+  TextBody:
+  [*
+    // Get the difference jump
+    differencejump := dorule.CurrentRealValue() - dorule.PreviousRealValue();
+    
+    // If direction is downwards, reverse the difference jump value by multiply -1
+    if( this.Direction() = RuleConstant::Direction_Downwards() )
+    {
+      differencejump := differencejump * -1; 
+    }
+    // If direction is upwards & downwards, just get the absolute value
+    else if( this.Direction() = RuleConstant::Direction_UpwardsDownwards() )
+    {
+      differencejump := abs( differencejump ); 
+    }
+    
+    differencejump := ifexpr( this.IsAbsolute(), 
+                              differencejump, 
+                              guard( differencejump / dorule.PreviousRealValue() * 100, 0.0 ) );
+    
+    return differencejump;
+  *]
+}

@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method Copy (LibSM_Scenario targetScenario, String newName, String newStorageState) as stream[LibSM_Dataset]
+{
+  Description: 'Creates a copy of this dataset (the actual underlying dataset), gives it the specified name and returns it as a LibSM_Dataset wrapper.'
+  TextBody:
+  [*
+    // Create a LibSM_Dataset instance to wrap around the actual dataset.
+    dataset := LibSM_Dataset::Create( this.ScenarioManager(),
+                                      this.Kind(),
+                                      newName,
+                                      this.Path(),
+                                      this.TimezoneID() );
+    // Bind the dataset to the targetScenario.
+    targetScenario.Dataset( relset, dataset );
+    
+    // Start making the physical dataset copy.
+    options := DatasetCreateOptions::Construct( newName )
+               .AsCopy( this.DatasetMDSID() );
+    options.State( DatasetState::FromString( newStorageState ) );
+    mds := DatasetController::Create( this.Kind(), options );
+    
+    // return when the dataset has been created.
+    return mds->( mds )
+    {
+      dataset.IsLoadingInProgress( true );
+      dataset.UpdateState( mds );
+      return dataset;
+    }
+  *]
+}

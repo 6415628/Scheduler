@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportFromDB (String brokerID_i, String dataTransformationID_i, Boolean doSynchronize_i) as Boolean id:Method_LibDIF_GlobalState_ImportFromDB
+{
+  #keys: '[131092.1.1251594517]'
+  Body:
+  [*
+    // Import data from a database.
+    success   := false;
+    pingFirst := false;  // Assume that pinging has already been done when necessary.
+    
+    // Make sure that the Integration-dataset is selected.
+    if( this.EnsureIntegrationDataset() )
+    {
+      // Call the EDI-broker to import the data as integration objects.
+      // Synchronize the data if applicable.
+      api := this.GetIntegrationAPI();
+      if( not isnull( api ) )
+      {
+        if( doSynchronize_i )
+        {
+          api.ImportFromDBAndSynchronize( brokerID_i, dataTransformationID_i, pingFirst );
+        }
+        else
+        {
+          api.ImportFromDB( brokerID_i, dataTransformationID_i, pingFirst );
+        }
+      
+        success := true;
+      }
+    }
+    
+    return success;
+  *]
+}

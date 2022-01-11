@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedMPSPlannedOrder (CDIntegration cdintegration)
+{
+  Description: 'Restore imported MPS planned order core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedMPSPlannedOrder
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedMPSPlannedOrder ), cdmpspo )
+    {
+      importedMPSPlannedOrder := ImportedMPSPlannedOrder::Create( schedule, cdmpspo.MPSPlanID(), cdmpspo.RoutingID(), cdmpspo.DueDate() );
+      CopyCorresponding::CopyFrom( cdmpspo ).CopyTo( importedMPSPlannedOrder );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

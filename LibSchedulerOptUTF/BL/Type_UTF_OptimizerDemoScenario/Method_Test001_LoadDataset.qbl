@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test001_LoadDataset
+{
+  Description: 'Loads the demoscenario as a memory-only dataset'
+  TextBody:
+  [*
+    // Remove the dataset based on the dataset name we are going to copy to prevent a copy error
+    //row := this.GetTestUnitRow( this.Variant() );
+    //datasetname := row.DatasetName();
+    //datasetname := "Schedule"; // name of the loaded dataset that 
+    //schedule_mdsobject := MDSEditor::Editor().ObjectInfo( datasetkind, "/root", datasetname );
+    suffix := '_' + this.Variant() + '_' + DateTime::ActualTime().Format( 'YM2D2_H2ms' );
+    datasetName := "Schedule_" + this.DefinitionName() + suffix;
+    options := DatasetCreateOptions::Construct( datasetName )
+    //              .CopyAs( schedule_mdsobject.MDSID() ) // should not be needed because we'll anyway import our own data from the demo scenario.
+                  .State( DatasetState::MemoryOnly() )
+    schedule := MDSSchedule::Create( options );
+    
+    schedule->(s){
+      s.DemoManager().ResetToDemoData( this.DemoScenarioCategory(), this.DemoScenarioName(), false );
+      s.SynchronizationObject().SynchronizeKTWithMaterialReservation();
+    }
+    
+    this.WorkerDataset( datasetName );
+    
+    
+    // We get the ScenarioManager dataset here. It is better to have it as argument of the method
+    // by setting it in SetDatasets, but that is in the current UTF version not possible. 
+    // The current version uses Reactive Quill and internally it tries to cast all datasets to a stream[Object]
+    // which is not possible for ScenarioManager because that is a Tree. Once this has been fixed either in 
+    // Reactive Quill or ScenarioManager we can pass in the ScenarioManager as argument.
+    // 
+    // Method DatasetController::Find returns an empty structured[Key] if no dataset is found. We use it instead of 
+    // MDSScenarioManager::Find( options ) which can cause an unfinished UTF unit test if no dataset is found.
+    options_sm := DatasetFindOptions::Construct( LibSM_ScenarioManager::GetDatasetName() );
+    mdskeys := DatasetController::Find( options_sm );
+    if( mdskeys.Size() > 0 )
+    {
+      mdskey := mdskeys.Element( 0 );
+      // load the dataset if it's not loaded:
+      load_stream := stream[Object]::Success();
+      if( not MDSEditor::Editor().LoadedObjectInfo( mdskey ).IsLoaded() )
+      {
+        load_stream := DatasetController::Load( mdskey ); // ERRORS if already online!
+      }
+      scenariomanager_stream := load_stream ->| MDSLibSM_ScenarioManager::Root( mdskey );
+      remove_stream := scenariomanager_stream -> UTF_Optimizer::RemoveScenario( "Schedule" );
+      
+      remove_stream->Exception()->(e){
+        this.Run().RegisterFailure( e.Message() );
+      };
+      // load_stream flows into remove stream, so if an error appears in load_stream, it is also caught by above exception handling.
+    }
+    else
+    {
+      this.Run().WriteText( Translations::LibSchedulerOptUTF_ScenarioManagerNotFound() );
+    }
+  *]
+}

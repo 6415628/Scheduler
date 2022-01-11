@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method FSPLGetDownstreamMaterialReservationTasks () as owning Task_SCs
+{
+  Description: 'Get FSPL related downstream tasks linked via material reservation.'
+  TextBody:
+  [*
+    // woi1 Dec-13-2017 (created)
+    tasks := construct( Task_SCs );
+    
+    traverse( this, FSPLOperationInTask.OutputOperationMaterialFulfillment.AsInputOperationMaterialFulfillment.AsFSPLOperationInTask, down_task )
+    {
+      downtask := down_task.FSPLGetAllRelatedTasksExcept( down_task );
+      tasks := tasks.Union( downtask );
+    }
+    
+    tasks.Add( this );
+    
+    return &tasks
+  *]
+}

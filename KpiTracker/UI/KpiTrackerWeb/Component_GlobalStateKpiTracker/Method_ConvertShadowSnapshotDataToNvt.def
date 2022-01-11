@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method ConvertShadowSnapshotDataToNvt (structured[shadow[KpiSnapshotData]] shadowSnapshots) as NamedValueTree id:Method_GlobalStateKpiTracker_ConvertShadowSnapshotDataToNvt
+{
+  #keys: '[136398.1.783148964]'
+  Body:
+  [*
+    // Converts a shadow[SnapshotData] object to a NamedValueTree.
+    
+    nvt := NamedValueTree::Create();
+    
+    snapshotHandle  := nvt.GetHandle( 'KpiSnapshotData' );
+    serverDtHandle  := nvt.GetHandle( 'ServerDateTime' );
+    planDtHandle    := nvt.GetHandle( 'PlanDateTime' );
+    retentionHandle := nvt.GetHandle( 'RetentionPolicyIdentification' );
+    kpiHandle       := nvt.GetHandle( 'KpiValueData' );
+    labelHandle     := nvt.GetHandle( 'KpiLabelData' );
+    nameHandle      := nvt.GetHandle( 'Name' );
+    valueHandle     := nvt.GetHandle( 'Value' );
+    
+    traverse( shadowSnapshots, Elements, shadowSnapshot )
+    {
+      root := nvt.Root().AddChild( snapshotHandle );
+      root.AddChild( serverDtHandle, shadowSnapshot.ServerDateTime() );
+      root.AddChild( planDtHandle, shadowSnapshot.PlanDateTime() );
+      root.AddChild( retentionHandle, shadowSnapshot.RetentionPolicyIdentification() );
+      
+      // Kpis
+      traverse( shadowSnapshot, Value, val )
+      {
+        kpiNode := root.AddChild( kpiHandle );
+        kpiNode.AddChild( nameHandle, val.Name() );
+        kpiNode.AddChild( valueHandle, val.Value() );
+      }
+      
+      // Labels
+      traverse( shadowSnapshot, Label, lab )
+      {
+        labelNode := root.AddChild( labelHandle );
+        labelNode.AddChild( nameHandle, lab.Name() );
+        labelNode.AddChild( valueHandle, lab.Value() );
+      }
+    }
+    
+    return &nvt;
+  *]
+  ReturnsOwning: true
+}

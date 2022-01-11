@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoOnCommit (Boolean isnew)
+{
+  Description: 'Place OnCommit logic here to allow for easy overriding in subclasses.'
+  TextBody:
+  [*
+    synchronizationObject := this.Schedule().SynchronizationObject();
+    synchronizationObject.SynchronizeResourceConnections();
+    synchronizationObject.SynchronizeTools();
+    synchronizationObject.SynchronizeToolBlocks();
+    
+    // Update default optimizer if current selected optimizer is not enabled
+    enabledoptimizers := this.Schedule().GetOptimizerStrings().Tokenize( Constants::SemiColon() );
+    if( not exists( enabledoptimizers, Elements, optimizer, optimizer = this.Schedule().Optimizer().SelectedOptimizer() ) )
+    {
+      this.Schedule().Optimizer().UpdateDefaultSelectedOptimizer(); 
+    }
+  *]
+}

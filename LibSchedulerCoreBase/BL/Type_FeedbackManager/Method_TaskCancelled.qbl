@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method TaskCancelled (Operation_SC operation, String resource_id, DateTime time, 
+  String remark)
+{
+  Description: 'Feedback API: handle feedbacktask with feedback type StartCancelled or EndCancelled'
+  TextBody:
+  [*
+    // jiex Aug-25-2016 (created)
+    // The only use case we're supporting is receiving CANCELLED feedback AFTER receiving START feedback
+    // This means that we from a START feedback to having NO feedback
+    // (1) remove existing feedback task
+    // (2) plan the operation as first task in schedule
+    fbtaskinschedule := FeedbackTaskInSchedule::FindFeedbackTaskInSchedule( operation.WorkOrderId(),
+                                                                            operation.PlanUnitId(),
+                                                                            operation.WorkOrderSequenceNr() );
+    // Remove existing feedback task
+    if( not isnull( fbtaskinschedule ) )
+    {
+      fbtaskinschedule.Delete();
+    }
+    
+    // Reset and update statuses with remarks
+    operation.UpdateFeedbackStatus( Constants::StatusCancelled(), remark, resource_id );               
+    
+    // Plan the operation as first task in schedule
+    resource := Resource_SC::FindResource_SC( resource_id );
+    
+    if( not isnull( resource ) and resource.istype( SingleResourceBase ) )
+    {
+      resource.astype( SingleResourceBase ).PlanFirst( operation );
+    }
+  *]
+}

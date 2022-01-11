@@ -1,0 +1,58 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test055_ResourceExchangability_Capabilities (Schedule schedule)
+{
+  Description:
+  [*
+    Removes the allowedness of an operation on a resource and asserts that the optimizer correctly identified that resource group are not exchangable.
+    Input is the one operation.
+  *]
+  TextBody:
+  [*
+    // precondition: the UTS KT must correcly set 1 scope operation
+    debuginfo( schedule.MDSSchedule().Name() );
+    
+    // we can't call method `Run_Test03x_IsPlanned`, because it would only select the allowed resources in scope, but we also want the disallowed one for testing.
+    
+    // start scenario for test is empty schedule
+    schedule.UnplanAll();
+    Transaction::Transaction().Propagate();
+    
+    // get scope: this depends on the current UTF method name ("TestXXX")
+    operations := this.GetMethodOperationsInScope( this.GetCurrentMethodShortName(), schedule );
+    resources := Operation_SC::GetAllowedResources( operations );
+    resources := resources.Add( selectset( resources, Elements.ResourceGroup_SC.Resource_SC, r, true ) ); // include the disallowed resource
+    scope := UTF_Optimizer_Regression_Test_OptimizerSequencing::CreateScope( operations, resources );
+    
+    run := UTF_Optimizer_Regression_Test_OptimizerSequencing::CreateSelectorSpanAndSuboptimzierPOARun( UTF_Optimizer_Regression_Test_OptimizerSequencing::Optimizer( schedule ),
+                                                                                                        scope );
+    
+    result := run.Start();
+    assert1 := this->After( result )->Asserts_LastRunTerminatedStatus( schedule );
+    assert2 := this->After( result )->Asserts_Test_IsPlanned( schedule, operations, resources );
+    assert1->Exception()->Merge( assert2->Exception() )->( exception ) {
+      this.Run().RegisterFailure( "post-optimization checks failed:\n" + exception.Message() );
+    };
+    
+    result ->| void->() {
+      transientdata := UTF_Optimizer_Regression_Test_OptimizerSequencing::GetLastTransientData( schedule );
+      this.Run().AssertFalse( isnull( transientdata ), "Transient Data not saved by optimizer" );
+      operation := selectobject( this.GetMethodOperationsInScope( this.GetCurrentMethodShortName(), schedule ), Elements, op, true );
+      oor := select( operation, OperationOnResource, oor, true );
+      this.Run().AssertFalse( isnull( oor ), "The OperationOnResource object does not exist." );
+      traverse( transientdata, ResourceGroup, rg )
+      {
+        if( exists( rg.ResourceGroup(), Resource_SC, r, r = oor.Resource_SC() ) )
+        {
+          this.Run().AssertFalse( rg.IsExchangable(), "The optimizer did not recognize that resource group " + rg.ResourceGroup().Name() + " is not exchangable." );
+        }
+        else
+        {
+          this.Run().AssertTrue( rg.IsExchangable(), "The optimizer did not recognize that resource group " + rg.ResourceGroup().Name() + " is exchangable." );
+        }
+      }
+    }->Exception()->(exception) {
+      this.Run().RegisterFailure( "post-optimization assert failed:\n" + exception.Message() );
+    };
+  *]
+}

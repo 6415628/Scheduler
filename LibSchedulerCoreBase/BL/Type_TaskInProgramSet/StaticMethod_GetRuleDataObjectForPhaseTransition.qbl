@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetRuleDataObjectForPhaseTransition (Characteristic characteristic, Real currentvalue, BinaryValue previousphasecummulativecharacteristic, 
+  BinaryValue previousphasecummulativerealvalue, Boolean isfirsttaskinprogram) declarative remote as owning DORule_DataObjectSequencingRule
+{
+  Description: 'Get rule data object information as input to rule framework for validation of phase transition rules'
+  TextBody:
+  [*
+    // Get rule data object information as input to rule framework for validation of phase transition rules
+    previousvalue := 0.0;
+    
+    // For the first phase, characteristic DurationInHours or NumberOfTasks, previousvalue will be program change Task.SequenceNr or EndTime
+    if( isfirsttaskinprogram )
+    {
+      previousvalue := 0; 
+    }
+    // For other characteristics (e.g Length or Quantity), just based on previous phase last task cumulative values
+    else
+    {
+      previousvalue := Characteristic::GetCumulativeValueForCharacteristic( characteristic, 
+                                                                            previousphasecummulativecharacteristic,
+                                                                            previousphasecummulativerealvalue );
+    }
+    dosequencingrule := TaskInProgramSet::GetRuleDataObject( characteristic, currentvalue, previousvalue, true, 0.0 );
+    
+    return &dosequencingrule;
+  *]
+}

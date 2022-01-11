@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method VerifyCompatibilityAndUpdateSystemVersion (String senderGUID_i, NamedValueTree nvt_i, LibDEF_IntegrationEvent event_i) as Boolean
+{
+  Description:
+  [*
+    Checks if the Major version of a Message from another system matches with that of this systems.
+    Then, look for the System (if exist) and update its version information.
+  *]
+  TextBody:
+  [*
+    // Timothy G May-25-2016 (created)
+    majorVersionNVT := LibDEF_DataAccessor::GetHeaderPropertyAsNumber( nvt_i, LibDEF_DataAccessor::HEADER_MAJORVERSION() );
+    majorVersionDEF := LibDEF_DataAccessor::MAJORVERSION_VALUE();
+    
+    matchedMajorVersion := majorVersionDEF = majorVersionNVT;
+    
+    // log security
+    if( not matchedMajorVersion )
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  "Message rejected",
+                                  "Message received has MajorVersion '" + [String]majorVersionNVT
+                                  + "' while the MajorVersion of the receiving System is '" + [String]majorVersionDEF + "'." );
+    }
+    // update version information
+    else
+    {
+      sender := LibDEF_System::FindSystemByGUID( this, senderGUID_i );
+      if( not isnull( sender ) )
+      {
+        minorVersionNVT := LibDEF_DataAccessor::GetHeaderPropertyAsNumber( nvt_i, LibDEF_DataAccessor::HEADER_MINORVERSION() );
+    
+        if( sender.MajorVersion() <> majorVersionNVT or sender.MinorVersion() <> minorVersionNVT )
+        {
+          sender.UpdateVersion( majorVersionNVT, minorVersionNVT );
+          LibDEF_Util::EventLog( event_i, "The System has an updated Data Exchange Framework of version " + [String]majorVersionNVT + "." + [String]minorVersionNVT + "." );
+        }
+      }
+    }
+    
+    return matchedMajorVersion;
+  *]
+}

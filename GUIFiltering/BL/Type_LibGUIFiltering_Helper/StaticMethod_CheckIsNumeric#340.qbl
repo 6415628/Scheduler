@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsNumeric (output String token, output String valuetype) remote as Boolean
+{
+  TextBody:
+  [*
+    // PER Oct-11-2016 (created)
+    valuetype := '';
+    
+    if ( StringToReal::UserConverter().CanConvert( token ) )
+    {
+      r := StringToReal::UserConverter().Convert( token );
+      if ( r < Number::MaxNumber()
+       and r > Number::MinNumber()
+       and guard( floor( r ) = r, false )
+       and guard( ceil( r )  = r, false )
+       and StringToNumber::StandardConverter().CanConvert( token ) )
+      {
+        valuetype := 'Number';
+        token     := ([Number]r).AsQUILL();
+      }
+      else
+      {                     
+        valuetype := 'Real';
+        token     := r.AsQUILL();
+      }
+    }
+    else if ( StringToNumber::StandardConverter().CanConvert( token ) )
+    {
+      valuetype := 'Number';
+    }
+    
+    return valuetype <> '';
+  *]
+}

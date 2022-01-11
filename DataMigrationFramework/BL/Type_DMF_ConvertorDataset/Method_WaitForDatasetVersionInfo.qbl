@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method WaitForDatasetVersionInfo (Duration waitInterval_i, Number retryLimit_i) as stream[Boolean]
+{
+  Description: 'Before execution continues, wait for all datasets to have their "VersionInfo" calculated'
+  TextBody:
+  [*
+    // tgn3 Apr-26-2021 (created)
+    
+    // Wait until delay complete, then return
+    hasConvertorVersions := forall( this, DatasetType.Dataset, dataset, dataset.VersionInfo() <> "" );
+    success_s            := emit( hasConvertorVersions );
+    
+    if( not hasConvertorVersions )
+    {
+      if( retryLimit_i > 0 )
+      {
+        timeout := stream[Void]::Wait( waitInterval_i );
+        
+        success_s := timeout->|this->WaitForDatasetVersionInfo( waitInterval_i, retryLimit_i - 1 ); 
+      }
+      else
+      {
+        msg := "WaitForDatasetVersionInfos timed out while waiting for all datasets to have a valid 'VersionInfo'";
+        
+        DMF_Utility::LogWarning( msg );
+      } 
+    }
+    
+    return success_s;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

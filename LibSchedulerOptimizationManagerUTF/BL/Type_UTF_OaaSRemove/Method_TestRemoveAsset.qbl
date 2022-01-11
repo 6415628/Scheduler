@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRemoveAsset (Schedule schedule)
+{
+  Description: 'Test removing assets (resources) based on mock 3DSpace JSON data.'
+  TextBody:
+  [*
+    assetsArray := this.GetJSONRemove_AssetsArray().Build();
+    
+    for( i := 0; i < assetsArray.Size(); i++ )
+    {
+      assetID := assetsArray.Get( i ).GetString();
+      
+      isAssetRemoved := not exists( schedule, 
+                                    ResourceGroup_SC.Resource_SC, 
+                                    resource,
+                                    resource.ResourceID() = assetID
+                                    // CanBeDeleted checks if there are any tasks planned
+                                    and resource.CanBeDeleted() );
+      
+      this.Run().AssertTrue( isAssetRemoved,
+                             Translations::LibSchedulerOptMgrUTF_Resource_NotRemoved( assetID ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

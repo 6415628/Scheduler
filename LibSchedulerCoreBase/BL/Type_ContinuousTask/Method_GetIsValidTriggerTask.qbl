@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetIsValidTriggerTask (ContinuousTask previous) declarative as Boolean
+{
+  Description: "Validate if the given 'previous' continuous task is a valid trigger for current task."
+  TextBody:
+  [*
+    // 'previous' is a valid trigger if :
+    // 1. IsParallelWithPrevious = false
+    // 2. when it exits the continuous resource, the current operation can be fed into the resource
+    valid := not previous.IsParallelWithPrevious()
+             and previous.CumulativeDischargeLength() >= this.CumulativeChargeLength() - this.Resource_SC().Length() 
+             and previous.CumulativeDischargeLength() - previous.DischargeLength() < this.CumulativeChargeLength() - this.Resource_SC().Length();
+     
+    return valid;
+  *]
+}

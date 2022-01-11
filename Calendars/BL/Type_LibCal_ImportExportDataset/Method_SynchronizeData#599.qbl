@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeData (LibCal_ImportExport importExport_i, String context_i, Boolean doDelete_i, 
+  Boolean keepIfNotImported_i)
+{
+  TextBody:
+  [*
+    // First synchronize the Calendars...
+    synchronizedCalendars := this.SynchronizeCalendars( importExport_i );
+    
+    // ...then synchronize the Events, including their LeadingParticipation...
+    this.SynchronizeEvents( importExport_i, context_i, doDelete_i, keepIfNotImported_i );
+    
+    // ...and finally sychronize the Subscriptions, i.e. the Participations in other Calendars.
+    this.SynchronizeSubscriptions( importExport_i, context_i, doDelete_i, keepIfNotImported_i );
+    
+    // Update the calendars that have been synchronized.
+    traverse( synchronizedCalendars, Elements, calendar )
+    {
+      calendar.GenerateOccurrences();
+    }
+    
+    // If applicable, delete the Calendars that were not present in the import.
+    // This is done here at the end of the synchronization and not already in SynchronizeCalendars() because deleting calendars can result
+    // in actions in the planning (DeleteNotImportedCalendars() can be overridden) that should only done at the end of the synchronization.
+    if( doDelete_i )
+    {
+      importExport_i.DeleteNotImportedCalendars( synchronizedCalendars, context_i, keepIfNotImported_i );
+    }
+  *]
+}

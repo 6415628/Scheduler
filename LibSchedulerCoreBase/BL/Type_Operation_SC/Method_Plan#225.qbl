@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method Plan (Resource_SCs resources) as Task_SC
+{
+  Description: 'Plan this operation on one of the given resource candidates'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    task := null( Task_SC );
+    
+    resource := this.SelectSingleResource( resources );
+    
+    if( guard( not resource.HasBatch(), false ) )
+    {
+      if( resource.IsPlanRelatedOperations() )
+      {
+        Schedule::PlanRelatedOperationsBefore( this, resource, null( Task_SC ), true, false );
+      }
+      
+      task := resource.PlanLast( this );
+    }
+    
+    return task;
+  *]
+}

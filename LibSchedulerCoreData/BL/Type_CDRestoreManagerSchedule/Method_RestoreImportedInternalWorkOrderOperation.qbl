@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedInternalWorkOrderOperation (CDIntegration cdintegration)
+{
+  Description: 'Restore imported internal work order operation core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedInternalWorkOrderOperation
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedInternalWorkOrderOperation ), cdwop )
+    {
+      importedInWorkOrderOp := schedule.ImportedWorkOrderOperation( relnew, 
+                                                                    ImportedInternalWorkOrderOperation,
+                                                                    WorkOrderId := cdwop.WorkOrderId(), 
+                                                                    SequenceNr := cdwop.SequenceNr() 
+                                                                  );
+      CopyCorresponding::CopyFrom( cdwop ).CopyTo( importedInWorkOrderOp );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

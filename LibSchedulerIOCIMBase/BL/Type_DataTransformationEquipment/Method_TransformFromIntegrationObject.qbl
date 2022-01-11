@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride TransformFromIntegrationObject (const LibDIO_IntegrationObject integrationObject_i)
+{
+  TextBody:
+  [*
+    // Cast integrationObject_i to the applicable type.
+    integrationObject := integrationObject_i.astype( LibDII_CIM_Equipment );
+    
+    // Synchronize resource group.
+    // Get the existing instance.
+    importedResourceGroup := ImportedResourceGroup_SC::FindImportedResourceGroupTypeIndex( integrationObject.EquipmentClassID() );
+    
+    // Create a new instance if it does not exist yet.
+    if( isnull( importedResourceGroup ) )
+    {
+      schedule := this.IntegrationAPI().astype( IntegrationAPI ).Schedule();
+      importedResourceGroup := ImportedResourceGroup_SC::Create( schedule, integrationObject.EquipmentClassID(), integrationObject.EquipmentClassID() );
+    }
+    
+    // Update the values.
+    importedResourceGroup.Update( integrationObject.Index(), integrationObject.IsBottleneck(), integrationObject.IsPlanRelatedOperations(), integrationObject.UseFeedbackHistory(), 
+                                  integrationObject.FeedbackHistory(), integrationObject.UseSchedulingWindow(), integrationObject.SchedulingWindow(), integrationObject.UseFrozenHorizon(), 
+                                  integrationObject.FrozenHorizon() );
+    
+    // Mark the ImportedResourceGroup as synchronized.
+    importedResourceGroup.IsSoftDeleted( false );
+    
+    // Synchronize resource.
+    // Get the existing instance.
+    importedResource := ImportedResource_SC::FindImportedResourceTypeIndex( integrationObject.ID() );
+    
+    // Create a new instance if it does not exist yet.
+    if( isnull( importedResource ) )
+    {
+      importedResource := ImportedResource_SC::Create( importedResourceGroup, integrationObject.ID(), integrationObject.EquipmentClassID() );
+    }
+    
+    // Update the values.
+    importedResource.Update( integrationObject.Name(), integrationObject.Index(), integrationObject.CanOverlapCalendarBreak(), integrationObject.CanProcessOverlapCalendarBreak() );
+    
+    // Mark the ImportedResourceGroup as synchronized.
+    importedResource.IsSoftDeleted( false );
+  *]
+}

@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test081_TimeConstraintFinishToStartMin (Schedule schedule)
+{
+  TextBody:
+  [*
+    // jkr8 Dec-28-2020 (created)
+    
+    schedule.UnplanAll();
+    
+    schedule.TechnicalConfiguration().IsDataDrivenTimeConstraintsMode( true );
+    
+    schedule.SynchronizationObject().SynchronizeWorkOrderOperationPrecedences();
+    schedule.SynchronizationObject().SynchronizeOperationDependencies();
+    
+    scope := construct( LibOpt_ScopeElements );
+    
+    operations := construct( Operation_SCs );
+    
+    op1 := select( schedule, Operation_SC, o, o.OperationID() = 'PU_1_000-10' );
+    op2 := select( schedule, Operation_SC, o, o.OperationID() = 'PU_1_000-20' );
+    operations.Add( op1 );
+    operations.Add( op2 );
+    resources := selectset( schedule, ResourceGroup_SC.Resource_SC, res, true );
+    
+    optimizersequencing := UTF_Optimizer_Regression_Test_OptimizerSequencing::Optimizer( schedule );
+    oldduration := optimizersequencing.UserSetting().TimeLimit();
+    optimizersequencing.UserSetting().TimeLimit( Duration::Seconds( 1 ) );
+    
+    result1 := optimizersequencing->Optimize( operations, resources );
+    result2 := void->After( result1 )->()
+    {
+      this.Asserts_LastRunTerminatedStatus( schedule );
+      this.Asserts_RunWithoutWarningsAndErrors( schedule );
+      this.Asserts_Test_IsPlanned( schedule, operations, resources );
+      this.Asserts_Test081_TimeConstraintFinishToStartMin( schedule, operations );
+      // Mark the last run by the name of this method:
+      optimizersequencing.LastRun().Comment( 'Test081_TimeConstraintFinishToStartMin' );    
+    }
+    
+    scope.Add( op1.GetOrCreateScopeElement() );
+    scope.Add( op2.GetOrCreateScopeElement() );
+    
+    // Reset the settings
+    void->After( result2 )->() 
+    {
+      schedule.TechnicalConfiguration().IsDataDrivenTimeConstraintsMode( false );
+      
+      schedule.UnplanAll();
+    
+      schedule.SynchronizationObject().SynchronizeWorkOrderOperationPrecedences();
+      schedule.SynchronizationObject().SynchronizeOperationDependencies();
+      
+      optimizersequencing.UserSetting().TimeLimit( oldduration );
+    }
+  *]
+}

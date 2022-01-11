@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Remove (LibOpt_ScopeElement scope_element)
+{
+  TextBody:
+  [*
+    shared := scope_element.ScopeShared();
+    
+    if( not isnull( shared ) )
+    {
+      if( shared.ScopeSharedOnScope( relsize ) = 1 )
+      {
+        scope_element.ScopeShared( relflush );
+        if( scope_element.Optimization().AutoDeleteScopeElements()
+            and scope_element.ScopeElementOnScope( relsize ) = 0 )
+        {
+          scope_element.Delete();
+        }
+      }
+      else
+      {
+        new_shared := shared.FindSharedWithout( this );
+        if( isnull( new_shared ) )
+        {
+          scopes := selectset( shared, ScopeSharedOnScope.ScopeThin, scope, scope <> this );
+          new_shared := LibOpt_ScopeShared::Create( scopes, shared.Group() );
+        }
+        scope_element.ScopeShared( relset, new_shared );
+      }
+    }
+  *]
+}

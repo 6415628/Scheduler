@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ParseTags (String string, Strings output) const declarative remote
+{
+  TextBody:
+  [*
+    hashtag := Char::Construct( 35 ); // #
+    white_space := Char::Construct( 32 ); // Space
+    pos := 0;
+    while( pos >= 0 )
+    {
+      tag_index_start := string.FindChar( hashtag, pos );
+      if( tag_index_start >= 0 )
+      {
+        // Select the position of the next space char, if there is none, use the end of string position.
+        tag_index_end_ws := string.FindChar( white_space, tag_index_start + 1 );
+        if( tag_index_end_ws = -1 )
+        {
+          tag_index_end_ws := string.Length();
+        }
+        
+        // Select the position of the next hashtag char, if there is none, use the end of string position.
+        tag_index_end_ht := string.FindChar( hashtag, tag_index_start + 1 );
+        if( tag_index_end_ht = -1 )
+        {
+          tag_index_end_ht := string.Length();
+        }
+        
+        // Determine the end position of the tag
+        tag_index_end := minvalue( tag_index_end_ws, tag_index_end_ht );
+        
+        // Read the tag
+        output.Add( string.SubString( tag_index_start + 1, tag_index_end - tag_index_start - 1 ) );
+        pos := tag_index_end;
+      }
+      else
+      {
+        pos := -1;
+      }
+    }
+  *]
+}

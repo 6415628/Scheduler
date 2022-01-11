@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: #root
+Method CopyKnowledgeBranches (LibSM_KnowledgeProfile sourceKnowledgeProfile, LibSM_KnowledgeProfile newKnowledgeProfile) id:Method_LibSM_GlobalState_CopyKnowledgeBranches
+{
+  #keys: '[136398.1.587826894]'
+  Body:
+  [*
+    // Make a copy of knowledge branches
+    Domain.PublishKnowledge();
+    editor := CKBEditor::Create();
+    kbids  := editor.GetKBs();
+    
+    traverse( sourceKnowledgeProfile, KnowledgeBaseBranchInProfile, kbbranch )
+    {
+      copiedBranchInSelection := select( newKnowledgeProfile, KnowledgeBaseBranchInProfile, kb,
+                                         kb.KBDefinitionName() = kbbranch.KBDefinitionName() );
+    
+    
+      // only make a new copy if the KB branch name is different from the source
+      if( copiedBranchInSelection.KBBranchName() <> kbbranch.KBBranchName() )
+      {
+        kbid    := select( kbids, Elements, kbid, kbid.Name() = kbbranch.KBDefinitionName() );
+        kbinfos := editor.GetKBStructure( kbid );
+    
+        // and also only if the new copy branch name does not exists in the model
+        if( not exists( kbinfos, Elements.KBFullID, k,
+                        k.Branch().ToUpper() = copiedBranchInSelection.KBBranchName().ToUpper()
+                    and k.Version() = copiedBranchInSelection.KBBranchVersion() ) )
+    
+        {
+          kbfullid := maxselect( kbinfos, Elements.KBFullID, k,
+                                 k.Branch().ToUpper() = kbbranch.KBBranchName().ToUpper(),
+                                 k.ChangeNr() );
+    
+          modelkb := editor.GetModelKB( kbfullid.KBID() );
+    
+          //get a copy so we could edit
+          saveid := KBFullID::Create( kbfullid.Domain(), kbfullid.Name(), kbfullid.Branch(), kbfullid.Version() );
+          saveid.Version( "1.0.0.0" );
+    
+          saveid.Branch( copiedBranchInSelection.KBBranchName() );
+    
+          //Perform the upgrade if needed
+          ckbhandle := editor.LoadKB( kbfullid );
+          ckbhandle.CKB().ValidateAll();
+          ckbhandle.CKB().Upgrade( modelkb.CKB() );
+    
+          //Perform the actual saveAs action
+          editor.SaveKBAs( ckbhandle, saveid, '' );
+        }
+      }
+    }
+  *]
+}

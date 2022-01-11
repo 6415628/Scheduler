@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateDataPieces (NamedValueTree nvt_i) as owning LibDEF_NamedValueTreeContainer
+{
+  Description: 'Create DataPieces for buffering based on the given NVT by chunking the NVT to pieces.'
+  TextBody:
+  [*
+    // First see whether chunking of NVT is really needed or not.
+    // If not, then just create an NVT group with only one NVTContainer containing the original NVT.
+    // This is to save time.
+    nvtContainer := null( LibDEF_NamedValueTreeContainer, owning );
+    if( this.GetNumberOfPiecesRequired() > 1 )
+    {
+      nvtContainer := LibDEF_NamedValueTreeProcessor::ChunkNvt( nvt_i, this.ChunkSizeLimit() );
+    }
+    else
+    {
+      nvtContainer := construct( LibDEF_NamedValueTreeContainer );
+      LibDEF_NamedValueTree::Create( nvtContainer, nvt_i );
+    }
+    
+    this.CreateDataPieces( nvtContainer );
+    
+    return &nvtContainer;
+  *]
+}

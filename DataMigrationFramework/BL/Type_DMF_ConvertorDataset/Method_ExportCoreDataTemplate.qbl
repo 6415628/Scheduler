@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExportCoreDataTemplate (Type datasetType_i, String datasetName_i, Object rootObject_i)
+{
+  Description: "API to export only the 'Core data template', including upgradeability metadata"
+  TextBody:
+  [*
+    // Murugaiya Mar-17-2021 (created)
+    
+    dbInterface := this.DBInterface();
+    
+    // Create SQLite file and populate it with 'Core data template'
+    dbTemplateFileName := dbInterface.GetExportDatabaseFileName( datasetType_i, datasetName_i, rootObject_i );
+    
+    // Assumption: we always want to overwrite the older template (in case core data schema changed)
+    duioTemplate := dbInterface.FindCreateTemplateDB( dbTemplateFileName, rootObject_i, true );
+    
+    // Retrieve metadata and insert it to the schema
+    // DevNote: GetInfo method should be overridden by the end-user to retrieve the metadata object
+    metadata := DMF_UpgradeabilityMetaData::GetMetadataObjectExtensible( rootObject_i );
+    
+    if( not isnull( metadata ) )
+    {
+      dbInterface.InsertMetadata( duioTemplate, metadata );
+    }
+    else
+    {
+      DMF_Utility::LogError( 'Meta data object not initialized for the dataset ' + datasetName_i + ' please ensure that the DMF_UpgradeabilityMetaData is initialized during onCreate of the dataset. ');
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

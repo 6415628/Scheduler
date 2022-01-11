@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericProductExternalFulfillment (const ProductDemand productdemand)
+{
+  Description: 'Backup generic product external fulfillment core data'
+  TextBody:
+  [*
+    traverse( productdemand, Fulfillment.astype( GenericProductExternalFulfillment ), genericProductExternalFulfillment )
+    {
+      cdGenericProductExternalFulfillment := this.CDEntity( relnew, CDGenericProductExternalFulfillment );
+      CopyCorresponding::CopyFrom( genericProductExternalFulfillment ).CopyTo( cdGenericProductExternalFulfillment );  
+      
+      cdGenericProductExternalFulfillment.OperationMaterialID( guard( genericProductExternalFulfillment.OperationMaterial().OperationMaterialID(), '' ) );
+      cdGenericProductExternalFulfillment.BackupSupplyType( guard( genericProductExternalFulfillment.Supply().SupplyType(), '' ) );
+      cdGenericProductExternalFulfillment.ImportedFixedFulfillmentBackupID( guard( genericProductExternalFulfillment.ImportedFixedFulfillment().BackupImportedID(), '' ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[DemandBatch] selection) id:Response_SCListDemandBatch_MenuPlanBatchesToEarliestAvailableResource_OnClick
+{
+  #keys: '[134372.0.82337932]'
+  Body:
+  [*
+    // Plan to earliest available resource
+    operations := selectset( selection, Elements.BatchWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, operation, true );
+    Schedule.PlanOperations( operations );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /Responsedef_SCListDemandBatch_Menu_OnClick
+  Initiator: 'MenuPlanBatchesToEarliestAvailableResource'
+  Precondition:
+  [*
+    isallowedhard := true;
+    operations := selectset( selection, Elements.BatchWorkOrder.Order_SC.PlanUnit_SC.Operation_SC, operation, true );
+    value := Operation_SC::CanReplan( operations, false, feedback, isallowedhard )
+    value := Operation_SC::CheckHasAllowedResources( operations, feedback ) and value;
+    
+    if( not value )
+    {
+      feedback := Translations::SC_CannotBeReplanned( Operation_SC::GetSelectedObjects( operations ) ) + String::NewLine() + feedback;
+    }
+    
+    return value;
+  *]
+}

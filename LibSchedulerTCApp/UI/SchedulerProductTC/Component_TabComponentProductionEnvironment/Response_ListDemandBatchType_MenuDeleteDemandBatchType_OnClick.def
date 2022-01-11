@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: ListDemandBatchType
+Response OnClick (structured[DemandBatchType] selection) id:Response_ListDemandBatchType_MenuDeleteDemandBatchType_OnClick
+{
+  #keys: '[139424.1.675309172]'
+  Body:
+  [*
+    // Delete DemandBatchTypes
+    deletableDemandBatchTypes := selectset( selection, Elements, demandBatchType, demandBatchType.CanBeDeleted() );
+    DemandBatchType::Remove( deletableDemandBatchTypes );
+  *]
+  DefinitionID => /ListDemandBatchType/Responsedef_ListDemandBatchType_Menu_OnClick
+  Initiator: 'MenuDeleteDemandBatchType'
+  Precondition:
+  [*
+    DemandBatchType::CanRemove( selection )
+    // Workaround to show feedback in the old way until all responses are converted to use FeedbackObject. 
+    feedback := ApplicationScheduler.ShowOldStyleFeedback( FeedbackObject::CurrentFeedback().Feedback() );
+    
+    return FeedbackObject::IsAllowed();
+  *]
+}

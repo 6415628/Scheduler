@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method DeselectScenario (GUIComponent component, Key datasetMDSID) id:Method_LibSM_GlobalState_DeselectScenario
+{
+  #keys: '[136398.1.587826897]'
+  Body:
+  [*
+    // Deselect a scenario in component level
+    
+    componentMDS := null( ComponentMDS );
+    
+    if( not isnull( component ) )
+    {
+      componentMDS := ComponentMDS::CreateForLoadedMDSsOnly( component );
+    }
+    else
+    {
+      componentMDS := ComponentMDS::CreateForLoadedMDSsOnly( Application );
+    }
+    
+    if( not datasetMDSID = Key::ZeroKey() )
+    {
+      mdsInstance := select( componentMDS,
+                             ComponentMDSKinds.ComponentMDSInstances, m,
+                             m.MDSID().Equals( datasetMDSID )
+                            );
+    
+      if( not isnull( mdsInstance ) and not isnull( componentMDS ) )
+      {
+        mdsInstance.ComponentMDSKind().DeselectAll();
+        componentMDS.Apply();
+      }
+    
+      if ( guard( dhActiveScenario.Data().Dataset().DatasetMDSID(), Key::ZeroKey() ) = datasetMDSID )
+      {
+        this.dhActiveScenario().Data( null( LibSM_Scenario ) );
+      }
+    }
+  *]
+}

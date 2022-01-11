@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetPeriodWithEndDate (Date startDate_i, Date endDate_i)
+{
+  Description: 'Set a recurrence period that starts at a specific date and ends at a specific date.'
+  TextBody:
+  [*
+    // Check if a new RecurrencePeriod must be created.
+    period       := guard( this.RecurrencePeriod().astype( LibCal_RecurrencePeriodWithEndDate ), null( LibCal_RecurrencePeriodWithEndDate ) );
+    changeOfType := isnull( period );
+    
+    isChanged := changeOfType  // There was no period yet, or it was not a PeriodWithoutEnd
+              or period.StartDate() <> startDate_i
+              or period.EndDate()   <> endDate_i;
+    
+    if( isChanged )
+    {
+      if( endDate_i >= startDate_i )
+      {
+        prevPeriod    := this.GetRecurrencePeriod(); // Can be the one from the LeadingParticipation.
+        prevStartDate := guard( prevPeriod.StartDate(), Date::MinDate() );
+        prevEndDate   := guard( prevPeriod.EndDate(),   Date::MaxDate() );
+      
+        if( changeOfType )
+        {
+          // Create a new RecurrencePeriod.
+          period := LibCal_RecurrencePeriodWithEndDate::Create( this, startDate_i, endDate_i );
+        }
+        else
+        {
+          period.StartDate( startDate_i );
+          period.EndDateSet( endDate_i  );
+        }
+        
+        // Directly calculate the new EndDate.
+        period.CalcEndDate();
+      
+        // Register the previous startdate and enddate.
+        // They are used to determine which occurrences must be created / deleted for the changed period.
+        period.PreviousStartDate( prevStartDate );
+        period.PreviousEndDate(   prevEndDate   );
+      
+        this.HasChangedRecurrencePeriod( true );
+      }
+      else
+      {
+        LibCal_Util::Error( this.Calendar().CalendarID() + "." + this.Event().Subject() + " : " + 
+                            "EndOfPeriod < StartOfPeriod (" + [String]endDate_i + " < " + [String]startDate_i + ")" );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

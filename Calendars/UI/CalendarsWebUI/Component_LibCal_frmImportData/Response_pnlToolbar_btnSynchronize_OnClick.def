@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: pnlToolbar/btnSynchronize
+Response OnClick () id:Response_pnlToolbar_btnSynchronize_OnClick
+{
+  #keys: '[131094.0.2034175296]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebButton_OnClick'
+  Precondition:
+  [*
+    return Form.DatasetsOK();
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Synchronize the imported data to the planning-dataset.
+      // Ask if the user want to continue when the are errors.
+      continue := true;
+      
+      if( guard( [Number]lblNrOfErrors.Text(), 0 ) > 0 )
+      {
+        continue :=  WebMessageBox::Warning( "The imported data contains errors. Only data without errors will be synchronized." +
+                                             String::NewLine() + String::NewLine() +
+                                             "Do you want to continue?" + String::NewLine(), 
+                                             Translations::MessageBox_YesNo(), true ) = 0  // ShowModal
+      }
+      
+      if( continue )
+      {
+        // Call SynchronizeData in the planning-dataset.
+        Form.SynchronizeData();
+      }
+    *]
+    GroupServerCalls: false
+  }
+}

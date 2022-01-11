@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method Script_2018Q2_fix_relation_to_imported_reservation
+{
+  TextBody:
+  [*
+    // ProductExternalFulfillment.ImportedReservation_SC relation has been removed and replace with Fulfillment.ImportedExternalFulfillment_SC
+    // Therefore this script is obsolete
+    // QP 15253,15254
+    /* 
+    traverse( this.Schedule(), Demand.Fulfillment, fulfillment )
+    {
+      if( fulfillment.istype( GenericProductExternalFulfillment ) and fulfillment.Demand().istype( ProductPlannedDemand ) )
+      {
+        demand := WorkOrderDemand::FindWorkOrderDemand( fulfillment.Demand().astype( ProductPlannedDemand ).WorkOrderDemand().Id() );
+        ext2wo_reservation := ImportedReservationExt2WO_SC::FindImportedReservationExt2WO_SC( fulfillment.SupplyId(), demand.Id() );
+                                                                                   
+        fulfillment.astype( GenericProductExternalFulfillment ).ImportedReservation_SC( relset, ext2wo_reservation );
+      }
+      else if( fulfillment.istype( GenericProductExternalFulfillment ) and fulfillment.Demand().istype( ProductCustomerOrderLine ) )  
+      {
+        demand := fulfillment.Demand().astype( ProductCustomerOrderLine );
+        demandid := ProductCustomerOrderLine::GetDemandID( demand.OrderNr(), demand.OrderLineNr() );
+        customerorderline := ProductCustomerOrderLine::FindProductCustomerOrderLine( DemandType::ProductCustomerOrderLine(), demandid );
+        
+        supply := WorkOrderSupply::FindWorkOrderSupply( fulfillment.Supply().astype( ProductPlannedSupply ).WorkOrderSupply().Id() )
+        
+        wo2col_reservation := ImportedReservationWO2COL_SC::FindImportedReservationWO2COL_SC( supply.Id(), customerorderline.OrderNr(), customerorderline.OrderLineNr() );
+        
+        fulfillment.astype( GenericProductExternalFulfillment ).ImportedReservation_SC( relset, wo2col_reservation );            
+      }      
+    }
+  *]
+}

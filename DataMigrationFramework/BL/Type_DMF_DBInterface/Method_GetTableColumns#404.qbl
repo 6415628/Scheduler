@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetTableColumns (DataUpgradeIO duio_i, String tableName_i, Strings excludeColumns_i) as owning Strings
+{
+  Description: 'Retrieve the columns of a table from a DB file'
+  TextBody:
+  [*
+    // tgn3 Apr-14-2021 (created)
+    
+    columns := construct( Strings );
+    
+    results := construct( Strings );
+    msg     := "";
+    
+    query := "SELECT name FROM PRAGMA_TABLE_INFO('" + tableName_i + "')";
+    
+    isSuccess := this.Execute( duio_i, query, results, msg );
+    
+    // Only handle result if query succeeded
+    // DevNote: if there are no rows in the table, a size 1 result is returned with an empty string
+    // Which is not what we want for columns..
+    if( isSuccess )
+    {
+      columns := results.Copy();  // Mind: copy required or will not have ownership returned
+      
+      // Remove excluded columns from result
+      // Key and IsFrozen is intentionally always excluded
+      // These aren't detectable when we scan a types MdlAttrElements,
+      // So we're not able to check them
+      excludeColumns := "Key,IsFrozen".Tokenize( "," );
+      excludeColumns := excludeColumns.Union( excludeColumns_i );
+      
+      columns := columns.Difference( excludeColumns );
+    }
+    else
+    {
+      DMF_Utility::LogWarning( msg ); 
+    }
+    
+    /* Debug - do not delete
+    traverse( columns, Elements, column )
+    {
+      logfile( ">>> Column", column ); 
+    }
+    //*/
+    
+    return &columns;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

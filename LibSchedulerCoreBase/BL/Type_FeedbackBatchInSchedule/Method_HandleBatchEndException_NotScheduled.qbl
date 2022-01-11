@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleBatchEndException_NotScheduled (DateTime end, String resource_id, String remark)
+{
+  Description: 'Exception check for TaskEnd feedback reported for task that was not scheduled'
+  TextBody:
+  [*
+    // jiex Sep-1-2016 (created)
+    // Check exception for for TaskEnd feedback reported for task that was not scheduled
+    resource := Resource_SC::FindResource_SC( resource_id );
+    
+    if( not isnull( resource ) )
+    {
+      ops := selectvalues( this, FeedbackBatchContentInSchedule.OperationBatchFeedback.AsOwningOperation_SC, operation, 
+                                    isnull( operation.Task_SC() ),                                
+                                    operation.OperationID() );
+    
+      if( ops.Size() > 0 )
+      {
+        this.Exception_NotScheduledOperationID( ops.ToString(';') );
+        this.Exception_HasBatchContentNotScheduled( true );
+        this.UpdateFeedbackEnd( end, resource_id, Constants::StatusEnd(), remark ); 
+        this.ExportedStart( end - this.ExportedProcessDuration() )
+      }                       
+    }
+  *]
+}

@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: listContextMenuDemands_1/MenuReserveMaterialsForDemand
+Response OnClick (structured[Demand] selection) id:Response_listContextMenuDemands_1_MenuReserveMaterialsForDemand_OnClick
+{
+  #keys: '[143768.1.250808120]'
+  CanBindMultiple: false
+  DefinitionID => /listContextMenuDemands_1/Responsedef_listContextMenuDemands_1_MenuRemoveDemandReservations_265_OnClick
+  GroupServerCalls: true
+  QuillAction
+  {
+    Body:
+    [*
+      // Automatically reserves material for selected demands
+      existFrozenDemand := exists( selection, Elements, demand, demand.IsFrozenInSchedule() );
+      
+      if( Scheduler.ConstructMessageBoxForSoftPrecondition( existFrozenDemand, Translations::SC_Confirmation_MaterialReservation_Demands() ) )
+      {
+        supplies := selectset( Schedule, Supply, supply, true );
+        fulfillments := selectset( selection, Elements.Fulfillment, f, true );
+        Fulfillment::CreateAutoPlannedFulfillments( selection, supplies, fulfillments, false, 0.0 );
+      }
+    *]
+  }
+}

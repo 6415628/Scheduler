@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: ndTimeInterval
+Response OnDraw (LibCal_ExplicitTimeInterval element) id:Response_LibCal_gcCalendar_ndTimeInterval_OnDraw
+{
+  #keys: '[131094.1.535387879]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebGanttChartNode_OnDraw'
+  QuillAction
+  {
+    Body:
+    [*
+      // Draw the backgroundcolor of the node based on the EventType.
+      eventType := element.Participation().Event().Type();
+      
+      // Show white as light yellow because the backgroundcolor of the row is white and cannot be changed.
+      white := Color::Color( 255, 255, 204 );  // Light yellow
+      
+      if( eventType = LibCal_Event::TYPE_UNAVAILABLE() )
+      {
+        drawinfo.BackgroundColor( Color::LightGray() );
+      }
+      else if( eventType = LibCal_Event::TYPE_AVAILABLE() )
+      {
+        drawinfo.BackgroundColor( white );
+      }
+      else if( eventType = LibCal_Event::TYPE_PARTIAL() )
+      {
+        backgroundColor := Color::Interpolate( Color::Gray(), white, 0.7 );  // Grayish yellow
+        drawinfo.BackgroundColor( backgroundColor );
+      }
+      
+      // Show whether the event is recurring or not.
+      img := ifexpr( element.Participation().IsRecurring(), "REFRESH", "" );
+      drawinfo.Image( 0, img );
+    *]
+    GroupServerCalls: false
+  }
+}

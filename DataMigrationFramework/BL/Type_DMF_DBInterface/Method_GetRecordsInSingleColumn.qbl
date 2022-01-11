@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetRecordsInSingleColumn (DataUpgradeIO duio_i, String table_i, Strings requiredColumns_i) as owning Strings
+{
+  Description:
+  [*
+    Helper method to retrieve columns of a record into a single column
+    
+    DevNote: there is a limitation with the DataUpgradeIO that doesn't allow multi-column data to be returned
+  *]
+  TextBody:
+  [*
+    // tgn3 Apr-9-2021 (created)
+    
+    // Default records to return (none)
+    records := construct( Strings );
+    
+    // Assume empty results by default
+    results := construct( Strings );
+    msg     := "";
+    delim   := DMF_DBInterface::GetKeyValueDelimiter();
+    
+    /* Example - Return key-value pairs in a concatenated column
+    SELECT( 'CoreDataBuildVersion='||CoreDataBuildVersion ) AS object FROM DMF_UpgradeabilityMetaData
+    */              
+    concatenatedColumns := selectvalues( requiredColumns_i, Elements, column, true, 
+                                         "'" + column + delim + "'||" + column ).ToString( DMF_DBInterface::GetConcatenationDelimiter() );
+    
+    query := "SELECT (" + concatenatedColumns + ") AS object FROM " + table_i;
+    
+    isSuccess := this.Execute( duio_i, query, results, msg );
+    
+    // Only handle result if query succeeded
+    // DevNote: this may actually not be necessary, but is done so for consistency with other execute patterns
+    if( isSuccess )
+    {
+      records := results.Copy();  // Mind: copy required or will not have ownership returned
+    } 
+    else
+    {
+      DMF_Utility::LogWarning( msg ); 
+    }
+    
+    return &records;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

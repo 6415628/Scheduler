@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride FeedbackMessage (const Rule rule, DORule_DataObjectSequencingRule do_rule) const declarative remote as String
+{
+  TextBody:
+  [*
+    // Construct feedback message for min/max value
+    feedback := Translations::RuleFeedback_MinMaxValue( rule.Name(),
+                                                         guard( rule.CharacteristicMain().Name(), "" ),
+                                                         do_rule.CurrentRealValue(),
+                                                         ifexpr( this.IsMinimum(), Translations::RuleFeedback_LessThan(), Translations::RuleFeedback_MoreThan() ),
+                                                         this.Name().ToLower(),
+                                                         rule.RuleValue() );
+    // Append program set name
+    feedback := this.AppendProgramSetName( feedback, do_rule );
+    
+    return feedback;
+  *]
+}

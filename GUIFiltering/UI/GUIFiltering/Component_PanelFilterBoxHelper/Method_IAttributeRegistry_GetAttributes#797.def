@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method IAttributeRegistry_GetAttributes (shadow[LibGUIFiltering_RegisteredComponent] registeredcomponent, internal[List] list, internal[DataSetLevelImp] level, 
+  String restriction) id:Method_LibGUIFiltering_PanelFilterBoxHelper_IAttributeRegistry_GetAttributes_797
+{
+  #keys: '[128900.0.529277205]'
+  Body:
+  [*
+    typeinterface := level.TypeInterface();
+    objecttype    := typeinterface.Type().Name();
+    
+    traverse( level.Columns(),
+              Columns.astype(DataSetDataColumn),
+              col,
+              restriction = col.Name()
+           or restriction = Translations::LibGUIFiltering_All()
+           or restriction = '' )
+    {
+      path := col.DataMember();
+    
+      this.IAttributeRegistry_Add( objecttype, path );
+    }
+    
+    traverse( level.Columns(),
+              Columns.astype(DataSetConstraintColumn),
+              col,
+              restriction = col.Name()
+           or restriction = Translations::LibGUIFiltering_All()
+           or restriction = '' )
+    {
+      path := col.DataMember();
+    
+      this.IAttributeRegistry_Add( objecttype, path );
+    }
+    
+    traverse( level.Columns(),
+              Columns.astype(DataSetConfigurableColumn),
+              col,
+              restriction = col.Name()
+           or restriction = Translations::LibGUIFiltering_All()
+           or restriction = '' )
+    {
+      columnattributes := construct( Strings );
+      this.IAttributeRegistry_GetValueAttributes( col.Text(), columnattributes );
+    
+      traverse( columnattributes, Elements, columnattr )
+      {
+        this.IAttributeRegistry_Add( objecttype, columnattr );
+      }
+    }
+  *]
+}

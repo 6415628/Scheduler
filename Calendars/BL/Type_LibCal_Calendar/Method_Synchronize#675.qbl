@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method Synchronize (DateTime base_i, Duration updateInterval_i, Number window_i, 
+  Number history_i, Boolean isAlwaysAvailable_i)
+{
+  Description: 'Synchronize the calendar,typically with the data of an integration object.'
+  TextBody:
+  [*
+    // Only take over the settings when they have been provided.
+    if( base_i.IsFinite()
+     or window_i  <> 0
+     or history_i <> 0
+     or updateInterval_i <> Duration::Zero() )
+    { 
+      // First validate the settings.
+      // If something is wrong the validation results in an error so that the actual update below will not be executed.
+      // this.Update( ... ) is not called here, in order to postpone re-generation of occurrences only at the end of the synchronization.
+      this.Validate( base_i, updateInterval_i, window_i, history_i );
+      
+      this.Base(           base_i           );
+      this.UpdateInterval( updateInterval_i );
+      this.Window(         window_i         );
+      this.History(        history_i        );
+      
+      // Subscribe to / unsubscribe from Event "Always available" if applicable.
+      this.SetIsAlwaysAvailable( isAlwaysAvailable_i );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

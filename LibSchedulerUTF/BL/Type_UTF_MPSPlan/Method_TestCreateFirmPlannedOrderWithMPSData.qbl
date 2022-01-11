@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCreateFirmPlannedOrderWithMPSData (Schedule schedule)
+{
+  Description: 'Test the creation of firm planned orders from MPS planned orders, checks whether they have the exact same data.'
+  TextBody:
+  [*
+    testInstance := this.GetTestInstance( this.Variant() );
+    
+    Transaction::Transaction().Propagate( relation( MPSPlannedOrder, Routing ) ); // Need this relation propagated to create firm planned orders
+    Transaction::Transaction().Propagate( attribute( MPSPlannedOrder, QuantityOpen ) ); // Need updated open quantity to create firm planned orders
+    
+    traverse( schedule, MPSPlan.MPSPlannedOrder, mpsPlannedOrder, mpsPlannedOrder.CanCreateFirmPlannedOrder() )
+    {
+      mpsPlannedOrder.CreateFirmPlannedOrder();
+    }
+    
+    // Partial propagate this declarative relation to determine that firm planned orders were indeed created for this MPS planned order
+    Transaction::Transaction().Propagate( relation( MPSPlannedOrder, WorkOrder ) );
+    
+    // No need to guard since the relation is being reused during traverse
+    allMPSPlannedOrderHasFirmPlannedOrder := forall( schedule, 
+                                                     MPSPlan.MPSPlannedOrder.WorkOrder, 
+                                                     workOrder, 
+                                                     workOrder.DueDate() = workOrder.MPSPlannedOrder().DueDate()
+                                                     and workOrder.RoutingID() = workOrder.MPSPlannedOrder().RoutingID()
+                                                     and workOrder.Quantity() = workOrder.MPSPlannedOrder().Quantity() );
+    
+    // Don't need to check firm planned order creation if no mps planned orders were synchronized
+    this.Run().AssertTrue( not testInstance.IsSyncMPSPlannedOrder() or allMPSPlannedOrderHasFirmPlannedOrder,
+                           UTFUtility::GenerateFailedMessage( 'Creation of firm planned order based on MPS data', '' ) );
+  *]
+}

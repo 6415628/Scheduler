@@ -1,0 +1,126 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test050_GetDownstream (LibOpt_TestDataset dataset)
+{
+  Description: 'Test the `GetOutgoingLink`, `GetDownstreamLinks` and `GetDownstreamComponents` methods on the components.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    
+    runs := opt.CreateAllComponents();
+    
+    traverse( runs, Elements, run )
+    {
+      component := run.StartComponent();
+      
+      id := ' [' + component.DefinitionName() + ']';
+      
+      c1 := opt.ComponentCounter( run, 'c1' );
+      c2 := opt.ComponentCounter( run, 'c2' );
+      c3 := opt.ComponentCounter( run, 'c3' );
+      
+      c1.To( c3 );
+      c2.To( c3 );
+      
+      if( component.istype( LibOpt_IteratorParent ) )
+      {
+        iterator := component.astype( LibOpt_IteratorParent );
+        iterator.To( c1 );
+      }
+      else if( component.istype( LibOpt_IteratorForEachLink ) )
+      {
+        iterator := component.astype( LibOpt_IteratorForEachLink );
+        iterator.Fork( c1 );
+        iterator.Fork( c1 );
+        iterator.Fork( c2 );
+      }
+      else if( component.istype( LibOpt_SwitchRoundRobin ) )
+      {
+        switch := component.astype( LibOpt_SwitchRoundRobin );
+        switch.Branch( c1 );
+        switch.Branch( c1 );
+        switch.Branch( c2 );
+      }
+      else if( component.istype( LibOpt_SwitchProbability ) )
+      {
+        switch := component.astype( LibOpt_SwitchProbability );
+        switch.Branch( 0.2, c1 );
+        switch.Branch( 0.2, c1 );
+        switch.Branch( 0.2, c2 );
+      }
+      else if( component.istype( LibOpt_SwitchPriority ) )
+      {
+        switch := component.astype( LibOpt_SwitchPriority );
+        switch.Branch( opt.AvailabilityCheckerTrue(), c1 );
+        switch.Branch( opt.AvailabilityCheckerTrue(), c1 );
+        switch.Branch( opt.AvailabilityCheckerTrue(), c2 );
+      }
+      else if( component.istype( LibOpt_ComponentParent ) )
+      {
+        component_parent := component.astype( LibOpt_ComponentParent );
+        component_parent.To( c1 );
+      }
+      else
+      {
+        this.Run().RegisterFailure( 'Cannot link downstream components. This unit test needs to be adjusted for' + id );
+      }
+      
+      single_link := component.istype( LibOpt_IteratorParent ) or component.istype( LibOpt_ComponentParent );
+      
+      {
+        // Test `GetOutgoingLinks`
+        outgoing_links := component.GetOutgoingLinks();
+        link_ids := selectvalues( outgoing_links, Elements, link, true, link.Destination().Name() );
+        link_ids.Sort();
+        
+        if( single_link )
+        {
+          this.Run().AssertEqual( 1, outgoing_links.Size(), 'outgoing_links.Size()' + id );
+          this.Run().AssertEqual( 'c1', link_ids.ToString( '|' ), 'outgoing_links IDs' + id );
+        }
+        else
+        {
+          this.Run().AssertEqual( 3, outgoing_links.Size(), 'outgoing_links.Size()' + id );
+          this.Run().AssertEqual( 'c1|c1|c2', link_ids.ToString( '|' ), 'outgoing_links IDs' + id );
+        }
+      }
+      
+      {
+        // Test `GetDownstreamLinks`
+        downstream_links := component.GetDownstreamLinks();
+        link_ids := selectvalues( downstream_links, Elements, link, true, link.Destination().Name() );
+        link_ids.Sort();
+        
+        if( single_link )
+        {
+          this.Run().AssertEqual( 2, downstream_links.Size(), 'downstream_links.Size()' + id );
+          this.Run().AssertEqual( 'c1|c3', link_ids.ToString( '|' ), 'downstream_link IDs' + id );
+        }
+        else
+        {
+          this.Run().AssertEqual( 5, downstream_links.Size(), 'downstream_links.Size()' + id );
+          this.Run().AssertEqual( 'c1|c1|c2|c3|c3', link_ids.ToString( '|' ), 'downstream_link IDs' + id );
+        }
+      }
+      
+      {
+        // Test `GetDownstreamComponents`
+        downstream_components := component.GetDownstreamComponents();
+        component_ids := selectvalues( downstream_components, Elements, c, true, c.Name() );
+        component_ids.Sort();
+        
+        if( single_link )
+        {
+          this.Run().AssertEqual( 2, downstream_components.Size(), 'downstream_components.Size()' + id );
+          this.Run().AssertEqual( 'c1|c3', component_ids.ToString( '|' ), 'downstream_components IDs' + id );
+        }
+        else
+        {
+          this.Run().AssertEqual( 3, downstream_components.Size(), 'downstream_components.Size()' + id );
+          this.Run().AssertEqual( 'c1|c2|c3', component_ids.ToString( '|' ), 'downstream_components IDs' + id );
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

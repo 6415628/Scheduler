@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcStart
+{
+  Description: 'Computes the start time of transfer subtask.'
+  TextBody:
+  [*
+    task  := this.Task_SC();
+    start := task.Schedule().Time();
+    prevsubtask := this.Previous();
+    
+    if( not isnull( prevsubtask ) )
+    {
+      // In default case where calendar downtime starts right on the previous subtask end,
+      // this subtask will start after downtime end.
+      start := task.Resource_SC().ResourceCalendar().NextAvailable( prevsubtask.End() );
+    }
+    else if( not isnull( task.Strategy_SC() ) )
+    {
+      // Kyle 27-Aug-2015 QP #5740
+      // If transfer subtask is the first subtask in the sequence,
+      // ensure the start time is after both the transfer and receive resource's calendar downtime.
+      start := this.GetNextFitStart( task.Strategy_SC().Start() );
+    }
+    
+    start := maxvalue( start, this.SimulatedEarliestStart() );
+    this.Start( start );
+  *]
+}

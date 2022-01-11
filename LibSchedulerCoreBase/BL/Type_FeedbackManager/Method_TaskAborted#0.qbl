@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method TaskAborted (Operation_SC operation, String resource_id, DateTime end, 
+  String remark)
+{
+  Description: 'Feedback API: handle feedbacktask with feedback type aborted'
+  TextBody:
+  [*
+    // jiex Aug-25-2016 (created)
+    
+    fbtaskinschedule := FeedbackTaskInSchedule::FindFeedbackTaskInSchedule( operation.WorkOrderId(),
+                                                                            operation.PlanUnitId(),
+                                                                            operation.WorkOrderSequenceNr() );
+    
+    if( isnull( fbtaskinschedule ) )
+    {
+      fbtaskinschedule := FeedbackTaskInSchedule::Create( this, operation )
+      fbtaskinschedule.UpdateFeedbackTaskExportedAttributes( operation.Task_SC(), operation, resource_id );  
+    }
+            
+    // Update FeedbackTaskInSchedule
+    fbtaskinschedule.UpdateFeedbackEnd( end, resource_id, Constants::StatusAborted(), remark, '', '', guard( operation.ExportedSingleTask().ScheduledPrevOperationID(), '' ) );
+    fbtaskinschedule.HasReportedAborted( true );
+    
+    // Reset and update statuses with remarks
+    operation.UpdateFeedbackStatus( fbtaskinschedule.Status(), remark, resource_id );
+    
+    this.CleanUpFeedbackedTask( operation );
+  *]
+}

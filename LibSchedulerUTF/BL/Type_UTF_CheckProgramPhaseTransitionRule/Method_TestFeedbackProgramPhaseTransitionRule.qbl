@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestFeedbackProgramPhaseTransitionRule (Schedule schedule)
+{
+  Description: 'Test feedback program phase transition rule'
+  TextBody:
+  [*
+    // Default phase transition rule is 5 tasks for each phase
+    // Gantt chart
+    // |                           |     HEAD     |   BODY      |    TAIL      |
+    // | FeedbackProgramChangeTask |  Task1-Task5 | Task 6 - 10 | Task 11 - 15 |
+    isvalid := forall( schedule, ResourceGroup_SC.Resource_SC.ProgramSet.ProgramType.ProgramPhase, phase,
+                       phase.TaskInProgramSet( relsize ) = 5 );
+                             
+    this.Run().AssertTrue( isvalid,
+                           UTFUtility::GenerateFailedMessage( 'Test feedback program phase transition rule failed.', 
+                                                              this.Variant() ) );
+  *]
+}

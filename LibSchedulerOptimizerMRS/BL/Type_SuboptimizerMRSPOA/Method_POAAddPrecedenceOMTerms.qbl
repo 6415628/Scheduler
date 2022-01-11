@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddPrecedenceOMTerms (SuboptimizerMRSPOA_POAOneResourceGroup poa, LibOpt_Task task, POADependency dependency, 
+  POANode firstnode, Operation_SC currentoperation, output Operation_SCs visitedoperations)
+{
+  TextBody:
+  [*
+    traverse( currentoperation, ToOperationDependency.ToOperation, nextoperation,
+              visitedoperations.Find( nextoperation ) = -1 )
+    {
+      visitedoperations.Add( nextoperation );
+      // We can only add the precedence relation if the operartion is in scope (and thus the node exists)
+      if( task.Scope().Contains( nextoperation.ScopeElementOperation() ) )
+      {
+        nextnode := poa.Node( SuboptimizerMRSPOA::POANameNodeOperation( nextoperation ), nextoperation );
+        dependency.Add( firstnode, nextnode );
+      }
+      debuginfo( "adding dependency between ", firstnode.Role(), " and ", nextoperation.OperationID(), "based on", currentoperation.OperationID() );
+      
+      // We also want to set the precedence relation to any further downstream operations
+      // That is to make sure that POA still recognizes these precedence relations if not everything is planned
+      if( nextoperation.ToOperationDependency( relsize ) > 0 )
+      {
+        this.POAAddPrecedenceOMTerms( poa, task, dependency, firstnode, nextoperation, visitedoperations );
+      }
+    }
+  *]
+}

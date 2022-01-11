@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeResourceTypes
+{
+  Description:
+  [*
+    Synchronizes the resource type of both the resource group and the resources owned by that group. 
+    Called from the DialogResourceGroup_SC.Edit(...) method in the Designer when an existing resource group has its resource type changed.
+  *]
+  TextBody:
+  [*
+    // James Kwapien Sep-1-2016 QP#7686 Recreate all related resources when changing resource group type
+    // Only needed if instance owns resource instances
+    if( this.Resource_SC( relsize ) > 0 )
+    {
+      old_resources := selectset( this, Resource_SC, resource, resource.ResourceGroupType() <> this.ResourceType() ); 
+    
+      // Create new resources from set of old resources
+      traverse( old_resources, Elements, old_resource )
+      {
+        old_resource_id := old_resource.ResourceID();
+        old_resource_name := old_resource.Name();
+        old_resource_capacity_name := old_resource.CapacityResourceName();
+        old_resource_calendar_is_always_available :=  exists( old_resource, ResourceCalendar.Participation.Event, evt, evt.IsAlwaysAvailableEvent());
+        old_index := old_resource.Index();
+        old_resource.Delete();
+       
+        // Create new resource after old resource is deleted
+        new_resource := this.CreateResource( old_resource_id );
+        new_resource.Name( old_resource_name );
+        new_resource.CapacityResourceName( old_resource_capacity_name );
+        new_resource.ImportedIndex( old_index ); // added this because there were some cases where the index of all resources became 0
+        if( old_resource_calendar_is_always_available and not isnull( new_resource.ResourceCalendar() ))
+        {
+          // Subscribe calendar to always available event if the previous calendar has that subscription
+          new_resource.ResourceCalendar().SubscribeToAlwaysAvailableEvent();
+        }
+        // Create default lead time strategy for new resource
+        LeadTimeStrategy_SC::Create( new_resource, Duration::Zero(), Constants::SC_LeadTimeStrategy_Name_ASAP() );
+      }
+    }
+  *]
+}

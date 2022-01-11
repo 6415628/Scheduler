@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizePracticeFromWorkOrderOperations (output Practices updatedInstances)
+{
+  Description: 'Synchronize practices from work order operations.'
+  TextBody:
+  [*
+    practiceStrings := selectuniquevalues( this, 
+                                           Schedule.WorkOrder.WorkOrderOperation, 
+                                           workOrderOperation, 
+                                           workOrderOperation.Practice().TrimBoth().Length() > 0, 
+                                           workOrderOperation.Practice().TrimBoth() );
+    
+    traverse( practiceStrings, Elements, practiceString )
+    {
+      practice := Practice::FindPracticeIndex( practiceString );
+      
+      if( isnull( practice ) )
+      {
+        practice := this.Schedule().CreatePractice( practiceString );
+      }
+      
+      updatedInstances.Add( practice );
+    }
+  *]
+}

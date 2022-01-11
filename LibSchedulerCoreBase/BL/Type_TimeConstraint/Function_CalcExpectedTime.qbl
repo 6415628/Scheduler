@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcExpectedTime
+{
+  TextBody:
+  [*
+    value := this.FromOperationTimeConstraint().PlanUnit_SC().DueDate();
+    
+    if( this.HasToOperation() )
+    {
+      operation := this.ToOperationTimeConstraint();
+      value := operation.LatestStart();
+      
+      if( operation.Finished() and operation.HasReportedStart() )
+      {
+        value := operation.ReportedStart();
+      }
+      
+      value := value - this.TotalOffsetDuration();
+    }
+    
+    this.ExpectedTime( value );
+  *]
+}

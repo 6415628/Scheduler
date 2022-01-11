@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetEarliestStartTime (OperationOnResource operationonresource) as DateTime
+{
+  TextBody:
+  [*
+    // bauke Apr-9-2014 (created)
+    
+    operation := operationonresource.Operation_SC();
+    resource  := operationonresource.Resource_SC();
+    time      := this.Schedule().Time();
+    
+    
+    value := maxvalue( guard( resource.Last().End() + resource.astype( SingleResourceBase ).GetSetupDuration( resource.Last().GetOperation(), operation ), time ),
+                       guard( operation.GetLatestPreviousOperation().Task_SC().End(), time ) ); //AlexanderNg 6-Jul-2015 QP # 5536
+    
+    return value;
+  *]
+}

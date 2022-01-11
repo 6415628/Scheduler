@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateJSONProcessOperations () as owning JSONBuilder
+{
+  Description: 'Creates process operations (routing steps) from work order operations in JSON from the current dataset in the event there is no routing information available.'
+  TextBody:
+  [*
+    // Create Operations (RoutingStep) based on work order operations
+    operations := JSON::Array();
+    
+    sortedExtWorkOrderOperations := selectsortedset( this, WorkOrderOperation.astype( ExternalWorkOrderOperation ),workOrderOperation, 
+                                                  true, workOrderOperation.SequenceNr() );
+    
+    traverse( sortedExtWorkOrderOperations, Elements, extWorkOrderOperation )
+    {
+      operation := JSON::Object();
+      
+      // Generate ID if it doesn't exist yet
+      // 1. Use ProcessOperatonID (after checking String length)
+      // 2. OR use ExternalOperationID (after checking String length)
+      // 3. OR generate a new JSONOperationID, because there is no existing available single ID attribute
+      id := ifexpr( extWorkOrderOperation.ProcessOperationID().Length() > 0, 
+                    extWorkOrderOperation.ProcessOperationID(),
+                    ifexpr( extWorkOrderOperation.ExternalOperationID().Length() > 0,
+                            extWorkOrderOperation.ExternalOperationID(),
+                            extWorkOrderOperation.GetJSONOperationID() ) );
+      
+      operation.Add( Constants::JSON_Process_Operation_ID(), id );
+      operation.Add( Constants::JSON_Process_Operation_ProportionalToQty(), true );
+      operation.Add( Constants::JSON_Process_Operation_PreparationTime(), 0 );
+      operation.Add( Constants::JSON_Process_Operation_TomBefore(), 0 );
+      operation.Add( Constants::JSON_Process_Operation_TomAfter(), 0 );
+      operation.Add( Constants::JSON_Process_Operation_Interruptible(), true );
+      
+      // Create Capable Resources
+      capableResources := extWorkOrderOperation.CreateJSONCapableResources();
+      operation.Add( Constants::JSON_CapableResources(), capableResources );
+      
+      operations.Add( operation );
+    }
+    
+    return &operations
+  *]
+}

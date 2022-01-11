@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetRollbackKPIDiff (LibOpt_Task task, LibOpt_DatasetCopyConditional datasetcopy) as owning RealVector
+{
+  Description:
+  [*
+    Returns the difference between the pre handle result Rollback KPI and the post handle result Rollback KPI of this component (or the next component that uses `LibOpt_SnapshotKPIs`) as a `RealVector`.
+    This difference is calculated as: `diff := KPIposthandleresult - KPIprehandleresult`.
+    Therefore, the returned `RealVector` will contain a negative value if the Rollback KPI decreased this iteration. Note that a negative value corresponds to an improvement if we are minimizing the Rollback KPI.
+  *]
+  TextBody:
+  [*
+    snapshotcomponent := task.SnapshotComponent();
+    snapshotKPIprehandleresult := LibOpt_SnapshotKPI::GetSnapshotKPIDownstreamComponent( snapshotcomponent, true );
+    snapshotKPIposthandleresult := LibOpt_SnapshotKPI::GetSnapshotKPIDownstreamComponent( snapshotcomponent, false );
+    
+    diff := null( RealVector, owning );
+    // It is sufficient to check if snapshotKPIposthandleresult is null. If snapshotKPIprehandleresult is null, then snapshotKPIposthandleresult will also always be null.
+    if( not isnull( snapshotKPIposthandleresult ) ) 
+    {
+      KPIprehandleresult := snapshotKPIprehandleresult.RollbackKPI();
+      KPIposthandleresult := snapshotKPIposthandleresult.RollbackKPI();
+      
+      diff := RealVector::Construct( KPIposthandleresult ) - RealVector::Construct( KPIprehandleresult );  
+    }
+    else
+    {
+      // No snapshotKPIposthandleresult has been found on this component or on any descendant component that uses SnapshotKPIs.
+      // Show a warning in the Snapshot form to indicate this to the AE.
+      replannablesnapshot := select( task,
+                                     SnapshotComponent.Children.astype( LibOpt_SnapshotReplannableCopyDataset ),
+                                     snapshot,
+                                     snapshot.ComponentPositionName() = datasetcopy.ComponentPositionName()
+                                     );
+      if( not isnull( replannablesnapshot ) )
+      {    
+        LibOpt_SnapshotWarning::Throw( task.Run(),
+                                       replannablesnapshot,
+                                       Translations::LibOpt_DatasetCopyOnRollbackSize_NoPostHandleResult() ); 
+      }
+      else
+      {
+        LibOpt_SnapshotWarning::Throw( task, 
+                                       Translations::LibOpt_DatasetCopyOnRollbackSize_NoPostHandleResult() ); 
+      }  
+    }
+    
+    return &diff;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

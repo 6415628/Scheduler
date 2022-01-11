@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod IsNameUnique (Schedule schedule, Rule rule, String name) remote as Boolean
+{
+  Description: 'Perform checking to ensure the name is unique.'
+  TextBody:
+  [*
+    // Perform checking to ensure the name is unique.
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    value := not exists( schedule,
+                         Rule,
+                         allRule,
+                         allRule <> rule,
+                         allRule.Name() = name );
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      feedbackobject.AddHard( Translations::Rule_NameMustBeUnique() );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

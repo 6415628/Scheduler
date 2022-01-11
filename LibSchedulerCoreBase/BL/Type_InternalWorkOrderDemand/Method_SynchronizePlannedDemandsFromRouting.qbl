@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizePlannedDemandsFromRouting (Real oldqty)
+{
+  Description: 'Updates the quantity of the planned demands as it may have changed due to splits.'
+  TextBody:
+  [*
+    // WOI1 Nov-2-2016 (created)
+    multiplier := guard( this.Quantity() / oldqty, 1 );
+    
+    traverse( this, ProductPlannedDemand, demand )
+    {
+      updatedqty := demand.Quantity() * multiplier;
+      isdiscrete := guard( demand.ProductInStockingPoint().Product_SC().IsDiscrete(), false );
+    
+      if( isdiscrete )
+      {
+        updatedqty := ceil( updatedqty ); // round up the demand's quantity if it is a discrete product
+      }
+      
+      demand.Quantity( updatedqty );
+    }
+  *]
+}

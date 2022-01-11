@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: ListBatchDetail
+Response OnClick (structured[Operation_SC] selection) id:Response_ListBatchDetail_MenuRemoveBatchElement_OnClick
+{
+  #keys: '[154390.0.104952757]'
+  DefinitionID => //ListBatch/Responsedef_ListBatch_WebMenu_OnClick
+  GroupServerCalls: true
+  Initiator: 'MenuRemoveBatchElement'
+  Precondition:
+  [*
+    batches := selectset(  selection, Elements.BatchSequenceElement.Batch, batch, true );
+    value := Batch::CanDelete( batches, feedback );
+    feedback := Schedule::TrimFeedback( feedback );
+    
+    return value;
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Remove structured[Operation_SC] from batches
+      message := '';
+      hasNoSoftViolation := Batch::GetRemoveFromBatchConfirmation( message, selection );
+      
+      if( Scheduler.ConstructMessageBoxForSoftPrecondition( not hasNoSoftViolation, message ) )
+      {
+        Operation_SC::RemoveOperationsFromBatches( selection, Schedule );
+      }
+    *]
+  }
+}

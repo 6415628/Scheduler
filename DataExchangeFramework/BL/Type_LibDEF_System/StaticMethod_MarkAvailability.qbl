@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod MarkAvailability (LibDEF_DataBroker dataBroker_i, String systemGUID_i, Boolean availability_i, 
+  LibDEF_IntegrationEvent event_i) as LibDEF_System
+{
+  Description: 'Look for the System and mark as available.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-29-2016 (created)
+    system := LibDEF_System::FindSystemByGUID( dataBroker_i, systemGUID_i );
+    if( not isnull( system ) )
+    {
+      system.IsAvailable( availability_i );
+    
+      // Updates the IntegrationEvent with System's information
+      event_i.Update( system );
+    
+      // update flags
+      if( system.IsBootNode() )
+      {
+        dataBroker_i.SetIsBootNodeAvailable();
+      }
+      else
+      {
+        dataBroker_i.SetHasUnavailablePeers();
+      }
+    }
+    else
+    {
+      LibDEF_Util::EventLogWarning( event_i,
+                                    "The System record cannot be found, marking as '" +
+                                    ifexpr( availability_i, "Available", "Unavailable" ) +
+                                    "' is not possible." );
+    }
+    
+    return system;
+  *]
+}

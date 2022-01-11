@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride ExecuteStrategyReactive (stream[POAAlgorithm] poa) as stream[Void]
+{
+  TextBody:
+  [*
+    schedule := this.GetSchedule();
+    // By defining the POA strategy in a static method without any references to your model, it will be executed asynchronously.
+    
+    result := poa->( poasingle )
+    {
+      poasingletyped := poasingle.astype( SuboptimizerPOACombiLeg_SequenceCombiLeg );
+    
+      name_logfile := schedule.MDSSchedule().Name();
+      
+      SuboptimizerPOACombiLeg::Strategy( poasingletyped, this.Settings().ExportAsNVT(), name_logfile, this.IsTwoNodeImprovement() );
+    }
+    
+    return result;
+  *]
+}

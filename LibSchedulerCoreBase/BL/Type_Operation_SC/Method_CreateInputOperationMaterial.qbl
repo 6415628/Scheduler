@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateInputOperationMaterial (Operation_SC prevoperation, Real quantity) as OperationMaterial
+{
+  Description: 'Create operation for the InputOperationMaterial and set the relations to the operation and previous operation.'
+  TextBody:
+  [*
+    planunit := this.PlanUnit_SC();
+    
+    // InputOperationMaterial for the operation is created, relations are set
+    // to the operation and the previous operation ( potentially of the Parent planUnit )
+    om := planunit.CreateOperationMaterial( planunit.GetLastOperationMaterialID() );
+    om.Quantity( quantity ); // AlexanderNg 2-Aug-2015 QP #5681
+    this.FromOperationDependency( relinsert, om )
+    
+    // if has previous operation and the relation is not set before
+    // set input operation material of this operation as output operation of previous operation.
+    if( not isnull( prevoperation ) )
+    {
+      prevoperation.ToOperationDependency( relinsert, om );
+    }
+    
+    return om;
+  *]
+}

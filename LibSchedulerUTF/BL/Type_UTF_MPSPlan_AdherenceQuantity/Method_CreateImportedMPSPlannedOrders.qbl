@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateImportedMPSPlannedOrders (Schedule schedule) as owning ImportedMPSPlannedOrders
+{
+  TextBody:
+  [*
+    // Create 1st default variant MPSPlannedOrder
+    importedMPSPlannedOrders := super.CreateImportedMPSPlannedOrders( schedule );
+    
+    // Create 2nd default variant MPSPlannedOrder with later due date and later window
+    existingImportedMPSPlannedOrder := select( importedMPSPlannedOrders, Elements, importedMPSPlannedOrder, true );
+    
+    // Prevent duplicate type index
+    dueDate := existingImportedMPSPlannedOrder.DueDate() + Duration::Days( 1 );
+    
+    mpsPlanID := existingImportedMPSPlannedOrder.MPSPlanID();
+    routingID := existingImportedMPSPlannedOrder.RoutingID();
+    
+    importedMPSPlannedOrder := ImportedMPSPlannedOrder::FindImportedMPSPlannedOrder( mpsPlanID, routingID, dueDate );
+    
+    if( isnull( importedMPSPlannedOrder ) )
+    {
+      importedMPSPlannedOrder := ImportedMPSPlannedOrder::Create( schedule, mpsPlanID, routingID, dueDate );
+    }
+    
+    importedMPSPlannedOrder.Update( existingImportedMPSPlannedOrder.MPSPeriodEnd(), // Moved MPSPeriodStart
+                                    dueDate, // Moved MPSPeriodEnd
+                                    existingImportedMPSPlannedOrder.Quantity() );
+    
+    importedMPSPlannedOrders.Add( importedMPSPlannedOrder );
+    
+    return &importedMPSPlannedOrders;
+  *]
+}

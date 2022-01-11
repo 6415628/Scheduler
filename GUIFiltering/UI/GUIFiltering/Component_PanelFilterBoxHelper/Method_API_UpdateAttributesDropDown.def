@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method API_UpdateAttributesDropDown () id:Method_LibGUIFiltering_PanelFilterBoxHelper_API_UpdateAttributesDropDown
+{
+  #keys: '[128900.0.373900308]'
+  Body:
+  [*
+    // This method updates the drop down to show which attributes you can specifically filter on
+    registry := this.IAttributeRegistry_Get();
+    traverse( registry, LibGUIFiltering_RegisteredAttribute, attr )
+    {
+      if ( attr.IsAllAttributes() )
+      {
+        attr.Name( Translations::LibGUIFiltering_All() );
+        attr.Path( Translations::LibGUIFiltering_All() ); 
+      }
+      else
+      {
+        attr.IsDeleted( true );
+      }
+    }
+    
+    this.IAttributeRegistry_Update( '' );
+    
+    traverse( registry, LibGUIFiltering_RegisteredAttribute, attr, attr.IsDeleted() )
+    {
+      attr.Delete();
+    }
+    
+    sortedattributes := selectsortedset( registry, LibGUIFiltering_RegisteredAttribute, a, true, not a.IsAllAttributes(), a.Name() );
+    attributenames   := selectvalues( sortedattributes, Elements, s, true, s.Name() );
+    
+    this.IPanelFilterBox_Get().StringSelectionFilterBoxAttributes().Strings( attributenames.ToString( ';' ) );
+  *]
+}

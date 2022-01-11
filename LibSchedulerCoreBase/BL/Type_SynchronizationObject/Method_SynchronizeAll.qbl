@@ -1,0 +1,96 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeAll
+{
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // project to implement data integration
+    // Multiplies imported data with data multiplier
+    this.MultiplyImportedData();
+    
+    // Required to propagate the declarative relations of the new imported data
+    Transaction::Transaction().Propagate();
+    
+    // Synchronize configurations
+    this.SynchronizeConfigurations();
+    
+    this.SynchronizeTime();
+    
+    // Required to propagate the feedback task can be deleted logic because it depends on shopfloor history and schedule time
+    Transaction::Transaction().Propagate( method( FeedbackManager, CleanUpFeedbackTaskAndBatchesInSchedule ) );
+    
+    // Clean up feedback task and batches that already past shop floor history days
+    this.Schedule().FeedbackManager().CleanUpFeedbackTaskAndBatchesInSchedule();
+    
+    // Kyle 31-Jul-2015 QP #5687
+    this.SynchronizeKT(); // Resource connection synchronized in SychronizeResourceConfigurations
+    
+    // Synchronizing stocking points and products in stocking points.
+    this.SynchronizeProducts();
+    this.SynchronizeStockingPoints();
+    
+    // Initialize stock
+    this.SynchronizeScheduleStock();
+    
+    // Synchronize inventory target
+    this.SynchronizeInventoryTargets();
+    
+    //Sync KPIDashboards
+    this.Schedule().KPIDashboard_SC().SynchronizeKPIComponents();
+    
+    // Synchronize external demand
+    this.SynchronizeCustomerOrderLines();
+    this.SynchronizeDependentDemand();
+    
+    // Synchronize routings
+    this.SynchronizeRoutings();
+    // done after all routing steps are synchronized instead of per routing step because all yield calculation can only be calculated after all routing steps are synchronized
+    // yield calculation is basically back calculating from the last routing step's yield, thats why we need all routing steps to be synchronized first
+    this.SynchronizeRoutingStepInputOutput(); 
+    
+    // Synchronize work orders imported from ERP.
+    this.SynchronizeWorkOrders();
+    this.SynchronizeWorkOrderOperationPrecedences();
+    
+    // Synchronize practices from work order operations and routing steps
+    this.SynchronizePractices();
+    
+    // Synchronize orders, plan units and supplies
+    this.SynchronizeOrders();
+    
+    // Propagate relation for plan unit synchronization 
+    Transaction::Transaction().Propagate( relation( Order_SC, ParentPlanUnit ) );
+    
+    this.SynchronizePlanUnits();
+    this.SynchronizeProductExternalSupplies();
+    this.SynchronizeMaterialExternalSupplies();
+    
+    // Synchronize OperationCampaigns, this needs to be done AFTER both WorkOrders have been synchronized and Operations have been created
+    this.SynchronizeOperationCampaigns();
+    
+    // Synchronize stock elements
+    this.SynchronizeStockElements();
+    
+    // Synchronize operation dependencies
+    this.SynchronizeOperationDependencies();
+    
+    // Synchronize external fulfillments
+    this.SynchronizeExternalFulfillments();
+    
+    // Synchronize work order color range;
+    this.SynchronizeWorkOrderColorRange();
+    
+    // Synchronize demand batch
+    this.SynchronizeDemandBatch();
+    
+    // Synchronize work orders created in Scheduler, basically only deleting work orders that already have ended feedback
+    this.SynchronizeWorkOrdersCreatedInScheduler();
+    
+    // Synchronize planned supply conversion
+    Transaction::Transaction().PropagateAll( typeof( Demand ) ); // Propagate demand.DueDate
+    Transaction::Transaction().PropagateAll( typeof( Supply ) ); // Propagate supply.IsPlannedSupply, AvailableFrom, EarliestFulfilledDemandDueDate
+    Transaction::Transaction().PropagateAll( typeof( Fulfillment ) ); // Propagate fulfillment.IsFixedReservation
+    this.SynchronizePlannedSupplyConversion();
+  *]
+}

@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcStart
+{
+  Description: 'Calculate the start of the subtask based on previous task end or this task strategy start taking UseFitProcessCalendarStrategy into consideration.'
+  TextBody:
+  [*
+    task     := this.Task_SC();
+    resource := task.Resource_SC();
+    start    := task.Schedule().Time();
+    prevsubtask := this.Previous();
+    
+    if( not isnull( prevsubtask ) )
+    {
+      // In Default and UseFitCalendarStrategy, process subtask start after setup subtask.
+      // in default case where calendar downtime starts right on setup subtask end, process subtask will start after downtime end.
+      start := resource.ResourceCalendar().NextAvailable( prevsubtask.End() ); // alexandern 28-May-2015 QP # 5420
+    
+      // Kyle 26-Aug-2015 #QP 5737
+      // No extra handling needed for UseFitCalendarStrategy because it is already handled in Strategy.EarliestStart
+      // as the entire task duration will not overlap with calendar downtime.
+      if( resource.UseFitProcessCalendarStrategy() )
+      {
+        start := resource.ResourceCalendar().NextFit( prevsubtask.End(), this.NetDuration() );
+      }
+    }
+    else if( not isnull( task.Strategy_SC() ) )
+    {
+      start := task.Strategy_SC().Start();
+    }
+    
+    start := maxvalue( start, this.SimulatedEarliestStart() );
+    this.Start( start )
+  *]
+}

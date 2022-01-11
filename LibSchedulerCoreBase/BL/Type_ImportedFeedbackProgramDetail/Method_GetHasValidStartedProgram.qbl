@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidStartedProgram (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if the imported program detail has a valid imported started program'
+  TextBody:
+  [*
+    importedstartedprogram := this.ImportedFeedbackStartedProgram();
+    
+    isvalid := not isnull( importedstartedprogram )      // Must have started program
+    
+    if( not isvalid and not isnull(  feedback_o ) )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedFeedbackProgramDetail_Instance( name ),
+                                                               Translations::SC_ImportedFeedbackProgramDetail_ViolateHasValidStartedProgram() ) );
+    }
+    
+    return isvalid;
+  *]
+}

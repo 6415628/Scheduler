@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod SelectRelatedIterationsAndSnapshotsPrecondition (const LibOpt_Issues issues) const remote as Boolean
+{
+  Description: '[Used in GUI] Checks whether the action to "select related iterations and snapshots" is allowed for any of the given `LibOpt_Issues` (issues). If not, provide feedback.'
+  TextBody:
+  [*
+    feedbackobj := FeedbackObject::LocalFeedback();
+    
+    if( not feedbackobj.CheckHard( exists( issues, Elements, issue,
+                                           issue.Statistic().GetIterations( issue ).Size() > 0
+                                         )
+                                 )
+      )
+    {
+      feedbackobj.AddHard( Translations::LibOpt_Issue_NoRelatedIterations() );
+    }
+    
+    return feedbackobj.IsAllowed();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

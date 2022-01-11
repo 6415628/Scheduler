@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride StoreSnapshot (KpiSnapshotData snapshotData)
+{
+  TextBody:
+  [*
+    // Create a real Snapshot object from the specified data object.
+    snapshot := DssKpiSnapshot::Create( this, snapshotData.ServerDateTime(), snapshotData.PlanDateTime() );
+    
+    // Store the Labels
+    labelValues := this.GetOrCreateLabelValues( snapshotData.Label( relget ) );
+    snapshot.AddLabelValues( labelValues );
+                            
+    // Create the KPIs
+    kpiMetaDatas := this.GetOrCreateMatchingMetaDatas( snapshotData.Value( relget ) );
+    configuration := this.GetOrCreateMatchingConfiguration( kpiMetaDatas );
+    snapshot.Configuration( relset, configuration );
+    
+    // Prepare and store the KPI values.
+    kpiValues := this.GetKpiValuesAsReals( snapshotData.Value( relget ) );
+    snapshot.StoreValues( kpiValues );
+    
+    // Set the retention policy.
+    policy := this.KpiTracker().GetRetentionPolicyByIdentifier( snapshotData.RetentionPolicyIdentification() );
+    if ( isnull( policy ) )
+    {
+      info( "KpiTracker | Warning: could not find specified retention policy '", snapshotData.RetentionPolicyIdentification(), "', reverting to default." );
+      policy := this.KpiTracker().DefaultRetentionPolicy();
+    }
+    snapshot.RetentionPolicy( relset, policy );
+    
+    // If the retention policy is 'TEMPORARY' then also remove the previous snapshot with the same 
+    // label/labelvalues combination.
+    if ( policy.Identification() = KpiRetentionPolicy::POLICY_TEMPORARY() )
+    {
+      this.RemovePreviousTemporarySnapshots( snapshot );
+    }
+  *]
+}

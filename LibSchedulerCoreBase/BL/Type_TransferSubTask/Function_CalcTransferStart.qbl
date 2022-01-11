@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcTransferStart
+{
+  Description: 'Computes the actual time the transfer / receive process can begin.'
+  TextBody:
+  [*
+    // Kyle Aug-14-2015 (created)
+    transferstart := this.Start();
+    om := this.OperationMaterial();
+    
+    if( not isnull( om ) )
+    {
+      // Kyle 26-Aug-2015 QP #5735
+      // Use operationMaterial's TransferLatestStart if the transferring or receiving resource strategy is JITASAP.
+      receivesubtask := om.ReceiveSubTask();
+      isreceivejit := not isnull( receivesubtask ) and not isnull( receivesubtask.Task_SC().StrategyJIT() );
+    
+      // For other resource strategies, use OperationMaterial's TransferEarliestStart.
+      transferstart := om.TransferEarliestStart();
+      
+      if( not isnull( this.Task_SC().StrategyJIT() ) or isreceivejit )
+      {
+        transferstart := om.TransferLatestStart();
+      }
+    }
+    
+    this.TransferStart( transferstart );
+  *]
+}

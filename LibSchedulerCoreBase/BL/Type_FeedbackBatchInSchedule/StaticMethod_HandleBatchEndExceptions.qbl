@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod HandleBatchEndExceptions (FeedbackBatchInSchedule fbbatch, Boolean isfirstfeedback, Boolean isfirstreportedendfeedback, 
+  String resource_id, DateTime end, String remark)
+{
+  TextBody:
+  [*
+    if ( isfirstfeedback or isfirstreportedendfeedback )
+    {
+      if( isfirstfeedback )
+      {
+        //Exception 3: TaskEnd feedback reported for task that was not scheduled
+        fbbatch.HandleBatchEndException_NotScheduled( end, resource_id, remark );
+      }
+    }
+    else
+    {
+      // Exception 2: Already has Reported "End" 
+      fbbatch.HandleBatchEndException_HasEarlierReportedEnd( end, resource_id, remark );    
+    }
+    
+    // Exception 1: without Reported "Start" 
+    fbbatch.HandleBatchEndException_WithoutReportedStart( end, resource_id, remark );
+  *]
+}

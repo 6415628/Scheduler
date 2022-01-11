@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (OperationInSuboptimizerSequencing owner, ResourceInSuboptimizerSequencing resource, OperationOnResource oor) as OperationOnResourceInSuboptimizerSequencing
+{
+  TextBody:
+  [*
+    // mbr23 Jan-24-2020 (created)
+    assert( oor.Operation_SC() = owner.Operation() );
+    assert( oor.Resource_SC() = resource.Resource() );
+    object := owner.OperationOnResource( relnew,
+                                         OperationOnResource := oor,
+                                         Resource := resource,
+                                         WasSelected := oor.IsSelected() );
+    return object;
+    
+    // mbr23, 2020-03-25
+    // A note on the following Editor warning:
+    // Declaratively instantiated type 'OperationOnResource' has non-derived relation (or relation derived in a non-standard way) 'OperationOnResourceInSuboptimizerSequencing.OperationOnResource-OperationOnResource.AsInSuboptimizerSequencing' (error 570)
+    // Wherever this relation is used (4 palces), it is used by TransientData code to retreive an attribute of OperationOnResource.
+    // This warning is true and could be resolved by the following (but somewhat code-bloathing) measures:
+    // * delete the relation betwee OperationOnResourceInSuboptimizerSequencing and OperationOnResource
+    // * model copies of the used attributes of OOR into this type.
+    // * here on Create, copy the used attributes.
+    // These attributes are: InputDurationPerQuantity, OutputDurationPerQuantity, ProcessDuration, IsAllowedHard.
+    // This object's declarative IsAllowed relation's equality check on SelectedOperationOnResource can be remodelled to an equality check on Resource.
+  *]
+}

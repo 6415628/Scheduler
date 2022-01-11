@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetTimeLimit (LibOpt_Run run) declarative as Duration
+{
+  Description: 'returns the user-set time limit of the given run. This depends on which optimizer it was created by.'
+  TextBody:
+  [*
+    // mbr23 Apr-20-2020 (created)
+    value := Duration::Zero();
+    
+    optimizer := select( this, Optimizer, opt, opt.Name() = run.OptimizerName() );
+    if( not isnull( optimizer ) )
+    {
+      // refer the query to the optimizer that created the run:
+      value := optimizer.GetTimeLimit( run );
+    }
+    
+    return value;
+  *]
+}

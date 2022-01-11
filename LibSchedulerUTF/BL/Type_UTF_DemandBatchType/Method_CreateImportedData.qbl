@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateImportedData (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Create imported demand batch type
+    batchType := this.Name();
+    importedDemandBatchType := ImportedDemandBatchType::Create( schedule, batchType );
+    importedDemandBatchType.Update( UTFUtility::DemandBatchType_MaxBatchSize() );
+                                          
+    // Create imported demand batch routing step
+    for( i := 0; i < 3; i++ )
+    {
+      operationType := batchType.Concat( [String]i )
+      importedDemandBatchRoutingStep := ImportedDemandBatchRoutingStep::Create( importedDemandBatchType, batchType, i );
+      importedDemandBatchRoutingStep.Update( operationType );
+      
+      // Create resource group to pass sanity test
+      importedResourceGroup := this.CreateImportedResourceGroup( schedule, operationType );
+      importedResourceGroup.ResourceType( operationType );
+    }
+  *]
+}

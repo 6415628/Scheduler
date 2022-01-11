@@ -1,0 +1,76 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitialSchedule
+{
+  Description: 'Creates an initial schedule.'
+  TextBody:
+  [*
+    // bauke Apr-7-2014 (created)
+    
+    schedule := this.Schedule()
+    days := max( schedule, PlanUnit_SC, unit, true, ( unit.DueDate() - schedule.Time() ).Days() )
+    
+    for( day := 1; day <= days; day++ )
+    {
+      // ops is the alternatives due on day "day"
+      ops := selectset( schedule,
+                        PlanUnit_SC.Operation_SC,
+                        op,
+                        op.IsExclusiveSingle(),
+                        ( op.PlanUnit_SC().DueDate() - schedule.Time() ).Days() = day )
+    
+      running := true
+    
+      while( running )
+      {
+        // Needed to re-calculate the earliest possible alternative
+        Transaction::Transaction().Propagate();
+        // Select earliest possible alternative
+        oor := minselect( ops, Elements.AllowedOperationOnResource, oor,
+                          guard( oor.Operation_SC().GetLatestPreviousOperation().IsPlanned(), true ),
+                          this.GetEarliestStartTime( oor ) );
+    
+        if( isnull( oor ) )
+        {
+          running := false;
+        }
+        else if( this.GetEarliestCompletionTime( oor ) > oor.Operation_SC().DueDate() )
+        {
+          // If we would not be able to complete in time, we unplan the
+          // complete plan unit and take the operation out of the "ops" set
+          op := oor.Operation_SC();
+          op.PlanUnit_SC().Unplan();
+          ops.Remove( op );
+        }
+        else
+        {
+          // Plan on this alternative.
+          op := oor.Operation_SC();
+          oor.Resource_SC().astype( SingleResourceBase ).PlanLast( op );
+          //op.PlanOn( oor.Resource_SC().astype( SingleResourceBase ) )
+          ops.Remove( op );
+        }
+      }
+    }
+    
+    // Plan each of the remaining planunits greedily (on the alternative
+    // which leads to earliest finish)
+    traverse( schedule, PlanUnit_SC, unit, not unit.IsPlanned() )
+    {
+      // Needed to re-calculate alternative which leads to earliest finish
+      Transaction::Transaction().Propagate();
+    
+      traverse( unit, Operation_SC, op, op.IsExclusiveSingle() )
+      {
+        oor := minselect( op, AllowedOperationOnResource, oor,
+                          true,
+                          guard( oor.Resource_SC().Last().End()
+                                 + oor.Resource_SC().astype( SingleResourceBase ).GetSetupDuration( oor.Resource_SC().Last().GetOperation(), op ), schedule.Time() )
+                          + oor.ProcessDuration() );
+    
+        oor.Resource_SC().astype( SingleResourceBase ).PlanLast( op );
+        //op.PlanOn( oor.Resource_SC().astype( SingleResourceBase ) )
+      }
+    }
+  *]
+}

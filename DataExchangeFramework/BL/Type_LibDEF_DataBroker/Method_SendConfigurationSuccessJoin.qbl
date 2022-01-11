@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendConfigurationSuccessJoin (LibDEF_System newSystem_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Send a successful message to the new system for joining a domain.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-22-2016 (created)
+    nvt := LibDEF_DataAccessor::CreateMessageConfiguration();
+    
+    LibDEF_DataAccessor::SetConfigurationHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_TYPE(), LibDEF_DataAccessor::TYPE_CONFIGURATION_JOIN() );
+    
+    isBootNode := this.IsBootNode();
+    LibDEF_DataAccessor::SetConfigurationBodyProperty( nvt, LibDEF_DataAccessor::HEADER_FROMBOOTNODE(), isBootNode );
+    
+    // send extra information as BootNode
+    if( isBootNode )
+    {
+      // inform the new System about its System-GUID
+      LibDEF_DataAccessor::SetConfigurationBodyProperty( nvt, LibDEF_DataAccessor::HEADER_SYSTEMGUID(), newSystem_i.GUID() );
+    
+      // inform the new System about the BootNode GUID
+      LibDEF_DataAccessor::SetConfigurationBodyProperty( nvt, LibDEF_DataAccessor::HEADER_BOOTNODEGUID(), this.BootNode().GUID() );
+    
+      // attach routing table
+      nvt := this.AttachRoutingTableInNVT( &nvt );
+    }
+    
+    LibDEF_Util::EventLog( event_i, "Sending join Domain acknowledgement" );
+    
+    this.SendMessage( newSystem_i, nvt, LibDEF_DataAccessor::KIND_SUCCESS(), event_i );
+  *]
+}

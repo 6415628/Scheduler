@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method StoreDemoDataset (internal[GUIComponent] parent) id:Method_DialogStoreDemoDataset_StoreDemoDataset
+{
+  #keys: '[125460.0.313562823]'
+  Body:
+  [*
+    // Store demo dataset #9319
+    if( this.DoModal( parent ) > 0 )
+    {
+      schedule  := ExternalMDSEditor::Editor().ObjectInfo( Constants::ScheduleDataset(), 
+                                                          Constants::DatasetFolder(),
+                                                          Constants::ScheduleDataset() );
+      
+      // Copy datasets
+      if( not isnull( schedule ) )
+      {
+        isnew := CheckBoxStoreNew.Checked();
+        targetdemo := ifexpr( isnew, EditorDemoName.Text(), StringSelectionDemoDataset.BoundValue() );
+    
+        backupFolder := ifexpr( StringSelectionCategory.BoundValue() = Constants::DemoCategory_Sales(), Schedule::GetBackupDirectory(), Schedule::GetBackupTestDirectory() );
+        exportFolder := backupFolder.Concat( targetdemo );
+        
+        // for overwrite, need to delete the file before create 
+        if( not isnew )
+        {
+          files := OS::SimpleScanDirectory( exportFolder, Constants::ScheduleStarDataset() );
+          traverse( files, Elements, file )
+          {
+            OS::RemoveFile( file );
+          }
+        }
+      
+        // create the DSS file
+        mdsids := MDSIDs::Create( schedule.MDSID() );
+        ExternalMDSEditor::Editor().CreateDBExportFile( exportFolder, Constants::QDB(), mdsids );
+      }
+    }
+  *]
+}

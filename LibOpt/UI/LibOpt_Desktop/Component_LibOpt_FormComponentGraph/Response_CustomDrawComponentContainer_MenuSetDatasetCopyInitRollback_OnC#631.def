@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: CustomDrawComponentContainer
+Response OnClick (structured[LibOpt_Component] selection) id:Response_CustomDrawComponentContainer_MenuSetDatasetCopyInitRollback_OnClick_631
+{
+  #keys: '[141860.2.327419792]'
+  Body:
+  [*
+    // Set dataset copies on the 'Handle rollback' and 'Initialize' component positions.
+    LibOpt_BreakpointPosition::SetDatasetCopy( selection, 
+                                               typeof( LibOpt_DatasetCopyUnconditional ).Name(),
+                                               LibOpt_Suboptimizer::ComponentPosition_Rollback()
+                                               );
+    
+    LibOpt_BreakpointPosition::SetDatasetCopy( selection, 
+                                               typeof( LibOpt_DatasetCopyOnAnyDownstreamCopy ).Name(),
+                                               LibOpt_Component::ComponentPosition_Initialize()
+                                               );
+  *]
+  DefinitionID => /CustomDrawComponentContainer/Responsedef_CustomDrawComponentContainer_Menu_OnClick
+  GroupServerCalls: true
+  Initiator: 'MenuSetDatasetCopyInitRollback'
+  Precondition:
+  [*
+    //Check if this component has a 'Handle Rollback' component position 
+    result := LibOpt_BreakpointPosition::SetDatasetCopyHandleRollbackAllowed( selection );
+    
+    if( result )
+    {
+      componentpositions := selectset( selection, 
+                                       Elements.ComponentPosition,
+                                       position,
+                                       position.Name() = LibOpt_Suboptimizer::ComponentPosition_Rollback()
+                                       or position.Name() = LibOpt_Component::ComponentPosition_Initialize()
+                                       );
+      // Check if a dataset copy can be placed on the 'Handle rollback' and 'Initialize' component positions.
+      result := LibOpt_BreakpointPosition::SetDatasetCopyAllowed( componentpositions );
+    }
+                                                            
+    return result;
+  *]
+}

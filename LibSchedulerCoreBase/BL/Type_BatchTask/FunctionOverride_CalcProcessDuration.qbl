@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcProcessDuration
+{
+  Description: 'Calculate Process Duration based on BatchOnResource.ProcessDuration.'
+  TextBody:
+  [*
+    processduration := Duration::Zero();
+    
+    // Saravanen 20130613 check if all BatchSequenceElements in Batch has finished
+    
+    allFinished := forall( this, Batch.BatchSequenceElement, bse, bse.HasFeedback() );
+    
+    //Process duration will be calculated when :
+    //Task don't have feedback yet
+    //Task have feedback already, but (i) KeepTaskAfterFeedback = true and (ii) Task is not removed by menu item Remove Feedbacked Task
+    //Task have feedback already, but not all the batch sequence elements has feedback
+    
+    //Process duration will be zero when :
+    //Task has feedback and (i) KeepTaskAfterFeedback = false and (ii) all the batch sequence elements in the batch has feedback
+    //Task has feedback and (i) KeepTaskAfterFeedback = true but is removed by menu item Remove Feedbacked Task 
+    if( not allFinished )
+    {
+      // uses BatchOnResource structure to get ProcessDuration
+      usedbor := select( this, Batch.BatchOnResource, bor, bor.BatchResource() = this.Resource_SC() )
+    
+      if( not isnull( usedbor ) )
+      {
+        processduration := usedbor.ProcessDuration();
+      }
+    }
+    
+    this.ProcessDuration( processduration );
+  *]
+}

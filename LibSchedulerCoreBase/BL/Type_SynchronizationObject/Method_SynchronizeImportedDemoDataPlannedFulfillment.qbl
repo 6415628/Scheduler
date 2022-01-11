@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeImportedDemoDataPlannedFulfillment
+{
+  Description: 'Synchronize imported planned fulfillment and translate them to internal planned fulfillment instances.'
+  TextBody:
+  [*
+    allinstances := selectset( this, Schedule.Demand.Fulfillment, fulfillment, not fulfillment.IsFixedReservation() );
+    updatedinstances := construct( Fulfillments );
+    
+    traverse( this, Schedule.ImportedDemoDataPlannedFulfillment, importedDemoDataPlannedFulfillment )
+    {
+      plannedFulfillment := select( allinstances, Elements, plannedFulfillment, 
+                                    plannedFulfillment.DemandId() = importedDemoDataPlannedFulfillment.DemandID()
+                                    and plannedFulfillment.SupplyId() = importedDemoDataPlannedFulfillment.SupplyID() )
+      
+      if( isnull( plannedFulfillment ) )
+      {
+        demand := select( this, Schedule.Demand, demand, demand.DemandID() = importedDemoDataPlannedFulfillment.DemandID() );
+        supply := select( this, Schedule.Supply, supply, supply.SupplyID() = importedDemoDataPlannedFulfillment.SupplyID() );
+        
+        if( not isnull( demand ) and not isnull( supply ) )
+        {
+          plannedFulfillment := demand.CreatePlannedFulfillment( supply, true, importedDemoDataPlannedFulfillment.Quantity() );
+        }
+      }
+      
+      if( not isnull( plannedFulfillment ) )
+      {
+        plannedFulfillment.UpdateQuantity( importedDemoDataPlannedFulfillment.Quantity() );
+      }
+      
+      updatedinstances.Add( plannedFulfillment );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, plannedFulfillment )
+    {
+      plannedFulfillment.Remove();
+    }
+  *]
+}

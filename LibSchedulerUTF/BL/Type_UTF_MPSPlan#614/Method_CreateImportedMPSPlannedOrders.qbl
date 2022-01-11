@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateImportedMPSPlannedOrders (Schedule schedule) as owning ImportedMPSPlannedOrders
+{
+  Description: 'Creates imported MPS planned orders.'
+  TextBody:
+  [*
+    importedMPSPlannedOrders := construct( ImportedMPSPlannedOrders );
+    
+    // Use test variant ID for MPSPlanID and RoutingID
+    variant := this.Variant();
+    
+    // Hardcoded MPSPeriodStart, MPSPeriodEnd and DueDate = MPSPeriodEnd
+    start := schedule.Time();
+    end := start + Duration::Days( 1 );
+    
+    // Use imported routing lot size as quantity
+    lotSize := min( schedule, ImportedRouting_SC, importedRouting, importedRouting.RoutingId() = variant, importedRouting.LotSize() );
+    qty := lotSize * 100;
+    
+    // Create ImportedMPSPlannedOrder based on hardcoded data
+    importedMPSPlannedOrder := ImportedMPSPlannedOrder::FindImportedMPSPlannedOrder( variant, variant, end );
+    
+    if( isnull( importedMPSPlannedOrder ) )
+    {
+      importedMPSPlannedOrder := ImportedMPSPlannedOrder::Create( schedule, variant, variant, end );
+    }
+    
+    importedMPSPlannedOrder.Update( start, end, qty );
+    importedMPSPlannedOrders.Add( importedMPSPlannedOrder );
+    
+    return &importedMPSPlannedOrders;
+  *]
+}

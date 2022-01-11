@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: SCListTask
+Response OnClick (structured[Task_SC] selection) id:Response_SCListTask_MenuReserveMaterialsAutomaticallyForTasks_OnClick
+{
+  #keys: '[122574.0.563680202]'
+  Body:
+  [*
+    // reserve materials automatically for selected tasks
+    value := true;
+    feedback_o := ''
+    hasNoSoftViolation := Task_SC::CanReserveMaterialForTaskSoft( selection, feedback_o );
+    
+    if( not hasNoSoftViolation )
+    {
+      value := MessageBox::Question( this, feedback_o, '&Yes|&No' ) = 0
+    }
+    
+    if( value )
+    {
+      supplies := selectset( Schedule, Supply, supply, true );
+      demands := selectset( selection, Elements.OperationInTask.PlannedDemand, demand, true );
+      fulfillments := selectset( demands, Elements.Fulfillment, fulfill, true );
+      
+      Fulfillment::CreateAutoPlannedFulfillments( demands, supplies, fulfillments, false, 0.0 );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => //FilteredList/Responsedef_FilteredList_Menu_OnClick
+  Initiator: 'MenuReserveMaterialsAutomaticallyForTasks'
+  Precondition:
+  [*
+    return Task_SC::CanAutoReserveMaterial( selection, feedback );
+  *]
+}

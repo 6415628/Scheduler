@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ExportResults (const LibOpt_BT_BTSs elements)
+{
+  Description: 'Export the results of the given BTS instances to file according to the parameters set in the configuration utility.'
+  TextBody:
+  [*
+    format := LibOpt_BT_ConfigurationSettings::GetSetting_ResultExportFormat();
+    
+    export := 'Unsupported format';
+    file_extension := 'txt';
+    
+    if( format = 'JSON' )
+    {
+      json := LibOpt_BT_BTS::ExportResultsJSON( elements );
+      export := json.AsString();
+      file_extension := 'json';
+    }
+    
+    path := LibOpt_BT_ConfigurationSettings::GetSetting_ResultExportPath();
+    OS::CreateDirectory( path );
+    
+    file := OSFile::Construct();
+    file.Encoding( LibOpt_BT_ConfigurationSettings::GetSetting_ResultExportCharacterEncoding() );
+    file.Open( path + '/benchmarking_results_' + DateTime::ActualGMTTime().Format( 'YM2D2THms', ConversionOptions::ISO() ) + '.' + file_extension, 'Write', true );
+    
+    file.WriteTextLine( export );
+    
+    file.Close();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

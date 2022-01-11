@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCanOptimizeFromOperationList (Schedule schedule)
+{
+  Description: 'Unit test to test whether can optimize from operation list'
+  TextBody:
+  [*
+    isvariantfound := false;
+    resource1hasconfigurablerule := false;
+    resource2hasconfigurablerule := false;
+    issequencingoptimizerenabled := false;
+    isprogramoptimizerenabled := false;
+    isallowed := false;
+    
+    this.GetTestVariantForCanOptimizeFromOperationList( isvariantfound,
+                                                        resource1hasconfigurablerule,
+                                                        resource2hasconfigurablerule,
+                                                        issequencingoptimizerenabled,
+                                                        isprogramoptimizerenabled, 
+                                                        isallowed );
+    isvalid := true;
+    
+    if( isvariantfound )
+    {
+      resources := selectset( schedule, ResourceGroup_SC.Resource_SC, res, true );
+      feedback := '';
+      isvalid := isallowed = schedule.AllowedOptimizeBasedOnResources( resources, feedback );
+    }
+    
+    this.Run().AssertTrue( isvalid,
+                           UTFUtility::GenerateFailedMessage( 'Precondition check of can optimize from operation list', '' ) );
+  *]
+}

@@ -1,0 +1,15 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckCanChangeDueDateSoft (InternalWorkOrder existingWorkOrder, Routing routing, DateTime dueDate, 
+  output String feedback_o) const declarative remote as Boolean
+{
+  Description: 'Checks if the input internal work order can change its input due date.'
+  TextBody:
+  [*
+    value := guard( existingWorkOrder.CheckSameDueDate( dueDate ) or existingWorkOrder.CheckUsedInSchedule( feedback_o ), true )
+             // We always want to check for due date earlier than company time
+             and guard( routing.CheckDueDateAfterCompanyTime( DateTimeToDate::StandardConverter().Convert( dueDate ), feedback_o ), true );
+    
+    return value;
+  *]
+}

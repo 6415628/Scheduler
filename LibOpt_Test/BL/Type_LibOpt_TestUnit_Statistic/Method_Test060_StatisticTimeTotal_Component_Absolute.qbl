@@ -1,0 +1,72 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test060_StatisticTimeTotal_Component_Absolute (LibOpt_TestDataset dataset)
+{
+  Description: 'Test that we get the right amount of issues for `LibOpt_StatisticTimeTotal` that is configured with `IsAbsolute` true and for a specific component'
+  TextBody:
+  [*
+    nr_iterations := 20;
+    
+    
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    run.DebugScope( true );
+    
+    scope_elements := construct( LibOpt_ScopeElementSleeps );
+    for( i := 0; i < nr_iterations; i++ )
+    {
+      scope_elements.Add( LibOpt_ScopeElementSleep::Create( dataset, '#' + [String] i, Duration::Millis( 100 ) ) );
+    }
+    
+    scope_elements := selectsortedset( scope_elements, Elements, scope_element, true, Real::Random() );
+    
+    lower := scope_elements.Element( 0 );
+    lower.SleepDuration( Duration::Millis( 0 ) );
+    
+    upper := scope_elements.Element( 1 )
+    upper.SleepDuration( Duration::Millis( 200 ) );
+    
+    scope_elements := selectsortedset( scope_elements, Elements, scope_element, true, Real::Random() );
+    
+    scope := LibOpt_Scope::Create( run, scope_elements );
+    run.SetStartScope( scope );
+    
+    scopes := construct( LibOpt_Scopes );
+    traverse( scope_elements, Elements, scope_element )
+    {
+      scope := LibOpt_Scope::Create( run );
+      scope.Add( scope_element );
+      scopes.Add( scope );
+    }
+    
+    iterator := opt.IteratorForEachScope( run, 'Iterator', opt.ScopeProviderScripted( scopes ) );
+    
+    component := opt.ComponentParentReflection( run, 'Component',
+                                                method( LibOpt_TestUnit_Statistic, M06X_Operation_SleepScope,
+                                                        LibOpt_ComponentParent, LibOpt_Task ) );
+    
+    iterator.To( component );
+    
+    this.NoException( run->Start()->|void->( )
+    {
+      statistics := selectset( run, Statistic.astype( LibOpt_StatisticTimeTotal ), statistic,
+                               statistic.IsAbsolute()
+                               and statistic.IsComponent() );
+      
+      if( this.Run().AssertEqual( 2, statistics.Size(), 'Incorrect amount of statistics' ) )
+      {
+        statistic := selectobject( statistics, Elements, statistic, statistic.Component() = component );
+        
+        this.Run().AssertEqual( nr_iterations, statistic.NrElements(), 'Incorrect amount of elements' );
+        this.Run().AssertGreaterOrEqual( 2, statistic.Issue( relsize ), 'Incorrect amount of issues' );
+        
+        snapshot_lower := selectobject( lower, ScopeElementOnScope.Scope.AsInputScope, snapshot, snapshot.Component() = component );
+        snapshot_upper := selectobject( upper, ScopeElementOnScope.Scope.AsInputScope, snapshot, snapshot.Component() = component );
+        
+        this.Run().AssertEqual( 1, counter( snapshot_lower, IterationPart.Snapshot.Issue, issue, issue.Statistic() = statistic ), 'Unexpected issue count on violation of lower bound' );
+        this.Run().AssertEqual( 1, counter( snapshot_upper, IterationPart.Snapshot.Issue, issue, issue.Statistic() = statistic ), 'Unexpected issue count on violation of upper bound' );
+      }
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

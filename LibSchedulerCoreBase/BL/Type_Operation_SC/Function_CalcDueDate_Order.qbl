@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcDueDate_Order
+{
+  Description: 'The duedate order of an operation is the duedate of the order for the last operation or the minimum of the next operations minus the leadtime of that operation.'
+  TextBody:
+  [*
+    // TG updated to use OOM
+    // TG introduced OOM.AsIOM.DueDate_Order_Start to take the start date of the next operation when it is scheduled.
+    // TG4AvK080508
+    // Kyle 11-05-2015 #5344 Use TotalOffsetDuration instead of TransportCoolingDuration
+    // Guo Zhuang 5-08-2016 Remove else statement.
+    
+    value := min( this, ToOperationDependency, oom, oom.HasToOperation(),
+                  oom.ToOperation().DueDate_Order_Start() - oom.TotalOffsetDuration() );
+    
+    if( this.IsLastOperation() )
+    {
+      value := this.PlanUnit_SC().DueDate();
+    }
+    
+    
+    this.DueDate_Order( value );
+  *]
+}

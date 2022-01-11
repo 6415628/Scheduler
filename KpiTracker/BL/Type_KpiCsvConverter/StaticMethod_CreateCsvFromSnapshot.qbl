@@ -1,0 +1,76 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateCsvFromSnapshot (KpiSnapshotSetData snapshotSetData, KpiTracker kpiTracker) as String
+{
+  Description: 'Creates a CSV string out of the specified KpiSnapshotDatas'
+  TextBody:
+  [*
+    // Render header line.
+    output := "";
+    
+    conversion := ConversionOptions::System();
+    
+    if ( snapshotSetData.SnapshotData( relsize ) > 0 )
+    {
+      output := "PlanDateTime; ServerDateTime; RetentionPolicyID; ";
+      first  := snapshotSetData.SnapshotData( relget ).Element( 0 );
+    
+      // -- Label headers
+      sortedLabels := selectsortedset( kpiTracker, Label, label, true, label.Name() );
+      output := output + selectuniquevalues( sortedLabels, Elements, label, 
+                                             true, "label_" + label.Name() ).ToString( "; ");
+      if ( first.Label( relsize ) > 0 ) 
+      {
+        output := output + "; "
+      }
+      // -- KPI headers
+      sortedKpis    := selectsortedset( kpiTracker, MetaData, metadata, true, metadata.Name() ); 
+      output := output + selectuniquevalues( sortedKpis, Elements, kpi, 
+                                             true, "kpi_" + kpi.Name() ).ToString( "; " );
+      
+      // -- Finish header row with a newline.
+      output := output + String::NewLine();
+                                       
+                                       
+      // Render rows
+      traverse( snapshotSetData, SnapshotData, snapshot ) 
+      {
+        // Timestamps and stuff
+        output := output 
+                + snapshot.PlanDateTime().Format( 'Y-M2-D2TH2:m:sZ', conversion ) + "; "
+                + snapshot.ServerDateTime().Format( 'Y-M2-D2TH2:m:sZ', conversion ) + "; "
+                + snapshot.RetentionPolicyIdentification() + "; "
+                
+        sortedLabels := selectsortedset( kpiTracker, Label, label, true, label.Name() );
+        traverse( sortedLabels, Elements, labelValue )
+        {
+          kpiObj := selectsortedset( snapshot, Label, label, true, label.Name() );
+          lab := select( kpiObj, Elements, label, labelValue.Name() = label.Name() );
+          output := output + guard ( lab.Value(), "" ) + "; ";
+        }
+        if ( snapshot.Label( relsize ) < 0 ) 
+        {
+          output := output + "; "
+        }
+        sortedKpis    := selectsortedset( kpiTracker, MetaData, metadata, true, metadata.Name() ); 
+        traverse( sortedKpis, Elements, metadata )
+        {
+          kpiObj := selectsortedset( snapshot, Value, value, true, value.Name() );
+          val := select( kpiObj, Elements, value, metadata.Name() = value.Name() );
+          output := output + guard( [String]val.Value(), "" ) + "; ";
+        }
+        if ( snapshot.Value( relsize ) < 0 )
+        {
+          output := output + "; ";
+        }
+    
+        // -- Finish content row with a newline.
+        output := output + String::NewLine();
+      }
+      
+    }
+    
+    // send result.
+    return output;
+  *]
+}

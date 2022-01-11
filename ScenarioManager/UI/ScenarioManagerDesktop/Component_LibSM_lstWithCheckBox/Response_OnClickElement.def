@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClickElement (structured[Object] element) id:Response_LibSM_lstWithCheckBox_OnClickElement
+{
+  #keys: '[110852.0.632260347]'
+  Body:
+  [*
+    dp := this.dhObjects().Data();
+    
+    traverse( element, Elements, e )
+    {
+      exist := dp.Find( e ) > -1;
+      if( exist )
+      {
+        dp.Remove( e );
+        //OLH 20100826 If we have multiple ListWithCheckbox in a form and need to base other ListWithCheckbox on the selection of this ListWithCheckbox,
+        //then we need an ugly hack here since we can't change the element name and data type of DetailPanelObjects.
+        //We will need a unique DetailPanel name so that we can use it in later DataExtractor, filter argument, etc.
+        //And there is no way to fill a DetailPanel from another DetailPanel easily...
+        //(1) DetailPanel.OnDataChanged does not work because that only fires if the whole structured set is changed, not element in set.
+        //(2) Can't use a DataExtractor within a DetailPanel to extract from another DetailPanel too?!
+        //So, add a DetailPanelSelectedXXXs that has the correct data type, and fill that DetailPanel here.
+        //DetailPanelSelectedXXXs.Data().Remove( e.astype( XXX ) );
+      }
+      else
+      {
+        dp.Add( e );
+        //DetailPanelSelectedXXXs.Data().Add( e.astype( XXX ) );
+      }
+    }
+    
+    object := selectset( dp, Elements, e, true, true );
+    dhObjects.Data( &object );
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_List_OnClickElement'
+  Precondition:
+  [*
+    return x < 16;
+  *]
+}

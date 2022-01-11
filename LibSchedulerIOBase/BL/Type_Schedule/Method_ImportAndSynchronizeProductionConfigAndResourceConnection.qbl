@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportAndSynchronizeProductionConfigAndResourceConnection
+{
+  Description: 'Imports and synchronizes production environment configurations as well as resource connection from KT.'
+  TextBody:
+  [*
+    if( this.IntegrationConfiguration().UseCommonInformationModel() )
+    {
+      integrationAPI := this.IntegrationAPI();
+      synchronizationObject := this.SynchronizationObject();
+    
+      importAndSynchronizeStream := integrationAPI -> ImportAndSynchronizeEquipment();
+      synchronizationObject -> After( importAndSynchronizeStream ) -> SynchronizeProductionConfigurationsAndResourceConnection();
+    }
+    else
+    {
+      this.ImportObject().ImportProductionConfigurations();
+      Transaction::Transaction().Propagate( attribute( ImportedData_SC, IsValidDataHard ) );
+      this.SynchronizationObject().SynchronizeProductionConfigurationsAndResourceConnection();  
+      
+      // Synchronize rule to create rule scope in resource when the resource is not created or imported yet
+      // Use case: Import rule then only import resource
+      rules := selectset( this, Rule, rule, true );
+      Rule::UpdateRuleScope( rules );
+      
+      // Synchronize work order operation resource when the resource is not created or imported yet
+      // Use case: Import ERP with invalid resource in ImportedWorkOrderOperationResource then only import that invalide resource from FormProductionEnvirionment
+      // Expected behavior is the work order operation resource will be created
+      workOrderOperations := selectset( this, ImportedWorkOrderOperationResource.ImportedWorkOrderOperation.WorkOrderOperation, woo, true ); 
+      
+      WorkOrderOperation::UpdateWorkOrderOperationResource( workOrderOperations );
+    }
+  *]
+}

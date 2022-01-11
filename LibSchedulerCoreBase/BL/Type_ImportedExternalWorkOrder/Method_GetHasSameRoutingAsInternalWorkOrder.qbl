@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasSameRoutingAsInternalWorkOrder (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if external work order share the same routing as the internal work order it is going to replace.'
+  TextBody:
+  [*
+    isvalid := this.RoutingID() = guard( this.InternalWorkOrder().RoutingID(), '' );
+               
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedWorkOrder_Instance( name ),
+                                                               Translations::ImportedWorkOrder_HaveDifferentRoutingAsInternalWorkOrder() ) );
+    }
+    
+    return isvalid;
+  *]
+}

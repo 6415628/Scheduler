@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method Edit (GUIComponent parent, LibSM_KnowledgeProfile knowledgeProfile) id:Method_LibSM_dlgCreateEditKnowledgeProfile_Edit
+{
+  #keys: '[107496.2.1552069388]'
+  Body:
+  [*
+    // Edit kb branch selection
+    // to keep the old value of branches in Profile,
+    // need to use shadow object, copy all relations over, and reset wrapped so to detached from original object
+    
+    oldProfile := shadow( knowledgeProfile );
+    oldProfile.ExpandRecursive();
+    oldProfile.ResetWrapped();
+    
+    data := shadow( knowledgeProfile );
+    Dialog.Data( data );
+    
+    if( Dialog.DoModal( parent ) > 0 )
+    { 
+      // Get all new created branches in dataholder to instantiate new knowledge base branch
+      // and select the created branches for all scenario that using current knowledge profile.
+      traverse( dhNewKBBranch.Data(), Elements, branch )
+      {
+        newKBbranch := selectobject( data,
+                                     KnowledgeBaseBranchInProfile,
+                                     KBbranch,
+                                     KBbranch.KBDefinitionName() = branch.KBDefinitionName()
+                                 and KBbranch.KBBranchName()     = branch.KBBranchName() );                                         
+                          
+        LibSM_GlobalState.InstantiateNewKnowledgeBranch( newKBbranch.KBDefinitionName(), newKBbranch.KBBranchName() );
+        
+        LibSM_GlobalState.SelectKB( knowledgeProfile,
+                                             newKBbranch.KBDefinitionName(),
+                                             newKBbranch.KBBranchName(),
+                                             newKBbranch.KBBranchVersion() );
+      }
+    
+      data.Commit();
+    
+      LibSM_GlobalState.ValidateKBBranchExistence_SingleProfile( knowledgeProfile );
+    
+      if( knowledgeProfile.IsUsed() )
+      {
+        this.SelectKnowledgeBranch( oldProfile, knowledgeProfile );
+      }
+    }
+  *]
+}

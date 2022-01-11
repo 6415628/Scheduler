@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test030_BreakpointAtEndOfLeafComponent (LibOpt_TestDataset dataset)
+{
+  Description: 'Check if we stop executing as we hit a breakpoint at the end of a component without children.'
+  TextBody:
+  [*
+    {
+      opt := this.Optimizer( dataset );
+      run := opt.CreateRun();
+    
+      iterator := opt.IteratorUntil( run, 'Iterator' );
+      iterator.SetMaxIterations( 10 );
+      switch := opt.SwitchRoundRobin( run, 'Switch' );
+    
+      component1 := opt.ComponentCounter( run, 'Component1' );
+      component2 := opt.ComponentCounter( run, 'Component2' );
+    
+      iterator.To( switch );
+      switch.Branch( component1 );
+      switch.Branch( component2 );
+    
+      component_position := select( component1, ComponentPosition, bp, bp.Name() = LibOpt_Component::ComponentPosition_Continue() );
+      component_position.SetBreakpoint();
+      
+      run.SetStartComponent( iterator );
+      str := run->Start();
+    
+      test := this->WaitForBreakpoint( run, this.Run() )
+        ->|this->( this )
+        {
+          this.Run().AssertEqual( 1, component1.NrOfTimesCalled(), 'Component 1: Number of calls has an unexpected value [Paused]' );
+          this.Run().AssertEqual( 0, component2.NrOfTimesCalled(), 'Component 2: Number of calls has an unexpected value [Paused]' );
+        }
+        ->|run->Continue()
+        ->|this->WaitForBreakpoint( run, this.Run() )
+        ->|run->Stop()
+        ->|this->( this )
+        {
+          this.Run().AssertEqual( 2, component1.NrOfTimesCalled(), 'Component 1: Number of calls has an unexpected value [Stopped]' );
+          this.Run().AssertEqual( 1, component2.NrOfTimesCalled(), 'Component 2: Number of calls has an unexpected value [Stopped]' );
+        }
+      this.NoException( test );
+      str->Exception()->LibOpt_TestUnit_TestDataset::CheckNoException( this );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

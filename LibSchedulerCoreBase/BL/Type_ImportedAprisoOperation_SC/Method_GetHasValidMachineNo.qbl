@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidMachineNo (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Checks whether there exists a resource with this machine no.'
+  TextBody:
+  [*
+    // woi1 Feb-10-2017 (created)
+    resource := select( this, ImportedAprisoOperationProgress_SC.ImportedAprisoScheduleProgress_SC.Schedule.ResourceGroup_SC.Resource_SC, resource, resource.ResourceID() = this.MachineNo() );
+    
+    isvalid := not isnull( resource );
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Operation_SC::GenerateOperationID( this.OrderNo(), [Number]this.OprSequenceNo() );
+      name := Schedule::GetSubstituteName( name );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedAprisoOperation_Instance( name ),
+                                                               Translations::SC_ImportedAprisoOperation_ViolateHasValidMachineNo() ) );
+    }
+    
+    return isvalid;
+  *]
+}

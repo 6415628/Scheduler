@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: ListDemand
+Response OnClick (structured[Demand] selection) id:Response_ListDemand_MenuReserveMaterialsForSelectedDemandsAutomatically_OnClick
+{
+  #keys: '[122574.0.525341926]'
+  Body:
+  [*
+    // Automatically reserves material for selected demands
+    value := true;
+    feedback_o := '';
+    hasNoSoftViolation := Demand::CanReserveMaterialSoft( selection, feedback_o );
+    
+    if( not hasNoSoftViolation )
+    {
+      value := MessageBox::Question( this, feedback_o, '&Yes|&No' ) = 0
+    }
+    
+    if( value )
+    {
+      supplies := selectset( Schedule, Supply, supply, true );
+      fulfillments := selectset( selection, Elements.Fulfillment, f, true );
+      Fulfillment::CreateAutoPlannedFulfillments( selection, supplies, fulfillments, false, 0.0 );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => /ListDemand/Responsedef_ListDemand_Menu_OnClick
+  Initiator: 'MenuReserveMaterialsForSelectedDemandsAutomatically'
+}

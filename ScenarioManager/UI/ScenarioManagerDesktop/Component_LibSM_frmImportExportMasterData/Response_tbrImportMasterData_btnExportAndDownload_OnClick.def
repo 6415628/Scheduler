@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: tbrImportMasterData/btnExportAndDownload
+Response OnClick () id:Response_tbrImportMasterData_btnExportAndDownload_OnClick
+{
+  #keys: '[136402.0.449730735]'
+  Body:
+  [*
+    // export message to excel
+    filename := Application.GetSaveFileName( "MasterData", "xlsx", "Scenario Manager master data export (.xlsx)" );
+    
+    if( filename <> '' )
+    {                                            
+      // Set up value/dataholders to deal with when the export is complete.
+      // The ExportMasterData method will update the LibSM_ScenarioManager.ExportedMasterData 
+      // attribute, which will trigger a 'OnValueChanged' event on ValueHolderLastExportedData.
+      // In the event handler, the actual file is written using the filename from ValueHolderExportFileName.
+      DataHolderScenarioManager.Data( LibSM_ScenarioManager );
+      ValueHolderExportFileName.Value( filename );
+      LibSM_StagingSet::ExportMasterData( LibSM_ScenarioManager );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIButtonBase_OnClick'
+  Precondition:
+  [*
+    Form.HasScenarioManager();
+  *]
+}

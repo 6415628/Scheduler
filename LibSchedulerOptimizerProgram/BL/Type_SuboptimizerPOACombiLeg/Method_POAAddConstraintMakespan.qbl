@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintMakespan (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs)
+{
+  TextBody:
+  [*
+    // yifei Aug-31-2021 (created)
+    valueset := POAValueSet::P( poa, SuboptimizerPOACombiLeg::NamePOAConstraintMakespan(), Real::MaxReal() );   
+    
+    // Only define the makespan constraint for those combilegs that do not have the next combileg in scope
+    // Otherwise we incentivize moving operations from this combileg to the next
+    traverse( combilegs, Elements, combileg,
+              not exists( combilegs, Elements, otherleg, 
+                          otherleg = combileg.Next() ) )
+    {
+      pathtype := poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathCombiLeg( combileg ), combileg );
+      valueset.Set( pathtype, 0.0 );
+    }
+    endorderconstraint := poa.NewEndPathConstraint( SuboptimizerPOACombiLeg::NamePOAConstraintMakespan() );
+    
+    endorderconstraint.Expression( poa.Expression( SuboptimizerPOACombiLeg::NamePOAExpressionTime() ) );
+    endorderconstraint.ValueSet( valueset );
+    
+    endorderconstraint.Power( this.Strategy().Program_KPIPowerConstraintMakespan() );
+    endorderconstraint.Factor( this.Strategy().Program_KPIWeightConstraintMakespan() );
+  *]
+}

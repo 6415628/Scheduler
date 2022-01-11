@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method Open (GUIComponent parent_i, LibCal_Calendar calendar_i) id:Method_LibCal_dlgSubscribeToEvent_Open
+{
+  #keys: '[131094.0.1391641400]'
+  Body:
+  [*
+    this.Title( "Select an event to subscribe calendar '" + calendar_i.CalendarID() + "' to" );
+    
+    // Get the available events. In lstEventParticipations the LeadingParticipations of these events will be shown.
+    events := calendar_i.GetPotentialEventsToSubscribeTo();
+    
+    // Get the calendars of the events. The events are shown per calendar.
+    calendars := selectset( events, Elements.Calendar, cal, true, true ).Unique();
+    
+    // Disallow selecting an event from the selected calendar.
+    calendars.Remove( calendar_i );
+    
+    // Register the selected calendar.
+    calendarAsSet := construct( LibCal_Calendars );
+    calendarAsSet.Add( calendar_i );
+    dhSubscribers.Data( &calendarAsSet );
+    
+    dhCalendars.Data( &calendars );
+    
+    Dialog.DoModal( parent_i );
+    
+    // The dialog is closed when the followup dialog is closed with OK.
+  *]
+}

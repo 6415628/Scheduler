@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcLastInputLotLatestStart
+{
+  TextBody:
+  [*
+    lateststart := DateTime::MinDateTime();
+    
+    if( this.PlanUnit_SC().IsLotLeadTimeLogicOn() )
+    {
+      lateststart := this.LatestEnd() - this.LeadTime();
+      
+      if( this.HasFeedback() )
+      {
+        lateststart := this.ActiveOperationFeedback().FeedbackProcessStart();
+      }
+      else if( this.IsPlanned() )
+      {
+        //alexandern 18-Jun-2015 QP#5478
+        firstrespectroutingsubtask := this.GetTask().FirstRespectRoutingSubTask();
+        
+        if( not isnull( firstrespectroutingsubtask ) )
+        {
+          if( firstrespectroutingsubtask.istype( ProcessSubTask ) )
+          {
+            lateststart := this.GetTask().LastInputLot().LatestStart();
+          }
+          else
+          {
+            lateststart := firstrespectroutingsubtask.JITLatestStart();
+          }
+        }
+      }
+    }
+    
+    this.LastInputLotLatestStart( lateststart );
+  *]
+}

@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExportedCalendarRuleTimeInterval (QuillCalendarRule rule)
+{
+  Description: 'Create exported calendar rule time interval instances that will be exported as part of demo data interface.'
+  TextBody:
+  [*
+    if( not isnull( rule ) )
+    {
+      allRuleTimeIntervalInstances := selectset( this, ExportedCalendarRuleTimeInterval, exportedCalendarRuleTimeInterval, true );
+      updatedRuleTimeIntervalInstances := construct( ExportedCalendarRuleTimeIntervals );
+      
+      traverse( rule, TimeIntervals, timeInterval )
+      {
+        exportedCalendarRuleTimeInterval := ExportedCalendarRuleTimeInterval::FindExportedCalendarRuleTimeInterval( timeInterval.Rule().Name(), timeInterval.Offset() );
+        
+        if( isnull( exportedCalendarRuleTimeInterval ) )
+        {
+          exportedCalendarRuleTimeInterval := ExportedCalendarRuleTimeInterval::Create( this, timeInterval.Rule().Name(), timeInterval.Offset() );
+        }
+        
+        if( not isnull( exportedCalendarRuleTimeInterval ) )
+        {
+          exportedCalendarRuleTimeInterval.Update( timeInterval );
+        }
+        
+        updatedRuleTimeIntervalInstances.Add( exportedCalendarRuleTimeInterval );
+      }
+      
+      //Delete old instances
+      oldRuleTimeIntervalInstances := allRuleTimeIntervalInstances.Difference( updatedRuleTimeIntervalInstances );
+      
+      traverse( oldRuleTimeIntervalInstances, Elements, calendarRuleTimeInterval )
+      {
+        calendarRuleTimeInterval.Remove();
+      }
+    }
+  *]
+}

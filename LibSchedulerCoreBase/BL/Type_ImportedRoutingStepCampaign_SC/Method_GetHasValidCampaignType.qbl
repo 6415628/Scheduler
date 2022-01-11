@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidCampaignType (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'checks whether CampaignType is valid, i.e., whether it matches a campaign type on a resource group that has same operation type as the routing step'
+  TextBody:
+  [*
+    // ihe1 May-17-2017 (created)
+    isvalid := exists( this, 
+                       Schedule.ResourceGroup_SC.CampaignType, 
+                       campaigntype, 
+                       campaigntype.ResourceGroup_SC().Name() = this.ResourceGroup(),                     
+                       campaigntype.Name() = this.CampaignType() );
+    
+    if( not isnull(  feedback_o ) and not isvalid ) 
+    {
+      name := Schedule::GetSubstituteName( this.RoutingStepName() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedRoutingStep_Instance( name ),
+                                                               Translations::SC_ImportedRoutingStepCampaign_ViolateHasValidCampaignType() ) );
+    }
+    
+    return isvalid;
+  *]
+}

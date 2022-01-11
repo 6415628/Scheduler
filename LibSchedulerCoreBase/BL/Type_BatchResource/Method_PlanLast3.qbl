@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanLast (Batches batches)
+{
+  Description: 'This method call planlast to move all selected batches to last'
+  TextBody:
+  [*
+    operations := selectset( batches, Elements.BatchSequenceElement.Operation_SC, op, true );
+    Operation_SC::SetIsPlanning( operations, true );
+    
+    traverse( batches, Elements, batch )
+    {
+      if( this.IsPlanRelatedOperations() )
+      {
+        traverse( batch, BatchSequenceElement.Operation_SC, op )
+        {
+          Schedule::PlanRelatedOperationsBefore( op, this, null( Task_SC ), true, false );
+        }
+      }
+      
+      this.PlanLast( batch );
+    }
+    
+    this.Schedule().AutomaticProductBasedMaterialReservationBySorting();
+    Operation_SC::SetIsPlanning( operations, false );
+  *]
+}

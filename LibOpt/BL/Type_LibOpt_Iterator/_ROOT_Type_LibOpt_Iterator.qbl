@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#root
+#parent: #DomainModel
+TypeSpecialization LibOpt_Iterator
+{
+  #keys: '2[143908.1.750506511][143908.1.750506510]'
+  Description:
+  [*
+    A `LibOpt_Iterator` is an intermediate `LibOpt_Component` subtype. 
+    We expect other components to subtype from this type.
+    A `LibOpt_Iterator` creates multiple `LibOpt_Tasks` for each `LibOpt_Task` it receives.
+    
+    Since this is an abstract type, the following behaviors are not specified on this level:
+    It is not specified whether these created `LibOpt_Tasks` are sent to the same component or to different ones.
+    It is not specified how many `LibOpt_Tasks` are created for each incoming `LibOpt_Task`.
+    The scopes of the created `LibOpt_Tasks` are not specified. They may be different from one another.
+    It is not specified whether the created `LibOpt_Tasks` are created to run concurrently.
+    
+    How to subclass:
+    We've provided a lot of functionality already for you out-of-the-box. In most cases, the methods to override will be `StartIterations` and `Progress`.
+    The `StartIterations` need to contain a loop with the condition `this.CanStartIteration( context )` to see if an additional iteration can be spawned.
+    It is also advised to add an additional condition that may stop the loop, as you may otherwise create an iterator that never stops.
+    In the body of the loop you need to call `this.StartIteration( task, context )` or any of its similarly named methods.
+    The stream results of these methods need to be merged into a single stream and this stream should be returned.
+    
+    A generic example:
+    result := stream[JSON]::Success();
+    
+    while( this.MyCondition()
+           and this.CanStartIteration( context ) )
+    {
+        result := result->Merge( this.StartIteration( task, context, scope ) );
+    }
+    
+    return result;
+    
+    Note: this.MyCondition() is a method in this example that returns a boolean if the iterator should stop.
+    
+    `LibOpt_Iterator` is a subtype of `LibOpt_ComponentParentTemp` for backward compatibility reasons.
+    This will change in a future release. Model elements that are defined by `LibOpt_ComponentParentTemp` are not to be used by `LibOpt_Iterator` objects.
+  *]
+  IsUserAbstract: true
+  Parent: LibOpt_ComponentParentTemp
+  StructuredName: 'LibOpt_Iterators'
+}

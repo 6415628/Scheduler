@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: CustomDrawComponentResourceView/CustomDrawDataLayerLabel
+Response OnDrawObject (shadow[ResourceNode] object) id:Response_CustomDrawComponentResourceView_CustomDrawDataLayerLabel_OnDrawObject
+{
+  #keys: '[134650.0.90008462]'
+  Body:
+  [*
+    // Draw node labels
+    if ( not isnull( DataHolderSelectedResourceView.Data() ) )
+    {
+      //Set font color
+      font := FontSpecification::Construct( DataHolderSelectedResourceView.Data().FontName(), DataHolderSelectedResourceView.Data().FontSize(), true, false, false );
+      surface.Font( font );
+      color := Color::Color(0, 0, 0);
+      
+      if ( object.TextColor() <> '' )
+      {
+        color := guard( Color::Color( object.TextColor() ), ColorScheme.NodeText() );
+      }
+    
+      surface.TextColor( color );
+    
+      if ( text = '' )
+      {
+        text := object.Name();
+      }
+    
+      fontheight := DataHolderSelectedResourceView.Data().FontSize() + 3; // +3 needed to make text actually fit in fontheight
+      fontheight := ceil( fontheight / CustomDrawComponentResourceView.ZoomY() ) // Make fontheight independent of zoom level
+      rows := text.Tokenize( String::NewLine() ).Size();
+      maxlength := max( text.Tokenize( String::NewLine() ), Elements, e, e.Length() )
+      width := region.Width();
+      totalwidth := width *  ceil( maxlength / 2 ) ; //assume each width only fits 3 chars
+      offset := [Number] ( ( totalwidth - width ) / 2 );
+    
+      y := region.Height();
+      if ( object.IsTextTop() )
+      {
+        y := region.Top() - ( rows * fontheight );
+      }
+    
+      if( object.IsNameVisible() )
+      {
+        textformat := TextFormat::AlignCenter();
+        surface.Text( region.Left() - offset, y , totalwidth, ( fontheight * rows ), text, textformat );
+      }
+    }
+  *]
+  DefinitionID: 'Responsedef_CustomDrawDataLayer_OnDrawObject'
+}

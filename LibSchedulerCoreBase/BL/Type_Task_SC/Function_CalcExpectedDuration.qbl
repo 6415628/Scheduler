@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcExpectedDuration
+{
+  Description:
+  [*
+    Computes the expected duration of an operation.
+    Duration is computed by summing the net duration of all subtasks between first respect routing subtask (inclusive) and last respect routing subtask (inclusive).
+  *]
+  TextBody:
+  [*
+    // Kyle Aug-10-2015 (created)
+    
+    expectedduration := Duration::Zero();
+    
+    frrst := this.FirstRespectRoutingSubTask();
+    lrrst := this.LastRespectRoutingSubTask();
+    
+    if( not isnull( frrst ) and not isnull( lrrst ) )
+    {
+      // jx Jan-4-2017 #8175 assert statement for when the last respect routing is set earlier than first respect routing
+      assert( frrst.SequenceNr() <= lrrst.SequenceNr(), Translations::SC_Task_LastRespectRouting_EarlierThan_FirstRespectRouting() );
+    
+      expectedduration := sum( this, SubTask, subtask,
+                               frrst.SequenceNr()<= subtask.SequenceNr()
+                               and subtask.SequenceNr() <= lrrst.SequenceNr(),
+                               subtask.NetDuration() );
+      
+    }
+    
+    this.ExpectedDuration( expectedduration );
+  *]
+}

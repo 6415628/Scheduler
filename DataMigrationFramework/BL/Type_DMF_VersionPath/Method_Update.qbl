@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update (OSFile file, String path)
+{
+  TextBody:
+  [*
+    // Calculate variables
+    fileNamePrefix        := this.VersionLookup().GetFileNamePrefix();
+    fileNameWithoutPrefix := file.FileName().RestString( path.Length() + fileNamePrefix.Length() );
+    
+    // Calculate suffix. There may be none, in which case the extention should be empty
+    suffix      := ifexpr( fileNameWithoutPrefix.FindString( ".", 0 ) > 0,
+                           DMF_DBInterface::GetScriptFileExtension(), "" );
+    fromVersion := fileNameWithoutPrefix.SubString( 0, fileNameWithoutPrefix.Length() - suffix.Length() );
+    
+    this.File       ( file.FileName() );
+    this.FromVersion( fromVersion );
+    this.SetScript  ( this.GetScript( file ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

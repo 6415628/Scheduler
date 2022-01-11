@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method WarnWhenNotOverlapping () as Boolean id:Method_LibCal_dlgSubscription_WarnWhenNotOverlapping
+{
+  #keys: '[146730.0.238490940]'
+  Body:
+  [*
+    // Check if the subscription period overlaps with the recurrence period of all selected events.
+    // If there are events for which there is no overlap, then show a MessageBox in which is indicated
+    // for which subscription no occurrences will be generated, and ask the user if he/she wants to continue. 
+    continue := true;
+    feedback := FeedbackObject::LocalFeedback();
+    feedback.EnableLocalFeedbackText();  // Collect the feedback text.
+    
+    if( not this.SubscriptionPeriodOK() )
+    {
+      nl  := String::NewLine();
+      msg := "The following subscriptions will not result in occurrences being created, because the " + nl
+           + "specified subscription period does not overlap with the recurrence period of the event."
+           + nl + nl
+           + feedback.Feedback()
+           + nl
+           + "Do you want to continue?"
+           + nl + nl;
+           
+      buttons       := Translations::MessageBox_YesNo();
+      defaultButton := 0; // Yes
+      title         := "Warning";
+      showModal     := true;
+      
+      continue := WebMessageBox::Warning( Application, msg, buttons, defaultButton, title, showModal ) = 0;
+    }
+    
+    return continue;
+  *]
+}

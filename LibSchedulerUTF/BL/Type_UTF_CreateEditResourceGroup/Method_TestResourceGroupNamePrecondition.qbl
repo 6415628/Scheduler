@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestResourceGroupNamePrecondition (Schedule schedule)
+{
+  Description: 'Test resource group name precondition.'
+  TextBody:
+  [*
+    feedback := '';
+    
+    // Check if precondition is violated when name is empty
+    value := not ResourceGroup_SC::CheckNameIsValid( schedule, '', '', feedback );
+    
+    // Check if precondition is violated when name is not unique
+    value := value and not ResourceGroup_SC::CheckNameIsValid( schedule, '', 'NewResourceGroup', feedback );
+    
+    // Check if precondition is violated when name is not empty and is unique
+    value := value and ResourceGroup_SC::CheckNameIsValid( schedule, '', 'NewResourceGroup2', feedback );
+    
+    this.Run().AssertTrue( value, UTFUtility::GenerateFailedMessage( 'ResourceGroupNamePrecondition check failed', '' ) );
+  *]
+}

@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitializeNonConst (LibOpt_Task task) as owning MathematicalProgram
+{
+  TextBody:
+  [*
+    // jkr8 Jul-20-2021 (created)
+    
+    transientData := TransientDataSuboptimizerPTAssignment::Create( this, task, this.Settings() );
+    
+    program := SuboptimizerMPPTAssignment_PTAssignmentMP::Create();
+    
+    
+    if( task.Run().DebugScope() )
+    {
+      program.Log(true);
+      program.RegisterTypeDescriptor( attribute( PTAssignmentBucket, SequenceNr ) );
+      program.RegisterTypeDescriptor( attribute( PTAssignmentOperationGroup, Identifier ) );
+      program.RegisterTypeDescriptor( attribute( ProgramTypeConfiguration, Name ) );
+      program.RegisterTypeDescriptor( attribute( Rule, Name ) );
+    }
+    
+    this.InitVariables( task, program, transientData );
+    this.InitConstraints( task, program, transientData );
+    this.InitGoal( task, program, transientData );
+    
+    this.InitCurrentSolution( task, program, transientData );
+    
+    if( task.Run().DebugScope() )
+    {
+      program.GenerateNames();
+      
+    }
+    
+    return &program
+  *]
+}

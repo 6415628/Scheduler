@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcStatistics
+{
+  Description: 'Calculate the "summary statistics" for the values collected by the owning `LibOpt_Statistic` of this `LibOpt_StatisticSummary`.'
+  TextBody:
+  [*
+    if( this.Statistic().NrElements() > 0 )
+    {
+      values := RealVector::Construct( this.Statistic().ValuesAsRealVector() ).AsValues();
+      
+      // Sort the values for correct calculations of the following attributes:
+      // - `Q1`, `Median`, `Q3`, `Max`, `Min`
+      values_sorted := values.Sort();
+      
+      // Set attributes for numerical statistics.
+      this.Q1( LibOpt_Utility::GetRealByPercentile( 0.25, values_sorted ) );
+      this.Median( LibOpt_Utility::GetRealByPercentile( 0.5, values_sorted ) );
+      this.Q3( LibOpt_Utility::GetRealByPercentile( 0.75, values_sorted ) );
+      this.Average( average( values_sorted, Elements, value, true, value ) );
+      this.Max( values_sorted.Element( values_sorted.Size() - 1 ) );
+      this.Min( values_sorted.Element( 0 ) );
+      this.StandardDeviation( stddev( values_sorted, Elements, value, true, value )
+                              // Make adjustments to get the population-based standard deviation as Quintiq's built-in `stddev` quantor is sample-based.
+                              * ( values.Size() - 1)
+                              / values.Size()
+                            );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

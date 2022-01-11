@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportAndSynchronizeProgramConfiguration
+{
+  Description: 'Import and synchronize program configuration.'
+  TextBody:
+  [*
+    this.ImportObject().ImportProgramConfigurations();
+    
+    // Transaction propagate the declarative relations which used in synchronization logic
+    Transaction::Transaction().Propagate( relation( ImportedProgramSetConfiguration, ImportedProgramDefinitionConfiguration ) );
+    Transaction::Transaction().Propagate( relation( ImportedProgramTypeConfiguration, ImportedProgramSetConfiguration ) );
+    Transaction::Transaction().Propagate( relation( ImportedProgramTypeChangeConfiguration, ImportedProgramSetConfiguration ) );
+    Transaction::Transaction().Propagate( relation( ImportedProgramPhaseConfiguration, ImportedProgramTypeConfiguration ) );
+    Transaction::Transaction().Propagate( relation( ImportedResourceProgramDefinition, ImportedProgramDefinitionConfiguration ) );
+    
+    this.SynchronizationObject().SynchronizeProgramConfigurations();
+    
+    // Synchronize rule to create rule scope in program type or phase when the program is not created or imported yet
+    // Use case: Import rule then only import program
+    rules := selectset( this, Rule, rule, true );
+    Rule::UpdateRuleScope( rules );
+  *]
+}

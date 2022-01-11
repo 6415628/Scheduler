@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method CopyOccurrences (Date start_i, Date end_i)
+{
+  Description: 'Add occurrences during a period of time by coping them from the LeadingParticipation.'
+  TextBody:
+  [*
+    if( start_i <= end_i )
+    {
+      timezone := this.Calendar().GetTimeZone();
+      
+      traverse( this.LeadingParticipation(), ExplicitTimeInterval, leadingETI,
+                leadingETI.End().Date( timezone )   >= start_i                      and
+                leadingETI.End()                    <> start_i.DateTime( timezone ) and            // Exclude when the end is exactly at start_i 
+                leadingETI.Start().Date( timezone ) <= end_i                        and
+                not exists( leadingETI, SubscribingETI, eti, true, eti.Participation() = this ) )  // Check if the subscribing occurrence does not already exists.
+      {
+        occurrence := this.CreateTimeInterval( leadingETI.Start(), leadingETI.End(), leadingETI.Capacity() );
+      
+        if( not isnull( occurrence ) )
+        {
+          // Register the occurrence (i.e. the ExplicitTimeInterval) as SubscribingETI of the LeadingETI.
+          occurrence.LeadingETI( relset, leadingETI );
+        }
+      }            
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

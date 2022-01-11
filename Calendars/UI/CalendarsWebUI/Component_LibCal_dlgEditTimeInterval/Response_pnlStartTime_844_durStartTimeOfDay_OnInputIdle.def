@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: pnlStartTime_844/durStartTimeOfDay
+Response OnInputIdle () id:Response_pnlStartTime_844_durStartTimeOfDay_OnInputIdle
+{
+  #keys: '[131094.1.128259813]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebDateTimeFieldBase_OnInputIdle'
+  GroupServerCalls: true
+  QuillAction
+  {
+    Body:
+    [*
+      // If not AllDay, adjust the EndTimeOfDay accordingly.
+      if( not ckbIsAllDay.Checked() )
+      {
+        delta := this.Duration() - dhStartTimeOfDay.Data();
+        
+        if( delta <> Duration::Zero() )
+        {
+          endTimeOfDay := durEndTimeOfDay.Duration() + delta;
+      
+          // Also adjust dsEndDate if necessary.    
+          dsEndDate.Date( dsEndDate.Date() + endTimeOfDay.Days() );
+          durEndTimeOfDay.Duration( endTimeOfDay - Duration::Days( endTimeOfDay.Days() ) );
+        
+          // Update the 'memory' for later delta-calculation, and/or setting the time back when AllDay is turned off.
+          dhStartTimeOfDay.Data( this.Duration() );
+        }
+      }
+    *]
+  }
+}

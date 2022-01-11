@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SynchronizeExportedFulfillmentsUsingStock (ExportedSchedule owner, MaterialPlannedFulfillment fulfillment, MaterialExternalSupply materialsupply, 
+  output ExportedPlannedFulfillments updatedinstances)
+{
+  TextBody:
+  [*
+    exported_fulfillment := ExportedPlannedLinkStock::FindExportedPlannedLinkStock( fulfillment.SupplyId(), fulfillment.DemandId() );
+    
+    if( isnull( exported_fulfillment ) )
+    {
+      exported_fulfillment := ExportedPlannedLinkStock::Create( owner, fulfillment, materialsupply.SupplyID(), '', '', '', this.WorkOrderInputMaterialId() );
+    }
+    
+    exported_fulfillment.Update( fulfillment );
+    
+    updatedinstances.Add( exported_fulfillment );
+  *]
+}

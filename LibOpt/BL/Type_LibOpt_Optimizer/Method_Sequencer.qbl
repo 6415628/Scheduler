@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method Sequencer (LibOpt_Components children, String iterator_name) as LibOpt_IteratorForEachLink
+{
+  Description:
+  [*
+    This method is deprecated. It will be removed in the next major version upgrade. Use `IteratorForEachLink` instead.
+    
+    Created an `LibOpt_IteratorForEachLink` component and forks it to the given child components, in the order given.
+    The given children must all be from the same run. In that run, the new component will be created.
+  *]
+  TextBody:
+  [*
+    run := select( children, Elements.Run, run, true );
+    
+    assert( not isnull( run ), 'None of the children is owned by a `LibOpt_Run`.' );
+    if( LibOpt_Utility::IsServerRunningInDebugMode() )
+    {
+      rightchild := select( children, Elements, child, true, child.Run() = run );
+      wrongchild := select( children, Elements, child, true, child.Run() <> run );
+      assert( isnull( wrongchild ),
+              'The children do not belong to the same `LibOpt_Run`: Child',
+              rightchild.Name(),
+              'belongs to run nr.',
+              rightchild.Run().RunNr(),
+              'while child',
+              wrongchild.Name(),
+              'belongs to run nr.',
+              wrongchild.Run().RunNr() );
+    }
+    
+    iterator := this.IteratorForEachLink( run, iterator_name );
+    traverse( children, Elements, child )
+    {
+      iterator.Fork( child );
+    }
+    
+    return iterator;
+  *]
+}

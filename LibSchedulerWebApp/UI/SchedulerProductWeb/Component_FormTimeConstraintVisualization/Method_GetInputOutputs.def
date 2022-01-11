@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetInputOutputs (Operation_SC operation, Boolean isUpstream) as structured[Operation_SC] id:Method_FormTimeConstraintVisualization_GetInputOutputs
+{
+  #keys: '[134266.1.1803390902]'
+  Body:
+  [*
+    // Retrive operations as input or output in desired sorting sequence
+    inputoutputs := null( Operation_SCs );
+    
+    if( isUpstream )
+    {
+      // Upstream Operations
+      inputoutputs := selectsortedset( operation, 
+                                       FromOperationDependency.FromOperation, 
+                                       upstreamOperation, 
+                                       true, 
+                                       upstreamOperation.OperationID() ); 
+    }
+    else
+    {
+      // Downstream Operations
+      inputoutputs := selectsortedset( operation, 
+                                       ToOperationDependency.ToOperation, 
+                                       downstreamOperation, 
+                                       true, 
+                                       downstreamOperation.OperationID() );
+    }
+    
+    return &inputoutputs;
+  *]
+  Declarative: true
+  ReturnsOwning: true
+}

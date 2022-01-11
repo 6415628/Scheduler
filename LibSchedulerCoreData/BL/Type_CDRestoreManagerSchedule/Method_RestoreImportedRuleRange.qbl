@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedRuleRange (CDIntegration cdintegration, ImportedRule importedrule)
+{
+  Description: 'Restore imported rule range core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedRuleRange
+    cdimportedRuleRanges := selectset( cdintegration, CDEntity.astype( CDImportedRuleRange ), cdimportedRuleRange, 
+                                       cdimportedRuleRange.RuleID() = importedrule.RuleID() 
+                                     );
+    traverse( cdimportedRuleRanges, Elements, cdimportedRuleRange )
+    {
+      importedRuleRange := importedrule.ImportedRuleRange( relnew,
+                                                           From := cdimportedRuleRange.From(),
+                                                           RuleID := cdimportedRuleRange.RuleID(),
+                                                           To := cdimportedRuleRange.To()
+                                                         );
+      CopyCorresponding::CopyFrom( cdimportedRuleRange ).CopyTo( importedRuleRange );   
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

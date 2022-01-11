@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateChannels
+{
+  Description: 'Create all channels based on subtypes of LibDEF_Channel.'
+  TextBody:
+  [*
+    // Jacky CHAN May-6-2016 (created)
+    channelBaseType := Model::Domain().FindType( typeof( LibDEF_Channel ).Name() );
+    
+    traverse( Model::Domain().Types(), Types, type,
+              type.IsDerivedFrom( channelBaseType )
+              and type.Specializations( relsize ) = 0    // only create concrete object type
+              and type.Name().StartsWith( LibDEF_Channel::TYPE_PREFIX_OF_CUSTOMCHANNEL() ) )      // only for type in Library
+    {
+      channelTypeName := type.Name();
+    
+      // Reminder: The implementation in the Create method must check that the Channel has not already been created.
+      // The implemented method must follow the signature below (similar to MSG):
+      // LibDEC_Channel<Name> LibDEC_Channel<Name>::Create( LibDEF_DataRepository )
+      createMethod := Reflection::FindStaticMethod( channelTypeName, "Create" );
+    
+      if( not isnull( createMethod ) )
+      {
+        createMethod.AddObjectArgument( this );
+        createMethod.Execute();
+      }
+      else
+      {
+        // log warning and proceed with other channels
+        LibDEF_Util::LogWarning( "Fail in creating Channel of type '" + channelTypeName + "' in LibDEF_DataRepository." );
+      }
+    }
+  *]
+}

@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method SaveKB (QuillTable table, KBEditor kbEditor)
+{
+  Description: 'Save changes to knowledge table'
+  TextBody:
+  [*
+    table.Apply();
+    
+    kbEditor.Save();
+    
+    if( kbEditor.Validate() )
+    {
+      //propagate to ensure valid knowledge.
+      Transaction::Transaction().Propagate();
+     
+      //save also unlocks
+      kbEditor.Save(); 
+    }
+    else
+    {
+      kbEditor.Unlock();
+    }
+    
+    Transaction::Transaction().DisableUndo();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

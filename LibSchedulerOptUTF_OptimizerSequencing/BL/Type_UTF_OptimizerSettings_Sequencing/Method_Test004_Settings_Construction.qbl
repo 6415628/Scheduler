@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test004_Settings_Construction (Schedule schedule)
+{
+  Description: 'Imports the default optimizer settings for Construction, changes them, tests the import/export function and then exports the original settings. Asserts that all imported settings are the same as the exported ones.'
+  TextBody:
+  [*
+    // jog2 Nov-12-2020 (created)
+    
+    constructionsettings := select( schedule, Optimization.Optimizer.astype( OptimizerSequencing ).Settings.astype( SettingsSequencing ).Construction, construction, true );
+    
+    // Store the current Construction settings
+    originalsettings := construct( SettingsSequencingConstructionForSequencing );
+    originalsettings.UTF_StoreSettings( constructionsettings );
+    
+    // Change the Construction settings
+    constructionsettings.UTF_ChangeSettings();
+    
+    // Store them for comparison
+    storedsettings := construct( SettingsSequencingConstructionForSequencing );
+    storedsettings.UTF_StoreSettings( constructionsettings );
+    
+    // Export the changed settings
+    schedule.ExportObject().ExportOptimizerSettingsSequencingToDataFolder();
+    
+    // Change it again
+    constructionsettings.UTF_ChangeSettings();
+    
+    // Import the previous changed settings
+    schedule.ImportAndSynchronizeOptimizerSettingsSequencing();
+    
+    // Check to see if the imported settings are the same as the stored ones
+    this.Run().AssertTrue( this.CheckConstructionSettings( constructionsettings, storedsettings ), 'The imported values for the Construction settings are different from the current ones.');
+    
+    // Reset the values to the original
+    constructionsettings.UTF_StoreSettings( originalsettings );
+    schedule.ExportObject().ExportOptimizerSettingsSequencingToDataFolder();
+  *]
+}

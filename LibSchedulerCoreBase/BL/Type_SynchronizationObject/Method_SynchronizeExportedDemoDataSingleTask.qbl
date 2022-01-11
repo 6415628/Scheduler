@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExportedDemoDataSingleTask
+{
+  TextBody:
+  [*
+    allInstances := selectset( this, Schedule.FeedbackManager.ExportedSchedule.ExportedSingleTask.astype( ExportedDemoDataSingleTask ), 
+                               exportedDemoDataSingleTask, true );
+    updatedInstances := construct( ExportedDemoDataSingleTasks );
+    
+    traverse( this, Schedule.ResourceGroup_SC.Resource_SC.Task_SC.astype( SingleTaskBase ), t, not t.HasFeedbackTask() )
+    {
+      operation := t.GetOperation();
+      exportedDemoDataSingleTask := ExportedDemoDataSingleTask::FindExportedDemoDataSingleTask( operation.WorkOrderId(),
+                                                                                                operation.PlanUnitId(),
+                                                                                                operation.WorkOrderSequenceNr() );
+      
+      if( isnull( exportedDemoDataSingleTask ) )
+      {
+        // Create one if not exist or is deleted due to different FeedbackID
+        exportedDemoDataSingleTask := ExportedDemoDataSingleTask::Create( this.Schedule().FeedbackManager().ExportedSchedule(), operation );
+      }
+      
+      exportedDemoDataSingleTask.Update( t );
+      updatedInstances.Add( exportedDemoDataSingleTask );
+    }
+    
+    oldInstances := allInstances.Difference( updatedInstances );
+    
+    traverse( oldInstances, Elements, old )
+    {
+      old.Remove();
+    }
+  *]
+}

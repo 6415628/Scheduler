@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestLockUpstreamOperation (Schedule schedule)
+{
+  Description: 'Test whether an upstream operation is locked when the downstream is locked.'
+  TextBody:
+  [*
+    variant := this.GetCurrentVariant();
+    
+    Transaction::Transaction().PropagateAll( typeof( Operation_SC ) );
+    
+    // First downstream operation, assume only 1 upstream 
+    upstreamOperation := select( schedule, 
+                                 PlanUnit_SC.Operation_SC, 
+                                 op, 
+                                 op.UpstreamOperations( relsize ) = 0 );
+    
+    this.Run().AssertTrue( upstreamOperation.IsLocked() = variant.IsUpstreamOperationLocked(),
+                           UTFUtility::GenerateFailedMessage( 'Upstream operation locking has failed.', '' ) );
+  *]
+}

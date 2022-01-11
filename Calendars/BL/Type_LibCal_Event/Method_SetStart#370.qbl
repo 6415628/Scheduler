@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetStart (Date startDate_i, Duration startTimeOfDay_i) as LibCal_Event
+{
+  Description:
+  [*
+    Set the start of the event.
+    This moves the event, i.e. the end of the event is changed accordingly.
+  *]
+  TextBody:
+  [*
+    timezone := this.Calendar().GetTimeZone();
+    
+    // Ignore seconds.
+    startTimeOfDay := startTimeOfDay_i.Round( Duration::Minutes( 1 ) );
+    startTime      := startDate_i.Add( timezone, startTimeOfDay );
+    
+    // Use a FeedbackObject the collect the validation feedback.
+    feedback := LibCal_Validate::FeedbackObject();
+    
+    moreInfo := this.GetEventInfo() + ", StartTimeOfDay = " + startTimeOfDay.Format( Translations::DurationFormat() );
+    LibCal_Validate::RegisterError( LibCal_Validate::Event_StartTimeOfDay( startTimeOfDay ), moreInfo );
+    
+    if( feedback.IsAllowed() )
+    {
+      if( this.StartTimeOfDay() <> startTimeOfDay )
+      {
+        this.IsChanged( true );
+      }
+      
+      // Set the new StartTimeOfDay of the Event...
+      this.StartTimeOfDay( startTimeOfDay );
+    
+      endTime := startTime + this.Duration();
+      
+      // ...and the StartDate of the LeadingParticicpation.
+      // Also update the EndDate of the LeadingParticipation, otherwise it may happen that StartDate > EndDate,
+      // which will result in a validation error.
+      this.LeadingParticipation().Update( startDate_i, endTime.Date( timezone ) );
+      
+      // Update the EndTime.
+      this.SetEnd( endTime );
+    }
+    
+    // Process the feedback that has been registered by the validation (if any).
+    LibCal_Util::ProcessFeedbackObject( feedback );
+    
+    // Make the API fluent.
+    return this;
+  *]
+}

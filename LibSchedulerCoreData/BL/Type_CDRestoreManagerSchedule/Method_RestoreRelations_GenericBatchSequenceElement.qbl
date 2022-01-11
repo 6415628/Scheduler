@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericBatchSequenceElement (CDSchedule cdschedule, Batch batch)
+{
+  Description: 'Restore generic operation batch sequence element core data relations to planning object'
+  TextBody:
+  [*
+    cdOpBses := selectsortedset( cdschedule, CDEntity.astype( CDGenericBatchSequenceElement ), cdopbse, cdopbse.BatchID()= batch.BatchID(), cdopbse.SequenceNr());
+    bses := selectsortedset( batch, BatchSequenceElement, bse, true, bse.SequenceNr() );
+    
+    schedule := this.Schedule();
+    
+    for( i := 0; i < bses.Size(); i++ )
+    {
+      bse := bses.Element( i );
+      cdbse := guard( cdOpBses.Element( i ), null( CDGenericBatchSequenceElement ) );
+      
+      if( not isnull( cdbse ) )
+      {
+        // Restore operation related to this batch sequence element
+        operation := select( schedule, PlanUnit_SC.Operation_SC, op, op.PlanUnit_SC().PlanUnitID() = cdbse.PlanUnitID() and op.OperationID() = cdbse.OperationID() );
+        bse.Operation_SC( relset, operation );  
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

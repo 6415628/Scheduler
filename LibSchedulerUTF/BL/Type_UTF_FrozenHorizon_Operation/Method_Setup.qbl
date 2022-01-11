@@ -1,0 +1,111 @@
+Quintiq file version 2.0
+#parent: #root
+Method Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    testinstance := this.GetTestInstanceMain( variant );
+    
+    // Initialize
+    testinstanceid := testinstance.TestInstanceID();
+    
+    // Set company time
+    schedule.Time( UTFUtility::GetCompanyTime() );
+    
+    // Create order and plan unit
+    planunit := UTFMockObjectFactory::CreateOrderAndPlanUnit( schedule, testinstanceid, 1.0 );
+    
+    // Create demand batch to map to this plan unit
+    demandBatch := UTFMockObjectFactory::CreateDemandBatch( schedule, testinstanceid, 10 );
+    demandBatch.BatchWorkOrder().Order_SC( relset, planunit.Order_SC() );
+    
+    // Create operations, resource and planning them
+    hasMultipleOperations := testinstance.HasMultipleOperation()
+    frozenPeriodUser := Duration::Hours( 4 );
+    nr := ifexpr( hasMultipleOperations, 3, 1 );
+    prevop := null( Operation_SC );
+    testinstanceid := testinstance.TestInstanceID();
+    
+    for( i := 0; i < nr; i++ )
+    {
+      useFrozenPeriodUser := ifexpr( i = 0, 
+                                     ifexpr( hasMultipleOperations, testinstance.UseUpstreamResourceFrozenPeriod(), testinstance.UseResourceFrozenPeriod() ),
+                                     ifexpr( i = 1, testinstance.UseResourceFrozenPeriod(), testinstance.UseDownstreamResourceFrozenPeriod() ) );
+      hasFSPL := ifexpr( i = 0,
+                         ifexpr( hasMultipleOperations, testinstance.HasUpstreamFSPL(), testinstance.HasFSPL() ),
+                         ifexpr( i = 1, testinstance.HasFSPL(), testinstance.HasDownstreamFSPL() ) );
+      isPlanned := ifexpr( i = 0,
+                           ifexpr( hasMultipleOperations, testinstance.IsUpstreamPlanned(), testinstance.IsPlanned() ),
+                           ifexpr( i = 1, testinstance.IsPlanned(), testinstance.IsDownstreamPlanned() ) );
+      hasFeedback := ifexpr( i = 0,
+                             ifexpr( hasMultipleOperations, testinstance.HasUpstreamFeedback(), testinstance.HasFeedback() ),
+                             ifexpr( i = 1, testinstance.HasFeedback(), testinstance.HasDownstreamFeedback() ) );
+      hasLaterTaskFrozen := ifexpr( i = 0,
+                                    ifexpr( hasMultipleOperations, testinstance.HasUpstreamLaterTaskFrozen(), testinstance.HasLaterTaskFrozen() ),
+                                    ifexpr( i = 1, testinstance.HasLaterTaskFrozen(), testinstance.HasDownstreamLaterTaskFrozen() ) );
+      isBatch := ifexpr( i = 0,
+                         ifexpr( hasMultipleOperations, false, testinstance.IsBatchTask() ),
+                         ifexpr( i = 1, testinstance.IsBatchTask(), false ) );
+      
+      // Create resource per operation to plan on and planning it
+      resourceid := testinstanceid.Concat( [String]i ); // Generate unique id for resourcegroup and resource
+      resource := null( Resource_SC );
+      
+      if( isBatch )
+      {
+        resource := UTFMockObjectFactory::CreateBatchResource( schedule, resourceid );
+      }
+      else
+      {
+        resource := UTFMockObjectFactory::CreateSingleResource( schedule, resourceid );
+      }
+      
+      resource.UseFrozenPeriodUser( useFrozenPeriodUser );
+      resource.FrozenPeriodUser( frozenPeriodUser );
+      resourcegroup := guard( guard( resource.astype( UTFSingleResource ).UTFResourceGroup(), resource.astype( UTFBatchResource ).UTFResourceGroup() ), null( UTFResourceGroup ) );
+      resourcegroup.CreateSubTaskTypeOnResourceGroupProcessNoBufferWait();
+      resourcegroup.Update( testinstance );
+      resourcegroup.HasFixedSequencePlanLogic( hasFSPL );                   
+      
+      // Create operation                                                         
+      newop := UTFMockObjectFactory::CreateOperation( planunit );
+      newop.SequenceNr( i );
+      newop.CreateInputOperationMaterial( prevop, 1.0 );
+      
+      if( hasFeedback ) // Create feedback
+      {
+        newop.HasFeedback_UTF( hasFeedback );
+        UTFMockObjectFactory::CreateFeedbackTaskInSchedule( newop, resource );
+      }
+      
+      if( isPlanned ) // Plan operation
+      {
+        operations := construct( Operation_SCs );
+        operations.Add( newop );
+        resource.PlanLast( operations );
+      }
+      
+      if( hasLaterTaskFrozen ) // Freeze later task
+      {
+        laterOp := UTFMockObjectFactory::CreateOperation( schedule, testinstanceid.Concat( [String]i ), 1.0 );
+        operations := construct( Operation_SCs );
+        operations.Add( laterOp );
+        resource.PlanLast( operations );
+        resource.Last().FreezeByUser(); // Freeze operation LATER TASK
+      }
+      
+      // Create planned demand for each operation
+      demand := UTFMockObjectFactory::CreateDemand( schedule, DemandType::ProductPlannedDemand(), testinstanceid.Concat( [String]i ) );
+      demand.Operation_SC( relset, newop );
+      demand.PlanUnit_SC( relset, newop.PlanUnit_SC() );
+      
+      prevop := newop;
+    }
+    
+    // Propagate all declarative attributes/relations prior to assertion in the actual test method.                                       
+    Transaction::Transaction().Propagate();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

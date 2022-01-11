@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsProgramPhaseConfigurationIDUnique (ProgramTypeConfiguration owner, ProgramPhaseConfiguration programphaseconfiguration, String programphaseconfigurationid) remote as Boolean
+{
+  Description: 'Perform checking to ensure the program definition configuration ID is unique.'
+  TextBody:
+  [*
+    // Perform checking to ensure the program phase configuration ID is unique.
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    value := not exists( owner,
+                         ProgramPhaseConfiguration,
+                         ppc,
+                         ppc <> programphaseconfiguration,
+                         ppc.ProgramPhaseConfigurationID() = programphaseconfigurationid );
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      feedbackobject.AddHard( Translations::ProgramConfiguration_IDMustUnique( Translations::ProgramPhaseConfiguration_TypeName() ) );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

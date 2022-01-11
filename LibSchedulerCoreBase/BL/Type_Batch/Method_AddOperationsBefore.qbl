@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddOperationsBefore (Operation_SCs operations, BatchSequenceElement element)
+{
+  Description: 'This method call AddOperationBefore to add all operations before a batch sequence element'
+  TextBody:
+  [*
+    Operation_SC::SetIsPlanning( operations, true );
+    
+    traverse( operations, Elements, operation )
+    {
+      if( guard( this.BatchTask().Resource_SC().IsPlanRelatedOperations(), false ) )
+      {
+        Schedule::PlanRelatedOperationsBefore( operation, this.BatchTask().Resource_SC(), guard( this.BatchTask().Next(), null( BatchTask ) ), false, true );
+      }
+      this.AddOperationBefore( operation, element );
+    }
+    
+    this.Schedule().AutomaticProductBasedMaterialReservationBySorting();
+    Operation_SC::SetIsPlanning( operations, false );
+  *]
+}

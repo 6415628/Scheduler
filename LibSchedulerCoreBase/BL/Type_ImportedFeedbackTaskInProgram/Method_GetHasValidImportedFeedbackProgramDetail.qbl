@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidImportedFeedbackProgramDetail (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if the imported feedback task in program has a valid imported feedback task'
+  TextBody:
+  [*
+    importedprogramdetail := this.ImportedFeedbackProgramDetail();
+    
+    isvalid := not isnull( importedprogramdetail )        // Must have imported feedback program detail
+               and importedprogramdetail.IsValidData();   // Imported program detail must be valid
+    
+    if( not isvalid and not isnull(  feedback_o ) )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedFeedbackTaskInProgram_Instance( name ),
+                                                               Translations::SC_ImportedFeedbackTaskInProgram_ViolateHasValidFeedbackProgramDetail() ) );
+    }
+    
+    return isvalid;
+  *]
+}

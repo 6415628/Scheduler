@@ -1,0 +1,16 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckHasNoDependencyToNextOperation () declarative remote as Boolean
+{
+  TextBody:
+  [*
+    // batch has dependency to next operation when
+    // 1. it is ended
+    // 2. it has no buffer wait/action subtask
+    // 3. any of its next operation has not started
+    return not ( this.Finished()
+                 and guard( this.BatchTask().HasNoBufferWaitOrAction(), false )
+                 and exists( this, BatchSequenceElement.Operation_SC.ToOperationDependency.ToOperation, op,
+                             not op.Started() ) );
+  *]
+}

@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_SettingsSequencing (CDSchedule cdSchedule)
+{
+  Description: 'Restore settings sequencing core data attributes to planning object'
+  TextBody:
+  [*
+    optimizer := guard( this.Schedule().Optimization().OptimizerSequencing(), null( OptimizerSequencing ) );
+    
+    if( not isnull( optimizer ) )
+    {
+      traverse( cdSchedule, CDEntity.astype( CDSettingsSequencing ), cdSettingsSequencing )
+      {
+        settingsSequencing := SettingsSequencing::FindTypeIndexSettingsSequencing( cdSettingsSequencing.Id() );
+        
+        // Default settings sequencing are created on initialize of schedule, thus we do not need to recreate them
+        if( isnull( settingsSequencing ) )
+        {
+          settingsSequencing := SettingsSequencing::Create( optimizer, cdSettingsSequencing.Id() );
+        }
+        
+        CopyCorresponding::CopyFrom( cdSettingsSequencing ).CopyTo( settingsSequencing );
+        
+        // Create instances of all required objects
+        settingsSequencing.Update();
+        
+        this.RestoreAttributes_SettingsSequencingConstructionForSequencing( cdSchedule, settingsSequencing );
+        this.RestoreAttributes_SettingsSequencingDistanceMetricForSequencing( cdSchedule, settingsSequencing );
+        this.RestoreAttributes_SettingsSequencingMetaForSequencing( cdSchedule, settingsSequencing );
+        this.RestoreAttributes_SettingsMRSIterationForSequencing( cdSchedule, settingsSequencing );
+        this.RestoreAttributes_SettingsMRSMetaForSequencing( cdSchedule, settingsSequencing );
+        this.RestoreAttributes_SettingsMRSPOAForSequencing( cdSchedule, settingsSequencing );
+        this.RestoreAttributes_SettingsNeighborhoodCreatorForSequencing( cdSchedule, settingsSequencing );
+        this.RestoreAttributes_SettingsSequencingPOAForSequencing( cdSchedule, settingsSequencing );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

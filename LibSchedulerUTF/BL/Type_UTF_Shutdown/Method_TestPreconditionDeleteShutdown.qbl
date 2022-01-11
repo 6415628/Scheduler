@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionDeleteShutdown (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    resourceType := '';
+    leadTimeStrategy := '';
+    hasShutdownTypeInResource := false;
+    isValidForPreconInsert := false;
+    hasShutdown := false;
+    hasFeedback := false;
+    isValidForPreconDelete := false;
+    hasShutdownType := false;
+    duration := Duration::MaxDuration();
+    isValidForPreconCreateEdit := false;
+    
+    this.GetTestVariantForPreconditionChecking( isvariantfound,
+                                                resourceType,
+                                                leadTimeStrategy,
+                                                hasShutdownTypeInResource,
+                                                isValidForPreconInsert,
+                                                hasShutdown,
+                                                hasFeedback,
+                                                isValidForPreconDelete,
+                                                hasShutdownType,
+                                                duration,
+                                                isValidForPreconCreateEdit );
+    
+    value := false;
+    if( isvariantfound )
+    {
+      task := null( Task_SC );
+      
+      // Choose between normal task and shutdown task based on variant
+      if( hasShutdown )
+      {
+        // Select shutdown task
+        task := select( schedule, ResourceGroup_SC.Resource_SC.Task_SC.astype( ShutdownTask ), t, true );  
+      }
+      else
+      {
+        // Select single task
+        task := select( schedule, Operation_SC.Task_SC, t, true );
+      }
+      
+      value := task.CanDeleteShutdownHard();
+    }
+    this.Run().AssertEqual( isValidForPreconDelete, value,
+                            UTFUtility::GenerateFailedMessage( 'Precondition in deleting shutdown failed.', this.Variant() ) );
+  *]
+}

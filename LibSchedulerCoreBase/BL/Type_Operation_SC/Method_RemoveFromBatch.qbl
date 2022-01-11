@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method RemoveFromBatch
+{
+  Description: 'Remove operation from batch'
+  TextBody:
+  [*
+    //checks if this batch operation has been planned, if yes then BatchSequenceElement should exist
+    if( not isnull( this.BatchSequenceElement() ) )
+    {
+      //if this batch operation is the LAST batch operation in this batch and that this batch has been planned
+      if( this.BatchSequenceElement().Batch().BatchSequenceElement( relsize ) = 1 and not isnull( this.BatchSequenceElement().Batch().BatchTask() ) )
+      {
+        //unplan the batch task, because we're removing the last batch operation from the batch
+         this.BatchSequenceElement().Batch().BatchTask().Unplan();
+      }
+      //else if the batch has been planned, but the BatchSequenceElement is NOT the last batch operation in the batch
+      else if( not isnull( this.BatchSequenceElement().Batch().BatchTask() ) and this.BatchSequenceElement().Batch().BatchTask().Resource_SC().ResourceGroup_SC().HasFixedSequencePlanLogic())
+      {
+        task := this.BatchSequenceElement().Batch().BatchTask();
+        bo := this.BatchSequenceElement().Operation_SC();
+    
+        //remove FSPLOperationInTask relation so that update graph will be correct
+        task.FSPLOperationInTask( reldelete, bo );
+        
+        //passing in the BatchSequenceElement to handle it's removal of edges to its Operation
+        task.FSPLUpdateGraph( null( Task_SC ), null( Task_SC ), this.BatchSequenceElement() );
+      }
+    
+      this.BatchSequenceElement().Delete();
+    }
+  *]
+}

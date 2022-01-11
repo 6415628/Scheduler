@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidImportedTargetWithinMinAndMaxStockLevel (Strings feedback_o) declarative as Boolean
+{
+  Description: 'The target stock level must be within minimum and maximum stock level.'
+  TextBody:
+  [*
+    isvalid := this.TargetStockLevel() <= this.MaximumStockLevel()
+               and this.TargetStockLevel() >= this.MinimumStockLevel();
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedInventoryTarget_Instance( name ),
+                                                               Translations::SC_ImportedInventoryTarget_TargetNotWithinMinimumAndMaximumStockLevel( name, 
+                                                                                                                                                    this.MaximumStockLevel(), 
+                                                                                                                                                    this.MinimumStockLevel(), 
+                                                                                                                                                    this.TargetStockLevel() ) ) );
+    }
+    
+    return isvalid;
+  *]
+}

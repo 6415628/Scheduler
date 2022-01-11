@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method DeleteEventsOrSubscriptions (structured[LibCal_Participation] participations_i) id:Method_LibCal_GlobalState_DeleteEventsOrSubscriptions_162
+{
+  #keys: '[146730.0.132467026]'
+  Body:
+  [*
+    if( participations_i.Size() = 1 )
+    {
+      // Give more accurate feedback when there is only one participation selected.
+      this.DeleteEventOrSubscription( participations_i.Element( 0 ) );
+    }
+    else
+    {
+      subject   := "the selected " + ifexpr( participations_i.Element( 0 ).IsSubscription(), "subscriptions", "events" );
+      title     := "Delete "       + ifexpr( participations_i.Element( 0 ).IsSubscription(), "subscriptions", "events" );
+      defButton := 0;
+      
+      if( MessageBox::Question( this, Translations::MessageBox_ConfirmDeletion( subject ),
+                                      Translations::MessageBox_YesNo(),
+                                      defButton, title ) = 0 )
+      {
+        // When the selection consists of LeadingParticipations their accompanying Events will also be deleted.
+        LibCal_Participation::Delete( participations_i );
+      }
+    }
+  *]
+}

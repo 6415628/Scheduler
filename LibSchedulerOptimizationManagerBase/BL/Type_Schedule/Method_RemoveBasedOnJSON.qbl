@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method RemoveBasedOnJSON (String jsonString)
+{
+  Description: 'Remove schedule data based on input JSON. Remove imported instances and call synchronization logic to update.'
+  TextBody:
+  [*
+    jsonTree := JSON::Parse( jsonString );
+    
+    // Shift Pattern & Process Operations removal 'cleans up' related objects
+    // Because its related imported objects have no entry in the JSON input to be removed
+    this.RemoveShiftPatterns( jsonTree ); // Also cleans up related objects
+    this.RemoveWorkCenters( jsonTree );
+    this.RemoveAssets( jsonTree );
+    this.RemoveProcesses( jsonTree );
+    this.RemoveProcessOperations( jsonTree ); // Also cleans up related objects
+    this.RemoveWorkOrders( jsonTree );
+    this.RemoveWorkOrderOperations( jsonTree );
+    
+    // Propagate external data check
+    Transaction::Transaction().Propagate( attribute( ExternalWorkOrder, HasExternalData ) );
+    Transaction::Transaction().Propagate( attribute( ExternalWorkOrderOperation, HasExternalData ) );
+    this.CleanUpPlanningData();
+    
+    // Call sync logic to remove actual instances (without being blocked by existing planning data)
+    this.SynchronizationObject().SynchronizeAll3DSpace();
+  *]
+}

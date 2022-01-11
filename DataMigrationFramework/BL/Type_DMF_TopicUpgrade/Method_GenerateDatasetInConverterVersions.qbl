@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GenerateDatasetInConverterVersions (DMF_Dataset dataset_i)
+{
+  TextBody:
+  [*
+    versionLookup := dataset_i.DatasetType().VersionLookup();
+    
+    // Determine versions in which a DICV should be genereated
+    version := select( versionLookup, VersionPath, versionPath, 
+                       versionPath.FromVersion() = DMF_Dataset::FlattenVersion( dataset_i.VersionInfo() ) );
+    targetVersion := dataset_i.DatasetType().MetadataVersion();
+    
+    while( not isnull( version ) and
+           version.ToVersion() <= targetVersion )
+    {
+      converterVersion := select( dataset_i, DatasetType.ConvertorDataset.ConvertorVersion, converterVersion, 
+                                  converterVersion.Version() = version.FromVersion() );
+      
+      if( not isnull( converterVersion ) )
+      {  
+        DMF_DatasetInConvertorVersion::FindCreateDatasetInConvertorVersion( converterVersion, dataset_i ) 
+      }
+      
+      version := version.NextVersionPath();
+    }
+  *]
+}

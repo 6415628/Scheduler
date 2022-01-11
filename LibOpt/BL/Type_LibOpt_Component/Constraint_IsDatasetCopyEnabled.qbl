@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Constraint IsDatasetCopyEnabled
+{
+  #keys: '2[141860.2.1045005971][141860.2.1045005972]'
+  ConstraintCondition:
+  [*
+    run := this.Run();
+    
+    value := this.HasNoDatasetCopies()
+                   or ( ifexpr( LibOpt_RunStatus::IsRunning( run ),
+                                      run.IsCreatingDatasetCopiesEnabled(),
+                                      run.IsCreatingDatasetCopiesEnabledOnOptimizer()
+                                      )
+                   );
+    
+    return value;
+  *]
+  ConstraintKind: 'Soft'
+  ConstraintText:
+  [*
+    @ifexpr( LibOpt_RunStatus::IsRunning( this.Run() ),
+             Translations::LibOpt_BreakpointPosition_IsDatasetCopyEnabledRun( this.Run() ), 
+             Translations::LibOpt_BreakpointPosition_IsDatasetCopyEnabledOptimizer( this.Run() ) 
+             );@
+  *]
+  Description:
+  [*
+    Used in the UI to set the 'Dataset copies are disabled' image icon in the 'Components' form and to show a constraint to the user.
+        
+    An icon will be shown when:
+    1: There is a dataset copy on any component position of this component.
+    and either 
+    2a: The optimizer run is ongoing and `LibOpt_Run.IsCreatingDatasetCopiesEnabled` is set to `false` on the related `LibOpt_Run` object.
+    2b: The optimizer run has finished and `LibOpt_Optimizer.IsCreatingDatasetCopiesEnabled` is set to `false` on the related `LibOpt_Optimizer` object.
+  *]
+  Priority: 6
+}

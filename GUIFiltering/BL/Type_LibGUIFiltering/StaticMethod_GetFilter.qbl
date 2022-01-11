@@ -1,0 +1,93 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetFilter (String searchterms, Strings attributes, Strings attributetypes, 
+  output String warnings) as String
+{
+  TextBody:
+  [*
+    // per Oct-4-2016 (created)
+    alltokens := LibGUIFiltering_Helper::GetTokens( searchterms );
+    terms     := construct(LibGUIFiltering_Terms);
+    group     := terms.LibGUIFiltering_TermGroup(relnew);
+    tokenidx  := 0;
+    
+    yo := 0;
+    while ( tokenidx < alltokens.Size() and yo < 100 )
+    {       
+      yo++;
+      
+      term := construct( LibGUIFiltering_Term,
+                         Token     := alltokens.Element( tokenidx ),
+                         Operand   := '~',
+                         ValueType := 'String' );
+      
+      if ( term.Token() = 'or'
+        or term.Token() = 'and' )
+      {
+        tokenidx++;
+    
+        if ( term.Token() = 'or'
+         and group.LibGUIFiltering_Term(relsize) > 0 )
+        {
+          group := terms.LibGUIFiltering_TermGroup( relnew );
+        }
+        
+        term.Token( alltokens.Element( tokenidx ) );
+      }
+    
+      newtoken          := term.Token();
+      attributemodifier := LibGUIFiltering_Helper::GetAttributeRestriction( newtoken, attributes, attributetypes );
+      newtokenidx       := tokenidx + 1;
+    
+      if ( attributemodifier <> ''
+       and LibGUIFiltering_Helper::GetExpression( term, alltokens, newtokenidx ) )
+      {
+        term.AttributeModifier( attributemodifier );
+        tokenidx := newtokenidx;
+      }
+      else
+      {
+        LibGUIFiltering_Helper::GetExpression( term, alltokens, tokenidx );
+      }
+      
+      term.OriginalToken( term.Token() );
+      
+      range := term.Token().Tokenize( '...' );
+      if ( range.Size() = 1 )
+      {
+        range := term.Token().Tokenize( '..' );
+      }
+      if ( range.Size() = 2 )
+      {
+        term.IsRange( true );
+        term.RangeStart( range.Element( 0 ) );
+        term.RangeEnd( range.Element( 1 ) );
+      }
+    
+      if ( not LibGUIFiltering_Helper::CheckIsDate( term )
+       and not LibGUIFiltering_Helper::CheckIsDateTime( term )
+       and not LibGUIFiltering_Helper::CheckIsNumeric( term )
+       and not LibGUIFiltering_Helper::CheckIsDuration( term ) )
+      {
+        if ( StringToBoolean::StandardConverter().CanConvert( term.Token() ) )
+        {
+          term.ValueType( 'Boolean' );
+          term.Token( StringToBoolean::StandardConverter().Convert( term.Token() ).AsQUILL() );
+        }
+        else
+        {
+          term.Token( LibGUIFiltering_Helper::AddQuotes( term.Token() ) );
+        }
+      }
+      
+      if ( not isnull(term) )
+      {
+        group.LibGUIFiltering_Term( relinsert, &term );
+      }
+    }
+    
+    filter := LibGUIFiltering_Helper::DetermineFilter( attributes, attributetypes, terms, warnings );
+    
+    return filter;
+  *]
+}

@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method TransferSubTaskExists (shadow[SubTaskTypeOnResourceGroup] sttorg_i, output String feedback_o) as Boolean id:Method_DialogResourceGroup_SC_TransferSubTaskExists
+{
+  #keys: '[129856.0.84933747]'
+  Body:
+  [*
+    // James Kwapien #7721 If transfer subtask exists, only previous to transfer subtask
+    // or transfer subtask may be lastrespectrouting
+    rg := Dialog.Data();                    
+    
+    isnotoverridingtransfer := true;
+                        
+    transfer := select( rg,
+                        SubTaskTypeOnResourceGroup,
+                        sttorg,
+                        sttorg.SubTaskID() = Constants::SubTask_Transfer() );
+    
+    if( not isnull( transfer ) and transfer.SequenceNr() > 0 )
+    {
+      isnotoverridingtransfer := sttorg_i.SequenceNr() = transfer.SequenceNr() - 1; 
+    }
+    
+    SubTaskTypeOnResourceGroup::TransferSubTaskExists( isnotoverridingtransfer, feedback_o );
+    
+    return isnotoverridingtransfer;
+  *]
+}

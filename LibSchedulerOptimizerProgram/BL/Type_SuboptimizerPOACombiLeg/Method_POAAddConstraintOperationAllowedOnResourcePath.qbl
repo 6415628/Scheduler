@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintOperationAllowedOnResourcePath (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, Operation_SCs operations, Resource_SCs resources)
+{
+  Description: 'Ensures that the operations are not allowed to be planned on the resource path'
+  TextBody:
+  [*
+    traverse( resources, Elements, resource )
+    {
+      pathtype := poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathResource( resource ), resource );
+      default_allowed := true;
+      nodepossible := POAPossible::N( poa, SuboptimizerPOACombiLeg::NamePOANodePossibleOperationOnResource( resource ), default_allowed );
+      pathtype.NodesAllowed( nodepossible );
+      
+      // None of the operations are allowed to be planned on the resource (and thus outside the legs)
+      traverse( operations, Elements, operation )
+      {
+        node := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation ), operation );
+        nodepossible.Set( node, false );
+      }
+    }
+  *]
+}

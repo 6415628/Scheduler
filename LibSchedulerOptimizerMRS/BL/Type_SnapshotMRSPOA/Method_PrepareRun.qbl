@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride PrepareRun () as LibOpt_Run
+{
+  TextBody:
+  [*
+    copy := super.PrepareRun();
+    
+    // In addition to the regular copying, we also need to make sure
+    // to correctly set the Scheduler specific ScopeElementOnRun attributes
+    traverse( this.Parent().astype( LibOpt_SnapshotComponent ).InputScope().ScopeElements(), Elements, element )
+    {
+      scopeelementonrun := element.OnRun( this.Run() );
+      islockedelement := guard( scopeelementonrun.IsLocked(), false );
+      ismandatory := guard( scopeelementonrun.IsMandatory(), false );
+      scopeelementoncopy := element.OnRunOrCreate( copy );
+      
+      if( not isnull( scopeelementoncopy ) )
+      {
+        scopeelementoncopy.IsLocked( islockedelement );
+        scopeelementoncopy.IsMandatory( ismandatory );
+      }
+    }
+          
+    return copy
+  *]
+}

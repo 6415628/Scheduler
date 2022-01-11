@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedToolRequirementPattern (CDIntegration cdintegration)
+{
+  Description: 'Restore imported tool requirement pattern core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedToolRequirementPattern_SC
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedToolRequirementPattern ), cdtrp )
+    {
+      importedToolRequirementPattern := schedule.ImportedToolRequirementPattern_SC( relnew, 
+                                                                                    FromResourceGroupID := cdtrp.FromResourceGroupID(),
+                                                                                    FromResourceID := cdtrp.FromResourceID(),
+                                                                                    SubTaskDefinitionName := cdtrp.SubTaskDefinitionName(),
+                                                                                    ToolGroupID := cdtrp.ToolGroupID(),
+                                                                                    ToResourceGroupID := cdtrp.ToResourceGroupID(),
+                                                                                    ToResourceID := cdtrp.ToResourceID()
+                                                                                  );
+      CopyCorresponding::CopyFrom( cdtrp ).CopyTo( importedToolRequirementPattern );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

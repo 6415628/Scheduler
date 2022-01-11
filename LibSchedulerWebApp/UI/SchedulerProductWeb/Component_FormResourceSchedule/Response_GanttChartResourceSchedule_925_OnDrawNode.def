@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: GanttChartResourceSchedule_925
+Response OnDrawNode (CampaignTask element, CampaignTypeOnResource row) id:Response_GanttChartResourceSchedule_925_OnDrawNode
+{
+  #keys: '[142956.0.658683036]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebGanttChart_OnDrawNode'
+  GroupServerCalls: true
+  QuillAction
+  {
+    Body:
+    [*
+      // OnDrawNode CampaignTask
+      processduration := element.End() - element.Start();
+      
+      if( not element.HasConstraintViolations() )
+      {
+        color := ColorScheme.Campaign();
+        campaign := element.CampaignInCampaignType();
+        // Use campaign color
+        if( not isnull( campaign ) and campaign.HasColor() )
+        {
+          color := Color::Color( campaign.Color() );
+        }
+        // Use campaign type default color
+        else if( guard( element.CampaignType().HasDefaultColor(), false ) )
+        {
+          color := Color::Color( element.CampaignType().DefaultColor() );
+        }
+        drawinfo.AddCompartment( color, processduration );
+        
+        // Make sure node text is visible
+        if( color.IsDark() )
+        {
+          drawinfo.TextColor( Color::White() );
+        }
+        else
+        {
+          drawinfo.TextColor( Color::Black() );
+        }
+      }
+      else
+      {
+        drawinfo.AddCompartment( drawinfo.BackgroundColor(), processduration );
+      }
+    *]
+  }
+}

@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateInterest (Key datasetMDSID_i, String datasetKind_i, String datasetPath_i, 
+  String datasetName_i, String datasetType_i, Key dataTransformationDefinition_i, 
+  Boolean isDatasetEvent_i)
+{
+  TextBody:
+  [*
+    // SetType belongs to current System, there is no need to send a message to local System
+    
+    if( this.System().IsLocalSystem() )
+    {
+      if( not this.HasOtherOnlineDatasetInterest( datasetMDSID_i ) )
+      { 
+        LibDEF_SetTypeInterestFromSystem::FindCreate( this, this.System() );
+      }
+    
+      // Creates the local SetInterest immediately (as the 'approval' can be done locally)
+      // When dataset is loaded, do not create the dataset-level interest
+      if( not isDatasetEvent_i )
+      {
+        LibDEF_SetTypeInterestOfDataset::FindCreate( this, datasetMDSID_i, datasetKind_i, datasetPath_i, datasetName_i, datasetType_i, dataTransformationDefinition_i );
+        this.CreateSetInterest( datasetMDSID_i, datasetKind_i, datasetPath_i, datasetName_i, datasetType_i, dataTransformationDefinition_i );
+      }
+    }
+    // Set Type belongs to other System, we need to send a message to the System
+    else
+    { 
+      if( isDatasetEvent_i
+          or not this.HasOtherOnlineDatasetInterest( datasetMDSID_i ) )
+      {
+        // Construct a temporary Dataset-level SetTypeInterest to be used when approval is received from Set Type owner.
+        datasetInterest := LibDEF_SetTypeInterestOfDataset::Construct( datasetMDSID_i, datasetKind_i, datasetPath_i, datasetName_i, datasetType_i, dataTransformationDefinition_i );
+    
+        // Send a 'SetTypeInterest-Created' message to the Set Type owner    
+        this.System().SendMetadataRequestSetTypeInterestCreated( datasetInterest, this );
+      }
+      // 1. There is already an existing System-level SetTypeInterest in the System of the Set Type (owner), 
+      //    the DatasetInterest can thus immediately be created.
+      // 2. When dataset is loaded, do not create the dataset-level interest
+      else
+      {
+        LibDEF_SetTypeInterestOfDataset::FindCreate( this, datasetMDSID_i, datasetKind_i, datasetPath_i, datasetName_i, datasetType_i, dataTransformationDefinition_i );
+        this.CreateSetInterest( datasetMDSID_i, datasetKind_i, datasetPath_i, datasetName_i, datasetType_i, dataTransformationDefinition_i );
+      }
+    }
+  *]
+}

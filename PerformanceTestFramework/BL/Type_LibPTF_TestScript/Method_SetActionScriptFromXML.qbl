@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetActionScriptFromXML
+{
+  Description: 'Splits the complete action script ( read from xml ) into different parts and store it in multiple action script sub element objects.'
+  TextBody:
+  [*
+    maxscriptlength := this.LibPTF_TestScenario().LibPTF_TestScenarioContainer().LibPTF().MaxStringLength();
+    scriptlength    := this.ActionScript().Length();
+    
+    this.LibPTF_ActionScriptSubElement( relflush );
+    
+    if( scriptlength > maxscriptlength )
+    {
+      originalscript := this.ActionScript();
+      startindex     := 0;
+    
+      while( startindex < scriptlength )
+      {
+        count      := minvalue( maxscriptlength, scriptlength - startindex );
+        scriptpart := originalscript.SubString( startindex, count );
+    
+        if( startindex = 0 )
+        {
+          this.ActionScript( scriptpart );
+        }
+        else
+        {
+          part := this.LibPTF_ActionScriptSubElement( relnew );
+          part.ActionScriptPart( scriptpart );
+        }
+        startindex := startindex + count;
+      }
+    }
+  *]
+}

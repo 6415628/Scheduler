@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method FSPLRemoveDownstreamSubTasks (BatchSequenceElement oldbatchsequenceelement, ProcessSubTask batch_operation_current_process)
+{
+  TextBody:
+  [*
+    // Selects all the batchsequenceelement's downstream process subtasks 
+    oldbatchsequenceelement_downstream_process := selectset( oldbatchsequenceelement.Operation_SC(), 
+                                                             ToOperationDependency.ToOperation.AsFSPLOperationInTask.ProcessSubTask, 
+                                                             oldbatch_down_process_subtask, 
+                                                             true );
+    
+    traverse( oldbatchsequenceelement_downstream_process, Elements, batch_operation_downstream_process_subtask )
+    {
+      // Grabs the edge from current batch sequence element's batch's Process subtask to batch sequence element's downstream Process subtask
+      edge_to_downstream_process := batch_operation_current_process.PrecedenceNode().GetEdgeToNode( batch_operation_downstream_process_subtask );
+    
+      if( not isnull( edge_to_downstream_process ) )
+      {
+        // Remove the edge from current batch sequence element's batch's Process subtask to batch sequence element's downstream Process subtask
+        PrecedenceEdge::Delete( edge_to_downstream_process );
+      }
+    }
+  *]
+}

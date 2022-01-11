@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedMaterial (CDIntegration cdintegration)
+{
+  Description: 'Restore imported material core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedMaterial
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedMaterial ), cdm )
+    {
+      importedMaterial := schedule.ImportedMaterial_SC( relnew, Id := cdm.Id() );
+      CopyCorresponding::CopyFrom( cdm ).CopyTo( importedMaterial );
+      
+      // Restore ImportedPlannedSupply2Material_SC
+      this.RestoreImportedPlannedSupply2Material( cdintegration, importedMaterial );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

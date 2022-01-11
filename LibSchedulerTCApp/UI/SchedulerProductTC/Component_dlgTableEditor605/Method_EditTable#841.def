@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method EditTable (String tablename, Boolean synchronizekt) id:Method_dlgTableEditorResources_EditTable_841
+{
+  #keys: '[128956.0.488669844]'
+  Body:
+  [*
+    this.Title( tablename );
+    
+    retval := this.EditTable( tablename,
+                              Application.Frame(),
+                              ExternalMDSEditor::Schedule() );
+    
+    if( retval > 0 )
+    {
+      // sychronizekt is not needed for any KT being used in table function only. 
+      if( synchronizekt )
+      {
+        Schedule.SynchronizationObject().SynchronizeKTWithMaterialReservation();
+      }
+    
+      // Remove history to solve following problems
+      // 1. Undo dlgTableEditor.EditTable would throws error, not undoable
+      // 2. If SynchronizeKTWithMaterialReservation is called, need to do undo twice to reach dlgTableEditor.EditTable undo
+      Application.RemoveHistory();
+    }
+  *]
+}

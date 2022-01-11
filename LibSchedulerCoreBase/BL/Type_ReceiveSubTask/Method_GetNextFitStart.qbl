@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetNextFitStart (DateTime start) declarative as DateTime
+{
+  Description: "Get the nextfit of the Strategy's start after considering both transfer and receive resource calendar."
+  TextBody:
+  [*
+    // khang chuen Aug-27-2015 (created)
+    om := this.OperationMaterial();
+    query := Calendar::Query();
+    
+    // Add receive resource's resource calendar to calendar query.
+    query.AddCalendar( this.Resource_SC().ResourceCalendar() );
+    
+    // If there is a transfer resource, add the transferring resource's resource calendar to the query
+    if( not isnull( om ) and not isnull( om.TransferSubTask() ) )
+    {
+      query.AddCalendar( om.TransferSubTask().Resource_SC().ResourceCalendar() );
+    }
+    
+    // Find the next fit of the strategy start so that it will the receive subtask will not overlap with the downtime.
+    nextfitstart := query.NextFit( start, this.NetDuration() );
+    
+    return nextfitstart;
+  *]
+}

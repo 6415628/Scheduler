@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride InterpretFeedbackTask
+{
+  TextBody:
+  [*
+    Transaction::Transaction().Propagate( relation( MESFeedbackAdapter3DSpace, FeedbackManager ) );
+    feedbackManager := this.FeedbackManager();
+    
+    // Deleting work orders and operations with cancelled maturity
+    this.RemoveCancelledFeedbackData();
+    
+    // Interpret feedback for non cancelled data
+    traverse( this, Schedule.WorkOrder.astype( ExternalWorkOrder ), externalWorkOrder )
+    {  
+      traverse( externalWorkOrder, WorkOrderOperation.astype( ExternalWorkOrderOperation ), workOrderOperation )
+      {
+        resourceID := workOrderOperation.ResourceID();
+        startTime := workOrderOperation.StartTime();
+        endTime := workOrderOperation.EndTime();
+        
+        traverse( workOrderOperation, Operation_SC, operation )
+        {
+          // STARTED
+          if( workOrderOperation.Maturity() = Constants::MaturityStatus_WORK_IN_PROGRESS() and startTime.IsFinite() )
+          {
+            feedbackManager.TaskStart( operation, resourceID, startTime, startTime, Constants::MaturityStatus_WORK_IN_PROGRESS() );
+          }
+          // ENDED
+          if( workOrderOperation.Maturity() = Constants::MaturityStatus_COMPLETED() )
+          {
+            if( not operation.HasStarted() and startTime.IsFinite() )
+            {
+              feedbackManager.TaskStart( operation, resourceID, startTime, startTime, Constants::MaturityStatus_WORK_IN_PROGRESS() );
+            }
+            
+            feedbackManager.TaskEnd( operation, resourceID, startTime, startTime, endTime, Constants::MaturityStatus_COMPLETED() );
+          }
+        }
+      }
+    }
+  *]
+}

@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method DeleteEventOrSubscription (LibCal_Participation participation_i) id:Method_LibCal_GlobalState_DeleteEventOrSubscription
+{
+  #keys: '[146730.0.127393120]'
+  Body:
+  [*
+    subject   := ifexpr( participation_i.IsSubscription(), "the subscription to ", "" )
+               + "event '" + participation_i.Event().Subject() + "'"
+    title     := "Delete " + ifexpr( participation_i.IsSubscription(), "subscription", "event" );
+    defButton := 0;
+    
+    if( MessageBox::Question( this, Translations::MessageBox_ConfirmDeletion( subject ),
+                                    Translations::MessageBox_YesNo(),
+                                    defButton, title ) = 0 )
+    {
+      // If participation_i is the LeadingParticipation the whole event will be deleted.
+      participation_i.Delete();
+    }
+  *]
+}

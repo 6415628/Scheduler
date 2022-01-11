@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedAprisoScheduleProgress (CDIntegration cdintegration)
+{
+  Description: 'Restore imported Apriso schedule progress core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedAprisoScheduleProgress_SC
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedAprisoScheduleProgress ), cdasp )
+    {
+      importedAprisoScheduleProgress := schedule.ImportedAprisoScheduleProgress_SC( relnew );
+      CopyCorresponding::CopyFrom( cdasp ).CopyTo( importedAprisoScheduleProgress );
+      
+      // Restore ImportedAprisoOperationProgress_SC
+      this.RestoreImportedAprisoOperationProgress( cdintegration, importedAprisoScheduleProgress );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

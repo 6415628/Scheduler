@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method DeleteDatasetCopyManually (MDSObjectInfos objectinfos) as Boolean
+{
+  Description:
+  [*
+    Delete the dataset that is attached to this `LibOpt_SnapshotReplannableCopyDataset` snapshot.
+    This method is called (indirectly) from the context menu of a `LibOpt_SnapshotReplannableCopyDataset` snapshot. 
+    `LibOpt_SnapshotReplannableCopyDataset` snapshots can be found in the 'Snapshots' and 'Replannable snapshots' forms.
+  *]
+  TextBody:
+  [*
+    // evr3 Apr-28-2020 (created)
+    datasetinfo := objectinfos.Find( this.DatasetName() );
+    if( not isnull( datasetinfo ) )
+    {
+      mdskey := datasetinfo.MDSID().MDSKey();
+      if( datasetinfo.IsLoaded() )
+      {
+        DatasetController::Unload( mdskey )->DatasetController::Delete();
+      }
+      else
+      {
+        DatasetController::Delete( mdskey );
+      }
+    }
+    
+    this.IsDatasetLoaded( false );
+    this.IsDatasetDeletedManually( true );
+    
+    return isnull( datasetinfo );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

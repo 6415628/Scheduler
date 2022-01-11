@@ -1,0 +1,15 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoOnDelete
+{
+  Description: 'Method to hold OnDelete logic to allow for overriding for subclasses.'
+  TextBody:
+  [*
+    // Update shutdown subtask in resource groups by pass in the shutdowntypes that not included current deleted shutdowntype
+    shutdowntypes := selectset( this, Schedule.ShutdownType, st, st <> this );
+    ResourceGroup_SC::UpdateStoppageSubTaskTypeInResourceGroup( this.Schedule(), shutdowntypes );
+    
+    // Clean up rule scope in shutdown type
+    this.DeleteRuleScopeInShutdownType();
+  *]
+}

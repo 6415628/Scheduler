@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateFeedback (FeedbackManager owner, StoppageTask stoppageTask, Boolean hasReportedStart, 
+  DateTime reportedStart, Boolean hasReportedEnd, DateTime reportedEnd, 
+  Boolean hasUserReportedShutdownType, ShutdownType userReportedShutdownType, String status)
+{
+  Description: 'Create feedback task and update feedback'
+  TextBody:
+  [*
+    taskID := stoppageTask.TaskID();
+    fst := FeedbackShutdownTask::Create( owner, 
+                                         '',
+                                         '',
+                                         0,
+                                         taskID );
+    
+    reportedStart := ifexpr( hasReportedStart, reportedStart, DateTime::MinDateTime() );  // If no reported start, we will set it to infinite value.
+    reportedEnd := ifexpr( hasReportedEnd, reportedEnd, DateTime::MinDateTime() );        // If no reported end, we will set it to infinite value.
+    
+    // For newly created feedback shutdown task, all user set values will be updated to reported values
+    // except for shutdown type
+    fst.Update( taskID,
+                reportedStart,
+                reportedEnd,
+                Constants::TaskType_ShutDown(),
+                stoppageTask.Resource_SC().ResourceID(),
+                stoppageTask,
+                status );
+    
+    fst.UpdateFeedback( hasReportedStart,
+                        reportedStart,
+                        hasReportedEnd,
+                        reportedEnd,
+                        hasUserReportedShutdownType,
+                        userReportedShutdownType );
+    
+    shutdown := stoppageTask.Shutdown();
+    fst.Shutdown( relset, shutdown );
+    
+    shutdown.UnplanShutdownTask();
+  *]
+}

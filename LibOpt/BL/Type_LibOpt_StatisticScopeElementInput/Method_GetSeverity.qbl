@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetSeverity (Real valueofissue, Boolean isupperthresholdviolation, const constcontent LibOpt_StatisticSeverityScaleEntrys severityscaleentries) as Real
+{
+  Description: 'Return the `Severity` to set for a `LibOpt_Issue` with the given <value of issue> and nature (<whether it is an upper-threshold violation>).'
+  TextBody:
+  [*
+    score := LibOpt_Issue::Severity_0_Undefined();
+    
+    // Special case: If the *frequency in input scope* (value) is 0, then it is a *max severity* issue.
+    if( not isupperthresholdviolation
+        and valueofissue = 0.0
+      )
+    {
+      score := LibOpt_Issue::Severity_5_Max();
+    }
+    else
+    {
+      score := super.GetSeverity( valueofissue, isupperthresholdviolation, severityscaleentries );
+    }
+    
+    return score;
+  *]
+}

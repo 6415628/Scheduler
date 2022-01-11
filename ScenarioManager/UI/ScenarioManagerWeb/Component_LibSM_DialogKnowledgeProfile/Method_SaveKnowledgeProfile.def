@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method SaveKnowledgeProfile () id:Method_LibSM_DialogKnowledgeProfile_SaveKnowledgeProfile
+{
+  #keys: '[136402.0.1246496866]'
+  Body:
+  [*
+    // Saves the contents of the dialog to the existing or new Knowledge Profile.
+    
+    existing := this.DataHolderDialogData().Data();
+    isNew    := isnull( existing );
+    
+    if ( isNew )
+    {
+      profile := LibSM_KnowledgeProfile::Create( LibSM_ScenarioManager, 
+                                                 this.EditFieldName().Text() );
+                                                 
+      // Create some default branches.                                             
+      traverse( LibSM_ScenarioManager.MDSLibSM_ScenarioManager(), MDSKBs, kb )
+      {
+        profile.AddKnowledgeBaseBranch( kb.Name(), kb.Branch(), kb.Version() );
+      }                                             
+                                     
+    }
+    else if ( Form.HasChanges() )
+    {
+      Form.ApplyChanges();
+    }
+  *]
+}

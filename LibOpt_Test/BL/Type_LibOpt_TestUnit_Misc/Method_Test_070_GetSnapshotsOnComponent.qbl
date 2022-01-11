@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_070_GetSnapshotsOnComponent (LibOpt_TestDataset dataset)
+{
+  Description:
+  [*
+    Test if the method `LibOpt_SnapshotComponent::GetSnapshotsOnComponent` works as expected.
+    The method should return all `LibOpt_SnapshotComponent` entries of the provided component that have an iteration with the `LibOpt_SnapshotComponent` given as `this`.
+  *]
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    // Configuration
+    component1 := opt.Iterator( run, 'Iterator 1' );
+    component1.SetMaxIterations( 3 );
+    
+    component2 := opt.SwitchRoundRobin( run, 'Probability switch' );
+    
+    component3a := opt.Iterator( run, 'Iterator 3a' );
+    component3a.SetMaxIterations( 3 );
+    
+    component3b := opt.Iterator( run, 'Iterator 3b' );
+    component3b.SetMaxIterations( 3 );
+    
+    component4 := opt.ComponentCounter( run, 'Counter' );
+    
+    component1.To( component2 );
+    component2.Branch( component3a );
+    component2.Branch( component3b );
+    component3a.To( component4 );
+    component3b.To( component4 );
+    
+    run.ConfigureForOneTransaction();
+    
+    // Execute test method
+    run.Start()
+    run.HasIterations( true );
+    Transaction::Transaction().Propagate();
+    
+    // Check results
+    components := selectset( run, Component, component, true );
+    
+    traverse( components, Elements.SnapshotComponent, snapshot )
+    {
+      traverse( components, Elements, component )
+      {
+        id := '[' + snapshot.Component().Name() + '.' + [String] snapshot.SequenceNr() + ' - ' + component.Name() + ']'
+        actual_result := snapshot.GetSnapshotsOnComponent( component );
+        expected_result := selectset( snapshot, IterationPart.IterationPartNM.Iteration.IterationPartNM.IterationPart.SnapshotComponent, sc, sc.Component() = component );
+        
+        this.Run().AssertEqual( expected_result.Size(), actual_result.Size(), 'Size is incorrect ' + id );
+        this.Run().AssertEqual( 0, actual_result.Difference( expected_result ).Size(), 'actual_result.Difference( expected_result ).Size() ' + id );
+        this.Run().AssertEqual( 0, expected_result.Difference( actual_result ).Size(), 'expected_result.Difference( actual_result ).Size() ' + id );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

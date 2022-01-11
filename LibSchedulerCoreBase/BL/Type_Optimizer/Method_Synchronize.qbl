@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method Synchronize
+{
+  TextBody:
+  [*
+    // needed to synchronize singleton optimizer types for keeping old datasets alive
+    // e.g. test data
+    this.Schedule().ObjectFactory().CreateOptimizerTypes();
+    
+    // Propagate needed, because declarative relation Optimizer-OptimizerType used in traverse
+    // which is based on relation set in CreateOptimizerTypes.
+    Transaction::Transaction().Propagate( relation( Optimizer, OptimizerType ) );
+    
+    // Synchronize all optimizer types
+    traverse( this, OptimizerType, optimizertype )
+    {
+      optimizertype.Synchronize();
+    }
+    
+    this.CleanupOldRuns();
+  *]
+}

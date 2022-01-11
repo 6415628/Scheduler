@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanOperationsInBatch (Operation_SCs operations, Resource_SCs resources)
+{
+  Description: 'like ::PlanOperationsInBatch( operations ), but only considers planning on the given resource candidates.'
+  TextBody:
+  [*
+    while( operations.Size() > 0 )
+    {
+      firstoperation := operations.Element( 0 );
+    
+      batch := Batch::Create( this, firstoperation.Type() );
+    
+      // add a batch operation to set the practice for the batch
+      batch.AddOperation( operations.Element( 0 ) );
+      // To set the batch's practice
+      Transaction::Transaction().Propagate();
+      
+      resource := BatchResource::SelectResource( batch, resources ); 
+      
+      //plan related operations in batch
+      Schedule::PlanRelatedOperationsBefore( operations.Element( 0 ), resource, null( BatchTask ), true, false );
+      
+      operations.Delete( 0 );
+      
+      if( not isnull( resource ) )
+      {
+        resource.PlanLast( batch );
+      }
+      
+      batch.AddOperationToBatch( operations );
+    }
+  *]
+}

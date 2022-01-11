@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOACalendar (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata)
+{
+  Description: "This method adds the resource calendars defined in the model to POA's resource paths"
+  TextBody:
+  [*
+    timeExpr := poa.Expression( SuboptimizerSequencingPOA::NamePOAExpressionTime() );
+    poaepoch := this.POAEpoch(); //considers the start of the earliest frozen/feedback task before schedule time if any, else use schedule time
+    
+    traverse( transientdata.GetPOAPathTypeResources(), Elements, resource )
+    {
+      pathtype := poa.PathType( this.GetPathTypeName( resource ) );
+      sortedCalendars := selectsortedset( resource.Resource(),
+                                          ResourceCalendar.Elements,
+                                          element,
+                                          element.Start() > DateTime::MinDateTime()
+                                            and element.End() > poaepoch
+                                            and element.End() < DateTime::MaxDateTime(), // filter for calendar elements POA is interested in
+                                          element.Start(), // sort by start first
+                                          element.End() ); // secondary sorting by end
+      if( sortedCalendars.Size() > 0 ) // otherwise no POACalendar is needed at all
+      {
+        calendar := POACalendar::Process( poa, SuboptimizerSequencingPOA::NamePOACalendar( resource.Resource() ) );
+        calendar.Processing( 'Absolute' );
+        calendar.Cyclic( false );
+        calendar.Cycle( 10000 ); // According to https://support.quintiq.com/doc/optimization/poa/calendars the cycle must be set. Set it high enough to not really be a cycle.
+        
+        traverse( sortedCalendars, Elements, element )
+        {
+          startreal := ( element.Start() - poaepoch ).HoursAsReal();
+          endreal := ( element.End() - poaepoch ).HoursAsReal();
+      
+          transientdata.Task().Log( "Adding calendar event for resource " + resource.Resource().ResourceID() + ": start=" + startreal.AsQUILL() + ", end=" + endreal.AsQUILL() + ", capacity=" + element.Capacity().AsQUILL() );
+          calendar.Add( startreal, endreal, element.Capacity() );
+        }
+        calendar.Splitting( true );
+        if( resource.Resource().UseFitCalendarStrategy() )
+        {
+          calendar.Splitting( false );
+        }
+    
+        timePathType := pathtype.Expression( timeExpr );
+        timePathType.ParticipationCalendar( calendar )
+        timePathType.TransitionCalendar( calendar ); 
+      }
+    }
+    
+    // The model can be extended in the following method
+    this.InitPOACalendarCustom( poa, transientdata );
+  *]
+}

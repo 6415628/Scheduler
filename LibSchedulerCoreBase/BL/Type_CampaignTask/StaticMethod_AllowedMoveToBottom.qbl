@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod AllowedMoveToBottom (CampaignTasks selection, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Return true if the task is allowed to move to bottom'
+  TextBody:
+  [*
+    // gyg1 Jul-19-2016 (created)
+    // JK 12-16-2016 QP 8382 Adjusted relational logic for updated object model with multiple campaigns
+    
+    lasttask := select( selection, Elements, element, isnull( element.NextCampaignTask() ) );
+    value    := isnull( lasttask );
+    
+    if( not value )
+    {
+      feedback_o := Translations::SC_SelectionAlreadyAtLastPosition( CampaignTask::GetIdentifier( lasttask ));
+    }
+    else
+    {
+      isallowedhard   := true;
+      operations      := selectset( selection, Elements.OperationCampaign.Operation_SC, op, true );
+      resource        := selection.Element( 0 ).Resource_SC();
+      value           := Operation_SC::CanReplan( operations, false, feedback_o, isallowedhard );
+    
+      ontype( resource )
+      {
+        SingleResourceBase as sr: 
+        {
+          tasks := selectset( selection, Elements.OperationCampaign.Task_SC, t, true, true );
+          value := sr.AllowedScheduling( tasks, //structured[Task]
+                                         resource.Last(),//beforetask
+                                         null( Task_SC ), //aftertask
+                                         false, //skipsoftcheck
+                                         false, //ctrlshiftkey
+                                         feedback_o,
+                                         isallowedhard ) and value;
+        }
+        BatchResource as br:
+        {
+          batches := selectset( selection, Elements.OperationCampaign.Task_SC.astype( BatchTask ).Batch, batch, true, true );
+          value := br.AllowedScheduling( batches,  //structured batches
+                                         resource.Last(), //beforetask
+                                         null( Task_SC ), //aftertask
+                                         false, //skip soft check
+                                         feedback_o,
+                                         isallowedhard ) and value;
+    }
+      }
+    }
+    
+    feedback_o := Translations::SC_CannotBeMovedToBottom( CampaignTask::GetSelectedObjects( selection ) )
+                  + String::NewLine()
+                  + feedback_o;
+    
+    return value;
+  *]
+}

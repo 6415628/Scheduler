@@ -1,0 +1,52 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddExpressionTime (SuboptimizerMRSPOA_POAOneResourceGroup poa, LibOpt_Task task)
+{
+  Description: 'Add the expression duration to POA'
+  TextBody:
+  [*
+    // stn4 Mar-18-2016 (created)
+    ///////////////////////////////////////////////////////////////////////////
+    // DURATION EXPRESSION
+    ///////////////////////////////////////////////////////////////////////////
+    
+    timeexpression := poa.NewExpression( SuboptimizerMRSPOA::NamePOATimeExpression() );
+    ///////////////////////////////////////////////////////////////////////////
+    // DurationTransition : Setup Duration
+    ///////////////////////////////////////////////////////////////////////////
+    timeexpressiontransition := POATransition::PNN( poa, 'SetupDuration', 0.0 );
+    timeexpressiontransition.Symmetric( false );
+    timeexpression.Transition( timeexpressiontransition );
+    
+    traverse( task.Scope().ResourceGroups(), Elements.Resource_SC.astype( SingleResourceBase ), resource )
+    {
+      pathtype := poa.PathType( SuboptimizerMRSPOA::POANamePathResource( resource ), resource );
+      node0 := poa.Node( SuboptimizerMRSPOA::POANameDummyStart( resource ), resource  );
+    
+      traverseelement := this.GetAllowedElement( resource, task.Scope() );
+    
+      traverse( traverseelement, Elements, operation1 )
+      {
+        //operation1 := mrsaelement1.SingleOperation();
+        node1 := poa.Node( SuboptimizerMRSPOA::POANameNodeOperation( operation1 ), operation1 );
+    
+        traverse( traverseelement, Elements, operation2,
+                  operation2 <> operation1 )
+        {
+          node2 := poa.Node( SuboptimizerMRSPOA::POANameNodeOperation( operation2 ), operation2 );
+         //get setup duration from op1 to op2
+          setupdur := resource.GetSetupDuration( operation1, operation2 ).HoursAsReal();
+          //debuginfo( "setuptime", mrsaelement1.astype( MRSAPlanOperation ).SingleOperation().OperationID(), "-", mrsaelement2.astype( MRSAPlanOperation ).SingleOperation().OperationID(), ": ",  setupdur );
+          timeexpressiontransition.Set( pathtype, node1, node2, setupdur );
+        }
+    
+        //Add the setup for the case that the operation is scheduled first on the machine
+        setupdur := resource.GetSetupDuration( null( Operation_SC ), operation1 ).HoursAsReal(); // setup duration if first
+        timeexpressiontransition.Set( pathtype, node0, node1, setupdur );
+      }
+    }
+    
+    //add also process durations
+    this.POAAddExpressionTimeProcessDurations( poa, timeexpression, task );
+  *]
+}

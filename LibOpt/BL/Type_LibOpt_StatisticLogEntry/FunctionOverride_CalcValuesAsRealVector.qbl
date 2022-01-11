@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcValuesAsRealVector
+{
+  Description: 'Calculate the `RealVector` of values collected by this statistic, stored in the form of a `BinaryValue`.'
+  TextBody:
+  [*
+    numbervector_logentrycounts := null( NumberVector );
+    
+    if( this.CheckHasSpecificComponent() )
+    {
+      numbervector_logentrycounts := NumberVector::Construct( this.Run().TotalNrOfIterations() );
+      
+      traverse( this, SnapshotLogEntry, snapshotlogentry )
+      {
+        traverse( snapshotlogentry, IterationPart.IterationPartNM.Iteration, iteration )
+        {
+          index := iteration.IterationNr() - 1;
+          
+          // Increment the "log entry count".
+          numbervector_logentrycounts.Set( index, 
+                                           numbervector_logentrycounts.Get( index ) + 1
+                                         );
+        }
+      }
+    }
+    else
+    {
+      numbervector_logentrycounts := NumberVector::Construct( 1 );
+      numbervector_logentrycounts.Set( 0, this.SnapshotLogEntry( relsize ) );
+    }
+    
+    values_as_real_vector := RealVector::Construct( numbervector_logentrycounts ).AsBinaryValue();
+    
+    this.ValuesAsRealVector( values_as_real_vector );
+  *]
+}

@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetPreviousForPlannedOperation () declarative as OperationCampaign
+{
+  Description: 'Get previous operation campaign when operation is planned.'
+  TextBody:
+  [*
+    operationCampaign := null( OperationCampaign );
+    operation := this.Operation_SC();
+    
+    previousBatchSequenceElement := guard( operation.BatchSequenceElement().Previous(), 
+                                           null( BatchSequenceElement ) );
+    previousTask := guard( operation.Task_SC().Previous(), 
+                           null( Task_SC ) );
+    lastFeedbackTaskOnResource := guard( operation.PlannedResource().LastFeedback(), 
+                                          null( FeedbackTaskInSchedule ) );
+    lastFeedbackBatchOnResource := guard( operation.PlannedResource().astype( BatchResource ).LastFeedbackBatchOnResource(), 
+                                           null( FeedbackBatchInSchedule ) );
+    
+    if( not isnull( previousBatchSequenceElement ) ) // Planned BATCH operation, link to previous sequence element in same batch
+    {
+      operationCampaign := this.GetPrevious( previousBatchSequenceElement );
+    }
+    else if( not isnull( previousTask ) ) // Planned operation, link to previous task on same resource
+    {
+      operationCampaign := this.GetPrevious( previousTask );
+    }
+    else if( not isnull( lastFeedbackTaskOnResource ) ) // Planned operation as first task on resource, link to last task feedback on same resource
+    {
+      operationCampaign := this.GetPrevious( lastFeedbackTaskOnResource );
+    }
+    else if( not isnull( lastFeedbackBatchOnResource ) ) // Planned operation as first task on resource, link to last batch feedback on same resource
+    {
+      operationCampaign := this.GetPrevious( lastFeedbackBatchOnResource );
+    }
+    
+    return operationCampaign;
+  *]
+}

@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateImportedExternalWorkOrderOperation (Schedule schedule)
+{
+  Description: 'Create imported external work order operation instance.'
+  TextBody:
+  [*
+    variant := this.Variant();
+    testInstanceExternalWorkOrderOperations := this.GetExternalWorkOrderOperationTestInstances( variant );
+    
+    traverse( testInstanceExternalWorkOrderOperations, Elements, row )
+    {
+      importedExternalWorkOrderOperation := ImportedExternalWorkOrderOperation::FindImportedExternalWorkOrderOperation( row.WorkOrderID(), row.SequenceNr() );
+      
+      if( isnull( importedExternalWorkOrderOperation ) )
+      {
+        importedExternalWorkOrderOperation := schedule.ImportedWorkOrderOperation( relnew, ImportedExternalWorkOrderOperation, OperationType := row.OperationType(),
+                                                                                   SequenceNr := row.SequenceNr(), WorkOrderId := row.WorkOrderID() );
+      }
+    }
+  *]
+}

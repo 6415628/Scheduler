@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestTimeLogicOperationMaterialLotAvailableTime (Schedule schedule)
+{
+  Description: 'Test lot available time for operation material.'
+  TextBody:
+  [*
+    //Get the test instance based on variant
+    variant := this.Variant();
+    
+    testinstance := this.GetTestInstanceMain( variant );
+    
+    //Select the only operation material
+    operationmaterial := select( schedule, PlanUnit_SC.OperationMaterial, om, true );
+    
+    //Assert the result
+    this.Run().AssertEqual( testinstance.LotAvailableTime(), operationmaterial.LotAvailableTime(), UTFUtility::GenerateFailedMessage( 'TimeLogic_OperationMaterial_LotAvailableTime', variant ) );
+    
+    // Add group measurement
+    settings := UTF_TimeLogic_OperationMaterial::GetTestInstanceSettings( testinstance );
+    UTFUtility::AddMeasurementGroup( this.Run(), settings );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

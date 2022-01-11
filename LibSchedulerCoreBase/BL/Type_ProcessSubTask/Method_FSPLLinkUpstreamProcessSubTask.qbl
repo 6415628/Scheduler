@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method FSPLLinkUpstreamProcessSubTask
+{
+  TextBody:
+  [*
+    // Updates edges for normal routing and material reservation
+    
+    traverse( this.Task_SC(), FSPLOperationInTask.FromOperationDependency, operationDependency )
+    {
+      up_process_subtask := guard( operationDependency.FromOperation().AsFSPLOperationInTask().ProcessSubTask(), null( ProcessSubTask ) );
+      
+      if( guard( not isnull( up_process_subtask.PrecedenceNode() ), false ) )
+      {
+        isfulfillment := not isnull( guard( operationDependency.astype( OperationMaterial ).Fulfillment(), null( Fulfillment ) ) ); // Used to set the fulfillment flag on the edge
+        
+        // Check if there is already an edge from the upstream Process subtask to the Process subtask of current task
+        edge_to_process := up_process_subtask.PrecedenceNode().GetEdgeToNode( this );
+      
+        if( isnull( edge_to_process ) )
+        {
+          // Create the edge from the upstream Process subtask to the Process subtask of current task
+          PrecedenceEdge::Create( up_process_subtask.PrecedenceNode(), this.PrecedenceNode(), Constants::PrecedenceRelation_Precedes(), isfulfillment );
+        }
+      }
+    }
+  *]
+}

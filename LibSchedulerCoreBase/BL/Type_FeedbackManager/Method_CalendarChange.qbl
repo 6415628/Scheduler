@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method CalendarChange (ImportedCalendarInterval_SC importedfeedbackcalendar)
+{
+  Description: 'Feedback API: Calendar change event'
+  TextBody:
+  [*
+    start := importedfeedbackcalendar.ReportedStart();
+    end := importedfeedbackcalendar.ReportedEnd();
+    resourceid := importedfeedbackcalendar.ReportedResource();
+    capacity := importedfeedbackcalendar.ReportedCapacity();
+    remark := importedfeedbackcalendar.ReportedRemark();
+    intervalid := importedfeedbackcalendar.CalendarIntervalID();
+    
+    resource := Resource_SC::FindResource_SC( resourceid );
+    
+    if( not isnull( resource ) and not isnull( resource.ResourceCalendar() ) )
+    {
+      traverse( resource, ResourceCalendar.TimeIntervals.astype( ResourceExplicitTimeInterval ), rti, rti.TimeIntervalID() = intervalid )
+      {
+        rti.Delete();
+      }
+    
+      // Handle calendar conflicts where MES data will take precedence
+      resource.HandleCalendarChangeConflicts( start, end, capacity, intervalid, remark);
+    
+      if( start <> end )
+      {
+        ResourceExplicitTimeInterval::Create( resource, start, end, intervalid, remark, capacity );
+      }                          
+    }
+  *]
+}

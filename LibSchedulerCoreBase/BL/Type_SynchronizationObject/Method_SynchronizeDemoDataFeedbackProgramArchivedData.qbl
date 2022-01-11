@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeDemoDataFeedbackProgramArchivedData
+{
+  Description: 'Synchronize demo data feedback program archived data'
+  TextBody:
+  [*
+    importedprogramdetails := selectset( this.Schedule(),
+                                         ImportedFeedbackProgramDetail,
+                                         ipd,
+                                         ipd.IsValidData()
+                                         and ipd.ImportedFeedbackStartedProgram().IsValidData() );
+    
+    // Update archived data for feedback program type
+    traverse( importedprogramdetails, Elements, importedprogramdetail )
+    {
+      feedbackprogramtype := FeedbackProgramType::FindFeedbackProgramType( importedprogramdetail.ProgramDefinitionID(),
+                                                                           importedprogramdetail.ProgramSetID(),
+                                                                           importedprogramdetail.ProgramTypeID(),
+                                                                           importedprogramdetail.ExternalProgramID() );
+      if( not isnull( feedbackprogramtype ) )
+      {
+        feedbackprogramtype.ArchivedCumulativeCharacteristic( Characteristic::GetNumberVectorBinaryValue( importedprogramdetail.ArchivedCumulativeCharacteristic() ) );
+        feedbackprogramtype.ArchivedCumulativeRealValues( Characteristic::GetRealVectorBinaryValue( importedprogramdetail.ArchivedCumulativeRealValues() ) );
+        feedbackprogramtype.ArchivedPreviousPhaseCumulativeCharacteristic( Characteristic::GetNumberVectorBinaryValue( importedprogramdetail.ArchivedPreviousPhaseCumulativeCharacteristic() ) );
+        feedbackprogramtype.ArchivedPreviousPhaseCumulativeRealValues( Characteristic::GetRealVectorBinaryValue( importedprogramdetail.ArchivedPreviousPhaseCumulativeRealValues() ) );
+        feedbackprogramtype.ArchivedPhaseSequenceNr( importedprogramdetail.ArchivedPhaseSequenceNr() );
+        feedbackprogramtype.ArchivedReportedStart( importedprogramdetail.ArchivedReportedStart() );
+        feedbackprogramtype.ArchivedReportedEnd( importedprogramdetail.ArchivedReportedEnd() );
+      } 
+    }
+  *]
+}

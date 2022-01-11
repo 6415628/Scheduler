@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestStrategyJITGetLatestEndWithCalendar (Schedule schedule)
+{
+  Description: 'Test strategy jit get latest end with calendar.'
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    testinstance := this.GetTestInstance( variant );
+    
+    // Select the task
+    task := select( schedule, ResourceGroup_SC.Resource_SC.Task_SC, t, true );
+    
+    // Get the result from the method - if non JIT strategy is used, we'll just match it with schedule time
+    latestendwithcalendar := guard( task.StrategyJIT().GetLatestEndWithCalendar( task.DueDate(), task, task.Resource_SC() ), task.DueDate() );
+    
+    // Assert the result
+    this.Run().AssertEqual( testinstance.StrategyJITGetLatestEndWithCalendar(), latestendwithcalendar, UTFUtility::GenerateFailedMessage( 'StrategyJIT_GetLatestEndWithCalendar', variant ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

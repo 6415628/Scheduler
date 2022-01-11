@@ -1,0 +1,61 @@
+Quintiq file version 2.0
+#parent: ListIssue
+Response OnClick (structured[LibOpt_Issue] selection) id:Response_ListIssue_MenuSelectRelatedIterationsAndSnapshots_OnClick
+{
+  #keys: '[142652.0.1967257548]'
+  Body:
+  [*
+    // Select the Iterations in ListIteration and Snapshots in ListSnapshot for the Issues selected here.
+    
+    listiteration := LibOpt_GlobalState.GetActivatedFormIteration().ListIteration();
+    
+    // See comment about WORKAROUND below.
+    formsnapshot := LibOpt_GlobalState.GetActivatedFormSnapshot();
+    listsnapshot := formsnapshot.ListSnapshot();
+    
+    formscopeelement := LibOpt_GlobalState.GetActivatedFormScopeElement();
+    
+    // Select the related Iterations and Snapshots.
+    traverse( selection, Elements, issue )
+    {
+      // Select Iterations.
+      traverse( issue.Statistic().GetIterations( issue ), Elements, iteration )
+      {
+        listiteration.ExtendSelectByKey( iteration.Key() );
+      }
+      
+      // Select Snapshots.
+      traverse( issue.Statistic().GetSnapshots( issue ), Elements, snapshot )
+      {
+        listsnapshot.ExtendSelectByKey( snapshot.Key() );
+      }
+    }
+    
+    
+    /*  WORKAROUND:
+        
+        Even though we have called the `GetActivatedFormSnapshot` method above, LibOpt_FormSnapshot doesn't
+        get activated accordingly because the method is called right after `GetActivatedFormIteration`,
+        where LibOpt_FormIteration is activated.
+        This is a known software limitation (that is yet to be solved) as documented in:
+        - https://support.quintiq.com/cs:solutions:trouble:form.activate_doesn_t_work_for_second_form
+        
+        As such, we use a workaround where we activate LibOpt_FormSnapshot in the `OnTimer` response of the
+        GUITimerActivateFormSnapshot component, which `Interval` has been set to 500ms.
+        - 500ms was used because lower values don't result in the intended behavior of activating the form.
+    */
+    // Enable the GUITimerActivateFormSnapshot component.
+    // When the timer's Interval is used up, LibOpt_FormSnapshot is activated, and the timer is disabled.
+    formsnapshot.GUITimerActivateFormSnapshot().Enabled( true );
+    
+    interval := formsnapshot.GUITimerActivateFormSnapshot().Interval();
+    formscopeelement.GUITimerActivateFormScopeElement().Interval( 2 * interval );
+    formscopeelement.GUITimerActivateFormScopeElement().Enabled( true );
+  *]
+  DefinitionID => /ListIssue/Responsedef_ListIssue_Menu_OnClick
+  Initiator: 'MenuSelectRelatedIterationsAndSnapshots'
+  Precondition:
+  [*
+    return LibOpt_Issue::SelectRelatedIterationsAndSnapshotsPrecondition( selection );
+  *]
+}

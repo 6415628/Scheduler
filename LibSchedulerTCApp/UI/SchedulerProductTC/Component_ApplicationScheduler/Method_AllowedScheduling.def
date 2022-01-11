@@ -1,0 +1,58 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedScheduling (SingleResourceBase resource, structured[Operation_SC] operations, Boolean skipsoftcheck, 
+  Boolean ctrlshiftkey, Task_SC beforetask, Task_SC aftertask, 
+  String identifier, output String feedback_o, output Boolean isallowedhard_o) as Boolean id:Method_ApplicationScheduler_AllowedScheduling
+{
+  #keys: '[109706.1.2106715262]'
+  Body:
+  [*
+    /*
+    This precondition covers the use cases of scheduling/rescheduling operations/tasks of Single Resources
+    1. OnDrop structured[Operation]/[PlanUnit] --> SingleResourceBase ( GanttChart )
+    2. OnDrop structured[Operation]/[PlanUnit] --> SingleResourceBase ( Resource List )
+    3. OnDrop structured[Operation]/[PlanUnit] --> SingleResourceBase ( Task List )
+    4. OnDrop structured[Operation] --> SingleResourceBase ( Campaign List )
+    
+    This precondition checks whether the selection are allowed to be replanned
+    and are allowed to be planned between the before and after task
+    */
+    
+    isallowed := Operation_SC::CanReplan( operations, skipsoftcheck, feedback_o, isallowedhard_o );
+    
+    //After task checking is separated from AllowedScheduling checking to avoid multiple same feedback precondition text. Eg. When drag campaign task to before a campaign task in frozen period
+    isallowed := ( isnull( aftertask )
+                   // In case aftertask is operation
+                   or ( not isnull( aftertask.GetOperation() )
+                          and ( ( operations.Find( aftertask.GetOperation() ) > -1 )
+                                  or ( aftertask.GetOperation().CanReplan( skipsoftcheck, feedback_o, isallowedhard_o ) ) ) )
+                   // In case aftertask is stoppage task
+                   or ( aftertask.IsStoppageTask()
+                        and aftertask.astype( StoppageTask ).CanReplan( skipsoftcheck, feedback_o, isallowedhard_o ) ) )
+                 and isallowed;
+    
+    isallowed := resource.AllowedScheduling( operations,
+                                             beforetask,
+                                             aftertask,
+                                             skipsoftcheck,
+                                             feedback_o,
+                                             isallowedhard_o )
+                 and isallowed;
+    
+    if( not isallowed and feedback_o.Length() > 0 )
+    {
+      feedback_o := ApplicationScheduler.PrefixFeedbackWithGeneralActionMessage( Translations::SC_CannotBePlannedOn( identifier, Resource_SC::GetIdentifier( resource ) ), feedback_o );
+                    
+      feedback_o := ApplicationScheduler.ShowOldStyleFeedbackWithoutOverrideOption( feedback_o );
+      if( isallowedhard_o )
+      {
+        // Giving user a hint that holding ctrl key will skip soft check
+        feedback_o := feedback_o + String::NewLine() + String::NewLine() + Translations::SC_HoldCtrlToOverride();
+      }
+    }
+    
+    feedback_o := Schedule::TrimFeedback( feedback_o );
+    
+    return isallowed;
+  *]
+}

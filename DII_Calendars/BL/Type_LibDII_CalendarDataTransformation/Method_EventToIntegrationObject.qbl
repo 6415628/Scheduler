@@ -1,0 +1,91 @@
+Quintiq file version 2.0
+#parent: #root
+Method EventToIntegrationObject (LibCIM_CalendarBase owner_i, LibCal_Event event_i)
+{
+  TextBody:
+  [*
+    integrationEvent := owner_i.CIM_Event( relnew,
+                                           CalendarType    := owner_i.CalendarType(),
+                                           CalendarID      := owner_i.CalendarID(),
+                                           EventID         := event_i.EventID(),
+                                           Subject         := event_i.Subject(),
+                                           Description     := event_i.Description(),
+                                           Type            := event_i.Type(),
+                                           PartialCapacity := event_i.PartialCapacity(),
+                                           Category        := event_i.EventCategory().Name(),
+                                           IsDefault       := event_i.IsDefault(),
+                                           StartTimeOfDay  := event_i.StartTimeOfDay(),
+                                           Duration        := event_i.Duration(),
+                                           IsAllDay        := event_i.IsAllDay() );
+    
+    // Fill the appropriate attributes for the RecurrencePattern.
+    pattern     := event_i.RecurrencePattern();
+    isRecurring := not isnull( pattern );
+    integrationEvent.IsRecurring( isRecurring );
+    
+    if( isRecurring )
+    {
+      integrationEvent.PatternType(        pattern.PatternType()        );
+      integrationEvent.RecurrenceInterval( pattern.RecurrenceInterval() );
+      
+      if( pattern.istype( LibCal_RecurrencePatternWeekly ) )
+      {
+        weeklyPattern := pattern.astype( LibCal_RecurrencePatternWeekly );
+        
+        // Concatenate the short names of the selected weekdays.
+        separator := ';';
+        daysShort := Translations::Pattern_DaysShort().Tokenize( separator );
+        dummy     := "???";
+                                                                 
+        weekdays := ifexpr( weeklyPattern.Monday(),    guard( daysShort.Element( 0 ), dummy ) + separator, "" )
+                  + ifexpr( weeklyPattern.Tuesday(),   guard( daysShort.Element( 1 ), dummy ) + separator, "" )
+                  + ifexpr( weeklyPattern.Wednesday(), guard( daysShort.Element( 2 ), dummy ) + separator, "" )
+                  + ifexpr( weeklyPattern.Thursday(),  guard( daysShort.Element( 3 ), dummy ) + separator, "" )
+                  + ifexpr( weeklyPattern.Friday(),    guard( daysShort.Element( 4 ), dummy ) + separator, "" )
+                  + ifexpr( weeklyPattern.Saturday(),  guard( daysShort.Element( 5 ), dummy ) + separator, "" )
+                  + ifexpr( weeklyPattern.Sunday(),    guard( daysShort.Element( 6 ), dummy ) + separator, "" );
+        
+        integrationEvent.PatternWeekly_Weekdays( weekdays );
+      }
+      
+      else if( pattern.istype( LibCal_RecurrencePatternMonthly ) )
+      {
+        // Set the specific attributes of the Monthly pattern.
+        monthlyPattern := pattern.astype( LibCal_RecurrencePatternMonthly );
+    
+        integrationEvent.PatternMonthly_IsDay( monthlyPattern.IsDay() );
+        
+        if( monthlyPattern.IsDay() )
+        {
+          integrationEvent.PatternMonthly_Day( monthlyPattern.Day() );
+        }
+        else
+        {
+          integrationEvent.PatternMonthly_WeekOfMonth( monthlyPattern.PatternWeekOfMonth() );
+          integrationEvent.PatternMonthly_DayOfWeek(   monthlyPattern.PatternDayOfWeek()   );
+        }
+      }
+        
+      else if( pattern.istype( LibCal_RecurrencePatternYearly ) )
+      {
+        // Set the specific attributes of the Yearly pattern.
+        yearlyPattern := pattern.astype( LibCal_RecurrencePatternYearly );
+    
+        integrationEvent.PatternYearly_IsDay( yearlyPattern.IsDay() );
+        
+        if( yearlyPattern.IsDay() )
+        {
+          integrationEvent.PatternYearly_Month( yearlyPattern.Month() );
+          integrationEvent.PatternYearly_Day(   yearlyPattern.Day()   );
+        }
+        else
+        {
+          integrationEvent.PatternYearly_Month(       yearlyPattern.Month()              );
+          integrationEvent.PatternYearly_WeekOfMonth( yearlyPattern.PatternWeekOfMonth() );
+          integrationEvent.PatternYearly_DayOfWeek(   yearlyPattern.PatternDayOfWeek()   );
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

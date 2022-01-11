@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCollectQServerLogBatchScript (String resultlogpath, String batchfilepath) as String
+{
+  Description: 'Gets the batch script for retrieving QServerLog'
+  TextBody:
+  [*
+    qServerLogFilePath       := LibPTF::GetLogDir().ReplaceAll( "/", "\" );                    // Quintiq log directory ( QServer )
+    qServerLogfileNamePrefix := LibPTF_GlobalParameters::GetServerExecutableName();            // Quintiq executable name
+    
+    return '@ECHO OFF
+    SETLOCAL ENABLEDELAYEDEXPANSION
+    SET "folderQServer=' + qServerLogFilePath + '"' + '
+    SET "destination=' + resultlogpath + '"' + '
+    
+    FOR /F "DELIMS=" %%J IN' + " ('dir" + ' "!folderQServer!' + qServerLogfileNamePrefix + 'Trans_*.xml" /B /O:D /T:C' + "') DO (" + '
+    SET "latestTransLog=!folderQServer!%%J")' + '
+    ECHO F|XCOPY ' + '"!latestTransLog!"' + " " + '"!destination!' + this.QServerTransLogResultFileName() + '"
+    
+    FOR /F "DELIMS=" %%J IN' + " ('dir" + ' "!folderQServer!' + qServerLogfileNamePrefix + '_*.xml" /B /O:D /T:C' + "') DO (" + '
+    SET "latestServerLog=!folderQServer!%%J")' + '
+    ECHO F|XCOPY ' + '"!latestServerLog!"' + " " + '"!destination!' + this.QServerLogResultFileName() + '"
+    START CMD /C DEL "' + batchfilepath + '" /S /Q "%_dp0"
+    
+    EXIT';
+  *]
+}

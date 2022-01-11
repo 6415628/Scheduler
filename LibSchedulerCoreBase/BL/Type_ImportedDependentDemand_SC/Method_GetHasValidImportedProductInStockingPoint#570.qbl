@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetHasValidImportedProductInStockingPoint (output Strings feedback_o) declarative as Boolean
+{
+  TextBody:
+  [*
+    isvalid := super.GetHasValidImportedProductInStockingPoint( feedback_o );
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedDependentDemand_Instance( name ),
+                                                               Translations::SC_ImportedDependentDemand_ViolateHasProductInStockingPoint() ) );
+    }
+    
+    return isvalid;
+  *]
+}

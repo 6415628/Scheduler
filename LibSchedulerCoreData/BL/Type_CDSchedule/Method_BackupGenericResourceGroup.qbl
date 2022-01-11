@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericResourceGroup (const Schedule schedule)
+{
+  Description: 'Backup generic resource group core data'
+  TextBody:
+  [*
+    traverse( schedule, ResourceGroup_SC.astype( GenericResourceGroup ), resourceGroup )
+    {
+      cdResourceGroup := this.CDEntity( relnew, CDGenericResourceGroup );
+      CopyCorresponding::CopyFrom( resourceGroup ).CopyTo( cdResourceGroup );
+      
+      // Backup subtask type on resource group
+      this.BackupSubTaskTypeOnResourceGroup( resourceGroup );
+      
+      // Backup batch resource
+      this.BackupGenericBatchResource( resourceGroup );
+      
+      // Backup single resource
+      this.BackupGenericSingleResource( resourceGroup );
+      
+      // Backup continuous resource
+      this.BackupGenericContinuousResource( resourceGroup );
+      
+      // Backup campaign type
+      this.BackupCampaignType( resourceGroup );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

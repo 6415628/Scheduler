@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectKB (ComponentMDSInstance mdsInstance, LibSM_Scenario scenario, internal[KBIDs] kbIDs, 
+  String kbDefinitionName, String kbBranchName, String kbBranchVersion) id:Method_LibSM_GlobalState_SelectKB
+{
+  #keys: '[136398.1.587826932]'
+  Body:
+  [*
+    if( not isnull( mdsInstance ) )
+    {
+      editor    := CKBEditor::Create();
+      mdsHandle := mdsInstance.GetMDSHandle();
+    
+      if( not isnull( mdsHandle ) )
+      {
+        kbid     := select( kbIDs, Elements, kbid, kbid.Name() = kbDefinitionName );
+        
+        if ( not isnull( kbid ) ) 
+        {
+          kbinfos  := editor.GetKBStructure( kbid );
+      
+          kbfullid := maxselect( kbinfos, Elements.KBFullID, k,
+                                 k.Branch().ToUpper() = kbBranchName.ToUpper()
+                             and k.Version()          = kbBranchVersion,
+                                 k.ChangeNr() );
+      
+          if( not isnull( kbfullid ) )
+          {
+            editor.SelectMDSKB( mdsHandle, kbfullid );
+          }
+        }
+      }
+    }
+  *]
+}

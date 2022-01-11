@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod AllowedMoveTop (Operation_SCs batchoperations, output String feedback_o) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    // Only check CanReplan when all operations can be moved up
+    value := forall( batchoperations, Elements, operation, operation.AllowedMoveToTopInBatch( feedback_o ) );
+    
+    if( value )
+    {
+      isallowedhard := true;
+      value := Operation_SC::CanReplan( batchoperations, false, feedback_o, isallowedhard )
+    }
+    
+    feedback_o := Translations::SC_CannotBeMovedToTop( Operation_SC::GetSelectedObjects( batchoperations ) )
+                  + String::NewLine()
+                  + feedback_o;
+                
+    return value;
+  *]
+}

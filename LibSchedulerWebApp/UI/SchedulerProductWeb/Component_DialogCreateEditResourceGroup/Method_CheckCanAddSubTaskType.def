@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckCanAddSubTaskType (structured[SubTaskType] subtaskTypes, output String feedback_o) as Boolean id:Method_DialogCreateEditResourceGroup_CheckCanAddSubTaskType
+{
+  #keys: '[143768.1.1623578929]'
+  Body:
+  [*
+    resourceGroup := DialogCreateEditResourceGroup.DataHolderResourceGroup().Data();
+    
+    hasnobufferaction := exists( resourceGroup, SubTaskTypeOnResourceGroup.SubTaskType, type, type.SubTaskID() = Constants::SubTask_NoBufferAction() )
+                         or exists( subtaskTypes, Elements, subtaskType, subtaskType.SubTaskID() = Constants::SubTask_NoBufferAction() );
+    hasnobufferoutflow := exists( resourceGroup, SubTaskTypeOnResourceGroup.SubTaskType, type, type.SubTaskID() = Constants::SubTask_NoBufferOutflow() )
+                          or exists( subtaskTypes, Elements, subtaskType, subtaskType.SubTaskID() = Constants::SubTask_NoBufferOutflow() );
+    
+    value := not hasnobufferaction or not hasnobufferoutflow;
+    
+    if( not value )
+    {
+      feedback_o := Translations::SC_CannotUseNoBufferActionAndNoBufferOutflow();
+    }
+    
+    return value;
+  *]
+}

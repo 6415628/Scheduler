@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetReasonNotAllowed (BatchResource resource) declarative remote as String
+{
+  Description: 'Get the ReasonNotAllowed of batch when the batch is not allowed on the resource (checking against hard + soft checks)'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    feedback := '';
+    bora     := select( this, BatchOnResource, bora, bora.BatchResource() = resource, true )
+    
+    // Get reason not allowed hard
+    bora.AllowedHard( feedback );
+    
+    // Get reason not allowed soft if hard feedback is empty
+    if( feedback = '' )
+    {
+      bora.AllowedSoft( feedback );
+    }
+    
+    return feedback;
+  *]
+}

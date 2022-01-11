@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod M03X_SuboptimizerMP_HandleResult_NoImprovement (LibOpt_Suboptimizer self, MathematicalProgram program, LibOpt_Task task, 
+  Boolean is_feasible) as LibOpt_Scope
+{
+  Description: 'A `HandleResult` method that has an improvement depending on the probability of the `LibOpt_ScopeElementProbabilities`.'
+  TextBody:
+  [*
+    scope_elements := LibOpt_TestUnit_Statistic::GetScopeElementProbability( task.Scope() );
+    probability := average( scope_elements, Elements, se, true, se.Probability() );
+    
+    if( Real::Random() < probability )
+    {
+      rollback_kpi := self.RollbackKPI().astype( LibOpt_RollbackKPIStatic );
+      kpi := rollback_kpi.GetKPI( task );
+      improvement := ifexpr( rollback_kpi.IsMinimize( 1 ), -1, 1 );
+      
+      rollback_kpi.SetKPI( 1, kpi.Get( 1 ) + improvement );
+      rollback_kpi.SetKPI( 2, Real::Random() * 200 );
+    }
+    
+    return task.Scope();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,67 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateFeedback (Boolean hasUserReportedResource, String userReportedResource, Boolean hasUserReportedStart, 
+  DateTime userReportedStart, Boolean hasUserReportedEnd, DateTime userReportedEnd, 
+  Boolean hasUserReportedProgram, FeedbackProgramTypes userReportedProgramTypes)
+{
+  Description: 'Update feedback task'
+  TextBody:
+  [*
+    this.HasUserReportedResource( hasUserReportedResource );
+    this.HasUserReportedStart( hasUserReportedStart );
+    this.HasUserReportedEnd( hasUserReportedEnd );
+    this.HasUserReportedProgram( hasUserReportedProgram );
+    
+    userReportedResource := ifexpr( hasUserReportedResource, userReportedResource, '' );
+    this.UserReportedResource( userReportedResource );
+    
+    userReportedStart := ifexpr( hasUserReportedStart, userReportedStart, DateTime::MinDateTime() );
+    this.UserReportedStart( userReportedStart );
+    
+    userReportedEnd := ifexpr( hasUserReportedEnd, userReportedEnd, DateTime::MinDateTime() );
+    this.UserReportedEnd( userReportedEnd );
+    
+    currentfeedbackprogramtypes := selectset( this, FeedbackTaskInFeedbackProgramType.FeedbackProgramType, ftp, true );
+    
+    toaddprogramtypes := userReportedProgramTypes.Difference( currentfeedbackprogramtypes );
+    toremoveprogramtypes := currentfeedbackprogramtypes.Difference( userReportedProgramTypes );
+    
+    if( hasUserReportedProgram )
+    {
+      traverse( toaddprogramtypes, Elements, toadd )
+      {
+        FeedbackTaskInFeedbackProgramType::CreateUpdate( this, toadd, true );
+      }
+      
+      traverse( toremoveprogramtypes, Elements, toremove )
+      {
+        ftifpt := select( this, FeedbackTaskInFeedbackProgramType, ftifpt, ftifpt.FeedbackProgramType() = toremove );
+        ftifpt.Remove();
+      }
+    }
+    else
+    {
+      traverse( this, FeedbackTaskInFeedbackProgramType, ftifpt )
+      {
+        ftifpt.ResetUserReportedFeedback();
+      }
+    }
+    
+    
+    // Propagate CanBeDeleted attribute to determine whether FeedbackTaskINFeedbackProgramType can be deleted
+    Transaction::Transaction().Propagate( attribute( FeedbackTaskInFeedbackProgramType, CanBeDeleted ) );
+    this.CleanUpFeedbackTaskInFeedbackProgramType();
+    
+    // Change assignment to program based on start / end time
+    isImportRelationBetweenFeedbackTaskAndProgram := guard( this.FeedbackManager().Schedule().TechnicalConfiguration().IsImportRelationBetweenFeedbackTaskAndProgram(), true );
+    
+    if( not isImportRelationBetweenFeedbackTaskAndProgram 
+        and not hasUserReportedProgram )
+    {
+      // Propagate so that the new start time can be used to determine the new program change associated to this task.
+      Transaction::Transaction().Propagate( attribute( FeedbackTaskInSchedule, Start ) );  
+      
+      this.FeedbackManager().ManualAssignFeedbackTaskToProgram( this.ResponsibleResource(), this );
+    }
+  *]
+}

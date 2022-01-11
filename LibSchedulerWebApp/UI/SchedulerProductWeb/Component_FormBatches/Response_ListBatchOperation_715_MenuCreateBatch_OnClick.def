@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: ListBatchOperation_715
+Response OnClick (structured[Operation_SC] selection) id:Response_ListBatchOperation_715_MenuCreateBatch_OnClick
+{
+  #keys: '[151084.0.259370560]'
+  CanBindMultiple: false
+  DefinitionID => //ListOperations/Responsedef_ListOperations_WebMenu_OnClick
+  GroupServerCalls: true
+  Initiator: 'MenuCreateBatch'
+  Precondition:
+  [*
+    isallowedhard := false;
+    
+    return Scheduler.AllowedInBatch( selection, true, true, false, feedback, isallowedhard );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Create batch from selected operations.
+      feedback := '';
+      isallowedhard := false;
+      
+      hasNoSoftViolation := Scheduler.AllowedInBatch( selection, true, false, false, feedback, isallowedhard );
+      
+      if( Scheduler.ConstructMessageBoxForSoftPrecondition( not hasNoSoftViolation, feedback ) )
+      {
+        //Create batch and assign operations
+        Batch::CreateBatchAssignOperations( selection, Schedule )
+      }
+    *]
+  }
+}

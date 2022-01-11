@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateFeedback (internal[GUIComponent] parent, ProgramChangeTask selection) id:Method_DialogEditFeedbackProgramChangeTask_CreateFeedback
+{
+  #keys: '[155412.0.252036448]'
+  Body:
+  [*
+    // Create feedback for program change task
+    owner := Schedule.FeedbackManager();
+    
+    data := owner.FeedbackStoppageTask( relshadow, 
+                                        FeedbackProgramChangeTask,
+                                        ExternalStoppageTaskID := selection.TaskID(),
+                                        WorkOrderId := '',
+                                        PlanUnitId := '',
+                                        WorkOrderOperationSequenceNr := 0 );
+     
+    // Update date time to be able to show the right value in the UI
+    data.Start( selection.Start() );
+    data.ReportedStart( selection.Start() );
+    data.End( selection.End() );
+    data.ReportedEnd( selection.End() );
+                                       
+    Dialog.Data( data );
+    DataHolderProgramChangeTask.Data( selection );
+    Dialog.InitializeOnCreate( selection.ProgramChange() );
+    
+    // Show dialog
+    if( Dialog.DoModal( parent ) > 0 )
+    {    
+      FeedbackProgramChangeTask::CreateFeedback( owner,
+                                                 selection,
+                                                 CheckBoxHasUserReportedStart.Checked(),
+                                                 GUIDateTimeSelectorUserReportedStart.DateTime(),
+                                                 CheckBoxHasUserReportedEnd.Checked(),
+                                                 GUIDateTimeSelectorUserReportedEnd.DateTime(),
+                                                 CheckBoxHasUserReportedProgram.Checked(),
+                                                 DataHolderSelectedProgramTypeConfigurations.Data(),
+                                                 Constants::StatusEnd() );
+                                                 
+    }
+  *]
+}

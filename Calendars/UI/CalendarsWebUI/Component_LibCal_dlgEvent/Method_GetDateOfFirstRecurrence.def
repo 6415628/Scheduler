@@ -1,0 +1,72 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetDateOfFirstRecurrence (Date startOfPeriod_i) as Date id:Method_LibCal_dlgEventParticipation_GetDateOfFirstRecurrence
+{
+  #keys: '[131092.1.1290429]'
+  Accessibility: 'Public'
+  Body:
+  [*
+    date          := Date::MinDate();
+    earliestStart := startOfPeriod_i;
+    timezone      := this.GetCalendarTimeZone();
+    
+    // Make sure that dhDuration has a value.
+    this.UpdateDuration();
+    
+    if( btnWeekly.IsPressed() )
+    {
+      date := LibCal_RecurrencePatternWeekly::GetDateOfFirstRecurrence( startOfPeriod_i, earliestStart, 
+                                                                        [Number]edtEveryNrOfWeeks.Text() );
+    }
+    
+    else if( btnMonthly.IsPressed() )
+    {
+      // Make sure that the entered day of the month is valid.
+      day := guard( [Number]edtMonthlyDay.Text(), 0 );
+      
+      if( day > 0 )
+      {
+        everyNrOfMonths := ifexpr( ckbMonthlyDay.Checked(), edtMonthlyDayEveryNrOfMonths.Text(),
+                                                            edtMonthlyPatternEveryNrOfMonths.Text() );
+    
+        /* BUG: referencing the DropDownStringLists results in an error in the TCE !!!
+        // As a WORKAROUND, the values are also set in a hidden label, which càn be used here.
+        weekOfMonth := ssMonthlyPatternWeekOfMonth.Text();
+        dayOfWeek   := ssMonthlyPatternDayOfWeek.Text();
+        */
+    
+        weekOfMonth := lblMonthlyPatternWeekOfMonth.Text();
+        dayOfWeek   := lblMonthlyPatternDayOfWeek.Text();
+    
+        date := LibCal_RecurrencePatternMonthly::GetDateOfFirstRecurrence( timezone, startOfPeriod_i, durStartTimeOfDay.Duration(), durEndTimeOfDay.Duration(), dhDuration.Data(),
+                                                                           earliestStart, [Number]everyNrOfMonths,
+                                                                           ckbMonthlyDay.Checked(), day, weekOfMonth, dayOfWeek );
+      }
+    }
+    
+    else if( btnYearly.IsPressed() )
+    {
+      /* BUG: referencing the DropDownStringLists results in an error in the TCE !!! 
+      // As a WORKAROUND, the values are also set in a hidden label, which càn be used here.
+      month       := ifexpr( ckbYearlyDate.Checked(), ssYearlyMonth.Text(), ssYearlyPatternMonth.Text() );
+      nrOfMonth   := this.GetNrOfMonth( month );
+      dayOfMonth  := [Number]ssYearlyDayOfMonth.Text();
+      weekOfMonth := ssYearlyPatternWeekOfMonth.Text();
+      dayOfWeek   := ssYearlyPatternDayOfWeek.Text();
+      */
+    
+      month       := ifexpr( ckbYearlyDay.Checked(), lblYearlyMonth.Text(), lblYearlyPatternMonth.Text() );
+      nrOfMonth   := this.GetNrOfMonth( month );
+      dayOfMonth  := [Number]lblYearlyDayOfMonth.Text();
+      weekOfMonth := lblYearlyPatternWeekOfMonth.Text();
+      dayOfWeek   := lblYearlyPatternDayOfWeek.Text();
+      
+      date := LibCal_RecurrencePatternYearly::GetDateOfFirstRecurrence( timezone, startOfPeriod_i, durStartTimeOfDay.Duration(), durEndTimeOfDay.Duration(), dhDuration.Data(),
+                                                                        earliestStart, [Number]edtEveryNrOfYears.Text(),
+                                                                        nrOfMonth, ckbYearlyDay.Checked(), dayOfMonth, weekOfMonth, dayOfWeek );
+    }
+    
+    return date;
+  *]
+  UseInheritedAccessibility: false
+}

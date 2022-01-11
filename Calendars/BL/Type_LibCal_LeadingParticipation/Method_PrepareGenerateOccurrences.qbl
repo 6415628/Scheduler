@@ -1,0 +1,98 @@
+Quintiq file version 2.0
+#parent: #root
+Method PrepareGenerateOccurrences (output Date dateOfFirstRecurrence_o, output Date endDate_o, output Date startOverlap_o, 
+  output Date endOverlap_o, output Boolean preserveOccurrences_o) as Boolean
+{
+  Description: 'Prepare the data that is required to generate the applicable occurrences of a recurring event.'
+  TextBody:
+  [*
+    this.CalcRecurrencePattern();
+    
+    pattern := this.RecurrencePattern();
+    period  := this.GetRecurrencePeriod();
+    
+    ok := true;
+    
+    if( not isnull( pattern ) and
+        not isnull( period ) )
+    {
+      calendar := this.Calendar();
+      
+      // Make sure that the relevant attributes have been calculated.
+      period.CalcEndDate();
+      this.Event().CalcEarliestStart();
+      this.Event().CalcLatestEnd();
+      this.Event().CalcCapacity();
+      this.CalcNrOfOccurrences();
+      
+      // See if the generation of TimeIntervals was triggered by an update of the calendar window.
+      // This requires 'special treatment': TimeIntervals should only be added and/or removed at the
+      // start and/or end of the new window. 
+      windowChanged := [Date]calendar.StartDate() <> calendar.PreviousStartDate()
+                    or [Date]calendar.EndDate()   <> calendar.PreviousEndDate();
+    
+      // Get the overlap between the old window and the new window.
+      // The TimeIntervals during that period should be preserved (i.e. not changed, left 'as is').
+      startOverlap_o := maxvalue( [Date]calendar.StartDate(), calendar.PreviousStartDate() );
+      endOverlap_o   := minvalue( [Date]calendar.EndDate(),   calendar.PreviousEndDate()   );
+    
+      // The same applies when only the RecurrencePeriod was changed; also in that case TimeIntervals
+      // should only be added and/or removed at the new start and/or end of the period, but TimeIntervals
+      // in the overlap of the old period and the new period should be preserved, i.e. should remain the same.
+      onlyPeriodChanged := not this.IsChanged()
+                       and not this.Event().IsChanged()
+                       and this.HasChangedRecurrencePeriod()
+                       and not isnull( period );
+      if( onlyPeriodChanged )
+      {
+        startOverlap_o := maxvalue( period.StartDate(), period.PreviousStartDate() );
+        endOverlap_o   := minvalue( period.EndDate(),   period.PreviousEndDate()   );
+      }
+    
+      // See if all occurrences should be (re-)generated, or if during the overlap existing occurrences should be preserved.
+      preserveOccurrences_o := this.NrOfOccurrences() > 0 and  // Always generate all occurrences if there are non yet, for example after importing a new event.
+                               ( windowChanged or onlyPeriodChanged );
+    
+      /* Use the StartDate of the period, in order to get the correct basis for the RecurrenceInterval.
+       * The starting point matters if the RecurrenceInterval > 1. We cannot just use the current start of the calendar as starting point,
+       * because this can result in a wrong starting point for the recurrence.
+       * The calendar can now for example start on an odd day, while the start should be on an even day according the the StartDate of the period.
+       */
+      dateOfFirstRecurrence_o := pattern.GetDateOfFirstRecurrence( period.StartDate(), this.Event().EarliestStart() );
+         
+      /* Stop at the EndDate, or at the latest end of the Event, or at the end of the Calendar.
+       * EndDate is always used as stop criterium, also when a specific number of occurrences must be generated.
+       * In that case the EndDate has already been calcutated as the date of the last occurrence.
+       * Stopping at the latest end of the Event prevents TimeIntervals to be generated until the end of the Calendar
+       * in case the initiating Event has a limited period but a participating Event is set to have no enddate.
+       */
+      endDate_o := minvalue( period.EndDate(),
+                             this.Event().LatestEnd(),
+                             calendar.EndDate() );
+                             /*
+                             ifexpr( calendar.End() <> calendar.End().StartOfDay(), 
+                                     calendar.End().Date(),
+                                     calendar.End().Date() - 1 ) );  // If the calendar ends at midnight, the day before the EndDate of the Calendar is the last day that should be generated.
+                             */
+    }
+    else
+    {
+      if( isnull( period ) )
+      {
+        LibCal_Util::Info( "LibCal_Participation.GenerateTimeIntervals() : recurrring Event without RecurrencePeriod encountered; " +
+                           this.Calendar().CalendarID() + "." + this.Event().Subject() );
+      }
+    
+      if( isnull( pattern ) )
+      {
+        LibCal_Util::Info( "LibCal_Participation.GenerateTimeIntervals() : recurring Event without RecurrencePattern encountered; " +
+                           this.Calendar().CalendarID() + "." + this.Event().Subject() );
+      }
+      
+      ok := false;
+    }
+    
+    return ok;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

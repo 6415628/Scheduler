@@ -1,0 +1,87 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Operation (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    // Before starting the new iteration, synchronize the combi structure
+    SelectorLegsPerProgram::SynchronizeCombilegs( task );
+    
+    // Get all combilegs
+    combilegs := selectset( task.Scope().CombiLegs(), Elements, combileg, true );
+    
+    // Randomly select a combileg
+    combileg := minselect( combilegs, Elements, combileg,
+                           true,
+                           Real::Random() );
+    
+    selectedcombilegs := construct( CombiLegs );
+    selectedcombilegs.Add( combileg );
+    combilegs.Remove( combileg );
+    selectedoperations := SelectorLegsPerProgram::SelectScopeOperationsFromCombileg( combileg, task );
+    
+    // select all combilegs that are part of the same leading program
+    combilegsinsameprogram := selectset( combilegs, Elements, othercombileg,
+                                         combileg.GetIsSameProgram( othercombileg, combileg.LeadingCombiProgramPhase().CombiProgramType().CombiProgramSet().ProgramSetConfiguration() ) ); 
+    
+    // While the number of operations is less than the desired number, keep adding combilegs
+    desirednrops := this.SettingsSelector().TargetNrOperations();
+    while( selectedoperations.Size() < desirednrops and combilegs.Size() > 0 )
+    {
+      // If there are still unselected combilegs of the same program
+      if( exists( combilegsinsameprogram, Elements, cl, true ) )
+      {
+        // Select the combileg that is closest to the anchor combileg
+        nextcombileg := minselect( combilegsinsameprogram, Elements, othercombileg,
+                                   abs( combileg.SequenceNr() - othercombileg.SequenceNr() ) );
+        combilegsinsameprogram.Remove( nextcombileg );
+        combilegs.Remove( nextcombileg );
+        selectedcombilegs.Add( nextcombileg );
+        selectedoperations := selectedoperations.Merge( SelectorLegsPerProgram::SelectScopeOperationsFromCombileg( nextcombileg, task ) )
+        
+      }
+      else
+      {
+        // Select the combilegs that allow at least one of the in scope operations to be planned without constraint violations
+        possiblecombilegs := selectset( combilegs, Elements, othercombileg, exists( selectedoperations, Elements, operation,
+                                                                                    othercombileg.GetIsOperationAllowedHard( operation )
+                                                                                    and othercombileg.GetIsOperationAllowedHardShutdownRules( operation )
+                                                                                    and othercombileg.GetIsOperationAllowedSoft( operation ) ) ); 
+                                                                                    
+       // If no combilegs were selected, then drop the requirement that the operation should not lead to any soft constraint violations
+       if( possiblecombilegs.Size() = 0 )
+       {
+         possiblecombilegs := selectset( combilegs, Elements, othercombileg, exists( selectedoperations, Elements, operation,
+                                                                                     othercombileg.GetIsOperationAllowedHard( operation )
+                                                                                     and othercombileg.GetIsOperationAllowedHardShutdownRules( operation ) ) );
+       }
+       // If there are no possible combilegs, then empty the set so we end the while loop
+       if( possiblecombilegs.Size() = 0 )
+       {
+         combilegs.Flush();
+       }
+       // otherwise, select the next combileg
+       else
+       {                         
+         combileg := minselect( possiblecombilegs, Elements, othercombileg, true, Real::Random() ); 
+         combilegs.Remove( combileg );
+         selectedcombilegs.Add( combileg );
+         selectedoperations := selectedoperations.Merge( SelectorLegsPerProgram::SelectScopeOperationsFromCombileg( combileg, task ) )
+          // and identify all combilegs that are of the same program
+         combilegsinsameprogram := selectset( combilegs, Elements, othercombileg,
+                                               othercombileg.GetIsSameProgram( combileg, combileg.LeadingCombiProgramPhase().CombiProgramType().CombiProgramSet().ProgramSetConfiguration() ) )
+       }
+      }
+    }
+    
+    // Select additional suitable unplanned operations
+    // These can be used to resolve constraint violations (or fill up programs) 
+    selectedunplannedoperations := SelectorLegsPerProgram::SelectorSuitableUnplannedOperations( task, selectedcombilegs, this );
+    
+    // Create the scope
+    scope := LibOpt_Scope::Create( task.Run() );
+    SelectorLegsPerProgram::AddElementsToScope( scope, selectedcombilegs, selectedoperations, selectedunplannedoperations );
+    
+    return this.Continue( task, scope );
+  *]
+}

@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SynchronizeWorkOrderOperations
+{
+  TextBody:
+  [*
+    allinstances := selectset( this, WorkOrderOperation, workorderoperation, true )
+    updatedinstances := construct( WorkOrderOperations );
+    importedWorkOrderOperations := selectsortedset( this, ImportedWorkOrder.ImportedWorkOrderOperation.astype( ImportedExternalWorkOrderOperation ), 
+                                                    iwoo, true, iwoo.SequenceNr() );
+    
+    traverse( importedWorkOrderOperations, Elements, row, row.IsValidDataHard() )
+    {
+      workorderoperation := ExternalWorkOrderOperation::FindExternalWorkOrderOperation( row.WorkOrderId(), row.SequenceNr() );
+      
+      if( isnull( workorderoperation ) )
+      {
+        workorderoperation := this.CreateWorkOrderOperation( row.SequenceNr() ).astype( ExternalWorkOrderOperation );
+      }
+      
+      workorderoperation.Update( row );
+      
+      // Update related operations
+      traverse( workorderoperation, Operation_SC, op )
+      {
+        op.Update( op.OperationID(), op.SequenceNr(), op.Type(), workorderoperation );
+      }
+    
+      // synchronize work order demands, supplies, input and output materials
+      workorderoperation.SynchronizeWorkOrderDemands();
+      workorderoperation.SynchronizeWorkOrderSupplies();
+      workorderoperation.SynchronizeWorkOrderInputMaterial();
+      workorderoperation.SynchronizeWorkOrderOutputMaterial();
+      workorderoperation.SynchronizeWorkOrderOperationResource();  
+      updatedinstances.Add( workorderoperation );  
+    }
+    
+    //Delete work order operations if they do not exist in KT
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, workorderoperation, workorderoperation.CheckCanBeDeleted() )
+    {
+      workorderoperation.Delete();      
+    }
+  *]
+}

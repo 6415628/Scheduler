@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod MoveUp (WorkOrderColorRanges ordercolors) as owning WorkOrderColorRanges
+{
+  TextBody:
+  [*
+    sortedordercolors := selectsortedset( ordercolors, Elements, ordercolor, true,
+                                          ordercolor.ColorIndex() );
+    ordercolorset := construct( WorkOrderColorRanges );
+    
+    traverse( sortedordercolors, Elements, ordercolor )
+    {
+      previousordercolor := ordercolor.PreviousWorkOrderColorRange();
+      
+      // Exchange color code with previous
+      if( not isnull( previousordercolor ) )
+      {
+        temp := previousordercolor.ColorCode();
+        previousordercolor.ColorCode( ordercolor.ColorCode() );
+        ordercolor.ColorCode( temp );
+        // Update list selection
+        ordercolorset.Add( previousordercolor );
+      }
+    }
+    
+    return &ordercolorset;
+  *]
+}

@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportUpgradedData (Object coreDataset_i)
+{
+  Description: 'Helper method to import upgraded data for a dataset'
+  TextBody:
+  [*
+    // tgn3 May-24-2021 (created)
+    
+    dataType   := DMF_DBInterface::GetSQLDataTypeForExport();
+    dbFileName := this.GetUpgradedDatasetFileName();
+    
+    // Verify that the file exists (in case something went wrong)
+    hasFile := OS::IsFile( dbFileName );
+        
+    // Debug - do not delete
+    //logfile( ">>> dbFileName", dbFileName, hasFile );
+    
+    // Open the file, then import its contents to the Dataset
+    if( hasFile and not isnull( coreDataset_i ) )
+    {
+      duio := DataUpgradeIO::Create( dataType, dbFileName );
+      
+      duio.Import( coreDataset_i );
+      
+      // Debug - do not delete
+      //metadata := DMF_UpgradeabilityMetaData::GetMetadataObject( coreDataset_i );
+      
+      //logfile( ">>> ImportUpgradedData", this.Name(), not isnull( metadata ) );
+    }
+    else if( not hasFile )
+    {
+      msg := "Missing expected file in UpgradedData path";
+      
+      DMF_Utility::LogError( msg ); 
+    }
+    else
+    {
+      msg := "Core dataset not found or parse as null.";
+      
+      DMF_Utility::LogError( msg ); 
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

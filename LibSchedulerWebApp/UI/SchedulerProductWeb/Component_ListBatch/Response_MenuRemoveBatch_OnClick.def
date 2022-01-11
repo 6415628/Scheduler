@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[Batch] selection) id:Response_ListBatch_MenuRemoveBatch_OnClick
+{
+  #keys: '[145930.4.313946198]'
+  CanBindMultiple: false
+  DefinitionID => /Responsedef_ListBatch_WebMenu_OnClick
+  GroupServerCalls: true
+  Initiator: 'MenuRemoveBatch'
+  Precondition:
+  [*
+    value := Batch::CanDelete( selection, feedback );
+    feedback := Schedule::TrimFeedback( feedback );
+    
+    return value;
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      //Delete selected batches
+      message := Batch::GetDeleteConfirmationMessage( selection );
+      
+      //Always parse in TRUE because we always need confirmation when we delete a batch
+      if( Scheduler.ConstructMessageBoxForSoftPrecondition( true, message ) )
+      {
+        Batch::Delete( selection );
+      }
+    *]
+  }
+}

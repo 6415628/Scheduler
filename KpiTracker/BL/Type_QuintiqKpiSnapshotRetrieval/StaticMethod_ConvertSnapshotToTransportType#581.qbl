@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ConvertSnapshotToTransportType (DssKpiSnapshot snapshot, String kpiName) as owning KpiSnapshotData
+{
+  Description: 'Converts a snapshot from storage to a KpiSnapshotData object for a single KPI (kpiName).'
+  TextBody:
+  [*
+    data := construct( KpiSnapshotData );
+    
+    // Read the snapshot 'identification'. 
+    data.ServerDateTime( snapshot.ServerDateTime() );
+    data.PlanDateTime( snapshot.PlanDateTime() );
+    data.SourceDatasetMDSID( snapshot.DatasetMDSID() );
+    data.RetentionPolicyIdentification( snapshot.RetentionPolicy().Identification() );
+    
+    // Read the KPI Values.
+    values := snapshot.GetValues();
+    kpi    := select( snapshot, Configuration.MetaDataInConfiguration, mdic, mdic.KpiName() = kpiName );
+    value  := values.Element( kpi.Index() );
+    data.CreateValue( kpiName, value );
+    
+    // Read the Label values.
+    traverse( snapshot, LabelValueInSnapshot.LabelValue, label )
+    {
+      data.CreateLabel( label.Label().Name(), label.Value() );
+    }
+                                                                
+    return &data;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

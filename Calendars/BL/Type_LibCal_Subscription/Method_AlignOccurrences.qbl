@@ -1,0 +1,95 @@
+Quintiq file version 2.0
+#parent: #root
+Method AlignOccurrences (Date oldStart_i, Date oldEnd_i)
+{
+  TextBody:
+  [*
+    if( not this.IsRecurring() )
+    {
+      // It the occurrence overlaps with the calendar window,
+      // then copy all (one) occurrences from the LeadingParticipation.
+      if( this.Event().LeadingParticipation().StartTime() < this.Calendar().End() and
+          this.Event().LeadingParticipation().EndTime()   > this.Calendar().Start() )
+      {
+        if( this.ExplicitTimeInterval( relsize ) = 0 )
+        {
+          this.CopyOccurrences();
+        }
+      }
+      else  // Delete the occurrence if it is outside of the calendar window.
+      {
+        this.DeleteTimeIntervals( false );
+      }
+    }
+    else
+    {
+      // Determine which occurrences should be removed, and which ones copied from the LeadingParticipation.
+      period := this.GetRecurrencePeriod();
+      start  := maxvalue( period.StartDate(), this.Calendar().StartDate() );
+      end    := minvalue( period.EndDate(),   this.Calendar().EndDate()   );
+        
+      //info( this.Calendar().CalendarID() + "." + this.Event().Subject() );
+      //info( "from :", oldStart_i, "-", oldEnd_i );
+      //info( "  to :", start,      "-", end      );
+    
+      if( start <> oldStart_i or
+          end   <> oldEnd_i )
+      {
+        if( start < oldStart_i )
+        {
+          // old :           |-----|
+          // new :  |-----|
+          if( end < oldStart_i )
+          { //info( ">>> 1a" );
+            this.RemoveOccurrencesAfter( end );
+            this.CopyOccurrences( start, end );  
+          }  
+      
+          // old :           |-----|
+          // new :        |-----|
+          else if( end <= oldEnd_i )
+          { //info( ">>> 1b" );
+            this.RemoveOccurrencesAfter( end );
+            this.CopyOccurrences( start, oldStart_i - 1 );  
+          }
+      
+          // old :           |-----|
+          // new :        |-----------|
+          else
+          { //info( ">>> 1c" );
+            this.CopyOccurrences( start,        oldStart_i - 1 );
+            this.CopyOccurrences( oldEnd_i + 1, end            );  
+          }
+        }
+        
+        else if( start < oldEnd_i )
+        { 
+          // old :           |-----|
+          // new :            |---|
+          if( end < oldEnd_i )
+          { //info( ">>> 2a" );
+            this.RemoveOccurrencesBefore( start );
+            this.RemoveOccurrencesAfter(   end  );  
+          }
+      
+          // old :           |-----|
+          // new :              |-----|
+          else
+          { //info( ">>> 2b" );
+            this.RemoveOccurrencesBefore( start );
+            this.CopyOccurrences( oldEnd_i + 1, end );  
+          }
+        }
+        
+        else
+        { //info( ">>> 3" );
+          // old :           |-----|
+          // new :                   |-----|
+          this.RemoveOccurrencesBefore( start );
+          this.CopyOccurrences( start, end    );  
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

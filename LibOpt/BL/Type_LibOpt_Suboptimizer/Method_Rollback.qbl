@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method Rollback (const RealVector kpi_pre, const RealVector kpi_post, LibOpt_Task task)
+{
+  Description:
+  [*
+    Rollback the current transaction.
+    
+    This is done by throwing an error that is not logged in the server log.
+  *]
+  TextBody:
+  [*
+    diff_index := LibOpt_RollbackKPI::GetDiffIndex( kpi_post, kpi_pre );
+    
+    message := '';
+    if( diff_index = -1 )
+    {
+      message := Translations::LibOpt_Rollback();
+    }
+    else
+    {
+      message := Translations::LibOpt_Suboptimizer_Rollback( diff_index,
+                                                             kpi_pre.Get( diff_index ),
+                                                             kpi_post.Get( diff_index ),
+                                                             this.RollbackKPI().IsMinimize( diff_index ) );
+    }
+    
+    err := construct( LibOpt_Error );
+    err.Code( Transaction::RollbackErrorNr() );
+    err.GeneralInformation( message );
+    err.DeveloperInformation( Quill::CallStack() );
+    
+    task.RollbackCurrentTransaction( message, err );
+  *]
+}

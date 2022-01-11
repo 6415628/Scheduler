@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateResourceCalendar (const LibCIM_CalendarBase integrationCalendar_i) as LibCal_Calendar
+{
+  TextBody:
+  [*
+    calendar := null( ResourceCalendar );
+    
+    // Get the OwnerID from the integration calendar.
+    ownerID := integrationCalendar_i.OwnerID();
+    
+    // Get the owner.
+    owner := select( this.GetSchedule(), ResourceGroup_SC.Resource_SC, resource, 
+                     true, 
+                     resource.ResourceID() = ownerID );
+    
+    if( not isnull( owner ) )
+    {
+      // Create a new calendar based on the integration data, and set it to be owned by the owner.
+      // This requires a typecast to the applicable subtype of LibCal_Calendar.    
+      newCalendar := LibCal_Calendar::CreateByIntegration( integrationCalendar_i.CalendarType(), integrationCalendar_i.CalendarID() );   
+      
+      if( not isnull( newCalendar ) )
+      {
+        calendar := owner.ResourceCalendar( relset, &newCalendar.astype( ResourceCalendar ) );
+      }
+    }
+    else  // Owner not found.
+    {
+      info( ">>> WARNING: " + this.DefinitionName() + ".CreateResourceCalendar() : Resource '" + ownerID + "' not found." );
+    }
+    
+    return calendar;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

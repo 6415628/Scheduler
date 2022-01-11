@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method CanImportScenario () remote as Boolean
+{
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    // You can't import if this folder is deleted or the recycling bin.
+    if( not feedback.CheckHard( not this.IsDeleted() and not this.IsRecycleBin() ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_CanNotDoAction_IsRecycleBin() );
+    }
+    
+    // Check if the total nr of currently loaded scenario already exceeded max allowed 
+    // (this method will add onto the FeedbackObject).
+    this.ScenarioManager().IsLoadedScenariosLessThanMaxAllowed( "imported" );
+    
+    return feedback.IsAllowed();
+  *]
+}

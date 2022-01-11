@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+SOAPServerMethod getStatus
+{
+  Priority: 'Default'
+  ReturnType: OaaS_CallResultType
+  TextBody:
+  [*
+    feedback := ""; 
+    result := null( OaaS_CallResultType, owning );
+    msg := this.GetStatusMessage( optimizationRunID, feedback ); 
+    
+    if( feedback = "" )
+    {
+      result := construct( OaaS_CallResultType, 
+                           StatusCode := Constants::OptimizationServiceStatus_OK(), 
+                            Payload := msg
+                         );  
+    }
+    else
+    {
+      result := construct( OaaS_CallResultType, 
+                           StatusCode := Constants::OptimizationServiceStatus_Error(), 
+                           Payload := feedback
+                         );  
+    }
+    
+    return &result;
+  *]
+  SOAPArguments:
+  [
+    SOAPArgument optimizationRunID { Type: String }
+  ]
+}

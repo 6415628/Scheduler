@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeGroupResources
+{
+  Description: 'When "Apply to other resources" button is clicked in the resource dialog, certain resource settings are applied to all other resources in that group.'
+  TextBody:
+  [*
+    // James Kwapien Sep-7-2016 QP#7634 Apply everything from this resource except ResourceGroup, ResourceID, Name and CapacityResource
+    other_resources := selectset( this.ResourceGroup_SC(), Resource_SC, resource, resource <> this );
+    has_batches := this.ResourceGroup_SC().HasBatches();
+    
+    traverse( other_resources, Elements, other_resource )
+    {
+      // Update direct related attributes
+      other_resource.FitStrategy( this.FitStrategy() );
+      other_resource.UtilizationFactor( this.UtilizationFactor() );
+    
+      if( has_batches )
+      {
+        other_resource.astype( BatchResource ).MaximumBatchSize( this.astype( BatchResource ).MaximumBatchSize() );
+      }
+    
+      // Get all lead time strategies for this instance, then copy them to related instances
+      previous_strategies := selectset( other_resource, LeadTimeStrategy_SC, lts, true ); 
+      current_strategies := selectset( this, LeadTimeStrategy_SC, lts, true );
+    
+      traverse( current_strategies, Elements, strategy )
+      {
+        LeadTimeStrategy_SC::Create( other_resource, strategy.MinDistance(), strategy.StrategyName() );
+      }
+    
+      // delete old strategies
+      traverse( previous_strategies, Elements, strategy )
+      {
+        strategy.Delete();
+      }
+    }
+  *]
+}

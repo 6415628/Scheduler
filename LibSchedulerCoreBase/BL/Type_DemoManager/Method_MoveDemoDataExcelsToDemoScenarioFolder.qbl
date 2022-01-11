@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method MoveDemoDataExcelsToDemoScenarioFolder (String demoScenarioFolder)
+{
+  Description: 'Move all demo data related Excel files to demo scenario folder'
+  TextBody:
+  [*
+    sourceFolderPath := this.Schedule().GetDatasetDependentDirectory();
+    
+    files := OS::SimpleScanDirectory( sourceFolderPath, '*xml|*xlsx' );
+    
+    traverse( files, Elements, file, OS::IsFile( file ) )
+    {
+      destinationFilePath := file.ReplaceAll( sourceFolderPath, demoScenarioFolder );
+      OS::CopyFile( file, destinationFilePath );
+    }
+  *]
+}

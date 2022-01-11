@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: PanelActions/ButtonOk
+Response OnClick () inherited id:Response_PanelActions_ButtonOk_OnClick
+{
+  #keys: '[142956.0.1220762324]'
+  BaseType => //DialogStandard/Response_pnlActions_btnOk_OnClick
+  DefinitionID: 'Responsedef_WebButton_OnClick'
+  Precondition:
+  [*
+    feedback := NumberPickerQuantity.HintDescription();
+    
+    return not DialogSplitInternalWorkOrder.HasErrors()
+           and ( CheckBoxOverrideSoft.Checked() or not DialogSplitInternalWorkOrder.HasWarnings() );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Standard OK button response
+      // Workaround until inherited methods in components are able to properly access the child form components
+      existingPlannedOrder := guard( DataHolderPlannedOrder.Data(), null( InternalWorkOrder ) );
+      
+      if( not isnull( existingPlannedOrder ) )
+      {
+        existingPlannedOrder.SplitPlannedOrder( NumberPickerQuantity.Number(),
+                                                floor( NumberPickerNrOfLots.Number() ) );
+      }
+      
+      Form.Close();
+    *]
+  }
+}

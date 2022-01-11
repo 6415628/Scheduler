@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcExpectedDate
+{
+  Description:
+  [*
+    There are three reasons an operation can be expected on a certain date:
+    When this, or one of the previous operations is scheduled, the expected date of this operation depends on that scheduled date (ExpectedDate_Scheduling)
+    When this order uses material the material available date determines the expected date of this operation (ExpectedDate_Material)
+    When a part of this order is batched the expected date of this operation depends on the expected date of the batch (ExpectedDate_Batch)
+  *]
+  TextBody:
+  [*
+    // TG4AvK080508
+    
+    // TG
+    // Note that the expected date can be LATER than the planned End of operation, if there are previous operations which are unplanned and the ExpectedDate takes into account the LeadTime for them
+    
+    // TG moved Finished/Planned part here from ExpectedDate_Scheduling
+    // #201052
+    
+    value := maxvalue( this.ExpectedDate_Scheduling(),
+                       this.ExpectedDate_Suggested()
+                     );
+    
+    if( this.HasFeedback() or this.IsPlanned() )// TG: and not this.istype( CapacityOperation )
+    {
+      value := this.End();
+    }
+    else
+    {
+      value := maxvalue( value, this.ExpectedDate_Batch() );
+    }
+    
+    this.ExpectedDate( value );
+  *]
+}

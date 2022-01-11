@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckMaxParallel (LibOpt_Run run, Number max_parallel)
+{
+  TextBody:
+  [*
+    snapshots := selectset( run, Snapshot.astype( LibOpt_SnapshotComponent ), sm, sm.Component().istype( LibOpt_ComponentCounter ) );
+    this.Run().AssertEqual( sum( run, Component.astype( LibOpt_ComponentCounter ), c, true, c.NrOfTimesCalled() ),
+                            snapshots.Size(), 'The number of times called is not equal to the number of snapshots' );
+    traverse( snapshots, Elements, snap )
+    {
+      // Count the number of snapshots that overlap with the start of this snapshot.
+      // Since we traverse all the snapshots, as a whole, we will check the overlap of snapshots.
+      overlapping := selectset( snapshots, Elements, other,
+                                snap <> other,
+                                other.PrecisionTimeStampStartComponent() <= snap.PrecisionTimeStampStartComponent() and other.PrecisionTimeStampDone() > snap.PrecisionTimeStampStartComponent()
+                                );
+                                
+      string := [String] snap.PrecisionTimeStampStartComponent() + ' - ' + [String] snap.PrecisionTimeStampDone();
+      traverse( overlapping, Elements, snap2 )
+      {
+        string := string + ', ' + [String] snap2.PrecisionTimeStampStartComponent() + ' - ' + [String] snap2.PrecisionTimeStampDone();
+      }
+      
+      this.Run().AssertLess( max_parallel, overlapping.Size(), 'More snapshots were in parallel than was allowed: ' + string );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

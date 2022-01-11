@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericExternalWorkOrderInputMaterial (CDSchedule cdSchedule)
+{
+  Description: 'Restore generic external work order input material core data relations to planning object'
+  TextBody:
+  [*
+    traverse( cdSchedule, CDEntity.astype( CDGenericExternalWorkOrderInputMaterial ), cdGenericExternalWorkOrderInputMaterial )
+    {
+      genericExternalWorkOrderInputMaterial := ExternalWorkOrderInputMaterial::FindExternalWorkOrderInputMaterial( cdGenericExternalWorkOrderInputMaterial.Id() );
+      
+      if( not isnull( genericExternalWorkOrderInputMaterial ) )
+      {
+        importedExternalWorkOrderInputMaterial := ImportedExternalWorkOrderInputMaterial::FindImportedExternalWorkOrderInputMaterial( cdGenericExternalWorkOrderInputMaterial.Id() );
+        // ImportedExternalWorkOrderInputMaterial, 1-1
+        genericExternalWorkOrderInputMaterial.ImportedExternalWorkOrderInputMaterial( relset, importedExternalWorkOrderInputMaterial );
+        // ImportedWorkOrderInputMaterial, 1-1
+        genericExternalWorkOrderInputMaterial.ImportedWorkOrderInputMaterial( relset, importedExternalWorkOrderInputMaterial );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

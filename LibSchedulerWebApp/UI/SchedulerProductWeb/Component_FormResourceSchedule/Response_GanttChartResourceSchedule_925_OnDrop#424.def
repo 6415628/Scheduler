@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: GanttChartResourceSchedule_925
+Response OnDrop (structured[CampaignTask] source, CampaignTypeOnResource droprow, CampaignTask droptarget, 
+  CampaignTask beforedroptarget, CampaignTask afterdroptarget) id:Response_GanttChartResourceSchedule_925_OnDrop_424
+{
+  #keys: '[142956.2.72386092]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebGanttChart_OnDrop'
+  GroupServerCalls: true
+  Precondition:
+  [*
+    isallowedhard     := true;
+    aftercampaigntask := guard( droprow.FirstCampaignTaskOfTypeOnResource(), null( CampaignTask ) );
+    ctrlkey           := actionmodifier.IsControl();
+    ctrlshift         := ctrlkey and actionmodifier.IsShift();
+    identifier        := CampaignTask::GetSelectedObjects( source );
+    
+    if( not isnull( beforedroptarget ) )
+    {
+      aftercampaigntask := guard( beforedroptarget.NextCampaignTaskOfTypeOnResource(), null( CampaignTask ) );
+    }
+    
+    return Scheduler.AllowedScheduling( droprow.Resource_SC(),
+                                        source,
+                                        ctrlkey,
+                                        ctrlshift,
+                                        beforedroptarget,
+                                        aftercampaigntask,
+                                        identifier,
+                                        feedback,
+                                        isallowedhard );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // OnDrop structured[CampaignTask] -> Campaign task on Campaign task
+      resource := droprow.Resource_SC();
+      
+      if( not isnull( resource ) )
+      {
+        resource.PlanAfter( source, beforedroptarget );
+      }
+    *]
+  }
+}

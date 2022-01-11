@@ -1,0 +1,66 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_RuleScope (CDSchedule cdschedule, Rule rule)
+{
+  Description: 'Restore rule scope core data relation to planning object'
+  TextBody:
+  [*
+    // Restore RuleScopeInProgramPhase
+    cdrulescopeinprogramphases := selectset( cdschedule, CDEntity.astype( CDRuleScopeInProgramPhase ), cdrulescopeinprogramphase, 
+                                             cdrulescopeinprogramphase.RuleID() = rule.RuleID() );
+    traverse( cdrulescopeinprogramphases, Elements, cdrulescope )
+    {
+      programphaseconfiguration := ProgramPhaseConfiguration::FindProgramPhaseConfiguration( cdrulescope.ProgramDefinitionConfigurationID(),
+                                                                                             cdrulescope.ProgramSetConfigurationID(),
+                                                                                             cdrulescope.ProgramTypeConfigurationID(),
+                                                                                             cdrulescope.ProgramPhaseConfigurationID() );
+      rulescope := select( rule, RuleScopeInProgramPhase, rs, isnull( rs.ProgramPhaseConfiguration() ) );
+      if( not isnull( rulescope ) )
+      {
+        rulescope.ProgramPhaseConfiguration( relset, programphaseconfiguration );                        
+      }    
+    } 
+    
+    // Restore RuleScopeInProgramType
+    cdrulescopeinprogramtypes := selectset( cdschedule, CDEntity.astype( CDRuleScopeInProgramType ), cdrulescopeinprogramtype, 
+                                             cdrulescopeinprogramtype.RuleID() = rule.RuleID() );
+    traverse( cdrulescopeinprogramtypes, Elements, cdrulescope )
+    {
+      programtypeconfiguration := ProgramTypeConfiguration::FindProgramTypeConfiguration( cdrulescope.ProgramDefinitionConfigurationID(),
+                                                                                          cdrulescope.ProgramSetConfigurationID(),
+                                                                                          cdrulescope.ProgramTypeConfigurationID() );
+      rulescope := select( rule, RuleScopeInProgramType, rs, isnull( rs.ProgramTypeConfiguration() ) );
+      if( not isnull( rulescope ) )
+      {
+        rulescope.ProgramTypeConfiguration( relset, programtypeconfiguration );  
+      }    
+    } 
+    
+    // Restore RuleScopeInShutdownType
+    cdrulescopeinshutdowntypes := selectset( cdschedule, CDEntity.astype( CDRuleScopeInShutdownType ), cdrulescopeinshutdowntype, 
+                                             cdrulescopeinshutdowntype.RuleID() = rule.RuleID() );
+    traverse( cdrulescopeinshutdowntypes, Elements, cdrulescope )
+    {
+      shutdowntype := ShutdownType::FindShutdownType( cdrulescope.ShutdownTypeID() ); 
+      rulescope := select( rule, RuleScopeInShutdownType, rs, isnull( rs.ShutdownType() ) );
+      if( not isnull( rulescope ) )
+      {
+        rulescope.ShutdownType( relset, shutdowntype ); 
+      }    
+    } 
+    
+    // Restore RuleScopeInResource
+    cdrulescopeinresources := selectset( cdschedule, CDEntity.astype( CDRuleScopeInResource ), cdrulescopeinresource, 
+                                         cdrulescopeinresource.RuleID() = rule.RuleID() );
+    traverse( cdrulescopeinresources, Elements, cdrulescope )
+    {
+      resource := Resource_SC::FindResource_SC( cdrulescope.ResourceID() );
+      rulescope := select( rule, RuleScopeInResource, rs, isnull( rs.Resource_SC() ) );
+      if( not isnull( rulescope ) )
+      {
+        rulescope.Resource_SC( relset, resource );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

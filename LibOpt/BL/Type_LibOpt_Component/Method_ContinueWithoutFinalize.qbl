@@ -1,0 +1,74 @@
+Quintiq file version 2.0
+#parent: #root
+Method ContinueWithoutFinalize (LibOpt_Task task, LibOpt_Link link, LibOpt_Scope scope) as stream[JSON]
+{
+  TextBody:
+  [*
+    //Check to add iterationthread
+    snapshot := task.SnapshotComponent();
+    if( this.CheckAddIterationThreads( task, link ) )
+    {
+      iterThread := LibOpt_IterationThread::FindCreateAvailableThread( task.Run(), snapshot.GetIterationPartOwner().PrecisionTimeStampStartComponent() );
+      snapshot.ExecutingIterationThread( relset, iterThread );
+    }
+    
+    breakpoint_string := LibOpt_Component::ComponentPosition_Continue();
+    
+    // Conditionally create a dataset copy.
+    // If InOneTransaction() is true, then a dataset copy that is robust against errors and rollbacks will be created
+    // If InOneTransaction() is false then no errors or rollbacks will occur before the end of the transaction so a quick dataset copy will be created.   
+    isrobustdatasetcopy := guard( link.TaskTransporter().InOneTransaction(), false );
+    LibOpt_DatasetCopyConditional::CopyDatasetConditionally( breakpoint_string, task, isrobustdatasetcopy ); 
+    
+    result := stream[JSON]::Success();
+    breakpoint_stream := null( stream[Void] );
+    
+    if( this.HasBreakpoint( breakpoint_string, task, breakpoint_stream ) )
+    {
+      // Execute with breakpoint
+      if( isnull( link ) )
+      {
+        result := result->After( breakpoint_stream );
+      }
+      else
+      {
+        result := breakpoint_stream->|
+                  link->Execute( task, scope );
+      }
+    }
+    else if( not isnull( link ) )
+    {
+      // Execute without breakpoint
+      transaction := LibOpt_CurrentTransaction::GetCurrentTransaction( this );
+      if( transaction.IsSafe() )
+      {
+        istaskregistered := transaction.BeforeMethodCall_ExistingSafeTransaction( task );
+        // A user error might occur in Execute or in other methods called by Execute. 
+        // However, transaction.IsSafe() is true, so we are inside a try{...} block. We have also called BeforeMethodCall_ExistingSafeTransaction. The error is therefore handled gracefully. 
+        result := link.Execute( task, scope );
+        transaction.AfterMethodCall_ExistingSafeTransaction( task, istaskregistered );
+      }
+      else
+      {
+        try
+        {
+          istaskregistered := transaction.BeforeMethodCall_TryBlock( task );
+          // A user error might occur in Execute or in other methods called by Execute. 
+          // However, we are inside a try{...} block. We have also called BeforeMethodCall_TryBlock. The error is therefore handled gracefully. 
+          result := link.Execute( task, scope );
+          transaction.AfterMethodCall_TryBlock( task, task.Run(), istaskregistered );      
+        }
+        onerror
+        {
+          transaction.OnError( e );
+        }
+        onfailure
+        {
+          transaction.OnFailure( e );
+        }
+      }
+    }
+    
+    return result;
+  *]
+}

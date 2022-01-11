@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetUpstreamOperations () as owning Operation_SCs
+{
+  TextBody:
+  [*
+    // WOI1 Feb-24-2017 (created)
+    operations := construct( Operation_SCs );
+    
+    traverse( this, FromOperationDependency.FromOperation, prevoperation )
+    {
+      prevoperationupstream := prevoperation.GetUpstreamOperations();
+      operations := operations.Union( prevoperationupstream );
+    }
+    
+    operations.Add( this );
+    
+    return &operations;
+  *]
+}

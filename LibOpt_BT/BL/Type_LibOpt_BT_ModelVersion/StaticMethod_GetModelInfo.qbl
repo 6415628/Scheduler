@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetModelInfo (output String commit_id_o, output DateTime commit_time_o, output String commit_message_o)
+{
+  TextBody:
+  [*
+    // afn3 Sep-27-2019 (created)
+      // Get branch information
+    version_id := "";
+    versionCommitTime := DateTime::MinDateTime();
+    //branchname := "";
+    
+    repo := guard( VCRepository::OpenRepository(  "git", 
+                                                 'TestRepository', // identifier (not relevant)
+                                                 LibOpt_BT_ModelVersion::GetRepositoryURL() ),
+                   null( VCRepository, owning ) );
+    if( not isnull( repo ) )
+    {
+      
+      repo.UpdateBranches();
+      activebranch  := select( repo, Branches, abranch, abranch.IsActive() );
+      if( not isnull( activebranch ) )
+      {
+        
+        repo.UpdateVersionsForBranch( activebranch );
+        version       := minselect( activebranch, VersionsInBranch, v, true, v.SequenceNumber() ).Version();
+        version_id := version.VersionID();
+        //branchname := activebranch.ID().Name();
+        commit_message_o := version.CommitMessage();
+        versionCommitTime := version.CommitTime();
+      }
+    }
+    
+    commit_id_o := version_id;
+    commit_time_o := versionCommitTime;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

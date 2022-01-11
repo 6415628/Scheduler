@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_WriteLogForAction (String curraction) id:Method_LibPTF_pnlTestRunner_PTF_WriteLogForAction
+{
+  #keys: '[104342.0.783212864]'
+  Body:
+  [*
+    // Write status and execution information of an action to the log file
+    logstartinfo := this.vhLogStart().Value().Tokenize( '|' )
+    doactioninfo := this.vhDoActionInfoReturn().Value().Tokenize( '|' )
+    
+    logstartdatetime     := logstartinfo.Element( 0 );
+    logstartprecisionctr := [Real]logstartinfo.Element( 1 );
+    actualduration       := doactioninfo.Element( 0 );
+    issucessful          := doactioninfo.Element( 1 );
+    response             := doactioninfo.Element( 2 );
+    
+    logentry := [String]OS::PrecisionCounter()
+                + ' | ' + logstartdatetime
+                + ' | ' + this.PTF_GetCurrentDatetime()
+                + ' | ' + [String]this.PTF_GetDurationInMilisecond( logstartprecisionctr )
+                + ' | ' + actualduration
+                + ' | ' + curraction
+                + ' | ' + issucessful
+                + ' | ' + response
+    
+    this.PTF_WriteLogLineForAction( logentry )
+  *]
+}

@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: ListOperationsInPanelOperations
+Method RefreshFilter () id:Method_ListOperationsInPanelOperations_RefreshFilter
+{
+  #keys: '[154390.0.117154708]'
+  Body:
+  [*
+    // Refresh list batch operation
+    
+    finalFilter := '';
+    
+    filters := construct( Strings );
+    
+    filters.Add( this.GetIncompleteOperationsFilterString() );
+    filters.Add( this.GetAllowedOperationsFilterString() );
+    filters.Add( this.GetPreviousPlannedOperationsFilterString() );
+    filters.Add( this.GetUnplannedOperationsFilterString() );
+    filters.Add( this.FilterCompatibleOperations() );
+    filters.Add( this.FilterNotInBatch() );
+    
+    // Delete filters element that contain empty string
+    filters := filters.Difference( '' )
+    
+    finalFilter := filters.ToString( ' and ' );
+    
+    DataExtractorOperations.FixedFilter( finalFilter );
+    
+    // Refresh allowed operations check box label
+    this.RefreshAllowedOperationsCheckboxLabel();
+  *]
+}

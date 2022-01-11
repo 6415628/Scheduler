@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method DeleteDataset (structured[LibOpt_SnapshotReplannableCopyDataset] snapshots) id:Method_LibOpt_GlobalState_DeleteDataset
+{
+  #keys: '[141860.2.581295660]'
+  Body:
+  [*
+    // Delete the datasets that are attached to the LibOpt_SnapshotReplannableCopyDatasets
+    loadedobjectinfos := ExternalMDSEditor::Editor().LoadedObjectInfos();
+    infocurrentdataset := loadedobjectinfos.Find( snapshots.First().MDSID() );
+    
+    // Show a popup with a warning if you are trying to delete the currently selected dataset.
+    // Show a different popup for each dataset that is currently loaded. 
+    traverse( snapshots,
+              Elements,
+              snapshot,
+              not snapshot.IsDatasetDeleted()
+              )
+    {
+      if( infocurrentdataset.Name() = snapshot.DatasetName() )
+      {
+        if ( MessageBox::Question( this, Translations::LibOpt_SnapshotReplannable_MessageBox_DeleteCurrentDataset(), '&Yes|&No' ) <> 0 )
+        {
+          snapshots.Remove( snapshot );
+        }
+      }
+      else if( not isnull( loadedobjectinfos.Find( snapshot.DatasetName() ) ) )
+      {
+        if ( MessageBox::Question( this, Translations::LibOpt_SnapshotReplannable_MessageBox_DeleteLoadedDataset( snapshot ), '&Yes|&No' ) <> 0 )
+        {
+          snapshots.Remove( snapshot );
+        }
+      }
+    
+    }
+    
+    // The DeleteDatasetCopiesAndUpdateSnapshotStatus unloads all dataset copies.
+    // When a dataset copy cannot be found, then the DeleteDatasetCopiesAndUpdateSnapshotStatus also updates all snapshots. 
+    // We both delete the datasets and update the snapshots in a single method to ensure that we only start 1 server transaction.
+    // We cannot use the 'Group server calls in 1 transaction' checkbox, because UI methods (like this one) cannot be used when that checkbox is checked.
+    isanydatasetdeleted := LibOpt_SnapshotReplannableCopyDataset::DeleteDatasetCopiesAndUpdateSnapshotStatus( snapshots )
+    if( isanydatasetdeleted )
+    {
+      // Show a popup warning explaining that the status of the snapshots has been updated.
+      MessageBox::Warning( this,
+                           Translations::LibOpt_SnapshotReplannable_MessageBox_UnexpectedStatus(),
+                           Translations::LibOpt_MessageBox_OK()
+                           );
+    }
+  *]
+}

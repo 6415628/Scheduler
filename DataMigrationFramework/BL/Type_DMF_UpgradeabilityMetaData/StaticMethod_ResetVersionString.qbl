@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ResetVersionString (DMF_DBInterface dbInterface_i, DataUpgradeIO duio_i) as Boolean
+{
+  TextBody:
+  [*
+    // foong lin Jul-1-2021 (created)
+    // Use dummy metadata object to derive inputs
+    metadata      := construct( DMF_UpgradeabilityMetaData );
+    tableMetadata := metadata.DefinitionName();
+    
+    // Key is always returned by default, which we don't need
+    excludeColumns  := "Key".Tokenize( "," );
+    requiredColumns := dbInterface_i.GetTableColumns( duio_i, tableMetadata, excludeColumns );
+    success         := dbInterface_i.ResetCoreDataVersionToEmpty( duio_i, requiredColumns );
+    return success;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

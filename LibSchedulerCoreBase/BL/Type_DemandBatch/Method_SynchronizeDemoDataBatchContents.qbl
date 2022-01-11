@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeDemoDataBatchContents
+{
+  Description: "Synchronize this demand batch's contents based on demo data."
+  TextBody:
+  [*
+    sortedImportedDemandBatchContent := selectsortedset( this, 
+                                                         ImportedDemoDataDemandBatch.ImportedDemandBatchContent,
+                                                         importedDemandBatchContent,
+                                                         true,
+                                                         importedDemandBatchContent.DemandInBatchSequenceNr() );
+    
+    traverse( sortedImportedDemandBatchContent, Elements, importedDemandBatchContent, importedDemandBatchContent.IsValidDataHard() )
+    {
+      demand := importedDemandBatchContent.Demand();
+        
+      if( not isnull( demand ) )
+      {
+        demandInBatch := this.AddDemand( demand, importedDemandBatchContent.DemandInBatchQuantity() );
+        demandInBatch.ImportedDemandBatchContent( relset, importedDemandBatchContent );
+      }
+    }
+  *]
+}

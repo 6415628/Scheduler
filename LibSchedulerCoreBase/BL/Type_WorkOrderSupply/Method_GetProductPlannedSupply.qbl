@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetProductPlannedSupply (Operation_SC operation) as ProductPlannedSupply
+{
+  TextBody:
+  [*
+    schedule   := this.WorkOrderOperation().WorkOrder().Schedule();
+    supplytype := this.GetProductPlannedSupplyType();
+    
+    // Find product planned supply
+    id := this.GetPlannedSupplyID( operation.OperationID() );
+    productplannedsupply := ProductPlannedSupply::FindProductPlannedSupply( supplytype, id );
+    
+    // If non-matching SupplyID, see whether existing supply already linked to this WorkOrderSupply during work order replacement
+    // Assume only 1 created ProductPlannedSupply per Operation that is linked to same WorkOrderSupply
+    if( isnull( productplannedsupply ) )
+    {
+      productplannedsupply := minselect( operation, 
+                                         PlannedSupply.astype( ProductPlannedSupply ), 
+                                         plannedSupply, 
+                                         plannedSupply.WorkOrderSupply() = this,
+                                         plannedSupply.SupplyID() );
+    }
+    
+    // If not, create new ProductPlannedSupply
+    if( isnull( productplannedsupply ) )
+    {
+      productplannedsupply := schedule.CreateSupply( supplytype, id ).astype( ProductPlannedSupply );    
+    }
+    
+    productplannedsupply.Update( this, operation );
+    
+    return productplannedsupply;
+  *]
+}

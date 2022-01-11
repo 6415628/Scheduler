@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetOptimisticTransferDurationPerQuantity (Resource_SC transfer_resource, Resource_SC receive_resource) declarative as Duration
+{
+  Description:
+  [*
+    If both arguments are null, returns the fastest possible transfer duration per quantity of the material on any combination of output and input resources the respective operations are allowed on (as per OperationOnResource.IsAllowedHard).
+    If only the transfer_resource is null, returns the fastest possible transfer duration per quantity of the material to the given receiving resource across any allowed transfer resource (as per OperationOnResource.IsAllowedHard).
+    If only the receive_resource is null, returns the fastest possible transfer duration per quantity of the material from the given transfer resource across any allowed receiving resource (as per OperationOnResource.IsAllowedHard).
+    If both arguments are not null, returns the actual (i.e., non-optimistic) transfer duration per quantity.
+  *]
+  TextBody:
+  [*
+    // mbr23 Jan-23-2020 (created)
+    
+    output_duration := this.OptimisticOutputDurationPerQuantity(); // duration of transferring resource
+    input_duration := this.OptimisticInputDurationPerQuantity(); // duration of receiving resource
+    
+    if( not isnull( transfer_resource ) and this.HasFromOperation() )
+    {
+      oor := select( this.FromOperation(), AllowedOperationOnResourceHard, oor, oor.Resource_SC() = transfer_resource );
+      if( isnull( oor ) )
+      {
+        // operation not allowed on the given resource. => duration is +inf
+        output_duration := Duration::MaxDuration();
+      }
+      else
+      {
+        output_duration := oor.OutputDurationPerQuantity();
+      }
+    }
+    if( not isnull( receive_resource ) and this.HasToOperation() )
+    {
+      oor := select( this.ToOperation(), AllowedOperationOnResourceHard, oor, oor.Resource_SC() = receive_resource );
+      if( isnull( oor ) )
+      {
+        // operation not allowed on the given resource. => duration is +inf
+        input_duration := Duration::MaxDuration();
+      }
+      else
+      {
+        input_duration := oor.InputDurationPerQuantity();
+      }
+    }
+    
+    value := maxvalue( output_duration, input_duration );
+    
+    return value;
+  *]
+}

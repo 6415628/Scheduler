@@ -1,0 +1,71 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckIsDateTime (output String token) remote as Boolean
+{
+  TextBody:
+  [*
+    // PER Oct-11-2016 (created)
+    found := false;
+    
+    parts := token.Tokenize( ' ' );
+    x     := 0;
+    while ( x < parts.Size() )
+    {
+      if ( parts.Element( x ).TrimBoth() = '' )
+      {
+        parts.Delete( x );
+      }
+      else
+      {
+        x++;
+      }
+    }
+    
+    if ( parts.Size() = 2 )
+    {
+      duration := LibGUIFiltering_Helper::ConvertToDuration( parts.Element(1) );
+      isotoken := token.ReplaceAll( ' ', 'T' );
+      if ( duration.IsFinite() )
+      {
+        isotoken := parts.Element(0) + 'T' + duration.Format( 'H2:m:s' );
+      }
+      
+      if ( StringToDateTime::StandardConverter().CanConvert( token ) )
+      {                                                                      
+        found := true;
+        token := StringToDateTime::StandardConverter().Convert( token ).AsQUILL();
+      }
+      else if ( StringToDateTime::ISOConverter().CanConvert( isotoken ) )
+      {
+        found := true;
+        token := StringToDateTime::ISOConverter().Convert( isotoken ).AsQUILL();
+      }
+      else
+      {
+        part1    := parts.Element( 0 );
+        modifier := '';
+        date     := Date::MinDate();
+        
+        if ( LibGUIFiltering_Helper::CheckIsDate( part1, modifier, date ) )
+        {
+          if ( duration.IsFinite()
+           and duration < Duration::Days(1)
+           and duration >= Duration::Zero() )
+          {
+            if ( modifier = '' )
+            {
+              datetime := date + duration;
+              token    := datetime.AsQUILL();
+              found    := true;
+            }
+            else
+            {
+            }
+          }
+        }
+      }
+    }
+    
+    return found;
+  *]
+}

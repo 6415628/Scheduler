@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcHasUnifiedCalendars
+{
+  TextBody:
+  [*
+    // mbr23 Jan-27-2020 (created)
+    
+    value := true;
+    
+    if( this.Resource( relsize ) > 0 )
+    {
+      anyresource := select( this, Resource, r, true );
+      fitstrategy := false;
+      if( not isnull( anyresource.Resource() ) )
+      {
+        fitstrategy := anyresource.Resource().UseFitCalendarStrategy();
+      }
+      fitstrategies_match := forall( this, Resource.Resource, r, r.UseFitCalendarStrategy() = fitstrategy );
+      value := fitstrategies_match and not isnull( anyresource.Resource() );
+      if( value )
+      {
+        // A calendar's TimeIntervals are the "exploded" version of its (possibly recurring) event subscriptions.
+        // check that every calendar time interval of any resource has a matching time interval (= same start, end, and capacity) on all other resources
+        
+    
+        any_timeintervals := selectsortedset( anyresource.Resource().ResourceCalendar(),
+                                              Elements,
+                                              element,
+                                              element.End() >= this.RelevantStartForCalendars(), // we can ignore earlier happenings
+                                              element.Start(), element.End(), element.Capacity() ); // deterministic sorting
+        traverse( this, Resource, resource, value )
+        {
+          value := not isnull( resource.Resource() );
+          if( value )
+          {
+            timeintervals := selectsortedset( resource.Resource().ResourceCalendar(),
+                                              Elements,
+                                              element,
+                                              element.End() >= this.RelevantStartForCalendars(),
+                                              element.Start(), element.End(), element.Capacity() ); // same sorting
+            if( not ResourceGroupInSuboptimizerSequencing::IsEqualCalendarElements( any_timeintervals, timeintervals ) )
+            {
+              value := false;
+            }
+          }
+          
+        }
+      }
+    }
+    
+    this.HasUnifiedCalendars( value );
+  *]
+}

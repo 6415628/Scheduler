@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanOperations (Operation_SCs operations, Resource_SCs resources)
+{
+  Description: 'Plan all  operations on single resource or batch resource, but only on the given candidate resources.'
+  TextBody:
+  [*
+    batchops := construct( Operation_SCs );
+    singleops := construct( Operation_SCs );
+    traverse( operations, Elements , op, not isnull( op.SelectResource( resources ) ) )
+    {
+      if( op.SelectResource( resources ).HasBatch() )
+      {
+        batchops.Add( op );
+      }
+      else
+      {
+        singleops.Add( op );
+      }
+    }
+    if( batchops.Size() > 0 )
+    {
+      this.PlanOperationsInBatch( batchops, resources );
+    }
+    if( singleops.Size() > 0 )
+    {
+      this.PlanOperationsIndividually( singleops, resources );
+    }
+  *]
+}

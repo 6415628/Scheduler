@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method LoadDatasetSnapshotReplannableAllowed (LibOpt_SnapshotReplannableCopyDataset snapshot, Boolean isloadingdatasetinnewclient) as Boolean id:Method_LibOpt_GlobalState_LoadDatasetSnapshotReplannableAllowed
+{
+  #keys: '[141860.2.615980173]'
+  Body:
+  [*
+    // Precondition method for the LoadDatasetSnapshotReplannable method
+    
+    feedbackobj := FeedbackObject::LocalFeedback();
+    
+    if( not feedbackobj.CheckHard( not snapshot.IsDatasetDeleted() and snapshot.HasCreatedDataset() ) )
+    {
+      feedbackobj.AddHard( Translations::LibOpt_SnapshotReplannable_Precondition_DatasetNotFound( snapshot ) );
+    }  
+    // Don't load the dataset that is already loaded. Unless you are trying to load the dataset in a new client. 
+    else if( not feedbackobj.CheckHard( isloadingdatasetinnewclient or not snapshot.IsDatasetSelected() ) )
+    {
+      feedbackobj.AddHard( Translations::LibOpt_SnapshotReplannable_Precondition_AlreadyInDatasetSnapshotForm() );
+    }
+    
+    
+    return feedbackobj.IsAllowed();
+  *]
+}

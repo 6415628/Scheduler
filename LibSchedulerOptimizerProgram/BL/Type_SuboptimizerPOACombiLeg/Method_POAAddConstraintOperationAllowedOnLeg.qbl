@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintOperationAllowedOnLeg (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs, Operation_SCs operations)
+{
+  Description: 'Ensures that operation cannot be planned on legs when that would result in a hard constraint violation'
+  TextBody:
+  [*
+    traverse( combilegs, Elements, combilegforpath )
+    {
+      pathtype := poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathCombiLeg( combilegforpath ), combilegforpath );
+      default_allowed := true;
+      nodepossible := POAPossible::N( poa, SuboptimizerPOACombiLeg::NamePOANodePossibleOperationOnLeg( combilegforpath ), default_allowed );
+      pathtype.NodesAllowed( nodepossible );
+      
+      // Get all operations that are not allowed on the combilegforpath
+      not_allowed_operations := construct( Operation_SCs );
+    
+      traverse( operations, Elements, operation1 )
+      {
+        // Disallow operations that are not allowed hard
+        // or that would trigger a phase transition (we disallow planning this operation in this leg since the next phase must start on the next leg/plan path,
+        //                                           otherwise we cannot enforce the right rules)
+        if( not combilegforpath.GetIsOperationAllowedHard( operation1 ) )
+        {
+          not_allowed_operations.Add( operation1 );
+        }
+      }
+        
+      traverse( not_allowed_operations, Elements, operation )
+      {
+        // disallow this operation
+        node := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation ), operation );
+        nodepossible.Set( node, false );
+      }
+    }
+  *]
+}

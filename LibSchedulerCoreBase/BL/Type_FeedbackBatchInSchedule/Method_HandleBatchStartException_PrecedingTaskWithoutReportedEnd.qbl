@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleBatchStartException_PrecedingTaskWithoutReportedEnd (DateTime start, Resource_SC resource, String remark, 
+  String practice)
+{
+  Description: 'check the exception with TaskStart feedback received on task t while a preceding task has started but not yet ended.'
+  TextBody:
+  [*
+    // jiex Sep-1-2016 (created)
+    // Check exception for TaskStart feedback received on task t while a preceding task has started but not yet ended
+    
+    if( not isnull( resource ) )
+    {  
+      preceding_task := minselect( resource.astype( BatchResource ), FeedbackBatchInSchedule, fb, 
+                                   fb.StartReadIn().IsFinite() 
+                                   and fb.EndReadIn().IsInfinite() 
+                                   and fb <> this 
+                                   and fb.StartReadIn() <= start,
+                                   fb.StartReadIn() );
+                                       
+      
+      if( not isnull( preceding_task ) )
+      {
+        preceding_task.Exception_IsMissingBatchEndFeedback( true );
+        preceding_task.Exception_SuccessorBatchID( this.BatchID() );
+        preceding_task.EndReadIn( start );
+            
+        this.UpdateFeedbackStart( start, resource.ResourceID(), Constants::StatusStart(), remark, practice );    
+      }
+    }
+  *]
+}

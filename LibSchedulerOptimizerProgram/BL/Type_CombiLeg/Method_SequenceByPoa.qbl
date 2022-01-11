@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method SequenceByPOA (Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // zyi1 Jul-16-2021 (created)
+    optimizer := this.GetPOASubOptimizer();
+    
+    //this.AddAdditionalOperations( operations, optimizer.Settings().NrOptionalOperations() ); 
+    
+    additionaloperations := this.GetAllowedOperationRandomSet( operations ).SelectFirst( optimizer.Settings().NrOptionalOperations() ) ;
+    combilegs := construct( CombiLegs );
+    combilegs.Add( this );
+    
+    //propogate the attributes/relations which will be used in poa
+    Transaction::Transaction().Propagate( attribute( CombiLeg, ID ) );
+    Transaction::Transaction().Propagate( attribute( OperationInCombiLeg, IsHardTransitionRuleOk ) );
+    Transaction::Transaction().Propagate( relation( OperationInCombiLeg, LeadingOperationInCombiProgramSet ) );
+    Transaction::Transaction().Propagate( relation( OperationInCombiLeg, OperationOnResource ) );
+    
+    inscopeoperations := selectset( this, OperationInCombiLeg.Operation_SC, op, true );
+    inscopeoperations := inscopeoperations.Union( additionaloperations ).Unique();
+    //optimizer.InitializePOAForCombiLeg( poa, combilegs, operations );
+    //optimizer.ExecuteStrategy( poa );
+    //optimizer.HandleResultCombiLegs( poa, combilegs );
+    
+    optimizer.SequenceCombiLeg( combilegs, inscopeoperations );
+  *]
+}

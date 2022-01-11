@@ -1,0 +1,125 @@
+Quintiq file version 2.0
+#parent: #root
+Method IFilterTerms_Update (String restriction, String searchterms) id:Method_LibGUIFiltering_PanelFilterBoxHelper_IFilterTerms_Update
+{
+  #keys: '[128900.0.373900237]'
+  Body:
+  [*
+    // per Oct-4-2016 (created)
+    filter    := '';
+    alltokens := LibGUIFiltering_Helper::GetTokens( searchterms );
+    terms     := this.IFilterTerms_Get();
+    tokenidx  := 0;
+    
+    terms.LibGUIFiltering_TermGroup(relflush);
+    
+    group := terms.LibGUIFiltering_TermGroup(relnew);
+    
+    while ( tokenidx < alltokens.Size() )
+    {
+      origtokenidx := tokenidx;
+      token        := alltokens.Element( tokenidx );
+    
+      if ( token = 'or'
+        or token = 'and' )
+      {                   
+        andoror := token;
+        
+        tokenidx++;
+    
+        if ( token = 'or'
+         and group.LibGUIFiltering_Term(relsize) > 0 )
+        {
+          group := terms.LibGUIFiltering_TermGroup( relnew );
+        }
+    
+        token := guard( alltokens.Element( tokenidx ), '' );
+        if ( token = '' )
+        {
+          error( Translations::LibGUIFiltering_MissingTokenAfterAndOr( andoror ) );
+        }
+      }
+    
+      term := group.LibGUIFiltering_Term( relnew,
+                                          Token     := token,
+                                          Operand   := '~',
+                                          ValueType := 'String' );
+    
+      newtoken          := term.Token();
+      attributemodifier := this.IFilterTerms_CheckIsAttribute( newtoken );
+      newtokenidx       := tokenidx + 1;
+      
+      if ( newtokenidx < alltokens.Size()
+       and (alltokens.Element(newtokenidx) = 'or' or alltokens.Element(newtokenidx) = 'and') )
+      {
+        // do not do anything else, the "or" or "and" takes precendence
+        tokenidx := newtokenidx;
+      }
+      else
+      {
+        if ( attributemodifier = ''
+         and newtokenidx < alltokens.Size()
+         and  LibGUIFiltering_Helper::IsOperand( alltokens.Element( newtokenidx ) ) )
+        {
+          attributemodifier := token;
+        } 
+       
+        if ( attributemodifier <> ''
+         and this.IFilterTerms_CheckExpression( term, alltokens, newtokenidx ) )
+        {
+          term.AttributeModifier( attributemodifier );
+          tokenidx := newtokenidx;
+        }
+        else if ( not this.IFilterTerms_CheckExpression( term, alltokens, tokenidx ) )
+        {
+          tokenidx++;
+        }
+      
+        term.OriginalToken( term.Token() );
+      
+        range := term.Token().Tokenize( '...' );
+        if ( range.Size() = 1 )
+        {
+          range := term.Token().Tokenize( '..' );
+        }
+        if ( range.Size() = 2 )
+        {
+          term.IsRange( true );
+          term.RangeStart( range.Element( 0 ) );
+          term.RangeEnd( range.Element( 1 ) );
+        }
+      }
+        
+      if ( not this.IValue_IsDate( term )
+       and not this.IValue_IsDateTime( term )
+       and not this.IValue_IsNumeric( term )
+       and not this.IValue_IsDuration( term ) )
+      {
+        if ( StringToBoolean::StandardConverter().CanConvert( term.Token() ) )
+        {
+          term.ValueType( 'Boolean' );
+          term.Token( StringToBoolean::StandardConverter().Convert( term.Token() ).AsQUILL() );
+        }
+        else
+        {
+          term.Token( LibGUIFiltering_Helper::AddQuotes( term.Token() ) );
+        }
+      }
+      
+      if ( term.AttributeModifier() = '' 
+       and restriction <> '' )
+      {
+        term.AttributeModifier( restriction );
+      }
+      
+      //logfile( 'TOKEN <attr>', term.AttributeModifier(), '<op>', term.Operand(), '<token>', term.Token(), '<type>', term.ValueType() );
+      
+      if ( tokenidx = origtokenidx )
+      {
+        // Escape to ensure that we don't get into an infinite loop
+        logfile( 'LibGUILFiltering[IFilterTerms_Update]: "' + searchterms, '" cannot progress beyond token', tokenidx ); 
+        tokenidx++;
+      }
+    }
+  *]
+}

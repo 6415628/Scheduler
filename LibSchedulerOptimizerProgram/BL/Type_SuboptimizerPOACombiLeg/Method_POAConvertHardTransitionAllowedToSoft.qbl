@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAConvertHardTransitionAllowedToSoft (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, POAPossible poapossible, POANode previousnode, 
+  POANode node, Operation_SC previousoperation, Operation_SC operation, 
+  CombiLeg combileg, Boolean hassuitablereplacement)
+{
+  TextBody:
+  [*
+    // Get the relevant path
+    path := poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathCombiLeg( combileg ), combileg );
+    
+    // Allow the transition
+    poapossible.Set( previousnode, node, true );
+    
+    // The base penalty is equal to the hard constraint penalty
+    // + a factor times the size of the sequence violation. 
+    // This second term is added to encourage POA to reduce the size of the hard constraint violation, 
+    // which may faciliate solving the violation in upcoming iterations
+    penaltytransition := guard( poa.Transition( SuboptimizerPOACombiLeg::NamePOATransitionSoftRulePenalty() ), null( POATransition ) );
+    penalty := this.Settings().PenaltyForHardConstraints() 
+               + 1000 * combileg.GetCostSequenceViolation( combileg.Previous(), previousoperation, operation, true );
+    
+    
+    // If there is no operation in scope that could transition to the current end node of the previous leg
+    // Then check if any operation in the previous combileg is allowed to transition to this other op
+    // If not, then this other operation is a poor choice for starting op and we increase the penalty by a factor 10
+    if( not hassuitablereplacement
+        and not exists( combileg, Previous.OperationInCombiLeg, prevlegop,
+                        combileg.GetCostSequenceViolation( prevlegop.CombiLeg(), prevlegop.Operation_SC(), operation, true ) <=0.0 ) )
+    {
+      penalty := penalty * 10;
+    }
+         
+    // Set the transition penalty                 
+    penaltytransition.Set( path, previousnode, node, penalty );
+  *]
+}

@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_RuleFramework (CDSchedule cdschedule)
+{
+  Description: 'Restore rule framework core data attributes to planning object'
+  TextBody:
+  [*
+    // Restore Rule
+    schedule := this.Schedule();
+    
+    traverse( cdschedule, CDEntity.astype( CDRule ), cdrule )
+    {
+      rule := Rule::Create( schedule, cdrule.RuleID() );
+      CopyCorresponding::CopyFrom( cdrule ).CopyTo( rule );
+      
+      // Restore RuleScope
+      this.RestoreAttributes_RuleScope( cdschedule, cdrule, rule );
+      
+      // Restore RuleDetail
+      this.RestoreAttributes_RuleDetail( cdschedule, cdrule, rule );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddExpressionUnplannedCollectionPenalty (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, Operation_SCs operations)
+{
+  Description: 'Define the penalty expression for planning due operations on the unplanned collection path'
+  TextBody:
+  [*
+    // Expression for collection
+    collection_expression := poa.NewCollectionExpression( SuboptimizerPOACombiLeg::NamePOAExpressionUnplannedCollection() );
+    
+    // Participation for the collection, the default penalty is 0 for nodes that are not due in the scheduling horizon
+    participation := POAParticipation::N( poa, SuboptimizerPOACombiLeg::NamePOAParticipationUnplannedCollection(), 0.0 );
+    collection_expression.Participation( participation );
+    
+    // Set the penalty for the nodes that are due in the scheduling horizon
+    traverse( operations, Elements, operation, operation.IsDueInSchedulingHorizon() )
+    { 
+      node := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation ), operation );
+      // the participation is equal to the quantity of the operation times the urgency^3
+      // The if expression is to ensure we always add a cost for unplanning operations, even if the urgency is 0. 
+      // This is mostly to facilitate debugging in case you remove the operation.IsDueInSchedulingHorizon filter above
+      participation.Set( node, pow( ifexpr( operation.Urgency() <= 0.0, 
+                                            this.Settings().DueInHorizonOperationDefaultUrgency(), 
+                                            operation.Urgency() ), 
+                                    this.Settings().DueInHorizonOperationNotPlannedPenaltyPower() ) * operation.PlanUnit_SC().Quantity() );
+    }
+  *]
+}

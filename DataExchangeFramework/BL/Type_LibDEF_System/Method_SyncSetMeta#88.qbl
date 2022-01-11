@@ -1,0 +1,62 @@
+Quintiq file version 2.0
+#parent: #root
+Method SyncSetMeta (const LibDEF_Set set_i, Boolean isDatasetConstructed_i)
+{
+  Description: 'Performance improvement - only sync created/updated set'
+  TextBody:
+  [*
+    channel := set_i.SetType().Channel();
+    setType := set_i.SetType();
+    
+    // Synchronization  
+    channelMeta := LibDEF_ChannelMeta::CreateFromRepository( this, channel );
+    channelMeta.SyncFromRepository( channel );
+    
+    setTypeMeta := LibDEF_SetTypeMeta::CreateFromRepository( this, channelMeta, setType );
+    
+    isNew   := false;
+    setMeta := LibDEF_SetMeta::CreateFromRepository( setTypeMeta, set_i, isNew );
+    setMeta.IsSoftDeleted( false );
+    
+    hasUpdate := setMeta.SyncFromRepository( set_i );
+    
+    // broadcast to other systems if new
+    if( isNew )
+    {
+      // Create Set interest for local datasets that already have interest in Set Type level
+      setTypeMeta.CreateSetInterestOfDatasets( setMeta );
+      
+      // Create Set interest for external system that already have interest in Set Type level
+      setTypeMeta.CreateSetInterestFromSystem( setMeta );
+      
+      this.SendMetadataRequestSetCreated( setMeta );
+       
+      setMeta.SendSetCreated();
+      //setMeta.SendSetUpdated();
+    }
+    
+    // Send SetUpdated if change in LastUpdated
+    else if( hasUpdate )
+    {
+      setMeta.SendSetUpdated();
+    }
+    
+    
+    // if the DataRepository just constructed (during wake-up), sync with the Domain too
+    dataBroker := this.DataBroker();
+    if( isDatasetConstructed_i and not dataBroker.IsInSyncWithDataRepository() )
+    {
+      // only connect when allowed, upon dataset constructed
+      if( LibDEF_Util::GetSettingValueConnectOnStartup() )
+      {
+        dataBroker.RequestJoinDomainOrBroadcast();
+        // also sync interests
+        LibDEF_SetInterestOfDataset::SyncDatasetStatusExternally( dataBroker );
+      }
+      dataBroker.IsInSyncWithDataRepository( true );
+    }
+    
+    LibDEF_Util::Log( "Metadata in DataBroker has been synchronized with Data in DataRepository." );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

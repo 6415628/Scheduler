@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method Execute (LibDIF_PlatformAPICallOptions options_i) as String
+{
+  Description:
+  [*
+    Call the API-method of the PlatformAPI and return the response of the call. The provided options can be used in the Header and Body of the request.
+    Methods are called that can be specialized in subtypes to 'inject' specific logic.
+    The response is a string that contains data either as NamedValueTree (when processed by the QIntegrator), or in 'raw' JSON-format.
+  *]
+  TextBody:
+  [*
+    this.DoBeforeInitialization( options_i );
+    requestNVT := this.Initialize( options_i );
+    
+    this.DoBeforeExecution( options_i, requestNVT );
+    responseNVT := this.Execute( requestNVT );
+    this.DoAfterExecution( options_i, responseNVT );
+    
+    // Process the responseNVT.
+    // If the body of the responseNVT contains a NamedValueTree it is processed.
+    // If the body of the responseNVT contains data in 'raw' JSON-format it is returned as-is, so it can be processed later on.
+    response := this.ProcessResponseNVT( responseNVT );
+    this.DoAfterProcessing( options_i, response );
+    
+    return response;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

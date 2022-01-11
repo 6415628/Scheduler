@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: lstLibSM_KnowledgeBranchInSelection
+Response OnClick (shadow[LibSM_KnowledgeBaseBranchInProfile] selection) id:Response_lstLibSM_KnowledgeBranchInSelection_MenuCreateNewBranch_OnClick_877
+{
+  #keys: '[123216.0.250320028]'
+  Body:
+  [*
+    // Create a new knowledge branch
+    canEdit          := true;
+    knowledgeProfile := selection.KnowledgeProfile();
+    
+    if( not isnull( knowledgeProfile ) and knowledgeProfile.IsUsed() )
+    {
+      scenarioNames := knowledgeProfile.GetAffectedScenariosName();
+    
+      message := Translations::LibSM_KnowledgeProfile_Confirmation_SelectBranch( knowledgeProfile.Name(), scenarioNames );
+      canEdit := MessageBox::Warning( this, message, Translations::LibSM_Question_YesNo(), 0, 'Create new branch' ) = 0;
+    }
+    
+    if( canEdit )
+    {
+      dlg := construct( LibSM_dlgEditKBBranchName );
+      dlg.Data( selection );
+      dlg.vhIsCheckBranchNameNeeded().Enabled( true );
+      dlg.edtBranchVersion().Text( "1.0.0.0" );
+    
+      if( dlg.DoModal( this ) > 0 )
+      {
+        // Get New kb branch from LibSM_dlgEditKBBranchName dialog and add to dataholder
+        newbranch := dlg.GetNewKBBranch();   
+        Dialog.SetNewKnowledgeBaseBranch( newbranch );
+      }
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID => /lstLibSM_KnowledgeBranchInSelection/Responsedef_lstLibSM_KnowledgeBranchInSelection_Menu_OnClick
+  Initiator: 'MenuCreateNewBranch'
+  UserRequiresReadWrite: true
+}

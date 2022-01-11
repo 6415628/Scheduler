@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method IsCurrentDatasetChecked (LibDEF_SetInterestOfDataset datasetInterest_i) as Boolean id:Method_LibDEF_FormSetInterestOfDataset_IsCurrentDatasetChecked
+{
+  #keys: '[143398.0.762064573]'
+  Body:
+  [*
+    // Checks if the DatasetInterest belongs to the current dataset
+    feedback := FeedbackObject::LocalFeedback();
+    
+    if ( GlobalStateDataExchangeFramework.HasPlanningDatasetChecked() )
+    {  
+      currentMDSID := GlobalStateDataExchangeFramework.GetPlanningDatasetMDS().MDSID();
+      
+      matched      := datasetInterest_i.DatasetMDSID() = currentMDSID;
+      
+      if( not matched )
+      {
+        expectedDatasetString := LibDEF_Util::FormatDatasetString( datasetInterest_i.DatasetKind(),
+                                                                   datasetInterest_i.DatasetPath(),
+                                                                   datasetInterest_i.DatasetName() );
+      
+        actualMDSObjInfo    := ExternalMDSEditor::Editor().LoadedObjectInfo( currentMDSID );
+        actualDatasetString := LibDEF_Util::FormatDatasetString( actualMDSObjInfo.Kind(),
+                                                                 actualMDSObjInfo.Path(),
+                                                                 actualMDSObjInfo.Name() );
+      
+        feedback.AddHard( "Dataset selected [" +
+                           actualDatasetString +
+                           "] is not the dataset subscribed [" +
+                           expectedDatasetString +
+                           "] to the Set." );
+      }
+    }
+    return FeedbackObject::IsAllowed();
+  *]
+}

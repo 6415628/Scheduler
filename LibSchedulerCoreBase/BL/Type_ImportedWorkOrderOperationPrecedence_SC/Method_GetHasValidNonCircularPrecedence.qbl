@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidNonCircularPrecedence (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Checks that the work order operation precedence are not part of any circular precedence relations.'
+  TextBody:
+  [*
+    isvalid := not this.IsPartOfCircularPrecedence();
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedWorkOrderOperationPrecedence_Instance( name ),
+                                                               Translations::SC_ImportedWorkOrderOperationPrecedence_ViolateHasNonCircularPrecedence( this.Schedule().CyclicGraph() ) ) );
+    }
+    
+    return isvalid;
+  *]
+}

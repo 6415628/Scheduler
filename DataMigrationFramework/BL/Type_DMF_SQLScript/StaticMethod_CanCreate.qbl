@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CanCreate (DMF_ConvertorDataset owner_i, String datasetKind_i, String fromMajor_i, 
+  String fromMinor_i, String fromBuild_i, String fromPatch_i, 
+  String toMajor_i, String toMinor_i, String toBuild_i, 
+  String toPatch_i, String editingFileName_i, String fileName_i) const remote as Boolean
+{
+  Description: 'Precondition: Verify if all necessary data is present to create a new script, without clashes'
+  TextBody:
+  [*
+    // tgn3 Jul-12-2021 (created)
+    
+    /* Preconditions
+    - Dataset kind must not be empty
+    - All version numbers must not be empty (handled by editor)
+    - FromVersion check is skipped if an editing file was input
+    - File name must be unique
+    - Ignore any existing scripts matching 'this' file name
+    */
+    canCreate := DMF_SQLScript::IsValidDatasetKind( datasetKind_i ) and
+                 ( editingFileName_i <> "" or DMF_SQLScript::IsValidVersion( "From version", fromMajor_i, fromMinor_i, fromBuild_i, fromPatch_i ) ) and
+                 DMF_SQLScript::IsValidVersion( "To version", toMajor_i, toMinor_i, toBuild_i, toPatch_i ) and
+                 DMF_SQLScript::IsFileNameUnique( owner_i, editingFileName_i, fileName_i );
+    
+    return canCreate;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateSubscription (GUIComponent parent_i, structured[LibCal_Calendar] subscribers_i, structured[LibCal_LeadingParticipation] subscribeTo_i) id:Method_LibCal_dlgSubscription_CreateSubscription_436
+{
+  #keys: '[146730.0.226423921]'
+  Body:
+  [*
+    Dialog.Title( "Create subscription" );
+    
+    calendarsAsSet := subscribers_i.Copy();
+    dhSubscribers.Data( &calendarsAsSet );
+    
+    participationsAsSet := subscribeTo_i.Copy();
+    dhParticipationsToSubscribeTo.Data( &participationsAsSet );
+    
+    lblSubject.Text( [String]subscribeTo_i.Size() + " events" );
+    imgInfo.Visible( false ); 
+    
+    // Use one of the participations as representative of the set to initialize the dialog.
+    // Select a recurring event if possible.
+    participation := select( dhParticipationsToSubscribeTo.Data(), Elements, part, true, part.IsRecurring() );
+    if( isnull( participation ) )
+    {
+      participation := select( dhParticipationsToSubscribeTo.Data(), Elements, part, true, true );
+    }
+    
+    dhParticipationToSubscribeTo.Data( participation );
+    this.Open( parent_i, participation );
+  *]
+}

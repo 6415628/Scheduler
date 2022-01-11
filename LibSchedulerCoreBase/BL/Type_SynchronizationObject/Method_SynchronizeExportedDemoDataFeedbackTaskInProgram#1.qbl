@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExportedDemoDataFeedbackTaskInProgram
+{
+  Description: 'Synchronize exported demo data for feedback task in program'
+  TextBody:
+  [*
+    allInstances := selectset( this, Schedule.FeedbackManager.ExportedSchedule.ExportedDemoDataFeedbackTaskInProgram, 
+                               exporteddemodatafeedbacktaskinprog, true );
+    updatedInstances := construct( ExportedDemoDataFeedbackTaskInPrograms );
+    
+    // Create demo data feedback task based on FeedbackTaskInScheduleInProgram
+    traverse( this, Schedule.FeedbackManager.FeedbackTaskInSchedule, feedbacktaskinschedule )
+    {
+      workorderid := feedbacktaskinschedule.WorkOrderId();
+      planunitid := feedbacktaskinschedule.PlanUnitId();
+      workorderseqnr := feedbacktaskinschedule.WorkOrderOperationSequenceNr();
+      
+      traverse( feedbacktaskinschedule, FeedbackTaskInFeedbackProgramType, feedbacktaskinprogram )
+      {
+        expdemodatafeedbacktaskinprogram := ExportedDemoDataFeedbackTaskInProgram::FindExportedDemoDataFeedbackTaskInProgramTypeIndex( workorderid,
+                                                                                                                                       planunitid,
+                                                                                                                                       workorderseqnr,
+                                                                                                                                       feedbacktaskinprogram.ExternalProgramID() );
+        if( isnull( expdemodatafeedbacktaskinprogram ) )
+        {
+          expdemodatafeedbacktaskinprogram := ExportedDemoDataFeedbackTaskInProgram::Create( this.Schedule().FeedbackManager().ExportedSchedule(),
+                                                                                             workorderid,
+                                                                                             planunitid,
+                                                                                             workorderseqnr,
+                                                                                             feedbacktaskinprogram.ExternalProgramID() );
+        }
+        updatedInstances.Add( expdemodatafeedbacktaskinprogram );
+      }
+    }
+    
+    oldInstances := allInstances.Difference( updatedInstances );
+    
+    traverse( oldInstances, Elements, old )
+    {
+      old.Remove();
+    }
+  *]
+}

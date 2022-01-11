@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod UnplanBatches (Schedule schedule, Batches batches)
+{
+  Description: 'Unplan batches.'
+  TextBody:
+  [*
+    traverse( batches, Elements, batch, batch.CanUnplan() )
+    {
+      // unplan related operations
+      if( guard( batch.BatchTask().Resource_SC().IsPlanRelatedOperations(), false ) )
+      {
+        traverse( batch, BatchTask.OperationInTask, op ) 
+        {
+          op.UnplanRelatedOperations();
+        }
+      }
+    
+      batch.Unplan();
+    }
+    
+    schedule.AutomaticProductBasedMaterialReservationBySorting();
+  *]
+}

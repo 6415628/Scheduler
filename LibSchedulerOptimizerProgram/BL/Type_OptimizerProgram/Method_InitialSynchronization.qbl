@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitialSynchronization (Resource_SCs resources, Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // yifei Aug-21-2021 (created)
+    if( not OptimizerProgram::KeepExistingPlan() )
+    {
+      this.RemoveCurrentPlan( resources, operations );  
+    }
+    Transaction::Transaction().Propagate( attribute( CombiProgramSet, IsActive ) );
+    
+    traverse( resources, Elements, res )
+    {
+      if( isnull( res.ProgramDefinitionConfiguration() ) )  //create dummy program configurations for non-program resources
+      {
+        res.CreateDummyProgramDefinitions();
+        Transaction::Transaction().Propagate( relation( Resource_SC, ProgramSet ) );
+        res.SynchronizeCombis();  //create combi for the newly declaratively instantiated ProgramSet,  this set combi will be used in later combi creation
+        Transaction::Transaction().Propagate( attribute( CombiProgramSet, IsActive ) ); // if this flag not set, it will be deleted by the ProgramOptimizerDeleteNotActiveCombis method
+      }
+      // If the dummy program configuration already exists
+      // and if there is no program change task yet, then create one
+      else if( forall( res, ProgramSet, ps, ps.IsDummy() )
+               and not exists( res, ProgramChange, pc, true ) 
+               and not isnull( res.First() ) )
+      {
+        firsttask := res.First();
+        dummyset := select( res, ProgramSet, ps, ps.IsDummy() );
+        programtypeconfigs := selectset( dummyset, ProgramSetConfiguration.ProgramTypeConfiguration, ptc, true );
+        // Create the program change (and thus the program type)
+        res.InsertProgramChange( firsttask,
+                                 programtypeconfigs,
+                                 false,
+                                 Duration::Zero() );    
+       
+         // Propagate the new program
+        Transaction::Transaction().Propagate();
+      }
+      // Synchronize the combis
+      res.ProgramOptimizerDeleteNotActiveCombis();
+      res.SynchronizeOperationOnProgramPhaseConfiguration();
+      res.SynchronizeCombis();
+    
+    }
+  *]
+}

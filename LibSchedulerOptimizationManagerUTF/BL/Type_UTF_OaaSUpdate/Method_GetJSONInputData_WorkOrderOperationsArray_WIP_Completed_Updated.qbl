@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetJSONInputData_WorkOrderOperationsArray_WIP_Completed_Updated (Number workOrderNr) const as owning JSONBuilder
+{
+  Description:
+  [*
+    Generates standard work order operations with WIP and Completed maturity JSON input data similar to data from 3DSpace.
+    Only contains new data to update.
+  *]
+  TextBody:
+  [*
+    // Create operations array
+    operations := JSON::Array();
+    
+    // Create 2 workOrderOperation
+    for( i := 3; i < 5; i++ )
+    {
+      id := "WorkOrderOperation".Concat( [String]workOrderNr ).Concat( '-' ).Concat( [String]i );
+      processOperationID := "ProcessOperation".Concat( [String]i );
+      assetID := "Asset".Concat( [String]i );
+      maturity := ifexpr( i = 3, Constants::MaturityStatus_COMPLETED(), Constants::MaturityStatus_WORK_IN_PROGRESS() );
+      startAttribute := ifexpr( maturity = Constants::MaturityStatus_COMPLETED() or maturity = Constants::MaturityStatus_WORK_IN_PROGRESS(),
+                                Constants::JSON_WorkOrder_Operation_ActualStart(),
+                                Constants::JSON_WorkOrder_Operation_ScheduledStart() );
+      endAttribute := ifexpr( maturity = Constants::MaturityStatus_COMPLETED(),
+                              Constants::JSON_WorkOrder_Operation_ActualEnd(),
+                              Constants::JSON_WorkOrder_Operation_ScheduledEnd() );
+                              
+      workOrderOperation := JSON::Object();
+      workOrderOperation.Add( Constants::JSON_WorkOrder_Operation_ID(), id );
+      workOrderOperation.Add( Constants::JSON_WorkOrder_Operation_ProcessOperationID(), processOperationID );
+      workOrderOperation.Add( startAttribute, 
+                              DateTimeToString::ISOConverter().Convert( DateTime::Construct( 2019, 8, 21, 6, 0, 0 ) + Duration::Minutes( i * workOrderNr )  ) );
+      workOrderOperation.Add( endAttribute,
+                              DateTimeToString::ISOConverter().Convert( DateTime::Construct( 2019, 8, 21, 6, 0, 2 ) + Duration::Minutes( i * workOrderNr + 1 ) ) );
+      workOrderOperation.Add( Constants::JSON_WorkOrder_Operation_ScheduledAssetID(), assetID );
+      workOrderOperation.Add( Constants::JSON_WorkOrder_Operation_Maturity(), maturity );
+      workOrderOperation.Add( Constants::JSON_WorkOrder_Operation_Priority(), 1 );
+      
+      // Add workOrderOperation to operations
+      operations.Add( workOrderOperation );
+    }
+    
+    return &operations;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

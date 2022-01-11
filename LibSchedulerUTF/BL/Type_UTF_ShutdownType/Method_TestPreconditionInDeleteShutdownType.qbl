@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionInDeleteShutdownType (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    hasDuplicateID := false;
+    shutdownTypeID := '';
+    shutdownTypeName := '';
+    defaultduration := Duration::Zero();
+    isValidForPreconCreateEdit := false;
+    hasResourceScopeInShutdownType := false;
+    isViolatedResourceScopeConstraint := false;
+    hasPlannedShutdownTask := false;
+    isValidForPreconDelete := false;
+    
+    this.GetTestVariant( hasDuplicateID,
+                         shutdownTypeID,
+                         shutdownTypeName,
+                         defaultduration,
+                         isValidForPreconCreateEdit,
+                         hasResourceScopeInShutdownType,
+                         isViolatedResourceScopeConstraint,
+                         hasPlannedShutdownTask,
+                         isValidForPreconDelete );
+    
+    shutdownTypes := selectset( schedule, ShutdownType, st, true );
+    
+    value := ShutdownType::CheckCanBeDeleted( shutdownTypes );
+    
+    this.Run().AssertEqual( isValidForPreconDelete, value,
+                            UTFUtility::GenerateFailedMessage( 'Precondition in deleting shutdown type failed.', this.Variant() ) );
+  *]
+}

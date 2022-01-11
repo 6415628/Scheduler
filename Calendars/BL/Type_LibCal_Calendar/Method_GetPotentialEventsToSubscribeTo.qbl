@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetPotentialEventsToSubscribeTo () remote as owning LibCal_Events
+{
+  Description: 'Get the events to which this calendar can subscribe.'
+  TextBody:
+  [*
+    potentialCalendars := this.GetPotentialCalendarsToSubscribeTo();
+    potentialEvents    := construct( LibCal_Events );
+    
+    // The current calendar can subscribe to the events of the calendars of which it is defined as potential subscriber.
+    traverse( potentialCalendars, Elements, calendar, calendar <> this )
+    {
+      potentialEvents := potentialEvents.Add( calendar.Event( relget ) );
+    }
+    
+    return &potentialEvents;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

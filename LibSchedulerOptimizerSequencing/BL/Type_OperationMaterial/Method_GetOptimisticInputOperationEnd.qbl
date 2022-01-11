@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetOptimisticInputOperationEnd () declarative as DateTime
+{
+  Description: "Assuming optimistic durations of all unplanned upstream operations up until a planned one, Get the Input Operation's End of this operation material."
+  TextBody:
+  [*
+    // mbr23, 2020-01-23 (created)
+    
+    value := DateTime::MinDateTime();
+    
+    operation := this.FromOperation();
+    if( operation.IsPlanned() or  (operation.Finished() and operation.HasReportedEnd()) or not isnull( this.TransferSubTask() ) )
+    {
+      value := this.GetInputOperationEnd();
+    }
+    else
+    {
+      value := operation.OptimisticEnd();
+    }
+    
+    return value;
+  *]
+}

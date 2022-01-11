@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method RollbackOneTransaction
+{
+  Description:
+  [*
+    Rollback the transaction when the run is configured for `InOneTransaction`.
+    
+    This will serialize the run and store it such that it can later be retrieved by the `LibOpt_Optimizer.RecoverLastFailedRun` method.
+  *]
+  TextBody:
+  [*
+    if( not this.IsFailed() )
+    {
+      this.Task( relflush );
+      this.OnFinish();
+    }
+    
+    // Store the serialized LibOpt_Run in the AlgorithmStore
+    // This way it can later be deserialized and inspected.
+    json_builder := this.Serialize();
+    json_string := json_builder.AsString();
+    
+    identifier := LibOpt_Run::AlgorithmStore_OnException_Identifier( this.Optimizer() );
+    
+    algorithm := LibOpt_Utility::ConstructMathematicalProgramWithoutAnalysis();
+    algorithm.StoreString( LibOpt_Suboptimizer::RollbackStorage_Run(), json_string );
+    AlgorithmStore::TryRetrieve( identifier );
+    AlgorithmStore::Store( identifier, &algorithm );
+    
+    // Store the RunNr in the AlgorithmStore
+    // This way we prevent having duplicate RunNrs in the future.
+    identifier := LibOpt_Optimization::AlgorithmStore_RunNr( this.Optimization() );
+    
+    algorithm := LibOpt_Utility::ConstructMathematicalProgramWithoutAnalysis();
+    algorithm.StoreString( attribute( LibOpt_Run, RunNr ).Name(), NumberToString::ISOConverter().Convert( this.RunNr() ) );
+    AlgorithmStore::TryRetrieve( identifier );
+    AlgorithmStore::Store( identifier, &algorithm );
+    
+    // Rollback transaction
+    LibOpt_Utility::ThrowCleanError( Translations::LibOpt_Optimization_OneTransactionException() );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

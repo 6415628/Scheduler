@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: ListIssue
+Response OnClick (structured[LibOpt_Issue] selection) id:Response_ListIssue_MenuSelectRelatedSuboptimizerScopeElement_OnClick
+{
+  #keys: '[142652.0.1936757326]'
+  Body:
+  [*
+    // Select the Suboptimizer Scope Elements in ListSuboptimizerScopeElement for the Issues selected here.
+    
+    // The elements shown in ListSuboptimizerScopeElement is based on the selection in ListComponent.
+    // So, we need to update ListComponent first before we can select the related elements in ListSuboptimizerScopeElement.   
+    
+    listcomponent := LibOpt_GlobalState.GetActivatedFormComponent().ListComponent();
+    
+    // See comment about WORKAROUND below.
+    formsuboptimizerscopeelement := LibOpt_GlobalState.GetActivatedFormSuboptimizerScopeElement();
+    listsuboptimizerscopelement := formsuboptimizerscopeelement.ListSuboptimizerScopeElement();
+    
+    // Select the Components of the related Suboptimizer Scope Elements first,
+    // to populate ListSuboptimizerScopeElement with the relevant elements. 
+    traverse( selection, Elements.SuboptimizerScopeElement.Suboptimizer, suboptimizer )
+    {
+      listcomponent.ExtendSelectByKey( suboptimizer.Key() );
+    }  
+    
+    // Select the related Suboptimizer Scope Elements.
+    traverse( selection, Elements.SuboptimizerScopeElement, suboptscopelement )
+    {
+      listsuboptimizerscopelement.ExtendSelectByKey( suboptscopelement.Key() );
+    }
+    
+    /*  WORKAROUND:
+        
+        Even though we have called the `GetActivatedFormSuboptimizerScopeElement` method above,
+        LibOpt_FormSuboptimizerScopeElement doesn't get activated accordingly because the method is called
+        right after `GetActivatedFormCompenent`, where LibOpt_FormCompenent is activated.
+        This is a known software limitation (that is yet to be solved) as documented in:
+        - https://support.quintiq.com/cs:solutions:trouble:form.activate_doesn_t_work_for_second_form
+        
+        As such, we use a workaround where we activate LibOpt_FormSuboptimizerScopeElement in the `OnTimer`
+        response of the GUITimerActivateFormSuboptimizerScopeElement component, which `Interval` has been
+        set to 500ms.
+        - 500ms was used because lower values don't result in the intended behavior of activating the form.
+    */
+    // Enable the GUITimerActivateFormSuboptimizerScopeElement component.
+    // When the timer's Interval is used up, LibOpt_FormSuboptimizerScopeElement is activated, and the timer is disabled.
+    formsuboptimizerscopeelement.GUITimerActivateFormSuboptimizerScopeElement().Enabled( true );
+  *]
+  DefinitionID => /ListIssue/Responsedef_ListIssue_Menu_OnClick
+  Initiator: 'MenuSelectRelatedSuboptimizerScopeElement'
+  Precondition:
+  [*
+    return LibOpt_Issue::SelectRelatedSuboptimizerScopeElementPrecondition( selection );
+  *]
+}

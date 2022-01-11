@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateAndUpdateExportedRuleChangeOver (Rule rule)
+{
+  Description: 'Create and update exported rule change over.'
+  TextBody:
+  [*
+    allinstances := selectset( this, ExportedRuleChangeOver, exportedrco, true );
+    updatedinstances := construct( ExportedRuleChangeOvers );
+    
+    traverse( rule, RuleChangeOver, rco )
+    {
+      exportedrco := select( this, ExportedRuleChangeOver, erco, 
+                             erco.RuleID() = rco.Rule().RuleID()
+                             and erco.From() = rco.From() 
+                             and erco.To() = rco.To() );
+      
+      if( isnull( exportedrco ) )
+      {
+        exportedrco := ExportedRuleChangeOver::Create( this, rco );
+      }
+      updatedinstances.Add( exportedrco );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, exportedrco )
+    {
+      exportedrco.Delete();
+    }
+  *]
+}

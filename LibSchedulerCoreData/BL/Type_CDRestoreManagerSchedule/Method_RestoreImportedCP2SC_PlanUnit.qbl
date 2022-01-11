@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedCP2SC_PlanUnit (CDIntegration cdintegration)
+{
+  Description: 'Restore imported CP2SC plan unit core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedCP2SC_PlanUnit_SC
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedCP2SC_PlanUnit ), cdcp2scplanunit )
+    {
+      importedCP2SC_PlanUnit := ImportedCP2SC_PlanUnit_SC::Create( schedule, cdcp2scplanunit.Id(), cdcp2scplanunit.OrderId() );
+                                                                          
+      CopyCorresponding::CopyFrom( cdcp2scplanunit ).CopyTo( importedCP2SC_PlanUnit );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

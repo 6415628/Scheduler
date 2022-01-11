@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintEarliestStart (SuboptimizerMRSPOA_POAOneResourceGroup poa, LibOpt_Task task)
+{
+  Description: 'Add the constraint which prevent to start an operation before the end of the upstream'
+  TextBody:
+  [*
+    // stn4 Mar-18-2016 (created)
+    
+    debuginfo( 'Adding constraint earliest start...' );
+    
+    earlieststarts := POAValueSet::N( poa, 'EarliestStart', 0.0 );
+    
+    schedule := this.GetSchedule();
+    
+    traverse( task.Scope().Operations(), Elements, operation,
+              this.GetOperation( operation ).EarliestStart().IsFinite() )
+    {
+      operation_in_suboptimizer := this.GetOperation( operation );
+      estart := maxvalue(  operation_in_suboptimizer.EarliestStart(),
+                           schedule.Time() ).HoursAsReal( schedule.Time() );
+    
+      //delete the maximum mismatch to be sure that the operation is planned on time
+      node := poa.Node( SuboptimizerMRSPOA::POANameNodeOperation( operation ), operation );
+      assert( not isnull( node ) );
+      earlieststarts.Set( node, estart );
+      //debuginfo( 'populating value set for', operation.OperationID(), 'with  earliest start', estart.AsQUILL() );
+    }
+    
+    
+    // debug: get the values (CoreTech bug report raised; Get always shows the same value for all nodes.)
+    /*
+    traverse( task.Scope().Operations(), Elements, operation,
+              OperationInSuboptimizer::Find( this, operation ).EarliestStart().IsFinite() )
+    {
+      node := poa.Node( SuboptimizerMRSPOA::POANameNodeOperation( operation ), operation );
+      estart := 42.42;
+      earlieststarts.Get( node, estart );
+      debuginfo( 'result: populated value set for', operation.OperationID(), 'with  earliest start', estart.AsQUILL() );
+    }
+    */
+    
+    const := poa.NewStartConstraint( 'ConstEarliestStart' );
+    const.Expression( poa.Expression( SuboptimizerMRSPOA::NamePOATimeExpression() ) );
+    const.ValueSet( earlieststarts );
+  *]
+}

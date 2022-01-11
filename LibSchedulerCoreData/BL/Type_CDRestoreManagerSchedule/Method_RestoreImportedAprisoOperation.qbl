@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedAprisoOperation (CDIntegration cdintegration, ImportedAprisoOperationProgress_SC importedaprisooperationprogress)
+{
+  Description: 'Restore imported Apriso operation core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedAprisoOperation_SC
+    cdImportedAprisoOperations := selectset( cdintegration, CDEntity.astype( CDImportedAprisoOperation ), cdao, 
+                                             cdao.TimeStamp() = importedaprisooperationprogress.ImportedAprisoScheduleProgress_SC().TimeStamp() 
+                                            );
+    
+    traverse( cdImportedAprisoOperations, Elements, cdao )
+    {
+      importedAprisoOperation_SC := importedaprisooperationprogress.ImportedAprisoOperation_SC( relnew,
+                                                                                                OrderNo := cdao.OrderNo(),
+                                                                                                OprSequenceNo := cdao.OprSequenceNo()
+                                                                                               );
+      CopyCorresponding::CopyFrom( cdao ).CopyTo( importedAprisoOperation_SC );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

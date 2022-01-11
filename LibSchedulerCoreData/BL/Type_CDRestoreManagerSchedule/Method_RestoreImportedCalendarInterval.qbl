@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedCalendarInterval (CDIntegration cdintegration)
+{
+  Description: 'Restore imported calendar interval core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedCalendarInterval_SC
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedCalendarInterval ), cdci )
+    {
+      importedCalendarInterval_SC := schedule.ImportedCalendarInterval_SC( relnew, 
+                                                                           CalendarIntervalID := cdci.CalendarIntervalID(),
+                                                                           ReportedResource := cdci.ReportedResource()
+                                                                          );
+      CopyCorresponding::CopyFrom( cdci ).CopyTo( importedCalendarInterval_SC );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

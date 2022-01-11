@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test033_StatisticScopeElementRollback (LibOpt_TestDataset dataset)
+{
+  Description: 'Test that we get the right amount of issues for `LibOpt_StatisticScopeElementRollback`'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    run.DebugScope( true );
+    
+    iterator := opt.Iterator( run, 'Iterator' );
+    iterator.SetMaxIterations( 100 );
+    
+    selector := opt.ComponentParentReflection( run, 'Selector',
+                                               method( LibOpt_TestUnit_Statistic, M03X_Selector_SelectProbabilityGroup,
+                                                       LibOpt_ComponentParent, LibOpt_Task ) );
+    
+    rollback_kpi := opt.RollbackKPIStatic();
+    rollback_kpi.SetKPI( 0, 100.0, false );
+    suboptimizer := opt.SuboptimizerMPReflection( run, 'Suboptimizer', & rollback_kpi,
+                                                  method( LibOpt_TestUnit_Statistic, M033_SuboptimizerMP_HandleResult_Rollback,
+                                                          LibOpt_Suboptimizer, MathematicalProgram, LibOpt_Task, Boolean ) );
+    
+    iterator.To( selector );
+    selector.To( suboptimizer );
+    
+    never := LibOpt_ScopeElementProbability::Create( dataset, 'Never rollback', 0.0 );
+    always := LibOpt_ScopeElementProbability::Create( dataset, 'Always rollback', 1.0 );
+    scope := LibOpt_Scope::Create( run );
+    scope.Add( never );
+    scope.Add( always );
+    for( i := 1; i <= 9; i++ )
+    {
+      scope.Add( LibOpt_ScopeElementProbability::Create( dataset, '50% - #' + [String] i, 0.5 ) );
+    }
+    
+    run.SetStartScope( scope );
+    
+    this.NoException( run->Start()->|void->( )
+    {
+      statistics := selectset( run, Statistic.astype( LibOpt_StatisticScopeElementRollback ), statistic, true );
+      
+      if( this.Run().AssertEqual( 1, statistics.Size(), 'Incorrect amount of statistics' ) )
+      {
+        statistic := statistics.First();
+        this.Run().AssertGreaterOrEqual( 1, statistic.Issue( relsize ), 'Unexpected amount of issues' );
+        
+        this.Run().AssertTrue( not exists( never, SuboptimizerScopeElement.Issue, issue, issue.Statistic() = statistic ), 'Never rollback has an issue' );
+        this.Run().AssertTrue( exists( always, SuboptimizerScopeElement.Issue, issue, issue.Statistic() = statistic ), 'Always rollback has no issue' );
+      }
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

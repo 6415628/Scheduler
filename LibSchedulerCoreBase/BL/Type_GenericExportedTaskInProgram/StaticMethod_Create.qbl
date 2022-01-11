@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (ExportedSchedule owner, TaskInProgramSet taskinprogramset) as GenericExportedTaskInProgram
+{
+  Description: 'Create new exported task in program from task in program set'
+  TextBody:
+  [*
+    operation := taskinprogramset.Task_SC().GetOperation();
+    scheduledProgramID := guard( taskinprogramset.ProgramType().ScheduledProgramID(), '' );
+    getip := GenericExportedTaskInProgram::FindGenericExportedTaskInProgram( operation.WorkOrderId(),
+                                                                             operation.PlanUnitId(),
+                                                                             operation.WorkOrderSequenceNr(),
+                                                                             scheduledProgramID );
+                                                                             
+    if( isnull( getip ) )
+    {                                                                                                                                                  
+      getip := owner.ExportedTaskInProgram( relnew, 
+                                            GenericExportedTaskInProgram, 
+                                            WorkOrderID :=  operation.WorkOrderId(),
+                                            WorkOrderOperationSequenceNr   := operation.WorkOrderSequenceNr(),
+                                            PlanUnitID  := operation.PlanUnitId(),
+                                            ScheduledProgramID := scheduledProgramID );
+    }                                       
+                                            
+    return getip;
+  *]
+}

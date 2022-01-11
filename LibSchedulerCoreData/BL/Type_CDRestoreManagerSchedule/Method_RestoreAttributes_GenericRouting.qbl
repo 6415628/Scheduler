@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericRouting (CDSchedule cdschedule)
+{
+  Description: 'Restore attributes for routing core data to planning object'
+  TextBody:
+  [*
+    // Restore Routing
+    schedule := this.Schedule();
+    
+    traverse( cdschedule, CDEntity.astype( CDGenericRouting ), cdRouting )
+    {
+      routing := GenericRouting::Create( schedule, cdRouting.RoutingId() );
+      CopyCorresponding::CopyFrom( cdRouting ).CopyTo( routing );
+      
+      // Restore RoutingStep
+      cdRoutingSteps := selectset( cdschedule, CDEntity.astype( CDGenericRoutingStep ), cdrs, cdrs.RoutingId() = cdRouting.RoutingId() );
+      traverse( cdRoutingSteps, Elements, cdrs )
+      {
+        routingStep := GenericRoutingStep::Create( routing, cdrs.RoutingId(), cdrs.SequenceNr() );
+        CopyCorresponding::CopyFrom( cdrs ).CopyTo( routingStep ); 
+        
+        // Restore RoutingStepInput
+        this.RestoreAttributes_GenericRoutingStepInput( cdschedule, routingStep );
+        
+        // Restore RoutingStepOutput
+        this.RestoreAttributes_GenericRoutingStepOutput( cdschedule, routingStep );
+        
+        // Restore RoutingStepCampaign
+        this.RestoreAttributes_RoutingStepCampaign( cdschedule, routingStep );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

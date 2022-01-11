@@ -1,0 +1,142 @@
+Quintiq file version 2.0
+#parent: #root
+Method FSPLFixCycleOnResources (Task_SC task, Task_SCs cyclictasks, Boolean planbefore, 
+  Boolean planafter) as Task_SC
+{
+  Description: 'Fix the cycle be replanning the related cyclic tasks to the right position'
+  TextBody:
+  [*
+    //First, let's ensure that the task that is resequenced/planned is part of the cyclic tasks
+    //so there won't be any mismatched between the task that we are referring and the related task(s) that we are actually fixing
+    exists_in_cyclic_tasks := exists( cyclictasks, Elements, ct, true, ct = task );
+    //return last moved task
+    movedtask := null( Task_SC );
+    
+    if( exists_in_cyclic_tasks )
+    {
+      // sort the cyclic tasks that are related to task and in the same cycle
+    
+      //Gets all upstream and downstream tasks of current task and tasks within the same plan unit.
+      all_related_tasks := task.FSPLGetAllRelatedTasks();
+    
+      //grabbing cyclick tasks that are downstream/upstream task and same plan unit of current task
+      related_cyclic_tasks := cyclictasks.Intersect( all_related_tasks );
+      
+      // This implementation of sorting cyclic tasks came about trying to fix the circularity of SimplePaperbags_FSPL 
+      // where we found that FSPL was replanning the correct tasks to the correct positions BUT did not do the replanning action in the correct sequence
+      
+      // Sort related cycle tasks sequentially
+      // The sorting is determined by planafter/planbefore so that when we replan batch tasks, their downstream single tasks do not change their sequence on the resource when fspl replans them
+      // eg. AluminumHotRolling
+      sorted_related_cyclic_tasks := selectsortedset( related_cyclic_tasks, 
+                                                      Elements, 
+                                                      related_task, 
+                                                      true, 
+                                                      ifexpr( planafter, related_task.GetOperation().SequenceNr(), -related_task.GetOperation().SequenceNr() ),// For within same plan unit
+                                                      ifexpr( planafter, related_task.FSPLSequenceNr(), -related_task.FSPLSequenceNr() ) ); // For within same resource
+    
+      // This is to account for when there are long sets operations in a plan unit eg. PowerTrainPartProduction where we hit circularity when we select the last few operations of a long routing
+      // Get highest sequence nr 
+      maxseqnr := max( related_cyclic_tasks, Elements, ct, ct.GetOperation().SequenceNr() );
+      
+      // Reverse related cycle tasks sequentially if the dragged task is the LAST task in the cycle
+      if( task.GetOperation().SequenceNr() = maxseqnr )
+      {
+        sorted_related_cyclic_tasks := selectsortedset( related_cyclic_tasks, 
+                                                        Elements, 
+                                                        related_task, 
+                                                        true, 
+                                                        -related_task.GetOperation().SequenceNr(), // For within same plan unit
+                                                        -related_task.FSPLSequenceNr() ); // For within same resource 
+      }                              
+                                                               
+      continue := true; // decide whether to stop the traverse loop
+      
+      // replan only those tasks that were not rescheduled
+      traverse( sorted_related_cyclic_tasks, Elements, t, t <> task and continue )
+      { 
+        continue := t.Resource_SC() <> task.Resource_SC(); // used to stop the traverse loop when the two tasks are of the same resource
+        
+        movedtask := t;
+        
+        if( planbefore )
+        {
+          //Get the first cyclic tasks in the resource as t
+          beforetask := minselect( cyclictasks,
+                                   Elements,
+                                   ct,
+                                   ct.Resource_SC() = t.Resource_SC()
+                                   and ct <> t
+                                   and ct.FSPLSequenceNr() < t.FSPLSequenceNr(),
+                                   ct.FSPLSequenceNr() );
+          
+          if( not isnull( beforetask ) )
+          { 
+            if( t.istype( SingleTaskBase ) )
+            {
+              t.Resource_SC().astype( SingleResourceBase ).GenericPlanBefore( t.astype( SingleTaskBase ).OperationAsSingleTask(), beforetask.astype( SingleTaskBase ) );
+              
+              //if the plan unit of this task has any child plan units, we will also fix circularity due to it's resequencing
+              childplanunits := selectset( t.astype( SingleTaskBase ).OperationAsSingleTask().PlanUnit_SC(), Child, child, true ); 
+              taskplanunits := selectset( task, FSPLOperationInTask.PlanUnit_SC, pu, true, true );
+              
+              siblingsplanunits := childplanunits.Difference( taskplanunits )
+              if( siblingsplanunits.Size() > 0)
+              {
+                t.Resource_SC().FSPLRunFixCircularityMethod( t );
+              }
+            }
+            else
+            {
+              t.Resource_SC().astype( BatchResource ).GenericPlanBefore( t.astype( BatchTask ).Batch(), beforetask.astype( BatchTask ) );
+              //to fix the other related downstream operations of the batch
+              t.Resource_SC().FSPLRunFixCircularityMethod( t );
+            }
+          }
+        }
+        else if ( planafter )
+        {
+          //Get the last cyclic tasks in the resource as t
+          aftertask := maxselect( cyclictasks,
+                                  Elements,
+                                  ct,
+                                  ct.Resource_SC() = t.Resource_SC()
+                                  and ct <> t
+                                  and ct.FSPLSequenceNr() > t.FSPLSequenceNr(),
+                                  ct.FSPLSequenceNr() );
+    
+          if( not isnull( aftertask ) )
+          {
+            if( t.istype( SingleTaskBase ) )
+            {
+              t.Resource_SC().astype( SingleResourceBase ).GenericPlanAfter( t.astype( SingleTaskBase ).OperationAsSingleTask(), aftertask.astype( SingleTaskBase ) );
+              
+              //if the plan unit of this task has any child plan units, we will also fix circularity due to it's resequencing
+              childplanunits := selectset( t.astype( SingleTaskBase ).OperationAsSingleTask().PlanUnit_SC(), Child, child, true ); 
+              taskplanunits := selectset( task, FSPLOperationInTask.PlanUnit_SC, pu, true, true );
+              
+              siblingsplanunits := childplanunits.Difference( taskplanunits )
+              if( siblingsplanunits.Size() > 0)
+              {
+                t.Resource_SC().FSPLRunFixCircularityMethod( t );
+              }
+            }
+            else
+            {
+              t.Resource_SC().astype( BatchResource ).GenericPlanAfter( t.astype( BatchTask ).Batch(), aftertask.astype( BatchTask ) );
+              //to fix the other related downstream operations of the batch
+              t.Resource_SC().FSPLRunFixCircularityMethod( t );
+            }
+          }
+        }
+      }
+    }
+    else
+    {
+      //can't think of any use case which this will happen. But let's just logged this information
+      debuginfo( 'FSPL : task ' + task.TaskID() + ' is not part of cyclic tasks' );
+    }
+    
+    return movedtask;
+  *]
+}

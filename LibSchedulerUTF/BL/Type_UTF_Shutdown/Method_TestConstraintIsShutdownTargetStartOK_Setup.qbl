@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestConstraintIsShutdownTargetStartOK_Setup (Schedule schedule)
+{
+  Description: 'Test constraint IsShutdownTargetStartOK - setup'
+  TextBody:
+  [*
+    isvariantfound := false;
+    isenableshutdowntargetstart := false;
+    targetstart := Duration::Zero();
+    targetmaxdeviation := Duration::Zero();
+    shutdownstart := Duration::Zero();
+    isvalidforconstraintchecking := false;
+    
+    this.GetTestVariantForConstraintChecking( isvariantfound,
+                                              isenableshutdowntargetstart,
+                                              targetstart,
+                                              targetmaxdeviation,
+                                              shutdownstart,
+                                              isvalidforconstraintchecking );
+    
+    if( isvariantfound )
+    {
+      // Create resource
+      resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'resource' );
+      
+      // Create task1
+      order1 := UTFMockObjectFactory::CreateOrder( schedule, 'Order 1' );
+      planUnit1 := UTFMockObjectFactory::CreatePlanUnit( order1, 'Plan Unit 1', 1.0 );
+      operation1 := UTFMockObjectFactory::CreateOperation( planUnit1 );
+      operation1.Width( 100.0 );
+      Transaction::Transaction().Propagate( relation( Operation_SC, AllowedOperationOnResource ) );
+      task1 := resource.PlanLast( operation1 );
+      task1.astype( UTFSingleTask ).HasEndUTF( true );
+      task1.astype( UTFSingleTask ).End_UTF( schedule.Time() + shutdownstart );
+    
+      // Create shutdown type
+      shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, 'Shutdown Type' );
+      UTFMockObjectFactory::CreateShutdownTypeInResource( shutdownType, resource );
+      shutdownType.DefaultDuration( Duration::Hours( 1 ) );
+      
+      // Insert shutdown after the selected task
+      shutdowntask := this.InsertShutdown( resource, task1, shutdownType );
+      shutdowntask.astype( UTFShutdownTask ).ShutdownStart_UTF( schedule.Time() + shutdownstart );
+      shutdown := shutdowntask.Shutdown();
+      shutdown.IsTargetStartEnabled( isenableshutdowntargetstart );
+      shutdown.TargetStart( schedule.Time() + targetstart );
+      shutdown.MaxTargetStartDeviation( targetmaxdeviation );
+    }
+  *]
+}

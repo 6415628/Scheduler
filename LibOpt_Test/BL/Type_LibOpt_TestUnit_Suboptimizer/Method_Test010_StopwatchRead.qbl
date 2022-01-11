@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test010_StopwatchRead (LibOpt_TestDataset dataset)
+{
+  Description: 'Checks whether the AlgorithmStopwatch works correctly.'
+  TextBody:
+  [*
+    traverse( dataset.GetConstructibleAlgorithms(), Elements, algorithm )
+    {
+      start := OS::PrecisionCounter();
+      LibOpt_AlgorithmStopwatch::Start( algorithm, 'test' );
+      OS::Sleep( 100 );
+      LibOpt_AlgorithmStopwatch::Stop( algorithm, 'test' );
+      OS::Sleep( 500 );
+      LibOpt_AlgorithmStopwatch::Start( algorithm, 'test' );
+      OS::Sleep( 100 );
+      
+      r1 := LibOpt_AlgorithmStopwatch::Read( algorithm, 'test' );
+      r1max := ( OS::PrecisionCounter() - start ) / OS::PrecisionCounterFrequency();
+      LibOpt_AlgorithmStopwatch::Stop( algorithm, 'test' );
+      r2 := LibOpt_AlgorithmStopwatch::Read( algorithm, 'test' );
+      r3 := LibOpt_AlgorithmStopwatch::Read( algorithm, 'test' );
+      
+      this.Run().AssertGreater( 200.0, r1.MinutesAsReal() * 60 * 1000 );
+      this.Run().AssertLess( r1max - 500, r1.MinutesAsReal() * 60 * 1000 );
+      this.Run().AssertLess( r1, r2 );
+      this.Run().AssertEqual( r2, r3 );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

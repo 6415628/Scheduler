@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCharacteristicAdditionalRealValue (Characteristic characteristic, Resource_SC resource) declarative remote as Real
+{
+  Description: 'Get additional real value for the characteristic'
+  TextBody:
+  [*
+    // Get additional value   
+    additionalvalue := 0.0;
+    
+    // For duration in hours, the estimated additiona value is operation process duration on the resource
+    // It is not possible to calculate how long the phase will be extended when plan in this new operation, 
+    // we only able to calculate the additional duration based on process duration
+    if( characteristic.ID() = RuleConstant::Characteristic_DurationInHours() )
+    {
+      operationonresource := select( this, OperationOnResource, oor, 
+                                     oor.Resource_SC() = resource );
+      additionalvalue := guard( operationonresource.ProcessDuration().HoursAsReal(), 0.0 );       
+    }
+    else if( characteristic.ID() = RuleConstant::Characteristic_NumberOfTasks() )
+    {
+      additionalvalue := 1;       
+    }
+    else
+    {
+      additionalvalue := this.GetCharacteristicRealValue( characteristic );
+    }
+    
+    return additionalvalue;
+  *]
+}

@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanBefore (Batches batches, BatchTask element)
+{
+  Description: 'Move all selected batches to a spot after the batchtask.'
+  TextBody:
+  [*
+    operations := selectset( batches, Elements.BatchSequenceElement.Operation_SC, op, true );
+    Operation_SC::SetIsPlanning( operations, true );
+    
+    traverse( batches, Elements, batch )
+    {
+      if( this.IsPlanRelatedOperations() )
+      {
+        ops :=  selectset( batch, BatchSequenceElement.Operation_SC, op, true );
+        traverse( ops, Elements, op )
+        {
+          Schedule::PlanRelatedOperationsBefore( op, this, element, false, false );
+        }
+      } 
+      
+      this.PlanBefore( batch, element );
+    }
+    
+    this.Schedule().AutomaticProductBasedMaterialReservationBySorting();
+    Operation_SC::SetIsPlanning( operations, false );
+  *]
+}

@@ -1,0 +1,75 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test040_DatasetCopyConditional (LibOpt_TestDataset dataset)
+{
+  Description: 'Check, for all components, that when a `LibOpt_DatasetCopyConditional` is attached to a `LibOpt_BreakpointPosition`, exactly 1 dataset copy and exactly 1 `LibOpt_SnapshotReplannableCopyDataset` snapshot are created.'
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( true );
+    
+    // For each component in 'CreateAllComponents', a run is created that only contains that component.
+    runs := opt.CreateAllComponents();
+    se := dataset.ScopeElementMock( relnew );
+    
+    strs := construct( structured[stream[JSON]] );
+    traverse( runs, Elements, run )
+    {
+      scope := LibOpt_ScopeFat::Create( run );
+      scope.Add( se );
+      run.SetStartScope( scope );
+      
+      startcomponent := run.StartComponent();
+      // Attach a 'LibOpt_DatasetCopyUnconditional' dataset copy to the 'Initialize', 'Continue' and 'Finalize' component positions of the 'startcomponent' component.
+      // Note: the 'Continue' component position of iterator components is skipped.
+      // The 'Handle error' and 'Handle rollback' component positions will be tested in the 'Test070_DatasetOnError' and the 'Test071_DatasetOnRollback' unit tests
+      LibOpt_TestUnit_DatasetCopy::CreateDatasetCopiesForNormalComponentPositions( startcomponent, 
+                                                                                   // The LibOpt_DatasetCopyUnconditional type will always create a dataset copy.
+                                                                                   // This dataset copy will never be deleted.
+                                                                                   typeof( LibOpt_DatasetCopyUnconditional ).Name() );
+      
+      strs.Add( run.Start() );  
+    }
+    
+    str := stream[JSON]::Merge( strs )
+    ->|stream[Void]::Wait( this.MDSEditorUpdateTime() ) // Wait some time to ensure that the dataset copies have been created and that MDSEditor::Editor().ObjectInfos() is updated. 
+    ->|void->() // Start a reactive call to handle the created dataset copies.
+    {
+      objectinfos := MDSEditor::Editor().ObjectInfos();
+      traverse( runs,
+                Elements.Component.ComponentPosition,
+                componentposition,
+                not isnull( componentposition.DatasetCopyConditional() ) 
+                )
+      {
+        LibOpt_TestUnit_DatasetCopy::AssertsForComponentPositionCreatedDataset( this, componentposition ); 
+      }
+      // Test that the number of created dataset copies exactly equals the number of created 'LibOpt_DatasetCopyConditional' objects.
+      nrcreateddatasetcopies := counter( objectinfos,
+                                         Elements,
+                                         objectinfo,
+                                         LibOpt_TestUnit_DatasetCopy::IsDatasetChildOfUnitTestDataset( objectinfo, dataset )
+                                         );
+      nrofdatasetcopyconditionals := counter( runs,
+                                              Elements.Component.ComponentPosition.DatasetCopyConditional, 
+                                              conditionals,
+                                              true );
+      
+      this.Run().AssertEqual( nrofdatasetcopyconditionals, //Expected value
+                              nrcreateddatasetcopies, //Actual value
+                              "Expected to create "
+                              + [String] nrofdatasetcopyconditionals
+                              + " dataset copies (one for each created '"
+                              + typeof( LibOpt_DatasetCopyConditional ).Name()
+                              + "' ). However, "
+                              + [String] nrcreateddatasetcopies
+                              + " dataset copies were created."
+                              ); 
+    }   
+    
+    this.NoException( str );
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

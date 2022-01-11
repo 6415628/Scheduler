@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckAdjacentTaskWithFSPLFeedbackOnPlanUnit (Task_SC beforetask, Task_SC aftertask, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'This check is to ensure that we do not sequence a task before any task with plan unit already receiving feedback on 1 or more operation(s). Applicable to FSPL bound resource.'
+  TextBody:
+  [*
+    // janer May-30-2016 (created)
+    // Checks the new task position does not go before any task with plan unit already receiving feedback on 1 or more operation(s)
+    
+    droptarget := ifexpr( not isnull( beforetask ),
+                          beforetask.Next(),
+                          this.First() );
+                              
+    value := guard( not droptarget.HasFSPLFeedbackOnPlanUnit() and not aftertask.HasFSPLFeedbackOnPlanUnit(), true ); // Pass checking if there is no aftertask
+    
+    if( not value )
+    {
+      feedback_o := feedback_o 
+                    + String::NewLine()
+                    + Translations::SC_CannotBeScheduledDueToFSPLFeedback();
+    }                              
+    
+    return value;
+  *]
+}

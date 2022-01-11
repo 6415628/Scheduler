@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method Execute (LibOpt_Optimizer optimizer)
+{
+  TextBody:
+  [*
+    meth := Reflection::FindStaticMethodBySignature( typeof( LibOpt_BT_CustomSetting ).Name(), this.MethodName(), this.ArgumentType() );
+    
+    debuginfo( Translations::LibOpt_BT_CustomSetting_Executing( this ) );
+    if( not isnull( meth ) )
+    {
+      if( this.ArgumentType() = typeof( LibOpt_Optimizer ).Name() )
+      {
+        meth.AddObjectArgument( optimizer );
+        meth.Execute();
+      }
+      else if( this.ArgumentType() = typeof( LibOpt_Optimization ).Name() )
+      {
+        meth.AddObjectArgument( optimizer.Optimization() );
+        meth.Execute();
+      }
+      else
+      {
+        info( Translations::LibOpt_BT_CustomSetting_CannotFindArgument( this ) );
+      }
+    }
+    else
+    {
+      info( Translations::LibOpt_BT_CustomSetting_CannotFindMethod( this ) );
+    }
+  *]
+}

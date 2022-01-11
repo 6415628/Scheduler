@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method Resize () id:Method_LibOpt_FormComponentGraph_Resize
+{
+  #keys: '[139164.4.819672971]'
+  Body:
+  [*
+    run := DataHolderRun.Data();
+    if( not isnull( run ) )
+    {
+      graph := run.UIGraph();
+      
+      offset_x := 5.0;
+      offset_y := 5.0;
+      
+      scale_x := 1.0;
+      scale_y := 1.0;
+      
+      if( MenuAutoFit.Checked() )
+      {
+        canvas_width := CustomDrawComponentContainer.Width() - offset_x;
+        canvas_height := CustomDrawComponentContainer.Height() - offset_y;
+                                                                                     
+        graph_offset := 5.0;
+        graph_width  := max( graph, UIGraphNode, node, node.X() + node.Width()  / 2 ) + graph_offset * 2;
+        graph_height := max( graph, UIGraphNode, node, node.Y() + node.Height() / 2 ) + graph_offset * 2;
+        
+        scale_x := canvas_width  / graph_width;
+        scale_y := canvas_height / graph_height;
+      
+        offset_x := graph_offset * scale_x;
+        offset_y := graph_offset * scale_y;
+      }
+      
+      if( ValueHolderScaleX.Data()     <> scale_x
+          or ValueHolderScaleY.Data()  <> scale_y
+          or ValueHolderOffsetX.Data() <> offset_x
+          or ValueHolderOffsetY.Data() <> offset_y )
+      {
+        ValueHolderScaleX.Data( scale_x );
+        ValueHolderScaleY.Data( scale_y );
+        
+        ValueHolderOffsetX.Data( offset_x );
+        ValueHolderOffsetY.Data( offset_y );
+        
+        // Update drawing
+        Form.UpdateDrawing();
+      }
+    }
+  *]
+}

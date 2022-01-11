@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride DoExecuteReactive (stream[Algorithm] algorithm, LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    if( this.AutoRegisterTypeDescriptors() )
+    {
+      // Filter the stream of programs (which should only contain 1 program)
+      // in a read-only transaction with a lock only on program.
+      // We use this stream to minimize the amount of transactions with a read-write lock on the dataset we need.
+      first_time_execute := algorithm->( algorithm ) {
+        result := stream[MathematicalProgram]::Success();
+        
+        if( algorithm.ExecutionCounter() = 0 )
+        {
+          program := algorithm.astype( MathematicalProgram );
+          result := emit( program );
+        }
+        return result;
+      }
+      
+      // Register type descriptors if the program hasn't been executed before and the suboptimizer is configured to do so.
+      algorithm := this->RegisterTypeDescriptors( first_time_execute )->|algorithm;
+    }
+    
+    execute := algorithm->LibOpt_SuboptimizerMP::ExecuteAlgorithm();
+    return execute->|this->DoHandleResultCall( algorithm, task );
+  *]
+}

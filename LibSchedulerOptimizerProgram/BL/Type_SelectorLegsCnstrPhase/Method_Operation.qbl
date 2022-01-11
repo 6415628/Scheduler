@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Operation (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    //ZYI1 07-09-2021,  create empty legs and add them into scope
+    
+    ptconfiguration := select( task.Scope().ProgramTypeConfigurations(), Elements, res, true );
+    
+    res := select( task.Scope().Resources(), Elements, res, true );
+    operations := selectset( task.Scope().Operations(), Elements, op, not op.IsPlanned() ); //Yifei Sept-01-2021: in current mode, there should be only one resource in the scope and 
+                                                                           // and operations added in scope at the beginning are all the operations allowed on this resource
+    combipt := res.CreateFullCombiProgramSetsAfter_ThenPlanTheOperations( res.Last(), ptconfiguration.ProgramSetConfiguration().ProgramDefinitionConfiguration(), operations );
+    
+    task.Scope().Add( combipt.GetOrCreateScopeElement() );
+    
+    scope := LibOpt_Scope::Create( task.Run() );
+    
+    elements := construct( ScopeElementLegs );
+    traverse( combipt, CombiProgramPhase.CombiLegAsLeading.Leg, leg )
+    {
+      elements.Add( leg.GetOrCreateScopeElement() );
+    }
+    
+    scope.Add( elements );
+    scope.Add( combipt.GetOrCreateScopeElement() );
+    traverse( task.Scope().ScopeElements(), 
+              Elements, 
+              se, 
+              not se.istype( ScopeElementCombiProgramType )
+              and not se.istype( ScopeElementOperation ) )
+    {
+      scope.Add( se );
+    }
+    unplannedops := selectset( task.Scope().Operations(), Elements, operation, not operation.IsPlanned() )
+    traverse( res.ProgramOptimizerGetNotPlannedScopeOperations( unplannedops ), Elements, op )
+    {
+      scope.Add( op.GetOrCreateScopeElement() );
+    }
+    //currently planned operaiton of this cpt should be also put in scope for combi creation
+    traverse( combipt, OperationInCombiProgramSet.Operation_SC, op, true )
+    {
+      scope.Add( op.GetOrCreateScopeElement() );
+    }
+    
+    return this.Continue( task, scope );
+  *]
+}

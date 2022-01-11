@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Serialize () as owning JSONBuilder
+{
+  TextBody:
+  [*
+    result := super.Serialize();
+    
+    if( not isnull( this.Component() ) )
+    {
+      result.Add( LibOpt_SnapshotComponent::JSON_Component(), [String] this.Component().Name() );
+    }
+    
+    scope := guard( this.InputScope().astype( LibOpt_ScopeFat ), null( LibOpt_ScopeFat ) );
+    if( not isnull( scope ) )
+    {
+      result.Add( LibOpt_SnapshotComponent::JSON_InputScope(), this.SerializeScope( scope ) );
+    }
+    
+    scope := guard( this.OutputScope().astype( LibOpt_ScopeFat ), null( LibOpt_ScopeFat ) );
+    if( not isnull( scope ) )
+    {
+      result.Add( LibOpt_SnapshotComponent::JSON_OutputScope(), this.SerializeScope( scope ) );
+    }
+    
+    return & result;
+  *]
+}

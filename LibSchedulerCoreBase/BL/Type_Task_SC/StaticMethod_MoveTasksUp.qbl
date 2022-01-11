@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod MoveTasksUp (Schedule schedule, Task_SCs tasks)
+{
+  Description: 'Move up the tasks'
+  TextBody:
+  [*
+    operations := selectset( tasks, Elements.OperationInTask, op, true );
+    Operation_SC::SetIsPlanning( operations, true );
+    
+    tasks.Sort( attribute( Task_SC, SequenceNr ), true );
+    
+    traverse( tasks, Elements, task )
+    {
+      task.MoveUp();   
+    }
+    
+    if( not isnull( schedule ) )
+    {
+      schedule.AutomaticProductBasedMaterialReservationBySorting();
+      Operation_SC::SetIsPlanning( operations, false );
+    }
+  *]
+}

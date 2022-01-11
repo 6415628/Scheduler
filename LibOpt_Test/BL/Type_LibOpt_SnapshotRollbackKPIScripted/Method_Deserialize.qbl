@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Deserialize (JSON json)
+{
+  TextBody:
+  [*
+    super.Deserialize( json );
+    
+    rollback_kpi_id := StringToKey::ISOConverter().Convert( json.Get( attribute( LibOpt_RollbackKPIScripted, InternalIdentifier ).Name() ).GetString() );
+    
+    rollback_kpi := LibOpt_RollbackKPIScripted::FindByRollbackKPIScriptedInternalIdentifier( rollback_kpi_id );
+    this.RollbackKPIScripted( relset, rollback_kpi );
+    
+    // Update the index
+    // This may have been reset by a rollback
+    rollback_kpi.Index( maxvalue( rollback_kpi.Index(), this.Index() ) );
+    
+    info( 'Deserialize' );
+  *]
+}

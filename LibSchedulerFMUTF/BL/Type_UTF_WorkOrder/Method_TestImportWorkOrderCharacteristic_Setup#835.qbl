@@ -1,0 +1,67 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestImportWorkOrderCharacteristic_Setup (Schedule schedule) #extension
+{
+  TextBody:
+  [*
+    /*
+      For external work order:
+      1. Create imported work order
+      2. Create imported work order operation
+      3. Create imported work order characteristic
+    */
+    
+    importedWorkOrder := UTFMockObjectFactory::CreateImportedExternalWorkOrder( schedule, 'work order' );
+    importedWorkOrderOperation := UTFMockObjectFactory::CreateImportedExternalWorkOrderOperation( schedule, importedWorkOrder.Id(), 10 );
+    importedWorkOrderOperationCharacteristic := UTFMockObjectFactory::CreateImportedWorkOrderOperationCharacteristic( schedule, importedWorkOrder.Id(), importedWorkOrderOperation.SequenceNr() );
+    
+    // Create an imported resource group to bypass hard sanity check on imported external work order
+    ImportedResourceGroup_SC::Create( schedule, 'resource group' );
+    
+    // Assign value to imported work order operation characteristic
+    importedWorkOrderOperationCharacteristic.InputThickness( 1.0 );
+    importedWorkOrderOperationCharacteristic.OutputThickness( 2.0 );
+    importedWorkOrderOperationCharacteristic.NeedsOil( true );
+    importedWorkOrderOperationCharacteristic.OilIndex( 3 );
+    importedWorkOrderOperationCharacteristic.MinimumTemperature( 4.0 );
+    importedWorkOrderOperationCharacteristic.MaximumTemperature( 5.0 );
+    importedWorkOrderOperationCharacteristic.NeedsEdgeTrimming( true );
+    importedWorkOrderOperationCharacteristic.EdgeTrim( 6.0 );
+    importedWorkOrderOperationCharacteristic.TreatmentType( 'treatment type' );
+    
+    // Call synchronize work order
+    Transaction::Transaction().Propagate( method( SynchronizationObject, SynchronizeWorkOrders ) );
+    schedule.SynchronizationObject().SynchronizeWorkOrders();
+    
+    /*
+      For internal work order
+      1. Create routing 
+      2. Create routing step
+      3. Create internal work order that linked to that routing step
+      4. Create imported routing step characteristic
+    */
+    
+    importedRouting := ImportedRouting_SC::Create( schedule, 'routing' );
+    importedRoutingStep := ImportedRoutingStep_SC::Create( schedule, importedRouting.RoutingId(), 10 );
+    importedRoutingStepCharacteristic := UTFMockObjectFactory::CreateImportedRoutingStepCharacteristic( schedule, importedRoutingStep.RoutingId(), importedRoutingStep.SequenceNr() );
+    
+    // Assign value to imported routing step characteristic
+    importedRoutingStepCharacteristic.InputThickness( 1.0 );
+    importedRoutingStepCharacteristic.OutputThickness( 2.0 );
+    importedRoutingStepCharacteristic.NeedsOil( true );
+    importedRoutingStepCharacteristic.OilIndex( 3 );
+    importedRoutingStepCharacteristic.MinimumTemperature( 4.0 );
+    importedRoutingStepCharacteristic.MaximumTemperature( 5.0 );
+    importedRoutingStepCharacteristic.NeedsEdgeTrimming( true );
+    importedRoutingStepCharacteristic.EdgeTrim( 6.0 );
+    importedRoutingStepCharacteristic.TreatmentType( 'treatment type' );
+    
+    // Call synchronize routing 
+    Transaction::Transaction().Propagate( method( SynchronizationObject, SynchronizeRoutings ) );
+    schedule.SynchronizationObject().SynchronizeRoutings();
+    
+    // Create internal work order
+    pisp := construct( ProductInStockingPoint, ProductId := 'productid', StockingPointId := 'stockingpointid' );
+    importedRouting.Routing().CreateWorkOrder( pisp, 10.0, 10, DateTime::MaxDateTime(), false );
+  *]
+}

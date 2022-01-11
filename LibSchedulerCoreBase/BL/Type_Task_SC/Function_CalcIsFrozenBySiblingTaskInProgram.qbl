@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcIsFrozenBySiblingTaskInProgram
+{
+  TextBody:
+  [*
+    value := false;
+                   
+    traverse( this, TaskInProgramSet, tips, 
+              not value
+              and tips.ProgramSet().ProgramSetConfiguration().IsFreezeScheduleByProgram() )
+    {
+      previoustaskinprogram := tips.GetPreviousTaskInProgramType();
+      if( not isnull( previoustaskinprogram ) )
+      {
+        task := previoustaskinprogram.Task_SC();
+        value := task.IsFrozenByFSPL()
+                 or task.IsFrozenByUser()
+                 or task.IsFrozenBySiblingTaskInProgram(); 
+      }
+    }
+    
+    this.IsFrozenBySiblingTaskInProgram( value );
+  *]
+}

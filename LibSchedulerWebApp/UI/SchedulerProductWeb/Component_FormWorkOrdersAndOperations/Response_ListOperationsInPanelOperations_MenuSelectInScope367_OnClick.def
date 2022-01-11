@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: ListOperationsInPanelOperations
+Response OnClick (structured[Operation_SC] selection) id:Response_ListOperationsInPanelOperations_MenuSelectInScope367_OnClick
+{
+  #keys: '[151084.0.260434517]'
+  CanBindMultiple: false
+  DefinitionID => //ListOperations/Responsedef_ListOperations_WebMenu_OnClick
+  GroupServerCalls: true
+  Initiator: 'MenuSelectInScope367'
+  Precondition:
+  [*
+    Scheduler.CanAddToOptimizerScope( selection );
+    
+    feedbackObject := FeedbackObject::CurrentFeedback();
+    feedback := feedbackObject.Feedback();
+    
+    return feedbackObject.IsAllowed();
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Add selected operations to optimizer scope
+      mandatoryOperations := DataHolderOptimizerScopeOperations.Data();
+      
+      selection := selectset( selection, Elements, e, e.HasAllowedResources() );
+      
+      DataHolderOptimizerScopeOperations.Data( mandatoryOperations.Union( selection ) );
+    *]
+  }
+}

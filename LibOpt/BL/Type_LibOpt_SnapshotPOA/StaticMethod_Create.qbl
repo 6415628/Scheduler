@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (LibOpt_Run owner, POAAlgorithm poa, Boolean store_run) as LibOpt_SnapshotPOA
+{
+  Description: 'Create a new POA snapshot.'
+  TextBody:
+  [*
+    snapshot := owner.Snapshot( relnew, LibOpt_SnapshotPOA,
+                                MaxPopulation := poa.Strategy().PlanStrategy().MaxPopulation(),
+                                MaxPathPopulation := poa.Strategy().PlanStrategy().MaxPathPopulation(),
+                                PopulationSize95Percentile := LibOpt_SnapshotPOA::GetPropagationPercentile( poa.Strategy(), 0.95 ),
+                                NrNodes := poa.Nodes( relsize ),
+                                NrPathTypes := poa.PathTypes( relsize ) );
+    
+    if( store_run )
+    {
+      LibOpt_SnapshotPOASolution::Create( snapshot, 'Initial solution', poa.Strategy().InitialSolution().Score() );
+      LibOpt_SnapshotPOASolution::Create( snapshot, 'Best solution', poa.Strategy().BestSolution().Score() );
+    }
+    
+    snapshot.Capture( poa );
+    
+    return snapshot;
+  *]
+}

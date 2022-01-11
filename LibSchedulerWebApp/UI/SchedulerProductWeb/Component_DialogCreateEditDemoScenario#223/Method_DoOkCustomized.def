@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method DoOkCustomized () id:Method_DialogCreateEditDemoScenario_DoOkCustomized
+{
+  #keys: '[142956.0.1221823541]'
+  Body:
+  [*
+    selectedDemoScenario := DataHolderDemoScenario.Data();
+    newScenarioName := EditFieldDemoScenarioName.Text();
+    
+    if( isnull( selectedDemoScenario ) )
+    {
+      Scheduler.StoreDemoDataset( true, DropDownStringListDemoCategory.Text(), newScenarioName );
+    }
+    else
+    {
+      demoCategoryFolderPath := Schedule.DemoManager().DemoScenarioDirectory() + DataHolderDemoCategory.Data().Name() + '/';
+      
+      originalFolderPath := demoCategoryFolderPath + selectedDemoScenario.Name() + '/';
+      newFolderPath := demoCategoryFolderPath + newScenarioName + '/';
+      OS::RenameFile( originalFolderPath, newFolderPath ); 
+      
+      if( selectedDemoScenario.IsSelected() )
+      {
+        Schedule.DemoManager().DemoDataSelected( newScenarioName );
+      }
+      Schedule.SynchronizationObject().SynchronizeDemoCategoriesAndScenarios();
+    }
+  *]
+}

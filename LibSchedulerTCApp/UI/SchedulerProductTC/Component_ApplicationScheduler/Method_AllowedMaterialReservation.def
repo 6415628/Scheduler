@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedMaterialReservation (structured[Supply] supplies, structured[Demand] demands, Boolean skipsoftcheck, 
+  Boolean ctrlshiftkey, output String feedback_o, output Boolean isallowedhard_o) as Boolean id:Method_ApplicationScheduler_AllowedMaterialReservation
+{
+  #keys: '[122574.0.508585485]'
+  Body:
+  [*
+    // this precondition checks whether this structured set of supplies are of compatible product types as demand
+    
+    value := Fulfillment::CanCreate( supplies, demands, skipsoftcheck, feedback_o, isallowedhard_o );
+    
+    // checks if there are more than one demand/supply that are dragged along with ctrl shift key
+    is_notsingle_demandsupply_ctrlshift := ( supplies.Size() > 1 or demands.Size() > 1 ) and ctrlshiftkey;
+    
+    if( is_notsingle_demandsupply_ctrlshift )
+    {
+      value := not is_notsingle_demandsupply_ctrlshift; // doesn't need to evaluated together with earlier 'value' because it is a hard rule
+      feedback_o := feedback_o + String::NewLine() + Translations::SC_Fulfillment_CtrlShiftForSingleDemandSupplyOnly();
+    }
+    else if( not value and feedback_o.Length() > 0 and isallowedhard_o and not ctrlshiftkey )
+    {
+      feedback_o := feedback_o + String::NewLine() +  Translations::SC_HoldCtrlToOverride();
+    }
+    
+    feedback_o := Schedule::TrimFeedback( feedback_o );
+    
+    return value;
+  *]
+}

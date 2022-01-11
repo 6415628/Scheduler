@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcEnd
+{
+  TextBody:
+  [*
+    // Maximum of all the following conditions
+    // 1. Program change reported end
+    // 2. Maximum end time of Feedback task in program 
+    // 3. Archived end
+    
+    value := maxvalue(  this.ProgramChange().ReportedEnd(),
+                        max( this, FeedbackTaskInFeedbackProgramType.FeedbackTaskInSchedule, feedbacktask, 
+                             feedbacktask.End() ),
+                        ifexpr( this.ArchivedReportedEnd().IsFinite(), 
+                                this.ArchivedReportedEnd(),
+                                DateTime::MinDateTime() ) );
+    
+    this.End( value );
+  *]
+}

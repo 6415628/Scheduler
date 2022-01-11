@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method ShouldStop () const declarative remote as Boolean
+{
+  TextBody:
+  [*
+    // yifei Aug-17-2021 (created)
+    value := false;
+    
+    //if it's first leg, then stop if the active cpt fully extended
+    // else,  should stop if it's previous leg has all its best combis fully extended
+    
+    prevleg := this.GetPrevLegInLeadingProgramTypeConst();
+    
+    if( isnull( prevleg ) )
+    {
+      mastercpt := this.ActiveCombiLeg().LeadingCombiProgramPhase().CombiProgramType();
+      value := mastercpt.NrTimeExtended() >= OptimizerProgram::BeamWidth();
+    }
+    else
+    {
+      value := prevleg.GetIsBestNCombiLegsFullyExtendedConst();
+    }
+    return value;
+  *]
+}

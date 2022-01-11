@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method LaterThanFirstRespectMachine (shadow[SubTaskTypeOnResourceGroup] sttorg_i, output String feedback_o) as Boolean id:Method_DialogResourceGroup_SC_LaterThanFirstRespectMachine
+{
+  #keys: '[129856.0.85393294]'
+  Body:
+  [*
+    // James Kwapien #7723 First respect machine subtask must have sequencenr
+    // less than last respect machine subtask sequencenr
+    rg := Dialog.Data();
+    
+    isafterfirstrespect := not exists( rg,
+                                       SubTaskTypeOnResourceGroup,
+                                       sttorg,
+                                       sttorg.IsFirstRespectMachine(),
+                                       sttorg.SequenceNr() > sttorg_i.SequenceNr() );
+                            
+    SubTaskTypeOnResourceGroup::LaterThanFirstRespectMachine( isafterfirstrespect, feedback_o );
+                                                                                
+    return isafterfirstrespect;
+  *]
+}

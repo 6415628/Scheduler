@@ -1,0 +1,64 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllProgramTestVariants (output Strings programscopes, output Booleans istransitionrules, output Booleans isconditionenables, 
+  output Strings conditionScopes, output Booleans conditionValues, output Booleans previousOperationAttributeValues, 
+  output Booleans operationAttributeValues, output Booleans hasNoViolateConstraints) as owning Strings
+{
+  Description: 'Return program specific variants.'
+  TextBody:
+  [*
+    variants := construct( Strings );
+    scopes := construct( Strings );
+    scopes.Add( RuleConstant::RuleScope_Program() );
+    scopes.Add( RuleConstant::RuleScope_ProgramPhase() );
+    
+    traverse( scopes, Elements, scope )
+    {
+      loop := ifexpr( scope = RuleConstant::RuleScope_ProgramPhase(), 2, 1 );
+      for( i := 1; i <= loop; i ++ )
+      {
+        istransitionrule := ( i = 2 );
+        trasitionstring := ifexpr( istransitionrule, 'Transition', 'Constraint' );
+        scopestring := ifexpr( istransitionrule, scope + ' ' + trasitionstring, scope );
+        
+        // Scenario 1.1: Test with program rule condition - needs edge trimming = true and condition scope = FirstTaskOnly ( Constraint/Transition )
+        //               while first operation = true and second operation = false
+        variants.Add( 'Test with ' + scopestring + ' rule condition - needs edge trimming = true and condition scope = FirstTaskOnly ( ' + trasitionstring + ' )' );
+        programscopes.Add( scope );
+        istransitionrules.Add( istransitionrule );
+        isconditionenables.Add( true );
+        conditionScopes.Add( RuleConstant::ConditionScope_FirstTaskOnly() );
+        conditionValues.Add( true );
+        previousOperationAttributeValues.Add( true );
+        operationAttributeValues.Add( false );
+        hasNoViolateConstraints.Add( false );
+        
+        // Scenario 1.2: Test with program rule condition - needs edge trimming = true and condition scope = FirstTaskOnly ( No Constraint/Transition )
+        //               while first operation = false and second operation = true
+        variants.Add( 'Test with ' + scopestring + ' rule condition - needs edge trimming = true and condition scope = FirstTaskOnly ( No ' + trasitionstring + ' )' );
+        programscopes.Add( scope );
+        istransitionrules.Add( istransitionrule );
+        isconditionenables.Add( true );
+        conditionScopes.Add( RuleConstant::ConditionScope_FirstTaskOnly() );
+        conditionValues.Add( true );
+        previousOperationAttributeValues.Add( false );
+        operationAttributeValues.Add( true );
+        hasNoViolateConstraints.Add( true );
+        
+        // Scenario 1.3: Test with program rule condition - condition checking disabled ( Constraint/Transition )
+        //               while first operation = true and second operation = true
+        variants.Add( 'Test with ' + scopestring + ' rule condition - condition checking disabled ( ' + trasitionstring + ' )' );
+        programscopes.Add( scope );
+        istransitionrules.Add( istransitionrule );
+        isconditionenables.Add( false );
+        conditionScopes.Add( RuleConstant::ConditionScope_FirstTaskOnly() );
+        conditionValues.Add( true );
+        previousOperationAttributeValues.Add( true );
+        operationAttributeValues.Add( true );
+        hasNoViolateConstraints.Add( false );
+      }
+    }
+    
+    return &variants;
+  *]
+}

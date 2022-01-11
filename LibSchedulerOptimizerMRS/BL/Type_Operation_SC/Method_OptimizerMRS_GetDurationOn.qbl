@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method OptimizerMRS_GetDurationOn (Resource_SC resource) declarative as Duration
+{
+  TextBody:
+  [*
+    // mbr23 Aug-27-2019 (created), copied from legacy optimizer's OptimizerPlanOperation::GetDurationOn
+    
+    value := Duration::Hours( 0 );
+    
+    //get the associated operation on resource
+    operationonresource := select( this, OperationOnResource, operation,
+                                   operation.Resource_SC() = resource );
+    
+    //the duration of a node include the process, receive and transfer duration
+    if( not isnull( operationonresource ) )
+    { 
+      // jkr8 May-14-2020
+      // Does the same as OperationOnResource.OptimizerSequencing_Duration but we want to keep the MRS library and sequencing library seperate. 
+      value := operationonresource.ProcessDuration()
+              + this.OptimizerMRS_ExpectedReceiveDuration()
+              + this.OptimizerMRS_ExpectedTransferDuration();
+    }
+    
+    return value;
+  *]
+}

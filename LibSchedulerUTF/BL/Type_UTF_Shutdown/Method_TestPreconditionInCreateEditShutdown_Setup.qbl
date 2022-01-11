@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionInCreateEditShutdown_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    resourceType := '';
+    leadTimeStrategy := '';
+    hasShutdownTypeInResource := false;
+    isValidForPreconInsert := false;
+    hasShutdown := false;
+    hasFeedback := false;
+    isValidForPreconDelete := false;
+    hasShutdownType := false;
+    duration := Duration::MaxDuration();
+    isValidForPreconCreateEdit := false;
+    
+    this.GetTestVariantForPreconditionChecking( isvariantfound,
+                                                resourceType,
+                                                leadTimeStrategy,
+                                                hasShutdownTypeInResource,
+                                                isValidForPreconInsert,
+                                                hasShutdown,
+                                                hasFeedback,
+                                                isValidForPreconDelete,
+                                                hasShutdownType,
+                                                duration,
+                                                isValidForPreconCreateEdit );
+    
+    if( isvariantfound )
+    {
+      shutdown := Shutdown::Create( schedule, schedule.GetLastShutdownID() );
+      
+      shutdownType := null( ShutdownType );
+      if( hasShutdownType )
+      {
+        shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, 'Shutdown Type ID' );  
+      }
+      
+      shutdown.Update( shutdownType, duration, true, false, DateTime::MinDateTime(), Duration::Zero() );
+    }
+  *]
+}

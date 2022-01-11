@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCampaignTaskInListDown_Recursive (CampaignTasks campaignTasks, CampaignTasks selectedCampaignTasks, CampaignTask nextCampaignTask) remote as CampaignTask
+{
+  Description: 'Get before target campaign task in campaign list down'
+  TextBody:
+  [*
+    ct := nextCampaignTask;
+    
+    c := select( selectedCampaignTasks, Elements, e, e = nextCampaignTask );
+    
+    if( not isnull( c ) )
+    {
+      if( not isnull( ct.NextCampaignTask() ) and ct.CampaignTypeName() = this.CampaignTypeName() )
+      {
+        this.GetCampaignTaskInListDown_Recursive( campaignTasks, selectedCampaignTasks, ct.NextCampaignTask() );
+      }
+      else
+      {
+         ct := this.Resource_SC().LastCampaignTask(); // JK 12-16-2016 QP 8382 Adjusted logic for updated object model with multiple campaigns
+      }
+    }
+    
+    return ct;
+  *]
+}

@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCanEditScenario (LibSM_ScenarioManager scenarioManager)
+{
+  Description: 'Test can edit scenario as leading scenario.'
+  TextBody:
+  [*
+    leadingScenario := select( scenarioManager, ScenarioNode.astype( Scenario ), scenario, scenario.IsLeadingScenario() );
+    nonLeadingScenario := select( scenarioManager, ScenarioNode.astype( Scenario ), scenario, not scenario.IsLeadingScenario() );
+    
+    // Propagate Scenario.HasDataset
+    Transaction::Transaction().Propagate( attribute( Scenario, HasDataset ) );
+    
+    this.Run().AssertTrue( not leadingScenario.CanEdit() and nonLeadingScenario.CanEdit(),
+                           UTFUtility::GenerateFailedMessage( 'Precondition for can edit scenario failed', this.Variant() ) );
+  *]
+}

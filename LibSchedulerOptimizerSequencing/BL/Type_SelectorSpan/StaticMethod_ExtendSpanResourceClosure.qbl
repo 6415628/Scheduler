@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ExtendSpanResourceClosure (output owning LibOpt_ScopeElementOnRuns span, LibOpt_Scope scope) as Boolean
+{
+  Description:
+  [*
+    Extends the given span by the following rule:
+    If operation o is in the span and planned on resource r and r is not in scope, then r is in the span (“spanning resource closure”).
+    Returns whether the span has been extended.
+  *]
+  TextBody:
+  [*
+    // mbr23 Jan-10-2020 (created)
+    scope_resources := scope.ResourcesExSpan();
+    has_changed := false;
+    traverse( span,
+              Elements.ScopeElement.astype( ScopeElementOperation ).Operation_SC.Task_SC.Resource_SC,
+              r,
+              scope_resources.Find( r ) < 0 )
+    {
+      scopeelement := r.GetOrCreateScopeElement();
+      seor := scopeelement.OnRunOrCreate( scope.Run() );
+      if( span.Find( seor ) < 0 )
+      {
+        // not yet in the span. add it:
+        span.Add( seor );
+        has_changed := true;
+      }
+    }
+    
+    return has_changed;
+  *]
+}

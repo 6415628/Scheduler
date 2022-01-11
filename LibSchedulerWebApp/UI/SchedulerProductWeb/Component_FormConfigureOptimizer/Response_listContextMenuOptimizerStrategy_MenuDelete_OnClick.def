@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: listContextMenuOptimizerStrategy/MenuDelete
+Response OnClick (structured[OptimizerStrategyInScenarioManager] selection) id:Response_listContextMenuOptimizerStrategy_MenuDelete_OnClick
+{
+  #keys: '[143768.1.1887559462]'
+  CanBindMultiple: false
+  DefinitionID => /listContextMenuOptimizerStrategy/Responsedef_listContextMenuOptimizerStrategy_MenuDelete_OnClick
+  GroupServerCalls: true
+  Precondition:
+  [*
+    return OptimizerStrategyInScenarioManager::CanDelete( selection, feedback );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Delete optimizer strategy
+      isSelected := exists( selection, 
+                            Elements, e,
+                            guard( e.ID() = Schedule.OptimizerStrategyInSchedule().ID(), false ) );
+      
+      dialogText := Translations::SM_ConfirmDeleteSelectedOptimizerStrategy() 
+                    + String::NewLine()
+                    + ifexpr( isSelected,
+                              Translations::SM_ConfirmDeleteSelectedOptimizerStrategy_SelectedWarning(),
+                              '' );
+      
+      if ( WebMessageBox::Question( this, dialogText, 'Yes|No' ) = 0 )
+      {
+        OptimizerStrategyInScenarioManager::Delete( selection, Schedule );
+      }
+    *]
+  }
+}

@@ -1,0 +1,75 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitializeNonConst (LibOpt_Task task) as owning POAAlgorithm
+{
+  TextBody:
+  [*
+    poa := SuboptimizerPOACombiLeg::CreateSequenceCombiLeg();
+    
+    // Select the relevant combi legs for this iteration
+    combilegs := construct( CombiLegs );
+    if( this.IsCombiGeneration() )
+    {
+      //for combi generation mode, till this step , there will be only one combileg in scope, which is the new empty combileg created in the later extending step
+      traverse( task.Scope().CombiLegs(), Elements, cl  )
+      {
+        task.Scope().Remove( cl.GetOrCreateScopeElement() );
+      }
+      
+      traverse( task.Scope().CombiProgramTypes(), Elements, cpt ) 
+      {
+        cpt.NrTimeExtended( cpt.NrTimeExtended() + 1 );
+        newcpt := cpt.Extend( task.Scope().Operations() );
+        Transaction::Transaction().Propagate( attribute( CombiProgramPhase, SequenceNr ) );
+        Transaction::Transaction().Propagate( attribute( CombiLeg, SequenceNr ) );
+        Transaction::Transaction().Propagate( attribute( CombiLeg, ID ) );
+        
+        lastcombileg := maxselect( newcpt, CombiProgramPhase.CombiLegAsLeading, cl, true, cl.LeadingCombiProgramPhase().SequenceNr(), cl.SequenceNr() );
+        
+        if( not isnull( lastcombileg ) and not lastcombileg.Leg().IsFrozenInSchedule() )
+        {
+          combilegs.Add( lastcombileg );
+          
+          task.Scope().Add( lastcombileg.GetOrCreateScopeElement() );
+          traverse( lastcombileg, OperationInCombiLeg.Operation_SC, op )
+          {
+            task.Scope().Add( op.GetOrCreateScopeElement() );
+          }
+        }
+        
+        if( not isnull( lastcombileg.StoppageTask() ) ) // shutdown related combileg, some propogation required for the path end constraints
+        {
+          Transaction::Transaction().Propagate( relation( CombiLeg, RuleInCombiLeg ) );
+          Transaction::Transaction().Propagate( attribute( RuleInCombiLeg, IsBeforeShutdown ) );
+          Transaction::Transaction().Propagate( attribute( RuleInCombiLeg, MaximumConstraintEndPathValue ) );
+          Transaction::Transaction().Propagate( attribute( RuleInCombiLeg, MinimumConstraintEndPathValue ) );
+        }
+      }
+    }
+    // For the pure POA iterations, the relevant combi legs are those that are related to the anchor leading combi program types
+    else
+    {
+      combilegs := this.GetCombiLegsInScope( task );
+    }
+    
+    //since we also need to call poa by debug method on a selected combileg, so it would be easier if we here pass in operations instead of task
+    //because otherwise we have to create a task/scope/optimizerrun in the debug code, so feel that get operations out from scope here and pass operations set in 
+    //should be fine
+    
+    operations := task.Scope().Operations();
+    
+    if( this.IsCombiGeneration() ) //for combi genertion,  only add the allowed operation for this combileg,  there is supposed to be only one combileg in the set
+    {
+      cl := combilegs.Element( 0 );
+      operations := cl.GetAllowedOperationRandomSet( operations ).SelectFirst( this.Settings().NrOptionalOperations() )
+    }
+    
+    if( combilegs.Size() > 0 )
+    {
+      this.InitializePOAForCombiLeg( poa, combilegs, operations );
+    }
+    
+    
+    return & poa;
+  *]
+}

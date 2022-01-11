@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericInternalWorkOrderInputMaterial (CDSchedule cdSchedule, GenericInternalWorkOrderOperation genericInternalWorkOrderOperation)
+{
+  Description: 'Restore generic internal work order input material core data relations to planning object'
+  TextBody:
+  [*
+    cdInternalWorkOrderInputMaterials := selectset( cdSchedule, CDEntity.astype( CDGenericInternalWorkOrderInputMaterial ), cdGenericInternalWorkOrderInputMaterial,
+                                                    cdGenericInternalWorkOrderInputMaterial.WorkOrderId() = genericInternalWorkOrderOperation.WorkOrderId(),
+                                                    cdGenericInternalWorkOrderInputMaterial.SequenceNr() = genericInternalWorkOrderOperation.SequenceNr() );
+     
+    traverse( cdInternalWorkOrderInputMaterials, Elements, cdGenericInternalWorkOrderInputMaterial )
+    {
+      genericInternalWorkOrderInputMaterial := InternalWorkOrderInputMaterial::FindInternalWorkOrderInputMaterial( cdGenericInternalWorkOrderInputMaterial.Id() );
+      
+      if( not isnull( genericInternalWorkOrderInputMaterial ) )
+      {
+        // ImportedInternalWorkOrderInputMaterial, 1-1 and ImportedWorkOrderInputMaterial, 1-1
+        importedInternalWorkOrderInputMaterial := ImportedInternalWorkOrderInputMaterial::FindImportedInternalWorkOrderInputMaterial( cdGenericInternalWorkOrderInputMaterial.Id() );
+        genericInternalWorkOrderInputMaterial.ImportedInternalWorkOrderInputMaterial( relset, importedInternalWorkOrderInputMaterial );
+        genericInternalWorkOrderInputMaterial.ImportedWorkOrderInputMaterial( relset, importedInternalWorkOrderInputMaterial );
+        
+        // RoutingStepInput, M-1
+        routingstepinput := RoutingStepInput::FindRoutingStepInput( cdGenericInternalWorkOrderInputMaterial.RoutingID(), 
+                                                                    cdGenericInternalWorkOrderInputMaterial.RoutingStepInputSequenceNr(), 
+                                                                    cdGenericInternalWorkOrderInputMaterial.RoutingStepInputProductID(), 
+                                                                    cdGenericInternalWorkOrderInputMaterial.StockingPointId() 
+                                                                  );
+        genericInternalWorkOrderInputMaterial.RoutingStepInput( relset, routingstepinput );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

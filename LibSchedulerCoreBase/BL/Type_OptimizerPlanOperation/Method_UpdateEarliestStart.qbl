@@ -1,0 +1,103 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride UpdateEarliestStart
+{
+  TextBody:
+  [*
+    //The earliest start of an operation is calculated by maximum of 5 items: 
+    //  1. the current schedule time
+    //  2. the moment in time input material becomes available 
+    //  3. the end of the processing subtask of the last upstream operation (if the operation has a planned upstream operation )
+    //  4. the start of the transfer subtask of the first upstream operation (if the operation has a planned upstream operation with a transfer subtask )
+    //  5. end of the receive subtask of a downstream operation (if the operation has a planned downstream operation with a receive subtask )
+    
+    //Currently this method only supports data with operations which have at most one upstream operation and at most one downstream operation.
+    //If there are multiple upstream operations, either item 3 or item 4 of the above list should be used in calculation. 
+    //    item 4 should be used whenever one (or more) of the upstream operations has a transfer operation
+    //    item 3 should be used otherwise. 
+    //Furthermore, the method has not yet been tested on data with transfer and receive subtasks. 
+    
+    //1:
+    //The operation cannot be planned before the current schedule time. 
+    scheduletime := this.Operation_SC().PlanUnit_SC().Schedule().Time();
+    
+    //2:
+    //The operation cannot be planned before the input material becomes available. (Only external input material, not from upstream operations )
+    materialavailable := this.Operation_SC().EarliestStart();
+    
+    //3: 
+    //The upstream operations must be finished before the current operation can start. 
+    //Hence, the operation cannot start before the end of the process subtask of the last upstream operation and some added leadtime. 
+    endprocesspreviousoperation := scheduletime;
+    lastdirectupstreamoperation := maxselect( this, Operation_SC.FromOperationDependency.FromOperation, operation, operation.IsPlanned(), operation.End() )
+    
+    if( not isnull( lastdirectupstreamoperation )  )
+    {
+      processsubtask := select( lastdirectupstreamoperation.Task_SC(),  SubTask.astype( ProcessSubTask ), subtask, true );
+      endprocesspreviousoperation :=  processsubtask.End() + lastdirectupstreamoperation.LeadTime();
+    }
+    
+    //4:
+    // The upstream operations might have a transfer subtask for which the current operation must align its receive subtask. 
+    // To ensure the receive subtask of the current operation is aligned with the transfer subtask of the upstream operation,
+    // the operation cannot start before the start of the transfer subtask of the first upstream operation. (must be the first upstream operation since this is the first moment of receiving).
+    
+    /*
+    //BELOW IS REFACTORED CODE, BUT CURRENTLY NO TEST IS AVAILABLE TO CHECK VALIDITY OF CALCULATION OF startoffirsttransfer. 
+    firsttransfer := minselect( this.Operation_SC(), InputOperationMaterial.AsOutputOperationMaterial.PlanUnit_SC.Operation_SC, operation,
+                                                operation.IsPlanned()
+                                                and guard( operation.PlannedResourceGroup().HasTransfer(), false ),
+                                                operation.End() );
+    
+    startoffirsttransfer := scheduletime;
+    
+    if( not isnull( firsttransfer )  )
+    {
+      transfersubtask := select( firsttransfer.GetTask(), SubTask.astype( TransferSubTask ), subtask, true );
+      startoffirsttransfer := guard( transfersubtask.Start(), scheduletime );
+    }
+    */
+    startoffirsttransfer := scheduletime;
+    
+    traverse( this, Operation_SC.FromOperationDependency.FromOperation, upstreamoperation,
+              upstreamoperation.IsPlanned() )
+    {
+      firsttransfer := minselect( upstreamoperation.GetTask(), SubTask.astype( TransferSubTask ), subtask, true, subtask.End()  ); 
+      
+      if( not isnull( firsttransfer ) )
+      {
+        startoffirsttransfer := guard( firsttransfer.Start(), scheduletime ); 
+      }
+    }
+    
+    //5:
+    //The downstream operations might have a receive subtask for which the current operation must align its transfer subtask. 
+    //To ensure the transfer subtask of the current operation is aligned with the receive subtask of the downstream operation, 
+    //the operation cannot start before the end of the receive subtask of the last downstream operation minues the duration of the current operation.
+    
+    lastdirectdownstreamoperation := maxselect( this.Operation_SC(), ToOperationDependency.ToOperation.PlanUnit_SC.Operation_SC, operation,
+                                                operation.IsPlanned()
+                                                and guard( operation.PlannedResourceGroup().HasReceive(), false ),
+                                                operation.End() );
+    
+    endofdownstreamreceive := scheduletime;
+    
+    if( not isnull( lastdirectdownstreamoperation )  )
+    {
+      receivesubtask := select( lastdirectdownstreamoperation.GetTask(), SubTask.astype( ReceiveSubTask ), subtask, true );
+      endofdownstreamreceive := receivesubtask.End() - this.ExpectedDuration();
+    }
+    
+    
+    //Total: 
+    //The EarliestStart is the maximum value of all 5 elements described above. 
+    value := maxvalue( scheduletime,
+                       materialavailable,
+                       endprocesspreviousoperation,
+                       startoffirsttransfer,
+                       endofdownstreamreceive
+                      );
+    
+    this.EarliestStart( value );
+  *]
+}

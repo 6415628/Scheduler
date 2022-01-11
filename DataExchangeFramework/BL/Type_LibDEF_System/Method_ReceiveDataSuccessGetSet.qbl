@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveDataSuccessGetSet (NamedValueTree nvt_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive a Data-Success message with the requested Set.'
+  TextBody:
+  [*
+    LibDEF_Util::EventLog( event_i, "Receiving requested Set data" );
+    
+    setGUID := LibDEF_DataAccessor::GetDataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SETGUID() );
+    setMeta := select( this, SetTypeMeta.SetMeta, s, s.GUID() = setGUID );
+    
+    if( isnull( setMeta ) )
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  "Failed to process Data-Success-GetSet message",
+                                  "Error processing Data-Success-GetSet, SetMeta with GUID '" + setGUID + "' does not exist." );
+    }
+    else
+    {
+      // update the SetMeta first
+      lastUpdated := LibDEF_DataAccessor::GetDataHeaderPropertyAsDateTime( nvt_i, LibDEF_DataAccessor::HEADER_SETLASTUPDATED() );
+      setMeta.Update( lastUpdated );
+      
+      // then forward data to requesting dataset
+      datasetType := LibDEF_DataAccessor::GetDataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_DATASETMODELTYPE() );
+      datasetKey  := LibDEF_DataAccessor::GetDataHeaderPropertyAsKey   ( nvt_i, LibDEF_DataAccessor::HEADER_DATASETMDSID() );
+      datasetDTD  := LibDEF_DataAccessor::GetDataHeaderPropertyAsKey   ( nvt_i, LibDEF_DataAccessor::HEADER_DATASETDTD() );
+      
+      LibDEF_DataBroker::ForwardSetToDataset( datasetType, datasetKey, datasetDTD, nvt_i, false, event_i );
+      
+      LibDEF_IntegrationEvent::EventComplete( event_i );
+    }
+  *]
+}

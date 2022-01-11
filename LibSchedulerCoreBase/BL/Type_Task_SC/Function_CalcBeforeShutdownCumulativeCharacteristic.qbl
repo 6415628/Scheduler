@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcBeforeShutdownCumulativeCharacteristic
+{
+  TextBody:
+  [*
+    // Construct vectors 
+    cumulativecharacteristic := BinaryValue::Construct();
+    cumulativerealvalue := BinaryValue::Construct();
+    iswithinbeforeshutdownscope := false;
+    
+    // Only calculate before shudown rule scope cumulative values if it is needed
+    if( this.CheckIsBeforeShutdownRuleCheckingNeeded() )
+    {
+      // Get previous cumulative characteristic values
+      previouscumulativecharacteristic := BinaryValue::Construct( );
+      previouscumulativerealvalue := BinaryValue::Construct( );  
+      this.GetBeforeShutdownPreviousCumulativeCharacteristic( previouscumulativecharacteristic,
+                                                              previouscumulativerealvalue );
+                                                        
+      // Get next shutdown start
+      shutdownstart := guard( this.NextShutdown().Start(), DateTime::MinDateTime() );
+      
+      // Get before shutdown scope rules
+      shutdownrules := selectset( this, NextShutdown.ResponsibleShutdownType.RuleScopeInShutdownType.Rule, rule,
+                                  rule.IsBeforeShutdown()
+                                  and rule.IsEnabled() );  
+      cumulativecharacteristics := selectset( shutdownrules, Elements.CharacteristicScope, char, true ); 
+      
+      // Checks whether current task is within the before shutdown scope
+      iswithinbeforeshutdownscope := exists( shutdownrules, Elements, rule, 
+                                             this.CheckIsInShutdownScopeForCumulativeValueCalculation( rule,
+                                                                          previouscumulativecharacteristic,
+                                                                          previouscumulativerealvalue ) );
+      // Only calculate current cumulative values if it is within before shutdown scope
+      if( iswithinbeforeshutdownscope )
+      {
+        // Calculate cumulative characteristic binary value
+        Characteristic::GetCharacteristicBinaryValue( cumulativecharacteristics, 
+                                                      this.GetOperation(),
+                                                      previouscumulativecharacteristic,
+                                                      previouscumulativerealvalue,
+                                                      this.Start(), 
+                                                      shutdownstart,
+                                                      cumulativecharacteristic,
+                                                      cumulativerealvalue );                                                
+      }
+    }
+                                                                
+    this.BeforeShutdownCumulativeCharacteristic( cumulativecharacteristic );
+    this.BeforeShutdownCumulativeRealValues( cumulativerealvalue );
+    this.IsWithinBeforeShutdownScope( iswithinbeforeshutdownscope );
+  *]
+}

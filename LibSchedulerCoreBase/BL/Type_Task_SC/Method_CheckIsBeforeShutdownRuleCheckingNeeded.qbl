@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsBeforeShutdownRuleCheckingNeeded () declarative remote as Boolean
+{
+  Description: 'Check whether before shutdown rule checking needed'
+  TextBody:
+  [*
+    // Check whether before shutdown rule checking needed
+    // 1. If there is next shutdown
+    // 2. Current task is not shutdown task
+    // 3. Current task is not program change task OR ProgramChange.IsSequenceRulesEnabled = TRUE
+    // 4. Either the following conditions meet
+    //    4(a). Next task is shutdown task
+    //    4(b). Next task is within after shutdown scope
+    
+    value := not isnull( this.NextShutdown() ) 
+             and not this.IsShutdownTask()
+             and ( not this.IsProgramChangeTask()
+                   or guard( this.GetProgramChange().IsSequenceRulesEnabled(), false ) )
+             and ( guard( this.Next().IsShutdownTask(), false )
+                   or guard( this.Next().IsWithinBeforeShutdownScope(), false ) );
+    
+    return value;
+  *]
+}

@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetJSONInputData_WorkOrderOperationsArray (Number workOrderNr) const as owning JSONBuilder
+{
+  Description: 'Generates a standard work order operation JSON input data similar to data from 3DSpace.'
+  TextBody:
+  [*
+    // Create operations array
+    operations := JSON::Array();
+    
+    // Create 2 workOrderOperation
+    for( i := 1; i < 3; i++ )
+    {
+      id := "WorkOrderOperation".Concat( [String]workOrderNr ).Concat( '-' ).Concat( [String]i );
+      processOperationID := "ProcessOperation".Concat( [String]i );
+      assetID := "Asset".Concat( [String]i );
+      workOrderOperation := JSON::Object();
+      workOrderOperation.Add( Constants::JSON_WorkOrder_Operation_ID(), id );
+      workOrderOperation.Add( Constants::JSON_WorkOrder_Operation_ProcessOperationID(), processOperationID );
+      workOrderOperation.Add( Constants::JSON_WorkOrder_Operation_ScheduledStart(), 
+                              DateTimeToString::ISOConverter().Convert( DateTime::Construct( 2019, 8, 21, 6, 0, 0 ) + Duration::Minutes( i * workOrderNr )  ) );
+      workOrderOperation.Add( Constants::JSON_WorkOrder_Operation_ScheduledEnd(), 
+                              DateTimeToString::ISOConverter().Convert( DateTime::Construct( 2019, 8, 21, 6, 0, 2 ) + Duration::Minutes( i * workOrderNr + 1 ) ) );
+      workOrderOperation.Add( Constants::JSON_WorkOrder_Operation_ScheduledAssetID(), assetID );
+      workOrderOperation.Add( Constants::JSON_WorkOrder_Operation_Maturity(), Constants::MaturityStatus_FIRM() );
+      workOrderOperation.Add( Constants::JSON_WorkOrder_Operation_Priority(), 1 );
+      
+      // Add workOrderOperation to operations
+      operations.Add( workOrderOperation );
+    }
+    
+    return &operations;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

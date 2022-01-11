@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDrop (structured[PlanUnit_SC] source, BatchResource droprow, Task_SC droptarget, 
+  Task_SC beforedroptarget, Task_SC afterdroptarget) id:Response_GanttChartSchedulingCentre_OnDrop_9
+{
+  #keys: '[12910.0.1173265336]'
+  Body:
+  [*
+    // OnDrop structured[PlanUnit] --> BatchResource
+    ctrlshift := dropaction.IsControlShift();
+    operations := selectset( source, Elements.Operation_SC, op, op.Type() = droprow.Type());
+    
+    if ( not isnull( droptarget.astype( BatchTask ) ) and not ctrlshift )
+    {
+      // (Add operation to batch)
+      droptarget.astype( BatchTask ).Batch().AddOperations( operations );
+    }
+    else
+    {
+      droprow.CreateBatchAssignOperationsPlanBatch( operations, beforedroptarget.astype( BatchTask ) );
+    }
+  *]
+  DefinitionID: 'Responsedef_GanttChart_OnDrop'
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey       := dropaction.IsControl();
+    ctrlshiftkey  := dropaction.IsControlShift();
+    
+    operations := selectset( source, Elements.Operation_SC, op, op.Type() = droprow.Type());
+    aftertask  := droptarget
+    
+    if( not ctrlshiftkey ) //when ctrlshiftkey = false and not isnull droptarget, the intention is to merge all operations into the droptarget
+    {
+      operationsintarget  := selectset( droptarget, OperationInTask, op, true, true ); //operations from the drop target
+      operations := operations.Union( operationsintarget );
+      aftertask := afterdroptarget;
+    }
+    
+    return  ApplicationScheduler.AllowedScheduling( droprow,            //batchresource
+                                                    operations,         //structured operations
+                                                    ctrlkey,            //skip soft check
+                                                    ctrlshiftkey,       //ctrl shift key
+                                                    beforedroptarget,   //before task
+                                                    aftertask,          //after task
+                                                    PlanUnit_SC::GetSelectedObjects( source ),
+                                                    feedback,
+                                                    isallowedhard )
+  *]
+  UserRequiresReadWrite: true
+}

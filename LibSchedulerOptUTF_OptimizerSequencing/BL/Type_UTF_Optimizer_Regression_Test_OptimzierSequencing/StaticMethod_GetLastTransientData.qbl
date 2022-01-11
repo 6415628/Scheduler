@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetLastTransientData (Schedule schedule) declarative remote as TransientDataSuboptimizerSequencing
+{
+  Description: 'returns the TransientDataSuboptimizerSequencing of the most recent optimizer run in the given schedule'
+  TextBody:
+  [*
+    // mbr23 Jan-13-2020 (created)
+    optimizer := UTF_Optimizer_Regression_Test_OptimizerSequencing::Optimizer( schedule );
+    lastrun := optimizer.Optimization().LastRun();
+    last_suboptimizer_snap := maxselect( lastrun,
+                                         Snapshot.astype( SnapshotTransientData ),
+                                         snap,
+                                         not isnull( snap.TransientData() ) and
+                                         snap.TransientData().Component().istype( SuboptimizerSequencingPOA ),
+                                         snap.PrecisionTimeStamp() );
+    transientdata := last_suboptimizer_snap.TransientData().astype( TransientDataSuboptimizerSequencing );
+    
+    return transientdata;
+  *]
+}

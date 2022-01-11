@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddExpressionsTime (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs, Operation_SCs operations)
+{
+  TextBody:
+  [*
+    // zyi1 Jul-15-2021 (created)
+    timeexpression := poa.NewExpression( SuboptimizerPOACombiLeg::NamePOAExpressionTime() ); 
+    
+    // We make the expression depend on the path, such that we can use different transitions and participations
+    // depending on the path. 
+    participationtime := POAParticipation::PN( poa, SuboptimizerPOACombiLeg::NamePOAParticipationTime(), 0.0 );
+    timeexpression.Participation( participationtime );
+    
+    // A time transition of 0 is added since we need a time transition for the strategy
+    transitiontime := POATransition::NN( poa, SuboptimizerPOACombiLeg::NamePOATransitionTime(), 0.0 );
+    timeexpression.Transition( transitiontime );
+    
+    traverse( combilegs, Elements, combileg )
+    {
+      legpathtype := poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathCombiLeg( combileg ), combileg )
+      
+      res := combileg.GetResource(); 
+      
+      traverse( operations, Elements, op1 )
+      {
+        processduration := op1.CalculateProcessDuration( res );
+        participation := processduration.HoursAsReal();
+        node1 := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( op1 ), op1 );
+        
+        participationtime.Set( legpathtype, node1, participation );
+        
+        traverse( operations, Elements, op2, op2 <> op1 )
+        {
+          node2 := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( op2 ), op2 );
+          setuptime := res.GetSetupDuration( op1, op2 );
+          transitiontime.Set( node1, node2, setuptime.HoursAsReal() );
+        }
+        
+        //setup between last leg's last operation to operations in this leg
+        dummystart := poa.Node( SuboptimizerPOACombiLeg::NamePOADummyStart( combileg ), combileg );
+        prevleglastop := combileg.GetPreviousLastOperationInCombiLeg();
+        if( not isnull( prevleglastop ) )
+        {
+          setuptime := res.GetSetupDuration( prevleglastop.Operation_SC(), op1 );
+          transitiontime.Set( dummystart, node1, setuptime.HoursAsReal() );
+        }
+      }
+      
+      if( guard( combileg.Leg().GetIsLastLegBeforeShutdown(), false ) )
+      {
+        nextshutdown := combileg.Leg().NextShutdown();
+        shutdownnode := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeShutdown( combileg ), combileg );
+        resourcepath := poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathResource( res ), res );
+        participationtime.Set( resourcepath, shutdownnode, nextshutdown.ShutdownDuration().HoursAsReal() );
+      }
+    }
+  *]
+}

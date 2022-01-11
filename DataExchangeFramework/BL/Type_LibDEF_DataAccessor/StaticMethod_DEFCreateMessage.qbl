@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod DEFCreateMessage (String definition_i) as owning NamedValueTree
+{
+  Description: '[Internal] Creates an empty NamedValueTree message with template of DEF library.'
+  TextBody:
+  [*
+    // Jacky CHAN May-9-2016 (created)
+    nvt := NamedValueTree::Create();
+    
+    // declare all required Handles
+    handleHeader     := nvt.GetHandle( LibDEF_DataAccessor::HANDLE_HEADER() );
+    handleBody       := nvt.GetHandle( LibDEF_DataAccessor::HANDLE_BODY() );
+    handleInternalMessage := nvt.GetHandle( LibDEF_DataAccessor::HANDLE_INTERNALMESSAGE() );
+    handleDefinition := nvt.GetHandle( definition_i );
+    
+    // Create the main nodes structure
+    root := nvt.Root( 'Root' );
+    root.AddChild( handleHeader );
+    internalMessage := root.AddChild( handleInternalMessage );
+    internalMessage.AddChild( handleHeader );
+    internalMessage.AddChild( handleBody );
+    
+    // Create the given definition node structure
+    definition := root.AddChild( handleDefinition );
+    definition.AddChild( handleHeader );
+    definition.AddChild( handleBody );
+    
+    return &nvt;
+  *]
+}

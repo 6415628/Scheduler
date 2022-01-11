@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraints (SuboptimizerMRSPOA_POAOneResourceGroup poa, LibOpt_Task task)
+{
+  Description: 'Add the constraints of POA'
+  TextBody:
+  [*
+    debuginfo( 'Adding constraints...' );
+    
+    //allowed operations on resource
+    this.POAAddConstraintAllowedNodes( poa, task );
+    
+    //operation earliest start
+    if( this.Settings().UseEarliestStart() )
+    {
+      this.POAAddConstraintEarliestStart( poa, task );
+    }
+    //operation latest end
+    if( guard( this.Strategy().MRS_KPIUseConstraintLatestEnd(), true ) )
+    {
+      this.POAAddConstraintLatestEnd( poa, task );
+    }
+    //Add the end constraint which penalyze the resource on which the last operation in balance workload, set end path penalty on each resource
+    this.POAAddConstraintBalanceLoad( poa, task );
+    
+    //Add the EndConstraints associated to the order due date and the suggested due dates
+    this.POAAddConstraintOrderDueDate( poa, task );
+    
+    //Add the idle time constraint
+    if( guard( this.Strategy().MRS_KPIUseConstraintSumCompletionTime(), true ) )
+    {
+      this.POAAddConstraintSumCompletionTime( poa, task );
+    }
+    
+    if( this.Settings().SupportPrecedenceConstraintsWithinResourceGroup() )
+    {
+      // Add the predecent relations between the operations that are linked through an operation material
+      this.POAAddConstraintPrecedenceOperationMaterial( poa, task );
+    }
+  *]
+}

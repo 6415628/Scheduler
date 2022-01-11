@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedBatchingCompatibility (Operation_SCs operations, Resource_SC resource, Boolean skipsoftcheck, 
+  output String feedback_o, output Boolean isallowedhard_o) declarative remote as Boolean
+{
+  Description: 'Checks batch compatibility rules ( hard and soft rules )'
+  TextBody:
+  [*
+    // jan er Jun-10-2014 (created)
+    /*
+    1. Checks batch compatibility hard rules ( default and customized )
+    2. Checks batch compatibility soft rules ( default and customized )
+    */
+    
+    //Hard rules
+    value := this.AllowedBatchingCompatibilityHardDefault( operations, feedback_o );
+    value := value and this.AllowedBatchingCompatibilityHardCustomized( operations, feedback_o );
+    
+    isallowedhard_o := isallowedhard_o and value;
+    
+    //Soft rules
+    if( value and not skipsoftcheck )
+    {
+      value := this.AllowedBatchingCompatibilitySoftDefault( operations, resource, feedback_o ) and value;
+      value := this.AllowedBatchingCompatibilitySoftCustomized( operations, resource, feedback_o ) and value;
+    }
+    
+    return value;
+  *]
+}

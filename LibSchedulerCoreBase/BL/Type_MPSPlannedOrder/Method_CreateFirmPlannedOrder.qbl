@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateFirmPlannedOrder () as WorkOrder
+{
+  Description: 'Create a firm planned order for this MPSPlannedOrder.'
+  TextBody:
+  [*
+    routing := this.Routing();
+    // Select routing step routing output base on max routing step sequence nr instead of last operation as end product might be produced in earlier operation.
+    lastRoutingStepOutput := maxselect( routing, RoutingStep.RoutingStepOutput, routingStepOutput, true, routingStepOutput.RoutingStepSequenceNr() );
+    productInStockingPoint := guard( lastRoutingStepOutput.ProductInStockingPoint(), null( ProductInStockingPoint ) );
+    workOrder := null( WorkOrder );
+    
+    if( not isnull( routing ) )
+    {
+      lotSize := routing.LotSize();
+      // We will allow the nr of lots to not match the quantity produced and allow the firing of constraints
+      nrOfLots := ifexpr( lotSize > 0, 
+                          ceil( this.QuantityOpen() / lotSize ), 
+                          0 );
+      
+      workOrder := routing.CreateWorkOrder( productInStockingPoint, this.QuantityOpen(), nrOfLots, this.DueDate(), false );
+      workOrder.astype( InternalWorkOrder ).IsCreatedFromMPSPlannedOrder( true );
+    }
+    
+    return workOrder;
+  *]
+}

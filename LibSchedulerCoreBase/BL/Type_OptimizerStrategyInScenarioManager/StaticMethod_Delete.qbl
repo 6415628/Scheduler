@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Delete (OptimizerStrategyInScenarioManagers optimizerstrategyinscenariomanagers, Schedule schedule)
+{
+  Description: 'Delete all selected OptimizerStrategyInScenarioManager'
+  TextBody:
+  [*
+    // kag1 Nov-16-2017 (created)
+    defaultStrategy := select( optimizerstrategyinscenariomanagers, Elements.ScenarioManager.OptimizerStrategyInScenarioManager, strategy, strategy.IsDefault() );
+    isInDeletionScope := exists( optimizerstrategyinscenariomanagers, Elements, e, 
+                                guard( e.ID() = schedule.OptimizerStrategyInSchedule().ID(), false ) );
+    
+    traverse( optimizerstrategyinscenariomanagers, Elements, optimizerstrategyinscenariomanager, not optimizerstrategyinscenariomanager.IsDefault() )
+    {
+      optimizerstrategyinscenariomanager.Delete();
+    }
+    
+    // Update the selected strategy if selected is within the deletion scope
+    if( not isnull( defaultStrategy ) and isInDeletionScope )
+    {
+      schedule.SetOptimizerStrategy( defaultStrategy, '' );
+    }
+  *]
+}

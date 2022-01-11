@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeExportedPlannedFulfillments
+{
+  Description: 'Synchronize planned fulfillments that are to be exported to ERP/MES systems.'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    allinstances := selectset( schedule, FeedbackManager.ExportedSchedule.ExportedPlannedFulfillment, epf, true );
+    updatedinstances := construct( ExportedPlannedFulfillments );
+    
+    traverse( schedule, Supply, supply )
+    {
+      supply.SynchronizeExportedFulfillments( updatedinstances );
+    }
+    
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, old )
+    {
+      old.Delete();
+    }
+  *]
+}

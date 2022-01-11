@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetSharedRepositoryPath () as String
+{
+  Description: 'Retrieves the shared repository full path'
+  TextBody:
+  [*
+    // PTF MODELING HANDLE - TARGET SHARED REPOSITORY
+    /*
+    The default shared repository path is "\\<machine name>\PTF_Repository\".
+    
+    Steps to change the shared repository path:
+    1. Create a static method with the name "GetSharedRepositoryPath" on the <LibPTF subclass> in the model.
+    2. Ensure that the static method has return type "String".
+    3. Let the static method return the customized shared repository path.
+    */
+    
+    // Retrieve shared repository path
+    methodname := 'GetSharedRepositoryPath';
+    libPTF     := typeof( LibPTF );
+    subclass   := select( libPTF, Specializations, sub, true, true );
+    
+    staticmethod := Reflection::FindStaticMethod( subclass.Name(), methodname );
+    
+    fullpath := '';
+    
+    if( not isnull( staticmethod ) )
+    {
+      staticmethod.Execute();
+      fullpath := staticmethod.GetStringResult();
+    
+      if( guard( fullpath.RestString( fullpath.Length() - 1 ) <> '\', false ) )
+      {
+        fullpath := fullpath + '\';
+      }
+    }
+    else
+    {
+      // Use curent machine as default
+      machinename := OS::ComputerName();
+      folderName  := 'PTF_Repository';
+      fullpath    := '\\' + machinename + '\' + folderName + '\';
+    }
+    
+    return fullpath;
+  *]
+}

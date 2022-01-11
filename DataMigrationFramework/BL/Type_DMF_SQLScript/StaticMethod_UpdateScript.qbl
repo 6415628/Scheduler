@@ -1,0 +1,93 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod UpdateScript (DMF_ConvertorDataset dmf_i, String fileName_i, Numbers toVersions_i)
+{
+  Description: 'Adds metadata information to an existing script, or replaces it if it already exists'
+  TextBody:
+  [*
+    // tgn3 Jul-14-2021 (created)
+    
+    settings := dmf_i.Settings();
+    
+    fileName := settings.DataUpgradeScriptsDirectory().Concat( fileName_i );
+    
+    /* Debug - do not delete
+    logfile( ">>> fileName", fileName );
+    logfile( ">>> datasetKind", datasetKind_i );
+    logfile( toVersions_i.ToString( ", " ) );
+    */
+    
+    // Verify if file exists before proceeding
+    // In case it was removed while user was managing scripts
+    if( OS::IsFile( fileName ) )
+    {
+      file := OSFile::Construct();
+      
+      file.Open( fileName, "ReadWrite", true );
+      
+      // Extract contents and close the file
+      contents := file.ReadTextToEnd();
+      
+      file.Close();
+      
+      // Locate start and end of metadata block
+      startLine  := DMF_SQLScript::MetadataStart();
+      endLine    := DMF_SQLScript::MetadataEnd();
+      startIndex := contents.FindString( startLine, 0 );
+      endIndex   := contents.FindString( endLine, 0 );
+      
+      // Debug - do not delete
+      //logfile( ">>>", contents, contents.Length(), startIndex, endIndex );
+      
+      hasBlock   := startIndex >= 0 and endIndex >= 0; 
+      hasNoBlock := startIndex < 0 and endIndex < 0;
+        
+      // If block exists, or doesn't exist, update/insert it
+      if( hasBlock or hasNoBlock )
+      {
+        if( hasBlock )
+        {
+          // Remove the block if it exists
+          // Second argument is a count, not an index
+          // We want to erase all instances up to the end of the second tag
+          contents := contents.Erase( startIndex, endIndex  + endLine.Length() - startIndex );  
+        }
+        else
+        {
+           // Force the start index to 0
+           startIndex := 0;      
+        }
+        
+        // Update contents
+        metadataBlock := DMF_SQLScript::GetMetadataBlock( toVersions_i.Element( 0 ), toVersions_i.Element( 1 ), toVersions_i.Element( 2 ), toVersions_i.Element( 3 ) );
+        contents      := contents.Insert( startIndex, metadataBlock );
+        
+        // Delete the file and re-write it  
+        OS::RemoveFile( fileName );
+        
+        file.Open     ( fileName, "Write", true );
+        file.WriteText( contents );
+        
+        file.Close();
+      }
+      else
+      {
+        // Partial metadata tags detected - do nothing
+        // Unable to augment script, could lead to bad result
+        msg := "DMF_SQLScript.UpdateBasicScript failed. A partial metadata tag was detected, please check the source file";
+        
+        DMF_Utility::LogWarning( msg );
+      }
+    }
+    else
+    {
+      msg := "DMF_SQLScript.UpdateBasicScript failed. The target script doesn't exist!"
+      
+      DMF_Utility::LogWarning( msg );
+    }
+    
+    // Always refresh script information after eitther of the above
+    dmf_i.RefreshScriptInformation();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

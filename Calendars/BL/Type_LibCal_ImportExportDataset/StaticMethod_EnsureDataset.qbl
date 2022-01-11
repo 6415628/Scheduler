@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod EnsureDataset (String datasetName_i, Boolean loadIfOffline_i, Boolean createIfNotExists_i, 
+  String storageState_i) as String
+{
+  Description: 'Make sure that a dataset is available by loading it or creating a new one if necessary.'
+  TextBody:
+  [*
+    fullName := LibCal_ImportExportDataset::GetFullName( datasetName_i );
+    
+    // First see if the dataset is already loaded.
+    // Use datasetName_i, method FindDatasetKey() will get the fullname itself.
+    includeOffline := false;
+    datasetKey     := LibCal_ImportExportDataset::FindDatasetKey( datasetName_i, includeOffline );
+    
+    if( datasetKey = Key::ZeroKey() )
+    {
+      // See if the dataset exists but is offline.
+      includeOffline := true;
+      datasetKey     := LibCal_ImportExportDataset::FindDatasetKey( datasetName_i, includeOffline );
+    
+      if( datasetKey = Key::ZeroKey() )
+      {
+        // Does not exist. If required, create a new dataset with the applicable storage state.
+        if( createIfNotExists_i )
+        {
+          MDSLibCal_ImportExportDataset::CreateMDS( fullName, storageState_i, LibCal_ImportExportDataset::DATASETFOLDER() );
+          LibCal_Util::DebugInfo( storageState_i + "-dataset '" + fullName + "' created in folder '" + LibCal_ImportExportDataset::DATASETFOLDER() + "'" );
+        }
+      }
+      else
+      {
+        // Does exist but is offline. If required, load it.
+        if( loadIfOffline_i )
+        {
+          MDSLibCal_ImportExportDataset::LoadMDS( fullName, LibCal_ImportExportDataset::DATASETFOLDER() );
+          LibCal_Util::DebugInfo( "Dataset '" + fullName + "' loaded" );
+        }
+      }
+    }
+    
+    return fullName;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

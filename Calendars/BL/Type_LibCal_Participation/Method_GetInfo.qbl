@@ -1,0 +1,64 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetInfo () declarative as String
+{
+  Description: 'Get information about the Event and the RecurrencePattern in textual format.'
+  TextBody:
+  [*
+    value   := "";
+    event   := this.Event();
+    convOps := ConversionOptions::ISO();
+    
+    if( this.IsRecurring() )
+    { 
+      fromTo := " from  " + event.StartTimeOfDay().Format( "H:m" )
+              + " to "    + event.EndTimeOfDay()  .Format( "H:m" );
+    
+      value := this.RecurrencePattern().Info() + fromTo;
+    }
+    else
+    {
+      // No RecurrencePattern, only from and to.
+      // Format depending on whether the participation is on one day or not.
+      // Show the info using the timezone of the calendar instead of in GMT.
+      timezone       := this.Event().Calendar().GetTimeZone();
+      startDate      := this.StartTime().Date(      timezone );
+      startTimeOfDay := this.StartTime().TimeOfDay( timezone );
+      endDate        := this.EndTime()  .Date(      timezone );
+      endTimeOfDay   := this.EndTime()  .TimeOfDay( timezone );
+       
+      if( this.EndDate() = this.StartDate() )
+      {
+        value :=             startDate.Format( "dd D-MM-Y" )
+               + " from  " + startTimeOfDay.Format( "H:m", convOps )
+               + " to "    + endTimeOfDay  .Format( "H:m", convOps );
+      }
+      else
+      {
+        value := "from  " + startDate.Format( "dd D2-MM-Y", convOps ) + startTimeOfDay.Format( "  H:m", convOps )
+               + " to "   + endDate  .Format( "dd D2-MM-Y", convOps ) + endTimeOfDay  .Format( "  H:m", convOps );
+      }
+    }
+    
+    // Don't show the duration for event "Always available".
+    if( not event.IsAlwaysAvailableEvent() )
+    {
+      // Format the duration depending on its value.
+      dur  := event.Duration();
+      mask := "h:m";
+      
+      if( dur >= Duration::Days( 1 ) )
+      {
+        days := "d 'day" + ifexpr( dur >= Duration::Days( 2 ), "s'", "'" );
+        mask := days     + ifexpr( dur  = dur.StartOfDay()   , ""  , "  " + mask );
+      }
+      
+      duration := "  (duration = " + dur.Format( mask ) + ")";
+        
+      value := value + duration;
+    }
+      
+    return value;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

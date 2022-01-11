@@ -1,0 +1,68 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateUnplannedProgramChangeImportedFeedbackData (Schedule schedule, Boolean isimportrelationbetweenfeedbacktaskandprogram)
+{
+  Description: 'Create unplanned program change imported feedback test data'
+  TextBody:
+  [*
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, res, true );
+    programchange := select( schedule, ProgramChange, pc, true )
+    taskduration := Duration::Hours( 1 );
+    
+    // Create 1st program change feedback for planned program change
+    programchangestart := schedule.Time() - Duration::Hours( 10 );
+    externalstoppageid := programchange.ProgramChangeID() + '_Ext';
+    this.CreateImportedFeedbackProgramChangeTask( schedule,
+                                                  programchange.ProgramChangeID(),
+                                                  externalstoppageid,
+                                                  resource,
+                                                  programchangestart );
+    
+    // Create 2nd program change feedback for unplanned program change ( External program change )
+    programchangestart2 := schedule.Time() - Duration::Hours( 6 );
+    externalstoppageid2 := 'ExternalStoppageID';
+    this.CreateImportedFeedbackProgramChangeTask( schedule,
+                                                  '',
+                                                  externalstoppageid2,
+                                                  resource,
+                                                  programchangestart2 );
+    
+    // Create 1st feedback program 
+    traverse( programchange, ProgramType, pt )
+    {
+      externalprogramid := pt.ScheduledProgramID() + '_Ext';
+      programtypeconfig := pt.ProgramTypeConfiguration();
+      taskstart := programchangestart + taskduration;
+      
+      this.CreateImportedFeedbackProgram( schedule,
+                                          externalprogramid,
+                                          programchange.ProgramChangeID(),
+                                          externalstoppageid,
+                                          programtypeconfig,
+                                          resource,
+                                          taskstart,
+                                          1,
+                                          3,
+                                          isimportrelationbetweenfeedbacktaskandprogram );
+    }
+    
+    // Create 2nd feedback program
+    traverse( programchange, ProgramType, pt )
+    {
+      externalprogramid := pt.ScheduledProgramID() + externalstoppageid2;
+      programtypeconfig := pt.ProgramTypeConfiguration();
+      taskstart := programchangestart2 + taskduration;
+      
+      this.CreateImportedFeedbackProgram( schedule,
+                                  externalprogramid,
+                                  '',
+                                  externalstoppageid2,
+                                  programtypeconfig,
+                                  resource,
+                                  taskstart,
+                                  4,
+                                  8,
+                                  isimportrelationbetweenfeedbacktaskandprogram );
+    }
+  *]
+}

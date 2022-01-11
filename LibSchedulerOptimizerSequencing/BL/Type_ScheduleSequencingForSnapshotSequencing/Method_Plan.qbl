@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method Plan (LibOpt_Run run)
+{
+  Description:
+  [*
+    Plans this plan copy on all actual resources that are captured by this plan copy.
+    Does not change the planning of operations that are marked as locked in the given run.
+  *]
+  TextBody:
+  [*
+    // Copied and adapted from the MRS optimizer
+    
+    schedule := run.Optimization().astype( Optimization ).Schedule();
+    operationsonrun_unfrozen := selectset( schedule, Operation_SC, op, true );
+    traverse( schedule, ResourceGroup_SC.Resource_SC, resource )
+    {
+      // Planned operations that should be unplanned
+      operationstounplan := selectset( operationsonrun_unfrozen,
+                                       Elements,
+                                       op,
+                                       // Operation not stored in snapshot, so not replanned
+                                       not exists( this, OperationOnResource, pe, pe.Operation() = op )
+                                       // Operation is planned
+                                       and guard( op.Task_SC().Resource_SC() = resource, false ) );
+      traverse( operationstounplan, Elements, op )
+      {
+        op.Unplan();
+      }
+      
+      // retrieve sorted list of operations to be planned on the resource:
+      planelements := selectsortedset( this, OperationOnResource, operationinsnapshot, 
+                                       guard( operationinsnapshot.Resource() = resource, false ),
+                                       operationinsnapshot.End() );
+      sortedoperations := construct( Operation_SCs );
+      traverse( planelements, Elements, planelement )
+      {
+        sortedoperations.Add( planelement.Operation() );
+      }
+      // plan in order:
+      resource.PlanLast( sortedoperations );
+    }
+  *]
+}

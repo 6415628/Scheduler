@@ -1,0 +1,16 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test058_ResourceExchangability_ResourceConnections_UndoChanges (Schedule schedule)
+{
+  Description: 'Reverts the changes to resource connections done in the previous test.'
+  TextBody:
+  [*
+    this.Test051_ResourceConnections_UndoChanges( schedule );
+    
+    transientdata := UTF_Optimizer_Regression_Test_OptimizerSequencing::GetLastTransientData( schedule );
+    this.Run().AssertFalse( isnull( transientdata ), "Transient Data not saved by optimizer" );
+    // the old transient data doesn't get updated when a new ResourceConnection is introduced in the manual model: the resource-connection exchangability check is not totally declarative.
+    // so we have to do a whole new run to check that it works again. This is the same as done in the test we call:
+    this.Run_Test_ResourceExchangability_Positive( schedule, this.GetPreviousMethodShortName() );
+  *]
+}

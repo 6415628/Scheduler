@@ -1,0 +1,60 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod FixVersionSequence (owning Strings detailInfo_i, String delimeter_i) as owning Strings
+{
+  Description: 'Helper method to fix detail information version sequence'
+  TextBody:
+  [*
+    // tgn3 Apr-14-2021 (created)
+    
+    // Mind: this method rearranges core data version elements to ensure they display in the right sequence
+    // Because they don't sort correctly alphabetically
+    majorKey := attribute( DMF_UpgradeabilityMetaData, CoreDataMajorVersion ).Name();
+    minorKey := attribute( DMF_UpgradeabilityMetaData, CoreDataMinorVersion ).Name();
+    buildKey := attribute( DMF_UpgradeabilityMetaData, CoreDataBuildVersion ).Name();
+    patchKey := attribute( DMF_UpgradeabilityMetaData, CoreDataPatchVersion ).Name();
+    
+    //main sequence reference from the attribute name
+    keys       := construct( Strings ).Merge( majorKey ).Merge( minorKey ).Merge( buildKey ).Merge( patchKey );
+    customKeys := DMF_API::SetCoreDataCustomVersionSequenceExtensible();
+    
+    //allowed custom sequencing, by default sequence by the naming if not provided a custom sequence
+    if( guard( customKeys.Size() > 0, false ) )
+    {
+      keys := keys.Merge( customKeys );
+    }
+    
+    allVersionRelatedPair := selectsortedset( detailInfo_i, Elements, detailInfo, 
+                                              detailInfo.StartsWith( "CoreData" ),//filter,
+                                              guard( detailInfo.Tokenize( delimeter_i ).Element( 0 ), '' ) ); //default sorting based on the attribute name
+    if( allVersionRelatedPair.Size() > 0 )
+    {
+      detailInfo_i := detailInfo_i.Difference( allVersionRelatedPair );
+    }
+    
+    index := 0;
+    
+    //sort the versions pairs
+    traverse( keys, Elements, key )
+    {
+      notFoundString            := '**NOT FOUND**';
+      versionString             := guard( select( allVersionRelatedPair, Elements, detailInfo, detailInfo.FindString( key, 0 ) <> -1 ), notFoundString );
+      versionStringPairLocation := ifexpr( versionString = notFoundString, -1, guard( allVersionRelatedPair.Find( versionString ), -1 ) );
+      
+      if( versionStringPairLocation <> -1 )
+      {
+        allVersionRelatedPair.Swap( versionStringPairLocation, index );
+        index++;
+      }  
+    }
+    
+    //reconnect the versions and other details info into one
+    if( allVersionRelatedPair.Size() > 0 )
+    {
+      detailInfo_i := allVersionRelatedPair.Merge( detailInfo_i );
+    }
+    
+    return &detailInfo_i;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

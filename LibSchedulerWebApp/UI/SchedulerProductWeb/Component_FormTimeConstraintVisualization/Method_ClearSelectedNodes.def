@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method ClearSelectedNodes () id:Method_FormTimeConstraintVisualization_ClearSelectedNodes
+{
+  #keys: '[134266.0.2007250899]'
+  Body:
+  [*
+    /*// Clear selected nodes when the user single clicks on other node
+    // or clicks on the background
+    
+    // We have to obtain the products and stocking points to be removed from nav panel
+    // we can't just flush nav panel selection because the ones the user selected at
+    // the nav panel have to remain intact, we only remove the ones that are selected in SCV
+    toBeDeletedProducts := selectset( DataHolderSelectedNodes.Data(),  
+                                      Elements.ProductInStockingPointInPeriod.ProductInStockingPoint_MP.Product_MP,
+                                      p, true )
+    toBeDeletedSPs := selectset( DataHolderSelectedNodes.Data(), 
+                                 Elements.ProductInStockingPointInPeriod.ProductInStockingPoint_MP.StockingPoint_MP,
+                                 sp, true )
+                                 
+    products := DataHolderProducts.Data().Difference( toBeDeletedProducts );
+    sps := DataHolderStockingPoints.Data().Difference( toBeDeletedSPs );
+    
+    
+    DataHolderProducts.Data( products.Copy() );
+    DataHolderStockingPoints.Data( sps.Copy() );
+    
+    DataHolderSelectedNodes.Data().Flush();
+    
+    // Make sure the display node is still selected in nav panel even after we clear the selection
+    if( DataHolderDisplayPISPIP.Data().Size() > 0 )
+    {                   
+      DataHolderProducts.Data().Add( DataHolderDisplayPISPIP.Data().Element( 0 ).ProductInStockingPoint_MP().Product_MP() );
+      DataHolderStockingPoints.Data().Add( DataHolderDisplayPISPIP.Data().Element( 0 ).ProductInStockingPoint_MP().StockingPoint_MP() );
+    }
+  *]
+}

@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetLastMonth (DateTime timestamp) as DateTime id:Method_Kpi_GlobalState_GetLastMonth
+{
+  #keys: '[136398.1.809533354]'
+  Body:
+  [*
+    // Returns the timestamp with its month reduced by 1. 
+    // Takes year-crossing into account.
+                           
+    timezone := TimeZone::ObjectTimeZone( KpiTracker );
+    
+    out := timestamp.StartOfMonth( timezone )
+           .AddAsPeriod( timezone, -Duration::Days( 1 ) )
+           .StartOfMonth( timezone )
+           .AddAsPeriod(  timezone, timestamp - timestamp.StartOfMonth( timezone ) );
+    
+    if( out.StartOfMonth( timezone ) = timestamp.StartOfMonth( timezone ) )
+    {
+      // When it is 29-31 March, the Feb do not have those dates, then just get Feb 28
+      out:= timestamp.StartOfMonth( timezone ).AddAsPeriod( timezone, -Duration::Days( 1 ) );
+    }
+                          
+    return out;
+  *]
+}

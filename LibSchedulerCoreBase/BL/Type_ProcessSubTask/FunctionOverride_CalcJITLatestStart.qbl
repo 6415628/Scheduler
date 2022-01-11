@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcJITLatestStart
+{
+  TextBody:
+  [*
+    lateststart := DateTime::MinDateTime();
+    strategyjit := this.Task_SC().StrategyJIT();
+    
+    if( not isnull( strategyjit ) )
+    {
+      latestend := DateTime::MinDateTime();
+      nextsubtask := this.Next();
+    
+      if( isnull( nextsubtask ) )
+      {
+        latestend := strategyjit.LatestEnd();
+      }
+      else
+      {
+        latestend := nextsubtask.JITLatestStart();
+      }
+    
+      lateststart := this.Resource_SC().ResourceCalendar().Subtract( latestend, this.NetDuration() );
+      
+      if( this.Task_SC().Schedule().TechnicalConfiguration().IsLotLeadTimeLogicOn() )
+      {
+        lateststart := this.Task_SC().FirstInputLot().LatestStart();
+      }    
+    }
+    
+    this.JITLatestStart( lateststart );
+  *]
+}

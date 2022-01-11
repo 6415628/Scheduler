@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod OnServerStartup (DatasetState storageState)
+{
+  TextBody:
+  [*
+    name := 'LibOpt_BT_BenchmarkTrackingDataset';
+    
+    infos := MDSEditor::Editor().ObjectInfos( typeof( LibOpt_BT_BenchmarkTrackingDataset ).Name() );
+    
+    inf := null( MDSObjectInfo );
+    if( infos.Elements( relsize ) = 1 )
+    {
+      inf := infos.Elements( relget ).First();
+    }
+    else
+    {
+      inf := infos.Find( name );
+    }
+    
+    
+    if( isnull( inf ) )
+    {
+      options := DatasetCreateOptions::Construct( name )
+                                      .State( storageState );
+      MDSLibOpt_BT_BenchmarkTrackingDataset::Create( options );
+    }
+    else if( not inf.IsLoaded() )
+    {
+      MDSLibOpt_BT_BenchmarkTrackingDataset::Load( inf.MDSID().MDSKey() );
+    }
+  *]
+}

@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+Method OptimizeSelectedOperations () id:Method_ApplicationScheduler_OptimizeSelectedOperations
+{
+  #keys: '[137186.0.151832865]'
+  Body:
+  [*
+    selectedOptimizer := LabelSelectedOptimizerName.Text();
+    operations := DataHolderOptimizerAllScopedOperations.Data();
+    // Get all allowed resources
+    resources := Operation_SC::GetAllowedResources( DataHolderOptimizerAllScopedOperations.Data() );
+    
+    // If sequencing optimizer is selected, optimize the selected operations
+    if( selectedOptimizer = Constants::OptimizerSequencing() )
+    {
+      // Get all allowed resources which do not have configurable rules
+      resources := selectset( resources, Elements, res, not res.ResourceGroup_SC().HasConfigurableRule() );
+      
+      // Get operations which are allowed on resource without configurable rules
+      operations := selectset( operations, Elements, operation,
+                               exists( resources, Elements, resource, operation.AllowedOnResource( resource ) ) );
+      
+      // Get all allowed resources
+      Schedule.Optimization().OptimizerSequencing().Optimize( operations, resources );
+    }
+    // If programs optimizer is selected, only optimize the operations which allowed on selected resource
+    else if( selectedOptimizer = Constants::OptimizerPrograms()
+             and resources.Size() > 0 )
+    {
+      // Get all allowed resources which have configurable rules
+      resources := selectset( resources, Elements, res, res.HasConfigurableRule() );
+      
+      // Select single resource, only pop up dialog if there are multiple resources
+      selectedresource := resources.Element( 0 );
+      if( resources.Size() > 1 ) 
+      {
+        dlgselectresource := construct( DialogSelectResourceForProgramOptimizer ); 
+        selectedresource := dlgselectresource.SelectResource( ApplicationScheduler, resources.Copy() );
+      }
+       
+      if( not isnull( selectedresource ) )
+      {
+        // Only select operations which allowed on selected resource
+        selectedoperations := selectset( operations, Elements, op, op.AllowedOnResource( selectedresource ) );
+        
+        // Get structured set of resources
+        resources.Flush();
+        resources.Add( selectedresource );
+        
+        // Call program optimizer
+        Schedule.Optimization().OptimizerProgram().Optimize( resources, selectedoperations );
+      }
+    }
+  *]
+}

@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckOverfulfilledQuantityAllowed (MaterialDemand demand, MaterialSupply supply, MaterialFulfillment fulfillment, 
+  String quantity, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Check if input overfulfilled quantity is allowed for the selected supply and demand'
+  TextBody:
+  [*
+    openquantity := supply.QuantityOpen();
+    
+    if( not isnull( fulfillment ) )
+    {
+      openquantity := openquantity + fulfillment.Quantity();
+    }
+    
+    qty := guard( StringToReal::UserConverter().Convert( quantity ), -1 ); // converter used to avoid conversion problems for different locales
+    
+    value := Fulfillment::CheckInputQuantitySmallerThanOrEqualToOpenQuantity( qty, openquantity, feedback_o );
+    value := value and Fulfillment::CheckInputQuantityMoreThanZero( qty, feedback_o );
+    value := value and Fulfillment::CheckInputQuantityWithinMaxNumberAllowed( qty, feedback_o );
+    value := value and Fulfillment::CheckMaterialFulfillmentInputQuantityIsDiscrete( qty, demand, supply, feedback_o );
+    
+    return value;
+  *]
+}

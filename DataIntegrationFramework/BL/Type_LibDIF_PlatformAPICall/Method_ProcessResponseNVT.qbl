@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method ProcessResponseNVT (NamedValueTree responseNVT_i) as String
+{
+  Description:
+  [*
+    Process the responseNVT of the APICall, depending on whether it contains data as a NamedValueTree or in 'raw' JSON-format.
+    If the data is in 'raw' JSON-format it can either be processed now, or later on; the JSON-data is returned as string for this purpose.
+  *]
+  TextBody:
+  [*
+    response := "";
+    
+    //info( ">>> ResponseNVT" );
+    //info( responseNVT_i.ToString() );
+    
+    if( this.ResponseOK( responseNVT_i ) )
+    {
+      // Process the data that is replied by the QI.
+      this.GetIntegrationDataset().ProcessDataFromQI( responseNVT_i, this.IntegratorID() );
+      
+      // If the response is in JSON-format then return it, so it can be processed only later on if applicable.
+      // In that case, it should not have been processed by ProcessDataFromQI.
+      if( LibDIF_PlatformAPICall::IsRawResponse( responseNVT_i ) )
+      {
+        // Get the data (in JSON-format) from the Body of the response, and process it.
+        response := LibInt_MessageAccessor::GetBodyValueAsString( responseNVT_i );
+      }
+    }
+    
+    return response;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

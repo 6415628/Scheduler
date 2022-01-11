@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestGeneralPreconditionInRule (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    ruleName := '';
+    ruleType := ''
+    ruleSubType := ''
+    isConditionChecked := false;
+    conditionCharacteristic := ''
+    isValid := false;
+    
+    this.GetTestVariant( ruleName,
+                         ruleType,
+                         ruleSubType,
+                         isConditionChecked,
+                         conditionCharacteristic,
+                         isValid );
+    
+    rule := select( schedule, Rule, rule, true );
+    rule_ruleName := rule.Name();
+    rule_ruleType := rule.RuleType();
+    rule_isConditionEnabled := rule.IsConditionEnabled();
+    rule_conditonCharacteristic := rule.CharacteristicCondition();
+    
+    // Verify the precondition return value.
+    value := Rule::IsValidRuleGeneral( schedule, 
+                                       rule, 
+                                       rule_ruleName, 
+                                       rule_ruleType, 
+                                       rule_isConditionEnabled, 
+                                       rule_conditonCharacteristic );
+    
+    this.Run().AssertEqual( isValid, value );
+  *]
+}

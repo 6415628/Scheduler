@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetOptimizerStrategy (OptimizerStrategyInScenarioManager optimizerstrategyinscenariomanager, String optimizername)
+{
+  Description:
+  [*
+    Sets the optimizer strategy of this schedule equal to the argument optimizer strategy.
+    This method copies the optimizer strategy from the ScenarioManager dataset to the Schedule dataset
+  *]
+  TextBody:
+  [*
+    if( not isnull( this.Optimizer() ) )
+    {
+      this.Optimizer().SetOptimizerStrategy( optimizerstrategyinscenariomanager, optimizername );
+    }
+    
+    // Since there is a 1:1 relation between scenario and strategy, the newly created strategy will automatically be selected
+    if( guard( this.OptimizerStrategyInSchedule().ID() <> optimizerstrategyinscenariomanager.ID(), true ) )
+    {
+      newstrategy := OptimizerStrategyInSchedule::Create( this, optimizerstrategyinscenariomanager.ID() );
+      newstrategy.Update( optimizerstrategyinscenariomanager );
+    }
+  *]
+}

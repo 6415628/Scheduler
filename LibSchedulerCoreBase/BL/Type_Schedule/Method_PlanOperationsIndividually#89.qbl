@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanOperationsIndividually (Operation_SCs operations, Resource_SCs resources)
+{
+  Description: 'like ::PlanOperationsIndividually( operations ), but only considers planning on the given resource candidates.'
+  TextBody:
+  [*
+    Operation_SC::SetIsPlanning( operations, true );
+    
+    traverse( operations, Elements, op, true )
+    {
+      op.Plan( resources );
+      // Propagate needed to recalculate the times when each resource is available, so a next operation can be planned ASAP
+      Transaction::Transaction().Propagate( attribute( Resource_SC, EarliestAvailable ) );
+    }
+    
+    this.AutomaticProductBasedMaterialReservationBySorting();
+    Operation_SC::SetIsPlanning( operations, false );
+  *]
+}

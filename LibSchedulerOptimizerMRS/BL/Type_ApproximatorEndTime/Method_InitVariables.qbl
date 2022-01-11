@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitVariables (SuboptimizerApproximatorEndTime_MIPBalanceLoadSingle program, LibOpt_Task task, ResourceGroup_SC resourcegroup)
+{
+  TextBody:
+  [*
+    // mbr23 Sep-16-2019 (created)
+    
+    operations := task.Scope().OperationsUnlocked();
+    
+    //Decision variables:
+    //The variable is equal to 1 is the resource is assigned to the operation, 0 otherwise.
+    traverse( operations, Elements, element )
+    {
+      traverse( resourcegroup, Resource_SC, resource, SuboptimizerMRSPOA::IsAllowedOnResource( element, resource) )
+      {
+        program.AssignVariables().New( resource, element );
+      }
+    }
+    
+    //helper variables:
+    //The variables total duration will contain the sum of processing time of the operations assigned to each resource.
+    traverse( resourcegroup, Resource_SC.astype( SingleResourceBase ), resource )
+    {
+      program.TotalDurationVariables().New( resource );
+    }
+    
+    //The variable Max duration represent the goal of the MILP, it is the maximum over all resources of the durations
+    program.MaxDurationVariables().New();
+  *]
+}

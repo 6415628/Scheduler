@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpgradeDatabaseBaseOnScript (DMF_RunStep runStep_i) as Boolean
+{
+  TextBody:
+  [*
+    datasetInConvertorVersion := runStep_i.DatasetInConvertorVersion();
+    dataset                   := datasetInConvertorVersion.Dataset();
+    convertorVersion          := datasetInConvertorVersion.ConvertorVersion();
+    databasePath              := dataset.DatabasePath();
+    versionPath               := select( dataset, DatasetType.VersionLookup.VersionPath, path, path.FromVersion() = convertorVersion.Version() );
+    databaseUpgradeScript     := versionPath.Script();
+    
+    //retrieve the database file and execute it with the database script
+    dbInterface           := this.DBInterface();
+    duio                  := dbInterface.FindCreateTemplateDB( databasePath );
+    scriptExecutionMsg    := '';
+    isValidExecution      := dbInterface.Execute( duio, databaseUpgradeScript, scriptExecutionMsg );
+    
+    if( not isValidExecution )
+    {
+      DMF_Utility::LogError( scriptExecutionMsg );
+    }
+    
+    return isValidExecution;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

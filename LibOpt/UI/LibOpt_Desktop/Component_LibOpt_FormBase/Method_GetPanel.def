@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetPanel () as LibOpt_Panel id:Method_LibOpt_FormBase_GetPanel
+{
+  #keys: '[139164.0.361144649]'
+  Body:
+  [*
+    // Returns the instance of the LibOpt_Panel control
+    // that was added to the consuming application.
+    panelOutput := this.DataHolderPanel().Data();
+    
+    if ( isnull( panelOutput ) )
+    {
+      set := selectset( this.Application(), SubComponents, sc, true );
+      safetyCounter := 0;
+      panel := null( GUIComponent );
+      while ( set.Size() > 0 and safetyCounter < 20 and isnull( panel ) )
+      {
+        panel := select( set, Elements, p, p.istype( LibOpt_Panel ) );
+        if ( isnull( panel ) )
+        {
+          set := selectset( set, Elements.SubComponents, sc, true );
+        }
+        safetyCounter++;
+      }
+      
+      // Warn the consumer of this library that the panel has not been
+      // added to the main form.
+      if ( isnull( panel ) )
+      {
+        info( "Components: Could not find an instance of the LibOpt_Panel component. Please add this component to your application's main toolbar. " );
+      }
+      else
+      {
+        panelOutput := panel.astype( LibOpt_Panel )
+        this.DataHolderPanel().Data( panelOutput );
+      }
+    }
+    return panelOutput;
+  *]
+}

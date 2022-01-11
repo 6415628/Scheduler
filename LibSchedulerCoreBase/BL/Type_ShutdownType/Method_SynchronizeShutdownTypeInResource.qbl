@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeShutdownTypeInResource (ImportedShutdownType importedShutdownType)
+{
+  Description: 'Synchronize shutdown type in resource.'
+  TextBody:
+  [*
+    // Get all instance of shutdown type in resource
+    allShutdownTypeInResources := selectset( this, ShutdownTypeInResource, stir, true );
+    updatedShutdownTypeInResources := construct( ShutdownTypeInResources );
+    
+    // Propagete declarative attribute and relation because it is used in traverse
+    Transaction::Transaction().Propagate( attribute( ImportedShutdownTypeInResource, IsValidDataHard ) );
+    Transaction::Transaction().Propagate( relation( ImportedShutdownType, ImportedShutdownTypeInResource ) );
+    
+    traverse( importedShutdownType, ImportedShutdownTypeInResource, importedShutdownTypeInResource, importedShutdownTypeInResource.IsValidDataHard() )
+    {
+      resource := Resource_SC::FindResource_SC( importedShutdownTypeInResource.ResourceID() );
+      
+      shutdownTypeInResource := select( this, 
+                                        ShutdownTypeInResource, 
+                                        stir, 
+                                        stir.Resource_SC() = resource );
+                      
+      if( not isnull( resource ) and isnull( shutdownTypeInResource ) )
+      {
+        shutdownTypeInResource := ShutdownTypeInResource::Create( this, resource );
+      }
+      
+      if( not isnull( shutdownTypeInResource ) )
+      {
+        updatedShutdownTypeInResources.Add( shutdownTypeInResource ); 
+      }
+    }
+    
+    // Delete old instances of imported shutdown type in resource
+    oldShutdownTypeInResources := allShutdownTypeInResources.Difference( updatedShutdownTypeInResources );
+    traverse( oldShutdownTypeInResources, Elements, oldShutdownTypeInResource )
+    {
+      oldShutdownTypeInResource.Remove(); 
+    }
+  *]
+}

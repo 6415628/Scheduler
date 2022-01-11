@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CalculateDeviation (const Rule rule, DORule_DataObjectSequencingRule do_rule) const declarative remote as Real
+{
+  TextBody:
+  [*
+    value := 0.0;
+    
+    // Getting threshold and difference jump from data object
+    ruleValue := this.GetRuleValue( rule, do_rule );
+    differencejump := this.GetDifferenceJumpValue( rule, do_rule );
+    
+    // Only calculate deviation if threshold is finite and difference jump greater than 0
+    if( ruleValue.IsFinite() and differencejump > 0 )
+    {
+      if( this.Limit() = RuleConstant::Limit_Min() )
+      {
+        // Calculate the deviation when RuleValue > currentvalue for Minimum rule checking
+        value := maxvalue( ruleValue - differencejump, 0 );
+      }
+      else if( this.Limit() = RuleConstant::Limit_Max() )
+      {
+        // Calculate the deviation when currentvalue > RuleValue for Maximum rule checking
+        value := maxvalue( differencejump - ruleValue, 0 );
+      }
+      else
+      {
+        // Default value will be 1.0 for limit "allowed" and "not allowed" 
+        value := 1.0; 
+      }
+    }
+    
+    return value;
+  *]
+}

@@ -1,0 +1,78 @@
+Quintiq file version 2.0
+#parent: #root
+Method POA_MatrixFilling (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLeg combileg, Rule rule, 
+  Reals rulevalueset1, Reals rulevalueset2, Operation_SCs operationsvalueset1, 
+  Operation_SCs operationsvalueset2, Boolean isforsoftrulepenalty)
+{
+  TextBody:
+  [*
+    // tvk2 Oct-13-2021 (created)
+    
+    poapossible := guard( poa.Possible( SuboptimizerPOACombiLeg::NamePOAPossibleTransitionAllowed( combileg ) ), null( POAPossible ) );
+    
+    penaltytransition := guard( poa.Transition( SuboptimizerPOACombiLeg::NamePOATransitionSoftRulePenalty() ), null( POATransition ) );
+    pathtype := guard( poa.PathType( SuboptimizerPOACombiLeg::NamePOAPathCombiLeg( combileg ), combileg ), null( POAPathType ) );
+    
+    //Create DORule_DataObjectSequencingRule, used as input for checking if the rule is broken.
+    dosequencingrule := construct( DORule_DataObjectSequencingRule );
+    dosequencingrule.HasPreviousOperation( true );
+    
+    traverse( rulevalueset1, Elements, value1 )
+    {
+      dosequencingrule.PreviousRealValue( value1 );
+      //Get the set of operations linked to value1 from the respective operationset.
+      operationsvalue1 := selectset( operationsvalueset1, Elements, operation1, operation1.GetCharacteristicRealValueCurrent() = value1 );
+      
+      traverse( rulevalueset2, Elements, value2 )
+      {        
+        dosequencingrule.CurrentRealValue( value2 );
+        
+        //Check if the values violate the rule, if so we find the operations that have the respective characteristic value.
+        if( not rule.RuleSubType().ValidationLogic( rule, dosequencingrule ) )
+        {
+          //Calculate the cost violation
+          costviolation := 0.0;
+          if( isforsoftrulepenalty )
+          {
+            costviolation := combileg.GetCostSequenceViolationByRule( rule, dosequencingrule );
+          }
+          
+          //Get the set of operations linked to value2 from the respective operationset.
+          operationsvalue2 := selectset( operationsvalueset2, Elements, operation1, operation1.GetCharacteristicRealValueCurrent() = value2 );
+          
+          traverse( operationsvalue1, Elements, operation1 )
+          {
+            node1 := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation1 ), operation1 );
+    
+            traverse( operationsvalue2, Elements, operation2 )
+            {
+              node2 := poa.Node( SuboptimizerPOACombiLeg::NamePOANodeOperation( operation2 ), operation2 );
+              
+              if( isforsoftrulepenalty )
+              {
+                //We still need to check if this pair of operations adhere to the rule condition, as the value that we checked could have come from another operation with the condition true, while this one is false.            
+                if( operation2.CheckIsRuleApplicableCurrent( rule, operation1, rule.CharacteristicMain() ) )
+                {
+                  totalcost := penaltytransition.Get( pathtype, node1, node2 ) + costviolation * operation2.PlanUnit_SC().Quantity();
+                  penaltytransition.Set( pathtype, node1, node2, totalcost );
+                }
+              }
+              else
+              {
+                currentval := poapossible.Get( node1, node2 );
+                
+                //We still need to check if this pair of operations adhere to the rule condition, as the value that we checked could have come from another operation with the condition true, while this one is false.
+                //No need to check for this however if the poapossible already is set to false by another rule.
+                if( currentval 
+                    and operation2.CheckIsRuleApplicableCurrent( rule, operation1, rule.CharacteristicMain() ) )
+                {
+                  poapossible.Set( node1, node2, false );
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  *]
+}

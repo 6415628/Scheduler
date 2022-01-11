@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAfterShutdownPreviousCumulativeCharacteristic (output BinaryValue previouscumulativecharacteristic, output BinaryValue previouscumulativerealvalue) declarative remote
+{
+  Description: 'Get after shutdown previous cumulative characteristic'
+  TextBody:
+  [*
+    // Get after shutdown previous cumulative characteristic
+    previouscumulativecharacteristic := guard( this.Previous().AfterShutdownCumulativeCharacteristic(), BinaryValue::Construct( ) );
+    previouscumulativerealvalue := guard( this.Previous().AfterShutdownCumulativeRealValues(), BinaryValue::Construct( ) );
+    
+    // Check whether there is previous feedback task/archived values
+    if( isnull( this.Previous() )
+        and not isnull( guard( this.PreviousShutdown().FeedbackShutdownTask(), null( FeedbackShutdownTask ) ) ) )
+    {
+      previousfeedbacktask := this.Resource_SC().GetLastFeedbackTaskForSequencingRules();
+      if( not isnull( previousfeedbacktask ) )
+      {
+        previouscumulativecharacteristic := previousfeedbacktask.AfterShutdownCumulativeCharacteristic();
+        previouscumulativerealvalue := previousfeedbacktask.AfterShutdownCumulativeRealValues();
+      }
+      // Checks whether there is previous shutdown archived cumulative values
+      else if( not isnull( this.PreviousShutdown() ) )
+      {
+        previouscumulativecharacteristic := this.PreviousShutdown().ArchivedAfterShutdownCumulativeCharacteristic();
+        previouscumulativerealvalue := this.PreviousShutdown().ArchivedAfterShutdownCumulativeRealValues();  
+      }
+    }
+  *]
+}

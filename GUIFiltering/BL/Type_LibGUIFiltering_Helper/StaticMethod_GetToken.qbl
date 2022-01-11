@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetToken (String searchterms, output Number pos, output Boolean isquoted) remote as String
+{
+  TextBody:
+  [*
+    // per Oct-4-2016 (created)
+    token := '';
+    
+    if ( pos < searchterms.Length() )
+    {
+      LibGUIFiltering_Helper::SkipSpaces( searchterms, pos );
+      
+      token    := LibGUIFiltering_Helper::GetOperand( searchterms, pos, '' );
+      isquoted := false
+      
+      if ( token = '' )
+      {   
+        char     := searchterms.SubString( pos, 1 );
+        endchar  := '';
+        startpos := pos;
+        
+        if ( char = '"' or char = "'" )
+        {
+          endchar := char;
+          pos++;
+        }
+        
+        if ( not LibGUIFiltering_Helper::GetToken( searchterms, pos, endchar, token )
+         and endchar <> '' )
+        {
+          pos := startpos;
+          
+          LibGUIFiltering_Helper::GetToken( searchterms, pos, '', token );
+        }
+        
+        isquoted := endchar <> '';
+        
+        LibGUIFiltering_Helper::SkipSpaces( searchterms, pos );
+      }
+    }
+    
+    return token;
+  *]
+  InterfaceProperties { Visibility: 'BusinessModel' }
+}

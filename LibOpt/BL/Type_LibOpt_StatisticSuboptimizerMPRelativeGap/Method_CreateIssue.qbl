@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateIssue (LibOpt_SnapshotMP snapshotmp, String issuetype, const constcontent LibOpt_StatisticSeverityScaleEntrys severityscaleentries_lowerthresholdviolation, 
+  const constcontent LibOpt_StatisticSeverityScaleEntrys severityscaleentries_upperthresholdviolation)
+{
+  Description: 'Create a `LibOpt_Issue` for the given "snapshot mp" (`LibOpt_SnapshotMP`) if its `LibOpt_SnapshotMP.RelativeGap` value violates the `UpperThreshold` of this statistic.'
+  TextBody:
+  [*
+    relativegapinreal := BinaryValueUtils::RealVectorGetElement( snapshotmp,
+                                                                 attribute( LibOpt_SnapshotMP, RelativeGaps ),
+                                                                 this.GoalLevel() - 1
+                                                               );
+    
+    relativegapinpercentage := ifexpr( relativegapinreal.IsFinite(), LibOpt_Utility::ConvertRatioToPercentage( relativegapinreal ), Real::MaxReal() );
+    
+    if( relativegapinpercentage >= this.UpperThreshold() )
+    {
+      // Create an Issue and link it to the relevant Snapshot.
+      LibOpt_Issue::Create( this,
+                            snapshotmp,
+                            issuetype,
+                            this.Focus() + ', ' + Translations::LibOpt_IterationNr( snapshotmp.GetIteration().IterationNr(), this.Run().TotalNrOfIterations() ),
+                            this.GetSeverity( relativegapinpercentage, true /*is upper threshold violation*/, severityscaleentries_upperthresholdviolation ),
+                            Translations::LibOpt_Issue_Details_SuboptimizerMPRelativeGap( relativegapinpercentage,
+                                                                                          this.UpperThreshold(),
+                                                                                          LibOpt_Statistic::GetFormat( relativegapinpercentage,
+                                                                                                                       this.UpperThreshold() )
+                                                                                        )
+                          );
+    }
+  *]
+}

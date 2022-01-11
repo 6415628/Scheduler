@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method OperationConflict (LibOpt_Task task, String message) as stream[JSON]
+{
+  TextBody:
+  [*
+    result := null( stream[JSON] );
+    
+    waited := Duration::Seconds( ( OS::PrecisionCounter() - task.SnapshotComponent().PrecisionTimeStampStartComponent() ) / OS::PrecisionCounterFrequency() );
+    if( waited < this.ConflictTimeout() and not task.IsAborted() )
+    {
+      task.Log( message );
+      result := stream[Void]::Wait( LibOpt_SelectorAnchor::ConflictRetryDuration() )->|this->Operation( task );
+    }
+    else
+    {
+      error( message );
+    }
+    
+    return result;
+  *]
+}

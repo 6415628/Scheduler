@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeData
+{
+  Description: 'Sychronize session dataset based on input JSON string data from 3DSpace.'
+  TextBody:
+  [*
+    // Retrieve Schedule dataset
+    scheduleDS := MDSSchedule::Find( DatasetFindOptions::Construct( this.DatasetName() ) );
+    
+    // Separate stream to handle Scheduler logic
+    void->( )
+    {
+      // Set the frequency for the dataset. 
+      scheduleDS.SetSendStatusFrequency( Duration::Seconds( 10 ) );
+      // Remove the existing imported data
+      scheduleDS.ResetAllImportedObjects();
+      // Import the data
+      scheduleDS.UpdateBasedOnJSONWithPlanning( this.SchedulerDataInputJSON() );
+    }
+  *]
+}

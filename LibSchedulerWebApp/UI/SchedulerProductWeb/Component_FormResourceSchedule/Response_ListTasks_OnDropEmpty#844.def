@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: ListTasks
+Response OnDropEmpty (structured[Operation_SC] source, BatchResource resource) id:Response_ListTasks_OnDropEmpty_844
+{
+  #keys: '[142956.0.659779373]'
+  CanBindMultiple: false
+  DefinitionID => /ListTasks/Responsedef_ListTasks_OnDropEmpty
+  GroupServerCalls: true
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey       := actionmodifier.IsControl();
+    ctrlshiftkey  := actionmodifier.IsControl() and actionmodifier.IsShift();
+    
+    return  Scheduler.AllowedScheduling( resource,           //batchresource
+                                         source,        //structured operations
+                                         ctrlkey,            //skip soft check
+                                         ctrlshiftkey,       //ctrl shift key
+                                         resource.Last(),    //before task
+                                         null( Task_SC ),    //afterbatch
+                                         Operation_SC::GetSelectedObjects( source ),
+                                         feedback,
+                                         isallowedhard );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // OnDrop structured[Operation] --> null(Task) on BatchResource
+      resource.CreateBatchAssignOperationsPlanBatch( source, resource.Last().astype( BatchTask ) );
+    *]
+  }
+}

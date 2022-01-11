@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method RefreshDatasets
+{
+  Description: 'Refreshes the collection of LibSM_Datasets, so that even the ones without a scenario are included.'
+  TextBody:
+  [*
+    editor         := MDSEditor::Editor();
+    allObjectInfos := editor.ObjectInfos( LibSM_ModelExtensions::GetPlanningDatasetKind() );
+    
+    // List all the datasets WITHOUT a LibSM_Dataset
+    objectInfosWithoutDataset := selectset( allObjectInfos, Elements, objectInfo,
+                                            objectInfo.IsLoaded(),
+                                            not exists( this, Dataset, dataset,
+                                                        dataset.DatasetMDSID() = objectInfo.MDSID().MDSKey() ) );    
+    
+    
+    // First update the datasets that have no associated Scenario, but which were created earlier
+    // e.g. when opening the 'Create scenario from existing dataset dialog'.
+    traverse( this, Dataset, dataset, isnull( dataset.Scenario() ) )
+    {
+      objectInfo := allObjectInfos.Find( dataset.DatasetMDSID() );
+      if ( not isnull( objectInfo ) )
+      {
+        dataset.UpdateState( objectInfo );
+      }
+    }
+    
+    // Now create a LibSM_Dataset object for all datasets that don't have one yet.
+    traverse( objectInfosWithoutDataset, Elements, objectInfo )
+    {
+      dataset := LibSM_Dataset::Create( this, 
+                                        objectInfo.Kind(),
+                                        objectInfo.Name(),
+                                        objectInfo.Path(),
+                                        objectInfo.TimeZoneID() );
+      
+      dataset.UpdateState( objectInfo );     
+    }
+    
+    zerokey := Key::ZeroKey();
+    
+    // Lastly remove all the LibSM_Dataset objects that have no
+    // matching 'real' datasets.
+    traverse( this, Dataset, dataset, 
+              not exists( allObjectInfos, Elements, objectInfo,
+                          objectInfo.MDSID().MDSKey() = dataset.DatasetMDSID() ) )
+    {
+      dataset.DatasetMDSID( zerokey );
+      dataset.Delete();
+    }
+  *]
+}

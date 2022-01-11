@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method ValidateKBDefinitionCompleteness_withOutput (LibSM_KnowledgeProfile knowledgeProfile) as String id:Method_LibSM_GlobalState_ValidateKBDefinitionCompleteness_withOutput
+{
+  #keys: '[136402.0.1246517146]'
+  Body:
+  [*
+    // validate if the profile passed in has all knowledge base definition
+    // A profile could have missing KB definition due to import data from KT ( invalid data in KT )
+    errorStrings := construct( Strings );
+    errorMessage_o := '';
+    
+    kbDefinitionNames := this.GetKnowledgeBaseDefinitionNameStrings();
+    
+    kbDefinitionNameSet := kbDefinitionNames.Tokenize( LibSM_ScenarioManager::KBDefinitionNameSeparator() );
+    
+    traverse( kbDefinitionNameSet, Elements, kbDefinitionName )
+    {
+      if( not exists( knowledgeProfile, KnowledgeBaseBranchInProfile, branch,
+                      branch.KBDefinitionName() = kbDefinitionName ) )
+      {
+        errorStrings.Add( Translations::LibSM_KnowledgeProfile_MissingKBDefinition( kbDefinitionName ) );
+      }
+    }
+    
+    if( errorStrings.Size() > 0 )
+    {
+      errorMessage_o := errorStrings.ToString( String::NewLine() );
+    }
+    
+    return errorMessage_o;
+  *]
+}

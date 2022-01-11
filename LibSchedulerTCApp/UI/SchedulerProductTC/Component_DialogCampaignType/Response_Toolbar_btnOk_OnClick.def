@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: Toolbar/btnOk
+Response OnClick () id:Response_Toolbar_btnOk_OnClick
+{
+  #keys: '[122180.0.73347232]'
+  Body:
+  [*
+    // Apply changes
+    Dialog.ApplyChanges_DefaultColor();
+    Dialog.ApplyChanges();
+    Dialog.EndModal(1);
+  *]
+  DefinitionID: 'Responsedef_GUIButtonBase_OnClick'
+  Precondition:
+  [*
+    /*
+    This precondition is here because it is a dialog within a dialog, so there is a use case where it needs to compare against other shadow 
+    objects without wrapped instances, hence the logic cannot be solely in the editor
+    */
+    
+    campaignname := EditorName.Text();
+    
+    nameused := select( DataHolderResourceGroup.Data(),
+                        CampaignType,
+                        ct,
+                        ct.Name() <> Dialog.Data().Name(),
+                        ct.Name() = campaignname );
+                        
+    isunique := isnull( nameused );                    
+                        
+    if( not isunique )
+    {
+      feedback := Translations::SC_CampaignType_UniqueName();
+    }                       
+                                             
+    return isunique;
+  *]
+}

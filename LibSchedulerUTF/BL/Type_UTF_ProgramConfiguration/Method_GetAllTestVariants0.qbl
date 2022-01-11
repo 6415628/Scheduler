@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetAllTestVariants () as owning Strings
+{
+  Description: 'Return all test variant names/IDs as structured string.'
+  TextBody:
+  [*
+    objectypes := construct( Strings );
+    hasDuplicateIDs := construct( Booleans );
+    programconfigurationIDs := construct( Strings );
+    programconfigurationNames := construct( Strings );
+    isValidForPreconCreateEdits := construct( Booleans );
+    hasLeadingProgramSets := construct( Booleans );
+    isViolatedLeadingProgramSetConstraints := construct( Booleans );
+    hasPlannedProgramChanges := construct( Booleans );
+    isValidForPreconDeletes := construct( Booleans );
+    isBatchResources := construct( Booleans );
+    isJITleadtimestrategys := construct( Booleans );
+    hasprogramchangeforassignprogramdefinitions := construct( Booleans );
+    isValidForAssignProgramDefinitionToResources := construct( Booleans );
+    isresourcealreadyassigneds := construct( Booleans );
+    moveprogramphasesactions := construct( Strings );
+    
+    variantsforconstrainthasleadingprogramset := this.GetAllTestVariantsForConstraintHasLeadingProgramSet( hasLeadingProgramSets,
+                                                                                                           isViolatedLeadingProgramSetConstraints );
+    
+    variantsformoveprogramphases := this.GetAllTestVariantsForMoveProgramPhases( moveprogramphasesactions );
+    
+    variantsforprecondassignprogramdef := this.GetAllTestVariantsForPreconditionAssignProgramDefinitionToResource( isBatchResources,
+                                                                                                                   isJITleadtimestrategys,
+                                                                                                                   hasprogramchangeforassignprogramdefinitions,
+                                                                                                                   isValidForAssignProgramDefinitionToResources );
+    
+    variantsforprecondcreateeditprogconfig := this.GetAllTestVariantsForPreconditionCreateEditProgramConfiguration( objectypes,
+                                                                                                                    hasDuplicateIDs,
+                                                                                                                    programconfigurationIDs,
+                                                                                                                    programconfigurationNames,
+                                                                                                                    isresourcealreadyassigneds,
+                                                                                                                    isValidForPreconCreateEdits );
+    
+    variantsfordeleteprogdef := this.GetAllTestVariantsForPreconditionDeleteProgramConfiguration( objectypes,
+                                                                                                  hasPlannedProgramChanges,
+                                                                                                  isValidForPreconDeletes );
+    
+    return variantsforconstrainthasleadingprogramset
+           .Union( variantsfordeleteprogdef )
+           .Union( variantsformoveprogramphases )
+           .Union( variantsforprecondassignprogramdef )
+           .Union( variantsforprecondcreateeditprogconfig );
+  *]
+}

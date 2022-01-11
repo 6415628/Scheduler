@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericPlannedSupply2ExternalSupply (CDSchedule cdSchedule, GenericProductExternalSupply genericProductExternalSupply)
+{
+  Description: 'Restore generic planned supply to external supply core data attributes to planning object'
+  TextBody:
+  [*
+    genericPlannedSupply2ExternalSupplys := selectset( cdSchedule, CDEntity.astype( CDGenericPlannedSupply2ExternalSupply ), cdGenericPlannedSupply2ExternalSupply,
+                                                       cdGenericPlannedSupply2ExternalSupply.ExternalSupplyID() = genericProductExternalSupply.SupplyID() );
+    
+    traverse( genericPlannedSupply2ExternalSupplys, Elements, cdGenericPlannedSupply2ExternalSupply )
+    {
+      genericPlannedSupply2ExternalSupply := PlannedSupply2ExternalSupply::FindPlannedSupply2ExternalSupply( cdGenericPlannedSupply2ExternalSupply.ExternalSupplyID(),
+                                                                                                             cdGenericPlannedSupply2ExternalSupply.WorkOrderSupplyID() );
+                                                     
+      if( not isnull( genericPlannedSupply2ExternalSupply ) )
+      {
+        // ExternalSupply, M-1
+        genericPlannedSupply2ExternalSupply.ExternalSupply( relset, genericProductExternalSupply );
+        
+        // ImportedPlannedSupply2Inventory_SC, M-1
+        importedPlannedSupply2Inventory := ImportedPlannedSupply2ExternalSupply_SC::FindImportedPlannedSupply2ExternalSupply_SC( cdGenericPlannedSupply2ExternalSupply.ExternalSupplyID(),
+                                                                                                                                 cdGenericPlannedSupply2ExternalSupply.WorkOrderSupplyID() );
+        genericPlannedSupply2ExternalSupply.ImportedPlannedSupply2Inventory_SC( relset, importedPlannedSupply2Inventory );                                                                                                               
+        
+        // PlannedSupply, M-1
+        productPlannedSupply := ProductPlannedSupply::FindProductPlannedSupply( cdGenericPlannedSupply2ExternalSupply.ProductPlannedSupplyType(),
+                                                                                cdGenericPlannedSupply2ExternalSupply.WorkOrderSupplyID() );
+                                        
+        genericPlannedSupply2ExternalSupply.ProductPlannedSupply( relset, productPlannedSupply );
+        
+        // ProductPlannedSupply, M-1
+        genericPlannedSupply2ExternalSupply.PlannedSupply( relset, productPlannedSupply );
+        
+        // Restore FulfillmentConversion
+        this.RestoreRelations_FulfillmentConversion( cdSchedule, genericPlannedSupply2ExternalSupply );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

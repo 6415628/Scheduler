@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateFor (LibOpt_Run run)
+{
+  Description: 'Create `LibOpt_StatisticLogEntrys` for the given "run" (`LibOpt_Run`).'
+  TextBody:
+  [*
+    snapshoterrors_run_o := selectset( run, SnapshotError, snapshoterror, true );
+    
+    snapshotwarnings_run_o := selectset( run, SnapshotWarning, snapshotwarning, true );
+    
+    traverse( run, Component, component )
+    {
+      // Create `LibOpt_StatisticErrors` to group error snapshots of the current component.
+      LibOpt_StatisticLogEntry::CreateStatistics( run, typeof( LibOpt_StatisticError ),
+                                                          component,
+                                                          snapshoterrors_run_o // output argument
+                                                        );
+      
+      // Create `LibOpt_StatisticWarnings` to group warning snapshots of the current component.
+      LibOpt_StatisticLogEntry::CreateStatistics( run, typeof( LibOpt_StatisticWarning ),
+                                                          component,
+                                                          snapshotwarnings_run_o // output argument
+                                                        );
+    }
+    
+    // Create `LibOpt_StatisticErrors` to group error snapshots that don't belong to any component.
+    LibOpt_StatisticLogEntry::CreateStatistics( run, typeof( LibOpt_StatisticError ),
+                                                        null( LibOpt_Component ),
+                                                        snapshoterrors_run_o // output argument
+                                                      );
+    
+    // Create `LibOpt_StatisticWarnings` to group warning snapshots that don't belong to any component.
+    LibOpt_StatisticLogEntry::CreateStatistics( run, typeof( LibOpt_StatisticWarning ),
+                                                        null( LibOpt_Component ),
+                                                        snapshotwarnings_run_o // output argument
+                                                      );
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

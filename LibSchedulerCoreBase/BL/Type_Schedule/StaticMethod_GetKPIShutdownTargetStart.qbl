@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetKPIShutdownTargetStart (const OptimizerStrategyInSchedule optimizerstrategy, constcontent Task_SCs shutdowntasks) const declarative remote as Real
+{
+  Description: 'Returns the KPI shutdown target start'
+  TextBody:
+  [*
+    value := 0.0;
+    
+    if( not isnull( optimizerstrategy ) )
+    {
+      a := optimizerstrategy.PenaltyParameterShutdownTargetStart_a();
+      b := optimizerstrategy.PenaltyParameterShutdownTargetStartPower_b();
+      c := optimizerstrategy.PenaltyParameterShutdownTargetStartOffset_c();
+      
+      value := sum( shutdowntasks,
+                    Elements,
+                    shutdowntask,
+                    not shutdowntask.IsShutdownTargetStartOK(),
+                     a * pow( shutdowntask.GetShutdownTargetStartDeviation() + c, b ) );
+    }
+    
+    return value.Round( 2 );
+  *]
+}

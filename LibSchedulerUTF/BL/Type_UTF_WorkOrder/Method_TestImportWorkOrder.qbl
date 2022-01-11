@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestImportWorkOrder (Schedule schedule)
+{
+  TextBody:
+  [*
+    importedExternalWorkOrder := select( schedule, ImportedWorkOrder.astype( ImportedExternalWorkOrder ), iewo, true );
+    importedExternalWorkOrderOperation := select( importedExternalWorkOrder, ImportedWorkOrderOperation.astype( ImportedExternalWorkOrderOperation ), iewoo, true );
+    
+    externalWorkOrder := select( schedule, WorkOrder.astype( ExternalWorkOrder ), ewo, true );
+    externalWorkOrderOperation := select( externalWorkOrder, WorkOrderOperation, ewoo, true );
+    
+    isWorkOrderCreated := not isnull( externalWorkOrder )
+                          and externalWorkOrder.DueDate() = importedExternalWorkOrder.DueDate()
+                          and externalWorkOrder.Id() = importedExternalWorkOrder.Id()
+                          and externalWorkOrder.ProductId() = importedExternalWorkOrder.ProductId()
+                          and externalWorkOrder.Quantity() = importedExternalWorkOrder.Quantity()
+                          and externalWorkOrder.RoutingID() = importedExternalWorkOrder.RoutingID()
+                          and externalWorkOrder.StockingPointId() = importedExternalWorkOrder.StockingPointID()
+                          and externalWorkOrder.IsDummy() = importedExternalWorkOrder.IsDummy();
+                          
+    
+    isWorkOrderOperationCreated := not isnull( externalWorkOrderOperation )
+                                   and externalWorkOrderOperation.InputLotSize() = importedExternalWorkOrderOperation.InputLotSize()
+                                   and externalWorkOrderOperation.Length() = importedExternalWorkOrderOperation.Length()
+                                   and externalWorkOrderOperation.OperationType() = importedExternalWorkOrderOperation.OperationType()
+                                   and externalWorkOrderOperation.OutputLotSize() = importedExternalWorkOrderOperation.OutputLotSize()
+                                   and externalWorkOrderOperation.Practice() = importedExternalWorkOrderOperation.Practice()
+                                   and externalWorkOrderOperation.PreferredResource() = importedExternalWorkOrderOperation.PreferredResource()
+                                   and externalWorkOrderOperation.SequenceNr() = importedExternalWorkOrderOperation.SequenceNr()
+                                   and externalWorkOrderOperation.SetupGroup() = importedExternalWorkOrderOperation.SetupGroup()
+                                   and externalWorkOrderOperation.ShelfLifeExpirationDate() = importedExternalWorkOrderOperation.ShelfLifeExpirationDate()
+                                   and externalWorkOrderOperation.Width() = importedExternalWorkOrderOperation.Width()
+                                   and externalWorkOrderOperation.WorkOrderId() = importedExternalWorkOrderOperation.WorkOrderId()
+                                   and externalWorkOrderOperation.Yield() = importedExternalWorkOrderOperation.Yield()
+                                   and externalWorkOrderOperation.IsOnHold() = importedExternalWorkOrderOperation.IsOnHold();
+    
+    this.Run().AssertTrue( isWorkOrderCreated
+                           and isWorkOrderOperationCreated, 
+                           UTFUtility::GenerateFailedMessage( 'Imported work order is not synchorinized to work order.', this.Variant() ) );
+  *]
+}

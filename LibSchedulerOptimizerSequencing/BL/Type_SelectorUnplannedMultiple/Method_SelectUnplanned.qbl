@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SelectUnplanned (LibOpt_Task task, Number target_nr_unplanned) as owning ScopeElementOperations
+{
+  TextBody:
+  [*
+    unplanned_sorted := selectsortedset( task.Scope().ScopeElementsNotLocked(),
+                                         Elements.astype( ScopeElementOperation ),
+                                         se,
+                                         not se.Operation_SC().IsPlanned(),
+                                         se.Operation_SC().OptimisticDueDateSuggested() );
+    // select the `target_num_unplanned` most urgent ones:
+    selected_unplanned := null( ScopeElementOperations );
+    if( unplanned_sorted.Size() <= target_nr_unplanned )
+    {
+      selected_unplanned := & unplanned_sorted;
+    }
+    else
+    {
+      selected_unplanned := unplanned_sorted.SelectFirst( target_nr_unplanned );
+    }
+    
+    return &selected_unplanned;
+  *]
+}

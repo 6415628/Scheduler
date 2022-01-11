@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Operation (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    start_init := OS::PrecisionCounter();
+    
+    stream_json := null( stream[JSON] );
+    
+    if( this.InOneTransaction() )
+    {
+      program := this.DoInitialize( task );
+      
+      LibOpt_AlgorithmStopwatch::Add( program, LibOpt_SnapshotAlgorithm::FrameworkInitialize(), LibOpt_Utility::TimeSince( start_init ) );
+      
+      stream_json := this.DoExecute( program, task );
+    }
+    else
+    {
+      program := this.DoInitializeReactive( task );
+      // Correctly calculate the init time, without blocking the dataset
+      program := program->( program ) {
+        LibOpt_AlgorithmStopwatch::Add( program, LibOpt_SnapshotAlgorithm::FrameworkInitialize(), LibOpt_Utility::TimeSince( start_init ) );
+      }->|program;
+      stream_json := this.DoExecuteReactive( program, task );
+    }
+    
+    return stream_json;
+  *]
+}

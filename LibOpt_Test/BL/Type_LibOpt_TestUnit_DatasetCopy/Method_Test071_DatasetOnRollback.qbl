@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test071_DatasetOnRollback (LibOpt_TestDataset dataset)
+{
+  Description: 'Check if dataset copies (and their snapshots) that are created before a rollback and right after a rollback (but before the transaction is rolled back) are handled correctly.'
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( true );
+    run := opt.CreateRun();
+    runcontextforutf := LibOpt_MyRunContextForUTF::Create( run );
+    
+    // Script of the rollback KPI
+    kpi_script := opt.RollbackKPIScripted( 1 );
+    kpi_script.Enqueue( 10.0 );
+    kpi_script.Enqueue( 20.0 );
+    
+    suboptimizer := opt.MPSuboptimizer( run, 'Suboptimizer', runcontextforutf, & kpi_script );
+    
+    // Set a LibOpt_DatasetCopyConditional object on the 'Initialize' and the 'Handle rollback' component positions. 
+    initializeposition := select( suboptimizer, ComponentPosition, position, position.Name() = LibOpt_Component::ComponentPosition_Initialize() );
+    initializeposition.SetDatasetCopy();
+    rollbackposition := select( suboptimizer, ComponentPosition, position, position.Name() = LibOpt_Suboptimizer::ComponentPosition_Rollback() );
+    rollbackposition.SetDatasetCopy();
+    
+    streamrun := run.Start(); 
+    
+    // Wait until the run is finished.
+    str := streamrun
+    ->|stream[Void]::Wait( this.MDSEditorUpdateTime() ) // Wait some time to ensure that the dataset copies are succesfully created.
+    ->|void->()
+    {
+      traverse( suboptimizer,
+                ComponentPosition,
+                componentposition,
+                not isnull( componentposition.DatasetCopyConditional() ) 
+                )
+      {
+        LibOpt_TestUnit_DatasetCopy::AssertsForComponentPositionCreatedDataset( this, componentposition );
+      }
+    }
+    this.NoException( str );
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

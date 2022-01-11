@@ -1,0 +1,89 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveConfigurationSuccessJoin (NamedValueTree nvt_i, NamedValue body_i, LibDEF_IntegrationEvent event_i)
+{
+  Description:
+  [*
+    Receive Configuration success-message to join domain, including accept from BootNode or acknowledgement from other nodes.
+    Also exchange Metadata information by using GetChannelsMetadata.
+  *]
+  TextBody:
+  [*
+    // Jacky CHAN Apr-22-2016 (created)
+    LibDEF_Util::EventLog( event_i, "Receiving join acknowledgement" );
+    
+    isFromBootNode := LibDEF_DataAccessor::GetBodyPropertyAsBoolean( nvt_i, LibDEF_DataAccessor::HANDLE_CONFIGURATION(), LibDEF_DataAccessor::HEADER_FROMBOOTNODE() );
+    
+    if( isFromBootNode )
+    {
+      // retrieve and save the assigned SystemGUID
+      systemGUID := LibDEF_DataAccessor::GetBodyPropertyAsString( nvt_i, LibDEF_DataAccessor::HANDLE_CONFIGURATION(), LibDEF_DataAccessor::HEADER_SYSTEMGUID() );
+      this.SystemLocal().ChangeKeySystemByGUID( systemGUID, event_i );
+    
+      // also update the reference
+      this.SystemGUID( systemGUID );
+    
+      // retrieve and save the BootNode S-GUID
+      bootNodeGUID    := LibDEF_DataAccessor::GetBodyPropertyAsString( nvt_i, LibDEF_DataAccessor::HANDLE_CONFIGURATION(), LibDEF_DataAccessor::HEADER_BOOTNODEGUID() );
+      newBootNode     := LibDEF_System::FindSystemByGUID( this, bootNodeGUID );
+      currentBootNode := this.BootNode();
+    
+      // a new node becomes BootNode
+      if( isnull( newBootNode ) and isnull( currentBootNode ) )
+      {
+        // create BootNode System
+        newBootNode := LibDEF_System::Create( this, bootNodeGUID );
+        newBootNode.SetAsBootNode();
+    
+        LibDEF_Util::EventLog( event_i, "BootNode has been registered." );
+      }
+      // nothing has changed
+      else if( newBootNode = currentBootNode )
+      {
+        LibDEF_Util::EventLog( event_i, "BootNode did not change." );
+      }
+      // an existing node becomes a BootNode
+      else if( not isnull( newBootNode ) )
+      {
+        newBootNode.SetAsBootNode();
+    
+        LibDEF_Util::EventLog( event_i, "Another System has become the BootNode. BootNode has been updated." );
+      }
+    
+      this.SyncFromRoutingTable( nvt_i, body_i, event_i );
+    
+      // Updates the IntegrationEvent with sender information (BootNode)
+      event_i.Update( newBootNode );
+    
+      // inform other systems
+      traverse( this.GetOtherPeers( false ), Elements, system )
+      {
+        this.SendConfigurationRequestJoinToPeer( system );
+      }
+    }
+    
+    // End of receive configuration success join
+    LibDEF_IntegrationEvent::EventComplete( event_i );
+    
+    // exchange GetChannelsMetadata from the sender
+    senderGUID := LibDEF_DataAccessor::GetHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SYSTEMGUID_FROM() );
+    sender     := LibDEF_System::FindSystemByGUID( this, senderGUID );
+    
+    if( not isnull( sender ) )
+    {
+      localSystem        := this.SystemLocal();
+      commonChannelNames := localSystem.GetCommonChannelNames( sender );
+    
+      if( commonChannelNames.Size() > 0 )
+      {
+        // send Request
+        localSystem.SendMetadataRequestGetChannelsMetadata( sender );
+    
+        // send Success with default common Channels
+        // The IntegrationEvent from argument event_i is for receive configuration success join event
+        // Since we are sending another message, a new Event should be created (which is handled inside the method itself)
+        localSystem.SendMetadataSuccessGetChannelsMetadata( commonChannelNames, sender, null( LibDEF_IntegrationEvent ) );
+      }
+    }
+  *]
+}

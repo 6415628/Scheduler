@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test078_NeighborhoodCreator_Combined (Schedule schedule)
+{
+  Description: 'Tests the NeighborhoodCreatorDistanceMetric by using all scoring dimension'
+  TextBody:
+  [*
+    // mbr23 Feb-17-2020 (created)
+    
+    anchor := minselect( schedule, Operation_SC, op, true, Real::Random() ); // select any anchor
+    neighborhood_size_operations := 15;
+    distancemetric := construct( SettingsSequencingDistanceMetricForSequencing ); 
+    // Set all values to 0
+    distancemetric.UTF_SetAllToZero();
+    // set all values:
+    distancemetric.ClosenessByAllowedOn( 1.0 / Real::Random() );
+    distancemetric.ClosenessByPractice( 1.0 / Real::Random() );
+    distancemetric.ClosenessByPrecedence( 1.0 / Real::Random() );
+    distancemetric.ClosenessByProduct( 1.0 / Real::Random() );
+    distancemetric.ClosenessByProductType( 1.0 / Real::Random() );
+    distancemetric.ClosenessByResourceGroup( 1.0 / Real::Random() );
+    distancemetric.ClosenessByScheduled( 1.0 / Real::Random() );
+    distancemetric.ClosenessBySetupGroup( 1.0 / Real::Random() );
+    
+    selector := this.Run_Test07x_NeighborhoodCreator( schedule, anchor, neighborhood_size_operations, distancemetric );
+    
+    minimum_output := construct( LibOpt_ScopeElements );
+    minimum_output.Add( anchor.GetOrCreateScopeElement() );
+    
+    // assert that output contains `minimum_output` and the correct number of operations:
+    selector.Run().Start() ->| this->( o ) {
+      UTF_Optimizer_Regression_Test_OptimizerSequencing::AssertOutputScopeContains( minimum_output, this.Run(), selector );
+      UTF_Optimizer_Regression_Test_OptimizerSequencing::AssertOutputScopeCounts( neighborhood_size_operations, typeof( ScopeElementOperation ), this.Run(), selector );
+    }->Exception()->(exception) {
+      this.Run().RegisterFailure( "post-optimization assert failed:\n" + exception.Message() );
+    };
+  *]
+}

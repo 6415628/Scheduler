@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetNewDatasetName (Number seqnr) as String
+{
+  TextBody:
+  [*
+    newdatasetname := this.GetNewDatasetNameFixedPart()
+                      + '_' + DateTime::ActualTime().Format( 'YM2D2THms', ConversionOptions::ISO() )
+                      + '_' + seqnr.AsQUILL();
+    
+    result := '';
+    if( newdatasetname.IsIdentifier() )
+    {
+      result := newdatasetname;
+    }
+    else
+    {
+      for( i := 0; i < newdatasetname.Length(); i++ )
+      {
+        char := newdatasetname.SubString( i, 1 );
+        result := result + ifexpr( char.Regex( "[^A-Za-z0-9_]"), '_', char );
+      }
+    }
+    
+    return result;
+  *]
+}

@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method PopulateVersionPath (String filePath_i, DMF_UpgradeabilityMetaData metadata_i)
+{
+  TextBody:
+  [*
+    // sbt2 Jul-1-2021 (created)
+    // Ensure file do not exist
+    DMF_DBInterface::CheckDeleteFile( filePath_i );
+    
+    dbInterface := this.ConvertorDataset().DBInterface();
+    
+    // Export metadata instance
+    duio := DataUpgradeIO::Create( DMF_DBInterface::GetSQLDataTypeForExport(), filePath_i );
+    duio.CreateTemplate( typeof( DMF_UpgradeabilityMetaData ) );
+    duio.Export( metadata_i );
+    
+    // Reset version to empty before we apply metadata scripts to ensure clean state
+    DMF_UpgradeabilityMetaData::ResetVersionString( dbInterface, duio );
+    
+    // Run metadata update scripts to retrieve target version for each script/version path
+    versionPath := guard( this.VersionLookup().FirstVersionPath(), null( DMF_VersionPath ) );
+    errorMsg := "";
+    isSuccess := true;
+    
+    while( isSuccess and not isnull( versionPath ) ) 
+    {
+      if( versionPath.ScriptMetadata().Length() > 0 )
+      {
+        isSuccess := dbInterface.Execute( duio, versionPath.ScriptMetadata(), errorMsg );
+        
+        if( isSuccess )
+        {
+          targetVersion := DMF_UpgradeabilityMetaData::GetVersionString( dbInterface, duio );
+      
+          // Update target version
+          versionPath.ToVersion( targetVersion );
+        }
+      }
+      
+      versionPath := versionPath.NextVersionPath();
+    }
+    
+    if( not isSuccess )
+    {
+      DMF_Utility::LogError( errorMsg );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

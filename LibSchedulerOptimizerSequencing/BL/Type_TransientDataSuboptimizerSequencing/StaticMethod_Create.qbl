@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (SuboptimizerSequencingPOA owner, LibOpt_Task task, SettingsSequencingPOA settings) as TransientDataSuboptimizerSequencing
+{
+  Description:
+  [*
+    Creates and populates the whole owned object tree of this TransientData, i.e. shadow objects of each operation and each resource in scope of the given task.
+    Note that no propagation is performed explicitly. Since the owned objects contain declarative data, it is likely desired that propagation be performend after this creation.
+  *]
+  TextBody:
+  [*
+    object := owner.TransientData( relnew,
+                                   TransientDataSuboptimizerSequencing,
+                                   Task := task,
+                                   KeyComponent := owner.Key(),
+                                   KeyTask := task.Key(),
+                                   IsAllowResourceExchangability := settings.IsAllowResourceExchangability() );
+    
+    // first create the resource shadow objects, because they are used by the operation shadow object's Create method. They also create the ResourceConnection shadow objects:
+    traverse( task.Scope().ScopeElements( typeof( ScopeElementResource ) ), Elements.astype( ScopeElementResource ), ser )
+    {
+      seor := ser.OnRunOrCreate( task.Run() );
+      object.CreateShadow( seor );
+    }
+    // now create the operation shadow objects. They also create the OperationOnResource shadow objects:
+    traverse( task.Scope().ScopeElements( typeof( ScopeElementOperation ) ), Elements.astype( ScopeElementOperation ), seop )
+    {
+      seor := seop.OnRunOrCreate( task.Run() );
+      object.CreateShadow( seor );
+    }
+    object.CreateOperationDependencies();
+    object.BuildPrecedenceDependencyGraph();
+    
+    object.SetOperationAttributes();
+    
+    return object;
+  *]
+}

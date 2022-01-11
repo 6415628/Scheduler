@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanAllFeedbackContinuousOperations (ImportedAprisoOperation_SCs imported_apriso_ops)
+{
+  Description: 'Plans all the operations for the imported apriso operation before handling their feedback.'
+  TextBody:
+  [*
+    // woi1 Mar-24-2017 (created)
+    
+    // this structured set of imported fbtasks should be sorted already
+    traverse( imported_apriso_ops, Elements, apriso_op, apriso_op.IsContinuous() and apriso_op.HasOperationInScheduler() and apriso_op.HasResourceInScheduler() )
+    {
+      operation := apriso_op.Operation_SC();
+      resource := apriso_op.Resource_SC().astype( SingleResourceBase );
+      
+      // selects the task to plan before based on feedback start time
+      beforetask := maxselect( resource, 
+                               SingleTaskBase, 
+                               t, 
+                               t.Start() <= apriso_op.ActualStartDate() and t.GetOperation() <> operation and t.GetOperation().ImportedAprisoOperation_SC( relsize ) > 0,
+                               t.Start(),
+                               t.End() );
+      
+      resource.PlanAfter( operation, beforetask ); 
+      // we update the task start time so that the next imported fb task is able to grab the right beforetask
+      // this will also allow us to plan different feedback tasks on different resources without worrying about the task start time
+      Transaction::Transaction().Propagate( attribute( ContinuousTask, Start ) );
+      Transaction::Transaction().Propagate( attribute( ContinuousTask, End ) ); 
+    }
+    
+    // propagate to ensure the end time of the feedback task is calculated correctly, meaning the EstimatedEnd is propagated too
+    Transaction::Transaction().Propagate( attribute( ImportedFeedbackTask, End ) );
+  *]
+}

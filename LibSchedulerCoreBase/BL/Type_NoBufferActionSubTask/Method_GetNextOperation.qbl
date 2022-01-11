@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetNextOperation () declarative as Operation_SC
+{
+  Description: 'Get next operation.'
+  TextBody:
+  [*
+    // alexandern Sep-29-2015 (created) QP #5515
+    /* Select next operation with latest possible start time, considering machine and routing earliest start */
+    task          := this.Task_SC();
+    nextoperation := null( Operation_SC );
+    
+    // Single task
+    if( task.istype( SingleTaskBase ) )
+    {
+      op := task.astype( SingleTaskBase ).GetOperation()
+      nextoperation := maxselect( op,
+                                  ToOperationDependency.ToOperation,
+                                  o,
+                                  not isnull( o.Task_SC() ),
+                                  o.Task_SC().MachineEarliestStart() + o.Task_SC().DurationBeforeRoutingStart()
+                                );
+    }
+    
+    // Batch task 
+    if( task.istype( BatchTask ) )
+    {
+      ops := task.astype( BatchTask ).Batch().GetOperations()
+      nextoperation := maxselect( ops,
+                                  Elements.ToOperationDependency.ToOperation,
+                                  o,
+                                  not isnull( o.Task_SC() ),
+                                  o.Task_SC().MachineEarliestStart() + o.Task_SC().DurationBeforeRoutingStart()
+                                );
+    }
+    
+    return nextoperation;
+  *]
+}

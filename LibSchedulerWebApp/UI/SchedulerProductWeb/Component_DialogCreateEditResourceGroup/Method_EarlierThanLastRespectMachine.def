@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method EarlierThanLastRespectMachine (shadow[SubTaskTypeOnResourceGroup] subTaskTypeOnResourceGroup, output String feedback_o) as Boolean id:Method_DialogCreateEditResourceGroup_EarlierThanLastRespectMachine
+{
+  #keys: '[143768.1.1636158518]'
+  Body:
+  [*
+    // First respect machine subtask must have sequencenr
+    // less than last respect machine subtask sequencenr         
+    resourceGroup := DialogCreateEditResourceGroup.DataHolderResourceGroup().Data();
+    
+    laterlastrespect := not exists( resourceGroup,
+                                    SubTaskTypeOnResourceGroup,
+                                    sttorg,
+                                    sttorg.IsLastRespectMachine(),
+                                    sttorg.SequenceNr() < subTaskTypeOnResourceGroup.SequenceNr() );
+                                    
+    SubTaskTypeOnResourceGroup::EarlierThanLastRespectMachine( laterlastrespect, feedback_o );
+                           
+    return laterlastrespect;
+  *]
+}

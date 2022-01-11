@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetYearlyMonthAndDay (Number month_i, Number day_i) id:Method_LibCal_dlgEventParticipation_SetYearlyMonthAndDay_549
+{
+  #keys: '[131094.0.2102177363]'
+  Body:
+  [*
+    ssYearlyMonth.Strings( Translations::Pattern_Months() );
+    
+    rowSeparator := ";";  // ssYearlyMonth.RowSeparator() in not possible (yet?) in WC.
+    
+    months := Translations::Pattern_Months().Tokenize( rowSeparator );
+    month  := months.Element( month_i - 1 );
+    day    := day_i.Format( "N(LPad0(2))" );
+    
+    ssYearlyMonth.Text( month );
+    
+    // Set the day of the month.
+    this.SetYearlyDaysOfMonth( month );
+    ssYearlyDayOfMonth.Text( day );
+    
+    // BUG: referencing the DropDownStringLists in methods GetDateOfFirstRecurrence and GetDateOfNextOccurrence
+    //      results in an error in the TCE.
+    // As a WORKAROUND, set the values also in a hidden label, and use that in those methods.
+    lblYearlyMonth     .Text( month );
+    lblYearlyDayOfMonth.Text( day   );
+  *]
+}

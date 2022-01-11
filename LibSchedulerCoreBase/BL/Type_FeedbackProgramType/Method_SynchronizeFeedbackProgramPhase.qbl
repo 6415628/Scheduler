@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeFeedbackProgramPhase
+{
+  Description: 'Synchronize feedback program phase'
+  TextBody:
+  [*
+    // Synchronize feedback program phase
+    allinstances := selectset( this, FeedbackProgramPhase, feedbackprogramphase, true );
+    updatedinstances := construct( FeedbackProgramPhases );
+    
+    programtypeconfiguration := ProgramTypeConfiguration::FindProgramTypeConfiguration( this.ProgramDefinitionConfigurationID(),
+                                                                                        this.ProgramSetConfigurationID(),
+                                                                                        this.ProgramTypeConfigurationID() );
+    
+    // Create feedback program phase based on configuration data
+    traverse( programtypeconfiguration, ProgramPhaseConfiguration, phase )
+    {
+      feedbackprogramphase := FeedbackProgramPhase::Create( this, phase );
+      updatedinstances.Add( feedbackprogramphase );
+    }
+    
+    //Delete old instances
+    oldinstances := allinstances.Difference( updatedinstances );
+    traverse( oldinstances, Elements, e )
+    {
+      e.Remove();
+    }
+  *]
+}

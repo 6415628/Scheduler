@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetIsSizeOk () declarative as Boolean
+{
+  TextBody:
+  [*
+    // wkn1 Aug-11-2017 (created)
+    order := this.Order_SC();
+    routing := guard( this.Order_SC().WorkOrder().astype( InternalWorkOrder ).Routing(), null( Routing ) );
+    
+    value := isnull( order )
+             or not order.HasLotSize() // if it is not created from routing, then constraint will not fire at all
+             or ( this.Quantity() >= order.LotSize()
+                  and Utility_SC::CheckIsMultiple( this.Quantity(), order.LotSize() ) // checks whether it is an integer
+                  and this.Quantity() >= routing.MinSize() // checks whether plan unit quantity more than routing min size
+                  and ( routing.MaxSize() <= 0 or routing.MaxSize() >= this.Quantity() ) ) // checks whether plan unit quantity less than routing max size
+    
+    return value;
+  *]
+}

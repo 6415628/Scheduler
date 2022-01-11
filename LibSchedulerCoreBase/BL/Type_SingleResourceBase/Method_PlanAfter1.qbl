@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method PlanAfter (SingleTaskBases tasks, Task_SC element)
+{
+  Description: 'Move all single Tasks  to a spot after other single task.'
+  TextBody:
+  [*
+    tasks := selectsortedset( tasks, Elements, task, true, task.SequenceNr() );
+    operations := selectset( tasks, Elements.OperationAsSingleTask, op, true );
+    Operation_SC::SetIsPlanning( operations, true );
+    
+    task := element;
+    traverse( tasks, Elements, t )
+    {
+      if( t.Resource_SC().IsPlanRelatedOperations() )
+      {
+        Schedule::PlanRelatedOperationsAfter( t.OperationAsSingleTask(), this, task, false, false );
+      }
+      //yl issue 228060
+      task := this.PlanAfter( t.OperationAsSingleTask(), task );
+    }
+    
+    this.Schedule().AutomaticProductBasedMaterialReservationBySorting();
+    Operation_SC::SetIsPlanning( operations, false );
+  *]
+}

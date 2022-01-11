@@ -1,0 +1,148 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnDatasetConstructed
+{
+  TextBody:
+  [*
+    if( this.Task( relsize ) > 0 and
+        MDSEditor::Editor().ObjectInfo( this.MDSID() ).State() <> DatasetState::Temporary().AsString() )
+    {
+      this.Stop();
+      
+      traverse( this, Task, task, isnull( task.SnapshotComponent() ) )
+      {
+        task.Delete();
+      }
+        
+      // Create the 'The dataset was unloaded. The run is stopped.' snapshot warning if the current dataset is unloaded during an optimizer run.
+      // The warning is not created when a new dataset is created during a run.
+      if( this.MDSID() = this.MDSIDRun() ) 
+      {
+        traverse( this, Task, task, task.ShouldHaveAbortMessage() )
+        {
+          LibOpt_SnapshotWarning::Throw( task, Translations::LibOpt_Run_OnDatasetConstructed_AbortingTasks(), LibOpt_Issue::Severity_2_Low() );
+        }  
+      }
+      else
+      {
+        // We only reach this else block if a dataset copy of the current dataset is created during the run.
+        // The copied dataset should support reruns, so all LibOpt_Scopes are changed to LibOpt_ScopeFats. 
+        this.DebugScope( true ); // Should be set to true to keep the scopes after the tasks are deleted.
+        traverse( this, Scope.astype( LibOpt_ScopeThin ), scope )
+        {
+          scope.ConvertToFat();
+        }
+        
+        // We assume that most datasets that are copied during a run are datasets that are created with the 'replannable snapshots' functionality. 
+        // The IsOptimizerDatasetCopy attribute is only used to enable/disable the 'Reload parent dataset' button in the 'Replannable snapshots' form. 
+        // Therefore, it isn't an issue that the above assumption is sometimes incorrect.
+        this.Optimization().IsOptimizerDatasetCopy( true );
+      } 
+      
+      traverse( this, Task, task )
+      {
+        task.Delete();
+      }
+    }
+    
+    // Migrate data
+    traverse( this, Scope.astype( LibOpt_ScopeFat ).ScopeElementOnScopeDEPRECATED, seos )
+    {
+      seos.ScopeElement().ScopeElementOnScope( relnew,
+                                               Comment := seos.Comment(),
+                                               Scope := seos.Scope(),
+                                               ScopeAsActiveScopeElements := seos.ScopeAsActiveScopeElements(),
+                                               ScopeAsDeletedScopeElements := seos.ScopeAsDeletedScopeElements() );
+      seos.Delete();
+    }
+    traverse( this, Component.astype( LibOpt_IteratorUntil ), iterator_depr )
+    {
+      iterator_depr.OnDatasetConstructed();
+    }
+    
+    traverse( this, Component.astype( LibOpt_Suboptimizer ).SnapshotComponent, snapshotcomponent )
+    {
+      if( exists( snapshotcomponent, Children.astype( LibOpt_SnapshotAlgorithm ), snapshotalgorithm,
+                  snapshotalgorithm.ExecutionNr() = 0
+                )
+        )
+      {   
+        snapshotsalgorithm_sorted := selectsortedset( snapshotcomponent, Children.astype( LibOpt_SnapshotAlgorithm ), snapshotalgorithm,
+                                                      // FILTER
+                                                      true,
+                                                      // VALUE
+                                                      snapshotalgorithm.SequenceNr()
+                                                    );
+        
+        executionnr := 1;
+        traverse( snapshotsalgorithm_sorted, Elements, snapshotalgorithm )
+        {
+          snapshotalgorithm.ExecutionNr( executionnr );
+          
+          executionnr++;
+        }
+      }
+    }
+    
+    traverse( this, Snapshot.astype( LibOpt_SnapshotSuboptimizer ), snapshotsuboptimizer,
+              snapshotsuboptimizer.NrKPILevels() = 0
+            )
+    {
+      snapshotsuboptimizer.NrKPILevels( RealVector::Construct( snapshotsuboptimizer.Improvement() ).Size() );
+    }
+    
+    traverse( this, Snapshot.astype( LibOpt_SnapshotMP ), snapshot )
+    {
+      if( RealVector::Construct( snapshot.AbsoluteGaps() ).Size() = 0
+          and RealVector::Construct( snapshot.Bounds() ).Size() = 0
+          and RealVector::Construct( snapshot.GoalScores() ).Size() = 0
+          and RealVector::Construct( snapshot.RelativeGaps() ).Size() = 0 )
+      {
+        vector := RealVector::Construct( 1 );
+        
+        vector.Set( 0, snapshot.AbsoluteGap() );
+        snapshot.AbsoluteGaps( vector.AsBinaryValue() );
+        
+        vector.Set( 0, snapshot.Bound() );
+        snapshot.Bounds( vector.AsBinaryValue() );
+        
+        vector.Set( 0, snapshot.GoalScore() );
+        snapshot.GoalScores( vector.AsBinaryValue() );
+        
+        vector.Set( 0, snapshot.RelativeGap() );
+        snapshot.RelativeGaps( vector.AsBinaryValue() );
+      }
+      
+      if( snapshot.NrGoalLevels() = 0 )
+      {
+        snapshot.NrGoalLevels( RealVector::Construct( snapshot.GoalScores() ).Size() );
+      }
+    }
+    
+    // Create statistics and issues for this run, if they don't exist yet.
+    Transaction::Transaction().Propagate( method( LibOpt_Run, CreateStatisticsAndIssuesPrecondition, Boolean ) );
+    if( this.Statistic( relsize ) = 0
+        and this.AutoAnalysisEnabled()
+        and this.CreateStatisticsAndIssuesPrecondition( true /*is fail-fast check*/ )
+      )
+    {
+      Transaction::Transaction().Propagate( method( LibOpt_Run, CreateStatisticsAndIssues ) );
+      this.CreateStatisticsAndIssues();
+    }
+    
+    // Link each `LibOpt_Issue` to its relevant `LibOpt_Run`.
+    traverse( this, Statistic.Issue, issue,
+              isnull( issue.Run() )
+            )
+    {
+      issue.LinkToRun();
+    }
+    
+    // Migrate the the PrecisionTimeStamp attribute to the PrecisionTimeStampStartComponent attribute, so that the LibOpt_SnapshotComponent.Duration attribute remains unchanged after a model upgrade. 
+    traverse( this, Snapshot.astype( LibOpt_SnapshotComponent ), snapshot, snapshot.PrecisionTimeStampStartComponent() = 0 )
+    {
+      snapshot.PrecisionTimeStampStartComponent( snapshot.PrecisionTimeStamp() );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

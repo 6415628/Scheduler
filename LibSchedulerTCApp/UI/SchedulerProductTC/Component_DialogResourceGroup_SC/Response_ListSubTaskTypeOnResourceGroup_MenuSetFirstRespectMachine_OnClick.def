@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: ListSubTaskTypeOnResourceGroup
+Response OnClick (shadow[SubTaskTypeOnResourceGroup] selection) id:Response_ListSubTaskTypeOnResourceGroup_MenuSetFirstRespectMachine_OnClick
+{
+  #keys: '[129856.0.69798273]'
+  Body:
+  [*
+    // James Kwapien #7719 Set first respect machine subtask
+    // Reset previous first respect machine subtask
+    rg := Dialog.Data();
+    
+    sttorg := select( rg,
+                      SubTaskTypeOnResourceGroup,
+                      sttorg,
+                      sttorg.IsFirstRespectMachine() = true );
+    
+    if( not isnull( sttorg ))
+    {
+      sttorg.IsFirstRespectMachine( false );
+    }
+    
+    // Set new first respect machine subtask
+    selection.IsFirstRespectMachine( true );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /ListSubTaskTypeOnResourceGroup/Responsedef_ListSubTaskTypeOnResourceGroup_Menu_OnClick
+  Initiator: 'MenuSetFirstRespectMachine'
+  Precondition:
+  [*
+    return Dialog.SetFirstRespectMachinePrecondition( selection, feedback );
+  *]
+}

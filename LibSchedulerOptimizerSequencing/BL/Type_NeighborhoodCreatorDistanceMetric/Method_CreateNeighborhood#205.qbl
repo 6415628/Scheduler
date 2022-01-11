@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateNeighborhood (LibOpt_ScopeElement anchor, LibOpt_Scope scope) as LibOpt_Scope
+{
+  TextBody:
+  [*
+    assert( anchor.istype( ScopeElementOperation ) );
+    anchor_operation := anchor.astype( ScopeElementOperation );
+    
+    snapshot_nc := SnapshotNeighborhoodCreatorDistanceMetric::Create( scope.Run() );
+    
+    program := NeighborhoodCreatorDistanceMetric_GraphProgramNeighborhoodCreatorDistanceMetric::Create();
+    this.InitGraph( scope, program );
+    this.InitAlgorithm( anchor_operation, program );
+    program.Execute();
+    snapshot_nc.Capture( program );
+    
+    result := LibOpt_Scope::Create( scope.Run() );
+    this.HandleResults( anchor_operation, program, snapshot_nc, result );
+    
+    //Record snapshot
+    scopeelementops := selectset( result.Operations(), Elements.ScopeElementOperation, seo, true );
+    snapshot_nc.RecordScope( scopeelementops );
+    
+    // resource closure:
+    // Add all resources the chosen operations are planned on:
+    traverse( result.Operations(),
+              Elements.PlannedResource.ScopeElementResource,
+              ser,
+              scope.Contains( ser ) and not result.Contains( ser ) )
+    {
+      result.Add( ser, "#Closure" );
+    }
+    
+    // Also add all available resources for the currently unplanned operations
+    traverse( result.Operations(), Elements, operation, not operation.IsPlanned() )
+    {
+      traverse( operation, AllowedOperationOnResource.Resource_SC.ScopeElementResource, ser,
+                scope.Contains( ser ) )
+      {
+        result.Add( ser, "#Closure" );
+      }
+    }
+    
+    return result;
+  *]
+}

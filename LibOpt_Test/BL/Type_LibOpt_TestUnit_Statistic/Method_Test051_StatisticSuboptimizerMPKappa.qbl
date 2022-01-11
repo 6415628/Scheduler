@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test051_StatisticSuboptimizerMPKappa (LibOpt_TestDataset dataset)
+{
+  Description: 'Test that we get the right amount of issues for `LibOpt_StatisticSuboptimizerMPKappa`'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    scope := LibOpt_Scope::Create( run );
+    run.SetStartScope( scope );
+    
+    iterator := opt.IteratorForEachLink( run, 'Iterator' );
+    
+    rollback_kpi := opt.RollbackKPIStatic();
+    suboptimizer_kappa := opt.SuboptimizerMPReflection( run, 'Kappa subopt', & rollback_kpi,
+                                                             method( LibOpt_TestUnit_Statistic, M051_SuboptimizerMP_Initialize_Kappa,
+                                                                     LibOpt_Suboptimizer, MathematicalProgram, LibOpt_Task ),
+                                                             method( LibOpt_SuboptimizerMPReflection, HandleResult_Empty,
+                                                                     LibOpt_Suboptimizer, MathematicalProgram, LibOpt_Task, Boolean ) );
+    
+    rollback_kpi := opt.RollbackKPIStatic();
+    suboptimizer_stable := opt.SuboptimizerMPReflection( run, 'Stable subopt', & rollback_kpi,
+                                                           method( LibOpt_SuboptimizerMPReflection, HandleResult_Empty,
+                                                                   LibOpt_Suboptimizer, MathematicalProgram, LibOpt_Task, Boolean ) );
+    
+    iterator.Fork( suboptimizer_kappa );
+    iterator.Fork( suboptimizer_stable );
+    run.ConfigureForOneTransaction();
+    
+    this.NoException( run->Start()->|void->( )
+    {
+      statistics := selectset( run, Statistic.astype( LibOpt_StatisticSuboptimizerMPKappa ), statistic, true );
+      
+      if( this.Run().AssertEqual( 2, statistics.Size(), 'Incorrect amount of statistics' ) )
+      {
+        statistic_kappa  := select( statistics, Elements, statistic, statistic.Component() = suboptimizer_kappa );
+        statistic_stable := select( statistics, Elements, statistic, statistic.Component() = suboptimizer_stable );
+        
+        this.Run().AssertEqual( 1, statistic_kappa.NrElements(), 'Incorrect amount of elements on kappa suboptimizer' );
+        this.Run().AssertEqual( 1, statistic_stable.NrElements(), 'Incorrect amount of elements on stable suboptimizer' );
+        
+        this.Run().AssertEqual( 1, statistic_kappa.Issue( relsize ), 'Incorrect amount of issues on kappa suboptimizer' );
+        this.Run().AssertEqual( 0, statistic_stable.Issue( relsize ), 'Incorrect amount of issues on stable suboptimizer' );
+      }
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,84 @@
+Quintiq file version 2.0
+#parent: #root
+Method CanSubscribe (Date startOfSubscription_i, Date endOfSubscription_i, Boolean isWithoutEnd_i) remote as Boolean
+{
+  TextBody:
+  [*
+    // Explicitly collect the FeedbackText, in order to be able to show it in a MessageBox.
+    feedback := FeedbackObject::LocalFeedback();
+    feedback.EnableLocalFeedbackText();
+    
+    context              := "     -  Subscription to event '" + this.Subject() + "'"; // + "' : ";
+    leadingParticipation := this.LeadingParticipation();
+    startOfCalendar      := leadingParticipation.Calendar().StartDate();
+    canSubscribe         := true;
+    
+    if( leadingParticipation.IsRecurring() )
+    {
+      period := leadingParticipation.RecurrencePeriod();
+      
+      // Additional restrictions if the event that is subscribed to has an end.
+      // These checks are done on period-level, so on Dates, not DateTimes.
+      if( period.PeriodType() = LibCal_RecurrencePeriod::TYPE_WITHENDDATE() )
+      {
+        // The subscription should start before the end of the recurrence period of the event.
+        canSubscribe := startOfSubscription_i <= period.EndDate();
+        
+        if( not feedback.CheckHard( canSubscribe ) )
+        {
+          feedback.AddHard( context );
+          /* Might be useful later
+          feedback.AddHard( context + Translations::Period_StartMustBeBeforeEndOfEvent( "subscription",
+                                                                                        startOfSubscription_i.Format( Translations::DateFormat() ),
+                                                                                        period.EndDate().Format( Translations::DateFormat() ) ) + String::NewLine() );
+         */
+        }
+      }
+      
+      // If the subscription has an end...
+      if( feedback.IsAllowed() and
+          isWithoutEnd_i = false )
+      {
+        if( period.StartDate() >= startOfCalendar )
+        {
+          // ...the end must be greater that the start of the recurrence period of the event.
+          canSubscribe := endOfSubscription_i >= period.StartDate();
+    
+          if( not feedback.CheckHard( canSubscribe ) )
+          {
+            feedback.AddHard( context );
+            
+            /* Might be useful later
+            feedback.AddHard( context + Translations::Period_EndMustBeGreaterThanStartOfEvent( "subscription",
+                                                                                               period.StartDate() .Format( Translations::DateFormat() ),
+                                                                                               endOfSubscription_i.Format( Translations::DateFormat() ) ) + String::NewLine() );
+            */
+          }
+        }
+        else
+        {
+          // ...the end must be greater than the start of the calendar
+          canSubscribe :=  endOfSubscription_i >= startOfCalendar;
+    
+          if( not feedback.CheckHard( canSubscribe ) )
+          {
+            feedback.AddHard( context );
+            
+            /*
+            feedback.AddHard( context + Translations::Period_EndMustBeGreaterThanStartOfCalendar( "subscription",
+                                                                                                  endOfSubscription_i.Format( Translations::DateFormat() ),
+                                                                                                  startOfCalendar    .Format( Translations::DateFormat() ) ) + String::NewLine() );
+            */
+          }
+        }
+      }
+    }
+    else
+    {
+      // No restrictions in case of a non-recurring event.
+    }
+    
+    return feedback.IsAllowed();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

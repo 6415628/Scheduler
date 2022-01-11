@@ -1,0 +1,118 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_DoStandardAction (String action, structured[String] parameters, output Boolean isstandardaction_o, 
+  output String response_o) as Boolean id:Method_LibPTF_pnlTestRunner_PTF_DoStandardAction
+{
+  #keys: '[103546.0.55858897]'
+  Body:
+  [*
+    // Perform the standard actions
+    issuccessful := false;
+    
+    param1 := guard( parameters.Element( 0 ), "" );
+    param2 := guard( parameters.Element( 1 ), "" );
+    param3 := guard( parameters.Element( 2 ), "" );
+    
+    twoparams   := param1    + ", " + param2;
+    threeparams := twoparams + ", " + param3;
+    
+    if( action = LibPTF_StandardAction::AutoClose() )
+    {
+      vhAutoClose.Value( 'true' );
+      issuccessful := true;
+    }
+    else if( action = LibPTF_StandardAction::CloseAllForms() )
+    {
+      this.PTF_DebugInfoAction( action, "" );
+      Application.CloseAll();
+    
+      issuccessful := true;
+    }
+    else if( action = LibPTF_StandardAction::OpenView() )
+    {
+      viewname := parameters.Element( 0 );
+    
+      this.PTF_DebugInfoAction( action, viewname );
+      isviewopened := ApplicationScope.ViewManager().OpenView( viewname );
+    
+      if( isviewopened )
+      {
+        issuccessful := true;
+      }
+      else
+      {
+        MessageBox::Warning( this, 'View: "' + viewname + '" is not found, please check your test script.', "OK", 1 );
+      }
+    }
+    else if( action = LibPTF_StandardAction::ScrollGCLeftRight() )
+    {
+      this.PTF_DebugInfoAction( action, threeparams );
+      issuccessful := this.PTF_ScrollGanttChartLeftRight( param1, param2, [Number]param3, response_o );
+    }
+    else if( action = LibPTF_StandardAction::ScrollGCPageLeftRight() )
+    {
+      this.PTF_DebugInfoAction( action, threeparams );
+      issuccessful := this.PTF_ScrollGanttChartPageLeftRight( param1, param2, [Number]param3,response_o );
+    }
+    else if( action = LibPTF_StandardAction::ScrollGCPageUpDown() )
+    {
+      this.PTF_DebugInfoAction( action, threeparams );
+      issuccessful := this.PTF_ScrollGanttChartPageUpDown( param1, param2, [Number]param3, response_o );
+    }
+    else if( action = LibPTF_StandardAction::ScrollGCUpDown() )
+    {
+      this.PTF_DebugInfoAction( action, threeparams );
+      issuccessful := this.PTF_ScrollGanttChartUpDown( param1, param2, [Number]param3, response_o );
+    }
+    else if( action = LibPTF_StandardAction::ScrollGCToBottom() )
+    {
+      this.PTF_DebugInfoAction( action, twoparams );
+      issuccessful := this.PTF_ScrollGanttChartTopBottom( param1, param2, false, response_o );
+    }
+    else if( action = LibPTF_StandardAction::ScrollGCToNow() )
+    {
+      this.PTF_DebugInfoAction( action, twoparams );
+      issuccessful := this.PTF_ScrollGanttChartToNow( param1, param2, response_o );
+    }
+    else if( action = LibPTF_StandardAction::ScrollGCToTop() )
+    {
+      this.PTF_DebugInfoAction( action, twoparams );
+      issuccessful := this.PTF_ScrollGanttChartTopBottom( param1, param2, true, response_o );
+    }
+    else if( action = LibPTF_StandardAction::ScrollListToLast() )
+    {
+      this.PTF_DebugInfoAction( action, twoparams );
+      issuccessful := this.PTF_ScrollListToLast( param1, param2, response_o );
+    }
+    else if( action = LibPTF_StandardAction::SelectListFrom() )
+    {
+      this.PTF_DebugInfoAction( action, threeparams );
+      issuccessful := this.PTF_SelectListFrom( param1, param2, [Number]param3, response_o );
+    }
+    else if( action = LibPTF_StandardAction::ZoomGC() )
+    {
+      this.PTF_DebugInfoAction( action, threeparams );
+      issuccessful := this.PTF_ZoomGanttChart( param1, param2, [Number]param3, response_o );
+    }
+    else if( action = LibPTF_StandardAction::ProfilerStart() )
+    {
+      issuccessful := this.PTF_ProfilerStart();
+    }
+    else if( action = LibPTF_StandardAction::ProfilerReset() )
+    {
+      // param1 is filename
+      issuccessful := this.PTF_ProfilerReset( param1 );
+    }
+    else if( action = LibPTF_StandardAction::ProfilerStop() )
+    {
+      // param1 is filename
+      issuccessful := this.PTF_ProfilerStop( param1 );
+    }
+    else
+    {
+      isstandardaction_o := false;
+    }
+    
+    return issuccessful;
+  *]
+}

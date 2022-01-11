@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method ResequenceMiddleTask (Number nroftask)
+{
+  Description: 'Resequence task at the middle of schedule'
+  TextBody:
+  [*
+    // soon hwee Dec-24-2014 (created)
+    
+    // Get the first resource of first resource group
+    firstresource := minselect( this.Schedule(), ResourceGroup_SC.Resource_SC, res, true, res.Index() );
+    
+    // Chris 2015 Jan 6 #5061: update resequence task at middle logic
+    // Get middle task position
+    fromtaskseq := ceil( ( firstresource.Task_SC( relsize ) - nroftask ) / 2 ) - 1;
+    
+    // Calculate the last resequence task position
+    totaskseq := fromtaskseq + nroftask;
+    
+    selectedtasks := selectset( firstresource, Task_SC, task,
+                                true,
+                                task.SequenceNr() >= fromtaskseq
+                                and task.SequenceNr() < totaskseq )
+    
+    aftertask := select( firstresource, Task_SC, task, true, task.SequenceNr() = totaskseq  );
+    
+    if( selectedtasks.Size() > 0 )
+    {
+      firstresource.PlanAfter( selectedtasks, aftertask );
+    }
+  *]
+}

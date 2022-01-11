@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride HandleFeasible (MathematicalProgram program, LibOpt_Task task) as LibOpt_Scope
+{
+  TextBody:
+  [*
+    // mbr23, 2019-09-16 (overridden)
+    
+    // save the goal variable in the RunContext!
+    
+    programtyped := program.astype( SuboptimizerApproximatorEndTime_MIPBalanceLoadSingle );
+    schedule := this.GetSchedule();
+    operations := task.Scope().OperationsUnlocked();
+    resourcegroup := task.Scope().ResourceGroups().Element( 0 );
+    
+    //Set the approximated end time on the considered resource group
+    var := programtyped.MaxDurationVariables().Get();
+    requiredtime := Duration::Hours( var.OptimalValue().Round( 3 ) );
+    
+    // Estimate the approximated end time from the first earliest start instead of Schedule.Time.
+    // This prevents the case where all plan elements have a late earliest start resulting in an 
+    // approximated end before the first earliest start. We would then count a penalty which we 
+    // cannot prevent which penalizes using more than one resource.
+    // If there are no planelements for this resource group, then use the Schedule time because 
+    // the minvalue of an empty set is MaxDateTime which is not correct.
+    earlieststart := ifexpr( operations.Size() = 0,
+                             schedule.Time(),
+                             min( operations, Elements, operation, true, operation.EarliestStart() ) );
+    approximateend := earlieststart + requiredtime;
+    
+    approximated_ends := construct( DateTimes ); // of all resources in this resource group
+    // Take calendar capacity from the resources into account when approximating the end time. 
+    traverse( resourcegroup, Resource_SC, resource )
+    {
+      // Assumption that the resource is completely needed, i.e. capacity of 1.0 is needed
+      approximateendresource := resource.ResourceCalendar().Add( earlieststart, requiredtime );
+      approximated_ends.Add( approximateendresource );
+      //resource.OptimizerMRSAApproximatedEnd( approximateendresource );
+    }
+    
+    resourcegroupapproximatedend := average( approximated_ends, Elements, approximatedend, approximatedend - earlieststart );
+    this.RunContextEndTimeApproximation().Get( resourcegroup ).ApproximatedEndPath( earlieststart + resourcegroupapproximatedend );
+    // mbr23, 2019-09-16 (comment): this logic is copied from the legacy optimizer. averaging over values subtracting `earlieststart` and adding `earlieststart` to the average is a detour.
+    
+    infotoprint := 'Approximated end:' + DateTimeToString::StandardConverter().Convert( approximateend );
+    task.Log( infotoprint );
+    
+    return task.Scope();
+  *]
+}

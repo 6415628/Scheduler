@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetUTFOperationAttributesForKPI_OperationsDueNotPlanned (UTFOperation operation, Boolean iscpplandue, Boolean isontime)
+{
+  Description: 'Update UTFOperation attributes for KPI, specific for KPI OperationsDueNotPlanned'
+  TextBody:
+  [*
+    
+    operation.UseIsCPPlanDue_UTF( true )
+    operation.IsCPPlanDue_UTF( iscpplandue );
+    
+    operation.UseEnd_UTF( true );
+    duedate := operation.PlanUnit_SC().Order_SC().DueDate();
+    if( isontime )
+    {
+      operation.End_UTF( duedate - Duration::Days( 1 ) );
+    }
+    else
+    {
+      // kpi does not have specific calc on how many days late, just boolean check on whether its late
+      operation.End_UTF( duedate + Duration::Days( 1 ) );
+    }
+  *]
+}

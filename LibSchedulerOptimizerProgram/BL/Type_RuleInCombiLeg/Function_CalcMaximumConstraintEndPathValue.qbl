@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcMaximumConstraintEndPathValue
+{
+  TextBody:
+  [*
+    // yifei Sep-22-2021 (created)
+    // Attribute should only be used for shutdown rules
+    
+    value := this.Rule().RuleScopeShutdownAggregateThreshold();
+    schedule := this.CombiLeg().GetResource().Schedule();
+    
+    //if the scope is about time,  then
+    // i), it use time spent,  including procesing and idle time
+    // ii), we will use the normal time expression for max constraint, which can including more general logic like calendar
+    // these two points make the value calculation for duration max limit special
+    if( this.Rule().CharacteristicScope().ID() <> RuleConstant::Characteristic_DurationInHours() )  //for duration, we will use 
+    {
+      // ADSC-26443: This cannot just staticly take the previous combilegs since they may be in scope as well";
+      value := value - this.CombiLeg().GetCharacteristicRealValueForPrevCombiLegsOfSameShutdown( this.Rule().CharacteristicScope() ); 
+    }
+    else
+    {
+      // If it is a time constraint and it is a before shutdown rule for a before shutdown leg, 
+      // Then we want to keep this 'restricted' combileg duration as short as possible";
+      // If it is a before shutdown rule and this leg is before the shutdown
+      // ADSC-26443: investigate this if part
+      if( this.IsBeforeShutdown() and this.Rule().IsBeforeShutdown() )
+      {
+        previouslegend := guard( this.CombiLeg().GetPreviousLastOperationInCombiLeg().EndTime(), schedule.Time() ); 
+        value := value + previouslegend.HoursAsReal( schedule.Time() );
+      }
+      // If it is not a before shutdown rule
+      else if( not this.Rule().IsBeforeShutdown() )
+      {
+        // The end time of this rule is the latest start of the previous shutdown + the shutdown duration + the rule duration (value)
+        prev_shutdown := guard( this.CombiLeg().Leg().FirstTaskOnLeg().PreviousShutdown(), null( Shutdown ) );
+        prev_shutdownend := guard( prev_shutdown.TargetStartAllowedTo() + prev_shutdown.ShutdownDuration(), schedule.Time() );                       
+        value := value + prev_shutdownend.HoursAsReal( schedule.Time() );
+      }
+    }
+    
+    this.MaximumConstraintEndPathValue( value );
+  *]
+}

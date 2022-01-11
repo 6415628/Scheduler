@@ -1,0 +1,67 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test064_StatisticTimeTotal_Type_Relative (LibOpt_TestDataset dataset)
+{
+  Description:
+  [*
+    Test that we get the right amount of issues for `LibOpt_StatisticTimeTotal` that is configured with `IsRelative` true and for a specific component type.
+    
+    This is currently only implemented for suboptimizers, so we will test it on a suboptimizer
+  *]
+  TextBody:
+  [*
+    nr_iterations := 20;
+    
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    scope := LibOpt_Scope::Create( run );
+    run.SetStartScope( scope );
+    
+    iterator := opt.IteratorForEachLink( run, 'Iterator' );
+    
+    violation := opt.ComponentParentReflection( run, OS::GenerateGUIDAsString(), method( LibOpt_TestUnit_Statistic, M06X_Operation_Sleep100,
+                                                                                         LibOpt_ComponentParent, LibOpt_Task ) );
+    
+    components := construct( LibOpt_ComponentParents );
+    
+    components.Add( violation );
+    for( i := 2; i <= nr_iterations; i++ )
+    {
+      component := opt.ComponentParentReflection( run, OS::GenerateGUIDAsString(), method( LibOpt_TestUnit_Statistic, M06X_Operation_Sleep010,
+                                                                                           LibOpt_ComponentParent, LibOpt_Task ) );
+      components.Add( component );
+    }
+    
+    components := selectsortedset( components, Elements, component, true, Real::Random() );
+    traverse( components, Elements, component )
+    {
+      iterator.Fork( component );
+      
+      suboptimizer := opt.SuboptimizerMPReflection( run, OS::GenerateGUIDAsString(), opt.RollbackKPIStatic(),
+                                                    method( LibOpt_TestUnit_Statistic, M06X_SuboptimizerMP_HandleResult_Sleep100,
+                                                            LibOpt_Suboptimizer, MathematicalProgram, LibOpt_Task, Boolean ) );
+      component.To( suboptimizer );
+    }
+    
+    this.NoException( run->Start()->|void->( )
+    {
+      statistics := selectset( run, Statistic.astype( LibOpt_StatisticTimeTotal ), statistic,
+                               not statistic.IsAbsolute()
+                               and statistic.IsType() );
+      
+      if( this.Run().AssertEqual( 3, statistics.Size(), 'Incorrect amount of statistics' ) )
+      {
+        suboptimizer := select( run, Component.astype( LibOpt_Suboptimizer ), subopt, true );
+        statistic := selectobject( statistics, Elements, statistic, statistic.ComponentType() = suboptimizer.ComponentType() );
+        
+        this.Run().AssertEqual( nr_iterations, statistic.NrElements(), 'Incorrect amount of elements' );
+        this.Run().AssertGreaterOrEqual( 1, statistic.Issue( relsize ), 'Incorrect amount of issues' );
+        
+        this.Run().AssertEqual( 1, counter( violation, SnapshotComponent.IterationPart.Snapshot.Issue, issue, issue.Statistic() = statistic ),
+                                'Unexpected issue count on violation of lower bound' );
+      }
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

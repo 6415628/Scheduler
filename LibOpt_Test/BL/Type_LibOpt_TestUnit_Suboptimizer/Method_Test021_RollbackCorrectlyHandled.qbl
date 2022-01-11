@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test021_RollbackCorrectlyHandled (LibOpt_TestDataset dataset)
+{
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    runcontextforutf := LibOpt_MyRunContextForUTF::Create( run );
+    
+    // Script of the rollback KPI
+    kpi_script := opt.RollbackKPIScripted( 1 );
+    kpi_script.Enqueue( 10.0 );
+    kpi_script.Enqueue( 20.0 );
+    
+    subopt := opt.MPSuboptimizer( run, 'Subopt', runcontextforutf, & kpi_script );
+    run.SetStartComponent( subopt );
+    
+    test := run->Start();
+    
+    test->|this->( v )
+    {
+      this.Run().AssertEqual( 6, run.Snapshot( relsize ), 'Expected # snapshots' );
+      this.Run().AssertEqual( 1, subopt.SnapshotComponent( relsize ), 'Optimizer did not do 1 run' );
+      this.Run().AssertEqual( 1, counter( run, Snapshot.astype( LibOpt_SnapshotSuboptimizer ), sn, true ), '# LibOpt_SnapshotSuboptimizer' );
+      this.Run().AssertEqual( 1, counter( run, Snapshot.astype( LibOpt_SnapshotMP ), sn, true ), '# LibOpt_SnapshotMP' );
+      this.Run().AssertEqual( 0, counter( run, Snapshot.astype( LibOpt_SnapshotError ), err, true ), 'No error snapshots expected' );
+      this.Run().AssertEqual( 0, counter( run, Snapshot.astype( LibOpt_SnapshotWarning ), err, true ), 'No warning snapshots expected' );
+      this.Run().AssertEqual( 1, counter( run, Snapshot.astype( LibOpt_SnapshotRollbackKPIScripted ), sn, true ), '# LibOpt_SnapshotRollbackKPIScripted' );
+      
+      snapshot := select( subopt, SnapshotComponent, sn, true );
+      if( not isnull( snapshot ) )
+      {
+        this.Run().AssertEqual( 2, counter( snapshot, Children.astype( LibOpt_SnapshotKPI ), sn, true ),
+                                'Expected 2 child snapshots of type `LibOpt_SnapshotKPI`' );
+        this.Run().AssertTrue( exists( subopt, SnapshotComponent.Children.astype( LibOpt_SnapshotSuboptimizer ), sn, sn.IsRollback() ),
+                               'Expected 1 child snapshots of type `LibOpt_SnapshotSuboptimizer` which represents a rollback.' );
+      }
+    };
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

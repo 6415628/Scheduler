@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method CleanUpFeedbackedTask (Operation_SC operation)
+{
+  TextBody:
+  [*
+    // Remove the task for this operation
+    // task can also be kept to achieve NoBuffer duration calculation and fixed sequence replanning.
+    
+    //To propagate IsAllFSPLOperationWithFeedback so that when all FSPL operation has feedback, we can proceed to clean up the feedbacked task
+    //The full transaction propagate cannot happen before this method because it will cause CBL error as at this stage, the related task are not replanned to the right position yet by FSPL
+    Transaction::Transaction().Propagate( attribute( PlanUnit_SC, HasFSPLFeedback ) );
+    //saravanen 20130723 A bug was found. When FSPLForFeedback = false and KeepTask = false, Feedback-ed tasks were not unplanned
+    // " or ( hasfspl and not this.FSPLForFeedback() ) " was added
+    // Chris 20141203 #5006 : Simplify the FixedSequence resource checking
+    if( not isnull( operation.Task_SC() )
+        and ( not operation.IsFSPLHandlingNeeded() or operation.HasBeenAborted() ) ) // We always want to clean up when the operation receives ABORT feedback, regardless of whether it has FSPL enabled
+    {
+      operation.Task_SC().CleanUpFeedbackedTask();
+    }
+    else if( operation.PlanUnit_SC().HasFSPLFeedback() ) // When we have FSPL and do not keep task, we only clean up task when all operation in operation group has feedback
+    {
+      operation.PlanUnit_SC().CleanUpFSPLFeedbackedTask();
+    }
+  *]
+}

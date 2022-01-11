@@ -1,0 +1,93 @@
+Quintiq file version 2.0
+#parent: #root
+Method DrawArcs
+{
+  Description: 'Draw the additional points between the start and the end point on each arc, so there are no overlapping positions.'
+  TextBody:
+  [*
+    program := LibOpt_Utility::ConstructMathematicalProgramWithoutAnalysis();
+    
+    arcs := selectsortedset( this, UIGraphNode.Outgoing, arc, true, arc.First().X() );
+    traverse( arcs, Elements, arc ) 
+    {
+      var := program.NewContinuousVariable( LibOpt_UIGraphRow::VarY(), arc );
+      var.LowerBound( 5.0 );
+      var.UpperBound( Real::MaxReal() );
+    }
+    
+    seen := construct( LibOpt_UIGraphArcs );
+    
+    traverse( arcs, Elements, elem1 )
+    {
+      dir1 := elem1.First().X() < elem1.Last().X();
+      traverse( seen, Elements, elem2 ) 
+      {
+        dir2 := elem2.First().X() < elem2.Last().X();
+        
+        overlap_type := elem1.DetermineOverlap( elem2 );
+        
+        if( dir1 = dir2 )
+        {
+          if( ( dir1 and overlap_type = LibOpt_UIGraphArc::OverlapLeft() )
+              or ( not dir1 and overlap_type = LibOpt_UIGraphArc::OverlapRight() ) )
+          {
+            LibOpt_UIGraphRow::NewOverlapConstraint( program, elem1, elem2 );
+          }
+          else if( ( dir1 and overlap_type = LibOpt_UIGraphArc::OverlapRight() )
+              or ( not dir1 and overlap_type = LibOpt_UIGraphArc::OverlapLeft() ) )
+          {
+            LibOpt_UIGraphRow::NewOverlapConstraint( program, elem2, elem1 );
+          }
+          else if( overlap_type <> LibOpt_UIGraphArc::NoOverlap() )
+          {
+            LibOpt_UIGraphRow::NewOverlapConstraint( program, elem1, elem2 );
+          }
+        }
+        else if( overlap_type <> LibOpt_UIGraphArc::NoOverlap() )
+        {
+          LibOpt_UIGraphRow::NewOverlapConstraint( program, elem1, elem2 );
+        }
+      }
+      seen.Add( elem1 );
+    }
+    
+    // Goal
+    traverse( arcs, Elements, arc ) 
+    {
+      var := program.Variable( LibOpt_UIGraphRow::VarY(), arc );
+      program.Goal().NewTerm( 1.0, var );
+    }
+    
+    program.Execute();
+    
+    max_value := max( arcs, Elements, arc, true, program.Variable( LibOpt_UIGraphRow::VarY(), arc ).OptimalValue() );
+    text_offset := 13;
+    traverse( arcs, Elements, arc ) 
+    {
+      var := program.Variable( LibOpt_UIGraphRow::VarY(), arc );
+      
+      point := arc.First();
+      point := point.To( arc.First().X(), [Real] this.UIGraph().Offset() + text_offset )
+      
+      // Make the cut diagonally
+      mul := ifexpr( arc.First().X() > arc.Last().X(), -1, 1 );
+      diff := abs( arc.First().X() - arc.Last().X() );
+      diag_part_1 := minvalue( diff, var.OptimalValue() - this.UIGraph().Offset() );
+      if( diag_part_1 > 0 )
+      {
+        point := point.To( arc.First().X() + diag_part_1 * mul, var.OptimalValue() + text_offset )
+      }
+      
+      // Make the cut diagonally again
+      diag_part_2 := minvalue( diff - diag_part_1, max_value - var.OptimalValue() )
+      if( diag_part_2 > 0 )
+      {
+        point := point.To( arc.Last().X() - diag_part_2 * mul, var.OptimalValue() + text_offset )
+      }
+      
+      point := point.To( arc.Last().X(), max_value + text_offset );
+      arc.Last().Y( max_value + 15 + text_offset );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

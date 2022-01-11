@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: SplitterWnd/ButtonStart
+Response OnClick (ExportedOperationBatch selection) id:Response_SplitterWnd_ButtonStart_OnClick_366
+{
+  #keys: '[118288.0.259747624]'
+  Body:
+  [*
+    // report setup start of selected scheduling batch
+    dlg := construct( DialogFeedbackBatch );
+    resource := ResourceSelection.Data();   
+    
+    dlg.ReportStartFromSchedulingBatch( this, Constants::StatusStart(), selection, resource.Name() );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /SplitterWnd/Responsedef_SplitterWnd_ButtonStart_OnClick_422
+  Precondition:
+  [*
+    feedback := '';
+    result := false;
+    
+    if( not isnull( ResourceSelection.Data() ) )
+    {
+      result := FormShopFloorEntryClient.IsBatchResource( ResourceSelection.Data() );
+    
+      if( result and not ( ListSchedulingBatch.HasFocus() or (  ValueHolderListLostFocus.Value() = 'ExportedBatch' and ( ButtonStop.HasFocus() or ButtonStart.HasFocus() ) ) ) )
+      {
+        feedback := Translations::SC_Designer_ShopFloorEntryButtonStart_FeedbackOnlyAvailableForBatch();
+      }
+    }
+    return result and feedback = '';
+  *]
+}

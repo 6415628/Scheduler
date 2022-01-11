@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method HasUniqueName (output String feedback_o) as Boolean id:Method_DialogCreateEditCampaignInCampaignType_HasUniqueName
+{
+  #keys: '[143768.1.1822079375]'
+  Body:
+  [*
+    // Check for uniqueness, is_name_unique true if no instance of CampaignTypeInCampaign exists s.t. it's name = the proposed name, 
+    // excluding the current instance if it's an edit function
+    new_name_i := EditFieldName.Text();
+    
+    is_name_unique := not exists( DataHolderCampaignType.Data(),
+                                  CampaignInCampaignType,
+                                  campaign,
+                                  campaign.Name() <> guard( DataHolderCampaignInCampaignType.Data().Name(), '' ),
+                                  campaign.Name() = new_name_i );
+    if( not is_name_unique )
+    {
+      feedback_o := Translations::SC_CampaignInCampaignType_NameNotUnique_Precondition( new_name_i );
+    }
+    
+    return is_name_unique;
+  *]
+}

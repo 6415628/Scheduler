@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveDataExchange (String data_i)
+{
+  Description: 'Receive data-exchange and determine its type.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-20-2016 (created)
+    nvt := LibDEF_DataAccessor::NVTDeserialize( data_i );
+    
+    senderGUID := LibDEF_DataAccessor::GetHeaderPropertyAsString( nvt, LibDEF_DataAccessor::HEADER_SYSTEMGUID_FROM() );
+    event      := this.EventCreate( senderGUID, true );
+    
+    LibDEF_Util::EventLog( event, "Receiving Data Exchange" );
+    
+    if( this.VerifyHeaderDomainGUID( nvt, event )
+        and this.VerifyCompatibilityAndUpdateSystemVersion( senderGUID, nvt, event ) )
+    {
+      // mark the system as available
+      sender := LibDEF_System::MarkAvailability( this, senderGUID, true, event );
+    
+      if( LibDEF_DataAccessor::HasChildNamed( nvt, nvt.Root(), LibDEF_DataAccessor::HANDLE_CONFIGURATION() ) )
+      {
+        // Handle configuration message
+        this.ReceiveConfiguration( &nvt, event );
+      }
+      else
+      {
+        // restrict non-Configuration message requires a valid System entry
+        if( isnull( sender ) )
+        {
+          // log restrictive error
+          LibDEF_Util::EventLogError( event,
+                                      "Failed to process Data-Exchange message",
+                                      "Non-configuration message received from unknown sender with S-GUID '" + senderGUID + "' is rejected." );
+        }
+        else
+        {
+          if( LibDEF_DataAccessor::HasChildNamed( nvt, nvt.Root(), LibDEF_DataAccessor::HANDLE_METADATA() ) )
+          {
+            // Handle metadata message
+            this.ReceiveMetadata( &nvt, sender, event );
+          }
+          else if( LibDEF_DataAccessor::HasChildNamed( nvt, nvt.Root(), LibDEF_DataAccessor::HANDLE_DATA() ) )
+          {
+            // Handle set-data message
+            this.ReceiveData( nvt, sender, event );
+          }
+          else
+          {
+            LibDEF_Util::EventLogError( event,
+                                        "Failed to process Data-Exchange message",
+                                        "Failed to process Data-Exchange message, message format cannot be recognized." );
+          }
+        }
+      }
+    }
+  *]
+}

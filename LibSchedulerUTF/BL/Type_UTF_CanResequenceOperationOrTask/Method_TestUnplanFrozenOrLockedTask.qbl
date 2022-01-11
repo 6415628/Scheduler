@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestUnplanFrozenOrLockedTask (Schedule schedule)
+{
+  Description: 'Tests unplan frozen or locked task. Body.'
+  TextBody:
+  [*
+    feedback_o := '';
+    tasks := selectset( schedule, ResourceGroup_SC.Resource_SC.Task_SC, task, true );
+    currentVariant := this.GetCurrentVariant();
+    
+    // Propagate IsLocked and IsFrozenInSchedule attribute value for precon check
+    Transaction::Transaction().Propagate( attribute( Task_SC, IsLocked ) );
+    Transaction::Transaction().Propagate( attribute( Task_SC, IsFrozenInSchedule ) );
+    
+    this.Run().AssertTrue( currentVariant.CanReserveOrUnreserveMaterial() = Task_SC::CanUnplanSoft( tasks, feedback_o ), 
+                           'Test unplan frozen or locked task failed' );
+  *]
+}

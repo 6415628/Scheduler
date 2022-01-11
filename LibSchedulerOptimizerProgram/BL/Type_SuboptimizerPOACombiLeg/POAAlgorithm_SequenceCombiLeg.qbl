@@ -1,0 +1,607 @@
+Quintiq file version 2.0
+#parent: #root
+POAAlgorithm SequenceCombiLeg (CombiLegs combilegs, Operation_SCs operations)
+{
+  #keys: '2[141356.0.848691127][141356.0.848691126]'
+  ApiVersion: 1
+  ConstraintInitializationText: 'this.POAAddConstraints( poa, combilegs, operations );'
+  CurrentStrategy: SimpleSingleCombiLeg
+  ExpressionInitializationText: 'this.POAAddExpressions( poa, combilegs, operations );'
+  GoalInitializationText: 'this.POAAddGoals( poa, combilegs );'
+  NodeInitializationText:
+  [*
+    this.POADetermineFrozenBoundaryNodes( combilegs );
+    this.POAAddNodes( poa, combilegs, operations );   
+    
+    schedule := this.GetSchedule();
+    scheduletime := schedule.Time();
+    
+    // Set the offsetdatetime of POAAnalysis at the start of the run instead of doing this manually (and forgetting it)
+    if( guard( POAAnalysis::Analysis().Active(), false ) )
+    {
+      POAAnalysis::Analysis().OffsetDateTime( scheduletime );
+    }
+  *]
+  OnFailureText: ''
+  PathTypeInitializationText: 'this.POAAddPaths( poa, combilegs );'
+  ResultText: 'this.HandleResultCombiLegs( poa, combilegs );'
+  SolutionInitializationText:
+  [*
+    this.POAPrepareForInitial( poa, combilegs, operations );
+    this.POAAddInitial( poa, combilegs, operations );
+  *]
+  POAAlgorithmNode
+  {
+    InstanceType: CombiLeg
+  }
+  POAAlgorithmNode
+  {
+    InstanceType: Operation_SC
+  }
+  POAStrategy.Strategies SimpleSingleCombiLeg
+  {
+    TextBody:
+    [*
+      // -------------------------------------------------------------------------- //
+      // Strategy for a simple single path problem                                  //
+      // -------------------------------------------------------------------------- //
+      
+      // ----- Parameters for the strategy -----
+      // String used to identify the expression used for time in this POA. This
+      // strategy needs an expression for time.
+      timeexpressionname := SuboptimizerPOACombiLeg::NamePOAExpressionTime();
+      // The total duration of iteratively improving the solution in this strategy.
+      // This does not include the time spend on creating and improving an initial
+      // solution. More time spend on iterive improvement will give a higher chance
+      // on better results.
+      iterativeduration := Duration::Seconds(0.1);
+      // The number of threads used throughout the strategy execution. The threads
+      // are all busy from begin till end.
+      nrthreads := 7;
+      
+      // ----- Advanced Parameters for the strategy -----
+      // The number of moves (plan possibilities of planelements) that make it in the
+      // final population. Moves that are estimated to be better have a higher chance
+      // to be in the population. All moves in the population are fully propagated,
+      // after which the best move is carried out. A higher number will mean more
+      // precise results because full propagation gives the precise score of a move.
+      // This comes at the cost of more time needed in propagation.
+      // It is currently not set, as we use an adaptive population size
+      //maxpopulation := 10;
+      
+      // The percentage of available planelements that is destructed by the random
+      // destruction action
+      randomdestructionpercentage := 20.0;
+      
+      // The number of unplanned elements that is considered by the random
+      // construction action
+      randomconstructiongroupsize := 7;
+      // The duration between the possibility of a reset to the globally best solution
+      // found.
+      durationbetweenrestarttoglobal := Duration::Seconds(3.5);
+      // The chance that a solution is restarted to the globally best solution
+      restarttoglobalchance := 0.6;
+      
+      // The duration between logging information during the iterative strategy
+      durationbetweeniterativereports := Duration::Seconds( 5 )
+      // Log file name prefix. '' means no logging
+      logfilename := '';
+      // Toggle info statements
+      printinfo := false;
+      
+      // -------------------------------------------------------------------------- //
+      // Print parameter values and initial score                                   //
+      // -------------------------------------------------------------------------- //
+      
+      if ( printinfo )
+      {
+        info( 'parameter timeexpressionname =' , timeexpressionname );
+        info( 'parameter iterativeduration =' , iterativeduration );
+        info( 'parameter nrthreads =' , nrthreads );
+        info( 'parameter maxpopulation =' , "adaptive" );
+        info( 'parameter randomdestructionpercentage =' , randomdestructionpercentage );
+        info( 'parameter randomconstructiongroupsize =' , randomconstructiongroupsize );
+        info( 'parameter durationbetweenrestarttoglobal =' , durationbetweenrestarttoglobal );
+        info( 'parameter restarttoglobalchance =' , restarttoglobalchance );
+        info( 'parameter logfilename =' , logfilename );
+        info( 'initial score', strategy.BestSolution().TotalScore());
+      }
+      
+      // -------------------------------------------------------------------------- //
+      // Initialize general settings                                                //
+      // -------------------------------------------------------------------------- //
+      
+      // For all constraints change MaxDownStreamDepth to MaxNumber where applicable.
+      // For independent path problems MaxNumber gives generally the best results.
+      {
+        traverse( poa, Constraints.astype( POAEndConstraint ), c, c.MaxDownStreamDepth() <> Number::MaxNumber() )
+        {
+          c.MaxDownStreamDepth( Number::MaxNumber() );
+          debuginfo( 'Warning: POAEndConstraint', c.Role(), 'MaxDownStreamDepth was changed to MaxNumber, because that will improve the move estimates' );
+        }
+        
+        traverse( poa, Constraints.astype( POACapacityConstraint ), c, c.MaxDownStreamDepth() <> Number::MaxNumber() )
+        {
+          c.MaxDownStreamDepth( Number::MaxNumber() );
+          debuginfo( 'Warning: POACapacityConstraint', c.Role(), 'MaxDownStreamDepth was changed to MaxNumber, because that will improve the move estimates' );
+        }
+        
+        traverse( poa, Constraints.astype( POAInTimeConstraint ), c, c.MaxDownStreamDepth() <> Number::MaxNumber() )
+        {
+          c.MaxDownStreamDepth( Number::MaxNumber() );
+          debuginfo( 'Warning: POAInTimeConstraint', c.Role(), 'MaxDownStreamDepth was changed to MaxNumber, because that will improve the move estimates' );
+        }
+      }
+      
+      timeexpression := select( poa, Expressions, e,true, e.Role() = timeexpressionname );
+      assert( not isnull( timeexpression ), 
+              "The strategy needs an expression that is called 'time' and will be used as the expression representing time
+              " );
+      
+      planstrategy := strategy.PlanStrategy();
+      // Apply parameter
+      // We use an adaptive population, so we do not set the MaxPopulation or MaxPathPopulation
+      planstrategy.AdaptivePopulation( true );
+      
+      // less propagation. No longer required in 5.5
+      // planstrategy.PropagateBetweenMoves( false );
+      
+      // -------------------------------------------------------------------------- //
+      // Initial Strategy                                                           //
+      // -------------------------------------------------------------------------- //
+      //
+      // The initial strategy will be used to plan all remaining planelements, and do
+      // some initial improvement. After that improvement will only be made by
+      // iterativestrategy.
+      
+      initialstrategy := strategy.NewMetaStrategy( 'initialstrategy' );
+      if ( logfilename <> '' )
+      {
+        initialstrategy.LogFileName(logfilename + '_InitialStrategy', true);
+      }
+      
+      // The only step used in the initial strategy.
+      initialstep := initialstrategy.NewStep( 'initialstep' );
+      // Room for one start solution.
+      initialstep.StartSolutionPool().Capacity( 1 );
+      // Use initial solution as the single starting solution.
+      initialstep.StartSolutionPool().Add( poa.Solution() );
+      // The step is repeated a number of times equal to the number of threads, each
+      // time starting from the same initial solution. Each repetition is carried out
+      // by its own thread.
+      initialstep.Repetitions( nrthreads );
+      // The step happens once in each thread. It will not be carried out on the
+      // results of a previous iteration.
+      initialstep.MaximumIterationsActions( 1 );
+      // 1 000 000 seconds pratically infinity
+      initialstep.MaximumSecondsActions( 1000000.0 );
+      // The result of each thread is stored.
+      initialstep.ResultSolutionPool().Capacity( nrthreads );
+      
+      actions := initialstep.Actions();
+      
+      // Use insertion heuristic, which choses a path, and plans one element a time on
+      // that path based on the time expression. When no more elements fit on the path
+      // a new path is chosen. This continues until there are not paths left,
+      insertionheuristic := actions.NewInsertionHeuristic( timeexpression );
+      // Try to plan all unplanned planelements.
+      insertionheuristic.Nodes( Number::MaxNumber() );
+      
+      // Use one node improvement action, which selects any planned or unplanned
+      // element and tries to find a better position for that element. Depending
+      // on the improvement made, a new element is selected and the process
+      // repeats itself.
+      onenodeimpr := actions.NewRandomOneNodeImprovement();
+      // By setting to 0.0 any improvement will make the process repeat itself.
+      onenodeimpr.MinimalImprovementPercentage().Set( 0.0 );
+      
+      // Start execution of the strategy and display the duration
+      executestarttime := DateTime::ActualTime();
+      debuginfo( 'execute initial actions' );
+      initialstrategy.Execute( nrthreads, Real::MaxReal() );
+      debuginfo( 'initial actions execution duration', DateTime::ActualTime() - executestarttime );
+      
+      // -------------------------------------------------------------------------- //
+      // Iterative Strategy                                                         //
+      // -------------------------------------------------------------------------- //
+      //
+      // iterativestrategy will repeatedly run on the start solution generated by
+      // initialstrategy.
+      
+      iterativestrategy := strategy.NewMetaStrategy( 'iterativestrategy' );
+      if ( logfilename <> '' )
+      {
+        iterativestrategy.LogFileName(logfilename + '_IterativeStrategy', true);
+      }
+      
+      // The only step used in the iterative strategy.
+      iterativestep := iterativestrategy.NewStep( 'iterativestep' );
+      // Use the result of each thread for the initial stategy as starting point for
+      // the iterative strategy. One thread will start for each of these starting
+      // points.
+      iterativestep.StartSolutionPool().Use( initialstep.ResultSolutionPool() );
+      // There is no limit on the number of times this step starts again within a
+      // single thread.
+      iterativestep.MaximumIterationsActions( Number::MaxNumber() );
+      // Execution of the step must not take longer then the reporting duration.
+      iterativestep.MaximumSecondsActions( durationbetweenrestarttoglobal.MinutesAsReal() * 60.0 );
+      // The result of each thread is stored.
+      iterativestep.ResultSolutionPool().Capacity( nrthreads );
+      
+      actions := iterativestep.Actions();
+      
+      // The number of elements available for planning.
+      nrplanelements := 10; //poa.GetNumber( OptimizerRunHRMPOA::POANumberOfPlanElements() );
+      
+      randomdestr := actions.NewRandomDestruction();
+      randomdestr.Nodes( round( randomdestructionpercentage / 100.0 * nrplanelements )  );
+      
+      // Use random construction, which
+      // (1) chooses a number of unplanned elements equal to
+      //     'randomconstructiongroupsize'.
+      // (2) determines the best move for each element by making estimates for all
+      //     moves and propagating the moves that make it in the population.
+      // (3) carry out the best move of the element that was best
+      randomcons := actions.NewRandomConstruction();
+      // Set the number of unplanned elements to consider.
+      randomcons.GroupSize( randomconstructiongroupsize );
+      
+      onenodeimpr := actions.NewRandomOneNodeImprovement();
+      // By setting to 0.0 any improvement will make the process repeat itself.
+      onenodeimpr.MinimalImprovementPercentage().Set( 0.0 );
+      
+      // Keep executing the iterative meta strategy until the time limit is reached
+      iterativeendtime := DateTime::ActualTime() + iterativeduration;
+      lastreporttime := DateTime::ActualTime() - durationbetweeniterativereports;
+      while ( DateTime::ActualTime() < iterativeendtime )
+      {
+        executeduration := minvalue( durationbetweenrestarttoglobal, iterativeendtime - DateTime::ActualTime() );
+        
+        // Call meta strategy execution
+        iterativestrategy.Execute( nrthreads, executeduration.MinutesAsReal() * 60.0 );
+        
+        // Fill start solution
+        traverse( iterativestep.ResultSolutionPool().UseSolutions(), Solutions, s )
+        {
+          if ( Real::Random() < restarttoglobalchance )
+          {
+            iterativestep.StartSolutionPool().Add(strategy.BestSolution());
+          }
+          else
+          {
+            iterativestep.StartSolutionPool().Add(s);
+          }
+        }
+        
+        if ( printinfo and DateTime::ActualTime() - lastreporttime >= durationbetweeniterativereports )
+        {
+          lastreporttime := DateTime::ActualTime();
+          
+          info( 'iterative time remaining', iterativeendtime - DateTime::ActualTime() );
+          
+          i := 0;
+          traverse( iterativestep.StartSolutionPool(), Solutions, s )
+          {
+            info( i, ': iterative result solution score', s.TotalScore() );
+            i++;
+          }
+          
+          info( 'iterations', actions.Iterations().Value() );
+          info( 'improvement iterations', actions.IterationsImproved().Value() );
+          
+          // After logging reset statistics for the next iteration
+          actions.ResetStatistics();
+          
+        }
+      }
+    *]
+  }
+  POAStrategy.Strategies SimpleSingleCombiLegShorter
+  {
+    TextBody:
+    [*
+      // -------------------------------------------------------------------------- //
+      // Strategy for a simple single path problem                                  //
+      // -------------------------------------------------------------------------- //
+      
+      // ----- Parameters for the strategy -----
+      // String used to identify the expression used for time in this POA. This
+      // strategy needs an expression for time.
+      timeexpressionname := SuboptimizerPOACombiLeg::NamePOAExpressionTime();
+      durationscaler := 100.0;
+      // The total duration of iteratively improving the solution in this strategy.
+      // This does not include the time spend on creating and improving an initial
+      // solution. More time spend on iterive improvement will give a higher chance
+      // on better results.
+      iterativeduration := Duration::Seconds( 1.0/durationscaler );
+      // The number of threads used throughout the strategy execution. The threads
+      // are all busy from begin till end.
+      nrthreads := 7;
+      
+      // ----- Advanced Parameters for the strategy -----
+      // The number of moves (plan possibilities of planelements) that make it in the
+      // final population. Moves that are estimated to be better have a higher chance
+      // to be in the population. All moves in the population are fully propagated,
+      // after which the best move is carried out. A higher number will mean more
+      // precise results because full propagation gives the precise score of a move.
+      // This comes at the cost of more time needed in propagation.
+      // It is currently not set, as we use an adaptive population size
+      //maxpopulation := 10;
+      
+      // The percentage of available planelements that is destructed by the random
+      // destruction action
+      randomdestructionpercentage := 20.0;
+      
+      // The number of unplanned elements that is considered by the random
+      // construction action
+      randomconstructiongroupsize := 7;
+      // The duration between the possibility of a reset to the globally best solution
+      // found.
+      durationbetweenrestarttoglobal := Duration::Seconds(3.5/durationscaler);
+      // The chance that a solution is restarted to the globally best solution
+      restarttoglobalchance := 0.6;
+      
+      // The duration between logging information during the iterative strategy
+      durationbetweeniterativereports := Duration::Seconds( 5/durationscaler )
+      // Log file name prefix. '' means no logging
+      logfilename := '';
+      // Toggle info statements
+      printinfo := true;
+      
+      // -------------------------------------------------------------------------- //
+      // Print parameter values and initial score                                   //
+      // -------------------------------------------------------------------------- //
+      
+      if ( printinfo )
+      {
+        info( 'parameter timeexpressionname =' , timeexpressionname );
+        info( 'parameter iterativeduration =' , iterativeduration );
+        info( 'parameter nrthreads =' , nrthreads );
+        info( 'parameter maxpopulation =' , "adaptive" );
+        info( 'parameter randomdestructionpercentage =' , randomdestructionpercentage );
+        info( 'parameter randomconstructiongroupsize =' , randomconstructiongroupsize );
+        info( 'parameter durationbetweenrestarttoglobal =' , durationbetweenrestarttoglobal );
+        info( 'parameter restarttoglobalchance =' , restarttoglobalchance );
+        info( 'parameter logfilename =' , logfilename );
+        info( 'initial score', strategy.BestSolution().TotalScore());
+      }
+      
+      // -------------------------------------------------------------------------- //
+      // Initialize general settings                                                //
+      // -------------------------------------------------------------------------- //
+      
+      // For all constraints change MaxDownStreamDepth to MaxNumber where applicable.
+      // For independent path problems MaxNumber gives generally the best results.
+      {
+        traverse( poa, Constraints.astype( POAEndConstraint ), c, c.MaxDownStreamDepth() <> Number::MaxNumber() )
+        {
+          c.MaxDownStreamDepth( Number::MaxNumber() );
+          debuginfo( 'Warning: POAEndConstraint', c.Role(), 'MaxDownStreamDepth was changed to MaxNumber, because that will improve the move estimates' );
+        }
+        
+        traverse( poa, Constraints.astype( POACapacityConstraint ), c, c.MaxDownStreamDepth() <> Number::MaxNumber() )
+        {
+          c.MaxDownStreamDepth( Number::MaxNumber() );
+          debuginfo( 'Warning: POACapacityConstraint', c.Role(), 'MaxDownStreamDepth was changed to MaxNumber, because that will improve the move estimates' );
+        }
+        
+        traverse( poa, Constraints.astype( POAInTimeConstraint ), c, c.MaxDownStreamDepth() <> Number::MaxNumber() )
+        {
+          c.MaxDownStreamDepth( Number::MaxNumber() );
+          debuginfo( 'Warning: POAInTimeConstraint', c.Role(), 'MaxDownStreamDepth was changed to MaxNumber, because that will improve the move estimates' );
+        }
+      }
+      
+      timeexpression := select( poa, Expressions, e,true, e.Role() = timeexpressionname );
+      assert( not isnull( timeexpression ), 
+              "The strategy needs an expression that is called 'time' and will be used as the expression representing time
+              " );
+      
+      planstrategy := strategy.PlanStrategy();
+      // Apply parameter
+      // We use an adaptive population, so we do not set the MaxPopulation or MaxPathPopulation
+      planstrategy.AdaptivePopulation( true );
+      
+      // less propagation. No longer required in 5.5
+      // planstrategy.PropagateBetweenMoves( false );
+      
+      // -------------------------------------------------------------------------- //
+      // Initial Strategy                                                           //
+      // -------------------------------------------------------------------------- //
+      //
+      // The initial strategy will be used to plan all remaining planelements, and do
+      // some initial improvement. After that improvement will only be made by
+      // iterativestrategy.
+      
+      initialstrategy := strategy.NewMetaStrategy( 'initialstrategy' );
+      if ( logfilename <> '' )
+      {
+        initialstrategy.LogFileName(logfilename + '_InitialStrategy', true);
+      }
+      
+      // The only step used in the initial strategy.
+      initialstep := initialstrategy.NewStep( 'initialstep' );
+      // Room for one start solution.
+      initialstep.StartSolutionPool().Capacity( 1 );
+      // Use initial solution as the single starting solution.
+      initialstep.StartSolutionPool().Add( poa.Solution() );
+      // The step is repeated a number of times equal to the number of threads, each
+      // time starting from the same initial solution. Each repetition is carried out
+      // by its own thread.
+      initialstep.Repetitions( nrthreads );
+      // The step happens once in each thread. It will not be carried out on the
+      // results of a previous iteration.
+      initialstep.MaximumIterationsActions( 1 );
+      // 1 000 000 seconds pratically infinity
+      initialstep.MaximumSecondsActions( 1000000.0 );
+      // The result of each thread is stored.
+      initialstep.ResultSolutionPool().Capacity( nrthreads );
+      
+      actions := initialstep.Actions();
+      
+      // Use insertion heuristic, which choses a path, and plans one element a time on
+      // that path based on the time expression. When no more elements fit on the path
+      // a new path is chosen. This continues until there are not paths left,
+      insertionheuristic := actions.NewInsertionHeuristic( timeexpression );
+      // Try to plan all unplanned planelements.
+      insertionheuristic.Nodes( Number::MaxNumber() );
+      
+      // Use one node improvement action, which selects any planned or unplanned
+      // element and tries to find a better position for that element. Depending
+      // on the improvement made, a new element is selected and the process
+      // repeats itself.
+      onenodeimpr := actions.NewRandomOneNodeImprovement();
+      // By setting to 0.0 any improvement will make the process repeat itself.
+      onenodeimpr.MinimalImprovementPercentage().Set( 0.0 );
+      
+      // Start execution of the strategy and display the duration
+      executestarttime := DateTime::ActualTime();
+      debuginfo( 'execute initial actions' );
+      initialstrategy.Execute( nrthreads, Real::MaxReal() );
+      debuginfo( 'initial actions execution duration', DateTime::ActualTime() - executestarttime );
+      
+      // -------------------------------------------------------------------------- //
+      // Iterative Strategy                                                         //
+      // -------------------------------------------------------------------------- //
+      //
+      // iterativestrategy will repeatedly run on the start solution generated by
+      // initialstrategy.
+      
+      iterativestrategy := strategy.NewMetaStrategy( 'iterativestrategy' );
+      if ( logfilename <> '' )
+      {
+        iterativestrategy.LogFileName(logfilename + '_IterativeStrategy', true);
+      }
+      
+      // The only step used in the iterative strategy.
+      iterativestep := iterativestrategy.NewStep( 'iterativestep' );
+      // Use the result of each thread for the initial stategy as starting point for
+      // the iterative strategy. One thread will start for each of these starting
+      // points.
+      iterativestep.StartSolutionPool().Use( initialstep.ResultSolutionPool() );
+      // There is no limit on the number of times this step starts again within a
+      // single thread.
+      iterativestep.MaximumIterationsActions( Number::MaxNumber() );
+      // Execution of the step must not take longer then the reporting duration.
+      iterativestep.MaximumSecondsActions( durationbetweenrestarttoglobal.MinutesAsReal() * 60.0 );
+      // The result of each thread is stored.
+      iterativestep.ResultSolutionPool().Capacity( nrthreads );
+      
+      actions := iterativestep.Actions();
+      
+      // The number of elements available for planning.
+      nrplanelements := 10; //poa.GetNumber( OptimizerRunHRMPOA::POANumberOfPlanElements() );
+      
+      randomdestr := actions.NewRandomDestruction();
+      randomdestr.Nodes( round( randomdestructionpercentage / 100.0 * nrplanelements )  );
+      
+      // Use random construction, which
+      // (1) chooses a number of unplanned elements equal to
+      //     'randomconstructiongroupsize'.
+      // (2) determines the best move for each element by making estimates for all
+      //     moves and propagating the moves that make it in the population.
+      // (3) carry out the best move of the element that was best
+      randomcons := actions.NewRandomConstruction();
+      // Set the number of unplanned elements to consider.
+      randomcons.GroupSize( randomconstructiongroupsize );
+      
+      onenodeimpr := actions.NewRandomOneNodeImprovement();
+      // By setting to 0.0 any improvement will make the process repeat itself.
+      onenodeimpr.MinimalImprovementPercentage().Set( 0.0 );
+      
+      // Keep executing the iterative meta strategy until the time limit is reached
+      iterativeendtime := DateTime::ActualTime() + iterativeduration;
+      lastreporttime := DateTime::ActualTime() - durationbetweeniterativereports;
+      iter := 0;
+      while ( DateTime::ActualTime() < iterativeendtime and iter < 1 )
+      {
+        iter ++;
+        //info( ' execute time: ', iter );
+        executeduration := minvalue( durationbetweenrestarttoglobal, iterativeendtime - DateTime::ActualTime() );
+        
+        // Call meta strategy execution
+        iterativestrategy.Execute( nrthreads, executeduration.MinutesAsReal() * 60.0 );
+        
+        // Fill start solution
+        traverse( iterativestep.ResultSolutionPool().UseSolutions(), Solutions, s )
+        {
+          if ( Real::Random() < restarttoglobalchance )
+          {
+            iterativestep.StartSolutionPool().Add(strategy.BestSolution());
+          }
+          else
+          {
+            iterativestep.StartSolutionPool().Add(s);
+          }
+        }
+        
+        if ( printinfo and DateTime::ActualTime() - lastreporttime >= durationbetweeniterativereports )
+        {
+          lastreporttime := DateTime::ActualTime();
+          
+          info( 'iterative time remaining', iterativeendtime - DateTime::ActualTime() );
+          
+          i := 0;
+          traverse( iterativestep.StartSolutionPool(), Solutions, s )
+          {
+            info( i, ': iterative result solution score', s.TotalScore() );
+            i++;
+          }
+          
+          info( 'iterations', actions.Iterations().Value() );
+          info( 'improvement iterations', actions.IterationsImproved().Value() );
+          
+          // After logging reset statistics for the next iteration
+          actions.ResetStatistics();
+          
+        }
+      }
+    *]
+  }
+  POAStrategy.Strategies SimpleStrategy
+  {
+    TextBody:
+    [*
+      maxSeconds        := 3;
+      
+      strategy.PlanStrategy().AdaptivePopulation( true );
+      
+      //POAStrategyDefine::PlanStrategyInit( strategy.PlanStrategy() );
+      
+      {
+        actions := strategy.NewActions( 'init_solution' );
+        //POAStrategyDefine::DefineInitConstruction( poa, actions, 1, 1, true );
+        actions.Execute( 1, 100 );
+      }
+      
+      {
+        actions := strategy.NewActions( 'improve' );
+        //POAStrategyDefine::CreateSnapshot( actions, 0.0, 0.0, 0.0, 1.0 );
+      
+        d := actions.NewRandomDestruction();
+        d.Nodes( 7 );
+      
+        //POAStrategyDefine::DefineInitConstruction( poa, actions, 1, 1, true );
+      
+        // Plan all in
+        actions.Execute( 1, 1 );
+      
+        oldScore := strategy.BestSolution().Score().TotalScore();
+        improvement := true;
+        iter := 0;
+      
+        while( iter < maxSeconds and improvement )
+        {
+          actions.Execute( 100, 1 );
+          improvement := strategy.BestSolution().Score().TotalScore() < oldScore;
+          iter++;
+          oldScore := strategy.BestSolution().TotalScore();
+        }
+      }
+      
+      strategy.SolutionPool().UseSolutions();
+      strategy.SolutionPool().Capacity( 1 );
+      strategy.SolutionPool().Add( strategy.BestSolution() );
+    *]
+  }
+}

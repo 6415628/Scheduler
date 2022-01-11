@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidProgramDetail (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if the imported started program has a valid program detail'
+  TextBody:
+  [*
+    importedprogramdetail := this.ImportedFeedbackProgramDetail();
+    
+    isvalid := not isnull( importedprogramdetail )       // Imported feedback program detail must exists
+               and importedprogramdetail.IsValidData();  // Imported feedback program detail must be valid
+    
+    if( not isvalid and not isnull(  feedback_o ) )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedFeedbackStartedProgram_Instance( name ),
+                                                               Translations::SC_ImportedFeedbackStartedProgram_ViolateHasValidProgramDetail() ) );  
+    }
+    
+    return isvalid;
+  *]
+}

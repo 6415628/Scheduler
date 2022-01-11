@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test070_DatasetOnError (LibOpt_TestDataset dataset)
+{
+  Description: 'Check if dataset copies (and their snapshots) that are created before an error and right after an error (but before the transaction is rolled back) are handled correctly.'
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( true );
+    run := opt.CreateRun();
+    
+    // Create a component that throws an error in the Operation method. 
+    errorcomponent := opt.ComponentError( run, 'Error', LibOpt_ComponentErrorPosition::Operation() );
+    
+    // Set a LibOpt_DatasetCopyConditional object on the 'Initialize' and the 'Handle error' component positions. 
+    initializeposition := select( errorcomponent, ComponentPosition, position, position.Name() = LibOpt_Component::ComponentPosition_Initialize() );
+    initializeposition.SetDatasetCopy();
+    errorposition := select( errorcomponent, ComponentPosition, position, position.Name() = LibOpt_Component::ComponentPosition_Error() );
+    errorposition.SetDatasetCopy();
+    
+    streamrun := run.Start(); 
+    
+    // Wait until the run is finished.
+    str := streamrun
+    ->|stream[Void]::Wait( this.MDSEditorUpdateTime() ) // Wait some time to ensure that the dataset copies are succesfully created.
+    ->|void->()
+    {
+      traverse( errorcomponent,
+                ComponentPosition,
+                componentposition,
+                not isnull( componentposition.DatasetCopyConditional() ) 
+                )
+      {
+        LibOpt_TestUnit_DatasetCopy::AssertsForComponentPositionCreatedDataset( this, componentposition );
+      }
+    }
+    this.NoException( str );
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

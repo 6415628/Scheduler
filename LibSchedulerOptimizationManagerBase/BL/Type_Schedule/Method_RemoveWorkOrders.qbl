@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method RemoveWorkOrders (JSON jsonTree)
+{
+  Description: 'Remove imported work orders data based on JSON input.'
+  TextBody:
+  [*
+    workOrdersJSON := guard( jsonTree.Get( Constants::JSON_Remove_WorkOrders() ), null( JSON, owning ) );
+    
+    if( not isnull( workOrdersJSON ) )
+    {
+      for( i := 0; i < workOrdersJSON.Size(); i++ )
+      {
+        workOrderID := workOrdersJSON.Get( i ).GetString();
+        importedWorkOrder := ImportedExternalWorkOrder::FindImportedExternalWorkOrder( workOrderID );
+        
+        if( not isnull( importedWorkOrder ) )
+        {
+          importedWorkOrder.Remove();
+        }
+        else
+        {
+          logfile( Translations::LibSchedulerOptMgr_Remove_WorkOrder_NotFound( workOrderID ) );
+        }
+      }
+    }
+  *]
+}

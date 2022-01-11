@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedOptimizeThisResourceGroup (ResourceGroup_SC resourcegroup, output String feedback_o) const declarative remote as Boolean
+{
+  Description: 'Checks if the optimizer is allowed to be run for all resources in the resource group.'
+  TextBody:
+  [*
+    // Checks if the optimizer is allowed to be run for all resources in the resource group. ( For precondition checking in schedule gantt chart )
+    value := this.TechnicalConfiguration().IsSequencingOptimizerEnabled()
+             and not resourcegroup.HasConfigurableRule();
+    
+    if( not value )
+    {
+      Utility_SC::Concat( feedback_o, Translations::Optimizer_CannotOptimizeThisResourceGroup() );
+    }
+    
+    return value;
+  *]
+}

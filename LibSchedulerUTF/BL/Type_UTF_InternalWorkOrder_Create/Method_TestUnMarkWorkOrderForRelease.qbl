@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestUnMarkWorkOrderForRelease (Schedule schedule)
+{
+  Description: 'Test unmark ready for release precondition and logic.'
+  TextBody:
+  [*
+    markForReleaseInstance := this.GetMarkForReleaseInstance( this.Variant() );
+    workOrders := selectset( schedule, WorkOrder, workOrder, true );
+    
+    // Do precon check
+    WorkOrder::CheckCanUnReleaseAndUnMarkForRelease( workOrders );
+    preconCheckValue := FeedbackObject::CurrentFeedback().IsAllowed();
+    
+    this.Run().AssertTrue( preconCheckValue = markForReleaseInstance.CanUnMarkForReleaseAndUnRelease(),
+                           UTFUtility::GenerateFailedMessage( 'Precondition check for unmark work order for release manually failed', '' ) );
+    
+    if( preconCheckValue )
+    {
+      internalWorkOrder := select( workOrders, Elements.astype( InternalWorkOrder ), internalWorkOrder, true );
+      
+      WorkOrder::UnMarkForRelease( workOrders );
+      
+      this.Run().AssertTrue( not internalWorkOrder.IsMarkedForReleaseByUser(),
+                             UTFUtility::GenerateFailedMessage( 'Unmark work order for release failed', '' ) );
+    }
+  *]
+}

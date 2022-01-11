@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: ResourceSelection
+Response OnSelectionChanged () id:Response_ResourceSelection_OnSelectionChanged
+{
+  #keys: '[12910.0.609309724]'
+  Body:
+  [*
+    // Filtering FeedbackTasks by their ScheduledResource.
+    if( not isnull( this.Data() ) )
+    {
+      // Single Tasks
+      GUIDataSetLevel1.FixedFilter("object.Resource_SC() = resource" );
+    
+      // Scheduling Batches
+      GUIDataSetLevel2.FixedFilter( "object.Resource() = '" + this.Data().ResourceID() + "'" );
+    
+      // Feedback Batches
+      GUIDataSetLevel4.FixedFilter("object.Resource() = '' or object.Resource() = '" + this.Data().ResourceID() + "'" );
+    
+      // Batch Resources is selected. Show Batch task view.
+      if( FormShopFloorEntryClient.IsBatchResource( this.Data() ) ) //and SplitterPaneSingleTask.Size() <> 0.0 )
+      {
+        SplitterPaneBatchTask.Visible( true );
+        SplitterPaneSingleTaskAndMaterial.Visible( false );
+      }
+    
+      // Single Resource is selected. Show Single task view.
+      if( not FormShopFloorEntryClient.IsBatchResource( this.Data() ) ) //and SplitterWndBatchTask.Size() <> 0.0 )
+      {
+        SplitterPaneSingleTaskAndMaterial.Visible( true );
+        SplitterPaneBatchTask.Visible( false );
+      }
+    }
+  *]
+  DefinitionID: 'Responsedef_GUISelectionBase_OnSelectionChanged'
+}

@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method PopulateYPosition (Boolean isUpstream) id:Method_FormTimeConstraintVisualization_PopulateYPosition
+{
+  #keys: '[132894.0.921486874]'
+  Body:
+  [*
+    // The previous step was to determine the Y positions
+    // of all the nodes that no longer spreads out,
+    // this step we utilize their positions to determine the Y positions
+    // of the rest of the nodes
+    config := DataHolderCustomDrawConfiguration.Data();
+    
+    depth := ifexpr( isUpstream, config.UpstreamDepth(), config.DownstreamDepth() )
+    
+    // Start from the outer most layer, converging towards middle
+    for( i := depth; i > 0; i-- )
+    {
+      traverse( config, CustomDrawNode, node,
+                node.IsUpstream() = isUpstream
+                and node.Depth() = i )
+      { 
+        this.AdjustNodeYPos( node, isUpstream /*isupstream*/ );
+      }
+    }
+  *]
+}

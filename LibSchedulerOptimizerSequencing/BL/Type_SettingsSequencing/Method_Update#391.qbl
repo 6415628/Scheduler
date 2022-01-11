@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update (NamedValueTree nvt)
+{
+  Description:
+  [*
+    Update this setting object's data with the given NVT.
+    Recursively also updates owned subsettings.
+  *]
+  TextBody:
+  [*
+    // mbr23 Mar-26-2020 (created)
+    // workaround:
+    wasactive := this.IsActive();
+    
+    nvt_backup := nvt.Clone();
+    new_settings := this.ImportAsInactive( nvt ).astype( SettingsSequencing ); // creates a new setting object with new name
+    this.Delete();
+    supernew_settings := new_settings.ImportAsInactive( nvt_backup ); // recreates a new settings object with id of `this`.
+    new_settings.Delete();
+    
+    // keep the 'active' state of this:
+    if( wasactive )
+    {
+      supernew_settings.Optimizer().ActiveSettings( relset, supernew_settings );
+    }
+  *]
+}

@@ -1,0 +1,74 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_FulfillmentConversion (CDSchedule cdSchedule, PlannedSupply2Inventory plannedSupply2Inventory)
+{
+  Description: 'Restore generic planned supply to external supply core data attributes to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    if( plannedSupply2Inventory.istype( GenericPlannedSupply2Material ) )
+    {
+      plannedSupply2Material := plannedSupply2Inventory.astype( PlannedSupply2Material );
+      
+      traverse( cdSchedule, CDEntity.astype( CDFulfillmentConversion ), cdFulfillmentConversion,
+                cdFulfillmentConversion.MaterialID() = plannedSupply2Material.MaterialID()
+                and cdFulfillmentConversion.WorkOrderOutputMaterialID() = plannedSupply2Material.WorkOrderOutputMaterialID() )
+      {
+        fullfillmentConversion := select( plannedSupply2Material, FulfillmentConversion, fulfillmentConversion,
+                                          fulfillmentConversion.PlannedSupply2Inventory().astype( PlannedSupply2Material ).MaterialID() = cdFulfillmentConversion.MaterialID()
+                                          and fulfillmentConversion.PlannedSupply2Inventory().astype( PlannedSupply2Material ).WorkOrderOutputMaterialID() = cdFulfillmentConversion.WorkOrderOutputMaterialID() );
+        
+        // ExternalSupplyFulfillment, M-1
+        externalSupplyFulfillment := select( schedule, Demand.Fulfillment.astype( GenericMaterialExternalFulfillment ), genericMaterialExternalFulfillment,
+                                             genericMaterialExternalFulfillment.DemandId() = cdFulfillmentConversion.ExternalSupplyFulfillmentDemandID()
+                                             and genericMaterialExternalFulfillment.DemandType() = cdFulfillmentConversion.ExternalSupplyFulfillmentDemandType()
+                                             and genericMaterialExternalFulfillment.SupplyId() = cdFulfillmentConversion.ExternalSupplyFulfillmentSupplyID()
+                                             and genericMaterialExternalFulfillment.SupplyType() = cdFulfillmentConversion.ExternalSupplyFulfillmentSupplyType()  );
+        
+        fullfillmentConversion.ExternalSupplyFulfillment( relset, externalSupplyFulfillment );
+        
+        // PlannedSupplyFulfillment
+        plannedSupplyFulfillment := select( schedule, Demand.Fulfillment.astype( GenericMaterialPlannedFulfillment ), genericMaterialPlannedFulfillment,
+                                            genericMaterialPlannedFulfillment.DemandId() = cdFulfillmentConversion.PlannedSupplyFulfillmentDemandID()
+                                            and genericMaterialPlannedFulfillment.DemandType() = cdFulfillmentConversion.PlannedSupplyFulfillmentDemandType()
+                                            and genericMaterialPlannedFulfillment.SupplyId() = cdFulfillmentConversion.PlannedSupplyFulfillmentSupplyID()
+                                            and genericMaterialPlannedFulfillment.SupplyType() = cdFulfillmentConversion.PlannedSupplyFulfillmentSupplyType() );
+        
+       fullfillmentConversion.PlannedSupplyFulfillment( relset, plannedSupplyFulfillment );                                        
+      }            
+    }
+    
+    else if( plannedSupply2Inventory.istype( GenericPlannedSupply2ExternalSupply ) )
+    {
+      plannedSupply2ExternalSupply := plannedSupply2Inventory.astype( PlannedSupply2ExternalSupply )
+      traverse( cdSchedule, CDEntity.astype( CDFulfillmentConversion ), cdFulfillmentConversion,
+                cdFulfillmentConversion.ExternalSupplyID() = plannedSupply2ExternalSupply.ExternalSupplyID()
+                and cdFulfillmentConversion.WorkOrderSupplyID() = plannedSupply2ExternalSupply.WorkOrderSupplyID() )
+      {
+        fullfillmentConversion := select( plannedSupply2ExternalSupply, FulfillmentConversion, fulfillmentConversion,
+                                          fulfillmentConversion.PlannedSupply2Inventory().astype( PlannedSupply2ExternalSupply ).ExternalSupplyID() = cdFulfillmentConversion.ExternalSupplyID()
+                                          and fulfillmentConversion.PlannedSupply2Inventory().astype( PlannedSupply2ExternalSupply ).WorkOrderSupplyID() = cdFulfillmentConversion.WorkOrderSupplyID() );
+        
+        // ExternalSupplyFulfillment, M-1
+        externalSupplyFulfillment := select( schedule, Demand.Fulfillment.astype( GenericProductExternalFulfillment ), genericProductExternalFulfillment,
+                                             genericProductExternalFulfillment.DemandId() = cdFulfillmentConversion.ExternalSupplyFulfillmentDemandID()
+                                             and genericProductExternalFulfillment.DemandType() = cdFulfillmentConversion.ExternalSupplyFulfillmentDemandType()
+                                             and genericProductExternalFulfillment.SupplyId() = cdFulfillmentConversion.ExternalSupplyFulfillmentSupplyID()
+                                             and genericProductExternalFulfillment.SupplyType() = cdFulfillmentConversion.ExternalSupplyFulfillmentSupplyType() );
+        
+        fullfillmentConversion.ExternalSupplyFulfillment( relset, externalSupplyFulfillment );
+        
+        // PlannedSupplyFulfillment
+        plannedSupplyFulfillment := select( schedule, Demand.Fulfillment.astype( GenericProductPlannedFulfillment ), genericProductPlannedFulfillment,
+                                            genericProductPlannedFulfillment.DemandId() = cdFulfillmentConversion.PlannedSupplyFulfillmentDemandID()
+                                            and genericProductPlannedFulfillment.DemandType() = cdFulfillmentConversion.PlannedSupplyFulfillmentDemandType()
+                                            and genericProductPlannedFulfillment.SupplyId() = cdFulfillmentConversion.PlannedSupplyFulfillmentSupplyID() 
+                                            and genericProductPlannedFulfillment.SupplyType() = cdFulfillmentConversion.PlannedSupplyFulfillmentSupplyType());
+        
+       fullfillmentConversion.PlannedSupplyFulfillment( relset, plannedSupplyFulfillment );                                        
+      }              
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

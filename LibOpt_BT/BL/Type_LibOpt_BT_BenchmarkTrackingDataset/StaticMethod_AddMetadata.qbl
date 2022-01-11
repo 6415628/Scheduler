@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod AddMetadata (Type type, NamedValueTree nvt, NamedValue nv)
+{
+  TextBody:
+  [*
+    // afn3 Sep-30-2019 (created)
+    traverse( nv.Children(), Elements, child )
+    {
+      children := child.Children();
+      if( children.Size() = 0 )
+      {
+        attr := null( MdlModeledAttrElement )
+        attr_type := type;
+        while( isnull( attr ) and not isnull( attr_type ) )
+        {
+          attr := select( attr_type, MdlAttrElements.astype( MdlModeledAttrElement ), a, a.Name() = child.Name() );      
+          attr_type := attr_type.Parent();
+        }
+        
+        if( not isnull( attr ) )
+        {
+          
+          //type_handle := nvt.GetHandle( "type" );
+          //child.AddChild( type_handle, attr.ValueType().Name() );  
+          LibSE_SettingsContainer::AddMetadata( nvt, child, attr, type );
+        }
+      }
+      else
+      {
+        
+        rel := select( type, MdlRelSideElements, rel, rel.Name() = child.Name() );
+        if ( not isnull( rel ) )
+        {      
+          LibOpt_BT_BenchmarkTrackingDataset::AddMetadata( rel.OtherSide().Type(), nvt, child );
+        }
+        else
+        {
+          info(  '!', child.Name() );
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

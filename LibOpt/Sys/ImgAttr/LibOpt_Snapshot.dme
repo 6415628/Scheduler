@@ -1,0 +1,145 @@
+Quintiq file version 2.0
+#parent: #root
+TypeDataInterface LibOpt_Snapshot
+{
+  TypeKey: '[139164.0.16781103]'
+  ImageDataMember ImgHasIssues
+  {
+    #keys: '1[154526.0.130121576]'
+    Description: 'Whether the snapshot has any issues associated to it'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'There is one issue associated with this snapshot'
+        Image: 'BUG_GREEN'
+        Quill: 'object.NrIssues() = 1'
+        Value: 'HasOneIssue'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'There are 2 issues associated with this snapshot'
+        Image: 'BUG_YELLOW'
+        Quill: 'object.NrIssues() = 2'
+        Value: 'HasTwoIssues'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'There are 3 or more issues associated with this snapshot'
+        Image: 'BUG_RED'
+        Quill: 'object.NrIssues() >= 3'
+        Value: 'HasManyIssues'
+      }
+    ]
+  }
+  ImageDataMember Status
+  {
+    #keys: '1[139164.0.724872894]'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Working'
+        Image: 'PROCESS'
+        Quill:
+        [*
+          not isnull( object.astype( LibOpt_SnapshotComponent ).Task() )
+          and 
+          not exists( object.astype( LibOpt_SnapshotComponent ).Task(), Children, task, true )
+        *]
+        Value: 'Working'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Done'
+        Image: 'CHECK'
+        Quill: 'object.istype( LibOpt_SnapshotComponent )'
+        Value: 'Done'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'KPI (rolled back)'
+        Image: 'UNDO'
+        Quill: 'guard( object.astype( LibOpt_SnapshotKPI ).IsRolledBack(), false )'
+        Value: 'KPI (rolled back)'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'KPI'
+        Image: 'EDITOR_KPI'
+        Quill: 'object.istype( LibOpt_SnapshotKPI )'
+        Value: 'KPI'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Copy error'
+        Image: 'DATA_ERROR'
+        Quill: 'object.astype( LibOpt_SnapshotReplannableCopyDataset ).HasFailedToCreateDataset();'
+        Value: 'Copy error'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Copy deleted'
+        Image: 'DATA_DELETE'
+        Quill: 'object.astype( LibOpt_SnapshotReplannableCopyDataset ).IsDatasetDeleted();'
+        Value: 'Copy deleted'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Copy selected'
+        Image: 'CHECK2'
+        Quill: 'object.astype( LibOpt_SnapshotReplannableCopyDataset ).IsDatasetSelected();'
+        Value: 'Copy selected'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Copy loaded'
+        Image: 'DATA_ADD2'
+        Quill: 'object.astype( LibOpt_SnapshotReplannableCopyDataset ).IsDatasetLoaded()'
+        Value: 'Copy loaded'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Copy in progress'
+        Image: 'DATA_GEAR'
+        Quill: 'not object.astype( LibOpt_SnapshotReplannableCopyDataset ).HasCreatedDataset();'
+        Value: 'Copy in progress'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Copy created'
+        Image: 'DATA_OK'
+        Quill: 'object.istype( LibOpt_SnapshotReplannable )'
+        Value: 'Copy created'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Error'
+        Image: 'ERROR'
+        Quill: 'object.istype( LibOpt_SnapshotError )'
+        Value: 'Error'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Warning'
+        Image: 'WARNING'
+        Quill: 'object.istype( LibOpt_SnapshotWarning )'
+        Value: 'Warning'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Information'
+        Image: 'INFORMATION'
+        Quill: 'object.istype( LibOpt_SnapshotInfo )'
+        Value: 'Information'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Unknown'
+        Image: 'UNKNOWN'
+        Quill: 'true'
+        Value: 'Unknown'
+      }
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRuleCheckOnOptimizer (Schedule schedule)
+{
+  Description: "Test rule check setting 'Optimizer'"
+  TextBody:
+  [*
+    // Get variant attribute
+    isHardConstraintForOptimizer := false;
+    isAllHighPriorityRulesOk := false;
+    isAllLowPriorityRulesOk := false;
+    
+    this.GetTestVariant( isHardConstraintForOptimizer,
+                         isAllHighPriorityRulesOk,
+                         isAllLowPriorityRulesOk );
+    
+    task2 := select( schedule, Operation_SC.Task_SC, task,
+                     task.GetOperation().OperationID() = 'Operation2' );
+    
+    // Propoagete constraint isAllLowPriorityRulesOK and isAllHighPriorityRulesOK
+    Transaction::Transaction().Propagate( constraint( Task_SC, IsAllLowPriorityRulesOK ) );
+    Transaction::Transaction().Propagate( constraint( Task_SC, IsAllHighPriorityRulesOK ) );
+    
+    value := task2.IsAllLowPriorityRulesOK() = isAllLowPriorityRulesOk 
+             and task2.IsAllHighPriorityRulesOK() = isAllHighPriorityRulesOk;
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Applying optimizer configuration to rule failed.',
+                                                               this.Variant() ) );
+  *]
+}

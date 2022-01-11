@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExportCoreData (DMF_Datasets datasets_i) as stream[Void]
+{
+  Description: 'Traverse datasets across all types and export their core data'
+  TextBody:
+  [*
+    // Murugaiya Mar-23-2021 (created)
+    exported_s := stream[Void]::Success();
+    traverse( datasets_i, Elements, dataset )
+    { 
+      // Mind: if dataset key is a 'ZeroKey' this will stop abruptly with a server warning
+      ds_s := dataset.GetDataset()->( ds )
+      {
+        if( not isnull( ds ) )
+        {
+          // Get the root object for the dataset, if the dataset already is the root object for core data, then the returning object will be same
+          rootObject := DMF_ConvertorDataset::GetRootObjectExtensible( ds );
+          metadata   := DMF_UpgradeabilityMetaData::GetMetadataObjectExtensible( rootObject );
+              
+          // Verify if the root object is valid to be exported by looking at whether the instance is created for DMF_UpgradeabilityMetaData
+          if( not isnull( metadata ) )
+          {
+            dsType := Type::Resolve( ds.DefinitionName() );
+            
+            this.ExportCoreData( dsType, dataset.Name(), rootObject ); 
+          }
+          else
+          {
+            message := "Root object " + typeofexpression( rootObject ).Name() + " in the dataset " + dataset.Name() +
+                       " is not valid as there is no metadata instance found owned by it. " + String::NewLine() +
+                       "Please extend static method " + method( DMF_ConvertorDataset, GetRootObjectExtensible, Object ).Name() +
+                       " in " + typeof( DMF_CustomLogicExport ).Name() +
+                       " to allow DataMigrationFramework capture the correct core data root object to be exported.";
+            
+            DMF_Utility::LogError( message );
+          }
+        }
+        return ds;
+      }
+      
+      exported_s->Merge( ds_s->AsVoid() );
+    }
+    
+    return void->After( exported_s->GroupAll() );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

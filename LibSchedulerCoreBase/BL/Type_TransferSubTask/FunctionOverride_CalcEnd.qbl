@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcEnd
+{
+  Description: 'Calculate the End time of this TransferSubTask.'
+  TextBody:
+  [*
+    end := this.Resource_SC().ResourceCalendar().Add( this.Start(), this.NetDuration() );
+    om  := this.OperationMaterial();
+    
+    if( not isnull( om ) )
+    {
+      // Kyle 26-Aug-2015 QP #5735
+      // Use operationMaterial's TransferLatestEnd if the transferring or receiving resource strategy is JITASAP.
+      receivesubtask := om.ReceiveSubTask();
+      isreceivejitasap := not isnull( receivesubtask ) and not isnull( receivesubtask.Task_SC().StrategyJIT() );
+      
+      // For other strategies, use Operation Material's TransferEarliestEnd.
+      end := om.TransferEarliestEnd();
+        
+      if( not isnull( this.Task_SC().StrategyJIT() ) or isreceivejitasap )
+      {
+        end := om.TransferLatestEnd();
+      }
+    }
+    
+    this.End( end );
+  *]
+}

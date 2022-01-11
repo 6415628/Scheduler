@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveDataRequestGetSet (NamedValueTree nvt_i, LibDEF_System requestor_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive a Data-Request message when a Set has been requested.'
+  TextBody:
+  [*
+    LibDEF_Util::EventLog( event_i, "Receiving Set data request." );
+    // Jacky CHAN May-26-2016 (created)
+    setGUID := LibDEF_DataAccessor::GetDataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SETGUID() );
+    
+    //dbMDSID := LibDEF_DataBroker::GetMDSID();
+    //drMDSID := LibDEF_DataRepository::GetMDSID();
+    
+    
+    dbDataset := LibDEF_DataBroker::GetDataset();
+    drDataset := LibDEF_DataRepository::GetDataset();
+    
+    tartget := requestor_i;
+    request := nvt_i;
+    dbDataset->SendRequestedDataToSystem( setGUID, tartget, request, event_i, false, drDataset );
+    //LibDEF_DataBroker::JobSendRequestedDataToSystem( dbMDSID, setGUID, requestor_i,
+    //                                                 nvt_i, event_i, false,
+    //                                                 drMDSID );
+  *]
+}

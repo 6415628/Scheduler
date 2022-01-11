@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericMaterialPlannedSupply (const Schedule schedule)
+{
+  Description: 'Backup generic material planned supply core data'
+  TextBody:
+  [*
+    traverse( schedule, Supply.astype( GenericMaterialPlannedSupply ), genericMaterialPlannedSupply )
+    {
+      cdGenericMaterialPlannedSupply := this.CDEntity( relnew, CDGenericMaterialPlannedSupply );
+      CopyCorresponding::CopyFrom( genericMaterialPlannedSupply ).CopyTo( cdGenericMaterialPlannedSupply );
+      
+      cdGenericMaterialPlannedSupply.OperationID( guard( genericMaterialPlannedSupply.Operation_SC().OperationID(), '' ) );
+      cdGenericMaterialPlannedSupply.BatchID( guard( genericMaterialPlannedSupply.DemandBatch().BatchID(), '' ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

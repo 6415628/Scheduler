@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method BuildPrecedenceDependencyGraph
+{
+  Description:
+  [*
+    Assuming that the shadow objects of all in-scope operations, operation materials, and OperationOnResources have already been created in this transient data, builds up the dependency graph by creating the following objects:
+    PrecedenceDependencyInSuboptimizerSequencing, PrecedencePathInSuboptimizerSequencing.
+  *]
+  TextBody:
+  [*
+    // mbr23 Jan-24-2020 (created)
+    // PrecedenceDependencyInSuboptimizerSequencing is automatically created with PrecedencePathInSuboptimizerSequencing::Create.
+    // create the paths iterativley in terms of lengths.
+    
+    // start by creating all of length 1 (representing exactly only the OperationMaterials we have):
+    current_length := 1;
+    paths_of_current_length := construct( PrecedencePathInSuboptimizerSequencings );
+    traverse( this, OperationDependencyInSuboptimizerSequencing, om )
+    {
+      path := PrecedencePathInSuboptimizerSequencing::Create( om, null( PrecedencePathInSuboptimizerSequencing ) );
+      paths_of_current_length.Add( path );
+    }
+    has_changed := paths_of_current_length.Size() > 0;
+    
+    // now, iteratively create all paths of length+1 until no more paths are created:
+    while( has_changed and current_length < 1000 )
+    {
+      paths_of_old_length := paths_of_current_length.Copy();
+      paths_of_current_length := construct( PrecedencePathInSuboptimizerSequencings );
+      current_length := current_length + 1;
+    
+      traverse( paths_of_old_length, Elements, sourcepath )
+      {
+        paths_of_current_length.AddInPlace( sourcepath.ExtendStepUpstream() );
+      }
+      has_changed := paths_of_current_length.Size() > 0;
+    }
+  *]
+}

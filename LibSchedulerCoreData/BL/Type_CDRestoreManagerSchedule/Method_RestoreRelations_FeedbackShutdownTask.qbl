@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_FeedbackShutdownTask (CDSchedule cdschedule)
+{
+  Description: 'Restore feedback shutdown task core data relation to planning object'
+  TextBody:
+  [*
+    // Restore FeedbackShutdownTask
+    traverse( cdschedule, CDEntity.astype( CDFeedbackShutdownTask ), cdfeedbackshutdowntask )
+    {
+      fst := FeedbackShutdownTask::FindFeedbackShutdownTask( cdfeedbackshutdowntask.WorkOrderId(),
+                                                             cdfeedbackshutdowntask.PlanUnitId(),
+                                                             cdfeedbackshutdowntask.WorkOrderOperationSequenceNr(),
+                                                             cdfeedbackshutdowntask.ExternalStoppageTaskID() );
+                                                                  
+      if( not isnull( fst ) )
+      {
+        shutdown := Shutdown::FindShutdown( cdfeedbackshutdowntask.ShutdownID() );
+        fst.Shutdown( relset, shutdown );
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

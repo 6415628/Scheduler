@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateScenarioForAllDatasets
+{
+  Description: 'Create scenario for all datasets.'
+  TextBody:
+  [*
+    // Traverse datasets without a scenario and create scenario.
+    
+    // Use root folder
+    scenarioFolder := select( this, ScenarioNode.astype( LibSM_ScenarioFolder ), folder,
+                              folder.Name() = LibSM_ScenarioManager::GetFolderRoot() );
+    
+    // Use default knowledge profile
+    knowledgeProfile := select( this, KnowledgeProfile, knowledgeprofile,
+                                knowledgeprofile.Name() = Constants::GetKnowledgeProfileDefault() );
+    
+    // ScenarioType, Status and OptimizerStrategy have been replaced with LibSM_MetaData in the latest version of ScenarioManager library 
+    metadatas := construct( LibSM_MetaDatas );
+    
+    this.RefreshDatasets();
+    
+    datasets := this.GetDatasetsWithoutScenario();
+    
+    traverse( datasets, Elements, dataset )
+    {
+      this.CreateScenarioFromDataset( dataset, 
+                                      scenarioFolder,
+                                      dataset.Name(),
+                                      '',
+                                      false,
+                                      '',
+                                      knowledgeProfile,
+                                      metadatas );
+    }
+  *]
+}

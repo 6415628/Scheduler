@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method IsCircularParentPlanUnits (Task_SC afterTask) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    // She Ven 20130121 #4715 Performance of Circularity check
+    
+    // check circular with parents plan unit
+    isCircular := false;
+    taskSeqNr := guard( afterTask.SequenceNr(), Constants::Operation_SC_GuardSequenceNr() );
+    
+    parents := this.PlanUnit_SC().GetParentPlanUnits();
+    
+    if( not isnull( parents ) )
+    {
+      isCircular := exists( parents,
+                            Elements.Operation_SC,
+                            o,
+                            o <> this
+                              and o.DefinitionName() = this.DefinitionName()
+                              and not isnull( o.Task_SC() )
+                              and guard( o.Task_SC().Resource_SC() = afterTask.Resource_SC(), false ),
+                            o.Task_SC().SequenceNr() >= taskSeqNr );
+    }
+    
+    
+    return isCircular;
+  *]
+}

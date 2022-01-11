@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_018_ErrorOnFinalizeMultipleComponentsMaxParallel (LibOpt_TestDataset dataset)
+{
+  Description:
+  [*
+    Test Snapshot created by an Error component. Error is thrown in the OnFinalize method.
+    The graph is iterator (max parallel: 2) -> error component
+  *]
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    iterator := opt.IteratorUntil( run, 'Iterator' );
+    iterator.SetMaxIterations( 4 );
+    iterator.MaxParallel( 2 );
+    err := opt.ComponentError( run, 'Error', LibOpt_ComponentErrorPosition::OnFinalize() );
+    
+    iterator.To( err );
+    
+    run.SetStartComponent( iterator );
+    
+    test := run->Start()->|void->()
+    {
+      this.Run().AssertEqual( LibOpt_RunStatus::Failed(), run.Status(), 'Failed status' );
+      
+      errors := selectset( run, Snapshot.astype( LibOpt_SnapshotError ), c, true );
+      this.Run().AssertEqual( 1, errors.Size(), 'Expecting only 1 error' );
+      
+      if( errors.Size() > 0 )
+      {
+        this.Run().AssertEqual( err.Name(), errors.First().Parent().astype( LibOpt_SnapshotComponent ).Name(), 'Error component name' );
+      }
+      
+      this.Run().AssertLessOrEqual( 2, err.NrTimesCalled(), 'Expecting at most 2 iterations' );
+    }
+    
+    this.NoException( test );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

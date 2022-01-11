@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestConstraintPreconForInvalidSubtaskInTimeConstraints_Setup (Schedule schedule)
+{
+  Description: 'Setup by creating the required mock and dependent objects.'
+  TextBody:
+  [*
+    // Create technical configuration and set IsTimeContraintMode to true
+    UTFMockObjectFactory::CreateGenericTechnicalConfiguration( schedule, 'TechnicalConfig01', true );
+    
+    // Create resource group
+    resourceGroup := UTFMockObjectFactory::CreateResourceGroup( schedule, 'ResourceGroup01' );
+    
+    // Create subtasks
+    subTaskTypes := selectvalues( schedule, SubTaskType, subTaskType, true, subTaskType.SubTaskID() );
+    UTFMockObjectFactory::CreateSubtaskTypeOnResourceGroup( resourceGroup, subTaskTypes, '', '' )
+    
+    // Propagate IsTimeConstraintMode declarative attribute which is required when synchronizing subtasks.
+    Transaction::Transaction().Propagate();
+  *]
+}

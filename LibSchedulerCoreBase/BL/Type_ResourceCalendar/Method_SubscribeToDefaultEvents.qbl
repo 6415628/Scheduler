@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SubscribeToDefaultEvents
+{
+  TextBody:
+  [*
+    // Synchronize calendars first to set the calendar start based on company time
+    // This is because SubscribeToDefaultEvents needs the Start and End to be updated to properly subscribe to events
+    // This works fine if it is called reactively, but for other reasons we need it to work synchronously as well
+    this.SynchronizeCalendar();
+    
+    // Propagate elements required by SubscribeToDefaultEvents, ie. End
+    Transaction::Transaction().Propagate( method( LibCal_Calendar, SubscribeToDefaultEvents ) );
+    
+    super.SubscribeToDefaultEvents();
+  *]
+}

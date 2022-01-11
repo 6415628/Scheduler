@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method FindCreateResourceNode (Resource_SC resource) as shadow[ResourceNode] id:Method_FormResourceView_FindCreateResourceNode
+{
+  #keys: '[134650.0.299145640]'
+  Body:
+  [*
+    // Create resource node if doesnt exist
+    shadowview := DataHolderShadowResourceView.Data();
+    
+    view := DataHolderShadowResourceView.Data();
+    size := round( view.RelativeResourceSize() * view.GridPointDistance() );
+    
+    shadownode := select( view, ResourceNode, node, node.ResourceID() = resource.ResourceID() );
+    
+    if( isnull( shadownode )  )
+    {
+      image := ifexpr( resource.Image() <> '', resource.Image(), resource.ResourceGroup_SC().Image() );
+      shadownode := shadowview.ResourceNode( relnew, 
+                                             Name := resource.Name(), 
+                                             ResourceID := resource.ResourceID(), 
+                                             Image := image, 
+                                             Size := size,
+                                             Width := size,
+                                             Height := size,
+                                             TextColor := 'Black',
+                                             IsNameVisible := true,
+                                             Resource_SC := resource );
+      Form.GetLeftX( shadownode );
+      Form.GetLeftY( shadownode );
+    }
+    
+    return shadownode;
+  *]
+}

@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnFailed (Exception ex_i)
+{
+  Description: 'Post fail run step'
+  TextBody:
+  [*
+    // Once the step is done, update its status according to the feedback from other datasets upgrade job
+    status                    := DMF_Utility::ID_Failed();
+    datasetInConvertorVersion := this.DatasetInConvertorVersion();
+    
+    this.UpdateStatus ( status );
+    this.UpdateEnd    ( DateTime::Now(), OS::PrecisionCounter() );
+    this.UpdateMessage( ex_i.Message() );
+    
+    if( not isnull( datasetInConvertorVersion ) ) //update the DatasetInConvertorVersion status and it will look for next run step
+    {
+      datasetInConvertorVersion.OnFailed( ex_i );
+      nextRunStepInSequence := this.NextRunStepInSequence();
+      if( not isnull( nextRunStepInSequence ) )
+      {
+        nextRunStepInSequence.OnFailed( ex_i );
+      }
+    }
+    else if( not isnull( this.Dataset() ) ) // looking for next run when dataset's runstep is executed (runstep without DatasetInConvertorVersion )
+    {
+      nextRunStepInSequence := this.NextRunStepInSequence();
+      if( not isnull( nextRunStepInSequence ) )
+      {
+        nextRunStepInSequence.OnFailed( ex_i );
+      }
+      else
+      {
+        this.Dataset().OnFailed( ex_i );    
+      }
+    }
+    
+    //look for other possible steps to do execution
+    this.Topic().ExecuteRunPoints();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

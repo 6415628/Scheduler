@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericOperation (CDSchedule cdschedule)
+{
+  Description: 'Restore attributes for operation core data to planning object'
+  TextBody:
+  [*
+    traverse( cdschedule, CDEntity.astype( CDGenericOperation ), cdop )
+    {
+      planunit := PlanUnit_SC::FindPlanUnit( cdop.PlanUnitID() );
+      
+      if( not isnull( planunit ) )
+      {
+        operation := GenericOperation::Create( planunit, cdop.Type() );
+        CopyCorresponding::CopyFrom( cdop ).CopyTo( operation );
+      }   
+    }
+    
+    // Restore operation campaign
+    this.RestoreAttributes_GenericOperationCampaign( cdschedule );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

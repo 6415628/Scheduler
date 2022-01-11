@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_GenericPlanUnit (CDSchedule cdschedule)
+{
+  Description: 'Restore relations for plan unit core data to planning object'
+  TextBody:
+  [*
+    // Restore plan unit
+    traverse( cdschedule, CDEntity.astype( CDGenericPlanUnit ), cdpu )
+    {
+      planunit := PlanUnit_SC::FindPlanUnit( cdpu.PlanUnitID() );
+      
+      if( not isnull( planunit ) )
+      {
+        // ImportedPlanUnit, 1-1
+        importedplanunit := ImportedPlanUnit::FindImportedPlanUnit( cdpu.PlanUnitID() )
+        planunit.ImportedPlanUnit( relset, importedplanunit );
+        
+        // Restore order that relates to this plan unit
+        order := Order_SC::FindOrder_SC( cdpu.OrderNr() );
+        planunit.Order_SC( relset, order );
+        
+        // Parent, M-1
+        parentplanunit := PlanUnit_SC::FindPlanUnit( cdpu.ParentPlanUnitID() );
+        planunit.Parent( relset, parentplanunit );
+      }
+    }
+    
+    // Restore operations that belongs to this planunit
+    this.RestoreRelations_GenericOperation( cdschedule ); 
+    
+    // Restore operation material that belongs to this planunit
+    this.RestoreRelations_GenericOperationMaterial( cdschedule );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

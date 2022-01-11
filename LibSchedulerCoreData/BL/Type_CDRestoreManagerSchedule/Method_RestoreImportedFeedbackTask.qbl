@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedFeedbackTask (CDIntegration cdintegration)
+{
+  Description: 'Restore imported feedback task core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedFeedbackTask
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedFeedbackTask ), cdft )
+    {
+      importedFeedbackTask := schedule.ImportedFeedbackTask( relnew, 
+                                                             ExternalStoppageTaskID := cdft.ExternalStoppageTaskID(),
+                                                             PlanUnitId := cdft.PlanUnitId(),
+                                                             WorkOrderId := cdft.WorkOrderId(),
+                                                             WorkOrderOperationSequenceNr := cdft.WorkOrderOperationSequenceNr()
+                                                           );
+      CopyCorresponding::CopyFrom( cdft ).CopyTo( importedFeedbackTask );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeCalendarData (String dataTransformationID_i) as stream[LibDIF_IntegrationAPI]
+{
+  Description:
+  [*
+    Use the synchronization mechanism that is implemented in the Calendar Library to synchronize the integration data to the planning-dataset.
+    Is added as extension in library DII_Calendars.
+  *]
+  TextBody:
+  [*
+    api := null( stream[LibDIF_IntegrationAPI] );
+    
+    // Get the planning-dataset's Integration-dataset.
+    integrationDataset := LibDIF_IntegrationDataset::GetDataset( this.GetDatasetName() );
+    if( not isnull( integrationDataset ) )
+    {
+      // Get the applicable DataTransformation.
+      dataTransformation := this.GetDataTransformation( dataTransformationID_i ).astype( LibDII_CalendarDataTransformation );
+      api := integrationDataset -> SynchronizeCalendarData( dataTransformation ) -> ( syncStream )
+      {
+        return this;
+      }
+    }
+    
+    // Return a stream that can be reacted on.
+    return api;
+  *]
+}

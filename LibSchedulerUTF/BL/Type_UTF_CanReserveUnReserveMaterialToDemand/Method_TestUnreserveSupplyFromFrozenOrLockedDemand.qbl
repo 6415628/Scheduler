@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestUnreserveSupplyFromFrozenOrLockedDemand (Schedule schedule)
+{
+  Description: 'Tests unreserve supply from frozen or locked demand. Body.'
+  TextBody:
+  [*
+    feedback_o := '';
+    supplies := selectset( schedule, Supply, supply, true );
+    currentVariant := this.GetCurrentVariant();
+    
+    // Propagate IsLocked and IsFrozenInSchedule attribute value for precon check
+    Transaction::Transaction().Propagate( attribute( Demand, IsLocked ) );
+    Transaction::Transaction().Propagate( attribute( Demand, IsFrozenInSchedule ) );
+    
+    this.Run().AssertTrue( currentVariant.CanReserveOrUnreserveMaterial() = Supply::CanUnreserveMaterialSoft( supplies, feedback_o ), 
+                           'Test unreserve supply from frozen or locked demand failed' );
+  *]
+}

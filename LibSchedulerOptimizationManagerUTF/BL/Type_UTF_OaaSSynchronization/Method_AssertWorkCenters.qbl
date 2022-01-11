@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method AssertWorkCenters (Schedule schedule, JSON workCentersArray)
+{
+  Description: 'Checks whether the schedule has resource groups that matches the JSON input data.'
+  TextBody:
+  [*
+    for( i := 0; i < workCentersArray.Size(); i++ )
+    {
+      workCenterJSON := workCentersArray.Get( i ); // Get to grab array's first instance
+      id := ImportedResourceGroup_SC::GetWorkCenterID( workCenterJSON );
+      resourceGroup := select( schedule, ResourceGroup_SC, resourceGroup, resourceGroup.Name() = id );
+      
+      if( this.Run().AssertTrue( not isnull( resourceGroup ), Translations::LibSchedulerOptMgrUTF_ResourceGroup_NotCreated( id ) ) )
+      {
+        this.Run().AssertTrue( ImportedResourceGroup_SC::GetIsFiniteCapacity( workCenterJSON ) = resourceGroup.IsFiniteCapacity() );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

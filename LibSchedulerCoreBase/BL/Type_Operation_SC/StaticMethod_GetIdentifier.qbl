@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetIdentifier (Operation_SC operation, Boolean appendMoreInfo) const declarative remote as String
+{
+  Description: 'Return value for operation identifier'
+  TextBody:
+  [*
+    /*
+    GetIdentifier received boolean argument to determine if additional info needs to be appended behind OperationID.
+    Currently if received 'true' for appendMoreInfo, we add Task ID behind the Operation.
+    But this can be customized. If more info had been returned through Operation::CalOperationID, additional info should be removed from this static method.
+    
+    Vice versaly, if more additional info needed, we should add them into this static method also.
+    */
+    
+    identifier := Translations::SC_Operation_NullOperation();
+    
+    if( not isnull( operation ) and operation.OperationID() <> Constants::EmptyString() )
+    {
+      identifier := operation.OperationID();
+    }
+    
+    if( appendMoreInfo )
+    {
+      if( not isnull( operation.Task_SC() ) )
+      {
+        identifier := identifier + Constants::BracketOpenWithSpaceFront() + operation.Task_SC().TaskID() + Constants::BracketClose();
+      }
+    }
+    
+    return identifier;
+  *]
+}

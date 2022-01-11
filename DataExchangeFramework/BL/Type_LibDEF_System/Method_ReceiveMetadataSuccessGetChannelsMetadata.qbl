@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveMetadataSuccessGetChannelsMetadata (NamedValueTree nvt_i, NamedValue body_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive a Metadata message for reply of Metadata of requested Channels.'
+  TextBody:
+  [*
+    LibDEF_Util::EventLog( event_i, "Receiving systems metadata" );
+    
+    // Jacky CHAN May-13-2016 (created)
+    // 1. Initialization: mark SoftDeleted
+    traverse( this, SetTypeMeta, st )
+    {
+      traverse( st, SetMeta, s )
+      {
+        s.IsSoftDeleted( true );
+      }
+      st.IsSoftDeleted( true );
+    }
+    
+    // 2. Synchronization
+    this.SyncSetTypeMeta( nvt_i, body_i, null( LibDEF_ChannelMeta ), event_i );
+    this.SyncSetMeta    ( nvt_i, body_i, event_i );
+    
+    // 3. Finalization: clean-up leftovers
+    traverse( this, SetTypeMeta, st )
+    {
+      if( st.IsSoftDeleted() )
+      {
+        st.Delete();
+      }
+      else
+      {
+        traverse( st, SetMeta, s, s.IsSoftDeleted() )
+        {
+          s.Delete();
+        }
+      }
+    }
+    
+    // End of receive metadata success get channels metadata
+    LibDEF_IntegrationEvent::EventComplete( event_i );
+  *]
+}

@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method AssertCapableResources (Schedule schedule, JSON capableResourcesArray)
+{
+  Description: 'Checks whether the schedule has capable resources that matches the JSON input data.'
+  TextBody:
+  [*
+    for( i := 0; i < capableResourcesArray.Size(); i++ )
+    {
+      capableResourceJSON := capableResourcesArray.Get( i ); // Get to grab array's first instance
+      assetID := ImportedCapableResource::GetAssetID( capableResourceJSON );
+      capableResource := select( schedule, Routing.RoutingStep.CapableResource, capableResource, capableResource.AssetID() = assetID );
+      
+      if( this.Run().AssertTrue( not isnull( capableResource ), Translations::LibSchedulerOptMgrUTF_CapableResource_NotCreated( assetID ) ) )
+      {
+        this.Run().AssertEqual( ImportedCapableResource::GetDurationRuc( capableResourceJSON ), capableResource.DurationPerLot().TotalInSeconds() );
+        this.Run().AssertEqual( ImportedCapableResource::GetRuc( capableResourceJSON ), capableResource.QuantityPerLot() );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

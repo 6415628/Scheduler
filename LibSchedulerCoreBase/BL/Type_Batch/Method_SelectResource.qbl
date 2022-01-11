@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectResource () as BatchResource
+{
+  Description: 'Select all resources where this batch is allowed on.'
+  TextBody:
+  [*
+    // The resource selected must be an allowed resource for batch and all operations in the batch
+    
+    operations := selectset( this, BatchSequenceElement.Operation_SC, op, true, true );
+    
+    allowedresources := selectset( this, AllowedBatchOnResource.BatchResource, res, true );
+    
+    resource := minselect( allowedresources, Elements, res,
+                           forall( operations, Elements, op,
+                                   op.AllowedOnResource( res ) ),
+                           res.EarliestAvailable() );
+    
+    return resource;
+  *]
+}

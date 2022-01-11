@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CreateIssue (LibOpt_SnapshotSuboptimizer snapshotsuboptimizer, String issuetype, const constcontent LibOpt_StatisticSeverityScaleEntrys severityscaleentries_lowerthresholdviolation, 
+  const constcontent LibOpt_StatisticSeverityScaleEntrys severityscaleentries_upperthresholdviolation)
+{
+  Description: 'Create a `LibOpt_Issue` for the given "snapshot suboptimizer" (`LibOpt_SnapshotSuboptimizer`) if its `LibOpt_SnapshotSuboptimizer.Improvement` value corresponding to this statistic violates the `LowerThreshold` / `UpperThreshold`.'
+  TextBody:
+  [*
+    // Variables needed for Issues creation.
+    shouldcreateissue := false;
+    severity := 0.0;
+    
+    kpi_improvement := BinaryValueUtils::RealVectorGetElement( snapshotsuboptimizer,
+                                                               attribute( LibOpt_SnapshotSuboptimizer, Improvement ),
+                                                               this.KPILevel() - 1
+                                                             );
+    
+    if( kpi_improvement < this.LowerThreshold() )
+    {
+      shouldcreateissue := true;
+      
+      severity := this.GetSeverity( kpi_improvement, false /*is upper threshold violation*/, severityscaleentries_lowerthresholdviolation );
+    }
+    else if( kpi_improvement > this.UpperThreshold() )
+    {
+      shouldcreateissue := true;
+      
+      severity := this.GetSeverity( kpi_improvement, true /*is upper threshold violation*/, severityscaleentries_upperthresholdviolation );
+    }
+    
+    if( shouldcreateissue )
+    {
+      // Create an Issue and link it to the relevant Snapshot.
+      LibOpt_Issue::Create( this,
+                            snapshotsuboptimizer,
+                            issuetype,
+                            this.Focus() + ', ' + Translations::LibOpt_IterationNr( snapshotsuboptimizer.GetIteration().IterationNr(), this.Run().TotalNrOfIterations() ),
+                            severity,
+                            Translations::LibOpt_Issue_Details_SuboptimizerKPIImprovement( kpi_improvement,
+                                                                                           this.LowerThreshold(),
+                                                                                           this.UpperThreshold(),
+                                                                                           LibOpt_Statistic::GetFormat( kpi_improvement,
+                                                                                                                        this.LowerThreshold(),
+                                                                                                                        this.UpperThreshold() ) )
+                          );
+    }
+  *]
+}

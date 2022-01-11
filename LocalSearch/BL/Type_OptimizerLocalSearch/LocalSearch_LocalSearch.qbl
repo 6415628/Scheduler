@@ -1,0 +1,65 @@
+Quintiq file version 2.0
+#parent: #root
+LocalSearch LocalSearch
+{
+  AsyncPriority: 'Default'
+  InitializationText:
+  [*
+    this.HaltRequested( false )
+    
+    this.InitializeNeighborhood();
+  *]
+  OnFailureText:
+  [*
+    solution := program.Retrieve( "cursol").astype( LsSolution )
+    
+    solution.IsTried( true ) // mark it tried
+    
+    
+    if( moveinfo.IsStepUndone() )
+    {
+      //info( 'Undone:', moveinfo.UndoReason())
+    }
+    else
+    {
+      info( 'Failure:', program.Failure().ErrorNr(), program.Failure().Information())
+    }
+    
+    program.ReExecute( true )
+  *]
+  StrategyText:
+  [*
+    if( not this.HaltRequested() )
+    {
+      currentScore := this.GetCurrentScore()
+    
+      solution := minselect( this, Neighbors, sol, not sol.IsTried(), sol.Estimate(), sol.Key())
+    
+      if( not isnull( solution ) )
+      {
+        program.Store( "cursol", solution);
+    
+        solution.MakeMove();
+    
+        if( solution.Score() >= currentScore )
+        {
+          //err := 1 / 0
+          program.UndoStep( "WorseSolution" )
+        }
+    
+        this.InitializeNeighborhood();
+    
+        program.ReExecute( true )
+      }
+      else
+      {
+        info( "### LS finished." )
+      }
+    }
+    else
+    {
+      this.HaltRequested( false )
+      info( "### LS halted." )
+    }
+  *]
+}

@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update (ImportedInternalWorkOrder importedInternalWorkOrder)
+{
+  Description: 'Update based on imported internal work order.'
+  TextBody:
+  [*
+    productInStockingPoint := ProductInStockingPoint::FindProductInStockingPoint( importedInternalWorkOrder.StockingPointID(),
+                                                                                  importedInternalWorkOrder.ProductId() );
+    
+    this.Update( productInStockingPoint,
+                 importedInternalWorkOrder.Quantity(),
+                 importedInternalWorkOrder.NrOfLots(),
+                 importedInternalWorkOrder.DueDate(),
+                 guard( importedInternalWorkOrder.ImportedRouting_SC().Routing(), null( Routing ) ),
+                 importedInternalWorkOrder.IsDummy() );
+    
+    this.IsCreatedInScheduler( true );
+    this.IsCreatedFromMPSPlannedOrder( importedInternalWorkOrder.IsCreatedFromMPSPlannedOrder() );
+    this.IsMarkedForReleaseByUser( importedInternalWorkOrder.IsMarkedForReleaseByUser() );
+    this.IsReleased( importedInternalWorkOrder.IsReleased() );
+    this.ImportedInternalWorkOrder( relset, importedInternalWorkOrder );
+    this.ImportedWorkOrder( relset, importedInternalWorkOrder );
+  *]
+}

@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDrawNode (CalendarElement element) id:Response_LibCal_gcResourceCalendars_OnDrawNode_6
+{
+  #keys: '[131094.1.464215956]'
+  Body:
+  [*
+    // CalendarElement; draw the backgroundcolor of the node based on the capacity.
+    // The color cannot be determined base on the EventType, because that is not available here.
+    // As a consequence 'Partial' with Capacity = 0.0 is visualized as 'Unavailable' and
+    // 'Partial' with Capacity = 1.0 is visualized as 'Available' here, while the TimeIntervals
+    // that define the CalendarElement are still shown as 'Partial'.
+    // But having 'Partial' with 0.0 or 1.0 is considered to be an edge-case. 
+    
+    if( element.Capacity() = 0.0 )       // Unavailable
+    {
+      drawinfo.BackgroundColor( Color::Black() );  // Becomes gray because of the overlay
+    }
+    else if( element.Capacity() = 1.0 )  // Available (for completeness, is filtered out)
+    {
+      drawinfo.BackgroundColor( Color::White() );
+    }
+    else                                 // Partially available
+    {
+      // Show the CalendarElement in light gray when the events are not shown individually,
+      // otherwise show the CalendarElement as white. In that case, partial capacity is visualized
+      // by a different node that shows the occurrence (i.e. an ExplicityTimeInterval).
+      if( not ckbShowOccurrences.Checked() )
+      {
+        drawinfo.BackgroundColor( Color::Color( 200, 200, 200 ) );  // Lighter gray
+      }
+      else
+      {
+        drawinfo.BackgroundColor( Color::White() );
+      }
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GanttChart_OnDrawNode'
+}

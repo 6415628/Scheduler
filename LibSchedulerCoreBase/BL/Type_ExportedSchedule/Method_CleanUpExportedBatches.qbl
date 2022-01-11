@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method CleanUpExportedBatches
+{
+  Description: 'ExportedBatch that does not have exportedcontent will be cleaned up.'
+  TextBody:
+  [*
+    // woi1 Feb-10-2017 (created)
+    
+    traverse( this, ExportedOperationBatch.ExportedOperationBatchContent, exbatchcontent, exbatchcontent.CanBeDeleted() )
+    {
+      exbatchcontent.Delete();
+    }
+    
+    // ExportedBatch that does not have exportedcontent will be cleaned up
+    traverse( this, ExportedOperationBatch, exbatch, exbatch.ExportedOperationBatchContent( relsize ) = 0 )
+    {
+      exbatch.Delete();
+    }
+    
+    Transaction::Transaction().Propagate( attribute( ImportedFeedbackBatchContent, CanBeDeleted ) );
+    
+    // Clean up feedback tasks and batches
+    this.FeedbackManager().CleanUpImportedFeedbackTasksAndBatches();
+  *]
+}

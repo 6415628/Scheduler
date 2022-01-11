@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: pnlStartTime/durStartTimeOfDay
+Response OnChanged () id:Response_pnlStartTime_durStartTimeOfDay_OnChanged
+{
+  #keys: '[131094.1.29050677]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebDateTimeFieldBase_OnChanged'
+  QuillAction
+  {
+    Body:
+    [*
+      // If not AllDay, adjust the EndTimeOfDay accordingly.
+      // When EndTimeOfDay is not changed, UpdateDuration must be done from here.
+      updateDuration := true;
+      
+      if( not ckbIsAllDay.Checked() )
+      {
+        delta := this.Duration() - dhStartTimeOfDay.Data();
+        
+        if( delta <> Duration::Zero() )
+        {
+          endTimeOfDay := durEndTimeOfDay.Duration() + delta;
+      
+          // Also adjust dsEndDate if necessary.    
+          dsEndDate.Date( dsEndDate.Date() + endTimeOfDay.Days() );
+          durEndTimeOfDay.Duration( endTimeOfDay - Duration::Days( endTimeOfDay.Days() ) );
+        
+          // Update the 'memory' for later delta-calculation, and/or setting the time back when AllDay is turned off.
+          dhStartTimeOfDay.Data( this.Duration() );
+          
+          updateDuration := false;
+        }
+      }
+      
+      if( updateDuration )
+      {
+        Form.UpdateDuration();
+      }
+    *]
+    GroupServerCalls: false
+  }
+}

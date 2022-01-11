@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddGoals (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs)
+{
+  TextBody:
+  [*
+    // zyi1 Jul-15-2021 (created)
+    strategy := this.GetSchedule().OptimizerStrategyInSchedule();
+    
+    // Minimize the sequence penalties
+    goalsequencepenalty := poa.NewSingleGoal( SuboptimizerPOACombiLeg::NamePOAGoalSequencePenalty() );
+    goalsequencepenalty.Expression( poa.Expression( SuboptimizerPOACombiLeg::NamePOAExpressionSoftRulePenalty() ) );
+    goalsequencepenalty.Factor( strategy.KPIWeightPreferenceRuleViolation() ); 
+    goalsequencepenalty.Power( 1.0 );
+    
+    // Minimize the planning of due operations on the unplanned collection
+    goalunplannedcollection := poa.NewSingleGoal( SuboptimizerPOACombiLeg::NamePOAGoalUnplannedCollectionDueOperations() );
+    goalunplannedcollection.Expression( poa.CollectionExpression( SuboptimizerPOACombiLeg::NamePOAExpressionUnplannedCollection() ) );
+    goalunplannedcollection.Factor( strategy.KPIWeightQuantityDueNotScheduled() );
+    goalunplannedcollection.Power( 1.0 );
+    
+    //Minimize the dummy order usage 
+    goaldummyorder := poa.NewSingleGoal( SuboptimizerPOACombiLeg::NamePOAGoalDummyOrders() );
+    goaldummyorder.Expression( poa.Expression( SuboptimizerPOACombiLeg::NamePOAExpressionDummyOrders() ) ); 
+    goaldummyorder.Factor( strategy.KPIWeightTotalDummyWorkOrderTime() );
+    goaldummyorder.Power( 1.0 );
+  *]
+}

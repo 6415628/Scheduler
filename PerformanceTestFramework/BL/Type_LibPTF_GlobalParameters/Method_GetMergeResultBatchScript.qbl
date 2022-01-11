@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetMergeResultBatchScript (String resultlogpath, String batchfilepath, String executePythonScriptBatchFilePath) remote as String
+{
+  Description: 'Gets the batch script for merging the result logs post-execution'
+  TextBody:
+  [*
+    folderPTFResultVar      := 'folderPTFResult';
+    ptfActionLogFileNameExt := '.end';
+    
+    return
+    '@ECHO OFF'
+    + String::NewLine()
+    + 'SETLOCAL ENABLEDELAYEDEXPANSION'
+    + String::NewLine()
+    // Set batch file variable
+    + 'SET "' + folderPTFResultVar + '=' + resultlogpath + '"'
+    + String::NewLine()
+    // Merge all "*.end" file contents from current result log file directory
+    + 'FOR /F %%G IN' + " ('dir" + ' "!'+ folderPTFResultVar + '!*' + ptfActionLogFileNameExt + '" /B' + "') DO type "
+    + ' "!'+ folderPTFResultVar + '!%%G"' + ' >> '
+    + ' "!'+ folderPTFResultVar + '!' + this.MergedResultLogFileName() + '"'
+    + String::NewLine()
+    + 'START "" "' + executePythonScriptBatchFilePath + '"'
+    + String::NewLine()
+    // Delete this batch file
+    + 'START CMD /C DEL "' + batchfilepath + '" /S /Q "%_dp0" '
+    + String::NewLine()
+    + 'EXIT';
+  *]
+}

@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenericPlanAfter (Operation_SC operation, Task_SC element) as Task_SC
+{
+  Description: 'Plan an operation after a single task. Needs to be implemented for specialization.'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // Method SingleResource.GenericPlanAfter : should be overloaded in specialized object
+    task        := null( Task_SC );
+    oldprev     := null( Task_SC );
+    oldnext     := null( Task_SC );
+    
+    if( guard( this.IsTaskTypeMatching( operation.SingleTaskBase() ), false ) )
+    {
+      task := operation.SingleTaskBase();
+      oldprev := task.Previous();
+      oldnext := task.Next();
+      // Unfreeze tasks frozen by user if they are moved outside of the frozen horizon or onto a different resource
+      this.UnfreezeTaskFrozenByUserBefore( task, guard( element.Next(), null( SingleTaskBase ) ) );
+      this.MoveAfter( task, element );
+    }
+    else
+    {
+      // Unplan existing operation's task before constructing new task
+      operation.Unplan();
+    
+      task := this.ConstructTask();
+      task.astype( SingleTaskBase ).OperationAsSingleTask( relset, operation );
+      task := this.AddAfter( &task, element ).astype( SingleTaskBase );
+    }
+    
+    // Update FSPL operation in task and FSPL graph
+    this.UpdateFSPLOperationInTaskAndGraph( task, oldprev, oldnext, null( BatchSequenceElement ) );
+      
+    // Replan linked succeeding stoppage task after replan preceding task and update FSPL for preceding task
+    succeedingtask := task.LinkedSucceedingStoppageTask();
+    if( not isnull( succeedingtask ) )
+    {
+      this.PlanAfter( succeedingtask, task ); 
+    }
+    
+    return task;
+  *]
+}

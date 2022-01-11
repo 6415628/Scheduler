@@ -1,0 +1,85 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportDemoDataDSS () id:Method_DialogImportDemoData_ImportDemoDataDSS
+{
+  #keys: '[125460.0.325862576]'
+  Body:
+  [*
+    // Import demo data using DSS
+    DataHolderCurrentBatch.ClearData();
+    datasetschedule := Constants::ScheduleDataset();
+    selectedDemo := StringSelectionDemoDataset.Text();
+    
+    // Restore demo dataset
+    schedule := ExternalMDSEditor::Editor().ObjectInfo( datasetschedule,
+                                                        "/root",
+                                                        datasetschedule );
+    
+    // Copy external files to data folder
+    Schedule::CopyExternalFilesToDataFolder( selectedDemo );
+    
+    // Unload and delete dataset
+    if( not isnull( schedule ) )
+    {
+      if( schedule.IsLoaded() )
+      {
+        ExternalMDSEditor::Editor().UnloadMDS( schedule.MDSID() );
+      }
+      
+      if( schedule.IsStoredInDB() )
+      {
+        ExternalMDSEditor::Editor().DeleteMDS( schedule.MDSID() );
+      }
+    }
+    
+    // Delete Schedule scenario #9235
+    if( not isnull( LibSM_ScenarioManager ) )
+    {
+      LibSM_ScenarioManager.Refresh();
+      scenarionodes := selectset( LibSM_ScenarioManager, ScenarioNode, s, s.IsDeleted(), s.Name() = Constants::ScheduleDataset() or s.Name() =  Constants::ScheduleCreatedBySystemScenario() );
+      LibSM_ScenarioNode::Delete( scenarionodes, LibSM_ScenarioManager.RecycleBinFolder() );
+    }
+    
+    /* Commented out - as SCH is not using Empty as intermedia dataset when switching for now
+    if( selectedDemo = 'Empty' )
+    {
+      datasetState := GlobalParameters_SC::GetMemoryOnlyStateString();
+      folderdefinitions := DomainModel::Domain().MDSFolderDefinitions();
+      folderdefinition := folderdefinitions.FindFolder( '/root' );
+      
+      // If user select 'empty', create a new independent dataset
+      schedule := ExternalMDSEditor::Editor().ObjectInfo( datasetschedule,
+                                                          "/root",
+                                                          datasetschedule );
+      if( isnull( schedule ) )
+      {
+        Schedule::CreateMemoryOnlyDataset( datasetschedule, folderdefinition.FolderID() );
+      }
+      // Select dataset
+      ApplicationScheduler.SelectDataset( datasetschedule, '/root', datasetschedule );
+      selectedDemo := '';
+    }
+    else //restore dataset from backup location based on user selection
+    */
+    {
+      backupPath := ifexpr( StringSelectionCategory.BoundValue() = Constants::DemoCategory_Sales(), Schedule::GetBackupDirectory(), Schedule::GetBackupTestDirectory() );
+      ExternalMDSEditor::Editor().RestoreDBExportFile( backupPath.Concat( selectedDemo ), "QDB" );
+      schedule := ExternalMDSEditor::Editor().ObjectInfo( datasetschedule,
+                                                          "/root",
+                                                          datasetschedule );
+      if( not isnull( schedule ) )
+      {
+        ExternalMDSEditor::Editor().ForceUnlockMDS( schedule );
+        ExternalMDSEditor::Editor().LoadMDS( schedule.MDSID(), schedule.State() );
+      }
+    }
+    
+    // GUITimer is need to re-select the dataset after import demo data
+    // somehow directly select after import does not work if imported file has same name as current dataset file
+    // GUITimer = 1s
+    // This is the workaround because load MDS is an async process, so we cannot directly select the dataset immediately.
+    ValueHolderSelectedCategory.Value( StringSelectionCategory.BoundValue() );
+    ValueHolderSelectedDemo.Value( selectedDemo );
+    GUITimerSelectDataset.Enabled( true );
+  *]
+}

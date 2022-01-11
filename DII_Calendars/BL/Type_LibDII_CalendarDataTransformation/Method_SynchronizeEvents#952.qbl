@@ -1,0 +1,100 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeEvents (LibCal_Calendar calendar_i, LibCIM_CalendarBase integrationCalendar_i, Boolean doDelete_i, 
+  Boolean keepIfNotCreatedByIntegration_i)
+{
+  Description:
+  [*
+    Synchronize the integration objects. The deletion behavior is determined by the arguments:
+    doDelete_i = TRUE deletes instances that do not exist in staging (anymore). When FALSE, no instances are deleted.
+    keepIfNotCreatedByIntegration_i = TRUE does not delete instances that do not exist in staging if they were not created by integration previously (i.e. have been created manually or by the application).
+  *]
+  TextBody:
+  [*
+    // Consider all existing events to be soft-deleted.
+    softDeletedEvents := calendar_i.Event( relget );
+    
+    traverse( integrationCalendar_i, CIM_Event, cimEvent )
+    {
+      event := null( LibCal_Event );
+    
+      // TEMPORARY ignore ShiftPatterns for which the Calendar Library raises a validation error.
+      if( cimEvent.Duration() > Duration::Zero() )
+      {
+          
+      // Synchronize the event if there are no errors.
+      //if( cimEvent.CanSynchronize() )
+      //{
+        // Only synchronize the integration event if the integration object of
+        // its accompanying LeadingParticipation exists.
+        cimLeadPart := cimEvent.CIM_LeadingParticipation();
+        if( not isnull( cimLeadPart ) )
+        {
+          event := calendar_i.SynchronizeEvent( cimEvent.EventID(),                         // Event
+                                                cimEvent.CalendarType(),
+                                                cimEvent.CalendarID(),
+                                                cimEvent.Category(),
+                                                cimEvent.Subject(),
+                                                cimEvent.Description(),
+                                                cimEvent.Type(),
+                                                cimEvent.PartialCapacity(),
+                                                cimEvent.IsDefault(),
+                                                cimEvent.IsRecurring(),
+                                                cimEvent.IsAllDay(),
+                                                cimEvent.StartTimeOfDay(),
+                                                cimEvent.Duration(), 
+                                                cimEvent.PatternType(),                     // RecurrencePattern
+                                                cimEvent.RecurrenceInterval(),
+                                                cimEvent.PatternWeekly_Weekdays(),
+                                                cimEvent.PatternMonthly_IsDay(),
+                                                cimEvent.PatternMonthly_Day(),
+                                                cimEvent.PatternMonthly_WeekOfMonth(),
+                                                cimEvent.PatternMonthly_DayOfWeek(),
+                                                cimEvent.PatternYearly_IsDay(),
+                                                cimEvent.PatternYearly_Month(),
+                                                cimEvent.PatternYearly_Day(),
+                                                cimEvent.PatternYearly_WeekOfMonth(),
+                                                cimEvent.PatternYearly_DayOfWeek(),
+                                                cimLeadPart.ParticipationID(),              // RecurrencePeriod
+                                                cimLeadPart.StartDate(),
+                                                cimLeadPart.HasSpecificPeriod(),
+                                                cimLeadPart.PeriodType(),
+                                                cimLeadPart.PeriodStartDate(),
+                                                cimLeadPart.PeriodEndDate() );
+        }
+        else
+        {
+          LibDIF_Util::Warning( this.DefinitionName() + ".SynchronizeEvent() : No LeadingParticipation found " +
+                                "in the integration data for event '" + cimEvent.Subject() + "' of calendar " + cimEvent.CalendarType() + "." + cimEvent.CalendarID() );
+        }
+      //}
+      
+      }  // TEMPORARY
+      else
+      {
+        LibDIF_Util::Warning( "IGNORING ShiftPattern because Duration = 0:00:00 | ID = " + cimEvent.EventID() );
+      }
+      
+      // Remove the event from the set of soft-deleted events.
+      if( not isnull( event ) )
+      {
+        softDeletedEvents.Remove( event );
+      }
+    }
+    
+    // If applicable, delete the events that are soft-deleted, i.e. that are not present in staging.
+    // Except for the "Always available" event, which should never be deleted.
+    if( doDelete_i )
+    {
+      traverse( softDeletedEvents, Elements, event, not event.IsAlwaysAvailableEvent() )
+      {
+        // Only the events that are imported should be deleted, unless indicated otherwise.
+        if( event.IsCreatedByImport() or not keepIfNotCreatedByIntegration_i )
+        {
+          event.Delete();
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

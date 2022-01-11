@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetDeleteConfirmationMessage (Batches batches) const declarative remote as String
+{
+  TextBody:
+  [*
+    message := Translations::SC_DeleteBatchesConfirmation();
+    
+    if( exists( batches, Elements.BatchTask, task, task.IsFrozenInSchedule() ) )
+    {
+      message := Translations::SC_DeleteFrozenBatchesConfirmation();
+    }
+    else if( exists( batches, Elements, batch, batch.HasFeedback() ) )
+    {
+      message := Translations::SC_DeleteFeedbackBatchesConfirmation();
+    }
+    
+    if( exists( batches, Elements.BatchTask, task, task.IsLocked() ) )
+    {
+      Utility_SC::Concat( message, Translations::DemandBatch_DeleteBatchesLockedByOptimizerConfirmation() );
+    }
+    
+    return message;
+  *]
+}

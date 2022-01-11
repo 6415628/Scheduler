@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_ResourceNode (CDSchedule cdSchedule, CDResourceView cdResourceView, ResourceView resourceView)
+{
+  Description: 'Restore resource node core data attributes to planning object'
+  TextBody:
+  [*
+    resourceViewKey := [String] resourceView.Key();
+    
+    cdResourceNodes := selectset( cdSchedule, CDEntity.astype( CDResourceNode ), cdResourceNode, cdResourceNode.BackupResourceViewKey() = cdResourceView.BackupResourceViewKey() );
+    
+    traverse( cdResourceNodes, Elements, cdResourceNode )
+    {
+      resourceNode := ResourceNode::Create( resourceView );
+      CopyCorresponding::CopyFrom( cdResourceNode ).CopyTo( resourceNode );
+      
+      // Store the key of resource view to allow setting of relation
+      cdResourceNode.RestoreResourceViewKey( resourceViewKey );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

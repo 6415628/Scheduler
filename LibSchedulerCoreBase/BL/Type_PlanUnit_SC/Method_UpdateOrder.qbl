@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateOrder (Real totalquantity)
+{
+  Description: 'Updates its Order_SC to have the correct summed quantity of its plan units.'
+  TextBody:
+  [*
+    // update Order_SC
+    order := this.Order_SC();
+    order.Quantity( totalquantity );
+    order.NrOfLots( order.GetNrOfLots( totalquantity ) );
+    
+    // update WorkOrder
+    workorder := order.WorkOrder();
+    
+    if( not isnull( workorder ) )
+    {
+      workorder.Update( workorder.ProductId(), 
+                        workorder.StockingPointId(), 
+                        order.Quantity(), 
+                        order.NrOfLots(), 
+                        order.DueDate(),
+                        workorder.RoutingID(),
+                        workorder.IsDummy() );
+    }
+  *]
+}

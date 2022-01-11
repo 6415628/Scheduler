@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method Preprocess (LibOpt_Task task)
+{
+  Description: "runs the operation's preprocessing necessary before the POA is intantiated and run."
+  TextBody:
+  [*
+    // mbr23 Aug-29-2019 (created)
+    
+    // create the neccessary OperationInSuboptimizer objects:
+    operations_in_suboptimizer := OperationInSuboptimizer::EnsureExistWithDownstream( this, task.Scope().Operations() );
+    
+    // calculate operations' EarliestStart and LatestEnd, but only of operations in scope (not downstream ones):
+    if( this.Settings().UseEarliestStart()
+        or guard( this.Strategy().MRS_KPIUseConstraintLatestEnd(), true ) )
+    {
+      operations_inscope := selectset( operations_in_suboptimizer,
+                                       Elements,
+                                       operation,
+                                       not isnull( operation.Operation_SC().ScopeElementOperation() )
+                                       and task.Scope().Contains( operation.Operation_SC().ScopeElementOperation() ) );
+      this.UpdateUpstreamDownstreamDueDate( operations_inscope, task );
+    }
+  *]
+}

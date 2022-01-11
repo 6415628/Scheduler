@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitializeRecurrencePeriod (shadow[LibCal_RecurrencePeriod] sRecurrencePeriod_i, Date startDate_i) id:Method_LibCal_dlgEvent_InitializeRecurrencePeriod
+{
+  #keys: '[131094.0.1357896159]'
+  Body:
+  [*
+    // First initialize everything as new...
+    this.InitializeRecurrencePeriodAsNew( startDate_i );
+    
+    // ... then take over the existing period (if applicable)
+    if( not isnull( sRecurrencePeriod_i ) )
+    {
+      // Use the UTC-timezone here in order to keep the same date, don't correct for a specific timezone.
+      timezone := TimeZone::UTCTimeZone();
+      dtStartOfPeriod.DateTime( sRecurrencePeriod_i.StartDate().DateTime( timezone ) );
+      vhStartOfPeriod.Data    ( dtStartOfPeriod.DateTime() );
+    
+      // NoEnd
+      if( sRecurrencePeriod_i.istype( shadow[LibCal_RecurrencePeriodWithoutEnd] ) )
+      {
+        // Is already initialized
+      }
+    
+      else if( sRecurrencePeriod_i.istype( shadow[LibCal_RecurrencePeriodWithEndDate] ) )
+      {
+        period := sRecurrencePeriod_i.astype( shadow[LibCal_RecurrencePeriodWithEndDate] );
+    
+        ckbEndOfPeriod.Checked( true );
+        dtEndOfPeriod.DateTime( period.EndDate().DateTime( timezone ) );
+      }
+    }
+    
+    this.SetEndOfPeriod();
+  *]
+}

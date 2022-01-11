@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidImportedProductInStockingPoint (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if imported object has product in stocking point link'
+  TextBody:
+  [*
+    // chin wai Jul-20-2016 (created)
+    isempty := this.ProductId().TrimBoth() = ''; // considered 'empty' because there is no product id
+    isvalid := isempty or not isnull( this.ImportedProductInStockingPoint_SC() );
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedRoutingStepOutput_Instance( name ),
+                                                               Translations::SC_ImportedRoutingStepOutput_ViolateHasProductInStockingPoint() ) );
+    }
+    
+    return isvalid;
+  *]
+}

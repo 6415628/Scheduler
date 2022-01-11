@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedScheduling (BatchResource resource, structured[Task_SC] tasks, Boolean skipsoftcheck, 
+  Boolean ctrlshiftkey, Task_SC beforetask, Task_SC aftertask, 
+  String identifier, output String feedback_o, output Boolean isallowedhard_o) as Boolean id:Method_Scheduler_AllowedScheduling_593
+{
+  #keys: '[143030.0.224891991]'
+  Body:
+  [*
+    value := true;
+    
+    // If any of the tasks has a mismatching type from the resource
+    if( exists( tasks, Elements, task,
+                not resource.IsTaskTypeMatching( task ) ) )
+    {
+      // Check the operations individually
+      operations := selectset( tasks, Elements.OperationInTask, op, true );
+      value := Scheduler.AllowedScheduling( resource,
+                                            operations,
+                                            skipsoftcheck,
+                                            ctrlshiftkey,
+                                            beforetask,
+                                            aftertask,
+                                            identifier,
+                                            feedback_o,
+                                            isallowedhard_o );
+    }
+    else
+    {
+      // Check the batches as a whole
+      batches := selectset( tasks, Elements.astype( BatchTask ).Batch, batch, true );
+      value := Scheduler.AllowedScheduling( resource,
+                                               batches,
+                                               skipsoftcheck,
+                                               ctrlshiftkey,
+                                               beforetask,
+                                               aftertask,
+                                               identifier,
+                                               feedback_o,
+                                               isallowedhard_o );
+    }
+    
+    return value;
+  *]
+}

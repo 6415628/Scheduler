@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_GenericResourceGroup (CDSchedule cdschedule)
+{
+  Description: 'Restore attributes generic resource group core data to planning object'
+  TextBody:
+  [*
+    // Restrore attributes for resource group
+    schedule := this.Schedule();
+    
+    traverse( cdschedule, CDEntity.astype( CDGenericResourceGroup ), cdrg )
+    {
+      resourcegroup := GenericResourceGroup::Create( schedule, cdrg.Name(), cdrg.Type() )
+      CopyCorresponding::CopyFrom( cdrg ).CopyTo( resourcegroup );
+    }
+    
+    // Restore attributes for subtask type on resource group
+    this.RestoreAttributes_SubTaskTypeOnResourceGroup( cdschedule );
+    
+    // Restore CampaignType
+    this.RestoreAttributes_CampaignType( cdschedule );
+    
+    // Restore attributes for resources
+    this.RestoreAttributes_GenericSingleResource( cdschedule );
+    this.RestoreAttributes_GenericBatchResource( cdschedule );
+    this.RestoreAttributes_GenericContinuousResource( cdschedule );
+    
+    // Restore lead time strategy
+    this.RestoreAttributes_LeadTimeStrategy( cdschedule );  
+    
+    // Restore resource connection
+    this.RestoreAttributes_ResourceConnection( cdschedule );
+    
+    // Restore single tasks
+    this.RestoreAttributes_GenericSingleTask( cdschedule );  
+    
+    // Restore program change tasks
+    this.RestoreAttributes_GenericProgramChangeTask( cdschedule );
+    
+    // Restore shutdown tasks
+    this.RestoreAttributes_GenericShutdownTask( cdschedule );
+    
+    // Restore batch tasks
+    this.RestoreAttributes_GenericBatchTask( cdschedule );  
+    
+    // Restore continuous tasks
+    this.RestoreAttributes_GenericContinuousTask( cdschedule );  
+    
+    // Restore subtasks
+    this.RestoreAttributes_SubTask( cdschedule );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

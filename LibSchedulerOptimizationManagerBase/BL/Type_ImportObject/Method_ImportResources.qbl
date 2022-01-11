@@ -1,0 +1,55 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportResources (String jsonString) #extension
+{
+  TextBody:
+  [*
+    jsonTree := JSON::Parse( jsonString );
+    schedule := this.Schedule();
+    
+    // Get resources JSON
+    resourcesJSON := guard( jsonTree.Get( Constants::JSON_Resources() ), null( JSON, owning ) );
+    
+    if( not isnull( resourcesJSON ) )
+    {
+      // Create ResourceGroups
+      workCentersJSON := guard( resourcesJSON.Get( Constants::JSON_WorkCenters() ), null( JSON, owning ) ); 
+      
+      if( not isnull( workCentersJSON ) )
+      {
+        for( i := 0; i < workCentersJSON.Size(); i ++ )
+        { 
+          ImportedResourceGroup_SC::ParseFCjson( schedule, workCentersJSON.Get( i ) ); 
+        }
+      }
+      
+      // Create Resources
+      assetsJSON := guard( resourcesJSON.Get( Constants::JSON_Assets() ), null( JSON, owning ) );
+      
+      if( not isnull( assetsJSON ) )
+      {
+        for( i := 0; i < assetsJSON.Size(); i ++ )
+        {
+          assetJSON := assetsJSON.Get( i );
+          importedResource := ImportedResource_SC::ParseFCjson( schedule, assetJSON ); 
+          
+          // Create ShiftPatternAssignment (timeCalendars)
+          timeCalendarsJSON := guard( assetJSON.Get( Constants::JSON_TimeCalendars() ), null( JSON, owning ) );
+          
+          if( not isnull( timeCalendarsJSON ) )
+          {
+            for( j := 0; j < timeCalendarsJSON.Size(); j ++ )
+            { 
+              timeCalendarJSON := timeCalendarsJSON.Get( j );
+              ImportedShiftPatternAssignment::ParseFCjson( schedule, timeCalendarJSON, importedResource ); 
+            }
+          }
+        }
+      }
+    }
+    else
+    {
+      logfile( Translations::Lib3DSpace_NoResource() ); 
+    }
+  *]
+}

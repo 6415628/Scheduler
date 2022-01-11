@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnReadView () id:Response_LibGUIFiltering_PanelFilterBox_OnReadView
+{
+  #keys: '[128900.0.323436247]'
+  Body:
+  [*
+    nvt      := NamedValueTree::Create();
+    
+    NamedValueTreeXMLStreamer::FromString( viewdata.Data(), nvt.Root() );
+    
+    hroot    := nvt.GetHandle( 'Root'    );
+    hoptions := nvt.GetHandle( 'Options' );
+    hfilters := nvt.GetHandle( 'Filters' );
+    
+    root     := guard( nvt.Root().Child( hroot ), null(NamedValue) );
+    options  := guard( root.Child( hoptions ), null(NamedValue) );
+    
+    if ( not isnull(options) )
+    {
+      this.PanelFilterBoxHelper().UserData( options.GetValueAsNumber() );
+    }
+    
+    filters        := guard( root.Child( hfilters ), null(NamedValue) );
+    currentfilters := construct(Strings);
+    
+    if ( not isnull(filters) ) 
+    {
+      traverse( filters.Children(), Elements, e )
+      {
+        currentfilters.Add( e.GetValueAsString() );  
+      }
+      
+      EditorFilterBox.Strings( currentfilters.ToString( EditorFilterBox.RowSeparator() ) );
+    }
+    
+    EditorFilterBox.Text( '' );
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIComponent_OnReadView'
+}

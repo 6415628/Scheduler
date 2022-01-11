@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeDemoDataBatchTaskFromFeedback
+{
+  Description: 'Synchronize demo data batch tasks from feedback.'
+  TextBody:
+  [*
+    feedbackrows := selectsortedset( this, Schedule.ImportedFeedbackBatch, row, true, row.Start(), row.BatchID() );
+    
+    traverse( feedbackrows, Elements, row )
+    {
+      operations := selectset( row, ImportedFeedbackBatchContent.Operation_SC, op, true );
+      
+      batch := Batch::CreateBatchAssignOperations( operations, this.Schedule() );
+      batchResource := BatchResource::FindBatchResource( row.Resource() );
+      
+      if( not isnull( batch ) and not isnull( batchResource ) )
+      {
+        batchResource.PlanLast( batch );
+      }
+    }
+  *]
+}

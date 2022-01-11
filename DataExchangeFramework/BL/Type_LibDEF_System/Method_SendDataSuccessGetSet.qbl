@@ -1,0 +1,67 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendDataSuccessGetSet (LibDEF_Set set_i, NamedValueTree request_i, LibDEF_IntegrationEvent event_i, 
+  Boolean inChunk_i)
+{
+  Description: 'Send a Data-Success message for requesting a Set.'
+  TextBody:
+  [*
+    LibDEF_Util::EventLog( event_i, "Sending GetSet reply." );
+    
+    dataBroker := this.DataBroker();
+    channel    := set_i.SetType().Channel();
+    
+    // Export the set to NVT
+    setNvt := NamedValueTreeIO::Export( set_i );
+    
+    // Prepare message
+    nvt := LibDEF_DataAccessor::CreateMessageData();
+    
+    // Add headers
+    type := LibDEF_DataAccessor::GetDataHeaderPropertyAsString( request_i, LibDEF_DataAccessor::HEADER_TYPE() );
+    datasetMDSID := LibDEF_DataAccessor::GetDataHeaderPropertyAsKey( request_i, LibDEF_DataAccessor::HEADER_DATASETMDSID() );
+    datasetDTD   := LibDEF_DataAccessor::GetDataHeaderPropertyAsKey( request_i, LibDEF_DataAccessor::HEADER_DATASETDTD() );
+    datasetType  := LibDEF_DataAccessor::GetDataHeaderPropertyAsString( request_i, LibDEF_DataAccessor::HEADER_DATASETMODELTYPE() );
+    LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_TYPE(), type );
+    LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_SETTYPEGUID(), set_i.SetType().GUID() );
+    LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_SETGUID(), set_i.GUID() );
+    LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_SETLASTUPDATED(), set_i.LastUpdated() );
+    LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_DATASETMDSID(), datasetMDSID );
+    LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_DATASETDTD(), datasetDTD );
+    LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_DATASETMODELTYPE(), datasetType );
+    
+    if( not inChunk_i )
+    {
+      // Fill in the message body with the setNvt
+      LibDEF_DataAccessor::SetDataBody( nvt, setNvt );
+    }
+    else
+    {
+      // create a DataTransfer
+      dataBroker := this.DataBroker();
+      setMeta    := LibDEF_SetMeta::FindSetMeta( dataBroker, dataBroker.SystemLocal().GUID(),
+                                                 set_i.ChannelName(), set_i.SetTypeName(), set_i.Name() );
+      dataTransfer   := LibDEF_DataTransfer::Create( this.DataBroker().QueueOutbox(),
+                                                     LibDEF_NamedValueTreeProcessor::GetCumulativeNumberOfChildren( setNvt.Root() ),
+                                                     "",
+                                                     setMeta,
+                                                     this,
+                                                     event_i );
+    
+      // Add chunking related headers
+      LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_ISINIT(),  true ); // this is the initialization only
+      LibDEF_DataAccessor::SetDataHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_DATATRANSFERGUID(), dataTransfer.GUID() );
+      
+      // export the DataTransfer into NVT
+      LibDEF_DataAccessor::SetDataBody( nvt, NamedValueTreeIO::Export( dataTransfer ) );
+      
+      // Add internal message for the async SOAP procedure to retrieve the payload to be chunked
+      LibDEF_DataAccessor::SetInternalMessageHeaderProperty( nvt, LibDEF_DataAccessor::HEADER_TYPE(), LibDEF_DataAccessor::TYPE_INTERNALMESSAGE_PAYLOADTOCHUNK() );
+      LibDEF_DataAccessor::SetInternalMessageBody( nvt, setNvt );
+    }
+    
+    // Send data
+    dataBroker.SendData( this, nvt, LibDEF_DataAccessor::KIND_SUCCESS(), event_i,
+                         channel.Name(), channel.MajorVersion(), channel.MinorVersion() );
+  *]
+}

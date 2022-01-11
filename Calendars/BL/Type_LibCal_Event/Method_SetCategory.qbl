@@ -1,0 +1,48 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetCategory (String categoryName_i) as LibCal_Event
+{
+  Description: 'Set the category of the event.'
+  TextBody:
+  [*
+    // Use a FeedbackObject to collect the validation feedback.
+    feedback := LibCal_Validate::FeedbackObject();
+    
+    result   := "";
+    category := select( this.Calendar().CalendarRegistry(), EventCategory, cat, true, cat.Name() = categoryName_i );
+    
+    if( isnull( category ) )
+    {
+      // If the category is not found, then default to the general category if there is no category yet (i.e. when the event is new).
+      // Otherwise, keep the current category.
+      if( isnull( this.EventCategory() ) )
+      {
+        category := this.Calendar().CalendarRegistry().GetGeneralEventCategory();
+        result   := ", the event will be created in category '" + category.Name() + "'";
+      }
+      else
+      {
+        result   := ", the event remains in category '" + this.EventCategory().Name() + "'";
+      }
+    }  
+    
+    // Validate the category.
+    msg := LibCal_Validate::Event_Category( categoryName_i );
+    if( msg <> "" )
+    {
+      moreInfo := this.GetEventInfo();
+      LibCal_Validate::RegisterWarning( msg + result, moreInfo );
+    }
+    
+    if( not isnull( category ) )
+    {
+      this.EventCategory( relset, category );
+    }
+    
+    // Process the feedback that has been registered by the validation (if any).
+    LibCal_Util::ProcessFeedbackObject( feedback );
+    
+    // Make the API fluent.
+    return this;
+  *]
+}

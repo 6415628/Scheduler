@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: ContextMenuImportData/MenuImportFromMPS
+Response OnClick () id:Response_ContextMenuImportData_MenuImportFromMPS_OnClick
+{
+  #keys: '[145930.4.760644901]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebMenu_OnClick'
+  GroupServerCalls: true
+  QuillAction
+  {
+    Body:
+    [*
+      // Import from MPS
+      Schedule.ImportFromMPS();
+      
+      if( Schedule.CheckHasMultipleMPSPlan() )
+      {
+        // Display import fail message when multiple MPS plans appear
+        WebMessageBox::Error( Translations::SC_MPSPlan_ImportFail_MultipleMPSPlan() );
+      }
+      else if( not Schedule.HasNewMPSPlan() )
+      {
+        // Display import not required message if there is no new MPS plan
+        WebMessageBox::Success( Translations::SC_MPSPlan_ImportNotRequired_NoNewMPSPlan() );
+      }
+      else if( Schedule.CheckHasImportedMPSSanityErrors() )
+      {
+        // Display import fail message if sanity error
+        WebMessageBox::Error( Translations::SC_MPSPlan_Import_WithErrors() );
+      }
+      else
+      {
+        // Display import success message if there is no error thrown.
+        WebMessageBox::Success( Translations::SC_MPSPlan_ImportSuccess() );
+      }
+    *]
+  }
+}

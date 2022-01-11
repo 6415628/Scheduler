@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method Extend (Operation_SCs operations, Number copylegnum) as CombiProgramType
+{
+  TextBody:
+  [*
+    // zyi1 Jul-28-2021 (created)
+    //make a copy, copy first copylegnum combilegs, add a combileg at the end, randomly add operations and sequence by poa
+    if( isnull( this.MasterCombiProgramType() ) and not isnull( this.ProgramTypeAsActiveCombi() ) )
+    {
+      this.MasterCombiProgramType( relset, this );
+    }
+    newcombipt := this.Copy( copylegnum ); 
+    
+    newcombipt.CombiProgramTypeExtendedFrom( relset, this );
+    tocopycombilegs := selectsortedset( this, MasterCombiProgramType.CombiProgramPhase.CombiLegAsLeading, cl, cl.LeadingCombiProgramPhase().SequenceNr(), cl.SequenceNr() );
+    
+    //get next combileg, and make a copy to new combi programtype, just not copy the operaitons
+    nextcombilegtocopy := null( CombiLeg );
+    
+    if( tocopycombilegs.Size() > copylegnum )
+    {
+      nextcombilegtocopy := tocopycombilegs.Element( copylegnum );
+      
+      newleg := newcombipt.CopyEmptyLegFrom( this.MasterCombiProgramType(), nextcombilegtocopy );
+      newleg.MasterCombiLeg( relset, nextcombilegtocopy );
+      
+      newleg.CopyFrozenElementsFrom( nextcombilegtocopy );
+      if( not nextcombilegtocopy.Leg().IsFrozenInSchedule() )
+      {
+        if( not isnull( newleg.Leg().ShutdownAnchorOperation() ) ) //remove from current set, and add at the end later
+        {
+          operations.Remove( newleg.Leg().ShutdownAnchorOperation() );
+        }
+    
+        Transaction::Transaction().Propagate( attribute( OperationInCombiLeg, SequenceNr ) );
+        Transaction::Transaction().Propagate( attribute( OperationInCombiLeg, IsPhaseChanged ) );
+        Transaction::Transaction().Propagate( attribute( OperationInCombiLeg, IsLeadingPhaseChanged ) );
+        newleg.Split();
+        
+        newleg.DeleteCombiLegsAfterThis();
+        
+        newleg.AddShutdownAnchorOperation();
+      }
+    }
+    
+    return newcombipt;
+  *]
+}

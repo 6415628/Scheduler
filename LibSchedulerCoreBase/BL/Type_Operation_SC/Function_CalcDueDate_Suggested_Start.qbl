@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcDueDate_Suggested_Start
+{
+  TextBody:
+  [*
+    // TG4AvK080508
+    // TG use ExpectedDuration even if the operation is planned and has a real duration
+    // Repository issue #3231: check with AvK
+    value := this.DueDate_Suggested() - this.ExpectedDuration();
+    
+    // TG4AvK080508
+    // TG LeadTime taken into account only if the operation is not planned yet.
+    if( not this.IsPlanned() )
+    {
+      value := value - this.LeadTime();
+    }
+    //else if( this.IsPlanned() and this.Schedule().GlobalParameters_SC().IsLotLeadTimeLogicOn() )
+    //{
+      // if this is planned, we take this task's last input lot's earliest end
+      //value := this.GetTask().LastInputLot().Start();
+    //}
+    
+    this.DueDate_Suggested_Start( value );
+  *]
+}

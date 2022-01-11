@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExecuteDataSynchronization (String dataTransformationID_i) as stream[LibDIF_IntegrationAPI]
+{
+  Description: 'Execute the synchronization of the integration objects to model objects in the planning-dataset, i.e. trigger the datatransformation using the provided ID.'
+  TextBody:
+  [*
+    api := null( stream[LibDIF_IntegrationAPI] );
+    
+    // Get the planning-dataset's Integration-dataset.
+    integrationDataset := LibDIF_IntegrationDataset::GetDataset( this.GetDatasetName() );
+    if( not isnull( integrationDataset ) )
+    {
+      // Get the applicable DataTransformation.
+      dataTransformation := this.GetDataTransformation( dataTransformationID_i );
+    
+      // Retrieve the integration objects from the Integration-dataset and transform them to model objects,
+      // i.e. update existing objects and create new ones if applicable.
+      api := integrationDataset -> GetIntegrationObjects( dataTransformation ) -> ( integrationObjects )
+      {
+        // Prepare the data synchronization (typically by marking instances as SoftDeleted).
+        dataTransformation.PrepareSynchronization();
+    
+        // Prepare the data transformation (for example by putting the integration objects in the required order).
+        integrationObjects := dataTransformation.PrepareTransformFromIntegrationObjects( integrationObjects );
+    
+        LibDIF_Util::DebugInfo( "Transforming " + [String]integrationObjects.Size() + " integration objects" );
+        traverse( integrationObjects, Elements, integrationObject )
+        {
+          dataTransformation.TransformFromIntegrationObject( integrationObject );
+        }
+        
+        // Finalize the data synchronization (typically by deleting the instances that are still SoftDeleted).
+        // Must be executed as part of this code block, otherwise it will already be executed before the transformation is executed.
+        dataTransformation.FinalizeSynchronization();
+        
+        return this;
+      }
+    }
+    
+    return api;
+  *]
+}

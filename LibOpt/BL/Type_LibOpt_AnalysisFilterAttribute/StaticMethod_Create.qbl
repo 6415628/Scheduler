@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (LibOpt_Analysiss analysiss, LibOpt_Component component, String attribute_path, 
+  String attribute_name, String sense, Real value, 
+  Boolean auto_update) as owning LibOpt_AnalysisFilterAttributes
+{
+  TextBody:
+  [*
+    result := construct( LibOpt_AnalysisFilterAttributes );
+    
+    traverse( analysiss, Elements, analysis )
+    {
+      if( component.Run() <> analysis.Run() )
+      {
+        component := select( analysis, Run.Component, c,
+                             c.Name() = component.Name()
+                             and c.DefinitionName() = component.DefinitionName() );
+      }
+      filter := analysis.AnalysisFilter( relnew, LibOpt_AnalysisFilterAttribute,
+                                         Component := component,
+                                         AttributeName := attribute_name,
+                                         AttributePath := attribute_path,
+                                         Sense := sense,
+                                         Value := value );
+      result.Add( filter );
+      if( auto_update )
+      {
+        analysis.Analyze();
+      }
+    }
+                               
+    return & result;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

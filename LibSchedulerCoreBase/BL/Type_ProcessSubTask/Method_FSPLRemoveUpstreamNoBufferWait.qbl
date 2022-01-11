@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method FSPLRemoveUpstreamNoBufferWait (BatchSequenceElement oldbatchsequenceelement, ProcessSubTask batch_operation_current_process)
+{
+  TextBody:
+  [*
+    // Selects all the batchsequenceelement's upstream NoBufferWait subtasks 
+    oldbatchsequenceelement_upstream_nobufferwait := selectset( oldbatchsequenceelement.Operation_SC(), 
+                                                                FromOperationDependency.FromOperation.AsFSPLOperationInTask.NoBufferWaitSubTask, 
+                                                                oldbatch_up_nobufferwait_subtask, 
+                                                                true );
+    
+    traverse( oldbatchsequenceelement_upstream_nobufferwait, Elements, batch_operation_upstream_nobufferwait_subtask )
+    {
+      // Grabs the edge from current batch sequence element's batch's Process subtask to batch sequence element's upstream NoBufferWait subtask
+      edge_to_upstream_nobufferwait := batch_operation_current_process.PrecedenceNode().GetEdgeToNode( batch_operation_upstream_nobufferwait_subtask );
+    
+      if( not isnull( edge_to_upstream_nobufferwait ) )
+      {
+        // Remove the edge from current batch sequence element's batch's Process subtask to batch sequence element's upstream NoBufferWait subtask
+        PrecedenceEdge::Delete( edge_to_upstream_nobufferwait );
+      }
+    }
+  *]
+}

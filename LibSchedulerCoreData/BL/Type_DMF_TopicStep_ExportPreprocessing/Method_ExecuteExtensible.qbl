@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride ExecuteExtensible (Key datasetKey_i, DMF_Dataset dataset_i, DMF_RunStep runStep_i) #extension
+{
+  TextBody:
+  [*
+    // Resolve core dataset
+    return DMF_API::GetCoreDataset( dataset_i )->( core )
+    {
+      // Resolve planning dataset
+      coreDataset := core.astype( CDRoot );
+      return coreDataset.GetPlanningDataset()->( const planningDataset, coreDataset )
+      {
+        // Backup data
+        return coreDataset->Backup( planningDataset )
+        
+        ->|this->( this )
+        {
+          return super.ExecuteExtensible( datasetKey_i, dataset_i, runStep_i );
+        }
+      }
+    }
+  *]
+}

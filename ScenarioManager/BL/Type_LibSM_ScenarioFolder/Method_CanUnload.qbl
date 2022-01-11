@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CanUnload (Key selectedPlanningDatasetMDSID) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    // Root folder and recycle bin folder is not able to set offline
+    if( not feedback.CheckHard( not this.IsRecycleBin() ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_CanSetOffline_IsRecycleBin() );
+    }
+    
+    if( not feedback.CheckHard( not this.IsRootFolder() ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_CanSetOffline_IsRootFolder() );
+    }
+    
+    // Scenario with Memory-only storage type is not able to set offline
+    if( not feedback.CheckHard( this.HasStorageScenario() ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_CanSetOffline_NotStorageScenario( this.Name() ) );
+    }
+    
+    // Check all scenario children is unloaded
+    if( not feedback.CheckHard( not this.IsAllStorageChildrenOffline() ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_CanSetOffline_AllStorageScenariosAreOffline() );
+    }
+    
+    if( not feedback.CheckHard( not this.IsDeleted() ) )
+    {
+      feedback.AddHard( Translations::LibSM_ScenarioFolder_CanSetOffline_IsDeleted() );
+    }
+    
+    return feedback.IsAllowed()
+       and this.CanUnloadCustom( selectedPlanningDatasetMDSID );
+  *]
+}

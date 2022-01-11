@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test030_IteratorProgress_Progress (LibOpt_TestDataset dataset)
+{
+  Description: 'Check that the iterator.Progress() does not throw any errors.'
+  TextBody:
+  [*
+    // Run randomized test
+    seed := Number::Random();
+    Real::Randomize( seed );
+    
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    iterator := opt.GenerateIterator( run, 'Iterator' );
+    
+    void->()
+    {
+      prog := iterator.Progress();
+      return prog;
+    }->Exception()->( e )
+    {
+      this.Run().RegisterFailure( 'Exception caught with seed ' + [String] seed + ': ' + e.Message() );
+    };
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

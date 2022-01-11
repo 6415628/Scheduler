@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedDemoDataPlannedFulfillment (CDIntegration cdintegration)
+{
+  Description: 'Restore imported demo data planned fulfillment core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedDemoDataPlannedFulfillment
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedDemoDataPlannedFulfillment ), cdddpf )
+    {
+      importedDemoDataPlannedFulfillment := schedule.ImportedDemoDataPlannedFulfillment( relnew, 
+                                                                                         DemandID := cdddpf.DemandID(),
+                                                                                         SupplyID := cdddpf.SupplyID()
+                                                                                       );
+      CopyCorresponding::CopyFrom( cdddpf ).CopyTo( importedDemoDataPlannedFulfillment );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

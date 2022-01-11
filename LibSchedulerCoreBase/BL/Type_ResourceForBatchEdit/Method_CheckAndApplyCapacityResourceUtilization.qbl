@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckAndApplyCapacityResourceUtilization (Resource_SC resource, Resource_SC sourceresource)
+{
+  TextBody:
+  [*
+    // wkn1 Jun-1-2017 (created)
+    if( this.ApplyCapacityResourceUtilization() )
+    {
+      resource.UtilizationFactor( sourceresource.UtilizationFactor() );
+      // Check if there exists a set of related capacity resources, then we need to update them
+      capacityresourceset := selectset( resource,
+                                        ResourceGroup_SC.CapacityResourceGroup.CapacityResource,
+                                        cr,
+                                        cr.Name() = resource.CapacityResourceName() );
+    
+      traverse( capacityresourceset, Elements, capacityresource )
+      {
+        capacityresource.UtilizationFactor( resource.UtilizationFactor() );   // set UtilizationFactor using helper attribute on Resource_SC
+        
+        // James Kwapien QP#7644 We need to set the utilization factor of all other associated Resource_SCs 
+        // to match the updated CapacityResource utilization factor for least surprise for user
+        // as user interacts directly with Resource_SC.UtilizationFactor() as opposed to CapacityResource attribute
+        related_resources := selectset( capacityresource,
+                                        Resource_SC,
+                                        resources,
+                                        resources <> resource );
+    
+        traverse( related_resources, Elements, related_resource )
+        {
+          related_resource.UtilizationFactor( capacityresource.UtilizationFactor() );
+        }
+      }
+    }
+  *]
+}

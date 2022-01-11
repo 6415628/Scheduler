@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (SuboptimizerMPPTAssignment owner, LibOpt_Task task, SettingsProgramPTAssignment settings) as TransientDataSuboptimizerPTAssignment
+{
+  Description:
+  [*
+    Creates and populates the whole owned object tree of this TransientData, i.e. shadow objects of each operation, operation group and buckets. 
+    Note that no propagation is performed explicitly. Since the owned objects contain declarative data, it is likely desired that propagation be performend after this creation.
+  *]
+  TextBody:
+  [*
+    object := owner.TransientData( relnew, 
+                                   TransientDataSuboptimizerPTAssignment,
+                                   Task := task,
+                                   KeyComponent := owner.Key(),
+                                   KeyTask := task.Key() );
+    
+    
+    //Create operation shadow objects
+    traverse( task.Scope().ScopeElements(), Elements.astype( ScopeElementOperation ), seop )
+    {
+      seor := seop.OnRunOrCreate( task.Run() );
+      object.CreateShadow( seor );
+    }
+    
+    //Create buckets
+    object.CreateBuckets( task, settings );
+    
+    //Create OperationGroups
+    object.CreateOperationGroups( task, settings );
+    
+    //Assign planned operations to buckets.
+    object.AssignPlannedOperationsToBuckets( task );
+    
+    return object;
+  *]
+}

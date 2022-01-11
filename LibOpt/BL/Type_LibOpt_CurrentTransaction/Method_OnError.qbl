@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnError (QuillError e)
+{
+  Description:
+  [*
+    This method is called from the `onerror` part of a `try{...}onerror{...}onfailure{...}` block. 
+    We are no longer in a safe `try{...}` block, so `EndSafeTransaction` resets the `TransactionGUID` attribute. This ensures that the `IsSafe` method will return `false` when it is called.
+    This method also calls the `HandleQuillErrorFromOnError` method. The `HandleQuillErrorFromOnError` method eventually throws an error.
+    However, before the error is thrown, many objects are serialized. This ensures, for example, that we do not lose the `LibOpt_Snapshots` that were created in the current transaction.
+  *]
+  TextBody:
+  [*
+    // evr3 Jul-28-2020 (created)
+    this.EndSafeTransaction();
+    this.HandleQuillErrorFromOnError( e );
+  *]
+}

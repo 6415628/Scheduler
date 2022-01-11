@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateAndPlanAnOperation (Schedule schedule) as Operation_SC
+{
+  Description: 'Create and plan an operation of planned order.'
+  TextBody:
+  [*
+    planUnit := select( schedule, PlanUnit_SC, planUnit, true );
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'testResource' );
+    operation := UTFMockObjectFactory::CreateOperation( planUnit );
+    
+    resource.GenericPlanLastUTF( operation );
+    
+    // Propagate Operation_SC.IsPlanned value which will be used in precon check.
+    Transaction::Transaction().Propagate( attribute( Operation_SC, IsPlanned ) );
+    
+    return operation;
+  *]
+}

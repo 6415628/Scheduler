@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_StartScriptExecution () id:Method_LibPTF_pnlTestRunner_PTF_StartScriptExecution
+{
+  #keys: '[102890.0.1865517405]'
+  Body:
+  [*
+    // Serves as the entry point for script execution
+    user              := ApplicationScope.Session().CurrentUser().ShortName();
+    project           := ApplicationScope.Project().Name();
+    fullpath          := this.PTF_GetScriptPath() + user + "_" + project + LibPTF::FileExtRunningScript();
+    
+    /*
+    // commented for now
+    // When the "ptf" cmdline arg is added by R&D, then we can use logic below
+    customCmdArgumentValue := CommandLine::Instance().StringArgument( "custom" );
+    
+    if( customCmdArgumentValue <> "" )
+    {
+      scripts := OS::ScanDirectory( this.PTF_GetScriptPath(), ".Qrunscript" );
+    
+      if( scripts.Size() = 0 )
+      {
+        MessageBox::Warning( ApplicationDemandPlanner, "There is no file with extension '.Qrunscript' in path " + this.PTF_GetScriptPath(), "&OK" );
+      }
+      else
+      {
+        fullpath := scripts.Element( 0 );
+      }
+    }
+    */
+    
+    isfile := OS::IsFile( fullpath );
+    
+    if( isfile )
+    {
+      file := OSFile::Construct();
+      file.Open( fullpath, "Read", true );
+      scriptText := file.ReadTextToEnd();
+      file.Close();
+    
+      LibPTF_pnlTestRunner.PTF_ParseScript( scriptText );
+    
+      // Create start and end client log files with start client datetime
+      this.PTF_WriteLogForStartEndClient( false );
+    
+      // Create empty action log files
+      filename := vhResultLogPath.Value()
+                  + ApplicationScope.Session().CurrentUser().ShortName()
+                  + '_' + [String]ApplicationScope.Session().ClientId() + LibPTF::FileExtTempResult();
+    
+      fileactionlog := OSFile::Construct();
+      fileactionlog.Open( filename, "Write", true );
+      fileactionlog.Close();
+    
+      this.PTF_GUITimerStart();
+    }
+  *]
+}

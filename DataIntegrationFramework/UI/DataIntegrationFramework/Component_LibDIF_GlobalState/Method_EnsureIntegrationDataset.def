@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method EnsureIntegrationDataset () as Boolean id:Method_LibDIF_GlobalState_EnsureIntegrationDataset
+{
+  #keys: '[146730.0.571965369]'
+  Body:
+  [*
+    // Make sure that an Integration-dataset exists for the currently selected planning-dataset.
+    // (EnsureDataset modifies the name, if applicable)
+    success := false;
+    
+    api := this.GetIntegrationAPI();
+    if( not isnull( api ) )
+    {
+      // Use the API-method to make sure that the dataset exists.
+      api.GetIntegrationDataset();
+    
+      // Select the Integration-datatset.
+      this.SelectIntegrationDatasetIfExists()
+    
+      // See if the dataset is selected in the Client.
+      if( isnull( this.GetIntegrationDataset() ) )
+      {
+        // Try again, that usually works...
+        this.SelectIntegrationDatasetIfExists();
+    
+        if( isnull( this.GetIntegrationDataset() ) )
+        {
+          datasetName := LibDIF_IntegrationDataset::GetFullName( api.GetDatasetName() );
+          LibDIF_Util::Warning( "LibDIF_frmStaging.EnsureIntegrationDataset() : dataset '" + datasetName + "' of datasetkind '" + LibDIF_IntegrationDataset::DATASETKIND() + "' could not be selected." );
+        }
+      }
+    
+      success := not isnull( this.GetIntegrationDataset() );
+    }
+    
+    return success;
+  *]
+}

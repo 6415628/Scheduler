@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method StartIteration (LibOpt_Task task, LibOpt_TaskContextIterator context, LibOpt_Link link, 
+  LibOpt_Scope scope) as stream[JSON]
+{
+  Description: 'Start a new iteration by calling the next component correctly.'
+  TextBody:
+  [*
+    result := stream[JSON]::Success();
+    
+    reactive_calls := LibOpt_CurrentTransaction::GetSpawnedReactiveCalls();
+    time := OS::PrecisionCounter();
+    continue := this.Continue( task, link, scope );
+    if( this.ForceInOneTransaction() or this.Run().InOneTransaction() or reactive_calls = LibOpt_CurrentTransaction::GetSpawnedReactiveCalls() )
+    {
+      context.NrOfIterations( context.NrOfIterations() + 1 );
+      
+      if( reactive_calls <> LibOpt_CurrentTransaction::GetSpawnedReactiveCalls() )
+      {
+        LibOpt_SnapshotWarning::Throw( task,
+                                       Translations::LibOpt_Iterator_NotInOneTransaction( this.Name(), LibOpt_CurrentTransaction::GetSpawnedReactiveCallNames( time ) ),
+                                       Translations::LibOpt_Iterator_NotInOneTransaction_Solution() );
+      }
+    }
+    else
+    {
+      finish := continue->|
+                this->Repeat( task, context );
+      result := continue->Merge( finish );
+      context.NrOfSubtasks( context.NrOfSubtasks() + 1 );
+    }
+    
+    return result;
+  *]
+}

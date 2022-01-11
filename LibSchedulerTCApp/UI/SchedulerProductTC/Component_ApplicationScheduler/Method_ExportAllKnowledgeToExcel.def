@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExportAllKnowledgeToExcel () id:Method_ApplicationScheduler_ExportAllKnowledgeToExcel
+{
+  #keys: '[139424.1.1493975575]'
+  Body:
+  [*
+    // Exports all knowledge bases to excel
+    
+    componentmds := ComponentMDS::Create( Application );
+    componentMDSKind := select( componentmds, ComponentMDSKinds, kind, kind.Kind() = typeof( Schedule ).Name() );
+    mdsinstance := select( componentMDSKind, ComponentMDSInstances, m,
+                             m.IsLoaded(),
+                             m.MDSID().Equals( Schedule.MDSSchedule().MDSID() ) );
+                             
+    editor := CKBEditor::Create();
+    mdshandle := mdsinstance.GetMDSHandle();
+    kbinfos     := editor.GetMDSKBs( mdshandle );
+    
+    // Get Data directory
+    folderPath := Schedule.GetDatasetDependentDirectory();
+    
+    traverse( kbinfos, Elements, kbInfo, kbInfo.KBFullID().KBID().Name() <> Constants::GetCalendarsKnowledgeBaseName()
+                                         and kbInfo.KBFullID().KBID().Name() <> Constants::GetUTFKnowledgeBaseName() )
+    {
+      fileName := kbInfo.KBFullID().KBID().Name().Concat( Constants::Excel_XLSX() );
+      
+      ckbhandle := editor.LoadMDSKB( mdsinstance.GetMDSHandle(), kbInfo.KBFullID().KBID() );
+      data := XLS::SaveTableGroupToBinaryData( ckbhandle.CKB().GetTables(), true );
+      
+      Schedule.SetServerFileData( folderPath, fileName, data.AsBinaryValue() );
+      
+    }
+  *]
+}

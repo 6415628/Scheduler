@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod PlanRelatedOperationsBefore (Operation_SC target_operation, Resource_SC target_resource, Task_SC element, 
+  Boolean isplanlast, Boolean op_added_to_batchtask)
+{
+  Description: 'Do upstream and downstream automated planning for the target operation'
+  TextBody:
+  [*
+    // Janer Feb-28-2017 (created)
+    // The logic goes like this:
+    // a. If the target_operation is replanned on the same resource, do nothing. FSPL will kicks in to fix any CBL error.
+    // b. If the target_operation is replanned on a different resource and if the related operation is planned on an allowed resource, do nothing.
+    // c. If the target_operation is replanned on a different resource and if the related operation is planned on a disallowed resource, 
+    //    plan the related operation to the allowed resource
+    // d. If the target_operation is not planned, plan the related operation to the allowed resource.
+    // e. If an operation is added to an existing batch task, plan the related operation to the allowed resource.
+    
+    is_replan := not isnull( target_operation.Task_SC() ); //check whether this is a replanning case
+    
+    if( not is_replan or ( is_replan and target_operation.Task_SC().Resource_SC() <> target_resource ) or op_added_to_batchtask )
+    {
+      //Proceed only when the target_operation is not replanned or is replanned on a different resource
+      Schedule::PlanRelatedOperationsBeforeUpstream( target_operation, target_resource, element, isplanlast );
+      Schedule::PlanRelatedOperationsBeforeDownstream( target_operation, target_resource, element, isplanlast );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: SCListCampaigns
+Response OnDropEmpty (structured[Operation_SC] information, SingleResourceBase resource) id:Response_SCListCampaigns_OnDropEmpty_1
+{
+  #keys: '[107652.0.1040127902]'
+  Body:
+  [*
+    // OnDrop structured[Operation] --> null(CampaignTask) on SingleResourceBase
+    
+    resource.PlanLast( information );
+  *]
+  DefinitionID => /SCListCampaigns/Responsedef_SCListCampaigns_OnDropEmpty
+  Precondition:
+  [*
+    isallowedhard := true;
+    ctrlkey  := dropaction.IsControl();
+    ctrlshiftkey := dropaction.IsControlShift();
+    
+    return ApplicationScheduler.AllowedScheduling( resource,
+                                                   information,
+                                                   ctrlkey,
+                                                   ctrlshiftkey,
+                                                   resource.Last(),
+                                                   null( Task_SC ),
+                                                   Operation_SC::GetSelectedObjects( information ),
+                                                   feedback,
+                                                   isallowedhard );
+  *]
+  UserRequiresReadWrite: true
+}

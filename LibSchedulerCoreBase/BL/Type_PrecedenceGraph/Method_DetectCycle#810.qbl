@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method DetectCycle (output Boolean iscyclic, output Strings cyclictasks, Task_SC task)
+{
+  Description: 'Determines if the precedence graph contains cycle. the start node will only contains the input task'
+  TextBody:
+  [*
+    start := minselect( task, SubTask.PrecedenceNode, node, true, node.SubTask().SequenceNr() );
+    cyclicnodes := construct( PrecedenceNodes );
+    onstack := construct( PrecedenceNodes );
+    depth := -1;
+    this.DepthFirstSearch( null( PrecedenceNode ), start, onstack, depth, cyclicnodes );
+    
+    iscyclic := cyclicnodes.Size() > 0;
+    
+    if( iscyclic )
+    {
+      this.HandleResult( cyclicnodes, cyclictasks );
+    }
+    // Unmark the graph nodes for next detect cycle execution.
+    this.UnmarkNodes();
+  *]
+}

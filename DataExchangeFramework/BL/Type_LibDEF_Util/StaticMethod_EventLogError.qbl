@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod EventLogError (LibDEF_IntegrationEvent event_i, String title_i, String errorMessage_i)
+{
+  Description: 'Log error in IntegrationEvent if an IntegrationEvent is found, else log in logfile.'
+  TextBody:
+  [*
+    if( not isnull( event_i ) )
+    {
+      event_i.LogError( title_i, errorMessage_i );
+    
+      // Checks if we are allowed to export "incomplete" IntegrationEvents into file to be re-created again later.
+      if( LibDEF_Util::GetSettingValueUseFilesForIntegrationEventsErrorLog() )
+      {
+        LibDEF_IntegrationEvent::ExportToTempDirectory( event_i.DataBroker() );
+      }
+    }
+    
+    LibDEF_Util::LogError( errorMessage_i );
+  *]
+}

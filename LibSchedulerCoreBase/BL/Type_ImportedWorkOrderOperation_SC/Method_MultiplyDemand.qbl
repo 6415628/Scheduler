@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method MultiplyDemand (ImportedWorkOrderDemands rows)
+{
+  Description: 'Synchronization method to be used in data multiplication of work order demands for multiplied work operations.'
+  TextBody:
+  [*
+    // woi1 Apr-28-2017 (created)
+    // ONLY FOR DEVELOPMENT PURPOSES ONLY
+    // ONLY USED WITH DATA MULTIPLIER ONLY
+    traverse( rows, Elements, row, row.IsValidDataHard() )
+    {
+      id := DataMultiplier::GetDemandSupplyId( this.WorkOrderId(), row.Id() )
+      multiplied_wod := ImportedWorkOrderDemand::FindImportedWorkOrderDemand_SC( id );
+      
+      if( isnull( multiplied_wod ) )
+      {
+        multiplied_wod := ImportedExternalWorkOrderDemand::Create( this.Schedule(), id );
+      }
+      
+      multiplied_wod.Update( row );
+    }
+  *]
+}

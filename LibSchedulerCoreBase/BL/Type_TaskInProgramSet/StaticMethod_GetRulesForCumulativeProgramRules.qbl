@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetRulesForCumulativeProgramRules (ProgramTypeConfiguration programtypeconfiguration, Operation_SC operation) declarative remote as owning Rules
+{
+  Description: 'Get all program /phase cumulative rules related based on input program type configuration and operation'
+  TextBody:
+  [*
+    // Get all program /phase cumulative rules related based on input program type configuration and operation
+    programrules := selectset( programtypeconfiguration, RuleScopeInProgramType.Rule, rule,
+                                rule.RuleSubType().IsCumulativeValueNeeded()
+                                and rule.IsEnabled()
+                                and ( isnull( operation ) // In case program change task does not have operation
+                                      or operation.CheckIsRuleApplicable( rule, 
+                                                                          guard( operation.GetPreviousOperationForSequencingRuleCheck(), null( Operation_SC ) ), 
+                                                                          null( Characteristic ) ) ) ) ;
+    
+    phaserules := selectset( programtypeconfiguration, ProgramPhaseConfiguration.RuleScopeInProgramPhase.Rule, rule,
+                              rule.RuleSubType().IsCumulativeValueNeeded()
+                              and rule.IsEnabled()
+                              and ( isnull( operation ) // In case program change task does not have operation
+                                    or operation.CheckIsRuleApplicable( rule, 
+                                                                        guard( operation.GetPreviousOperationForSequencingRuleCheck(), null( Operation_SC ) ), 
+                                                                        null( Characteristic ) ) ) ) ;
+    
+    rules := programrules.Union( phaserules );
+    
+    return &rules;
+  *]
+}

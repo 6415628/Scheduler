@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreatePlannedProgramChangeImportedFeedbackData (Schedule schedule, Boolean isimportrelationbetweenfeedbacktaskandprogram)
+{
+  Description: 'Create planned program change imported feedback test data'
+  TextBody:
+  [*
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, res, true );
+    programchange := select( schedule, ProgramChange, pc, true );
+    
+    // Create program change feedback
+    programchangestart := schedule.Time() - Duration::Hours( 6 );
+    externalstoppageid := programchange.ProgramChangeID() + '_Ext';
+    this.CreateImportedFeedbackProgramChangeTask( schedule,
+                                                  programchange.ProgramChangeID(),
+                                                  externalstoppageid,
+                                                  resource,
+                                                  programchangestart );
+    
+    traverse( programchange, ProgramType, pt )
+    {
+      externalprogramid := pt.ScheduledProgramID() + '_Ext';
+      programtypeconfig := pt.ProgramTypeConfiguration();
+      taskstart := schedule.Time() - Duration::Hours( 5 );
+      
+      this.CreateImportedFeedbackProgram( schedule,
+                                          externalprogramid,
+                                          programchange.ProgramChangeID(),
+                                          externalstoppageid,
+                                          programtypeconfig,
+                                          resource,
+                                          taskstart,
+                                          1,
+                                          5,
+                                          isimportrelationbetweenfeedbacktaskandprogram );                                         
+    }
+  *]
+}

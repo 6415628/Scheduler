@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#root
+#parent: #DomainModel
+Type LibOpt_BT_BTS
+{
+  #keys: '5[145136.0.90291890][145136.0.90291888][0.0.0][145136.0.90291889][145136.0.90291891]'
+  BaseType: Object
+  Description: 'Represent a single optimization run'
+  OnCreate:
+  [*
+    activemanualversion := select( this.BenchmarkTrackingDataset(), ManualVersion, mv, mv.IsActive() ); 
+    if( not isnull( activemanualversion ) )
+    {
+      this.ManualVersion( relset, activemanualversion );
+    }
+  *]
+  OnDelete:
+  [*
+    this.DeleteBackupFileIfExists();
+    
+    if( not isnull( this.ModelVersion() )
+        and this.ModelVersion().BTS( relsize ) = 1
+        and this.ModelVersion().RunSequenceElement( relsize ) = 0 )
+    {
+      this.ModelVersion().Delete();
+    }
+  *]
+  StructuredName: 'LibOpt_BT_BTSs'
+}

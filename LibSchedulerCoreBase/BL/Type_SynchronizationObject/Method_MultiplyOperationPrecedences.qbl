@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method MultiplyOperationPrecedences (Number multiplynr)
+{
+  Description: 'Multiplies the work order operation precedences.'
+  TextBody:
+  [*
+    // woi1 May-1-2017 (created)
+    traverse( this, Schedule.ImportedWorkOrderOperationPrecedence, row, row.IsValidDataHard() )
+    {
+      // get original from and to work order operations
+      from_imp_woo := row.AsFromImportedWOOP();
+      to_imp_woo := row.AsToImportedWOOP();
+      
+      for( i := 1; i < multiplynr; i ++ )
+      {
+        // look for equivalent multiplied work order operations
+        new_from_imp_woo := select( from_imp_woo, MultipliedOperations, new_wop, new_wop.MultiplyNr() = i );
+        new_to_imp_woo := select( to_imp_woo, MultipliedOperations, new_wop, new_wop.MultiplyNr() = i );
+        
+        // construct unique ID
+        id := new_from_imp_woo.WorkOrderId() + '-' + [String]new_from_imp_woo.SequenceNr()
+              + '-' + new_to_imp_woo.WorkOrderId() + '-' + [String]new_to_imp_woo.SequenceNr()
+              + '-' + [String]multiplynr
+        
+        new_imp_precedence := ImportedWorkOrderOperationPrecedence::FindImportedWorkOrderOperationPrecedence_SC( id );
+                                                                                                                    
+        if( isnull( new_imp_precedence ) )
+        {
+          new_imp_precedence := ImportedWorkOrderOperationPrecedence::Create( this.Schedule(), id, new_from_imp_woo, new_to_imp_woo );
+        }
+      }
+    }
+  *]
+}

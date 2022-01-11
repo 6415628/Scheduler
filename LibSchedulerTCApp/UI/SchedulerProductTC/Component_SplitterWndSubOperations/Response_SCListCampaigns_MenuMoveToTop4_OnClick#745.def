@@ -1,0 +1,58 @@
+Quintiq file version 2.0
+#parent: SCListCampaigns
+Response OnClick (structured[CampaignTask] selection) id:Response_SCListCampaigns_MenuMoveToTop4_OnClick
+{
+  #keys: '[11790.0.13005163]'
+  Body:
+  [*
+    // MoveToTop structured[CampaignTask]
+    CampaignTask::MoveCampaignTasksToTop( selection );
+  *]
+  DefinitionID => //FilteredList/Responsedef_FilteredList_Menu_OnClick
+  Initiator: 'MenuMoveToTop4'
+  Precondition:
+  [*
+    toptask := select( selection, Elements, element, isnull( element.PreviousCampaignTask() ) );
+    value   := isnull( toptask );
+    
+    if( not value )
+    {
+      feedback := Translations::SC_SelectionAlreadyAtFirstPosition( CampaignTask::GetIdentifier( toptask ));
+    }
+    else
+    {
+      isallowedhard   := true;
+      operations      := selectset( selection, Elements.OperationCampaign.Operation_SC, op, true );
+      resource        := selection.Element( 0 ).Resource_SC();
+      value           := Operation_SC::CanReplan( operations, false, feedback, isallowedhard );
+    
+      if( resource.istype( SingleResourceBase ) )
+      {
+        tasks := selectset( selection, Elements.OperationCampaign.Task_SC, t, true, true );
+        value := resource.astype( SingleResourceBase).AllowedScheduling( tasks, //structured[Task]
+                                                                     null( Task_SC ),//beforetask
+                                                                     resource.First(), //aftertask
+                                                                     false, //skipsoftcheck
+                                                                     false, //ctrlshiftkey
+                                                                     feedback,
+                                                                     isallowedhard ) and value;
+      }
+      else
+      {
+        batches := selectset( selection, Elements.OperationCampaign.Task_SC.astype( BatchTask ).Batch, batch, true, true );
+        value := resource.astype( BatchResource ).AllowedScheduling( batches,  //structured batches
+                                                                     null( Task_SC ), //beforetask
+                                                                     resource.First(), //aftertask
+                                                                     false, //skip soft check
+                                                                     feedback,
+                                                                     isallowedhard ) and value;
+      }
+    }
+    
+    feedback := Translations::SC_CannotBeMovedToTop( CampaignTask::GetSelectedObjects( selection ) )
+                + String::NewLine()
+                + feedback;
+    
+    return value;
+  *]
+}

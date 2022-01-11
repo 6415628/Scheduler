@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method Remove
+{
+  Description: "Removes the plan unit and it's operations, demands and supplies."
+  TextBody:
+  [*
+    // WOI1 Aug-11-2016 (created)
+    this.Unplan();
+    
+    traverse( this, Operation_SC, op )
+    {
+      op.RemoveItselfDemandAndSupplies();
+    }
+    
+    if( this.IsCreatedInScheduler() and this.GetHasExternalData() ) // update only if the work order is created in schedule and if the work order still exists / has relation to Order_SC
+    { 
+      // updates the order quantity
+      totalquantity := sum( this.Order_SC(), PlanUnit_SC, pu, pu <> this, pu.Quantity() );
+      this.UpdateOrder( totalquantity );
+    }
+    
+    // deletes itself
+    this.Delete();
+  *]
+}

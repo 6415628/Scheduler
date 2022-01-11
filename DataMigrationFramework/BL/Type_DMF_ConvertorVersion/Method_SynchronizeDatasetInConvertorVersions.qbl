@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeDatasetInConvertorVersions
+{
+  TextBody:
+  [*
+    allInstances := selectset( this, DatasetInConvertorVersion, e, true );
+    activeInstances := construct( DMF_DatasetInConvertorVersions );
+    
+    traverse( this, Topic_DELETED.TopicStep.DatasetType_DEPRECATED.Dataset, dt )
+    {
+      activeInstances.Add( DMF_DatasetInConvertorVersion::Create( this, dt ) );
+    }
+    
+    toBeDeleted := allInstances.Difference( activeInstances );
+    
+    DMF_DatasetInConvertorVersion::Delete( toBeDeleted );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

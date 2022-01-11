@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method CanLoad (Boolean isDatasetStoreEnabled) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    // Check loaded scenario 
+    if( not feedback.CheckHard( not this.IsLoaded() ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_General_IsLoaded() );
+    }
+    
+    // Check scenario is in the progress of loading 
+    if( not feedback.CheckHard( not this.IsLoadingInProgress() ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_CanSetAvailable_LoadingInProgress() );
+    }
+    
+    // Check datasetstore is not enabled when storage type of scenario is Cache, StandAlone and Hybrid 
+    if ( not feedback.CheckHard( not this.IsDatasetStoreStorage() or isDatasetStoreEnabled ) )
+    {
+      storageState := this.StorageState().ReplaceAll( LibSM_Util::GetStringStorageState(), "" );
+      feedback.AddHard( Translations::LibSM_Scenario_CanSetAvailable_DatasetStoreNotEnabled( this.Name(), storageState ) );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

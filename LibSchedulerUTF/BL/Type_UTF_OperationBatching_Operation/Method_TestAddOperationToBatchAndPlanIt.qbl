@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestAddOperationToBatchAndPlanIt (Schedule schedule)
+{
+  Description: 'Test the add operation to batch and plan it logic.'
+  TextBody:
+  [*
+    resource := select( schedule, ResourceGroup_SC.Resource_SC.astype( BatchResource ), resource, true );
+    operations := selectset( schedule, Operation_SC, operation, true );
+    
+    resource.CreateBatchAssignOperationsPlanBatch( operations, null( BatchTask ) );
+    
+    batch := select( schedule, Batch, batch, true );
+    
+    this.Run().AssertTrue( resource.Task_SC( relsize ) = 1
+                           and batch.BatchSequenceElement( relsize ) = 2, 'Test add operation to batch and plan it failed' );
+  *]
+}

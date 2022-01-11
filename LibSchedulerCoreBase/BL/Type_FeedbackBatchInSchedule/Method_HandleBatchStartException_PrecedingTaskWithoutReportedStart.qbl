@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleBatchStartException_PrecedingTaskWithoutReportedStart (Batch batch, DateTime start, Resource_SC resource, 
+  String remark, String practice)
+{
+  Description: 'Check exception for BatchStart feedback reported while one or more preceding batchtasks have not yet started'
+  TextBody:
+  [*
+    // jiex Sep-1-2016 (created)
+    // Check exception for BatchStart feedback reported while one or more preceding tasks have not yet started 
+    if( not isnull( resource ) and not isnull( batch ) )
+    {  
+      preceding_task := minselect( resource, Task_SC, task,     
+                                   task.SequenceNr() < batch.BatchTask().SequenceNr()
+                                   and not task.HasFeedbackTask(),
+                                   task.SequenceNr() );
+                                   
+      if( not isnull( preceding_task ) )
+      {
+        this.Exception_IsExecutedSequenceChanged( true );
+        this.Exception_PrecedingBatchID( preceding_task.TaskID() );
+        
+        this.UpdateFeedbackStart( start, resource.ResourceID(), Constants::StatusStart(), remark, practice );     
+      }
+    }
+  *]
+}

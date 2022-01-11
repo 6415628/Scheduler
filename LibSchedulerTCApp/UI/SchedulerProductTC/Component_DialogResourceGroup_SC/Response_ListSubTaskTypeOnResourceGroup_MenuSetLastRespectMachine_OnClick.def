@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: ListSubTaskTypeOnResourceGroup
+Response OnClick (shadow[SubTaskTypeOnResourceGroup] selection) id:Response_ListSubTaskTypeOnResourceGroup_MenuSetLastRespectMachine_OnClick
+{
+  #keys: '[129856.0.69801288]'
+  Body:
+  [*
+    // James Kwapien #7720 Set last respect machine subtask
+    // Reset previous last respect machine subtask
+    rg := Dialog.Data();
+    
+    sttorg := select( rg,
+                      SubTaskTypeOnResourceGroup,
+                      sttorg,
+                      sttorg.IsLastRespectMachine() = true );
+    
+    if( not isnull( sttorg ))
+    {
+      sttorg.IsLastRespectMachine( false );
+    }
+    
+    // Set new last respect machine subtask
+    selection.IsLastRespectMachine( true );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /ListSubTaskTypeOnResourceGroup/Responsedef_ListSubTaskTypeOnResourceGroup_Menu_OnClick
+  Initiator: 'MenuSetLastRespectMachine'
+  Precondition:
+  [*
+    return Dialog.SetLastRespectMachinePrecondition( selection, feedback );
+  *]
+}

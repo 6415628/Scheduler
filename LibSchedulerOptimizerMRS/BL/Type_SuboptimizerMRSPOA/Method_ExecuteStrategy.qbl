@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride ExecuteStrategy (POAAlgorithm poa) as stream[Void]
+{
+  TextBody:
+  [*
+    // mbr23, 2019-08-23 (overridden)
+    schedule := this.GetSchedule();
+    // By defining the POA strategy in a static method without any references to your model, it will be executed asynchronously.
+    
+    poatyped := poa.astype( SuboptimizerMRSPOA_POAOneResourceGroup );
+    
+    result := stream[Void]::Success();
+    
+    name_logfile := schedule.MDSSchedule().Name(); // logfile name as in legacy optimizer, mbr23, 2019-09-13
+    
+    if( this.InOneTransaction() )
+    {
+      SuboptimizerMRSPOA::Strategy( poatyped, this.Settings(), name_logfile );
+    }
+    else
+    {
+      result := poatyped->SuboptimizerMRSPOA::Strategy( this.Settings(), name_logfile );
+    }
+    
+    return result;
+  *]
+}

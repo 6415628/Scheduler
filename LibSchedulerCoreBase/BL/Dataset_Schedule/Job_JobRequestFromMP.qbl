@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Job JobRequestFromMP
+{
+  Description: 'Request data from MP.'
+  Priority: 'Default'
+  Text:
+  [*
+    systemGUID := guard( dataBroker_i.BootNode().GUID(), '' ); 
+    channelName := LibDEC_ChannelMP_Plan::CHANNEL_NAME();
+    setTypeName := Constants::DEF_MP_Plan();
+    
+    // 1. Get set created by MP, set should be created by exporting system
+    setTypeMeta := LibDEF_SetTypeMeta::FindSetTypeMeta( dataBroker_i, systemGUID, channelName, setTypeName );
+    set := maxselect( setTypeMeta, SetMeta, set, true, set.LastUpdated() ); // We grab the latest set, regardless of the name
+    
+    if( not isnull( set ) )
+    {
+      // 2. Request set data of MP_Plan to import plan from MP
+      dtd := this.DataTransformationDefinition();
+      dtd.RequestSetDataExternally( channelName, set.GUID() );
+    }
+    else
+    {
+      LibDEF_Util::LogError( "Unable to get the any Set from boot node. Please check if any Set exist." );
+    }
+  *]
+  JobArguments:
+  [
+    JobArgument dataBroker_i { MDSDefinition: LibDEF_DataBroker }
+  ]
+}

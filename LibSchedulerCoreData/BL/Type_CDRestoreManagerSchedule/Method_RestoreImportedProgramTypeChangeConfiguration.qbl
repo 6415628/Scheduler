@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedProgramTypeChangeConfiguration (CDIntegration cdintegration)
+{
+  Description: 'Restore imported program type change configuration core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedProgramTypeChangeConfiguration
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedProgramTypeChangeConfiguration ), cdptcc )
+    {
+      importedProgramTypeChangeConfiguration := schedule.ImportedProgramTypeChangeConfiguration( relnew, 
+                                                                                                 FromProgramDefinitionConfigurationID := cdptcc.FromProgramDefinitionConfigurationID(),
+                                                                                                 FromProgramSetConfigurationID := cdptcc.FromProgramSetConfigurationID(),
+                                                                                                 FromProgramTypeConfigurationID := cdptcc.FromProgramTypeConfigurationID(),
+                                                                                                 ToProgramDefinitionConfigurationID := cdptcc.ToProgramDefinitionConfigurationID(),
+                                                                                                 ToProgramSetConfigurationID := cdptcc.ToProgramSetConfigurationID(),
+                                                                                                 ToProgramTypeConfigurationID := cdptcc.ToProgramTypeConfigurationID()
+                                                                                               );
+      CopyCorresponding::CopyFrom( cdptcc ).CopyTo( importedProgramTypeChangeConfiguration );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test_065_SendJSONMessageWithIntermediateAndBreakpoint (LibOpt_TestDataset dataset)
+{
+  Description: 'Check whether a JSON message can be obtained outside of the run with a breakpoint.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    json := JSON::Object();
+    count := opt.ComponentCounter( run, 'Counter' );
+    message := opt.ComponentSendMessage( run, 'Message', json.Build() );
+    
+    component_position := select( message, ComponentPosition, bp, bp.Name() = LibOpt_Component::ComponentPosition_Continue() );
+    component_position.SetBreakpoint();
+    
+    count.To( message );
+    
+    this.NoException( run.Start()->Group( Duration::Seconds( 1 ) )->( jsons )
+    {
+      this.Run().AssertEqual( 1, jsons.Size(), 'Incorrect amount of JSONs received' );
+      run.Stop();
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

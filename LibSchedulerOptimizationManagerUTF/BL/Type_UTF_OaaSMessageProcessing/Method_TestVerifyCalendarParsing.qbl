@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestVerifyCalendarParsing (Schedule schedule)
+{
+  Description: 'Simulate test of parsing calendars data for given initialization request.'
+  TextBody:
+  [*
+    // -- Closed Days --
+    closedDayJSON := this.GetJSONInputData_ClosedDaysArray().Build().Get( 0 );
+    closedDayStart := ImportedClosedPeriod::GetStart( closedDayJSON );
+    closedDayEnd := ImportedClosedPeriod::GetEnd( closedDayJSON );
+    closedDay := select( schedule, ImportedClosedPeriod, importedClosedPeriod, 
+                         importedClosedPeriod.Start() = closedDayStart and importedClosedPeriod.End() = closedDayEnd );
+    
+    this.Run().AssertTrue( not isnull( closedDay ) );
+    
+    // -- Shift Pattern --
+    shiftPatternJSON := this.GetJSONInputData_ShiftPatternsArray().Build().Get( 0 );
+    shiftPatternID := ImportedShiftPattern::GetID( shiftPatternJSON );
+    shiftPattern := select( schedule, ImportedShiftPattern, importedShiftPattern, importedShiftPattern.ID() = shiftPatternID );
+    
+    this.Run().AssertTrue( not isnull( shiftPattern ) );
+    
+    // -- Period --
+    periodJSON := this.GetJSONInputData_PeriodsArray().Build().Get( 0 );
+    startDay := ImportedTimePeriod::GetStartDay( periodJSON );
+    startTime := ImportedTimePeriod::GetStartTime( periodJSON );
+    endDay := ImportedTimePeriod::GetEndDay( periodJSON );
+    endTime := ImportedTimePeriod::GetEndTime( periodJSON );
+    
+    period := select( schedule, ImportedTimePeriod, importedTimePeriod, 
+                      importedTimePeriod.StartDay() = startDay
+                      and importedTimePeriod.StartTime() = startTime
+                      and importedTimePeriod.EndDay() = endDay
+                      and importedTimePeriod.EndTime() = endTime );
+    
+    this.Run().AssertTrue( not isnull( period ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

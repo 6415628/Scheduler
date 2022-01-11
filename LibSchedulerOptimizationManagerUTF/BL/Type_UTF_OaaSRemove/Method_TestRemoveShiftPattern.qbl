@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestRemoveShiftPattern (Schedule schedule)
+{
+  Description: 'Test removing shift pattern based on mock 3DSpace JSON data.'
+  TextBody:
+  [*
+    shiftPatternsArray := this.GetJSONRemove_ShiftPatternsArray().Build();
+    
+    for( i := 0; i < shiftPatternsArray.Size(); i++ )
+    {
+      shiftPatternID := shiftPatternsArray.Get( i ).GetString();
+      
+      isShiftPatternRemoved := not exists( schedule, 
+                                           CalendarRegistry.Calendar.astype( ShiftPattern ), 
+                                           shiftPattern,
+                                           shiftPattern.CalendarID() = shiftPatternID );
+      
+      this.Run().AssertTrue( isShiftPatternRemoved,
+                             Translations::LibSchedulerOptMgrUTF_ShiftPattern_NotRemoved( shiftPatternID ) );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

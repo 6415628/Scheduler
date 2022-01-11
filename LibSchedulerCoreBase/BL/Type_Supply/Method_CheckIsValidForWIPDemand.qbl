@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsValidForWIPDemand (Demand demand, Boolean isrequirefeedback, output String feedback_o) const declarative remote as Boolean
+{
+  Description: 'Checks if this supply can be reserved for this WIP demand.'
+  TextBody:
+  [*
+    value := guard( not demand.istype( MaterialPlannedDemand ), true ) // No need to check if demand is not MaterialPlannedDemand
+             or guard( not demand.IsWIPDemand(), true ) // No need to check if demand is NOT wip demand
+             or guard( this.PlanUnit_SC() <> demand.PlanUnit_SC(), true ); // Disallow supply in same planunit 
+    
+    if( isrequirefeedback and not value )
+    {
+      Utility_SC::Concat( feedback_o, Translations::SC_Supply_SamePlanUnitWithWIPDemand( guard( demand.DemandID(), '' ) ) );  
+    }
+    
+    return value;
+  *]
+}

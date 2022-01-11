@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method PTF_ProfilerStop (String filename) as Boolean id:Method_LibPTF_pnlTestRunner_PTF_ProfilerStop
+{
+  #keys: '[105690.0.906478879]'
+  Body:
+  [*
+    // Stop the profiler
+    profiler := Domain.ExecuteMonitor();
+    
+    if( not isnull( profiler ) )
+    {
+      if( profiler.Active() )
+      {
+        profiler.Active( false );
+    
+        // Determine the filename to be used. If no filename is provided "profile.txt" is used.
+        filename := vhResultLogPath.Value() + ifexpr( filename <> "", filename, "profile.txt" );
+    
+        profiler.Export( filename );
+    
+        debuginfo( "PTF: Profiler stopped, file '" + filename + "' generated" );
+      }
+    }
+    else
+    {
+      debuginfo( "PTF_ProfilerStop: Profiler not found" );
+    }
+    
+    // Return true in all cases.
+    return true;
+  *]
+}

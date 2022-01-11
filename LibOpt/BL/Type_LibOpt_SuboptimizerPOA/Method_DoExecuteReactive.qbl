@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride DoExecuteReactive (stream[Algorithm] algorithm, LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    // Start measuring the framework-solve duration at POA's entry point in the LibOpt framework.
+    poa := algorithm->( algorithm )
+    {
+      poa := algorithm.astype( POAAlgorithm );
+      LibOpt_AlgorithmStopwatch::Start( poa, LibOpt_SnapshotAlgorithm::FrameworkSolve() );
+    
+      return poa;
+    }
+    
+    execute := this.ExecuteStrategyReactive( poa )
+    
+    result := execute->|poa->LibOpt_SuboptimizerPOA::FinalizePOA()
+                     ->|this->DoHandleResultCall( poa, task );
+    
+    return result;
+  *]
+}

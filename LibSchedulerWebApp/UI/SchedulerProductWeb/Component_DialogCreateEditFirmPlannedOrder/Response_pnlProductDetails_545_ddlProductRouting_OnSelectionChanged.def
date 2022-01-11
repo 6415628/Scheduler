@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: pnlProductDetails_545/ddlProductRouting
+Response OnSelectionChanged (Routing selection) id:Response_pnlProductDetails_545_ddlProductRouting_OnSelectionChanged
+{
+  #keys: '[143768.0.1681529478]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebDropDownList_OnSelectionChanged'
+  GroupServerCalls: true
+  QuillAction
+  {
+    Body:
+    [*
+      // Disable number of lots input if lot size = 0, and set it to 0.
+      npNumberOfLots.Enabled( selection.LotSize() <> 0, '' )
+      npNumberOfLots.Number( ifexpr( npNumberOfLots.Enabled(), npNumberOfLots.Number(), 0 ) );
+      
+      // Reset quantity and nr of lots.
+      if( isnull( DataHolderWorkOrder.Data() ) )
+      {
+        DialogCreateEditInternalWorkOrder.ResetQuantityAndNrOfLots( selection );
+      }
+      
+      DialogCreateEditInternalWorkOrder.DoPreconditionCheckOnRouting();
+      
+      // Update nr of lots base on new lot size
+      DialogCreateEditInternalWorkOrder.UpdateNrOfLotsBaseOnQuantityEntered();
+    *]
+  }
+}

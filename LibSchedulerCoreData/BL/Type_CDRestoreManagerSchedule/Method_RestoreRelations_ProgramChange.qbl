@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_ProgramChange (CDSchedule cdschedule)
+{
+  Description: 'Restore relations for program change core data to planning object'
+  TextBody:
+  [*
+    // Restore ProgramChange
+    traverse( cdschedule, CDEntity.astype( CDProgramChange ), cdProgramChange )
+    {
+      programChange := ProgramChange::FindProgramChange( cdProgramChange.ProgramChangeID() );
+      
+      if( not isnull( programChange ) )
+      {
+        cdProgramChangeInTypes := selectset( cdschedule, CDEntity.astype( CDProgramChangeInType ), cdpct, cdpct.ProgramChangeID() = programChange.ProgramChangeID() );
+      
+        traverse( cdProgramChangeInTypes, Elements, cdpct )
+        {
+          toprogramtypeconfiguration := ProgramTypeConfiguration::FindProgramTypeConfiguration( cdpct.ToProgramDefinitionConfigurationID(),
+                                                                                                cdpct.ToProgramSetConfigurationID(),
+                                                                                                cdpct.ToProgramTypeConfigurationID()
+                                                                                              );
+          programChangeInType := select( programChange, ProgramChangeInType, pcit, isnull( pcit.ToProgramTypeConfiguration() ) );
+          
+          if( not isnull( programChangeInType ) )
+          {
+            programChangeInType.ToProgramTypeConfiguration( relset, toprogramtypeconfiguration ); 
+          }                          
+        }
+      }    
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

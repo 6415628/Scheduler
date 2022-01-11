@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetDurationValuesOnComponentLevel () const declarative as owning Reals
+{
+  Description: 'Get the set of duration-related values to be used in the `CalcValuesAsRealVector` function of this `LibOpt_StatisticTimeTotal` with `IsComponent` = `true`.'
+  TextBody:
+  [*
+    values := construct( Reals );
+    
+    componentsnapshots := selectsortedset( this, Component.SnapshotComponent, snapshot,
+                                           // FILTER
+                                           true,
+                                           // SORTING
+                                           snapshot.SequenceNr()
+                                         );
+    
+    if( this.IsAbsolute() )
+    {
+      values := selectvalues( componentsnapshots, Elements, snapshot,
+                              // FILTER
+                              true,
+                              // VALUE
+                              snapshot.Duration().MinutesAsReal() * 60
+                            );
+    }
+    else
+    {
+      values := selectvalues( componentsnapshots, Elements, snapshot,
+                              // FILTER
+                              true,
+                              // VALUE
+                              this.DivPercentage( snapshot.Duration(),
+                                                  average( snapshot, IterationPart.IterationPartNM.Iteration, iteration,
+                                                           true,
+                                                           iteration.Duration()
+                                                         )
+                                                )
+                            );
+    }
+    
+    return &values;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

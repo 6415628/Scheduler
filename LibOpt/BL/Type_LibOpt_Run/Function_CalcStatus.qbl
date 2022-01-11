@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcStatus
+{
+  TextBody:
+  [*
+    value := LibOpt_RunStatus::Loaded();
+    
+    // Case: the run has been aborted because the dataset was copied during the run
+    if( this.IsAborted() 
+        and this.MDSID() <> this.MDSIDRun() )
+    {
+      value := LibOpt_RunStatus::AbortedCopiedDataset();
+    }
+    // Case: the run is aborted
+    else if( this.IsAborted() )
+    {
+      value := LibOpt_RunStatus::Aborted();
+    }
+    // Case: the run is failed
+    else if( this.IsFailed() )
+    {
+      value := LibOpt_RunStatus::Failed();
+    }
+    // Case: the run is paused due to a breakpoint
+    else if( not isnull( this.BreakpointEvent() ) )
+    {
+      value := LibOpt_RunStatus::Paused();
+    }
+    // Case: the run is finished, as there is a finished time and it is not marked as aborted or failed.
+    else if( not this.FinishedOn().IsMinInfinity() )
+    {
+      value := LibOpt_RunStatus::Finished();
+    }
+    // Case: the run is optimizing, as it is started and not aborted, paused or finished.
+    else if( not this.StartedOn().IsMinInfinity() )
+    {
+      value := LibOpt_RunStatus::Optimizing();
+    }
+    
+    this.Status( value );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

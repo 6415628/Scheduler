@@ -1,0 +1,82 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsEditResourceValid (output String feedback_o) as Boolean id:Method_DialogResource_CheckIsEditResourceValid
+{
+  #keys: '[132916.0.559624935]'
+  Body:
+  [*
+    value := true;
+    resources := construct( Resource_SCs );
+    // Checks DataHolderResources.Data.Size > 0 in order to know whether it is batch edit multiple resources
+    isbatchedit := DataHolderResources.Data().Size() > 0;
+    
+    if( isbatchedit )
+    {
+      resources := resources.Add( DataHolderResources.Data() );
+      
+      traverse( resources, Elements, resource )
+      {
+        resourcegroup  := Dialog.Data().ResourceGroup_SC();
+        hasbatches     := resourcegroup.HasBatches();
+        iscontinuous   := resourcegroup.IsContinuous();
+        resourceid     := ifexpr( not isbatchedit, EditorResourceID.Text(), resource.ResourceID() );
+        oldresourceiid := resource.ResourceID();
+        name           := ifexpr( not isbatchedit, EditorName.Text(), resource.Name() );
+        
+        maxbatchsize      := ifexpr( not isbatchedit or CheckBoxApplyMaxBatchSize.Checked()        , ApplicationScheduler.GetEditorRealValue( EditorMaxBatchSize ), guard( resource.astype( BatchResource ).MaximumBatchSize(), 0 ) );
+        resourcelength    := ifexpr( not isbatchedit or CheckBoxApplyResourceLength.Checked()      , ApplicationScheduler.GetEditorRealValue( EditorResourceLength ), resource.Length() );
+        parallelloadwidth := ifexpr( not isbatchedit or CheckBoxApplyMaxParallelLoadWidth.Checked(), ApplicationScheduler.GetEditorRealValue( EditorParallelLoadWidth ), resource.MaximumParallelLoadWidth() );
+        parallelloadgap   := ifexpr( not isbatchedit or CheckBoxApplyMinParallelLoadGap.Checked()  , ApplicationScheduler.GetEditorRealValue( EditorParallelLoadGap ), resource.MinimumParallelLoadGap() );
+        gaplength         := ifexpr( not isbatchedit or CheckBoxApplyMinGapLength.Checked()        , ApplicationScheduler.GetEditorRealValue( EditorGapLength ), resource.MinimumGapLength() );
+        resourcespeed     := ifexpr( not isbatchedit or CheckBoxApplyResourceSpeed.Checked()       , ApplicationScheduler.GetEditorRealValue( EditorResourceSpeed ), resource.Speed() );
+        
+        toolsimulationhashorizon  := ifexpr( not isbatchedit or CheckBoxApplyIsToolSimulationHasHorizon.Checked(), CheckBoxIsToolSimulationHasHorizon.Checked(), resource.IsToolSimulationHasHorizon() );    
+        toolsimulationduration    := ifexpr( not isbatchedit or CheckBoxApplyIsToolSimulationHasHorizon.Checked(), GUIDurationSelectorToolSimulationHorizon.Duration(), resource.FirstLeadTimeStrategy().MinDistance() );
+        leadtimestrategy          := ifexpr( not isbatchedit or CheckBoxApplyLeadTimeStrategy.Checked(), StringSelectionStrategy.Text(), resource.StrategyName() );
+          
+        value := value
+                 and Resource_SC::IsValid( feedback_o, 
+                                           Schedule,
+                                           hasbatches, 
+                                           maxbatchsize,
+                                           resourcegroup,
+                                           resourceid,
+                                           oldresourceiid,
+                                           name,
+                                           iscontinuous,
+                                           resourcelength,
+                                           parallelloadwidth,
+                                           parallelloadgap,
+                                           gaplength,
+                                           resourcespeed,
+                                           toolsimulationhashorizon,
+                                           toolsimulationduration,
+                                           resource, 
+                                           leadtimestrategy );
+      }
+    }
+    else
+    {
+      value := Resource_SC::IsValid( feedback_o, 
+                                     Schedule,
+                                     guard( Dialog.Data().ResourceGroup_SC().HasBatches(), false ), 
+                                     ApplicationScheduler.GetEditorRealValue( EditorMaxBatchSize ),
+                                     guard( Dialog.Data().ResourceGroup_SC(), null( ResourceGroup_SC ) ),
+                                     EditorResourceID.Text(),
+                                     guard( Dialog.Data().WrappedInstance().ResourceID(), '' ),
+                                     EditorName.Text(),
+                                     guard( Dialog.Data().ResourceGroup_SC().IsContinuous(), false ),
+                                     ApplicationScheduler.GetEditorRealValue( EditorResourceLength ),
+                                     ApplicationScheduler.GetEditorRealValue( EditorParallelLoadWidth ),
+                                     ApplicationScheduler.GetEditorRealValue( EditorParallelLoadGap ),
+                                     ApplicationScheduler.GetEditorRealValue( EditorGapLength ),
+                                     ApplicationScheduler.GetEditorRealValue( EditorResourceSpeed ),
+                                     CheckBoxIsToolSimulationHasHorizon.Checked(),
+                                     GUIDurationSelectorToolSimulationHorizon.Duration(),
+                                     Dialog.Data().WrappedInstance(),
+                                     StringSelectionStrategy.Text() );
+    }
+    
+    return value;
+  *]
+}

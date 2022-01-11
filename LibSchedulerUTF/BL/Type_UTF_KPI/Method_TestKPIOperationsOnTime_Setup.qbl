@@ -1,0 +1,64 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestKPIOperationsOnTime_Setup (Schedule schedule)
+{
+  Description: 'Test KPI OperationsOnTime - setup'
+  TextBody:
+  [*
+    isvariantfound := false;
+    isdummy := false;
+    hasfeedback := false;
+    hasfinished := false;
+    isdue := false;
+    isontime := false;
+    kpioperationsontime := 0.0;
+    
+    this.GetTestVariantForKPIOperationsOnTime( isvariantfound,
+                                               isdummy,
+                                               hasfeedback,
+                                               hasfinished,
+                                               isdue,
+                                               isontime,
+                                               kpioperationsontime );
+    
+    if( isvariantfound )
+    {  
+      // Create resource
+      resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Resource' );
+      
+      duedate := schedule.Time() + Duration::Days( 10 );
+      
+      // Create 5 operations, 4 operation not based on variant
+      for( i := 1; i<=4; i++ )
+      {
+        // Create operation
+        order := UTFMockObjectFactory::CreateOrder( schedule, 'Order ' + [String]i );
+        planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'Plan Unit ' + [String]i , 100.0 );
+        operation := UTFMockObjectFactory::CreateOperation( planUnit );
+    
+        // update UTFOperation attributes
+        this.SetUTFOperationAttributesForKPI( operation, resource, duedate,
+                                              false,  //isdummy
+                                              false,  //hasfeedback,
+                                              false,  //hasfinished
+                                              true ); //isplanned
+        this.SetUTFOperationAttributesForKPI_OperationsOnTime( operation,
+                                                               true,   //isdue
+                                                               true ); //isontime
+      }
+      
+      // Create operation5 based on variant
+      order5 := UTFMockObjectFactory::CreateOrder( schedule, 'Order 5' );
+      planUnit5 := UTFMockObjectFactory::CreatePlanUnit( order5, 'Plan Unit 5', 100.0 );
+      operation5 := UTFMockObjectFactory::CreateOperation( planUnit5 );
+      
+      // update UTFOperation attributes
+      this.SetUTFOperationAttributesForKPI( operation5, resource, duedate,
+                                            isdummy,
+                                            hasfeedback,
+                                            hasfinished,
+                                            true ); //isplanned
+      this.SetUTFOperationAttributesForKPI_OperationsOnTime( operation5, isdue, isontime );
+    }
+  *]
+}

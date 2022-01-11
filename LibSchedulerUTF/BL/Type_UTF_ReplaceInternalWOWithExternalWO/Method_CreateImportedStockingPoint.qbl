@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateImportedStockingPoint (Schedule schedule)
+{
+  Description: 'Create imported stocking point instance.'
+  TextBody:
+  [*
+    variant := this.Variant();
+    testInstanceStockingPoints := this.GetStockingPointTestInstances( variant );
+    
+    traverse( testInstanceStockingPoints, Elements, row )
+    {
+      importedStockingPoint := ImportedStockingPoint_SC::FindImportedStockingPoint_SC( row.ID() );
+      
+      if( isnull( importedStockingPoint ) )
+      {
+        importedStockingPoint := schedule.ImportedStockingPoint_SC( relnew, Id := row.ID(), Name := row.Name() );
+      }
+    }
+  *]
+}

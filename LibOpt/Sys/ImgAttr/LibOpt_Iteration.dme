@@ -1,0 +1,124 @@
+Quintiq file version 2.0
+#parent: #root
+TypeDataInterface LibOpt_Iteration
+{
+  TypeKey: '[139164.5.1065485471]'
+  ImageDataMember Change
+  {
+    #keys: '1[139164.0.1023703835]'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'The rollback KPI did not change'
+        Image: 'EQUALS-ORANGE'
+        Quill: 'object.IsFinished() and not object.IsChange()'
+        Value: 'Equal'
+      }
+    ]
+  }
+  ImageDataMember ImgHasIssue
+  {
+    #keys: '1[154526.0.130121386]'
+    Description: 'Whether the iteration has any issues associated to it'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'There is one issue associated with this iteration'
+        Image: 'BUG_GREEN'
+        Quill: 'object.NrOfIssues() = 1'
+        Value: 'HasOneIssue'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'There are 2 issues associated with this iteration'
+        Image: 'BUG_YELLOW'
+        Quill: 'object.NrOfIssues() = 2'
+        Value: 'HasTwoIssues'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'There are 3 or more issues associated with this iteration'
+        Image: 'BUG_RED'
+        Quill: 'object.NrOfIssues() >= 3'
+        Value: 'HasManyIssues'
+      }
+    ]
+  }
+  ImageDataMember ImgHasNoInfeasibleMPSnapshots
+  {
+    #keys: '1[151132.0.177212208]'
+    Description: 'Whether all MP snapshots in this iteration are feasible.'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'No infeasible MP snapshots'
+        Image: 'STAR_YELLOW_PREFERENCES'
+        Quill:
+        [*
+          forall( object, IterationPartNM.IterationPart.Snapshot.astype( LibOpt_SnapshotMP ), snapshotmp,
+                  snapshotmp.IsFeasible()
+                )
+        *]
+        Value: 'No infeasible MP snapshots'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Has infeasible MP snapshot(s)'
+        Image: 'STAR_YELLOW_DELETE'
+        Quill:
+        [*
+          exists( object, IterationPartNM.IterationPart.Snapshot.astype( LibOpt_SnapshotMP ), snapshotmp,
+                  not snapshotmp.IsFeasible()
+                )
+        *]
+        Value: 'Has infeasible MP snapshot(s)'
+      }
+    ]
+  }
+  ImageDataMember ImgStatus
+  {
+    #keys: '1[144996.0.1320549284]'
+    Description: 'The status of the iteration'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Paused'
+        Image: 'MEDIA_PAUSE'
+        Quill: 'guard( object.SnapshotOwning().Task().IsWaiting(), false )'
+        Value: 'Paused'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Working'
+        Image: 'PROCESS'
+        Quill: 'not isnull( object.SnapshotOwning().Task() )'
+        Value: 'Working'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Error'
+        Image: 'ERROR'
+        Quill: 'object.NrOfFirstErrors() > 0'
+        Value: 'Error'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Warning'
+        Image: 'WARNING'
+        Quill: 'object.NrOfFirstWarnings() > 0'
+        Value: 'Warning'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Done'
+        Image: 'CHECK'
+        Quill: 'true'
+        Value: 'Check'
+      }
+    ]
+  }
+}

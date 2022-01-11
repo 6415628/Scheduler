@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method JoinPlannedDemandReservations (PlanUnit_SC earliest_planunit, PlanUnit_SCs remainingplanunits)
+{
+  Description: "Join the plan units' operations' demand's reservations."
+  TextBody:
+  [*
+    // join the remaining demand's fulfillments with the earliest plan unit's fulfillments
+    traverse( remainingplanunits, Elements.Operation_SC.PlannedDemand.Fulfillment, fulfillment )
+    {
+      join_demand := fulfillment.Demand();
+      // same supply used by both demands, or to be used by equivalent demand
+      join_same_supply := fulfillment.Supply();
+      // grab the equivalent demand from the earliest plan unit
+      earliest_same_demand := select( earliest_planunit, 
+                                      Operation_SC.PlannedDemand, 
+                                      demand,
+                                      demand.DemandType() = join_demand.DemandType(),
+                                      guard( demand.astype( ProductPlannedDemand ).WorkOrderDemandId() = join_demand.astype( ProductPlannedDemand ).WorkOrderDemandId(), true ) // If it is product-based
+                                      and guard( demand.astype( MaterialPlannedDemand ).WorkOrderInputMaterialId() = join_demand.astype( MaterialPlannedDemand ).WorkOrderInputMaterialId(), true ) ); // If it is characteristic based
+      
+      isFixed := fulfillment.CheckIsFixedReservation();
+      
+      // grab the fulfillment from the equivalent demand to the same supply
+      same_fulfillment := select( earliest_same_demand, 
+                                  Fulfillment, 
+                                  earliest_same_fulfillment,
+                                  earliest_same_fulfillment.CheckIsFixedReservation() = isFixed // Same type of fixed/planned fulfillment
+                                  and earliest_same_fulfillment.Supply() = join_same_supply );
+    
+      qty := fulfillment.QuantityDecision();
+    
+      if( isnull( same_fulfillment ) )
+      {
+        same_fulfillment := earliest_same_demand.CreateFulfillment( join_same_supply, fulfillment.IsManualReservation(), qty, isFixed );
+        same_fulfillment.ImportedFixedFulfillment( relset, fulfillment.ImportedFixedFulfillment() ); // New external fulfillments need to be set to its ImportedExternalFulfillment
+      }
+      else
+      {
+        same_fulfillment.UpdateQuantity( same_fulfillment.QuantityDecision() + qty );
+      }
+    }
+  *]
+}

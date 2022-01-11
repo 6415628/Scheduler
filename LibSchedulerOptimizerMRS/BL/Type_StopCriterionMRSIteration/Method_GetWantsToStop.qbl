@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetWantsToStop (const LibOpt_Task task) as Boolean
+{
+  TextBody:
+  [*
+    // mbr23, 2019-09-04 (created), source of logic: legacy optimizer: OptimizerRunMRSAIteration::GetWantsToStop: svt1 Jun-7-2017 (created)
+    
+    context := task.TaskContext().astype( LibOpt_TaskContextIterator );
+    
+    // never stop at the first iteration, always do an optimize POA run 
+    stop := context.NrOfIterations() > 0;
+    
+    if( stop )
+    {
+      // exceptions:
+      // there are still conflicts to solve
+      atleastoneunsolvedgroup := exists( this.RunContextSolvedConflicts(), ResourceGroupInRunContextSolvedConflicts, resourcegroup, not resourcegroup.ConflictSolved() );
+     
+      // or we think we can still do better (because we did better in the last iteration)
+      snapshots := task.SnapshotComponent().Last().DescendantsConst();
+      lastsnapshotlastiteration := maxselect( snapshots, Elements.astype( LibOpt_SnapshotKPI ), kpisnapshot,
+                                          true, kpisnapshot.SequenceNr() );
+      firstsnapshotlastiteration := minselect( snapshots, Elements.astype( LibOpt_SnapshotKPI ), kpisnapshot,
+                                          true, kpisnapshot.SequenceNr() );
+    
+      delta := RealVector::Construct( lastsnapshotlastiteration.RollbackKPI() ) - RealVector::Construct( firstsnapshotlastiteration.RollbackKPI() );
+      debuginfo( "last iteration's first KPI:", Translations::LibOpt_SnapshotKPI_Details( RealVector::Construct( firstsnapshotlastiteration.RollbackKPI() ) ) );
+      debuginfo( "last iteration's last KPI:", Translations::LibOpt_SnapshotKPI_Details( RealVector::Construct( lastsnapshotlastiteration.RollbackKPI() ) ) );
+      delta_nozeroes := delta.GetSelection( delta.Equals( 0.0 ).NOT() );
+      lastimprovement := guard( delta_nozeroes.Get( 0 ), 0.0 );
+      improvedlastiteration := lastimprovement < 0.0;
+      debuginfo( 'last improvement:', lastimprovement );
+    
+      // only check this if we have already done a conflict solving
+      isstillimproving        := context.NrOfIterations() > 1 and improvedlastiteration;                                   
+      
+      nr_resourcegroups_in_scope := task.Scope().ResourceGroupsConst().Size();
+      continue := atleastoneunsolvedgroup 
+                  or ( isstillimproving 
+                       and nr_resourcegroups_in_scope > 2 //with 2 groups, constrained poa would repeat same group; better to not redo it at all
+                     );
+      
+      stop := not continue;
+      debuginfo(  'atleastoneunsolvedgroup:', atleastoneunsolvedgroup, 'improvedlastiteration:', improvedlastiteration, 'isstillimproving:', isstillimproving, 'nr resource groups in scope:', nr_resourcegroups_in_scope, 'stop:',  stop );               
+    }
+    
+    return stop;
+  *]
+}

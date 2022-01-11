@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateEvent (GUIComponent parent_i, LibCal_Calendar owner_i, LibCal_EventCategory category_i, 
+  DateTime start_i, DateTime end_i) as LibCal_Event id:Method_LibCal_dlgEvent_CreateEvent_653
+{
+  #keys: '[131094.0.1233348206]'
+  Body:
+  [*
+    timezone := owner_i.GetTimeZone();
+    
+    // Create a new Event.
+    sEvent := owner_i.Event( relshadow,
+                             EventID        := [String]Key::NextPersistentKey(),
+                             StartTimeOfDay := start_i.TimeOfDay( timezone ),
+                             EndTimeOfDay   := end_i.TimeOfDay( timezone ),
+                             EventCategory  := category_i );
+    
+    // Special case: by default the EventType is 'Unavailable', but when an event is created for
+    // category 'Available' or 'Partial' then set the Type to 'Available' resp. 'Partial'. 
+    if( guard( category_i.Name() = LibCal_Event::TYPE_AVAILABLE(), false ) )
+    {
+      sEvent.Type( LibCal_Event::TYPE_AVAILABLE() );
+    }
+    else if( guard( category_i.Name() = LibCal_Event::TYPE_PARTIAL(), false ) )
+    {
+      sEvent.Type( LibCal_Event::TYPE_PARTIAL() );
+    }
+                             
+    Dialog.Data( sEvent );
+    
+    // Create a new LeadingParticipation.
+    // Only set the dates, the times will be updated from the Event later if necessary.
+    sLeadPart := owner_i.Participation( relshadow, LibCal_LeadingParticipation,
+                                        ParticipationID := [String]Key::NextPersistentKey(),
+                                        StartDate       := start_i.Date( timezone ),
+                                        EndDate         := end_i.Date( timezone ) );
+    dhLeadingParticipation.Data( &sLeadPart );
+    this.InitializeRecurrence( start_i.Date( timezone ) ); 
+    
+    event := null( LibCal_Event );
+    
+    if( Dialog.DoModal( parent_i ) > 0 )
+    {
+      event := this.CreateUpdateEventAndParticipation();
+    }
+    
+    return event;
+  *]
+}

@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method SubscribeToDefaultEvents
+{
+  Description: 'Get the default events to which the calendar can subscribe and subscribe to them.'
+  TextBody:
+  [*
+    // Get the default events to which the calendar can subscribe...
+    potentialEvents := this.GetPotentialEventsToSubscribeTo();
+    defaultEvents   := selectset( potentialEvents, Elements, event, true, event.IsDefault() );
+    
+    // ... and subscribe to them, if this is not the case yet.
+    traverse( defaultEvents, Elements, defaultEvent )
+    {
+      if( not exists( this, Participation.Event, event, true, event = defaultEvent ) )
+      {
+        this.SubscribeToEvent( defaultEvent );
+      }
+    }
+  *]
+}

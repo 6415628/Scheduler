@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateJSONWorkOrderOperations () as owning JSONBuilder
+{
+  Description: 'Creates work orders in JSON from the current dataset.'
+  TextBody:
+  [*
+    operations := JSON::Array();
+    
+    traverse( this, WorkOrderOperation.astype( ExternalWorkOrderOperation ), workOrderOperation )
+    {
+      id := workOrderOperation.ExternalOperationID();
+      maturity := workOrderOperation.GetMaturityStatus();
+      
+      traverse( workOrderOperation, Operation_SC, op )
+      {
+        id := ifexpr( id.Length() > 0, id, workOrderOperation.GetJSONOperationID() );
+        processOperationID := ifexpr( workOrderOperation.ProcessOperationID().Length() > 0, workOrderOperation.ProcessOperationID(), id );
+        
+        startDate := DateTimeToString::ISOConverter().Convert( op.Start() );
+        endDate := DateTimeToString::ISOConverter().Convert( op.End() );
+        assetId := guard( op.PlannedResource().ResourceID(), '' );
+        
+        operation := JSON::Object();
+        operation.Add( Constants::JSON_WorkOrder_Operation_ID(), id );
+        operation.Add( Constants::JSON_WorkOrder_Operation_ProcessOperationID(), processOperationID );
+        operation.Add( Constants::JSON_WorkOrder_Operation_Maturity(), maturity );
+        operation.Add( Constants::JSON_WorkOrder_Operation_Priority(), 1 );
+        operation.Add( workOrderOperation.GetJSONStartAttribute(), startDate );
+        operation.Add( workOrderOperation.GetJSONEndAttribute(), endDate );
+        operation.Add( Constants::JSON_WorkOrder_Operation_ScheduledAssetID(), assetId );
+    
+        operations.Add( operation );
+      }
+    }
+    
+    return &operations;
+  *]
+}

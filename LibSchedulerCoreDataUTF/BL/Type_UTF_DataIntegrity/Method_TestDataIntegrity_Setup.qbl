@@ -1,0 +1,58 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestDataIntegrity_Setup (Schedule schedule)
+{
+  Description: 'Test the backup and restore of core data - setup'
+  TextBody:
+  [*
+    schedule.DemoManager().ResetToDemoData( 'Sales demo', 'AluminumHotRolling', false );
+    
+    // Import all knowledge bases from excel
+    
+    /*componentmds := ComponentMDS::Create( Application );
+    componentMDSKind := select( componentmds, ComponentMDSKinds, kind, kind.Kind() = typeof( Schedule ).Name() );
+    mdsinstance := select( componentMDSKind, ComponentMDSInstances, m,
+                             m.IsLoaded(),
+                             m.MDSID().Equals( Schedule.MDSSchedule().MDSID() ) );
+    
+    editor := CKBEditor::Create();
+    mdshandle := mdsinstance.GetMDSHandle();
+    kbinfos     := editor.GetMDSKBs( mdshandle );
+    
+    // Get Data directory
+    folderPath := Schedule.GetDataFolderPath() + '/';
+    
+    traverse( kbinfos, Elements, kbInfo, kbInfo.KBFullID().KBID().Name() <> Constants::GetCalendarsKnowledgeBaseName()
+                                         and kbInfo.KBFullID().KBID().Name() <> Constants::GetUTFKnowledgeBaseName() )
+    {                                  
+      fileName := kbInfo.KBFullID().KBID().Name();
+      filePath := folderPath.Concat( fileName ).Concat( Constants::Excel_XLSX() );
+      
+      data := Schedule.GetServerFileData( filePath );
+      if( data.Size() > 0 )
+      {
+        ckbhandle := editor.LoadMDSKB( mdsinstance.GetMDSHandle(), kbInfo.KBFullID().KBID() );
+        
+        templateckb := CKBEditor::Create().GetTemplateFromKB( ckbhandle.CKB() );
+        predefinedtablegroup := templateckb.CKB().GetTables();
+         
+        tablegrouphandle := XLS::LoadTableGroupFromBinaryData( data.AsBinaryData(), predefinedtablegroup, true, true );
+      
+        ckbhandle.CKB().OverwriteTables( tablegrouphandle );
+        ckbhandle.CKB().SetTables( &tablegrouphandle, true );
+        ckbhandle.CKB().SetDirty();
+        ckbhandle.CKB().ValidateAll();
+      
+        editor.LockApplySaveUnlock( mdshandle, ckbhandle, Translations::SC_ImportKTFromExcel( scenarioCategory, scenarioName ), false);
+        ckbhandle.CKB().ResetDirty();
+      }
+    }
+    */
+    schedule.SynchronizationObject().SynchronizeKTWithMaterialReservation();
+    
+    Transaction::Transaction().Propagate();
+    
+    DMF_API::PerformFullExport();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

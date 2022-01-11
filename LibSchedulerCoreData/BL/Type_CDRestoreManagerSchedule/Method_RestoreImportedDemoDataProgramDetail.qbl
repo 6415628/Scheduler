@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedDemoDataProgramDetail (CDIntegration cdintegration)
+{
+  Description: 'Restore imported demo data program detail core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedDemoDataProgramDetail
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedDemoDataProgramDetail ), cdiddpd )
+    {
+      importedDemoDataProgramDetail := schedule.ImportedDemoDataProgramDetail( relnew, 
+                                                                               ProgramChangeID := cdiddpd.ProgramChangeID(),
+                                                                               ProgramDefinitionConfigurationID := cdiddpd.ProgramDefinitionConfigurationID(),
+                                                                               ProgramSetConfigurationID := cdiddpd.ProgramSetConfigurationID(),
+                                                                               ProgramTypeConfigurationID := cdiddpd.ProgramTypeConfigurationID()
+                                                                              );
+                                                                              
+      CopyCorresponding::CopyFrom( cdiddpd ).CopyTo( importedDemoDataProgramDetail );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

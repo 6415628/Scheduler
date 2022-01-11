@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method IGetUserFiltering (shadow[LibGUIFiltering_RegisteredComponent] registeredcomponent) as internal[GEBObjectsFilter] id:Method_LibGUIFiltering_PanelFilterBoxHelper_IGetUserFiltering
+{
+  #keys: '[128900.0.381357990]'
+  Body:
+  [*
+    containercomponent := this.IComponent_FindByPath( registeredcomponent.ComponentPath() );
+    filteredcomponent  := this.IComponent_FindByPath( registeredcomponent.FilterComponentPath() );
+    userfiltering      := null(GEBObjectsFilter);
+    
+    if ( containercomponent.istype(List) )
+    {                        
+      level         := this.IComponent_GetLevel( containercomponent.astype(List), filteredcomponent.astype(GUIDataSetLevel) );
+      userfiltering := level.Filter().UserFiltering();
+    }
+    else if ( containercomponent.istype(GanttChart) )
+    {
+      if ( filteredcomponent.istype(GanttChartRowDefinition) )
+      {
+        userfiltering := filteredcomponent.astype(GanttChartRowDefinition).FilterObject().UserFiltering();
+      }
+      else if ( filteredcomponent.istype(GanttChartNodesDefinition) )
+      {
+        userfiltering := filteredcomponent.astype(GanttChartNodesDefinition).FilterObject().UserFiltering();
+      }
+    }
+    else if ( filteredcomponent.istype(GUIDataExtractor) )
+    {
+      userfiltering := filteredcomponent.astype(GUIDataExtractor).FilterObject().UserFiltering();
+    }
+    
+    return userfiltering;
+  *]
+}

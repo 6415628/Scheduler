@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcEnd
+{
+  TextBody:
+  [*
+    task := this.Task_SC();
+    end := task.Resource_SC().ResourceCalendar().Add( this.Start(), this.NetDuration() );
+    
+    if( guard( task.Schedule().TechnicalConfiguration().IsLotLeadTimeLogicOn(), false ) )
+    {
+      outputlot := task.LastOutputLot();
+      end := outputlot.End();
+      
+      if( task.HasFeedbackTask() )
+      {
+        end := task.Resource_SC().ResourceCalendar().Add( this.Start(), Duration::Zero() );
+      }
+    }
+    
+    value := maxvalue( end, task.Schedule().Time() );
+    
+    this.End( value );
+  *]
+}

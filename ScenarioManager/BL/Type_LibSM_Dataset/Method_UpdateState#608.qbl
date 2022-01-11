@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateState (MDSObjectInfo objectInfo) as LibSM_Dataset
+{
+  Description: 'Updates the state of the Dataset object based on the specified object info.'
+  TextBody:
+  [*
+    this.IsLoaded( guard( objectInfo.IsLoaded(), false ) );
+    
+    if ( this.IsLoadingInProgress() and this.IsLoaded() )
+    {
+      this.IsLoadingInProgress( false );
+    }
+    
+    if ( not isnull( objectInfo ) )
+    {
+      this.DatasetMDSID( objectInfo.MDSID().MDSKey() );
+      // Update the 'Active' flag, which is false in case e.g. the 
+      // knowledge used for the dataset is no longer available. 
+      this.IsActive( objectInfo.ActivityState() = 'Active' );
+      // Update the storage state.
+      this.StorageState( objectInfo.State() );
+      this.TimezoneID( objectInfo.TimeZoneID() );
+      if ( not isnull( this.Scenario() ) )
+      {
+        this.Scenario().TimezoneID( this.TimezoneID() );
+      }
+    }
+    
+    return this;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

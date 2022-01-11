@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdateResourceGroupInfo (SetupDurations_SCRowSet setup_rows)
+{
+  Description: 'Deletes and recreates the owned ResourceGroupInfoObjects and populates their infos based on the given setup duration KT.'
+  TextBody:
+  [*
+    this.SetupResourceGroupInfo( relflush );
+    
+    traverse( this.Run().Optimization().astype( Optimization ).Schedule(), ResourceGroup_SC, rg )
+    {
+      // setup times need to be considered on a per-resource ("granular") basis iff there is a row in the KT that explicitly mentions one of this RG's resources:
+      granular_setups := exists( setup_rows, Elements, row, not row.ResourceIDIsWildcard() and exists( rg, Resource_SC, r, r.ResourceID() = row.ResourceID() ) );
+      unified_setups := not granular_setups;
+      SetupResourceGroupInfo::Create( this, rg, unified_setups );
+    }
+  *]
+}

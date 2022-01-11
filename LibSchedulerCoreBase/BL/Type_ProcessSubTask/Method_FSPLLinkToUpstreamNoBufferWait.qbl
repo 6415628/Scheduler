@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+Method FSPLLinkToUpstreamNoBufferWait
+{
+  TextBody:
+  [*
+    traverse( this.Task_SC(), FSPLOperationInTask.FromOperationDependency, operationDependency )
+    {
+      up_nobufferwait_subtask := guard( operationDependency.FromOperation().AsFSPLOperationInTask().NoBufferWaitSubTask(), null( NoBufferWaitSubTask ) );
+      
+      if( guard( not isnull( up_nobufferwait_subtask.PrecedenceNode() ), false ) )
+      {
+        isfulfillment := not isnull( guard( operationDependency.astype( OperationMaterial ).Fulfillment(), null( Fulfillment ) ) ); // Used to set the fulfillment flag on the edge
+        
+        traverse( up_nobufferwait_subtask.Task_SC(), FSPLOperationInTask.ToOperationDependency.ToOperation.AsFSPLOperationInTask.Resource_SC, downstream_task_resource )
+        {
+          // Grabs NoBufferWait's lowest FSPL Seq Nr downstream task in the same resource of the current task
+          earliest_downstream_task_in_same_resource := minselect( up_nobufferwait_subtask.Task_SC(),
+                                                                  FSPLOperationInTask.ToOperationDependency.ToOperation.AsFSPLOperationInTask,
+                                                                  downstream_task_in_same_resource,
+                                                                  downstream_task_in_same_resource.Resource_SC() = downstream_task_resource,
+                                                                  downstream_task_in_same_resource.FSPLSequenceNr() );
+                                                                  
+          // Grabs all edges to NoBufferWait subtask
+          existing_edges_from_downstream_tasks_in_same_resource := selectset( up_nobufferwait_subtask.PrecedenceNode(),
+                                                                              Inputs,
+                                                                              in_edge,
+                                                                              in_edge.Type() = Constants::PrecedenceRelation_Met_By()
+                                                                              and in_edge.Input().SubTask().Task_SC().Resource_SC() = downstream_task_resource );
+      
+          earliest_downstream_process_subtask_in_same_resource := guard( earliest_downstream_task_in_same_resource.ProcessSubTask(), null( ProcessSubTask ) );
+      
+          // Checks if there is any downstream process subtask on the resource
+          if( not isnull( earliest_downstream_process_subtask_in_same_resource ))
+          {
+            // Grabs the edge to the NoBufferWait from the earliest downstream process subtask
+            edge_from_first_downstream_task := earliest_downstream_process_subtask_in_same_resource.PrecedenceNode().GetEdgeToNode( up_nobufferwait_subtask );
+      
+            // Checks if there is any edge to the NoBufferWait from the earliest downstream process subtask
+            if( isnull( edge_from_first_downstream_task ) )
+            {
+              // Create the edge from the earliest downstream Process subtask to the current NoBufferWait subtask
+              PrecedenceEdge::Create( earliest_downstream_process_subtask_in_same_resource.PrecedenceNode(), 
+                                      up_nobufferwait_subtask.PrecedenceNode(), 
+                                      Constants::PrecedenceRelation_Met_By(), 
+                                      isfulfillment );
+            }
+          }
+      
+          // Deletes any existing edge to current NoBufferWait subtask that is NOT from earliest downstream Process subtask
+          traverse( existing_edges_from_downstream_tasks_in_same_resource, Elements, existing_edge, existing_edge.Input().SubTask() <> earliest_downstream_process_subtask_in_same_resource )
+          {
+            PrecedenceEdge::Delete( existing_edge );
+          }
+        }
+      }
+    }
+  *]
+}

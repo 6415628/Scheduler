@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckQuantityAllowed (output String feedback_o) as Boolean id:Method_DialogEditSplitPlanUnit_CheckQuantityAllowed
+{
+  #keys: '[122574.0.600466865]'
+  Body:
+  [*
+    // checks whether the input quantity is allowed
+    issplit := [Boolean]ValueHolderIsSplit.Value();
+    planunit := DataHolderSelectedPlanUnit.Data();
+    isdiscerete := guard( planunit.Order_SC().Product_SC().IsDiscrete(), false );
+    
+    quantity := EditorQuantity.Text();
+    
+    if( issplit )
+    {
+      quantity := EditorQuantitySplit.Text();
+    }
+    
+    value := planunit.CheckQuantity( issplit, 
+                                     isdiscerete, 
+                                     quantity, 
+                                     CheckBoxOverride.Checked(), 
+                                     feedback_o );
+    
+    feedback_o := feedback_o.TrimBoth();
+    
+    return value;
+  *]
+}

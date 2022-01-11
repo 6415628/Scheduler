@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test021_IsCreatingDatasetCopiesEnabled_CopyDataset (LibOpt_TestDataset dataset)
+{
+  Description: 'Check that the `this.CopyDataset()` method does not create a `LibOpt_DatasetCopyReplannable` snapshot nor a dataset copy when the `opt.IsCreatingDatasetCopiesEnabled()` attribute is set to false.'
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( false );
+    run := opt.CreateRun();
+    
+    switch := opt.SwitchRoundRobin( run, 'Round robin' );
+    str := run.Start();
+    
+    // Copy the current dataset by using the task of the switch component
+    taskswitch := select( switch, Task, task, task.Component() = switch );
+    snapshotcopydataset := taskswitch.CopyDataset();
+                                                             
+    this.Run().AssertIsNull( snapshotcopydataset,
+                             "Expected that no '"
+                             + typeof( LibOpt_SnapshotReplannableCopyDataset ).Name()
+                             + "' snapshot would be created when calling 'component.CopyDataset()', because 'optimizer.IsCreatingDatasetCopiesEnabled()' is false. " 
+                             + "However, a snapshot was created."
+                             ); 
+    
+    // In the other LibOpt_UnitTest_DatasetCopy methods, we have to reactively wait this.MDSEditorUpdateTime before we can call MDSEditor::Editor().ObjectInfos().
+    // This is not required in this method, because switch.CopyDataset() always creates a robust dataset copy. 
+    // Robust copies are procedurally created. Therefore, MDSEditor::Editor().ObjectInfos() is always up-to-date when we reach this line. 
+    nrofcreateddatasets := counter( MDSEditor::Editor().ObjectInfos(),
+                                    Elements,
+                                    objectinfo,
+                                    LibOpt_TestUnit_DatasetCopy::IsDatasetChildOfUnitTestDataset( objectinfo, dataset )
+                                    );
+    
+    this.Run().AssertEqual( 0, // Expected value
+                            nrofcreateddatasets, // Actual value
+                            "Expected that no dataset copy would be created when calling 'component.CopyDataset()', because 'optimizer.IsCreatingDatasetCopiesEnabled()' is false. " 
+                            + "However, " + [String] nrofcreateddatasets + " dataset copies were created."
+                            );   
+    
+    this.NoException( str );
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

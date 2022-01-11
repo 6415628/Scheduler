@@ -1,0 +1,76 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CopyDatasetRobust (LibOpt_Task task, String namenewdataset, String componentpositionname, 
+  Key mdsid) as LibOpt_SnapshotReplannableCopyDataset
+{
+  Description:
+  [*
+    Copy the dataset in a slow (non-reactive) way that is robust against rollbacks and errors. 
+    An optimizer run has to wait until the dataset copy is created before the optmizer run can continue. 
+    Please override the `[YourOptimizationSubtype].GetMDSObject()` method before using this method.
+  *]
+  TextBody:
+  [*
+    // evr3 Mar-19-2020 (created)
+    component := task.Component();
+    run := component.Run();
+    snapshot := LibOpt_SnapshotReplannableCopyDataset::Create( run,
+                                                               task, 
+                                                               namenewdataset, 
+                                                               componentpositionname,                                              
+                                                               true // IsMemoryOnly 
+                                                               );
+    // LibOpt_Optimization::GetMDSObject should be overridden.
+    mdsobject := LibOpt_DatasetCopyConditional::GetMDSObject( run.Optimization() );
+    snapshot.IsGetMDSObjectOverridden( not isnull( mdsobject ) );
+    snapshot.HasFailedToCreateDataset( isnull( mdsobject ) );
+    
+    // Create the dataset after creating the snapshot, to ensure that the snapshot shows up in the 'snapshots' and 'replannable snapshots' forms. 
+    if( not isnull( mdsobject ) )
+    {
+      parameters := MDSParameters::Create();
+      // It is not possible to use StandAloneStorage. This results in empty datasets.
+      // The dataset is later converted to a StandAloneStorage dataset in LibOpt_Component::DatasetCopyChangeToStandAlone()
+      parameters.State( DatasetState::MemoryOnly().AsString() );  
+    
+      // An error can occur when mdsobject.Copy is called.
+      // This happens, for example, when a circularity is created in the current transaction (but not propagated).
+      // An error is also thrown if the name of the dataset copy is too long.
+      // When the error occurs, the following steps happen:
+      // - The onfailure block is entered
+      // - HandleQuillErrorFromOnFailure is called
+      // - If there is a dataset copy snapshot on the 'Handle error' component position, then the current method is called again.
+      // - The try block is entered again.
+      // - The dataset is copied succesfully (This dataset copy might be in a unpropagated or semi-propgated state)
+      // - The HandleQuillErrorFromOnFailure call will roll back the current iteration to resolve the propagation error
+      
+      // Note: If another error happens when mdsobject.Copy is called the second time, 
+      // then the if-block in the onfailure ensures that HandleQuillErrorFromOnFailure method won't be called again. This is to prevent an inescapable loop.
+      try
+      { 
+        // Using mdsobject.Copy() is less efficient than using 'MDSObject::Create'. 
+        // However, datasets created by using mdsobject.Copy() are not rolled back after an error or rollback. 
+        mdsobject.Copy( namenewdataset, parameters );  
+        snapshot.HasCreatedDataset( true );
+      }
+      onfailure
+      {
+        snapshot.HasFailedToCreateDataset( true );    
+        numberofsnapshots := counter( task,
+                                      SnapshotComponent.Children.astype( LibOpt_SnapshotReplannableCopyDataset ),
+                                      snapshotreplannable,
+                                      snapshotreplannable.ComponentPositionName() = componentpositionname );
+        // In the unlikely case that a failure occurs every time that mdsobject.Copy() is called, then we could end up in an endless dataset creation loop.
+        // Therefore, we attempt to create at most 1 additional dataset copy.
+        if( numberofsnapshots <= 1 )
+        {
+          transaction := LibOpt_CurrentTransaction::GetCurrentTransaction( component );
+          transaction.HandleQuillErrorFromOnFailure( e );
+        }
+      }
+    }
+    
+    return snapshot;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

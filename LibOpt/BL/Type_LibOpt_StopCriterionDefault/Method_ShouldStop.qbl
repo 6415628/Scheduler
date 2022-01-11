@@ -1,0 +1,14 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride ShouldStop (const LibOpt_Task task) as Boolean
+{
+  TextBody:
+  [*
+    context         := task.TaskContext().astype( LibOpt_TaskContextIterator );
+    iterations      := context.CurrentIteration() >= this.MaxIterations()
+    local_duration  := DateTime::ActualTime() - context.TimeStamp() >= this.MaxDurationLocal();
+    global_duration := DateTime::ActualTime() - task.Run().StartedOn() >= this.MaxDurationGlobal();
+    
+    return iterations or local_duration or global_duration;
+  *]
+}

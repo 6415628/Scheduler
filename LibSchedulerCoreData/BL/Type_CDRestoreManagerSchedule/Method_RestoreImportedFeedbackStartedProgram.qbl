@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedFeedbackStartedProgram (CDIntegration cdintegration)
+{
+  Description: 'Restore imported feedback started program core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedFeedbackStartedProgram
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedFeedbackStartedProgram ), cdfsp )
+    {
+      importedFeedbackStartedProgram := schedule.ImportedFeedbackStartedProgram( relnew, 
+                                                                                 ExternalProgramID := cdfsp.ExternalProgramID(),
+                                                                                 ExternalStoppageTaskID := cdfsp.ExternalStoppageTaskID()
+                                                                               );
+      CopyCorresponding::CopyFrom( cdfsp ).CopyTo( importedFeedbackStartedProgram );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

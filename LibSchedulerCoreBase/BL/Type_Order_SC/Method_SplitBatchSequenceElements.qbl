@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+Method SplitBatchSequenceElements (BatchSequenceElements batchsequenceelements, PlanUnit_SC newplanunit)
+{
+  Description: 'Splitting the batch sequence element and planning it in the same batch.'
+  TextBody:
+  [*
+    // WOI1 Nov-8-2016 (created)
+    traverse( batchsequenceelements, Elements, batchsequenceelement )
+    {
+      sameoperation := select( newplanunit, Operation_SC, op, op.SequenceNr() = batchsequenceelement.GetOperation().SequenceNr() );
+    
+      if( not isnull( sameoperation ) )
+      {
+        batch := batchsequenceelement.Batch();
+        batch.AddOperationAfter( sameoperation, batchsequenceelement );
+      }
+    }
+  *]
+}

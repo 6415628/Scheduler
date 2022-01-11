@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeDependentDemand_Product
+{
+  Description: 'Synchronizes product based dependent demands that come from external sources.'
+  TextBody:
+  [*
+    // WOI1 Jul-12-2016 (created)
+    allinstances := selectset( this.Schedule(), Demand.astype( ProductDependentDemand ), pdd, true );
+    updatedinstances := construct( ProductDependentDemands );
+    
+    // traverses imported dependent demands that have product ids
+    traverse( this.Schedule(), ImportedDependentDemand_SC, row, row.IsValidDataHard() and row.IsProduct() )
+    {
+      pdd := ProductDependentDemand::FindProductDependentDemand( DemandType::ProductDependentDemand(), row.Id() );
+      
+      if( isnull( pdd ) )
+      {
+        pdd := this.Schedule().CreateDemand( DemandType::ProductDependentDemand(), row.Id() ).astype( ProductDependentDemand );
+      }
+    
+      pdd.Update( row );
+      updatedinstances.Add( pdd );
+    }
+    
+    //Delete product dependent demands if they do not exist in KT
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, oldpdd, oldpdd.CheckCanBeDeleted() )
+    {
+      oldpdd.Remove();
+    }
+  *]
+}

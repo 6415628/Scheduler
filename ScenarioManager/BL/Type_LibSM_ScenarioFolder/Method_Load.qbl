@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Load (String userGroups)
+{
+  TextBody:
+  [*
+    ugs      := LibSM_Util::GetUserGroups( userGroups );
+    userName := LibSM_Util::GetCurrentUserName();
+    
+    
+    
+    traverse( this, Children, c,
+              // A user is allowed to load his own scenarios, and scenarios that have been created by the System within a folder
+              c.IsAuthorized( userName ) or
+              exists( c, ScenarioAuthorization, sa,
+                      exists( ugs, Elements, ug, sa.Name() = ug.Name() ) ) )
+    {
+      c.Load( userGroups );
+    }
+  *]
+}

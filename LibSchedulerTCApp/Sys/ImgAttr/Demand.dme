@@ -1,0 +1,154 @@
+Quintiq file version 2.0
+#parent: #root
+TypeDataInterface Demand
+{
+  TypeKey: '[122574.0.535886365]'
+  ImageDataMember ImgDemandType
+  {
+    #keys: '1[114198.0.795673498]'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Customer order line'
+        Image: 'BUSINESSMAN'
+        Quill: 'object.istype( ProductCustomerOrderLine ) or object.istype( MaterialCustomerOrderLine )'
+        Value: 'COL'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Dependent demand'
+        Image: 'WORKER'
+        Quill: 'object.istype( ProductDependentDemand ) or object.istype( MaterialDependentDemand )'
+        Value: 'DD'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Demand for planned production'
+        Image: 'GEAR'
+        Quill: 'object.istype( ProductPlannedDemand ) or object.istype(MaterialPlannedDemand ) and not object.IsWIPDemand()'
+        Value: 'Planned'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'WIP demand'
+        Image: 'ELEMENT_NEXT'
+        Quill: 'object.IsWIPDemand()'
+        Value: 'WIP'
+      }
+    ]
+  }
+  ImageDataMember ImgDueNotPlanned
+  {
+    #keys: '1[115962.0.445216975]'
+    Description: 'Indicates if a demand has a due date within the scheduling horizon but is not yet planned in a batch.'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'The demand has a due date within the scheduling horizon, but is not yet fully planned in batches'
+        Image: 'DATE-TIME'
+        Quill: 'object.IsDueInSchedulingHorizon() and not object.IsFullyFulfilled()'
+        Value: 'DueInSchedulingHorizon'
+      }
+    ]
+  }
+  ImageDataMember ImgFrozen
+  {
+    #keys: '1[115962.0.1540567050]'
+    Description: 'Shows if the operation for which the demand is needed as input is frozen'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Operation where demand is used as input is frozen'
+        Image: 'SNOWFLAKE'
+        Quill: 'object.IsFrozenInSchedule()'
+        Value: 'IsFrozen'
+      }
+    ]
+  }
+  ImageDataMember ImgIsOnTime
+  {
+    #keys: '1[115962.0.445216976]'
+    Description: 'Checks whether the demand is scheduled to be delivered on time.'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Demand is scheduled to be delivered on time.'
+        Image: 'CERTIFICATE_OK'
+        Quill:
+        [*
+          object.IsFullyFulfilled()
+          and forallexists( object,
+                            DemandInBatch.DemandBatch.BatchWorkOrder.WorkOrderOperation.Operation_SC,
+                            op,
+                            op.End().IsFinite() and op.End() <= object.DueDate() )
+        *]
+        Value: 'ImgIsOnTime'
+      }
+    ]
+  }
+  ImageDataMember ImgOrderOnTime
+  {
+    #keys: '1[124980.0.1565207801]'
+    Description: 'Checks whether the order has been scheduled late or on time'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Order planned late'
+        Image: 'ALARMCLOCK'
+        Quill: 'max( object , Fulfillment.Supply, s, true, s.AvailableFrom() ) > object.DueDate()'
+        Value: 'ImgOrderLate'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Order planned on time'
+        Image: 'ALARMCLOCK_GREEN'
+        Quill: 'max( object , Fulfillment.Supply, s, true, s.AvailableFrom() ) <= object.DueDate()'
+        Value: 'ImgOrderOnTime'
+      }
+    ]
+  }
+  ImageDataMember ReservationStatus
+  {
+    #keys: '1[114198.0.795673551]'
+    ImageSpecifications:
+    [
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Fully reserved by upsteam'
+        Image: 'CHECK2'
+        Quill:
+        [*
+          object.istype( MaterialPlannedDemand )
+          and object.astype( MaterialPlannedDemand ).IsFullyFulfilledByUpstream();
+        *]
+        Value: 'FullyFulfilledByUpstream'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Fully reserved'
+        Image: 'CHECK'
+        Quill: 'object.QuantityOpen() <= 0'
+        Value: 'Fullyreserved'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Partially reserved'
+        Image: 'MIXEDCHECKBOX'
+        Quill: 'object.QuantityReserved() > 0 and object.QuantityOpen() > 0'
+        Value: 'PartiallyReserved'
+      }
+      ImageDataMemberImageSpecification
+      {
+        Description: 'Operation planned without material reserved'
+        Image: 'WARNING'
+        Quill: 'not object.IsFullyFulfilled() and object.astype( ProductPlannedDemand ).Operation_SC().IsPlanned()'
+        Value: 'ReservationStatus3'
+      }
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+Method AddKpiNameValuePairsFromObject (KpiSnapshotData snapshotData, Object kpiHoldingObject)
+{
+  TextBody:
+  [*
+    tree       := NamedValueTreeIO::Export( kpiHoldingObject, false );
+    typeHandle := tree.GetHandle( kpiHoldingObject.DefinitionName() );
+    typeNV     := tree.Root().Child( typeHandle );
+    
+    traverse( typeNV.Children(), Elements, kpiNV )
+    {
+      // Get the 'raw' value from the data, because exported Number attributes
+      // will fail to be re-imported as 'Real'. So a little help here.
+      kpiRaw := kpiNV.GetValue();
+      
+      // Only create KPIs for Real or Number type attributes
+      if( kpiRaw.istype( Real ) or kpiRaw.istype( Number ) )
+      {      
+        kpiName  := kpiNV.Name();
+        kpiValue := 0.0;
+        
+        if( kpiRaw.istype( Real ) )
+        {
+          kpiValue := kpiRaw.astype( Real ); 
+        }
+        else if( kpiRaw.istype( Number ) )
+        {
+          kpiValue := [Real]( kpiRaw.astype( Number ));  
+        }
+          
+        snapshotData.CreateValue( kpiName, kpiValue );
+      }
+    }
+  *]
+}

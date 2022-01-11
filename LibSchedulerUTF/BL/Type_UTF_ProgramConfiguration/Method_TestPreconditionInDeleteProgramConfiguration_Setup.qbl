@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditionInDeleteProgramConfiguration_Setup (Schedule schedule)
+{
+  Description: 'Test precondition in delete program configuration data - setup'
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    objectype := '';
+    hasPlannedProgramChange := false;
+    isValidForPreconDelete:= false;
+    
+    this.GetTestVariantForPreconditionDeleteProgramConfiguration( isvariantfound,
+                                                                  objectype,
+                                                                  hasPlannedProgramChange,
+                                                                  isValidForPreconDelete );
+    
+    if( isvariantfound )
+    {
+      // Create program definition
+      programdefinition := UTFMockObjectFactory::CreateProgramDefinitionData( schedule, 'Program Definition ID', false );
+      
+      // Create resource
+      resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Resource' );
+      LeadTimeStrategy_SC::Create( resource, Duration::Zero(), Constants::StrategyASAP() );
+      
+      // Insert program change based on variant
+      if( hasPlannedProgramChange )
+      {
+        resource.AssignProgramDefinitionConfiguration( programdefinition ); 
+        programtypes := selectset( programdefinition, ProgramSetConfiguration.ProgramTypeConfiguration, pt, true );                                      
+        // Insert program change
+        resource.InsertProgramChange( null( Task_SC ), programtypes, false, Duration::Zero() );  
+      }
+    }
+  *]
+}

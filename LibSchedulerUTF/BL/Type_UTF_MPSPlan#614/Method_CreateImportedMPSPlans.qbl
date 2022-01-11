@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateImportedMPSPlans (Schedule schedule) as owning ImportedMPSPlans
+{
+  Description: 'Creates an imported MPS plan.'
+  TextBody:
+  [*
+    importedMPSPlans := construct( ImportedMPSPlans );
+    
+    // Use test variant ID for MPSPlanID
+    variant := this.Variant();
+    timeStamp := schedule.Time();
+    
+    importedMPSPlan := ImportedMPSPlan::FindImportedMPSPlan( variant );
+      
+    if( isnull( importedMPSPlan ) )
+    {
+      importedMPSPlan := ImportedMPSPlan::Create( schedule, variant );
+    }
+    
+    importedMPSPlan.Update( timeStamp );
+    importedMPSPlans.Add( importedMPSPlan );
+    
+    return &importedMPSPlans;
+  *]
+}

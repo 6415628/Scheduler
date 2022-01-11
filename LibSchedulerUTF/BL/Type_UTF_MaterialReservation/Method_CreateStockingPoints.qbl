@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateStockingPoints (Schedule schedule) as owning StockingPoints
+{
+  Description: 'Create stocking points based on test instance.'
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    
+    testInstanceSupplies := this.GetTestInstanceSupplies( variant );
+    testInstanceDemands := this.GetTestInstanceDemands( variant );
+    
+    supplyStockingPointIDs := selectuniquevalues( testInstanceSupplies, Elements, row, true, row.StockingPointID() );
+    demandStockingPointIDs:= selectuniquevalues( testInstanceDemands, Elements, row, true, row.StockingPointID() );
+    
+    stockingPointIDs := supplyStockingPointIDs.Union( demandStockingPointIDs );
+    
+    stockingPoints := construct( StockingPoints );
+    
+    traverse( stockingPointIDs, Elements, stockingpointid, stockingpointid.Length() > 0 )
+    {
+      stockingPoint := StockingPoint::FindStockingPoint( stockingpointid );
+      
+      if( isnull( stockingPoint ) )
+      {
+        stockingPoint := StockingPoint::Create( schedule, stockingpointid );
+      }
+      
+      stockingPoint.Name( stockingpointid );
+      stockingPoint.Index( 0 );
+      stockingPoints.Add( stockingPoint ); 
+    }
+    
+    return &stockingPoints;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

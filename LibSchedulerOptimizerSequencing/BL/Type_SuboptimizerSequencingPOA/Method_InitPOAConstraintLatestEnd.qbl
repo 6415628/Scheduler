@@ -1,0 +1,61 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOAConstraintLatestEnd (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata)
+{
+  Description:
+  [*
+    Adds the constraint which prevents an operation to end after a certain time.
+    This time is Operation.LatestEnd.
+  *]
+  TextBody:
+  [*
+    poaepoch := this.POAEpoch(); // considers the start of the earliest frozen/feedback task before schedule time if any, else use schedule time
+    
+    latestends := POAValueSet::N( poa, SuboptimizerSequencingPOA::NamePOAConstraintLatestEnd(), Real::MaxReal() );
+    
+    traverse( transientdata, OperationInSuboptimizerSequencing, operation )
+    {
+      latestend := operation.LatestEnd();
+      if( latestend.IsFinite() )
+      {
+        end := latestend.HoursAsReal( poaepoch );
+        node := poa.Node( operation );
+        latestends.Set( node, end );
+    
+        // Set the latest end of the dummy node equal to the latest end of the operation
+        if( operation.GetRequiresDummyEndNode() )
+        {
+          node := poa.Node( SuboptimizerSequencingPOA::NamePOADummyEndNode( operation ), operation );
+          latestends.Set( node, end );
+        }
+      }
+    
+      // We need an additional latest end related to the NoBufferWait tasks
+      // If the downstream operation is in scope or in span
+      // and the upstream operation is not in scope or span
+      // then the downstream operation needs a latest end to ensure the upstream operation's no buffer end will not be pushed out by the optimizer
+      if( operation.Operation().GetHasUpstreamNoBufferWaitSubtask() )
+      {
+        latestendnobuffer := operation.GetLatestEndForUpstreamNoBufferWait();
+        latestend := minvalue( latestend, latestendnobuffer );
+        
+        if( latestend.IsFinite() )
+        {
+          end := latestend.HoursAsReal( poaepoch );
+          node := poa.Node( operation );
+          latestends.Set( node, end );
+        }
+      }
+    }
+    
+    constr := poa.NewEndConstraint( SuboptimizerSequencingPOA::NamePOAConstraintLatestEnd() );
+    constr.Expression( poa.Expression( SuboptimizerSequencingPOA::NamePOAExpressionTime() ) );
+    constr.ValueSet( latestends );
+    constr.SetEnd();
+    
+    constr.Hard( false );
+    constr.ViolationOffset( guard( this.Strategy().MRS_KPIOffsetConstraintLatestEnd(), 0.0 ) );
+    constr.Factor( guard( this.Strategy().MRS_KPIWeightConstraintLatestEnd(), 0.0 ) );
+    constr.Power( OptimizerRun::GetPOAPower( guard( this.Strategy().MRS_KPIPowerConstraintLatestEnd(), OptimizerRun::POADefaultPower() ) ) );
+  *]
+}

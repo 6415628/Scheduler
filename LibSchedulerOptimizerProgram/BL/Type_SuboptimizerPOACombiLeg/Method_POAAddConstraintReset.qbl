@@ -1,0 +1,56 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintReset (SuboptimizerPOACombiLeg_SequenceCombiLeg poa, CombiLegs combilegs, Operation_SCs operations, 
+  ProgramSetConfiguration programsetconfig, Rule rule)
+{
+  Description: 'Resets the expressions at the beginning of a new program or phase'
+  TextBody:
+  [*
+    // We need to reset the expression if this is the first combileg that is in scope of the relevant program type or program phase
+    // We then reset it to equal to the frozen cummulative value 
+    // (=cummulative value of the out of scope operations of this program or phase)
+    traverse( combilegs, Elements, combileg,
+              combileg.GetIsRelevantForRule( programsetconfig, rule ) )
+    {                           
+      // Check if this leg is the start of the relevant phase for this iteration
+      // That is the case if this is the first combileg related to the relevant program phase that is in scope
+      isstartofphase := combileg.GetIsFirstLegOfProgramPhaseInScope( programsetconfig, combilegs );
+                                     
+      // Check if this leg is the start of the relevant program for this iteration
+      // That is the case if this is the first combileg related to the relevant program that is in scope
+      // We start with the isstartofphase check since we can only start a new program if we also start a new phase
+      isstartofprogram := isstartofphase 
+                          and combileg.GetIsFirstLegOfProgramTypeInScope( programsetconfig, combilegs );
+                                    
+      // Get the start node of the leg, which will be used to set the right value for the expression
+      startnode := poa.Node( SuboptimizerPOACombiLeg::NamePOACombiLegStart( combileg ), combileg );
+      characteristic := rule.CharacteristicMain();
+      isminrule := rule.RuleSubType().IsMinimumCombinedLength();
+      isphaserule := rule.RuleScopeSelected() = RuleConstant::RuleScope_ProgramPhase();
+      isshutdownrule := rule.RuleScopeSelected() = RuleConstant::RuleScope_Shutdown();
+      charexpression := poa.Expression( SuboptimizerPOACombiLeg::NamePOAExpression( characteristic, isminrule, programsetconfig, isphaserule, isshutdownrule ) );
+      
+      // Get the value to which the expression should be reset
+      // This is the value of the out of scope (and thus frozen) operations
+      resettovalue := combileg.GetOutOfScopeCumulativeValue( characteristic, isminrule, programsetconfig, isphaserule, operations , combilegs );
+        
+      // For minimum combined length rules, we set the end value to its negative since we want to ensure at least this many operations being scheduled
+      resettovalue := ifexpr( isminrule, -resettovalue, resettovalue );
+      
+      
+      // If this leg is the first of a relevant program
+      // Or it is the first of a relevant phase and the rule is a phase rule
+      // then we need to reset the rules to the base value
+      if( isstartofprogram
+          or ( isstartofphase and isphaserule ) )
+      {
+        debuginfo( "combileg ", combileg.SequenceNr(), " rule", rule.Name(),"char", characteristic.ID(), "resettovalue", resettovalue )
+        // Define the reset constraint
+        poa.NewResetConstraint( SuboptimizerPOACombiLeg::NamePOAConstraintReset( characteristic, isminrule, programsetconfig, isphaserule, combileg ),
+                                startnode,
+                                charexpression,
+                                resettovalue )
+      }                        
+    }
+  *]
+}

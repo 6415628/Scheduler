@@ -1,0 +1,61 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test022_IsCreatingDatasetCopiesEnabled_DatasetCopyConditional (LibOpt_TestDataset dataset)
+{
+  Description: 'Check that a `LibOpt_DatasetCopyConditional` that is attached to some `LibOpt_BreakpointPosition` does not create a `LibOpt_DatasetCopyReplannable` snapshot nor a dataset copy when the `opt.IsCreatingDatasetCopiesEnabled()` attribute is set to false.'
+  TextBody:
+  [*
+    // evr3 Jul-6-2020 (created)
+    opt := this.Optimizer( dataset );
+    opt.IsCreatingDatasetCopiesEnabled( false );
+    run := opt.CreateRun();
+    
+    // Create any component and set a LibOpt_DatasetCopyConditional to a component position of that component.
+    switch := opt.SwitchRoundRobin( run, 'Round robin' );
+    initializeposition := select( switch, ComponentPosition, cp, cp.Name() = LibOpt_Component::ComponentPosition_Initialize() );
+    initializeposition.SetDatasetCopy();
+    
+    streamrun := run->Start();
+    
+    str := streamrun
+    ->|stream[Void]::Wait( this.MDSEditorUpdateTime() ) // Wait some time to ensure that the dataset copy has been created and that MDSEditor::Editor().ObjectInfos() is updated. 
+    ->|void->() // Start a reactive call to handle the dataset copy
+    {
+      snapshotcopydataset := select( switch,
+                                     SnapshotComponent.Children.astype( LibOpt_SnapshotReplannableCopyDataset ), 
+                                     snapshot,
+                                     true );
+                                                               
+      this.Run().AssertIsNull( snapshotcopydataset,
+                               "Expected that no '" 
+                               + typeof( LibOpt_SnapshotReplannableCopyDataset ).Name()
+                               + "' snapshot would be created when attaching a "
+                               + typeof( LibOpt_DatasetCopyConditional ).Name()
+                               + "' object to a '"
+                               + typeof( LibOpt_BreakpointPosition ).Name()
+                               + "', because 'optimizer.IsCreatingDatasetCopiesEnabled()' is false. " 
+                               + "However, a snapshot was created."
+                               ); 
+      
+      nrofcreateddatasets := counter( MDSEditor::Editor().ObjectInfos(),
+                                      Elements,
+                                      objectinfo,
+                                      LibOpt_TestUnit_DatasetCopy::IsDatasetChildOfUnitTestDataset( objectinfo, dataset )
+                                      );
+      
+      this.Run().AssertEqual( 0, // Expected value
+                              nrofcreateddatasets, // Actual value
+                              "Expected that no dataset copy would be created when attaching a "
+                              + typeof( LibOpt_DatasetCopyConditional ).Name()
+                              + "' object to a '"
+                              + typeof( LibOpt_BreakpointPosition ).Name()
+                              + "', because 'optimizer.IsCreatingDatasetCopiesEnabled()' is false. " 
+                              + "However, " + [String] nrofcreateddatasets + " dataset copies were created."
+                              );   
+    }   
+    
+    this.NoException( str );
+    this.DeleteDatasetCopies( dataset, str );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

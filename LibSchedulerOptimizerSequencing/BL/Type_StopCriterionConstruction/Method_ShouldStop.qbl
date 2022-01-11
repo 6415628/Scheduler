@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride ShouldStop (const LibOpt_Task task) as Boolean
+{
+  TextBody:
+  [*
+    //The iterator continues as long as
+    // there are unplanned operations
+    // and no iteration has failed so far
+    // and the last iteration planned at least one operation.
+    
+    continue := true;
+    
+    // there are unplanned operations
+    continue := continue and exists( task.Scope().OperationsConst(), Elements, op, not op.IsPlanned() );
+    
+    // and no iteration has failed so far
+    Transaction::Transaction().Propagate( relation( LibOpt_SnapshotComponent, IterationPart ) ); // this relation is not calculated before the first iteration. Used in line below.
+    continue := continue and forall( task, SnapshotComponent.IterationPart.IterationPartNM.Iteration, iteration, iteration.NrOfErrors() = 0 );
+    
+    // and the last iteration planned at least one operation.
+    previoussnapshots := task.SnapshotComponent().GetSnapshotsOnPreviousIteration();
+    if( previoussnapshots.Size() > 0 )
+    {
+      continue := continue and exists( previoussnapshots, Elements.astype( SnapshotAutoplan ), snap, snap.NrOperationsPlanned() > 0 );
+    }
+    
+    return not continue;
+  *]
+}

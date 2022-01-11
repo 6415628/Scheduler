@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method Create (internal[GUIComponent] parent, ProductSupply productsupply, ProductDemand productdemand) id:Method_DialogEditProductFulfillment_Create
+{
+  #keys: '[129484.0.15026544]'
+  Body:
+  [*
+    // Create planned fulfillment
+    
+    Dialog.SetDialogData( productdemand, productsupply, false );
+    
+    data := productdemand.ProductFulfillment( relshadow, 
+                                              GenericProductPlannedFulfillment, 
+                                              ProductSupply := productsupply,
+                                              SupplyId := productsupply.SupplyID(),
+                                              ProductDemand := productdemand,
+                                              DemandId := productdemand.DemandID(),
+                                              Quantity := productdemand.GetSuggestedQuantity( productdemand.QuantityOpen(), productsupply, productsupply.QuantityOpen() ) );
+    
+    Dialog.Data( data );
+    
+    if( this.DoModal( parent ) > 0 )
+    {
+      productdemand.CreatePlannedFulfillment( productsupply, true, ApplicationScheduler.GetEditorRealValue( EditorReservedQuantity ) );
+    }
+  *]
+}

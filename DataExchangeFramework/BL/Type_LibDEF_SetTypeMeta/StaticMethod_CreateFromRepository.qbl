@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateFromRepository (LibDEF_System owner_i, LibDEF_ChannelMeta channelMeta_i, const LibDEF_SetType setType_i) as LibDEF_SetTypeMeta
+{
+  Description: 'Create using Repository object.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-28-2016 (created)
+    // find existing SetTypeMeta
+    channelName := channelMeta_i.Name();
+    setTypeMeta := LibDEF_SetTypeMeta::FindSetTypeMeta( owner_i.DataBroker(), owner_i.GUID(), 
+                                                        channelName, setType_i.Name() );
+    
+    // make sure the GUID matches
+    if( not isnull( setTypeMeta ) and
+        setTypeMeta.GUID() <> setType_i.GUID() )
+    {
+      setTypeMeta.Delete();
+      setTypeMeta := null( LibDEF_SetTypeMeta );
+    }
+    
+    if( isnull( setTypeMeta ) )
+    {
+      setTypeMeta := LibDEF_SetTypeMeta::Create( owner_i,
+                                                 channelMeta_i,
+                                                 setType_i.Name(),
+                                                 setType_i.GUID() );
+    
+      // This will only be executed for a locally owned-SetType, where owner_i is the current System instance
+      owner_i.SendMetadataRequestSetTypeCreated( setTypeMeta );
+    }
+    
+    return setTypeMeta;
+  *]
+}

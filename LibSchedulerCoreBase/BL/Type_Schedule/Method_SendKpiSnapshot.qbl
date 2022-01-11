@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendKpiSnapshot (String action)
+{
+  TextBody:
+  [*
+    libsm_ScenarioManagerMDSInfo := MDSEditor::Editor().LoadedObjectInfo( LibSM_ScenarioManager::GetDatasetKind(),
+                                                                          LibSM_ScenarioManager::GetDatasetFolderName(),
+                                                                          LibSM_ScenarioManager::GetDatasetName() );
+    
+    // Use LoadedObjectInfo and Root to detect null ScenarioManager
+    if( not isnull( libsm_ScenarioManagerMDSInfo ) )
+    {
+      libsm_ScenarioManager := MDSLibSM_ScenarioManager::Root( libsm_ScenarioManagerMDSInfo.MDSID().MDSKey() );
+      activeScenario := libsm_ScenarioManager->GetActiveScenario( this.MDSID() );
+      this.KpiSnapshotGenerator_SC()->SendSnapshot( action, activeScenario );
+    }
+  *]
+}

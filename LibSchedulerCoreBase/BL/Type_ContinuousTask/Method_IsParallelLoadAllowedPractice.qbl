@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method IsParallelLoadAllowedPractice () declarative as Boolean
+{
+  Description: 'Check practice allowed rule for continuous task parallel load'
+  TextBody:
+  [*
+    // jiex Nov-4-2016 (created)
+    isallowed := false;
+    
+    if( not isnull( this.Previous() ) )
+    {
+      isallowed := this.GetOperation().Practice() = this.Previous().GetOperation().Practice();
+    } 
+    else
+    {
+      lastfeedback := this.Resource_SC().LastFeedbackTaskInSchedule();
+      if( not isnull( lastfeedback ) )
+      {
+        isallowed := guard( this.GetOperation().Practice() = lastfeedback.OperationTaskFeedback().Operation_SC().Practice(), false );
+      }
+    }
+    return isallowed;
+  *]
+}

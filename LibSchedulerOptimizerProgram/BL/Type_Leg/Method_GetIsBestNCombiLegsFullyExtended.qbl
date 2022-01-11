@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetIsBestNCombiLegsFullyExtended () remote as Boolean
+{
+  TextBody:
+  [*
+    // yifei Aug-16-2021 (created)
+    //look for the CombiProgramType, whose last combileg is linked to this leg
+    combilegs := selectset( this, 
+                            CombiLeg, 
+                            combileg, 
+                            isnull( combileg.GetNextCombiLegInCPT() ) );
+    cpts := selectsortedset( combilegs, Elements.LeadingCombiProgramPhase.CombiProgramType, cpt, true, cpt.CostTotal() );
+    
+    firstNcpts := cpts.SelectFirst( OptimizerProgram::NumBestCombiToKeepPerLeg() );
+    
+    return forall( firstNcpts, Elements, cpt, cpt.GetIsFullyExtended() );
+  *]
+}

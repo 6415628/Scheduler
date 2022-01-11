@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetParallelMaxLength () declarative as Real
+{
+  Description: 'Get max task length in parallel'
+  TextBody:
+  [*
+    // jiex Nov-4-2016 (created)
+    value := 0.0
+    
+    if( not isnull( this.LastFeedbackTask() ) )
+    {
+      value := this.LastFeedbackTask().ExportedParallelMaxLength();
+    }                                                                                            
+    else
+    {
+      value := max( this, AsFirstTaskInParallel.ParallelTasks, t, true, t.GetTaskLength() );
+      
+      if( this.IsParallelWithFeedback() and not isnull( this.Resource_SC().LastFeedbackTaskInSchedule() ) )
+      {
+        value := maxvalue( value, this.Resource_SC().LastFeedbackTaskInSchedule().ExportedParallelMaxLength() );
+      }
+    }
+    return value;
+  *]
+}

@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method InsertOptimizationStatusReporters (LibOpt_Component root_component)
+{
+  Description:
+  [*
+    For each suboptimizer reachable from the given component, inserts a link to a new `OptimizationStatusReporterSequencing` component.
+    This makes sure that status is reported to the optimzation manager after each execution of a suboptimizer.
+  *]
+  TextBody:
+  [*
+    // mbr23 Mar-25-2020 (created)
+    run := root_component.Run();
+    // generic status reporter to optimzation manager that has NO `next` component:
+    generic_reporter := run.Component( relnew, OptimizationStatusReporterSequencing, Name := "Optimization Manager reporter" );
+    traverse( root_component.GetDownstreamComponents().Union( root_component ), Elements.astype( LibOpt_Suboptimizer ), suboptimizer )
+    {
+      // if the suboptimizer has no `Next` component, we can `next` it to the generic reporter:
+      if( isnull( suboptimizer.Next() ) )
+      {
+        suboptimizer.To( generic_reporter );
+      }
+      else
+      {
+        // else, we need to insert a new reporter component between the suboptimizer and its 'next' component:
+        special_reporter := run.Component( relnew, OptimizationStatusReporterSequencing, Name := "Optimization Manager reporter for " + suboptimizer.Name() );
+        special_reporter.To( suboptimizer.Next().Destination() );
+        suboptimizer.To( special_reporter );
+      }
+    }
+  *]
+}

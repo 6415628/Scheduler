@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestFinishToStartMaxDelay_Setup (Schedule schedule)
+{
+  Description: 'Setup by creating the required mock and dependent objects.'
+  TextBody:
+  [*
+    // Setup
+    this.Setup( schedule );
+    
+    // Retrieve test variant data controller columns
+    hasDelay := false;
+    availableTime := DateTime::MinDateTime();
+    expectedTime := DateTime::MinDateTime();
+    exceedMaximumWaitingDuration := false;
+    
+    this.GetTestVariant( hasDelay, availableTime, expectedTime, exceedMaximumWaitingDuration );
+    
+    fromOperation := select( schedule, PlanUnit_SC.Operation_SC, operation, operation.ToOperationDependency( relsize ) > 0 );
+    toOperation := select( schedule, PlanUnit_SC.Operation_SC, operation, operation.FromOperationDependency( relsize ) > 0 );
+    
+    offsetType := ifexpr( hasDelay, Constants::TimeConstraint_OffsetRelation_Max(), '' );
+    UTFMockObjectFactory::CreateTimeConstraint( schedule, 'TimeConstraint_02', fromOperation, toOperation, Constants::TimeConstraint_DependencyType_FinishToStart(),
+                                                offsetType, Duration::Minutes( 5 ) );
+  *]
+}

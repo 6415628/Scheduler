@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod DoFinalizeDatasetCopyDelete (LibOpt_Task task, Boolean iserrorhandling) as stream[Void]
+{
+  Description:
+  [*
+    This method checks for all datasets that are created by `task` if the `DeleteCondition` of the `LibOpt_DatasetCopyConditional` is satisfied. If so, the dataset is deleted. 
+    This method assumes for all newly created datasets that any memory only dataset is online and that any standalone dataset is offline. 
+    This method can be called right before an error. Therefore, don't start any reactive transactions in the parts of this method that can be reached when `iserrorhandling` is `true`.
+  *]
+  TextBody:
+  [*
+    // evr3 Jun-30-2020 (created)
+    previousdeletecondition := stream[Void]::Success();
+    snapshots := selectsortedset( task,
+                                  SnapshotComponent.Children.astype( LibOpt_SnapshotReplannableCopyDataset ), 
+                                  snapshot, 
+                                  not snapshot.IsDatasetDeletedByOptimizer() 
+                                  and not snapshot.HasFailedToCreateDataset()
+                                  and not snapshot.HasExecutedDoFinalizeDatasetCopyDelete(), 
+                                  // The DeleteCondition of a LibOpt_DatasetCopyOnAnyDownstreamCopy uses the HasToBeDeleted and IsDatasetDeletedByOptimizer attributes of
+                                  // the snapshots that are created after the LibOpt_DatasetCopyOnAnyDownstreamCopy
+                                  // By sorting on SequenceNr, it is ensured that the HasToBeDeleted and IsDatasetDeletedByOptimizer attributes of the newest components are updated first. 
+                                  -snapshot.SequenceNr()
+                                  );
+    
+    traverse( snapshots, Elements, snapshot )
+    {
+      datasetcopyconditional := snapshot.DatasetCopyConditional();
+      // The AE can modify the DeleteCondition method himself. This means that a user error might occur there. 
+      // If there is an error in this method and if DatasetCopyDelete is called with iserrorhandling := false, 
+      // then this error will be logged below the dataset copy snapshot and the dataset won't be deleted. 
+      // The optimizer will then continue executing as if nothing happened. 
+      
+      // If an error occurs when DatasetCopyDelete is called with iserrorhandling := true,
+      // then this error will be logged below the SnapshotComponent. 
+      // The current transaction will then be rolled back and the optimizer iteration will be aborted. 
+      if( not isnull( datasetcopyconditional ) ) 
+      {
+        if( not task.Run().InOneTransaction() and not iserrorhandling )
+        {
+          hastodeletedataset := previousdeletecondition->|datasetcopyconditional->DeleteCondition( task );
+          previousdeletecondition := datasetcopyconditional->DeleteConditionPostProcessing( snapshot, hastodeletedataset )->IgnoreException()
+                                     ->|hastodeletedataset->Exception()->LibOpt_SnapshotError::ReadAndThrow( task, snapshot );
+        }
+        else
+        {    
+          hastodeletedataset := datasetcopyconditional.DeleteCondition( task );
+          datasetcopyconditional.DeleteConditionPostProcessing( snapshot, hastodeletedataset );
+        }
+      }
+    }
+    
+    // We return a chain of streams.
+    // This ensures that stream::Success() will only be emitted when all dataset copies have been handled.
+    return previousdeletecondition;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitializeCapacity () id:Method_LibCal_dlgEvent_InitializeCapacity
+{
+  #keys: '[131094.1.527551346]'
+  Body:
+  [*
+    // Show pnlTypeWithCapacity (which has an additional radiobutton and an editfield for the capacity) instead if pnlType if applicable.
+    // In the TC the additional radiobutton is dynamically added. This is not possible in the WC, so here two panels are used.
+    // Extensible method USE_PARTIAL_CAPACITY indicates if partial capacity is allowed.
+    useParticalCapacity := LibCal_Event::USE_PARTIAL_CAPACITY();
+    
+    pnlTypeWithCapacity.Visible( useParticalCapacity     );
+    pnlType            .Visible( not useParticalCapacity );
+    
+    event     := dhEvent.Data();
+    eventType := event.Type();
+    
+    // Enable the editfield for the capacity, if applicable.
+    if( useParticalCapacity )
+    {
+      rbgEventTypeWithCapacity.BoundValue( eventType );
+      lblEventTypeWithCapacity.Text(       eventType  );  // Workaround (see below)
+      edtCapacity.Enabled( dhEvent.Data().Type() = LibCal_Event::TYPE_PARTIAL(), "" );
+    }
+    else
+    {
+      // Partial capacity should not be used. Convert it to Unavailable or Available.
+      // This is an edge case that can only happen via import, or when using partial capacity was first enabled and later disabled.
+      if( eventType = LibCal_Event::TYPE_PARTIAL() )
+      {
+        if( event.PartialCapacity() = 0.0 )
+        {
+          eventType := LibCal_Event::TYPE_UNAVAILABLE();
+        }
+        else
+        {
+          eventType := LibCal_Event::TYPE_AVAILABLE();
+        }
+          
+        // Show a message to inform the user that the EventType and Capacity was changed.
+        capacity   := this.RealToString( event.PartialCapacity() );
+        WebMessageBox::Warning( "The event type is 'Partial' with Capacity = " + capacity + ", but partial capacity is not enabled."
+                              + "The event type is set to '" + eventType + "'.", false, false );
+      }
+      
+      rbgEventType.BoundValue( eventType );
+      lblEventType.Text(       eventType );  // Workaround because rbgEventType.BoundValue() cannot be used in
+    }                                        // method CreateUpdateEventAndParticipation.
+  *]
+}

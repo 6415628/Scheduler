@@ -1,0 +1,19 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCharacteristicRealValueForCumulativeCheckings (Characteristic characteristic) declarative remote as Real
+{
+  Description: 'Get real value for the characteristic in cumulative checkings'
+  TextBody:
+  [*
+    // Get real value for the characteristic in cumulative checkings
+    operationchar :=  select( this, OperationCharacteristicCumulativeRule, opchar,
+                              opchar.Characteristic() = characteristic );
+    if( isnull(  operationchar ) )
+    {
+      operationchar :=  select( this, OperationCharacteristicShutdownScope, opchar,
+                              opchar.Characteristic() = characteristic ); 
+    }
+    
+    return guard( operationchar.RealValue(), 0.0 );
+  *]
+}

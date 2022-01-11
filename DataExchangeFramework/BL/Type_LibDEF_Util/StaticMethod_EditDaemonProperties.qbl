@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod EditDaemonProperties (MDSObject mdsObject_i, String daemonName_i, Boolean isEnabled_i, 
+  Duration frequency_i, DateTime startTime_i)
+{
+  Description: 'Generic method for modifying Daemon configuration.'
+  TextBody:
+  [*
+    // Jacky CHAN May-3-2016 (created)
+    daemon := select( mdsObject_i, MDSObjectDaemons, daemon, daemon.Name() = daemonName_i );
+    
+    if( not isnull( daemon ) )
+    {
+      if( isEnabled_i )
+      {
+        // Set according to the dataset's Timezone
+        // GMT is used when the dataset has no timezone
+        timezoneID := ifexpr( TimeZone::HasTimeZoneSupport(), mdsObject_i.TimezoneID(), "GMT" );
+        timezone   := TimeZone::Construct( timezoneID );
+        
+        daemon.LocalFrequency( frequency_i );
+        daemon.LocalStartDate( startTime_i.Date( timezone ) );
+        daemon.LocalStartTimeOfDay( startTime_i.TimeOfDay( timezone ) );
+    
+        LibDEF_Util::Log( "Daemon '" + daemonName_i + "' has been enabled with [Frequency: " + LibDEF_Util::GetLoggerDurationToString().Convert( frequency_i ) + 
+                                                                            ", Start-time: " + LibDEF_Util::GetLoggerDateTimeToString().Convert( startTime_i ) + "]." );
+      }
+      else
+      {
+        daemon.LocalFrequency( Duration::Zero() );
+    
+        LibDEF_Util::Log( "Daemon '" + daemonName_i + "' has been disabled." );
+      }
+    }
+    else
+    {
+      LibDEF_Util::Log( "Daemon '" + daemonName_i + "' is not updated; the Daemon cannot be found." );
+    }
+  *]
+}

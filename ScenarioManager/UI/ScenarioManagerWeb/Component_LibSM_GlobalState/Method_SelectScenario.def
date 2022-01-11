@@ -1,0 +1,44 @@
+Quintiq file version 2.0
+#parent: #root
+Method SelectScenario (LibSM_Scenario scenario) as Boolean id:Method_LibSM_GlobalState_SelectScenario
+{
+  #keys: '[136398.0.1891177386]'
+  Body:
+  [*
+    // Select the active dataset based on passed in scenario.
+    mds := ApplicationScope.ComponentMDS();
+    
+    isSelected := false;
+    dataset := guard( scenario.Dataset(), null( LibSM_Dataset ) );
+    
+    if( not isnull( dataset ) )
+    {
+      allInfo := ExternalMDSEditor::Editor().LoadedObjectInfos();
+      
+      mdsInfo := select( allInfo, Elements, oinfo, 
+                         oinfo.MDSID().MDSKey() = dataset.DatasetMDSID()
+                      or oinfo.Name()           = dataset.Name() );
+    
+      if( not isnull( mdsInfo ) )
+      {
+        mdsInstance := select( mds, ComponentMDSKinds.ComponentMDSInstances, instance, 
+                               instance.Name() = dataset.Name() );
+    
+        if( not isnull( mdsInstance ) )
+        {
+          info( ' >>> Selecting dataset ', mdsInstance.Name(), ' as the active one!' );
+          mdsInstance.ComponentMDSKind().SelectInstance( mdsInstance );
+          mds.Apply();
+    
+          // Also put the active scenario in a DataHolder.
+          DataHolderSelectedScenario.Data( scenario );
+          
+          this.PopulateMDS();
+          isSelected := true;
+        }
+      }
+    }
+    
+    return isSelected;
+  *]
+}

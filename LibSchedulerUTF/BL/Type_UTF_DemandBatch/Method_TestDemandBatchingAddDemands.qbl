@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestDemandBatchingAddDemands (Schedule schedule)
+{
+  Description: 'Test adding demands into a batch.'
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    
+    testinstance_demandinbatches := this.GetTestInstanceDemandInBatch( variant );
+    
+    // Select the demand batch
+    demandbatch := select( schedule, DemandBatch, db, true );
+    
+    // Select the demands
+    demands := selectset( schedule, Demand, demand, true );
+    
+    // Call the method that we want to test
+    demandbatch.AddDemands( demands );
+    
+    // Get all the demands in batche
+    demandinbatches := selectset( demandbatch, DemandInBatch, dib, true );
+    
+    // Assert if the number of demand in batch created is correct
+    this.Run().AssertEqual( testinstance_demandinbatches.Size(), demandinbatches.Size(), UTFUtility::GenerateFailedMessage( 'DemandBatching_AddDemands', variant ) ); 
+    
+    // Check each the demand in batch is created with the right quantity
+    traverse( testinstance_demandinbatches, Elements, testinstance )
+    {
+      demandinbatch := select( demandinbatches, Elements, dib, dib.Demand().DemandID() = testinstance.DemandID() )
+      
+      // Assert the result
+      this.Run().AssertEqual( testinstance.QuantityAllowed_MultipleDemands(), guard( demandinbatch.Quantity(), 0.0 ), UTFUtility::GenerateFailedMessage( 'DemandBatching_AddDemands', variant ) ); 
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

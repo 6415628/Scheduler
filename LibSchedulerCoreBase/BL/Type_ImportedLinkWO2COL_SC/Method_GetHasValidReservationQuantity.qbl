@@ -1,0 +1,20 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetHasValidReservationQuantity (output Strings feedback_o) declarative as Boolean
+{
+  TextBody:
+  [*
+    isvalid := this.Quantity() <= guard( this.ImportedWorkOrderOutputMaterial().Quantity(), Real::MaxReal() )   
+               and this.Quantity() <= guard( this.ImportedCustomerOrderLine_SC().Quantity(), Real::MaxReal() ); 
+               
+    // guard with Real::MaxReal so that it passes the sanity check, because the main problem here is that the externalsupply or workorderdemand does not exist, causing null relation.
+    
+    if( not isnull( feedback_o ) and not isvalid )
+    {
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( this.GetName(),
+                                                               Translations::SC_ImportedLink_ViolateHasValidReservationQuantity() ) );
+    }
+    
+    return isvalid;
+  *]
+}

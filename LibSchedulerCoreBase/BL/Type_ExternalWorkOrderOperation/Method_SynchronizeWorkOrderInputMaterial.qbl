@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SynchronizeWorkOrderInputMaterial
+{
+  TextBody:
+  [*
+    allinstances := selectset( this, WorkOrderInputMaterial, workorderinputmaterial, true )
+    updatedinstances := construct( WorkOrderInputMaterials );
+    
+    traverse( this, ImportedExternalWorkOrderOperation.ImportedWorkOrderInputMaterial.astype( ImportedExternalWorkOrderInputMaterial ), row, 
+                                                                                                                                        row.IsValidDataHard() )
+    {
+      workorderinputmaterial := ExternalWorkOrderInputMaterial::FindExternalWorkOrderInputMaterial( row.Id() );
+      
+      if( isnull( workorderinputmaterial ) )
+      {
+        workorderinputmaterial := this.CreateWorkOrderInputMaterial( row.Id() ).astype( ExternalWorkOrderInputMaterial );
+      }
+      //to cater for scenario where workorderID in Excel change, but the ID does not change
+      else if(  workorderinputmaterial.WorkOrderId() <> this.WorkOrderId() )
+      {
+        newoperation := WorkOrderOperation::FindWorkOrderOperation( row.WorkOrderId(), row.SequenceNr() )
+        
+        if( not isnull( newoperation ) )
+        {
+          newoperation.WorkOrderInputMaterial( relmove, workorderinputmaterial );
+        }      
+      }
+      
+      workorderinputmaterial.Update( row );
+      updatedinstances.Add( workorderinputmaterial );
+    }
+    
+    //Delete work order demands if they do not exist in KT
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, workorderinputmaterial )
+    {
+      workorderinputmaterial.Remove();
+    }
+  *]
+}

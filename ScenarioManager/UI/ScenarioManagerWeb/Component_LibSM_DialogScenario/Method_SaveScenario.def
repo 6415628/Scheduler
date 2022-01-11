@@ -1,0 +1,97 @@
+Quintiq file version 2.0
+#parent: #root
+Method SaveScenario () id:Method_LibSM_DialogScenario_SaveScenario
+{
+  #keys: '[136398.0.1933172983]'
+  Body:
+  [*
+    // Saves the current scenario.
+    // This method is called regardless of whether it's a new, copy or edit action.
+    
+    scenario              := DataHolderDialogData.Data();
+    sourceScenario        := DataHolderCopySourceScenario.Data();
+    parentFolder          := DataHolderParentFolder.Data();
+    
+    name                  := EditFieldScenarioName.Text();
+    description           := EditFieldScenarioDescription.Text();
+    isLive                := CheckboxCannotDelete.Checked();
+    
+    //Add metadata to structured
+    metadatas := construct( structured[ LibSM_MetaData ] );
+    this.SaveScenarioMetaData( metadatas ) ; 
+    
+    knowledgeProfile      := DropDownListKnowledgeProfile.Data();
+    storageState          := DropDownStringListStorageState.Text();
+    timezone              := '';
+    
+    originalKnowledgeProfile := DataHolderOriginalKnowledgeProfile.Data();
+    
+    if ( isnull( scenario ) )
+    {
+      // New/Copy
+      if ( isnull( sourceScenario ) )
+      {
+        // New
+        if ( isnull( this.DataHolderExistingDataset().Data() ) )
+        {
+          // Really new. Also create a new dataset.
+          scenario := LibSM_ScenarioManager.CreateScenario( parentFolder, 
+                                                            name, 
+                                                            description, 
+                                                            isLive, 
+                                                            storageState, 
+                                                            '',   // weird 'description'/'comment' duplicate.
+                                                            knowledgeProfile, 
+                                                            metadatas, 
+                                                            timezone );
+          // Select the new scenario as main dataset.                                                  
+          LibSM_GlobalState.SelectScenario( scenario );
+        }
+        else
+        {
+          // New scenario based on an existing dataset. 
+          scenario := LibSM_ScenarioManager.CreateScenarioFromDataset( this.DataHolderExistingDataset().Data(), 
+                                                                       parentFolder, 
+                                                                       name, 
+                                                                       description, 
+                                                                       isLive,  
+                                                                       '', 
+                                                                       knowledgeProfile,
+                                                                       metadatas,
+                                                                       timezone );
+        }
+      } 
+      else
+      {
+        // Copy an existing scenario.
+        scenario := sourceScenario.Copy( sourceScenario.ParentNode(), 
+                                         name, 
+                                         description,
+                                         storageState, 
+                                         knowledgeProfile,
+                                         metadatas, 
+                                         LibSM_ScenarioManager.GlobalParameter().IsCopiesAreChildrenOfSource() );
+      }                                          
+    
+      // Make sure the new scenario is highlighted in open Scenario lists.
+      LibSM_GlobalState.QueueForHighlight( scenario );                                                     
+    }
+    else
+    {
+      // Edit an existing scenario.
+      scenario.Update( name, 
+                       description, 
+                       isLive, 
+                       storageState,
+                       knowledgeProfile, 
+                       metadatas,
+                       timezone );
+    }
+    
+    if ( isnull( originalKnowledgeProfile ) or originalKnowledgeProfile <> knowledgeProfile )
+    {
+      WebMessageBox::Information( 'Selecting knowledge profile ' + knowledgeProfile.Name() + ' for scenario ' + scenario.Name() );
+      LibSM_GlobalState.SelectKB( scenario );
+    }
+  *]
+}

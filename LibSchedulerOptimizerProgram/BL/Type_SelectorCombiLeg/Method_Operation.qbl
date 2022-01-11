@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Operation (LibOpt_Task task) as stream[JSON]
+{
+  TextBody:
+  [*
+    scope := LibOpt_Scope::Create( task.Run() );
+    
+    traverse( task.Scope().ScopeElements(), Elements, ele, not ele.istype( ScopeElementCombiProgramType ) )
+    {
+      scope.Add( ele );
+    }
+    
+    traverse( task.Scope().Legs(), Elements, leg )
+    {
+      cpts := selectsortedset( leg.GetCandidateCombiProgramTypesTobeExtended(), Elements, cpt, true, cpt.CostTotal() )
+      
+      cpts := cpts.SelectFirst( OptimizerProgram::NumBestCombiToKeepPerLeg() );
+      cpt := select( cpts, Elements, cpt, cpt.IsTobeExtendedCombi() and not cpt.GetIsFullyExtended() );
+      
+      //if it's the first leg, then select the active cpt to extend
+      if( isnull( leg.GetPrevLegInLeadingProgramTypeConst() ) ) 
+      {
+        cpt := select( cpts, Elements, cpt1, cpt1.IsActive() );
+      }
+      if( not isnull( cpt ) )
+      {
+        scope.Add( cpt.GetOrCreateScopeElement() );
+      }
+    }
+     
+    this.DebugMethod( scope );                                        
+    return this.Continue( task, scope );
+  *]
+}

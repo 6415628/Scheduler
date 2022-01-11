@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedOptimizeBasedOnOptimizer (String selectedOptimizer, Operation_SCs selectedOperations, output String feedback_o) declarative remote as Boolean
+{
+  Description: 'Check whether optimizer can be run based on the selected optimizer and operations'
+  TextBody:
+  [*
+    // Check whether optimizer can be run based on the selected optimizer and operations ( For precondition checking in optimizer dashboard form )
+    isvalid := true;
+      
+    // Get all allowed resources
+    resources := Operation_SC::GetAllowedResources( selectedOperations );
+    
+    // Only allow optimizer to start if there is allowed resource ( with/without configurable rule ) based on selected optimizer
+    if( selectedOptimizer = Constants::OptimizerSequencing() )
+    {
+      // Only valid if there is resource group does not have configurable rule resources
+      isvalid := exists( resources, Elements.ResourceGroup_SC, resgroup, not resgroup.HasConfigurableRule() );
+    }
+    else if( selectedOptimizer = Constants::OptimizerPrograms() )
+    {
+      isvalid := exists( resources, Elements, res, res.HasConfigurableRule() );
+    }
+    
+    if( not isvalid )
+    {
+      Utility_SC::Concat( feedback_o, Translations::SC_Optimizer_ScopeNotValid() );
+    }
+    
+    if( isvalid )
+    {
+      // If sequencing optimizer is selected, all the selected resources must not have configurable rules
+      if( selectedOptimizer = Constants::OptimizerSequencing() )
+      {
+        if( not this.TechnicalConfiguration().IsSequencingOptimizerEnabled() )
+        {
+          isvalid := false;
+          Utility_SC::Concat( feedback_o, Translations::Optimizer_OnlyOptimizeWhenSequencingOptimizerIsEnabled() );    
+        }
+      }
+      // If programs optimizer is selected, all the selected resources must have configurable rules
+      else if( selectedOptimizer = Constants::OptimizerPrograms() )
+      {
+        if( not this.TechnicalConfiguration().IsProgramOptimizerEnabled() )
+        {
+          isvalid := false;
+          Utility_SC::Concat( feedback_o, Translations::Optimizer_OnlyOptimizeWhenProgramOptimizerIsEnabled() );        
+        }
+      } 
+    }
+    
+    return isvalid;
+  *]
+}

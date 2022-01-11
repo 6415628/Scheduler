@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method SetTechnicalConfiguration (internal[GUIComponent] parent) id:Method_DialogTechnicalConfiguration_SetTechnicalConfiguration
+{
+  #keys: '[139424.1.697854566]'
+  Body:
+  [*
+    // Updates technical configurations
+    data := shadow( Schedule.TechnicalConfiguration() );
+    
+    Dialog.Data( data );
+    
+    // Manipulate checkbox to set data driven time constraint mode during optimization service mode
+    if( Schedule.IsOptimizationService() )
+    {
+      CheckBoxIsTimeConstraintsMode.Enabled( false );
+      CheckBoxIsTimeConstraintsMode.Text( CheckBoxIsTimeConstraintsMode.Text().Concat( ' (not configurable in optimization service) ' ) );
+    }
+    
+    // Disable program optimizer
+    CheckBoxIsProgramOptimizerEnabled.DisableWithUserFeedback( Translations::ProgramOptimizer_DisabledForBetaOptimization() );
+    
+    if( Dialog.DoModal( parent ) > 0 )
+    {
+      data.Commit();
+      ApplicationScheduler.HideOrShowLabelSelectedOptimizer();
+      ApplicationScheduler.UpdateOptimizerStringListInOptimizerDashboard();
+    }
+  *]
+}

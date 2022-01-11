@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcEnd
+{
+  Description: 'Calculate end of campaign task'
+  TextBody:
+  [*
+    // JK 12-16-2016 QP 8382 Adjusted relational logic for updated object model with multiple campaigns
+    // WORKAROUND to force campaign task to use operation ReportedEnd when it has ended
+    // REAL solution it to just use operation.End, fix Operation.End calculation to consider ReportedEnd only when ended
+    value := max( this, 
+                  OperationCampaign.Operation_SC, 
+                  operation, 
+                  ifexpr( operation.HasReportedEnd(),
+                          operation.ReportedEnd(),
+                          // WORKAROUND to ensure campaign task includes subtasks durations AFTER last respect routing
+                          // REAL solution is to possibly to update Operation_SC.End
+                          maxvalue( operation.End(), guard( operation.Task_SC().End(), operation.End() ) ) ) );
+    
+    this.End( value );
+  *]
+}

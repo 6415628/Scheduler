@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPreconditonMoveDownOrToBottom (Schedule schedule)
+{
+  Description: 'Test the precondition methods that are being used move MoveBottom and MoveDown.'
+  TextBody:
+  [*
+    // Propogate sequence nr because it is set declaratively.
+    Transaction::Transaction().Propagate( attribute( BatchSequenceElement, SequenceNr ) );
+    
+    feedback := '';
+    
+    batch_1 := select( schedule, Batch, batch, batch.BatchID() = "Batch 1" );
+    
+    operation_3 := selectset( batch_1, BatchSequenceElement.Operation_SC, operation,
+                              operation.OperationID() = "operation_3"
+                              and operation.BatchSequenceElement().SequenceNr() = 2 );
+    
+    value := Batch::AllowedMoveBottom( operation_3, feedback )
+             or Batch::AllowedMoveDown( operation_3, feedback );
+    
+    this.Run().AssertFalse( value );
+  *]
+}

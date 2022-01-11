@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride InterpretFeedbackCalendar
+{
+  TextBody:
+  [*
+    // Cleanup removed resource calendar intervals
+    traverse( this, Schedule.ResourceGroup_SC.Resource_SC.ResourceCalendar.TimeIntervals.astype( ResourceExplicitTimeInterval ), resourcetimeinterval )
+    {
+      importedfeedbackcalendar := ImportedCalendarInterval_SC::FindImportedCalendarInterval( resourcetimeinterval.ResourceID(), resourcetimeinterval.TimeIntervalID() );
+    
+      if( isnull( importedfeedbackcalendar ) )
+      {
+        resourcetimeinterval.Delete();
+      }
+    }
+    
+    importedfbcalandars := selectsortedset( this.Schedule(),
+                                            ImportedCalendarInterval_SC,
+                                            fbcalendar,
+                                            fbcalendar.IsValidData(),
+                                            fbcalendar.ReportedResource(),
+                                            fbcalendar.CalendarIntervalID() );
+                                            
+    traverse( importedfbcalandars, Elements, importedfeedbackcalendar )
+    {  
+      this.FeedbackManager().CalendarChange( importedfeedbackcalendar );
+      importedfeedbackcalendar.IsProcessed( true );
+    }
+  *]
+}

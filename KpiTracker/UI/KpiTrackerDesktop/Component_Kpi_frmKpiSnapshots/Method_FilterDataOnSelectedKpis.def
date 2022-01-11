@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method FilterDataOnSelectedKpis () id:Method_Kpi_frmKpiSnapshots_FilterDataOnSelectedKpis
+{
+  #keys: '[136398.1.735679907]'
+  Body:
+  [*
+    // Sets the filter on the KpiValues list to match the selected KPIs and the 
+    // LastSnapshotOnly checkbox.
+    dslKpiValues.Filter( "" );
+    
+    filterKpis := dhSelectedKpis.Data();
+    
+    if ( not isnull( filterKpis ) )
+    {
+      filters := construct( structured[String] );
+      traverse( filterKpis, Elements, kpi ) 
+      {
+        filters.Add( "object.Name() = " + kpi.Name().AsQUILL() );
+      }
+      filter := "( " + filters.ToString( ' or ' ) + " )";
+      
+      
+      if ( cbOnlyLastSnapshot.Checked() and not isnull( selSeries.Data() ) ) 
+      {
+        filter := filter + " and ( object.UI_IsLast() ) "
+      }
+      info(' >>> Setting filter to ' , filter );
+      dslKpiValues.Filter( filter );
+    }
+  *]
+}

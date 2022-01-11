@@ -1,0 +1,46 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod AddQuotes (String string) remote as String
+{
+  TextBody:
+  [*
+    // per Oct-4-2016 (created)
+    addquotes := string.Length() < 2;
+    
+    if ( not addquotes )
+    {
+      firstchar := string.SubString( 0, 1 );
+      lastchar  := string.SubString( string.Length() - 1, 1 );
+      
+      addquotes := firstchar <> lastchar
+                or (firstchar <> '"' and firstchar <> "'" );
+    }
+    
+    if ( addquotes )
+    {        
+      single := string.FindString( "'", 0 ) >= 0;
+      double := string.FindString( '"', 0 ) >= 0;
+      
+      if ( single and double )
+      {
+        doublequote := '"';
+        singlequote := "'";
+        
+        string := string.ReplaceAll( "'", "%%$$%%" );
+        string := "'" + string + "'";
+        string := string.ReplaceAll( '%%$$%%', "' + " + doublequote + singlequote + doublequote + "+ '" );
+      }
+      else if ( single )
+      {
+        string := '"' + string + '"';
+      }
+      else // if ( double )
+      {
+        string := "'" + string + "'";
+      }
+    }
+    
+    return string;
+  *]
+  InterfaceProperties { Visibility: 'BusinessModel' }
+}

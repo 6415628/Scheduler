@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: Toolbar/btnOk
+Response OnClick () id:Response_Toolbar_btnOk_OnClick
+{
+  #keys: '[107496.2.1664986029]'
+  Body:
+  [*
+    applyData := Dialog.GetApplyChanges();
+    
+    scenarioManagerParameter := Dialog.Data().WrappedInstance();
+           
+    if( not CheckBoxApplyUsageLimitationTotal.Checked() )
+    {
+      applyData.AddAttribute( scenarioManagerParameter, attribute( LibSM_GlobalParameter, MaxNrOfScenarios ), -1 );  
+    }
+    if( not CheckBoxApplyUsageLimitationLoaded.Checked() )
+    {
+      applyData.AddAttribute( scenarioManagerParameter, attribute( LibSM_GlobalParameter, MaxNrOfLoadedScenarios ), -1 );  
+    }
+    
+    applyData.Execute();
+    Dialog.EndModal( 1 );
+  *]
+  DefinitionID: 'Responsedef_GUIButtonBase_OnClick'
+  Precondition:
+  [*
+    scenarioManagerParameter := Dialog.Data();
+        return scenarioManagerParameter.WrappedInstance().UpdateAllowed( 
+          guard( [Number]edtMaxNrOfScenarios.Text(), -999 ),
+          guard( [Number]edtMaxNrOfLoadedScenarios.Text(), -999 ) );
+  *]
+}

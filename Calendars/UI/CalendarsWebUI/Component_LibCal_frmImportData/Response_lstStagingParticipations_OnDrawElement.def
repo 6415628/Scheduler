@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: lstStagingParticipations
+Response OnDrawElement (LibCal_StagingParticipation element) id:Response_lstStagingParticipations_OnDrawElement
+{
+  #keys: '[146730.0.25912264]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebList_OnDrawElement'
+  QuillAction
+  {
+    Body:
+    [*
+      // Indicate if the event has an error or warning.
+      if( element.HasError() )
+      {
+        drawinfo.Image( 0, "ERROR" );
+        drawinfo.TextColor( Color::Red() );  // Red text
+      }
+      else if( element.HasWarning() )
+      {
+        drawinfo.Image( 0, "WARNING" );  
+        drawinfo.BackgroundColor( Color::Color( 255, 255, 175 ) );  // Yellow background
+      }
+      
+      // Indicate if the event in which is participated is recurring or not.
+      img := ifexpr( guard( element.StagingEvent().IsRecurring(), false ), "REFRESH", "" );  // Don't use EventIsRecurring.
+      drawinfo.Image( 1, img );
+      
+      // Indicate if the participation is a subscription or not.
+      // In principle, don't use IsSubscription because that cannot be 'trusted' (can be wrong in imported data).
+      // Exception: do use it when the StagingElement is missing, because in that case it's all we got (IsLeading is then wrong). 
+      if( not isnull( element.StagingEvent() ) )
+      {
+        img := ifexpr( not element.IsLeading(), "LINK", "" );
+      }
+      else
+      {
+        img := ifexpr( element.IsSubscription(), "LINK", "" );
+      }
+      drawinfo.Image( 2, img );
+    *]
+    GroupServerCalls: false
+  }
+}

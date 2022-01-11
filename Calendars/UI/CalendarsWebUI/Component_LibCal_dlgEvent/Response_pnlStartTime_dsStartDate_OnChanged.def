@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: pnlStartTime/dsStartDate
+Response OnChanged () id:Response_pnlStartTime_dsStartDate_OnChanged
+{
+  #keys: '[131092.1.1288753023]'
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_WebDateTimeFieldBase_OnChanged'
+  QuillAction
+  {
+    Body:
+    [*
+      // Adjust the EndDate accordingly.
+      if( dhStartDate.Data().IsFinite() )
+      {
+        delta := this.Date() - dhStartDate.Data();
+        dsEndDate.Date( dsEndDate.Date() + delta );
+      }
+       
+      // Update the 'memory' for later delta-calculation, and/or setting the time back when AllDay is turned off.
+      dhStartDate.Data( this.Date() );
+      
+      // Adjust StartOfPeriod accordingly for convenience.
+      // EndOfPeriod is then also automatically adjusted.
+      if( btnNoRecurrence.IsPressed() )
+      {
+        // Use the UTC-timezone here in order to keep the same date, don't correct for a specific timezone.
+        timezone := TimeZone::UTCTimeZone();
+        dtStartOfPeriod.DateTime( this.Date().DateTime( timezone ) );
+      }
+    *]
+    GroupServerCalls: false
+  }
+}

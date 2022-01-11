@@ -1,0 +1,15 @@
+Quintiq file version 2.0
+#parent: #root
+Method ShouldRollback (const RealVector kpi_pre, const RealVector kpi_post) as Boolean
+{
+  TextBody:
+  [*
+    change := kpi_post.Minus( kpi_pre );
+    diff_index := LibOpt_RollbackKPI::GetDiffIndex( kpi_post, kpi_pre );
+    is_improvement := guard( ifexpr( diff_index >= 0 and diff_index < change.Size() and this.RollbackKPI().IsMinimize( diff_index ),
+                                     change.Get( diff_index ) < 0.0,
+                                     change.Get( diff_index ) > 0.0 ), false );
+    
+    return not is_improvement and diff_index >= 0;
+  *]
+}

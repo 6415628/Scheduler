@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride PlanAfterBasedOnFeedback (Operation_SC operation, FeedbackTaskInSchedule fbtaskinschedule)
+{
+  Description: 'Re-plan a task based on its feedback. This method is for Fixed Sequence Plan Logic for Feedback Task.'
+  TextBody:
+  [*
+    // saravanen Jul-9-2013 (created)
+    tasks := construct( Task_SCs );
+    // Get the FeedbackTaskInSchedule that is right before the Start of this ImportedFeedbackTask ( to get its previous FeedbackTaskInSchedule )
+    
+    start := fbtaskinschedule.ReportedStart();
+    
+    beforefbtis := maxselect( this,
+                              FeedbackTaskInSchedule,
+                              fbtis,
+                              fbtis.OperationID() <> fbtaskinschedule.OperationID()
+                              and guard( fbtis.OperationTaskFeedback().Operation_SC().IsPlanned(), false )
+                              and fbtis.ReportedStart() <= start, // we don't check fbtis.ReportedEnd <= start because it is not applicable for continuous resource
+                              fbtis.ReportedStart(),
+                              fbtis.ReportedEnd(),
+                              fbtis.EstimatedEnd() );
+                              
+    // Get the task of the beforefbtis
+    beforetask := guard( beforefbtis.OperationTaskFeedback().Operation_SC().Task_SC(), null( SingleTaskBase ) );
+    task       := operation.Task_SC();
+    
+    if( not isnull( task ) )
+    { 
+      tasks.Add( task );
+      // Plan the Task of the ExportedTask to be after the beforefbtis's Task
+      // change plan after
+      this.PlanAfterWithoutPlanRelated( tasks, beforetask );
+    }
+  *]
+}

@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestFinishToStartAvailableTime (Schedule schedule)
+{
+  Description: 'Test finish to start data-driven time constraint available time.'
+  TextBody:
+  [*
+    // Get the test instance based on variant
+    variant := this.Variant();
+    hasMinDelay := false;
+    availableTime := DateTime::MinDateTime();
+    expectedTime := DateTime::MinDateTime();
+    exceedMaximumWaitingDuration := false;
+    
+    this.GetTestVariant( hasMinDelay, availableTime, expectedTime, exceedMaximumWaitingDuration );
+    
+    // Propagate TimeConstraint.AvailableTime to verify it's value
+    Transaction::Transaction().Propagate( attribute( TimeConstraint, AvailableTime ) );
+    
+    // Select the time constraint
+    timeConstraint := select( schedule, PlanUnit_SC.Operation_SC.ToTimeConstraint, timeConstraint, true );
+    
+    // Assert the result
+    this.Run().AssertEqual( availableTime, timeConstraint.AvailableTime(), UTFUtility::GenerateFailedMessage( 'TestFinishToStartAvailableTime', variant ) );
+  *]
+}

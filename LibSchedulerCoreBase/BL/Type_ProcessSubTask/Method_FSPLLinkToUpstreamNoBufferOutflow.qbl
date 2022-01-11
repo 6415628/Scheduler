@@ -1,0 +1,59 @@
+Quintiq file version 2.0
+#parent: #root
+Method FSPLLinkToUpstreamNoBufferOutflow
+{
+  TextBody:
+  [*
+    traverse( this.Task_SC(), FSPLOperationInTask.FromOperationDependency, operationDependency )
+    {
+      up_nobufferoutflow_subtask := guard( operationDependency.FromOperation().AsFSPLOperationInTask().NoBufferOutflowSubTask(), null( NoBufferOutflowSubTask ) );
+      
+      if( guard( not isnull( up_nobufferoutflow_subtask.PrecedenceNode() ), false ) )
+      {
+        isfulfillment := not isnull( guard( operationDependency.astype( OperationMaterial ).Fulfillment(), null( Fulfillment ) ) ); // Used to set the fulfillment flag on the edge
+        
+        traverse( up_nobufferoutflow_subtask.Task_SC(), FSPLOperationInTask.ToOperationDependency.ToOperation.AsFSPLOperationInTask.Resource_SC, downstream_task_resource )
+        {
+          //grabs NoBufferOutflow's highest FSPL Seq Nr downstream task in the same resource of the current task
+          latest_downstream_task_in_same_resource := maxselect( up_nobufferoutflow_subtask.Task_SC(),
+                                                                FSPLOperationInTask.ToOperationDependency.ToOperation.AsFSPLOperationInTask,
+                                                                downstream_task_in_same_resource,
+                                                                downstream_task_in_same_resource.Resource_SC() = downstream_task_resource,
+                                                                downstream_task_in_same_resource.FSPLSequenceNr() );
+      
+          //grabs all edges to NoBufferOutflow subtask
+          existing_edges_from_downstream_tasks_in_same_resource := selectset( up_nobufferoutflow_subtask.PrecedenceNode(),
+                                                                              Inputs,
+                                                                              in_edge,
+                                                                              in_edge.Type() = Constants::PrecedenceRelation_Met_By()
+                                                                              and in_edge.Input().SubTask().Task_SC().Resource_SC() = downstream_task_resource );
+      
+          latest_downstream_process_subtask_in_same_resource := guard( latest_downstream_task_in_same_resource.ProcessSubTask(), null( ProcessSubTask ) );
+      
+          //checks if there is any downstream Process subtask on the resource
+          if( not isnull( latest_downstream_process_subtask_in_same_resource ) )
+          {
+            //grabs the edge to the NoBufferOutflow from the earliest downstream Process subtask
+            edge_from_last_downstream_task := latest_downstream_process_subtask_in_same_resource.PrecedenceNode().GetEdgeToNode( up_nobufferoutflow_subtask );
+      
+            //checks if there is any edge to the NoBufferOutflow from the latest downstream Process subtask
+            if( isnull( edge_from_last_downstream_task ) )
+            {
+              //create the edge from the latest downstream Process subtask to the current NoBufferOutflow subtask
+              PrecedenceEdge::Create( latest_downstream_process_subtask_in_same_resource.PrecedenceNode(), 
+                                      up_nobufferoutflow_subtask.PrecedenceNode(), 
+                                      Constants::PrecedenceRelation_Met_By(), 
+                                      isfulfillment );
+            }
+          }
+      
+          //deletes any existing edge to current NoBufferOutflow subtask that is NOT from latest downstream Process subtask
+          traverse( existing_edges_from_downstream_tasks_in_same_resource, Elements, existing_edge, existing_edge.Input().SubTask() <> latest_downstream_process_subtask_in_same_resource )
+          {
+            PrecedenceEdge::Delete( existing_edge );
+          }
+        }
+      }
+    }
+  *]
+}

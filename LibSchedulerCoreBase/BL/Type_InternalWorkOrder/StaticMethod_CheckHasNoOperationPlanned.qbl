@@ -1,0 +1,13 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckHasNoOperationPlanned (InternalWorkOrders plannedOrders) declarative remote
+{
+  Description: 'Check if all planned orders has no operation planned.'
+  TextBody:
+  [*
+    value := not exists( plannedOrders, Elements.Order_SC.PlanUnit_SC.Operation_SC, operation, true, operation.IsPlanned() or operation.HasFeedback() );
+    
+    feedbackobject := FeedbackObject::LocalFeedback();
+    feedbackobject.AddHard( value, Translations::InternalWorkOrder_CannotJoinPlannedOrdersWithOperationPlanned() );
+  *]
+}

@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateDataset
+{
+  TextBody:
+  [*
+    // EricdB Oct-16-2019 (created)
+    
+    if(  this.DatasetName() = '' )
+    {
+      this.DatasetName( this.ID() );
+      scheduleMDSObjectInfo := MDSEditor::Editor().LoadedObjectInfo( Constants::ScheduleDataset(), "/root", this.DatasetName() );
+      scheduleMDSID := null(  MDSID );
+      
+      if( isnull( scheduleMDSObjectInfo ) )
+      {
+        scheduleMDS := MDSSchedule::CreateMemoryOnlyMDS( this.DatasetName() );
+        scheduleMDSID := scheduleMDS.ID(); 
+      }
+      else
+      {
+        scheduleMDSID := scheduleMDSObjectInfo.MDSID();
+        error( "Dataset already existed but there is no OptimizationSession. This can happen in test situations" );  
+      }
+      this.DatasetMDSID( scheduleMDSID.MDSKey() );
+    }
+    else 
+    {
+      error( "Tried to create a dataset for an OptimizationSession instance (ID: ", this.ID() , ") that already has a dataset" ); 
+    }
+  *]
+}

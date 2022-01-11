@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: ListComponent
+Response OnClick (structured[LibOpt_Component] selection) id:Response_ListComponent_MenuSetDatasetCopyInitError_OnClick
+{
+  #keys: '[141860.2.320676103]'
+  Body:
+  [*
+    // Set dataset copies on the 'Handle error' and 'Initialize' component positions.
+    LibOpt_BreakpointPosition::SetDatasetCopy( selection, 
+                                               typeof( LibOpt_DatasetCopyUnconditional ).Name(),
+                                               LibOpt_Component::ComponentPosition_Error()
+                                               );
+    
+    LibOpt_BreakpointPosition::SetDatasetCopy( selection, 
+                                               typeof( LibOpt_DatasetCopyOnAnyDownstreamCopy ).Name(),
+                                               LibOpt_Component::ComponentPosition_Initialize()
+                                               );
+  *]
+  DefinitionID => /ListComponent/Responsedef_ListComponent_Menu_OnClick
+  GroupServerCalls: true
+  Initiator: 'MenuSetDatasetCopyInitError'
+  Precondition:
+  [*
+    componentpositions := selectset( selection, 
+                                     Elements.ComponentPosition,
+                                     position,
+                                     position.Name() = LibOpt_Component::ComponentPosition_Error()
+                                     or position.Name() = LibOpt_Component::ComponentPosition_Initialize()
+                                     );
+    
+    return LibOpt_BreakpointPosition::SetDatasetCopyAllowed( componentpositions );
+  *]
+}

@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method RemoveProcessOperations (JSON jsonTree)
+{
+  Description: 'Remove imported process operations (routing step) data based on JSON input.'
+  TextBody:
+  [*
+    processOperationsJSON := guard( jsonTree.Get( Constants::JSON_Remove_Process_Operations() ), null( JSON, owning ) );
+    
+    if( not isnull( processOperationsJSON ) )
+    {
+      for( i := 0; i < processOperationsJSON.Size(); i++ )
+      {
+        processOperationID := processOperationsJSON.Get( i ).GetString();
+        processOperation := select( this, ImportedRoutingStep_SC, processOperation, processOperation.ID() = processOperationID );
+        
+        if( not isnull( processOperation ) )
+        {
+          // Clean up capable resources for a more complete removal as we only receive process operations
+          processOperation.CleanUpCapableResources();
+          processOperation.Remove();
+        }
+        else
+        {
+          logfile( Translations::LibSchedulerOptMgr_Remove_ProcessOperation_NotFound( processOperationID ) );
+        }
+      }
+    }
+  *]
+}

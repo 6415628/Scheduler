@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateRootFolder (LibSM_ScenarioManager owner, Boolean isRecyclebin) as LibSM_ScenarioFolder
+{
+  Description: 'Create folders in scenario'
+  TextBody:
+  [*
+    foldername := LibSM_ScenarioManager::GetFolderRoot();
+    
+    if( isRecyclebin )
+    {
+      foldername := LibSM_ScenarioManager::GetFolderRecycleBin();
+    }
+    
+    folder := select( owner, ScenarioNode.astype( LibSM_ScenarioFolder ), folder, folder.Name() = foldername );
+    
+    if( isnull( folder ) )
+    {
+      folder := construct( LibSM_GenericScenarioFolder ,
+                           Name := foldername,
+                           IsRootFolder :=  true,
+                           IsRecycleBin := isRecyclebin,
+                           CreatedOn := DateTime::ActualTime() );
+      
+      folder := owner.ScenarioNode( relinsert, &folder );
+    }
+      
+    return folder;
+  *]
+}

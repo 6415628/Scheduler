@@ -1,0 +1,51 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveMetadataSuccessSetInterestDeleted (NamedValueTree nvt_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive a Metadata message for reply of deleted SetInterest.'
+  TextBody:
+  [*
+    LibDEF_Util::EventLog( event_i, "Receiving Set Interest deleted acknowledgement" );
+    
+    setTypeGUID    := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsString ( nvt_i, LibDEF_DataAccessor::HEADER_SETTYPEGUID()    );
+    setGUID        := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsString ( nvt_i, LibDEF_DataAccessor::HEADER_SETGUID()        );
+    datasetMDSID   := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsKey    ( nvt_i, LibDEF_DataAccessor::HEADER_DATASETMDSID()   );
+    isDatasetEvent := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsBoolean( nvt_i, LibDEF_DataAccessor::HEADER_ISDATASETEVENT() );
+    
+    actionFeedbackText := "Set Interest cannot be deleted. ";
+    
+    setMeta := this.FindSetMeta( setTypeGUID, setGUID, actionFeedbackText, event_i );
+    
+    if( not isnull( setMeta ) )
+    {
+      // Get the Dataset-level SetInterest to be deleted
+      datasetInterest := select( setMeta, SetInterestOfDataset, datasetInt, datasetInt.DatasetMDSID() = datasetMDSID );
+    
+      if( not isnull( datasetInterest ) )
+      {
+        // Mark the set interest's IsCreatedFromSetType to true if there is dataset interest in Set Type level 
+        if( setMeta.SetTypeMeta().IsInterestedByDataset( datasetMDSID ) )
+        {
+          datasetInterest.IsCreatedFromSetTypeInterest( true );
+        }
+        else if( not isDatasetEvent )
+        {
+          datasetInterest.Delete();
+        }
+      }
+      else
+      {
+        LibDEF_Util::EventLogWarning( event_i, actionFeedbackText + "DatasetInterest for dataset[" + [String]datasetMDSID + "] cannot be found." );
+      }
+    
+      // End of receive metadata success set interest deleted
+      LibDEF_IntegrationEvent::EventComplete( event_i );
+    }
+    else
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  actionFeedbackText,
+                                  actionFeedbackText + "The Set with GUID '" + setGUID + "' is not found in the DataBroker." );
+    }
+  *]
+}

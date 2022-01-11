@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveMetadataRequestSetInterestDeleted (owning NamedValueTree nvt_i, LibDEF_System requestor_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive a Metadata message for requesting a SetInterest to be deleted for certain Set.'
+  TextBody:
+  [*
+    LibDEF_Util::EventLog( event_i, "Receiving Set Interest deleted request" );
+    
+    setTypeGUID := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SETTYPEGUID() );
+    setGUID     := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SETGUID()     );
+    
+    actionFeedbackText := "Set Interest cannot be deleted. ";
+    
+    setMeta := this.FindSetMeta( setTypeGUID, setGUID, actionFeedbackText, event_i );
+    
+    if( not isnull( setMeta ) )
+    {
+      // Get the interested System's System-level SetInterest
+      systemInterest := select( setMeta, SetInterestFromSystem, systemInt, systemInt.SystemInterestedIn() = requestor_i );
+      
+      if( not isnull( systemInterest )
+          // only delete if there isn't interest from set type level
+          and not setMeta.SetTypeMeta().IsInterestedFromSystem( requestor_i ) )
+      { 
+        systemInterest.Delete();
+      }
+    
+      // Inform the requestor about the successful deletion of interest subscription
+      this.SendMetadataSuccessSetInterestDeleted( &nvt_i, requestor_i, event_i );
+    }
+    else
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  actionFeedbackText,
+                                  actionFeedbackText + "The Set with GUID '" + setGUID + "' is not found in the DataBroker." );
+    }
+  *]
+}

@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreRelations_ProducDemandOnSupply (CDSchedule cdSchedule, GenericProduct genericProduct)
+{
+  Description: 'Restore product demand on supply core data relations to planning object'
+  TextBody:
+  [*
+    cdProductDemandOnSupplies := selectset( cdSchedule, CDEntity.astype( CDProductDemandOnSupply ), cdProductDemandOnSupply,
+                                            cdProductDemandOnSupply.DemandProduct() = genericProduct.Id() );
+    
+    traverse( cdProductDemandOnSupplies, Elements, cdProductDemandOnSupply )
+    {
+      productDemandOnSupply := ProductDemandOnSupply::FindProductDemandOnSupply( cdProductDemandOnSupply.DemandProduct(),
+                                                                                 cdProductDemandOnSupply.SupplyProduct() );
+      
+      if( not isnull( productDemandOnSupply ) )
+      {
+        supplyProduct := Product_SC::FindProductId( cdProductDemandOnSupply.SupplyProduct() );
+        productDemandOnSupply.AsProductCompatibleSupply( relset, supplyProduct );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

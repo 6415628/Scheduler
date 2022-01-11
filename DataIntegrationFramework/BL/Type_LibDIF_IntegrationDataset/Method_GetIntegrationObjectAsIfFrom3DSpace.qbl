@@ -1,0 +1,62 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetIntegrationObjectAsIfFrom3DSpace (String objectInfo_i, String concept_i, String filePath_i)
+{
+  Description: 'Read an object from file in the 3DSpace-format, and let the QIntegrator process it as if the data was retrieved from the 3DSpace.'
+  TextBody:
+  [*
+    // objectInfo_i is expected to be the ObjectID, potentially concatenated with additional information that can be used to
+    // get the IntegratorID from the applicable APICall.
+    objectID := objectInfo_i.Tokenize( LibDIF_Util::SEPARATOR_1() ).Element( 0 );
+    
+    // The names of the files are expected to be <concept>_<object_id>.json
+    fileName        := concept_i + "_" + objectID + ".json";
+    fileRef         := filePath_i + fileName;
+    objectAs3DSpace := LibDIF_Util::ReadTextFile( fileRef );
+    
+    info( ">>> ObjectAsIfFrom3DSpace is read from file", fileName );
+    //info( objectAs3DSpace );
+    
+    // Create a NVT that contains msg_i as content as request for the QIntegrator.
+    requestNVT := LibDIF_IntegrationDataset::CreateRequestForQI( objectAs3DSpace );
+    
+    //info( ">>> RequestNVT" );
+    //info( requestNVT.ToString() );
+    
+    // Get the IntegratorID from the API-method that would normally called to get the data from the 3DSpace.
+    // Expected naming convention: the IntegratorIDs that are used to import data as if it comes from the 3DSpace
+    // have the same names as the 'real' IntegratorIDs, with "As3DSpace" appended.
+    // The concept is appended to the objectInfo, so it can be used to determine the applicable apiCall.
+    integratorID := "";
+    api          := this.GetPlatformAPI( concept_i );
+    apiCall      := api.GetAPICall( objectInfo_i + LibDIF_Util::SEPARATOR_2() + concept_i );
+    
+    if( not isnull( apiCall ) )
+    {
+      integratorID := apiCall.IntegratorID() + LibDIF_IntegrationDataset::AS_3DSPACE();
+    }
+    else
+    {
+      LibDIF_Util::Error( "APICall not found | ObjectInfo = '" + objectInfo_i + "'" );
+    }
+    
+    // Trigger the action in the QIntegrator and wait for its reply.
+    errMsg      := "";
+    responseNVT := LibInt_IntegratorProxy::SyncNvtRequest( integratorID, "", requestNVT, errMsg );
+    
+    if( errMsg <> "" )
+    {
+      LibDIF_Util::Info( "ERROR received from QIntegrator" );
+      error( errMsg );
+    }
+    else
+    {
+      //info( "ResponseNVT" );
+      //info( responseNVT.ToString() );
+      
+      // Process the data that is received from the QIntegrator.
+      this.ProcessDataFromQI( responseNVT, integratorID );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

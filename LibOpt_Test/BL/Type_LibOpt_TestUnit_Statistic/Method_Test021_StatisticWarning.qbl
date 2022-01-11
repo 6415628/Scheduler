@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test021_StatisticWarning (LibOpt_TestDataset dataset)
+{
+  Description: 'Test that the `LibOpt_StatisticWarning` creates issues for every `LibOpt_SnapshotWarning`.'
+  TextBody:
+  [*
+    opt := this.Optimizer( dataset );
+    run := opt.CreateRun();
+    
+    iterator := opt.Iterator( run, 'Iterator' );
+    iterator.SetMaxIterations( 100 );
+    component1 := opt.ComponentParentReflection( run, 'Warning 1',
+                                          method( LibOpt_TestUnit_Statistic, M021_Operation_ProbabilityWarning,
+                                                  LibOpt_ComponentParent, LibOpt_Task ) );
+    component2 := opt.ComponentParentReflection( run, 'Warning 2',
+                                          method( LibOpt_TestUnit_Statistic, M021_Operation_ProbabilityWarning,
+                                                  LibOpt_ComponentParent, LibOpt_Task ) );
+    
+    iterator.To( component1 );
+    component1.To( component2 );
+    
+    this.NoException( run.Start()->|void->( )
+    {
+      statistics := selectset( run, Statistic.astype( LibOpt_StatisticWarning ), statistic, true );
+      
+      this.Run().AssertEqual( 4, statistics.Size(), 'Incorrect amount of warning statistics' );
+      
+      nr_errors := counter( run, Snapshot.astype( LibOpt_SnapshotWarning ), snapshot, true );
+      this.Run().AssertGreaterOrEqual( 20, nr_errors, 'Unexpected low number of warnings' );
+      
+      // Check that for every snapshot there is an issue associated
+      traverse( run, Snapshot.astype( LibOpt_SnapshotWarning ), snapshot )
+      {
+        component := snapshot.GetComponent();
+        issues := counter( snapshot.IterationPart(), SnapshotComponent.Issue, issue,
+                           issue.Statistic().Component() = component
+                           and guard( issue.Statistic().astype( LibOpt_StatisticWarning ).LogEntryDetails() = snapshot.Details(), false )
+                           and issue.Severity() >= snapshot.Severity() );
+        this.Run().AssertEqual( 1, issues, 'Nr of issues for this snapshot is incorrect' );
+      }
+    } );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

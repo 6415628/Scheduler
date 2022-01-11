@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestAllowedOperationOnResource (Schedule schedule)
+{
+  Description: 'Test AllowedOperationOnResource'
+  TextBody:
+  [*
+    // Get variant data
+    hasexternalalloweddata := false;
+    useexternalallowed := false;
+    isexternalwooresourceallowed := false;
+    isproductallowed := false;
+    isoperationcompleted := false;
+    isValid := false;
+    
+    this.GetTestVariant( hasexternalalloweddata,
+                         useexternalallowed,
+                         isexternalwooresourceallowed,
+                         isproductallowed,
+                         isoperationcompleted,
+                         isValid );
+    
+    oor := select( schedule, ResourceGroup_SC.Resource_SC.OperationOnResource, oor, true );
+    
+    // Transaction propagate the OOR attribute
+    Transaction::Transaction().Propagate( attribute( OperationOnResource, IsAllowedHard ) );
+    Transaction::Transaction().Propagate( attribute( OperationOnResource, IsAllowedSoft ) );
+    
+    this.Run().AssertEqual( isValid,
+                            oor.IsAllowedHard() and oor.IsAllowedSoft(), 
+                            UTFUtility::GenerateFailedMessage( 'Allowed operation on resource checking failed.', 
+                                                               this.Variant() ) );
+  *]
+}

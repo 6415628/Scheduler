@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeProductInStockingPoints
+{
+  TextBody:
+  [*
+    allinstances := selectset( this, ProductInStockingPoint, pisp, true );
+    updatedinstances := construct( ProductInStockingPoints );
+    
+    traverse( this, ImportedProduct_SC.ImportedProductInStockingPoint_SC, row, row.IsValidDataHard() )
+    {
+      product_in_stocking_point := ProductInStockingPoint::FindProductInStockingPoint( row.StockingPointId(), row.ProductId() );
+      
+      if( isnull( product_in_stocking_point ) )
+      {
+        product_in_stocking_point := ProductInStockingPoint::Create( this, row.ProductId(), row.StockingPointId() );
+      }
+      
+      product_in_stocking_point.Update( row );
+      
+      updatedinstances.Add( product_in_stocking_point );
+    }
+    
+    //Delete product in stocking points if they do not exist in KT
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    // chin wai 12-Jul-2016 #7257
+    // WC: product in stocking point can be deleted anytime, supply and demand can exist without it.
+    traverse( oldinstances, Elements, old )
+    {
+      old.Delete();
+    }
+  *]
+}

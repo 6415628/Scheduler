@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method CanPlanOperationsInParallel (Operation_SCs operations) declarative as Boolean
+{
+  TextBody:
+  [*
+    // jiex Nov-7-2016 (created)
+    // 1.  check if practice allowed
+    value := equal( operations, Elements, op, true, op.Practice() );
+    
+    if( value )
+    {
+      // 2.  check if width allowed
+      value := sum( operations, Elements.OperationOnResource, oor, oor.Resource_SC() = this, oor.WidthInResource() ) 
+               + ( operations.Size() - 1 ) * this.MinimumParallelLoadGap()
+               <= this.MaximumParallelLoadWidth(); 
+    }            
+    
+    return value;
+  *]
+}

@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitPOAConstraintSumCompletionTime (SuboptimizerSequencingPOA_SequencingPOA poa, TransientDataSuboptimizerSequencing transientdata)
+{
+  Description: 'Add the constraints corresponding to the idle time.'
+  TextBody:
+  [*
+    weightedsumcompletionvalueset := POAValueSet::N( poa, SuboptimizerSequencingPOA::NamePOAConstraintSumCompletionTime(), 0.0 );
+    weightedsumcompletionfactorvalueset := POAValueSet::N( poa, SuboptimizerSequencingPOA::NamePOAConstraintSumCompletionTimeValueSetFactors(), 0.0 );
+    weightedsumcompletionconstraint := poa.NewEndConstraint( SuboptimizerSequencingPOA::NamePOAConstraintSumCompletionTime() );
+    weightedsumcompletionconstraint.Expression( poa.Expression( SuboptimizerSequencingPOA::NamePOAExpressionTime() ) );
+    weightedsumcompletionconstraint.ValueSet( weightedsumcompletionvalueset );
+    weightedsumcompletionconstraint.Power( OptimizerRun::GetPOAPower( guard( this.Strategy().MRS_KPIPowerConstraintSumCompletionTime(), OptimizerRun::POADefaultPower() ) ) );
+    weightedsumcompletionconstraint.Factors( weightedsumcompletionfactorvalueset );
+    weightedsumcompletionconstraint.ViolationOffset( guard( this.Strategy().MRS_KPIOffsetConstraintSumCompletionTime(), 1.0 ) );
+    
+    kpiweight := guard( this.Strategy().MRS_KPIWeightConstraintSumCompletionTime(), 1.0 );
+    
+    //define the factor of each operation
+    traverse( transientdata, OperationInSuboptimizerSequencing, operation )
+    {
+      node := poa.Node( operation );
+      factor := operation.Operation().ExpectedDuration().HoursAsReal() * kpiweight;
+      weightedsumcompletionfactorvalueset.Set( node, factor );
+    }
+  *]
+}

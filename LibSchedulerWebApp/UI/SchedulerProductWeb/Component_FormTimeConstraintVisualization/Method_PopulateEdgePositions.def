@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method PopulateEdgePositions () id:Method_FormTimeConstraintVisualization_PopulateEdgePositions
+{
+  #keys: '[134266.2.4972183]'
+  Body:
+  [*
+    // Populate edge positions using node positions
+    // Populate CustomDrawEdge starting and target positions
+    config := DataHolderCustomDrawConfiguration.Data();
+    rectWidth := config.RectWidth();
+    rectHeight := config.RectHeight();
+    
+    traverse( config, CustomDrawNode.CustomDrawEdge, edge )
+    { 
+      node1 := select( config, CustomDrawNode, node,
+                       edge.DestinationKey() = node.Key().AsQUILL() );
+    
+      node2 := select( config, CustomDrawNode, node,
+                       edge.OriginKey() = node.Key().AsQUILL() );
+      
+      sourceNode := ifexpr( edge.IsUpstream(), node1, node2 );
+      targetNode := ifexpr( edge.IsUpstream(), node2, node1 );
+      
+      adjustmentX := rectWidth; // Make it start at the 'end' of the node
+      adjustmentY := floor( rectHeight / 2 );
+      
+      edge.FromX( sourceNode.X() + adjustmentX );
+      edge.FromY( sourceNode.Y() + adjustmentY );
+      edge.ToX( targetNode.X() );
+      edge.ToY( targetNode.Y() + adjustmentY );
+    }
+  *]
+}

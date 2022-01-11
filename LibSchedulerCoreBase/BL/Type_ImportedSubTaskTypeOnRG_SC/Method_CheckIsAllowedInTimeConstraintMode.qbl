@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsAllowedInTimeConstraintMode (output Strings feedback_o) declarative remote as Boolean
+{
+  Description: 'Check if subtask type is allowed in time constraint mode.'
+  TextBody:
+  [*
+    schedule := this.ImportedResourceGroup_SC().Schedule()
+    subtaskType := select( schedule, SubTaskType, subtaskType, subtaskType.SubTaskID() = this.SubTaskID() );
+    value := true;
+    
+    if( not isnull( subtaskType ) )
+    {
+      value := not schedule.TechnicalConfiguration().IsDataDrivenTimeConstraintsMode()
+               or subtaskType.IsAllowedInDataDrivenTimeConstraintsMode();
+    }
+    
+    if( not value and not isnull( feedback_o ) )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedSubTaskTypeOnResourceGroup_Instance( name ),
+                                                               Translations::SC_ImportedSubtaskTypeOnRG_NotAllowedInTimeConstraintMode() ) );
+    }
+    
+    return value;
+  *]
+}

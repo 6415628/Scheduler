@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SetDatasets (String methodName)
+{
+  Description:
+  [*
+    The datasets set in this method will be passed as arguments to the test method when it is called for execution (which means that test method should have the dataset as argument of the method).
+    This method is called just before the test method is set as the next one to be executed.
+  *]
+  TextBody:
+  [*
+    planningdatasetkind := this.GetPlanningDatasetKind();
+    workerdataset := this.WorkerDataset();
+    
+    // All test methods after this method use the Schedule dataset as arguments
+    // So the test methods Test005_Preprocess, Test011_RunOptimizer, etc. use the Schedule dataset in the test method
+    if( methodName >= 'Test004' )
+    {
+      this.Run().SetDataset( planningdatasetkind, workerdataset );
+    }
+    else
+    {
+      // All other test methods do not need a dataset as argument
+      // Instead of not setting the dataset, we should remove it,
+      // because it can be remembered from a previous test method.
+      this.Run().RemoveDataset( planningdatasetkind, workerdataset );
+    }
+  *]
+}

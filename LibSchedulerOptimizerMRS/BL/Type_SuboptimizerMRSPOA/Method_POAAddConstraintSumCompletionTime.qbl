@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method POAAddConstraintSumCompletionTime (SuboptimizerMRSPOA_POAOneResourceGroup poa, LibOpt_Task task)
+{
+  Description: 'Add the constraints corresponding to the idle time.'
+  TextBody:
+  [*
+    // stn4 Mar-18-2016 (created)
+    // The order due date constraint
+    weightedsumcompletionvalueset := POAValueSet::N( poa, "WeightedSumCompletion", 0.0 );
+    weightedsumcompletionfactorvalueset := POAValueSet::N( poa, "WeightedSumCompletionFactor", 0.0 );
+    weightedsumcompletionconstraint := poa.NewEndConstraint( SuboptimizerMRSPOA::NamePOASumCompletionTimeConstraint() );
+    weightedsumcompletionconstraint.Expression( poa.Expression( SuboptimizerMRSPOA::NamePOATimeExpression() ) );
+    weightedsumcompletionconstraint.ValueSet( weightedsumcompletionvalueset );
+    weightedsumcompletionconstraint.Power( OptimizerRun::GetPOAPower( guard( this.Strategy().MRS_KPIPowerConstraintSumCompletionTime(), OptimizerRun::POADefaultPower() ) ) );
+    weightedsumcompletionconstraint.Factors( weightedsumcompletionfactorvalueset );
+    weightedsumcompletionconstraint.ViolationOffset( guard( this.Strategy().MRS_KPIOffsetConstraintSumCompletionTime(), 1.0 ) );
+    
+    kpiweight := guard( this.Strategy().MRS_KPIWeightConstraintSumCompletionTime(), 1.0 )
+    
+    //define the factor of each operation
+    traverse( task.Scope().Operations(), Elements, element )
+    {
+      node := poa.Node( SuboptimizerMRSPOA::POANameNodeOperation( element ), element );
+      factor := element.ExpectedDuration().HoursAsReal() * kpiweight;
+      weightedsumcompletionfactorvalueset.Set( node, factor );
+    }
+  *]
+}

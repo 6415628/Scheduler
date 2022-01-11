@@ -1,0 +1,53 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetRuleDataObjectForConstraintPrecondition (Characteristic characteristic, Boolean isprogramphase, Real additionalvalue) declarative remote as owning DORule_DataObjectSequencingRule
+{
+  Description: 'Get rule data object information as input to rule framework for validation of program or phase rules. Constraint or precondition checkings.'
+  TextBody:
+  [*
+    // Get rule data object information as input to rule framework for validation of program or phase rules. Constraint or precondition checkings.
+    dosequencingrule := construct( DORule_DataObjectSequencingRule );
+    previousvalue := 0.0;
+    currentvalue := 0.0;
+    prevoicps := null( OperationInCombiProgramSet ); 
+    // If it is program phase, need to get previous phase cumulative value
+    if( isprogramphase )
+    {
+      prevoicps := this.GetPreviousOperationInCombiProgramPhase();
+      
+      if( not isnull( prevoicps ) )
+      {
+        previousvalue := Characteristic::GetCumulativeValueForCharacteristic( characteristic, 
+                                                                              prevoicps.CumulativeCharacteristicPerPhase(),
+                                                                              prevoicps.CumulativeRealValuesPerPhase() );
+      }
+      currentvalue := Characteristic::GetCumulativeValueForCharacteristic( characteristic, 
+                                                                         this.CumulativeCharacteristicPerPhase(), 
+                                                                         this.CumulativeRealValuesPerPhase() );                                                                        
+    }
+    else
+    {
+      prevoicps := this.GetPreviousOperationInCombiProgramType(); 
+      if( not isnull( prevoicps ) )
+      {
+        previousvalue := Characteristic::GetCumulativeValueForCharacteristic( characteristic, 
+                                                                              prevoicps.CumulativeCharacteristic(),
+                                                                              prevoicps.CumulativeRealValues() );
+      }
+      
+      currentvalue := Characteristic::GetCumulativeValueForCharacteristic( characteristic, 
+                                                                           this.CumulativeCharacteristic(), 
+                                                                           this.CumulativeRealValues() );
+    }
+    //info( ' prevoicps seq: ', prevoicps.SequenceNr(), 'previousvalue', previousvalue  );
+    dosequencingrule := construct( DORule_DataObjectSequencingRule );
+    
+    
+    dosequencingrule.PreviousRealValue( previousvalue );
+    dosequencingrule.CurrentRealValue( currentvalue );
+    dosequencingrule.IsProgramPhase( isprogramphase );
+    dosequencingrule.ProgramSetName( guard( this.CombiProgramSet().ProgramSetConfiguration().Name(), '' ) ); 
+    
+    return &dosequencingrule;
+  *]
+}

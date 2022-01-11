@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method OpenNewClientWithDatasetLoaded (internal[MDSObjectInfo] datasetinfo) id:Method_LibOpt_GlobalState_OpenNewClientWithDatasetLoaded
+{
+  #keys: '[141860.2.203171788]'
+  Body:
+  [*
+    // This method first loads the dataset that belongs to the 'datasetinfo' object, then it executes a command that opens a new thin client. 
+    // The dataset that belongs to the 'datasetinfo' object is automatically selected in this new thin client. 
+    
+    // This method is called when the 'Open client and select dataset' context menu item in the 'Snapshots' form is pressed. 
+    
+    // This method heavily relies on forbidden Quill. Therefore, this method is only intended to be used for development purposes. 
+    
+    if( not isnull( datasetinfo ) )
+    {
+      mdsid := datasetinfo.MDSID();   
+      if( not datasetinfo.IsLoaded() )
+      {
+        ExternalMDSEditor::Editor().LoadMDS( mdsid, MDSInterface::StandAloneStorageState() ); 
+      }
+      Process::Execute( 'cmd',
+                        '/C',
+                        '"' + OS::BinDir() + 'QThinClient.exe"',
+                        '/startup.autostart=true', // Attempts to start the client without presenting the login dialog.
+                        '/startup.project='
+                        // The documentation gives the following warning:
+                        // "This element is part of internal infrastructure and must not be used in models."
+                        // We use this attribute anyway, because there don't seem to be any good workarounds.                    
+                        + Application.ApplicationScope().Project().Name(),
+                        '/startup.selectdataset=' 
+                        + datasetinfo.Kind()
+                        + ':'
+                        + datasetinfo.Path()
+                        + '/'
+                        + datasetinfo.Name(),
+                        // The ViewManager().CurrentView() relation is forbidden Quill (not an officially supported relation) 
+                        "'/startup.view=" + ApplicationScope.ViewManager().CurrentView().Name() + "'" 
+                        );
+    }
+  *]
+}

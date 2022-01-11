@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericPlanUnit (const Schedule schedule)
+{
+  Description: 'Backup generic plan unit core data'
+  TextBody:
+  [*
+    traverse( schedule, PlanUnit_SC.astype( GenericPlanUnit ), genericPlanUnit )
+    {
+      cdGenericPlanUnit := this.CDEntity( relnew, CDGenericPlanUnit );
+      CopyCorresponding::CopyFrom( genericPlanUnit ).CopyTo( cdGenericPlanUnit );
+      
+      // Additonal attribute in core data to persist the order that this plan unit relates to
+      cdGenericPlanUnit.OrderNr( guard( genericPlanUnit.Order_SC().OrderNr(), '' ) );
+      
+      // Additonal attribute in core data to persist the parent plan unit that this plan unit relates to
+      cdGenericPlanUnit.ParentPlanUnitID( guard( genericPlanUnit.Parent().PlanUnitID(), '' ) );
+      
+      // Backup operation
+      this.BackupGenericOperation( genericPlanUnit );
+      
+      // Backup operation material
+      this.BackupGenericOperationMaterial( genericPlanUnit );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method RequestSetDataByName (Key planningDatasetMDSID_i, String planningDatasetType_i, Key planningDatasetDTD_i, 
+  String channelName_i, String setTypeName_i, String setName_i)
+{
+  Description: '// Not used?'
+  TextBody:
+  [*
+    // select the applicable SetType
+    setTypeMeta := select( this, System.SetTypeMeta, setTypeMeta,
+                           setTypeMeta.Name()        = setTypeName_i and
+                           setTypeMeta.ChannelName() = channelName_i );
+    
+    if( not isnull( setTypeMeta ) )
+    {
+      setMeta := this.FindSetByName( setTypeMeta, setName_i );
+      
+      // request locally if set exists in local system
+      if( setTypeMeta.System().IsLocalSystem() )
+      {
+        isAutoForwarding := false;    
+        dataRepository := LibDEF_DataRepository::GetDataset();
+        dataRepository->ForwardSetData( planningDatasetMDSID_i,
+                                        planningDatasetType_i,
+                                        planningDatasetDTD_i,
+                                        setMeta.GUID(),
+                                        isAutoForwarding );
+                                                   
+      }
+      else // else, request set from external system
+      {
+        this.RequestSetData( planningDatasetMDSID_i, planningDatasetType_i, planningDatasetDTD_i, setMeta.GUID() );
+      }  
+    }
+    else
+    {
+      event := this.EventCreate( this.SystemLocal(), false );
+      LibDEF_Util::EventLogError( event, "Request Set Data", "SetType not found (channel, set type): " + channelName_i + ", " + setTypeName_i );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

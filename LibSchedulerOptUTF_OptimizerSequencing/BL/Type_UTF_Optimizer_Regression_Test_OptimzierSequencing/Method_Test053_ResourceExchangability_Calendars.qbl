@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test053_ResourceExchangability_Calendars (Schedule schedule)
+{
+  Description:
+  [*
+    Addds a downtime to a resource and asserts that the optimizer correctly identified that resource group are not exchangable.
+    Input are three operations, one per type.
+  *]
+  TextBody:
+  [*
+    // precondition: the UTS KT must correcly set 3 scope operations
+    this->Run_Test03x_IsPlanned( schedule )->| void->() {
+      transientdata := UTF_Optimizer_Regression_Test_OptimizerSequencing::GetLastTransientData( schedule );
+      this.Run().AssertFalse( isnull( transientdata ), "Transient Data not saved by optimizer" );
+      this.Run().AssertEqual( counter( schedule, ResourceGroup_SC, rg, true ),
+                              counter( transientdata, ResourceGroup, rg, true ),
+                              "Resource groups shadowed in the optimizer are different than actual resource groups." );
+      traverse( transientdata, ResourceGroup, rg )
+      {
+        if( rg.ResourceGroup().Type() = "Printing" )
+        {
+          this.Run().AssertFalse( rg.IsExchangable(), "The optimizer did not recognize that resource group " + rg.ResourceGroup().Name() + " is not exchangable." );
+        }
+        else
+        {
+          this.Run().AssertTrue( rg.IsExchangable(), "The optimizer did not recognize that resource group " + rg.ResourceGroup().Name() + " is exchangable." );
+        }
+      }
+    }->Exception()->(exception) {
+      this.Run().RegisterFailure( "post-optimization assert failed:\n" + exception.Message() );
+    };
+  *]
+}

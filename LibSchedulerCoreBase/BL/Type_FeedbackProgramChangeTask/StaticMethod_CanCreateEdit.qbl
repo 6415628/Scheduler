@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CanCreateEdit (FeedbackProgramChangeTask feedbackProgramChangeTask, Resource_SC resource, ProgramTypeConfigurations programTypeConfigurations, 
+  Boolean hasUserReportedStart, Boolean hasUserReportedEnd) const declarative remote as Boolean
+{
+  Description: 'Determine whether feedback program change task can be created or updated'
+  TextBody:
+  [*
+    value := true;
+    feedbackObject := FeedbackObject::LocalFeedback();
+    
+    if( isnull( feedbackProgramChangeTask ) )
+    {
+      value := hasUserReportedStart or hasUserReportedEnd;
+      feedbackObject.AddHard( value, Translations::FeedbackStoppageTask_InvalidReportedStartAndEnd() );
+    }
+    else
+    {
+      value := programTypeConfigurations.Size() > 0;
+      feedbackObject.AddHard( value, Translations::FeedbackProgramChangeTask_InvalidProgram( resource.ResourceID() ) );
+    }
+    
+    return value;
+  *]
+}

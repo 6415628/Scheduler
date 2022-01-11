@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method FSPLUpdateEdges (BatchSequenceElement oldbatchsequenceelement)
+{
+  TextBody:
+  [*
+    if( not isnull( oldbatchsequenceelement ) )
+    {
+      // Grabs batchsequenceelement's batch task process subtask
+      batch_operation_current_process := guard( oldbatchsequenceelement.Batch().BatchTask().ProcessSubTask(), null( ProcessSubTask ) );   
+      
+      if( not isnull( batch_operation_current_process ) )
+      {
+        // 1) REMOVING EDGE FROM BATCH PROCESS SUBTASK TO DOWNSTREAM PROCESS SUBTASK
+        this.FSPLRemoveDownstreamSubTasks( oldbatchsequenceelement, batch_operation_current_process );
+      
+        // 2) REMOVING EDGE FROM UPSTREAM PROCESS SUBTASK TO BATCH PROCESS SUBTASK
+        this.FSPLRemoveUpstreamSubTasks( oldbatchsequenceelement, batch_operation_current_process );                                   
+      
+        // 3) REMOVING EDGE FROM BATCH PROCESS SUBTASK TO UPSTREAM NOBUFFERWAIT SUBTASK
+        this.FSPLRemoveUpstreamNoBufferWait( oldbatchsequenceelement, batch_operation_current_process );
+      
+        // 4) REMOVING EDGE FROM BATCH PROCESS SUBTASK TO UPSTREAM NOBUFFERACTION SUBTASK
+        this.FSPLRemoveUpstreamNoBufferAction( oldbatchsequenceelement, batch_operation_current_process );
+        
+        // 5) REMOVING EDGE FROM BATCH PROCESS SUBTASK TO UPSTREAM NOBUFFEROUTFLOW SUBTASK
+        this.FSPLRemoveUpstreamNoBufferOutflow( oldbatchsequenceelement, batch_operation_current_process );
+      }
+    }
+  *]
+}

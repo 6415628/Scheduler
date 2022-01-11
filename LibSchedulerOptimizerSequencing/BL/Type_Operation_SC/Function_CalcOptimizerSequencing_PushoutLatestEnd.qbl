@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcOptimizerSequencing_PushoutLatestEnd
+{
+  TextBody:
+  [*
+    // mbr23 Jan-22-2020 (created)
+    
+    value := min( this, ToOperationDependency.astype( OperationMaterial ), om, true, om.OptimizerSequencing_PushoutLatestAvailableTime() );
+    if( this.IsLastOperation() )
+    {
+      value := this.PlanUnit_SC().DueDate();
+    }
+    if( this.IsPlanned() )
+    {
+      if( not isnull( this.Task_SC().Next() ) )
+      {
+        // we are also restricted by the following task's PushoutLatestStart, also taking into account the intermediary non-process durations:
+        nexttask_lateststart := min( this.Task_SC().Next(), OperationInTask, o, o.OptimizerSequencing_PushoutLatestStart() ) - this.Task_SC().Next().DurationBeforeProcess();
+        value := minvalue( value, nexttask_lateststart - this.Task_SC().DurationAfterProcess() );
+      }
+      //If this operation is planned, this it at least its actual process end and describes how much additional resource downtime right before this task can be handled by keeping lateness.
+      value := maxvalue( value, this.Task_SC().ProcessEnd() );
+    }
+    this.OptimizerSequencing_PushoutLatestEnd( value );
+  *]
+}

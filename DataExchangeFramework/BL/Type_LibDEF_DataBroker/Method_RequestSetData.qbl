@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method RequestSetData (Key planningDatasetMDSID_i, String planningDatasetType_i, Key planningDatasetDTD_i, 
+  String setGUID_i)
+{
+  Description: 'Request SetObjects from other System.'
+  TextBody:
+  [*
+    // Jacky CHAN May-26-2016 (created)
+    // find the SetMeta
+    setMeta := select( this, System.SetTypeMeta.SetMeta, sm,
+                       sm.GUID() = setGUID_i );
+    
+    if( isnull( setMeta ) )
+    {
+      LibDEF_Util::LogError( "Set with GUID '" + setGUID_i + "' cannot be requested, it does not exist. ");
+    }
+    
+    target := setMeta.SetTypeMeta().System();
+    
+    // use Chunking if possible
+    target.SendDataRequestGetSet( setMeta, planningDatasetMDSID_i, planningDatasetType_i, planningDatasetDTD_i, target.CanSendDataByChunking() );
+  *]
+}

@@ -1,0 +1,54 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestIsSequenceRuleEnableForResourceRule_Setup (Schedule schedule)
+{
+  Description: "Test program set configuration setting 'Is Sequence Rule Enabled' for resource rule - setup"
+  TextBody:
+  [*
+    // Get variant data
+    isvariantfound := false;
+    isSequenceRulesEnabled := false;
+    hasViolatedRules := false;
+    hasfeedback := false;
+    
+    this.GetTestVariant( isvariantfound,
+                         isSequenceRulesEnabled,
+                         hasViolatedRules,
+                         hasfeedback );
+    
+    if( isvariantfound )
+    {
+      // Initialize rule framework and characteristic
+      schedule.InitializeRuleFramework();
+      schedule.InitializeCharacteristic();
+      
+      // Create program scheduling data
+      // Plan all operations
+      programDefConfig := this.CreateProgramSchedulingData( schedule );
+      programsetconfig := select( programDefConfig, ProgramSetConfiguration, set, true );
+      programsetconfig.IsSequenceRulesEnabled( isSequenceRulesEnabled );
+      
+      // Create transition rule
+      this.CreateProgramPhaseTransitionRule( schedule );
+    
+      if( hasfeedback )
+      {
+        // Transaction propagate on newly created operations needed before create feedback
+        Transaction::Transaction().Propagate();
+        
+        // Create program feedback
+        this.CreateProgramSchedulingFeedbackData( schedule );
+        
+        // Create operation feedback
+        this.CreateFeedbackForOperations( schedule );
+      }
+        
+      // Create rule based on variant
+      this.CreateRule( schedule, 
+                       RuleConstant::RuleScope_AllTasksOnResource(), 
+                       RuleConstant::RuleSubType_NotAllowedJumpValue(), 
+                       RuleConstant::Characteristic_ProductType(), 
+                       programsetconfig );
+    }
+  *]
+}

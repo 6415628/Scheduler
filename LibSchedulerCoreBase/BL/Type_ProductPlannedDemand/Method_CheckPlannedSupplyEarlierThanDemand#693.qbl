@@ -1,0 +1,12 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride CheckPlannedSupplyEarlierThanDemand (Supply supply) declarative remote as Boolean
+{
+  TextBody:
+  [*
+    return not supply.IsPlannedSupply() // if supply is not planned supply, return true
+           or guard( not supply.Operation_SC().IsPlanned(), true ) // if supply is planned supply, return true if operation is NOT planned, guard added in case relation to Operation_SC was not set correctly, guarded to true because then it won't have circularity when there's no time logic from planning
+           or guard( not this.Operation_SC().IsPlanned(), true ) // return true if demand's operation is NOT planned, guard added in case relation to Operation_SC was not set correctly, guarded to true because then it won't have circularity when there's no time logic from planning
+           or supply.AvailableFrom() <= this.OperationStart();
+  *]
+}

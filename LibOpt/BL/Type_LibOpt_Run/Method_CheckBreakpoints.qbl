@@ -1,0 +1,33 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckBreakpoints (LibOpt_BreakpointPosition component_position, LibOpt_Task task, output stream[Void] breakpoint_stream_o) as Boolean
+{
+  TextBody:
+  [*
+    task.ComponentPosition( relset, component_position );
+    
+    // Check need to set a breakpoint event.
+    if( isnull( task.Run().BreakpointEvent() ) )
+    {
+      breakpoint := select( component_position, BreakpointConditionalOnComponent.BreakpointConditional, breakpoint, 
+                            breakpoint.IsEnabled() and breakpoint.Condition() );
+      if( not isnull( breakpoint ) )
+      {
+        this.BreakpointEvent( relnew, Breakpoint := breakpoint );
+      }
+    }
+    
+    // Don't poll the breakpoint if there is no breakpoint set on this component position.
+    if( not isnull( task.Run().BreakpointEvent() ) )
+    {
+      breakpoint_stream_o := this.PollBreakpoints( task );
+    }
+    else
+    {
+      breakpoint_stream_o := emit( void );
+    }
+    
+    return task.IsWaiting();
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

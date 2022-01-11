@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method VerifyHeaderDomainGUID (NamedValueTree nvt_i, LibDEF_IntegrationEvent event_i) as Boolean
+{
+  Description: 'Verify the Domain-GUID, it must match for any communications.'
+  TextBody:
+  [*
+    // Jacky CHAN Apr-25-2016 (created)
+    domainGUID := LibDEF_DataAccessor::GetHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_DOMAINGUID() );
+    
+    value := domainGUID = this.DomainGUID();
+    
+    // log security
+    if( not value )
+    {
+      LibDEF_Util::EventLogError( event_i,
+                                  "Message rejected",
+                                  "Message received belongs to Domain '" + domainGUID + "' while the Domain of the receiving System is '" + this.DomainGUID() + "'." );
+    }
+    
+    return value;
+  *]
+}

@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: cmSubtaskTypeOnResourceGroup_1/MenuSetFirstRespectMachine
+Response OnClick (shadow[SubTaskTypeOnResourceGroup] selection) id:Response_cmSubtaskTypeOnResourceGroup_1_MenuSetFirstRespectMachine_OnClick
+{
+  #keys: '[143768.1.1654083154]'
+  CanBindMultiple: false
+  DefinitionID => /cmSubtaskTypeOnResourceGroup_1/Responsedef_cmSubtaskTypeOnResourceGroup_1_MenuSetFirstRespectMachine_OnClick
+  GroupServerCalls: true
+  Precondition:
+  [*
+    return DialogCreateEditResourceGroup.SetFirstRespectMachinePrecondition( selection, feedback );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Set first respect machine subtask
+      // Reset previous first respect machine subtask
+      resourceGroup := DialogCreateEditResourceGroup.DataHolderResourceGroup().Data();
+      
+      sttorg := select( resourceGroup,
+                        SubTaskTypeOnResourceGroup,
+                        sttorg,
+                        sttorg.IsFirstRespectMachine() = true );
+      
+      if( not isnull( sttorg ))
+      {
+        sttorg.IsFirstRespectMachine( false );
+      }
+      
+      // Set new first respect machine subtask
+      selection.IsFirstRespectMachine( true );
+    *]
+  }
+}

@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method CanExport (structured_UserGroupDefinition userGroups) declarative remote as Boolean
+{
+  Description: 'Returns whether the dataset underlying this scenario can be exported.'
+  TextBody:
+  [*
+    feedback := FeedbackObject::LocalFeedback();
+    
+    if ( not feedback.CheckHard( this.HasDataset() and this.Dataset().IsDatasetStoreStorage() ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_CanExport_NotDSS() );
+    }
+    
+    if ( not feedback.CheckHard( LibSM_Util::HasFunctionality( userGroups, "LibSM_ExportDataset" ) ) )
+    {
+      feedback.AddHard( Translations::LibSM_Scenario_CanExport_NotAllowed() );
+    }
+    
+    return feedback.IsAllowed();
+  *]
+}

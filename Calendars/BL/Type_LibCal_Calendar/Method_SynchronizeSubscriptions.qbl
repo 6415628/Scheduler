@@ -1,0 +1,84 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeSubscriptions (LibCal_StagingCalendar stagingCalendar_i, Boolean doDelete_i, Boolean keepIfNotImported_i)
+{
+  Description:
+  [*
+    Synchronize the staging objects. The deletion behavior is determined by the arguments:
+    doDelete_i = TRUE deletes instances that do not exist in staging (anymore). When FALSE, no instances are deleted.
+    keepIfNotImported_i = TRUE does not delete instances that do not exist in staging if they were not imported previously (i.e. have been created manually or by the application).
+  *]
+  TextBody:
+  [*
+    // Consider all existing subscriptions to be soft-deleted.
+    // Ignore the subscription to Event "Always available", that is already synchronized as part of synchronizing the Calendar.
+    softDeletedSubscriptions := selectset( this.Subscriptions(), Elements, subscription, true,
+                                           not subscription.Event().IsAlwaysAvailableEvent() );
+    
+    // Ignore the LeadingParticipation. That is synchronized as part of synchronizing the Event.
+    traverse( stagingCalendar_i, StagingParticipation, stagPart, not stagPart.IsLeading() )
+    {
+      // Get the subscription that must be synchronized.
+      subscription := select( this.Subscriptions(), Elements, subscr, true, subscr.ParticipationID() = stagPart.StagingParticipationID() );
+      
+      // Synchronize the participation / subscription if there are no errors.
+      if( stagPart.CanSynchronize() )
+      {
+        // Get the event to subscribe to.
+        event := LibCal_Event::FindByEventID( stagPart.EventID() );
+    
+        if( not isnull( event ) )
+        {
+          useLeadingPeriod := not stagPart.HasSpecificPeriod();  // HasSpecificPeriod is easier to understand
+                                                                 // in the source (e.g. Excelsheet) from which the data is imported.
+          if( not isnull( subscription ) )
+          {
+            if( event <> subscription.Event() )
+            {
+              // Change the event to which is subscribed.
+              // Very unlikely to happen, is not supported in the UI.
+              // Can happen though if IsAlwaysAvailable is changed from FALSE to TRUE (or vice versa).
+              subscription.Event().RemoveSubscriber( this );
+              subscription := event.AddSubscriber( this, useLeadingPeriod );
+              subscription.ParticipationID( stagPart.StagingParticipationID() );
+            }
+          }
+          else  // Subscription does not exist.
+          {
+            // Add the calendar as subcriber to the event from another calendar.
+            subscription := event.AddSubscriber( this, useLeadingPeriod );
+            subscription.ParticipationID( stagPart.StagingParticipationID() );
+            subscription.IsCreatedByImport( true );
+          }
+         
+          // Synchronize the data. A subscription to event "Always available" does not have to be synchronized.
+          subscription.Synchronize( stagPart );        
+        }
+        else
+        {
+          LibCal_Util::Warning( "LibCal_Calendar.SynchronizeSubscriptions() : Event with ID '" + stagPart.EventID() + "' not found for StagingParticipation with ID '" + stagPart.StagingParticipationID() + "'." );
+        }
+      }
+    
+      if( not isnull( subscription ) )
+      {
+        // Remove the subscriptions from the set of soft-deleted subscriptions.
+        softDeletedSubscriptions.Remove( subscription );
+      }
+    }
+    
+    // If applicable, delete the subscriptions that are soft-deleted, i.e. that are not present in staging.
+    if( doDelete_i )
+    {
+      traverse( softDeletedSubscriptions, Elements, subscription )
+      {
+        // Only the subscriptions that are created by an import action should be deleted, unless indicated otherwise.
+        if( subscription.IsCreatedByImport() or not keepIfNotImported_i )
+        {
+          subscription.Delete();
+        }
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

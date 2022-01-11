@@ -1,0 +1,38 @@
+Quintiq file version 2.0
+#parent: #root
+Method Execute (DataUpgradeIO duio_i, String query_i, output String feedback_o) as Boolean
+{
+  Description:
+  [*
+    Attempt to execute a DB query, returns success state.
+    On error, logs information to the server
+  *]
+  TextBody:
+  [*
+    // tgn3 Apr-9-2021 (created)
+    
+    // Debug - do not delete
+    //logfile( ">>> Query: ", query_i );
+    
+    isSuccess := false;
+    
+    try 
+    {
+      // Empty queries won't fail, but make a redundant operation. Do nothing if one is detected
+      if( query_i.TrimBoth() <> "" )
+      {
+        duio_i.Execute( query_i );
+      }
+      
+      isSuccess := true;
+    }
+    onerror
+    {
+      // Failure due to query execution problem
+      feedback_o := "Failed to execute query." + String::NewLine() + query_i;
+    }
+    
+    return isSuccess;
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

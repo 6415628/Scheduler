@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcDueDate_Order_Start
+{
+  TextBody:
+  [*
+    // IS201051
+    
+    // TG4AvK080508
+    // TGalcoa added ExpectedDuration
+    
+    // TG I use ExpectedDuration even if the operation is planned and has a real duration. Does it make sense for you?
+    value := this.DueDate_Order()
+               - this.ExpectedDuration();
+    
+    // TG4AvK080508
+    // TG LeadTime taken into account only if the operation is not planned yet.
+    if( not this.IsPlanned() )
+    {
+      value := value - this.LeadTime()
+    }
+    else if( this.PlanUnit_SC().IsLotLeadTimeLogicOn() and guard( this.GetTask().FirstRespectRoutingSubTask().IsProcess(), false ) )
+    {
+      value := this.DueDate_Order()- this.GetTask().LastInputLot().Duration();
+    }
+    
+    this.DueDate_Order_Start( value );
+  *]
+}

@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+Method HandleCalendarChangeConflicts (output DateTime start, output DateTime end, Real capacity, 
+  String intervalid, String remark)
+{
+  Description: 'Handle conflicts on existing time intervals'
+  TextBody:
+  [*
+    // jiex Sep-29-2016 (created)
+    
+    // Find conflicts base on start/end
+    // For conflicts between unavailable events, we just needs the first and last, can delete others directly
+    conflicts := selectsortedset( this.ResourceCalendar(), TimeIntervals, timeinterval,
+                                                                          timeinterval.Capacity() <> 1
+                                                                          and ( timeinterval.End() >= start or
+                                                                                timeinterval.Start() <= end ),
+                                                                          timeinterval.Start() );
+                                                                     
+    traverse( conflicts, Elements, conflict )
+    {                       
+      if( not this.HandleCalendarConflicts_Contain( conflict, start, end, capacity, intervalid,remark ) )
+      {
+        this.HandleCalendarConflicts_During( conflict, start, end, capacity );
+        
+        this.HandleCalendarConflicts_Cut( conflict, start, end, capacity );
+      }
+    }
+  *]
+}

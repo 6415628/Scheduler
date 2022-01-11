@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[Operation_SC] selection) id:Response_SCListOperations_MenuPlanOnEarliestAvailableResource1_OnClick
+{
+  #keys: '[11532.0.128360962]'
+  Body:
+  [*
+    // Plan structured[Operation] on earliest available resource
+    
+    Schedule.PlanOperations( selection );
+    
+    //ListResource.RepaintAll();
+  *]
+  DefinitionID => //FilteredList/Responsedef_FilteredList_Menu_OnClick
+  Initiator: 'MenuPlanOnEarliestAvailableResource1'
+  Precondition:
+  [*
+    isallowedhard := true;
+    
+    value := Operation_SC::CanReplan( selection, false, feedback, isallowedhard );
+    value := Operation_SC::CheckHasAllowedResources( selection, feedback ) and value;
+    
+    if( not value )
+    {
+      feedback := Translations::SC_CannotBeReplanned( Operation_SC::GetSelectedObjects( selection ) ) + String::NewLine() + feedback;
+    }
+    
+    return value;
+  *]
+}

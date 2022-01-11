@@ -1,0 +1,31 @@
+Quintiq file version 2.0
+#parent: #root
+Method SynchronizeCalendarWindows3DSpace
+{
+  Description: 'Synchronizes calendar window based on 3DSpace input data.'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    // Get planning window to fully include all planned operations
+    scheduleTime := schedule.Time();
+    
+    // Filter out operation end time = DateTime::MaxDateTime. 
+    // It means those operations are not planned in the Gantt chart.
+    latestPlannedTime := max( schedule, ImportedWorkOrderOperation.astype( ImportedExternalWorkOrderOperation ), operation,
+                              operation.EndTime().IsFinite(),
+                              operation.EndTime() );
+    
+    planningWindow := ( latestPlannedTime - scheduleTime ).Ceil( Duration::Days( 1 ) ).Days();
+    
+    // Ensure that planning window is not with negative value and not lesser than the default Quintiq calendar window (70)
+    planningWindow := maxvalue( planningWindow, 70 );
+    
+    traverse( schedule, CalendarRegistry.Calendar, calendar )
+    {
+      // Include history into window
+      windowSize := planningWindow + calendar.History();
+      calendar.SetWindow( windowSize );
+    }
+  *]
+}

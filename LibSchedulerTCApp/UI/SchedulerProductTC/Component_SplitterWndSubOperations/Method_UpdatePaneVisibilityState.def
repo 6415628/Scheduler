@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method UpdatePaneVisibilityState () id:Method_SplitterWndSubOperations_UpdatePaneVisibilityState
+{
+  #keys: '[107652.0.47040416]'
+  Body:
+  [*
+    // Update pane visibility state
+    
+    isenablecampaigns := guard( Schedule.Functionality().IsEnableCampaigns(), true );
+    isenablebatches := guard( Schedule.Functionality().IsEnableOperationBatches(), true );
+    
+    HAS_BATCHES   := 1;
+    HAS_CAMPAIGNS := 2;
+    showTasks     := true;
+    
+    hasBatches := SCListResources.UserData() mod ( 2 * HAS_BATCHES ) >= HAS_BATCHES;
+    hasCampaigns := SCListResources.UserData() mod (2 * HAS_CAMPAIGNS ) >= HAS_CAMPAIGNS;
+    
+    showCampaigns := isenablecampaigns
+                     and ( ValueHolderShowCampaigns.Value() = Constants::Always()
+                           or ( ValueHolderShowCampaigns.Value() = Constants::Auto() and hasCampaigns ) );
+    
+    showTasks := not ( showCampaigns and ValueHolderHideTasksInCampaign.Value() = '1' )
+                     or ( ValueHolderBatchElements.Value() = Constants::Always() );
+    
+    showBatchElements := isenablebatches 
+                         and ( showTasks
+                               and ( ValueHolderBatchElements.Value() = Constants::Always()
+                                     or ( ValueHolderBatchElements.Value() = Constants::Auto() and hasBatches ) ) );
+    
+    // Disable Option Hide Tasks in Campaign when show elements list is always
+    form := ApplicationScheduler.GetFormSettings();
+    if( not isnull( form ) )
+    {
+      form.CheckBoxHideTasksInCampaigns().Enabled( not( ValueHolderBatchElements.Value() = Constants::Always() ) );
+    
+      // Uncheck Hide Tasks in Campaign when show elements list is always
+      if( ValueHolderBatchElements.Value() = Constants::Always() )
+      {
+        form.CheckBoxHideTasksInCampaigns().Checked( false );
+      }
+    }
+    
+    SplitterPaneTasks.Visible( showTasks );
+    SplitterPaneOpsInBatch.Visible( showBatchElements );
+    SplitterPaneCampaigns.Visible( showCampaigns );
+  *]
+}

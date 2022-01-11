@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestHandleSingleFeedback_OperationReceiveEndStatus (Schedule schedule)
+{
+  TextBody:
+  [*
+    endStatus := Constants::StatusEnd();
+    reportedStart := DateTime::MinDateTime();
+    reportedProcessStart := DateTime::MinDateTime();
+    reportedEnd := DateTime::Construct( 2017, 1, 1, 4, 0, 0 );
+    operation := select( schedule, PlanUnit_SC.Operation_SC, operation, true );
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, resource, true );
+    remark := Constants::EmptyString();
+    
+    // Giving end status and reported end to the operation
+    schedule.FeedbackManager().TaskEnd( operation, resource.ResourceID(), reportedStart, reportedProcessStart, reportedEnd, remark );
+    
+    isFeedbackTaskExist := exists( schedule, FeedbackManager.FeedbackTaskInSchedule, feedbackTaskInSchedule,
+                                   feedbackTaskInSchedule.OperationID() = operation.OperationID()
+                                   and feedbackTaskInSchedule.Status() = endStatus
+                                   and feedbackTaskInSchedule.ReportedStart().IsInfinite()
+                                   and feedbackTaskInSchedule.ReportedProcessStart().IsInfinite()
+                                   and feedbackTaskInSchedule.ReportedEnd() = reportedEnd
+                                   and feedbackTaskInSchedule.Remark() = remark );
+    
+    this.Run().AssertTrue( isFeedbackTaskExist );
+  *]
+}

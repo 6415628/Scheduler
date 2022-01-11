@@ -1,0 +1,88 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExportToXLS (structured_Object objects_i, LibDIF_DataTransformation dataTransformation_i, String brokerID_i, 
+  Boolean isForUI_i) as BinaryValue
+{
+  Description:
+  [*
+    Create integration objects based on the provided model objects, using the provided DataTransformation.
+    After that, trigger ExportToXLS for the integration objects, using the provided brokerID.
+    The exported data is either written to a file on the Server, or returned to the Client that triggered the export action.
+  *]
+  TextBody:
+  [*
+    binValue := BinaryValue::Construct();
+    
+    // Create the integration objects.
+    this.CreateIntegrationObjects( objects_i, dataTransformation_i );
+      
+    // Export the integration objects using the EDI-broker.
+    binData := this.ExportToXLS( brokerID_i )
+    
+    if( not isnull( binData ) )
+    {
+      if( isForUI_i )
+      {
+        // Return the data as BinaryValue so it can be streamed to a Client which can then write it locally.
+        binValue := binData.AsBinaryValue();
+      }
+      else
+      {
+        // Write the data to a file in the Data-directory of the model on Server-side.
+        // ToDo: make configurable (?)
+        path    := FileSystems::QFSPathToHardwarePath( DomainModel::GetDataDirectory().Path() );
+        fileRef := path + "/" + dataTransformation_i.ID() + ".xlsx";
+        
+        LibDIF_Util::WriteBinaryFile( fileRef, binData );
+        LibDIF_Util::Info( "Data is exported to file " + fileRef );
+      }
+    }
+    else
+    {
+      LibDIF_Util::Error( "No EDI-broker found for ExportToXLS | BrokerID = '" + brokerID_i + "'" );
+    }
+    
+    return binValue;
+    
+    /* MAYBE INTERESTING FOR LATER
+     * The below uses the Execute-method of the EDI-broker when isForUI_i = FALSE.
+     * In that case the settings of the broker determine the filename and -location.
+     * Don't know if that is necessary and/or preferred...?
+     * It requires a method GetEDIBroker to be implemented, and method ExportToXLS to be implemented a bit differently.
+    binValue := BinaryValue::Construct();
+    
+    // First see if the EDI-broker can be found.
+    broker := this.GetEDIBroker( brokerID_i );
+    
+    if( not isnull( broker ) )
+    {
+      // Create the integration objects.
+      this.CreateIntegrationObjects( objects_i, dataTransformation_i );
+      
+      // Export the integration objects using the EDI-broker.
+      // If isForUI_i = FALSE exporting can be done generically,
+      // ...
+      if( not isForUI_i )
+      {
+        broker.Execute();  // No BinaryValue is returned.
+      }
+      else
+      {
+        binValue := this.ExportToXLS( broker ).AsBinaryValue();
+        
+        xlsFile := OSFile::Construct( "C:\temp\erparticles.xlsx" );
+        xlsFile.Open();
+        xlsFile.WriteBinary( binValue );
+        xlsFile.Close();
+      }
+    }
+    else
+    {
+      LibDIF_Util::Error( "No EDI-broker found for ExportToXLS | BrokerID = '" + brokerID_i + "'" );
+    }
+    
+    return binValue;
+    */
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

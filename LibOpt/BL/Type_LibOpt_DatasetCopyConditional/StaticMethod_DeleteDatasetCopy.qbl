@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod DeleteDatasetCopy (LibOpt_SnapshotReplannableCopyDataset snapshot)
+{
+  Description:
+  [*
+    This method deletes the dataset that is attached to the `snapshot` variable. 
+    If the dataset is still being created, then it is not possible to delete the dataset yet. In this case, the `snapshot.HasToBeDeleted` flag is set to `true`. 
+    By setting this flag, the `LibOpt_DatasetCopyConditional::HandleSuccessfulDatasetCopy` method will automatically delete the dataset after the dataset has been created.
+  *]
+  TextBody:
+  [*
+    // evr3 Jun-4-2020 (created)
+    if( snapshot.HasCreatedDataset() )
+    {
+      infos := MDSEditor::Editor().ObjectInfos();
+      datasetinfo := infos.Find( snapshot.DatasetName() );
+      mdsid := datasetinfo.MDSID();
+      
+      if( snapshot.IsMemoryOnly() )
+      {
+        MDSEditor::Editor().UnloadMDS( mdsid );  
+      }
+      else      
+      // Note: we cannot use state := datasetinfo.State(),
+      // because datasetinfo.State() for a standalone storage state can still be equal to memory only.
+      {
+        MDSEditor::Editor().DeleteMDS( mdsid );   
+      }
+      snapshot.IsDatasetDeletedByOptimizer( true ); 
+      // The dataset is deleted, so the dataset doesn't have a state anymore. 
+      // Please consider using 'not snapshot.IsQuickDatasetCopy()' if you want to know if a dataset copy was created in a MemoryOnly state.
+      snapshot.IsMemoryOnly( false ); 
+    }
+    else
+    {
+      // Dataset does not exist yet. Flag dataset for later deletion, see LibOpt_SnapshotReplannableCopyDataset::HandleSuccessfulDatasetCopy. 
+      snapshot.HasToBeDeleted( true );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

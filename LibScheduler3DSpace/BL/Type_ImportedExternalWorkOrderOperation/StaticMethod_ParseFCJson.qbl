@@ -1,0 +1,27 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod ParseFCjson (Schedule schedule, JSON operation, String workOrderID) as ImportedExternalWorkOrderOperation
+{
+  Description:
+  [*
+    Parse the JSON data from 3DSpace for imported external work order operations. 
+    The logic here only updates the work order operations, because work order operations are created from process operations.
+  *]
+  TextBody:
+  [*
+    processOperationID := ImportedExternalWorkOrderOperation::GetProcessOperationID( operation );
+    
+    impExtWorkOrderOp := select( schedule, 
+                                 ImportedWorkOrderOperation.astype( ImportedExternalWorkOrderOperation ), 
+                                 impExtWorkOrderOp,
+                                 impExtWorkOrderOp.WorkOrderId() = workOrderID,
+                                 impExtWorkOrderOp.ProcessOperationID() = processOperationID );
+    
+    if( not isnull( impExtWorkOrderOp ) )
+    {
+      impExtWorkOrderOp.Update( operation );
+    }
+    
+    return impExtWorkOrderOp;
+  *]
+}

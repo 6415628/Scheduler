@@ -1,0 +1,151 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnDrawNode (ContinuousTask element, Resource_SC row) id:Response_GanttChartSchedulingCentre_OnDrawNode_648
+{
+  #keys: '[118288.0.276205748]'
+  Body:
+  [*
+    // OnDrawNode ContinuousTask
+    subtasks := selectsortedset( element, SubTask, subtask, true, subtask.SequenceNr() );
+    
+    is_starttime := [String]drawinfo.TextColor() = 'Black';
+    is_endtime := [String]drawinfo.TextColor() = 'Blue';
+    
+    next_task_start := guard( element.Next().Start(), DateTime::MinDateTime() );
+    previous_task_end := guard( element.Previous().End(), DateTime::MinDateTime() );
+    
+    traverse( subtasks, Elements, subtask )
+    {     
+      subtask_start := subtask.Start();
+      subtask_end := subtask.End();
+      
+      if( subtask.istype( SetupSubTask ) )
+      {
+        duration := subtask.Duration()    
+        if( is_starttime and next_task_start.IsFinite() )
+        {
+          duration := maxvalue( minvalue( subtask_end, next_task_start ) - subtask_start, Duration::Zero() )      
+        }
+        else if( is_endtime and previous_task_end.IsFinite() )
+        { 
+          duration := maxvalue( subtask_end - maxvalue( subtask_start, previous_task_end ), Duration::Zero() )
+        }                             
+        drawinfo.AddCompartment( ColorScheme.Setup(), duration );
+      }
+      else if( subtask.istype( TransferSubTask ) )
+      {
+        st := subtask.astype( TransferSubTask );
+    
+        drawinfo.AddCompartment( ColorScheme.IdleDuration(), st.IdleDuration() );
+        drawinfo.AddCompartment( ColorScheme.Transfer(), st.TransferDuration() );
+      }
+      else if( subtask.istype( ReceiveSubTask ) )
+      {
+        st := subtask.astype( ReceiveSubTask );
+    
+        drawinfo.AddCompartment( ColorScheme.IdleDuration(), st.IdleDuration());
+        drawinfo.AddCompartment( ColorScheme.Receive(), st.TransferDuration() );
+      }
+      else if( not element.HasConstraintViolations() )
+      {
+        color := ColorScheme.Scheduled();
+    
+        if( subtask.istype( ProcessSubTask ) )
+        {
+          if( element.Started() )
+          {
+            color := ColorScheme.Started()       
+          }
+          else if( element.IsFrozenInSchedule() )
+          {
+            color := ColorScheme.IsFrozenInSchedule()
+          }
+          else if( element.IsLocked() )
+          {
+            color := ColorScheme.IsLockedByOptimizer();
+          }
+          else if( element.IsStartInSchedulingHorizon() )
+          {
+            color := ColorScheme.IsStartInSchedulingHorizon()
+          }
+        }
+        else if( subtask.istype ( NoBufferWaitSubTask ) )
+        {
+          color := ColorScheme.NoBufferWait();
+        }
+        else if( subtask.istype ( NoBufferActionSubTask ) )
+        {
+          color := ColorScheme.NoBufferAction();
+        }
+        else if( subtask.istype ( CleanUpSubTask ) )
+        {
+          color := ColorScheme.CleanUp();
+        }
+        else if( subtask.istype ( NoBufferActionInputSubTask ) )
+        {
+          color := ColorScheme.NoBufferActionInput();
+        }
+        
+        duration := subtask.Duration();
+        if( is_starttime and next_task_start.IsFinite() )
+        {
+          duration := maxvalue( minvalue( subtask_end, next_task_start ) - subtask_start, Duration::Zero() )     
+        }
+        else if( is_endtime and previous_task_end.IsFinite() )
+        { 
+          duration := maxvalue( subtask_end - maxvalue( subtask_start, previous_task_end ), Duration::Zero() )                    
+        }
+        
+        drawinfo.AddCompartment( color, duration );
+      }
+      else
+      {
+        drawinfo.AddCompartment( drawinfo.BackgroundColor(), subtask.Duration() );
+      }
+    
+      //Draw the idle time compartments between subtasks
+      nextsubtask := subtask.Next();
+    
+      if( not isnull( nextsubtask ) )
+      {             
+        idleduration := nextsubtask.Start() - subtask.End();  
+    
+        if( is_starttime and next_task_start.IsFinite() )
+        {
+          idleduration := maxvalue( minvalue( nextsubtask.Start(), next_task_start ) - subtask.End(), Duration::Zero() )     
+        }
+        else if( is_endtime and previous_task_end.IsFinite() )
+        { 
+          idleduration := maxvalue( nextsubtask.Start() - maxvalue( subtask.End(), previous_task_end ), Duration::Zero() )                    
+        
+        }
+        drawinfo.AddCompartment( ColorScheme.IdleDuration(), idleduration );
+      }
+      
+      //if this is the last subtask
+      if( subtask.SequenceNr() = element.SubTask( relsize ) - 1 )
+      {
+        extra_process_duration := maxvalue( element.End() - subtask.End(), Duration::Zero() );
+        
+        color := ColorScheme.Scheduled();
+    
+        if( element.Started() )
+        {
+          color := ColorScheme.Started()       
+        }
+        else if( element.IsFrozenInSchedule() )
+        {
+          color := ColorScheme.IsFrozenInSchedule()
+        }
+        else if( element.IsStartInSchedulingHorizon() )
+        {
+          color := ColorScheme.IsStartInSchedulingHorizon()
+        }
+        
+        drawinfo.AddCompartment( color, extra_process_duration );
+        
+      }
+    }
+  *]
+  DefinitionID: 'Responsedef_GanttChart_OnDrawNode'
+}

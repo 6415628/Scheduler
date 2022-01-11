@@ -1,0 +1,83 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcMachineEarliestStart
+{
+  TextBody:
+  [*
+    value := this.Schedule().Time();
+    mes := this.Schedule().Time();
+    resource := this.Resource_SC();
+    duration := Duration::Zero();
+    
+    if( not isnull( this.LastFeedbackTask() ) )
+    {
+      mes := this.LastFeedbackTask().Start();
+      duration := this.GetOperation().ExpectedDuration()
+    }                                                                 
+    else
+    {
+      triggerstart := this.Schedule().Time();
+      triggeroperation := this.TriggerOperation();
+      previous := this.Previous().astype( ContinuousTask );
+      previousend := this.Schedule().Time();  
+      lastfeedbacktask := this.Resource_SC().LastFeedbackTaskInSchedule();  
+      
+      if( not isnull( triggeroperation ) and not this.IsParallelWithPrevious() )
+      {
+        // Earliest start while has trigger task
+        triggerstart := guard( triggeroperation.Task_SC().End(), triggeroperation.End() )
+                        + guard( Duration::Minutes( this.RequiredExtraSpace() / this.Resource_SC().Speed() ), Duration::Zero() );
+      }
+      if( not isnull( previous ) and this.IsParallelWithPrevious() )
+      {
+        // Is parallel with previous
+        mes := previous.MachineEarliestStart() + previous.SetupDuration();
+        previousend := this.Previous().End();
+      }
+      else if( isnull( previous ) and not isnull( lastfeedbacktask ) and this.IsParallelWithFeedback() )
+      {
+        // Is parallel with previous while previous is feedback
+        mes := lastfeedbacktask.Start() + lastfeedbacktask.ExportedSetupDuration();
+        previousend := lastfeedbacktask.End();
+      }
+      else if( ( this.HasSetupDuration() or this.IsFirstAfterDownTime() ) and ( not isnull( previous ) or not isnull( lastfeedbacktask ) ) )
+      { 
+         // there should be a previous operation if has setup duration
+        mes := guard( previous.End(), lastfeedbacktask.End() );
+      }
+      else if( not isnull( previous ) )
+      {
+        previousStart := ifexpr( previous.HasReportedStart(), previous.ReportedStart(), previous.EarliestStart() );
+        
+        mes := previousStart
+               + previous.SetupDuration()
+               + guard( Duration::Minutes( ( this.GapToPrevious() + previous.GetParallelMaxLength() ) / this.Resource_SC().Speed() ), Duration::Zero() );  
+        previousend := this.Previous().End();         
+      }
+      else if( not isnull( lastfeedbacktask ) )
+      {
+        // make sure the MES is always after the last feedback moment 
+        mes := lastfeedbacktask.Start()
+               + lastfeedbacktask.ExportedSetupDuration()
+               + guard( Duration::Minutes( ( this.GapToPrevious() + lastfeedbacktask.ExportedParallelMaxLength() )/ this.Resource_SC().Speed() ), Duration::Zero() );   
+        previousend := lastfeedbacktask.End();           
+      }
+     
+      mes := maxvalue( mes, triggerstart );              
+     
+      duration := maxvalue( previousend - mes, this.ExpectedDuration() ) + this.DischargeDuration();
+    }  
+    // the calendar should allow the machine to produce
+    if( this.IsFirstAfterDownTime() )
+    {
+      // if is first after down time, then backward task can start until down time end.
+      value := resource.ResourceCalendar().NextFit( mes,duration ); 
+    }
+    else
+    {
+      value := resource.ResourceCalendar().NextAvailable( mes );
+    }
+    
+    this.MachineEarliestStart( value );
+  *]
+}

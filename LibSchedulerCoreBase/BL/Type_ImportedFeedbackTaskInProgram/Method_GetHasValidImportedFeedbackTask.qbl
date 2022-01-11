@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetHasValidImportedFeedbackTask (output Strings feedback_o) declarative as Boolean
+{
+  Description: 'Check if the imported feedback task in program has a valid imported feedback task'
+  TextBody:
+  [*
+    ift := this.ImportedFeedbackTask();
+    
+    isvalid := not isnull( ift )
+               and not ift.IsStoppageTask();  // Feedback task must be normal task
+    
+    if( not isvalid and not isnull(  feedback_o ) )
+    {
+      name := Schedule::GetSubstituteName( this.Name() );
+      feedback_o.Add( SanityCheckMessage::GetFormattedMessage( Translations::SC_ImportedFeedbackTaskInProgram_Instance( name ),
+                                                               Translations::SC_ImportedFeedbackTaskInProgram_ViolateHasValidFeedbackTask() ) );
+    }
+    
+    return isvalid;
+  *]
+}

@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: ListDemandInBatch
+Response OnDropEmpty (structured[Demand] information, DemandBatch masterselection) id:Response_ListDemandInBatch_OnDropEmpty
+{
+  #keys: '[141590.0.72120889]'
+  Body:
+  [*
+    // [Demands] -> [Empty]
+    skipbatchquantitycheck := masterselection.QuantityOpen() <= 0.0   // Always add in full if batch is already full.
+                            
+    masterselection.AddDemands( information, skipbatchquantitycheck );
+  *]
+  CanBindMultiple: false
+  DefinitionID => /ListDemandInBatch/Responsedef_ListDemandInBatch_OnDropEmpty
+  Precondition:
+  [*
+    skipbatchquantitycheck := ifexpr( information.Size() > 1,      // Hidden option to override semi-hard constraints
+                                      dropaction.IsControlShift(), // only enabled when multiple demands are selected
+                                      true );                      // For single demand, always skip semi-hard checks
+    
+    skipsoftcheck := dropaction.IsControl();                             
+    
+    ApplicationScheduler.CanBatchDemands( information,
+                                          masterselection,
+                                          masterselection.DemandBatchType(),
+                                          skipsoftcheck,
+                                          skipbatchquantitycheck );
+    
+    // Workaround to show feedback in the old way until all responses are converted to use FeedbackObject.                                    
+    feedback := ApplicationScheduler.ShowOldStyleFeedback( FeedbackObject::CurrentFeedback().Feedback() );                                   
+    
+    return FeedbackObject::IsAllowedWithOverride( skipsoftcheck );
+  *]
+}

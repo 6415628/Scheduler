@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReceiveMetadataRequestSetDeleted (NamedValueTree nvt_i, LibDEF_IntegrationEvent event_i)
+{
+  Description: 'Receive a Metadata message for channel-event when a Set has been deleted.'
+  TextBody:
+  [*
+    LibDEF_Util::EventLog( event_i, "Receiving Set deleted request channel event" );
+    
+    setGUID := LibDEF_DataAccessor::GetMetadataHeaderPropertyAsString( nvt_i, LibDEF_DataAccessor::HEADER_SETGUID() );
+    setMeta := select( this, SetTypeMeta.SetMeta, setMeta, setMeta.GUID() = setGUID );
+    
+    if( not isnull( setMeta ) )
+    {
+      setMeta.Delete();
+    
+      // End of receive metadata request set deleted
+      LibDEF_IntegrationEvent::EventComplete( event_i );
+    }
+    else
+    {
+      LibDEF_Util::EventLogWarning( event_i,
+                                    "Failed to delete Set with ID: " + setGUID + ". Set is not found." );
+    }
+  *]
+}

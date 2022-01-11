@@ -1,0 +1,64 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestCopyProgramConfiguration (Schedule schedule)
+{
+  Description: 'Test copy program configuration'
+  TextBody:
+  [*
+    programconfigurationID := 'Program Configuration ID';
+    copyprogramconfigurationID := programconfigurationID + '_Copy';
+    
+    programdefinition := select( schedule, ProgramDefinitionConfiguration, data, data.ProgramDefinitionConfigurationID() = programconfigurationID );
+    programset := select( programdefinition, ProgramSetConfiguration, data, true );
+    programtype := select( programset, ProgramTypeConfiguration, data, true );
+    programphase := select( programtype, ProgramPhaseConfiguration, data, true );
+    programtypechange := select( programset, ProgramTypeChangeConfiguration, data, true );
+    
+    copyprogramdefinition := select( schedule, ProgramDefinitionConfiguration, data, data.ProgramDefinitionConfigurationID() = copyprogramconfigurationID );
+    copyprogramset := select( copyprogramdefinition, ProgramSetConfiguration, data, true );
+    copyprogramtype := select( copyprogramset, ProgramTypeConfiguration, data, true );
+    copyprogramphase := select( copyprogramtype, ProgramPhaseConfiguration, data, true );
+    copyprogramtypechange := select( copyprogramset, ProgramTypeChangeConfiguration, data, true );
+    
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, data, true );
+    
+    isprogramdefinitioncreated := not isnull( copyprogramdefinition )
+                                  and programdefinition.Name() = copyprogramdefinition.Name();
+    
+    isprogramsetcreated := not isnull( copyprogramset )
+                           and programset.Name() = copyprogramset.Name()
+                           and programset.IsProgramTypeChangeAllowed() = copyprogramset.IsProgramTypeChangeAllowed()
+                           and programset.ProgramTypeChangeDuration() = copyprogramset.ProgramTypeChangeDuration()
+                           and programset.IsSequenceRulesEnabled() = copyprogramset.IsSequenceRulesEnabled()
+                           and programset.IsFreezeScheduleByProgram() = copyprogramset.IsFreezeScheduleByProgram();
+                                                                                                                        
+    isprogramtypecreated := not isnull( copyprogramtype )
+                            and programtype.Name() = copyprogramtype.Name()
+                            and programtype.ColorCode() = copyprogramtype.ColorCode()
+                            and programtype.IsProgramTypeChangeSettingOverruled() = copyprogramtype.IsProgramTypeChangeSettingOverruled()
+                            and programtype.IsProgramTypeChangeAllowedOverruled() = copyprogramtype.IsProgramTypeChangeAllowedOverruled()
+                            and programtype.ProgramTypeChangeDurationOverruled() = copyprogramtype.ProgramTypeChangeDurationOverruled();
+    
+    isprogramphasecreated := not isnull( copyprogramphase )
+                             and programphase.Name() = copyprogramphase.Name()
+                             and programphase.ColorCodeOverruled() = copyprogramphase.ColorCodeOverruled()
+                             and programphase.IsColorCodeOverruled() = copyprogramphase.IsColorCodeOverruled();
+    
+    isprogramtypechangecreated := not isnull( copyprogramtypechange )
+                                  and programtypechange.IsAllowed() = copyprogramtypechange.IsAllowed()
+                                  and programtypechange.ProgramTypeChangeDuration() = copyprogramtypechange.ProgramTypeChangeDuration();
+    
+    isresourceprogramdefinitionassigned := not isnull( resource )
+                                           and resource.ProgramDefinitionConfiguration() = copyprogramdefinition;
+    
+    value := isprogramdefinitioncreated 
+             and isprogramsetcreated
+             and isprogramtypecreated
+             and isprogramphasecreated
+             and isprogramtypechangecreated
+             and isresourceprogramdefinitionassigned;
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Copy program configuration failed.', this.Variant() ) );
+  *]
+}

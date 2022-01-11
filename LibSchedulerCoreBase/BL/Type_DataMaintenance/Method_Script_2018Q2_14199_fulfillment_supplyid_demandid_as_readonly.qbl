@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method Script_2018Q2_14199_fulfillment_supplyid_demandid_as_readonly
+{
+  TextBody:
+  [*
+    // Fulfillment SupplyId and DemandId was declaratively set previously
+    // It is now set to readonly, so we need to traverse all fulfillment and set the attribute
+    traverse( this.Schedule(), Demand.Fulfillment, fulfillment )
+    {
+      if( fulfillment.istype( GenericProductPlannedFulfillment ) )
+      {
+        f := GenericProductPlannedFulfillment::Create( fulfillment.Demand().astype( ProductDemand ), fulfillment.Supply().astype( ProductSupply ) )
+        f.QuantityDecision( fulfillment.QuantityDecision() );
+        f.HasFeedback( fulfillment.HasFeedback() );
+        f.IsManualReservation( fulfillment.IsManualReservation() );
+      }
+      else if( fulfillment.istype( GenericMaterialExternalFulfillment ) )
+      {
+        f := GenericMaterialExternalFulfillment::Create( fulfillment.Demand().astype( MaterialExternalDemand ), fulfillment.Supply().astype( MaterialExternalSupply ) )
+        f.QuantityDecision( fulfillment.QuantityDecision() );
+        f.HasFeedback( fulfillment.HasFeedback() );
+        f.IsManualReservation( fulfillment.IsManualReservation() );
+      }
+      else if( fulfillment.istype( GenericMaterialPlannedFulfillment ) )
+      {
+        f := GenericMaterialPlannedFulfillment::Create( fulfillment.Demand().astype( MaterialPlannedDemand ), fulfillment.Supply().astype( MaterialPlannedSupply ))
+        f.QuantityDecision( fulfillment.QuantityDecision() );
+        f.HasFeedback( fulfillment.HasFeedback() );
+        f.IsManualReservation( fulfillment.IsManualReservation() );
+      }
+      else if( fulfillment.istype( GenericProductExternalFulfillment ) )
+      {
+        f := GenericProductExternalFulfillment::Create( fulfillment.Demand().astype( ProductDemand ), fulfillment.Supply().astype( ProductSupply ) )
+        f.QuantityDecision( fulfillment.QuantityDecision() );
+        f.HasFeedback( fulfillment.HasFeedback() );
+        f.IsManualReservation( fulfillment.IsManualReservation() );;
+      }
+      fulfillment.Delete();
+    }
+  *]
+}

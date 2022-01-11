@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestPlanOperations (Schedule schedule)
+{
+  Description: 'Test planning work order operations based on mock 3DSpace JSON data.'
+  TextBody:
+  [*
+    // Get last work order from init data
+    initWorkOrdersArrayJSON := this.GetJSONInputData_WorkOrdersArray().Build();
+    // We assume the 'highest' work order is the last work order in the array
+    lastInitWorkOrder := initWorkOrdersArrayJSON.Get( initWorkOrdersArrayJSON.Size() - 1 ); 
+    lastInitWorkOrderID := ImportedExternalWorkOrder::GetID( lastInitWorkOrder );
+    
+    allWorkOrderOperationsToPlan := selectset( schedule, 
+                                               WorkOrder.WorkOrderOperation.astype( ExternalWorkOrderOperation ),
+                                               workOrderOperation,
+                                               // Anything 'less' than highest work order belongs to the earlier dataset
+                                               workOrderOperation.WorkOrderId() <= lastInitWorkOrderID 
+                                               and workOrderOperation.ResourceID().Length() > 0
+                                               and workOrderOperation.Maturity() <> Constants::MaturityStatus_COMPLETED()
+                                               and workOrderOperation.Maturity() <> Constants::MaturityStatus_WORK_IN_PROGRESS() );
+    
+    Transaction::Transaction().Propagate( attribute( Operation_SC, IsPlanned ) );
+    
+    areAllOperationsPlanned := forall( allWorkOrderOperationsToPlan, 
+                                       Elements.Operation_SC,
+                                       operation,
+                                       operation.IsPlanned() );
+    
+    this.Run().AssertTrue( areAllOperationsPlanned,
+                           UTFUtility::GenerateFailedMessage( 'Planning of work order operations based on JSON data failed', '' ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

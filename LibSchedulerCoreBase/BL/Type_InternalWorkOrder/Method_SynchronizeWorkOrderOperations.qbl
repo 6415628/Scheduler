@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SynchronizeWorkOrderOperations
+{
+  TextBody:
+  [*
+    importedInternalWorkOrderOperations := selectsortedset( this, 
+                                                            ImportedInternalWorkOrder.ImportedWorkOrderOperation.astype( ImportedInternalWorkOrderOperation ), 
+                                                            iwoo, true, iwoo.SequenceNr() );
+    
+    traverse( importedInternalWorkOrderOperations, Elements, row, row.IsValidDataHard() )
+    {
+      internalWorkOrderOperation := InternalWorkOrderOperation::FindInternalWorkOrderOperation( row.WorkOrderId(), row.SequenceNr() );
+      
+      if( isnull( internalWorkOrderOperation ) )
+      {
+        internalWorkOrderOperation := this.CreateWorkOrderOperation( row.SequenceNr() ).astype( InternalWorkOrderOperation );
+      }
+      
+      internalWorkOrderOperation.Update( row );
+    
+      // synchronize work order demands, supplies, input and output materials
+      internalWorkOrderOperation.SynchronizeWorkOrderDemands();
+      internalWorkOrderOperation.SynchronizeWorkOrderSupplies();
+      internalWorkOrderOperation.SynchronizeWorkOrderInputMaterial();
+      internalWorkOrderOperation.SynchronizeWorkOrderOutputMaterial();
+    }
+  *]
+}

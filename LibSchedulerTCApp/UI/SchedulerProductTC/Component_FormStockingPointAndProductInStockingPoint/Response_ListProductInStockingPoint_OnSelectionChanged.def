@@ -1,0 +1,26 @@
+Quintiq file version 2.0
+#parent: ListProductInStockingPoint
+Response OnSelectionChanged (ProductInStockingPoint selection) id:Response_ListProductInStockingPoint_OnSelectionChanged
+{
+  #keys: '[118288.0.279160975]'
+  Body:
+  [*
+    // Store stocking point stocks for selected product in stocking points onto global data holder.
+    stock := null( ProductInStockingPointStock );
+    
+    if( not isnull( selection.ProductInStockingPointStock() ) )
+    {
+      stock := selection.ProductInStockingPointStock();
+    }
+    DataHolderScheduleStock.Data( stock );
+    
+    formchart := Application.Frame().FindChildObject( 'FormStockChart').astype( FormStockChart );
+    if( not isnull( formchart ) )
+    {
+      stockpoint := Translations::SC_Designer_StockChartProductTitle( selection.ProductId(), selection.StockingPointId() );
+      formchart.SetTitle( stockpoint );
+    }
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_List_OnSelectionChanged'
+}

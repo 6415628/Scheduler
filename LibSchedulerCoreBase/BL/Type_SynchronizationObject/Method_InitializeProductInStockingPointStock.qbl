@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitializeProductInStockingPointStock
+{
+  TextBody:
+  [*
+    scheduler := this.Schedule();
+    
+    traverse( scheduler, ImportedProductInStockingPoint_SC, target, target.IsValidDataHard() )
+    {
+      sp := target.ProductInStockingPoint();
+      stock := guard( sp.ProductInStockingPointStock(), null( ProductInStockingPointStock ) );
+      
+      // Create new stock
+      if( not isnull( sp ) and isnull( stock ) )
+      {
+        stock := ProductInStockingPointStock::Create( scheduler );
+      }      
+      
+      stock.ProductInStockingPoint( relset, sp );
+    }
+  *]
+}

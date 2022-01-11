@@ -1,0 +1,81 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Test020_CheckOptimizerKPIs (Schedule schedule)
+{
+  TextBody:
+  [*
+    run := this.Run();
+    
+    kpitotal := this.GetTotalKPI( schedule );
+    kpideliveryperformance := schedule.KPIDeliveryPerformance();
+    kpiproductivity := schedule.KPIProductivity();
+    kpinrunplannedoperation := schedule.KPINrUnplannedOperation();
+    
+    nameifnogroup := schedule.MDSSchedule().Name();
+    group := this.GetCurrentMeasurementGroup( nameifnogroup );
+    
+    // Sequence in which the KPIs are added should be equal to the sequence in which they are stored in the BTS,
+    // because the columns are added in this sequence to the view
+    group.AddValue( "TotalKPI", kpitotal );
+    group.AddValue( "Nr constraint violations", schedule.TotalViolations() );
+    
+    group.AddValue( "Delivery performance", kpideliveryperformance );
+    group.AddValue( "Productivity", kpiproductivity );
+    group.AddValue( "NrUnplannedOperation", kpinrunplannedoperation );
+    
+    row := this.GetTestUnitRow( this.Variant() );
+    if( not isnull( row ) )
+    {
+      tolerance := row.BenchmarkTolerance();
+      
+      // Total KPI
+      benchmarkkpitotal := row.BenchmarkKPITotal();
+      absolutebenchmarkkpitotal := row.BenchmarkKPIAbsoluteTotal();
+      isminimizationgoalkpitotal := row.IsMinimizationGoalKPITotal();
+      targetkpitotal := UTF_Optimizer::GetTargetKPIWithTolerance( benchmarkkpitotal, absolutebenchmarkkpitotal, tolerance, isminimizationgoalkpitotal );
+      if( isminimizationgoalkpitotal )
+      {
+        run.AssertLessOrEqual( targetkpitotal, kpitotal, 'Did not get within the KPI total tolerance.' );
+      }
+      else
+      {
+        run.AssertGreaterOrEqual( targetkpitotal, kpitotal, 'Did not get within the KPI total tolerance.' );
+      }
+      
+      // Delivery performance
+      benchmarkkpideliveryperformance := row.BenchmarkKPIDeliveryPerformance();
+      isminimizationgoaldeliveryperformance := row.IsMinimizationGoalKPIDeliveryPerformance();
+      targetkpideliveryperformance := UTF_Optimizer::GetTargetKPIWithTolerance( benchmarkkpideliveryperformance, benchmarkkpideliveryperformance, tolerance, isminimizationgoaldeliveryperformance );
+      if( isminimizationgoaldeliveryperformance )
+      {
+        run.AssertLessOrEqual( targetkpideliveryperformance, kpideliveryperformance, 'Did not get within the KPI Delivery Performance tolerance.' );
+      }
+      else
+      {
+        run.AssertGreaterOrEqual( targetkpideliveryperformance, kpideliveryperformance, 'Did not get within the KPI Delivery Performance tolerance.' );
+      }
+      
+      // Productivity
+      benchmarkkpiproductivity := row.BenchmarkKPIProductivity();
+      isminimizationgoalproductivity := row.IsMinimizationGoalKPIProductivity();
+      targetkpiproductivity := UTF_Optimizer::GetTargetKPIWithTolerance( benchmarkkpiproductivity, benchmarkkpiproductivity, tolerance, isminimizationgoalproductivity );
+      if( isminimizationgoalproductivity )
+      {
+        run.AssertLessOrEqual( targetkpiproductivity, kpiproductivity, 'Did not get within the KPI Productivity tolerance.' );
+      }
+      else
+      {
+        run.AssertGreaterOrEqual( targetkpiproductivity, kpiproductivity, 'Did not get within the KPI Productivity tolerance.' );
+      }
+      
+      // Nr Unplanned Operations
+      targetnrunplannedoperations := 0;
+      run.AssertEqual( targetnrunplannedoperations, [Number] kpinrunplannedoperation, 'Not all operations are planned' );
+    }
+    else
+    {
+      message := 'Could not extract benchmark KPI from KT for test instance' + this.Variant();
+      this.Run().RegisterFailure( message );
+    }
+  *]
+}

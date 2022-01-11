@@ -1,0 +1,47 @@
+Quintiq file version 2.0
+#parent: #root
+Method GenerateDatasetTypes (Strings excludeTypes_i)
+{
+  Description: "Generate 'DatasetType' instance for any dataset that implemented 'DMF_UpgradebilityMetadata'"
+  TextBody:
+  [*
+    // Murugaiya Mar-18-2021 (created)
+    typetofilter := typeof( DMF_UpgradeabilityMetaData ).Name();
+       
+    relations := selectset( DomainModel::Domain(), ModeledRelations.Elements, rel,
+                            rel.LeftSide().ObjectDefinition().Name() = typetofilter or
+                            rel.RightSide().ObjectDefinition().Name() = typetofilter );
+                            
+    traverse( relations, Elements, rel )
+    {
+      rootObject := ifexpr( rel.RightSide().ObjectDefinition().Name() = typetofilter , 
+                            rel.LeftSide().ObjectDefinition(), rel.RightSide().ObjectDefinition() );
+                                                                                                                                           
+      rootObjectOwner := DMF_Utility::GetObjectDefinitionClosureOwner( rootObject );
+    
+      // Only create dataset type if it is included
+      // If dataset can't be found
+      definitionName := guard( rootObjectOwner.Name(), "" );
+      isIncluded     := excludeTypes_i.Find( definitionName ) = -1;
+    
+      if( not isnull( rootObjectOwner ) and isIncluded )
+      {
+        DMF_DatasetType::Create( this, rootObjectOwner.Name() );
+      }
+      else if( isnull( rootObjectOwner ) )
+      {
+        // Only show error if root object is null
+        // If it's excluded, no need
+        message := "No dataset type found for the root object " + rootObject.Name() + 
+                   ". Please only assign the 1 to 1 relation from " + typetofilter + 
+                   " to an object that is a dataset root object or has owner from a dataset root object.";
+                   
+        DMF_Utility::LogWarning( message );
+      }
+    }
+    
+    // Save filter. Needed later for SetPriorityAndDependent
+    this.LastExcludeTypeFilter( excludeTypes_i.ToString( "," ) );
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

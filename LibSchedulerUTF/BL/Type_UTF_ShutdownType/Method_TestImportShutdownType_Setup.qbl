@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestImportShutdownType_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Create resource
+    resource := UTFMockObjectFactory::CreateSingleResource( schedule, 'Single Resource' );
+    
+    // Create imported shutdown type
+    importedShutdownType := UTFMockObjectFactory::CreateImportedShutdownType( schedule, 'Shutdown Type' );
+    importedShutdownType.Name( 'Name' );
+    importedShutdownType.DefaultDuration( Duration::Hours( 1 ) );
+    importedShutdownType.ColorCode( 'Color Code' );
+    importedShutdownType.IsSequenceRulesEnabled( true );
+    importedShutdownType.IsLinkToPrecedingTask( true );
+    
+    // Create imported shutdown type in resource
+    UTFMockObjectFactory::CreateImportedShutdownTypeInResource( schedule, resource, importedShutdownType );
+    
+    // Synchronize shutdown type
+    Transaction::Transaction().Propagate( method( SynchronizationObject, SynchronizeShutdownConfigurations ) );
+    schedule.SynchronizationObject().SynchronizeShutdownConfigurations();
+  *]
+}

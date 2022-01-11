@@ -1,0 +1,23 @@
+Quintiq file version 2.0
+#parent: #root
+Method CleanUpFeedbackedTask (Task_SCs tasks)
+{
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // Condition on unplan tasks with feedback
+    // saravanen 20130621 Added conditions to Traverse for FSPL on feedback to work properly
+    // 1. Set attribute Task.IsRemovedDueToFeedback in all Feedbacked Task
+    // 2. remove tasks that has feedbacktasks imported.
+    // 3. flag constraint for inconsistant task.
+    
+    traverse( tasks, Elements, task, task.HasFeedbackTask() )
+    {
+      if( not task.Resource_SC().ResourceGroup_SC().HasFixedSequencePlanLogic() // Remove if the task has no FSPL and has received feedback
+          or task.GetOperation().PlanUnit_SC().HasFSPLFeedback() ) // Remove if the task has FSPL and all of its operations in its plan unit has received feedback
+      {
+        task.CleanUpFeedbackedTask(); // this will unplan the task/operation
+      }
+    }
+  *]
+}

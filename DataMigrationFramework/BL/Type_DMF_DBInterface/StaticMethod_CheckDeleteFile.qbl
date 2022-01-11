@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckDeleteFile (String fileName_i)
+{
+  Description: 'Checks if a file exists, and deletes it if it does'
+  TextBody:
+  [*
+    // Mind: this can file if the file is locked
+    hasFile := OS::IsFile( fileName_i );
+    
+    if( hasFile )
+    {
+      try
+      {
+        OS::RemoveFile( fileName_i );
+        
+        msg := "Removed existing file [" + fileName_i + "]";
+        
+        DMF_Utility::LogInfo( msg );
+      }
+      onerror
+      {
+        msg := "Could not remove file [" + fileName_i + "]. Reason: " + e.DetailedInformation();
+        
+        DMF_Utility::LogWarning( msg );
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

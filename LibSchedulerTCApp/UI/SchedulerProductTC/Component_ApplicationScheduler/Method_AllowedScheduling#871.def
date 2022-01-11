@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+Method AllowedScheduling (BatchResource resource, structured[Task_SC] tasks, Boolean skipsoftcheck, 
+  Boolean ctrlshiftkey, Task_SC beforetask, Task_SC aftertask, 
+  String identifier, output String feedback_o, output Boolean isallowedhard_o) as Boolean id:Method_ApplicationScheduler_AllowedScheduling_871
+{
+  #keys: '[132688.0.641604062]'
+  Body:
+  [*
+    
+    // Performs checkings on stoppage tasks allowed scheduling rules
+    retvalue := this.AllowedSchedulingStoppageTasks( resource, 
+                                                     tasks, 
+                                                     skipsoftcheck, 
+                                                     ctrlshiftkey, 
+                                                     beforetask, 
+                                                     aftertask, 
+                                                     identifier, 
+                                                     feedback_o, 
+                                                     isallowedhard_o );
+    
+    // If any of the tasks has a mismatching type from the resource
+    if( exists( tasks, Elements, task,
+                     not resource.IsTaskTypeMatching( task ) ) )
+    {
+      // Check the operations individually
+      operations := selectset( tasks, Elements.OperationInTask, op, true );
+      retvalue := ApplicationScheduler.AllowedScheduling( resource,
+                                                          operations,
+                                                          skipsoftcheck,
+                                                          ctrlshiftkey,
+                                                          beforetask,
+                                                          aftertask,
+                                                          identifier,
+                                                          feedback_o,
+                                                          isallowedhard_o ) 
+                  and retvalue;
+    }
+    else
+    {
+      // Check the batches as a whole
+      batches := selectset( tasks, Elements.astype( BatchTask ).Batch, batch, true );
+      retvalue := ApplicationScheduler.AllowedScheduling( resource,
+                                                          batches,
+                                                          skipsoftcheck,
+                                                          ctrlshiftkey,
+                                                          beforetask,
+                                                          aftertask,
+                                                          identifier,
+                                                          feedback_o,
+                                                          isallowedhard_o ) 
+                  and retvalue;
+    }
+    
+    return retvalue;
+  *]
+}

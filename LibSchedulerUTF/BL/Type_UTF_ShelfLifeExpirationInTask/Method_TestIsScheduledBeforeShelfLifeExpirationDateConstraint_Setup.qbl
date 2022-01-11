@@ -1,0 +1,43 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestIsScheduledBeforeShelfLifeExpirationDateConstraint_Setup (Schedule schedule)
+{
+  TextBody:
+  [*
+    // Get variant data
+    hasShelfLifeExpirationDate := false;
+    shelfLifeExpirationDate := DateTime::MinDateTime();
+    end := DateTime::MinDateTime();
+    isValid := false;
+    
+    this.GetTestVariant( hasShelfLifeExpirationDate,
+                         shelfLifeExpirationDate,
+                         end,
+                         isValid );
+    
+    // Set schedule time, this is used to set task end time instead of creating sub-task.
+    schedule.Time( end );
+    
+    // Create order
+    order := UTFMockObjectFactory::CreateOrder( schedule, 'Order ID' );
+    
+    // Create plan unit
+    planUnit := UTFMockObjectFactory::CreatePlanUnit( order, 'Plan Unit ID', 1.0 );
+    
+    // Create operation
+    operation := UTFMockObjectFactory::CreateOperation( planUnit );
+    
+    // Assign shelf life attributes based on variant
+    operation.ShelfLifeExpirationDate( shelfLifeExpirationDate );
+    operation.HasShelfLifeExpirationDate( hasShelfLifeExpirationDate );
+    
+    // Create task by planning the operation
+    UTFMockObjectFactory::CreateSingleResource( schedule, 'Resource' );
+    
+    // Propagate the method because it is using declarative relationship.
+    Transaction::Transaction().Propagate( method( Operation_SC, Plan ) );
+    
+    operation.Plan();
+  *]
+  InterfaceProperties { Accessibility: 'Extensible' }
+}

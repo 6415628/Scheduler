@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method HasStagingData () as Boolean id:Method_LibSM_FormImportExportMasterData_HasStagingData
+{
+  #keys: '[146450.1.1039717720]'
+  Body:
+  [*
+    // Returns whether staging data exists. Use in preconditions, sets FeedbackObject.
+    feedback := FeedbackObject::LocalFeedback();
+    hasStagingData := not isnull( DataHolderStagingSetMetaData.Data() );
+    if ( not feedback.CheckHard( hasStagingData ) )
+    {
+      feedback.AddHard( Translations::LibSM_Import_NoStagingData() );
+    }                                                                
+    else
+    {
+      LibSM_StagingSet.CanSync();
+    }
+    return feedback.IsAllowed();
+  *]
+}

@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckHasNotMarkedForReleaseByUser (WorkOrders workOrders) remote
+{
+  Description: 'Check if all selected work orders have not marked for release by user.'
+  TextBody:
+  [*
+    feedbackObject := FeedbackObject::CurrentFeedback();
+    internalWorkOrders := selectset( workOrders, Elements.astype( InternalWorkOrder ), internalworkOrder, true );
+    
+    // Do not check this if there is no internal work order selected.
+    if( internalWorkOrders.Size() > 0 )
+    {
+      value := exists( internalWorkOrders, Elements, internalworkOrder, not internalworkOrder.IsMarkedForReleaseByUser() );
+      
+      if( not feedbackObject.CheckHard( value ) )
+      {
+        feedbackObject.AddHard( Translations::WorkOrder_CannotMarkInternalWorkOrderForReleaseTwice() );
+      }
+    }
+  *]
+}

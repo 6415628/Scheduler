@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcEarliestEnd
+{
+  Description:
+  [*
+    Compute the earliest end of NoBufferWaitSubTask base on next earliest operation's first respect routing subtask's earliest start.
+    Also takes the next earliest operation's calendar strategy into account when performing computation.
+  *]
+  TextBody:
+  [*
+    earlieststart := this.EarliestStart();
+    earliestend   := this.EarliestStart();
+    
+    if( not this.Task_SC().HasReportedEnd() )
+    {
+      nextoperation := this.GetNextOperation();
+      earliestend   := this.GetNextOperationStart( nextoperation, earliestend );
+      //NoBufferWait should take TransportCoolingDuration into account. 
+      //If material takes 10 minutes to transport between resources, 
+      //then NoBufferWait should be allowed to end 10 minutes before downstream task starts. 
+      transport     := this.GetTransportCoolingDuration( nextoperation );
+      
+      if( transport.IsFinite() )
+      {
+        earliestend := earliestend - transport
+      }
+    }
+    
+    value := maxvalue( earliestend, earlieststart );
+    
+    this.EarliestEnd( value );
+  *]
+}

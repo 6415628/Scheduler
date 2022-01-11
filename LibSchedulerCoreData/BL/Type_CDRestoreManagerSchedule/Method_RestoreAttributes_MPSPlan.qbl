@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_MPSPlan (CDSchedule cdSchedule)
+{
+  Description: 'Restore mps plan core data attributes to planning object'
+  TextBody:
+  [*
+    schedule := this.Schedule();
+    
+    traverse( cdSchedule, CDEntity.astype( CDMPSPlan ), cdMPSPlan )
+    {
+      mpsPlan := MPSPlan::Create( schedule, cdMPSPlan.MPSPlanID() );
+      
+      CopyCorresponding::CopyFrom( cdMPSPlan ).CopyTo( mpsPlan );
+      
+      this.RestoreAttributes_MPSPlannedOrder( cdSchedule, mpsPlan );
+      this.RestoreAttributes_MPSPlanChartElementByProduct( cdSchedule, mpsPlan );
+      this.RestoreAttributes_MPSPlanChartElementByRouting( cdSchedule, mpsPlan );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

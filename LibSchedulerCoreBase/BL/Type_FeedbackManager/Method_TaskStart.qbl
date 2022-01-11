@@ -1,0 +1,61 @@
+Quintiq file version 2.0
+#parent: #root
+Method TaskStart (Operation_SC operation, String resource_id, DateTime start, 
+  DateTime processstart, String remark)
+{
+  Description: 'Feedback API: TaskStart event'
+  TextBody:
+  [*
+    // jiex Sep-8-2016 (created)
+    fbtaskinschedule := FeedbackTaskInSchedule::FindFeedbackTaskInSchedule( operation.WorkOrderId(), 
+                                                                            operation.PlanUnitId(),
+                                                                            operation.WorkOrderSequenceNr() );
+    isfirstfeedback := false;
+    
+    //For cases where an operation that is replanned again after receving feedback, the earlier feedback will be deleted
+    /*if( not isnull( fbtaskinschedule ) and operation.HasEnded() )
+    {
+      fbtaskinschedule.Delete();
+    }*/
+    // Workaround to not have constraints fired about having an earlier reported start that's different from the current, it shouldn't be affected by ABORT feedback
+    if( guard( fbtaskinschedule.HasReportedAborted(), false ) )
+    {
+      fbtaskinschedule.Delete();
+    }
+    
+    if( isnull( fbtaskinschedule ) )
+    {
+      task := guard( operation.Task_SC(), null( Task_SC ) );
+      
+      //FeedbackTask for operation does not yet exist. So create one
+      fbtaskinschedule := FeedbackTaskInSchedule::Create( this, operation );
+      //Update based on task attributes
+      fbtaskinschedule.UpdateFeedbackTaskExportedAttributes( task, operation, resource_id );
+      
+      fbtaskinschedule.UpdateFeedbackStart( start, resource_id, Constants::StatusStart(), remark, '', '', guard( operation.ExportedSingleTask().ScheduledPrevOperationID(), '' ))
+      
+      // Export subtask duration
+      if( not isnull( task ) )
+      {
+        task.ExportSubtaskDuration();
+      }
+       
+      isfirstfeedback := true;
+    }
+    
+    fbtaskinschedule.ReportedProcessStart( processstart );  
+    
+    fbtaskinschedule.UpdateEstimatedEndImported( operation.EstimatedEndImported() );
+    
+    // handle exceptions
+    FeedbackTaskInSchedule::HandleTaskStartExceptions( operation, fbtaskinschedule, isfirstfeedback, resource_id, start, remark, guard( operation.ExportedSingleTask().ScheduledPrevOperationID(), '' ) );                                                                   
+    
+    // Propagate as resource is now declarative and is required to fix sequence planning
+    Transaction::Transaction().Propagate( relation( FeedbackTaskInSchedule, ResponsibleResource ) );
+    
+    this.HandleFeedbackTaskInSchedule( operation, fbtaskinschedule );
+    
+    // Reset and update statuses with remarks, we call it AFTER Exception handling logic because the logic might change the reported status
+    operation.UpdateFeedbackStatus( fbtaskinschedule.Status(), '', '' );
+  *]
+}

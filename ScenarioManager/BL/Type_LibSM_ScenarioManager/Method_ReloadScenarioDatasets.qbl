@@ -1,0 +1,15 @@
+Quintiq file version 2.0
+#parent: #root
+Method ReloadScenarioDatasets
+{
+  Description: 'Reload the scenarios that were loaded when the QAE was stopped'
+  TextBody:
+  [*
+    // Load stored scenarios that were loaded before server was down. (so exclude memory only scenarios
+    // because those will be lost anyway).
+    lastLoadedScenarios := selectset( this, ScenarioNode.astype( LibSM_Scenario ), scenario,
+                                      guard( scenario.Dataset().IsLoaded(), false ) and not guard( scenario.Dataset().IsMemoryOnlyStorage(), false ) );
+    
+    LibSM_ScenarioNode::Load( lastLoadedScenarios, "" );
+  *]
+}

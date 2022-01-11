@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method BackupGenericProductExternalSupply (const Schedule schedule)
+{
+  Description: 'Backup generic product external supply core data'
+  TextBody:
+  [*
+    traverse( schedule, Supply.astype( GenericProductExternalSupply ), genericProductExternalSupply )
+    {
+      cdGenericProductExternalSupply := this.CDEntity( relnew, CDGenericProductExternalSupply );
+      CopyCorresponding::CopyFrom( genericProductExternalSupply ).CopyTo( cdGenericProductExternalSupply );
+      
+      cdGenericProductExternalSupply.OperationID( guard( genericProductExternalSupply.Operation_SC().OperationID(), '' ) );
+      cdGenericProductExternalSupply.BatchID( guard( genericProductExternalSupply.DemandBatch().BatchID(), '' ) );
+      
+      // Restore GenericPlannedSupply2ExternalSupply
+      this.BackupGenericPlannedSupply2ExternalSupply( genericProductExternalSupply );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

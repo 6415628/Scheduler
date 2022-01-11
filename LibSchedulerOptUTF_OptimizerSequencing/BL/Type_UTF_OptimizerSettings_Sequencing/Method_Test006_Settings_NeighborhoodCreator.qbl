@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test006_Settings_NeighborhoodCreator (Schedule schedule)
+{
+  Description: 'Imports the default optimizer settings for Neighborhood Creator, changes them, tests the import/export function and then exports the original settings. Asserts that all imported settings are the same as the exported ones.'
+  TextBody:
+  [*
+    // jog2 Nov-12-2020 (created)
+    
+    nghbrhdcreatorsettings := select( schedule, Optimization.Optimizer.astype( OptimizerSequencing ).Settings.astype( SettingsSequencing ).NeighborhoodCreator, neighborhoodcreator,
+                                      true );
+    
+    // Store the current Neighborhood Creator settings
+    originalsettings := construct( SettingsNeighborhoodCreatorForSequencing );
+    originalsettings.UTF_StoreSettings( nghbrhdcreatorsettings );
+    
+    // Change the Neighborhood Creator settings
+    nghbrhdcreatorsettings.UTF_ChangeSettings();
+    
+    // Store them for comparison
+    storedsettings := construct( SettingsNeighborhoodCreatorForSequencing );
+    storedsettings.UTF_StoreSettings( nghbrhdcreatorsettings );
+    
+    // Export the changed settings
+    schedule.ExportObject().ExportOptimizerSettingsSequencingToDataFolder();
+    
+    // Change it again
+    nghbrhdcreatorsettings.UTF_ChangeSettings();
+    
+    // Import the previous changed settings
+    schedule.ImportAndSynchronizeOptimizerSettingsSequencing();
+    
+    // Check to see if the imported settings are the same as the stored ones
+    this.Run().AssertTrue( this.CheckNeighborhoodCreatorSettings( nghbrhdcreatorsettings, storedsettings ),
+                           'The imported values for the Neighborhood Creator settings are different from the current ones.' );
+    
+    // Reset the values to the original
+    nghbrhdcreatorsettings.UTF_StoreSettings( originalsettings );
+    schedule.ExportObject().ExportOptimizerSettingsSequencingToDataFolder();
+  *]
+}

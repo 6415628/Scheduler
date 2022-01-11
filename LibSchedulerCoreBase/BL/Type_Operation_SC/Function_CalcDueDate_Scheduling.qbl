@@ -1,0 +1,32 @@
+Quintiq file version 2.0
+#parent: #root
+Function CalcDueDate_Scheduling
+{
+  Description: 'The duedate of an operation is its end when it is planned, or the due date of the next operation minus leadtime and transport time.'
+  TextBody:
+  [*
+    // Not this.Finished()
+    // TG updated to OOM
+    
+    // TG4AvK080508
+    // TG added oom.AsInputOperationMaterial().DueDate_Scheduling_Start(),
+    // so if the next operation is planned, we do not use the LeadTime and ExpectedDuration,
+    // but the real Start value
+    // Kyle 11-05-2015 Use TotalOffsetDuration instead of TransportCoolingDuration
+    
+    value := min( this, ToOperationDependency, oom, oom.HasToOperation(), 
+                  oom.ToOperation().DueDate_Scheduling_Start() - oom.TotalOffsetDuration() 
+                  + guard( oom.astype( OperationMaterial ).TransferDuration(), Duration::Zero() ) );
+    // TG4AvK080508
+    // Repository issue #3237: confirm removing IsPlanned here with AvK.
+    // In Alcoa IsPlanned was also included, but I think that the due date should not be changed if the operation is planned,
+    // we want to see if an operation is planned later than its due date
+    //  or this.IsPlanned()
+    if( this.Finished() )
+    {
+      value := this.End();
+    }
+    
+    this.DueDate_Scheduling( value );
+  *]
+}

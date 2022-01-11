@@ -1,0 +1,34 @@
+Quintiq file version 2.0
+#parent: #root
+Response OnClick (structured[WorkOrder] selection) id:Response_ListWorkOrders_MenuScheduleAfterCurrentSchedule_OnClick
+{
+  #keys: '[142956.2.233785495]'
+  CanBindMultiple: false
+  DefinitionID => /Responsedef_ListWorkOrders_WebMenu_OnClick
+  GroupServerCalls: true
+  Initiator: 'MenuScheduleAfterCurrentSchedule'
+  Precondition:
+  [*
+    return Schedule.AllowedOptimizeWorkOrders( selection, feedback );
+  *]
+  QuillAction
+  {
+    Body:
+    [*
+      // Optimize operations in SELECTED work orders after current schedule
+      
+      // Clear scoped operations - which also clears DataHolderOptimizerAllScopedOperations because it has data extractors grabbing from Mandatory and Optional dataholders
+      DataHolderOptimizerScopeOperations.Data().Flush();
+      
+      // Scope selection
+      unplannedoperations := selectset( selection, Elements.WorkOrderOperation.Operation_SC, op, not op.IsPlanned() and not op.HasFeedback() and not op.IsFrozenInSchedule() );
+      DataHolderOptimizerScopeOperations.Data( &unplannedoperations );
+      
+      // Get all allowed resources
+      resources := Operation_SC::GetAllowedResources( DataHolderOptimizerScopeOperations.Data() );
+      
+      // Optimize - we call AllScopedOperations here because it has data extractors that grab from Mandatory and Optional dataholders
+      Schedule.Optimization().OptimizerSequencing().OptimizeWithDefaultSettings( DataHolderOptimizerScopeOperations.Data(), resources );
+    *]
+  }
+}

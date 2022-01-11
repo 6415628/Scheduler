@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestIsSequenceRuleEnableInShutdownType_Setup (Schedule schedule)
+{
+  Description: "Test shutdown type  setting 'Is Sequence Rule Enabled' - setup"
+  TextBody:
+  [*
+    // Get variant data
+    isSequenceRulesEnabled := false;
+    hasViolatedRules := false;
+    
+    this.GetTestVariant( isSequenceRulesEnabled,
+                         hasViolatedRules );
+    
+    // Create rule
+    this.CreateRule( schedule );
+    
+    // Create rule violated tasks
+    this.CreateRuleViolatedTasks( schedule );
+    
+    // Select resource
+    resource := select( schedule, ResourceGroup_SC.Resource_SC, r, true );
+    
+    // Create shutdown type
+    shutdownType := UTFMockObjectFactory::CreateShutdownType( schedule, 'Shutdown Type' );
+    UTFMockObjectFactory::CreateShutdownTypeInResource( shutdownType, resource );
+    
+    // Assign isLinkToPrecedingTask based on variant
+    shutdownType.IsSequenceRulesEnabled( isSequenceRulesEnabled );
+    
+    // Insert shutdown between task1 and task2
+    task1 := select( schedule, ResourceGroup_SC.Resource_SC.First, t, true );
+    resource.InsertShutdown( task1, 
+                             shutdownType, 
+                             Duration::Minutes( 1 ), 
+                             false,
+                             false,
+                             DateTime::MinDateTime(),
+                             Duration::Zero() );
+  *]
+}

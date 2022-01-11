@@ -1,0 +1,40 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride SynchronizeWorkOrderDemands
+{
+  TextBody:
+  [*
+    allinstances := selectset( this, WorkOrderDemand, workorderdemand, true )
+    updatedinstances := construct( WorkOrderDemands );
+    
+    traverse( this, ImportedInternalWorkOrderOperation.ImportedInternalWorkOrderDemand, row, row.IsValidDataHard() )
+    {
+      workorderdemand := InternalWorkOrderDemand::FindInternalWorkOrderDemand( row.Id() );
+      
+      if( isnull( workorderdemand ) )
+      {
+        workorderdemand := this.CreateWorkOrderDemand( row.Id() ).astype( InternalWorkOrderDemand );
+      }
+      else if( workorderdemand.WorkOrderId() <> this.WorkOrderId() )
+      {
+        newoperation := WorkOrderOperation::FindWorkOrderOperation( row.WorkOrderId(), row.SequenceNr() );
+        
+        if( not isnull( newoperation ) )
+        {
+          newoperation.WorkOrderDemand( relmove, workorderdemand );
+        }      
+      }
+      
+      workorderdemand.Update( row );
+      updatedinstances.Add( workorderdemand );
+    }
+    
+    //Delete work order demands if they do not exist in KT
+    oldinstances := allinstances.Difference( updatedinstances );
+    
+    traverse( oldinstances, Elements, workorderdemand )
+    {
+      workorderdemand.Remove();
+    }
+  *]
+}

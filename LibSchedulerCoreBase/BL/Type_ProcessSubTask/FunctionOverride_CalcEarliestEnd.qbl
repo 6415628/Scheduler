@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+FunctionOverride CalcEarliestEnd
+{
+  TextBody:
+  [*
+    task := this.Task_SC();
+    earliestend := task.Resource_SC().ResourceCalendar().Add( this.EarliestStart(), this.NetDuration() );
+    
+    if( guard( task.Schedule().TechnicalConfiguration().IsLotLeadTimeLogicOn(), false ) )
+    {
+      outputlot := task.LastOutputLot();
+      earliestend := outputlot.EarliestEnd();
+      
+      if( task.HasFeedbackTask() )
+      {
+        earliestend := task.Resource_SC().ResourceCalendar().Add( this.EarliestStart(), Duration::Zero() );
+      }
+    }
+    
+    value := maxvalue( earliestend, task.Schedule().Time() );
+    
+    this.EarliestEnd( value );
+  *]
+}

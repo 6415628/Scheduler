@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateFulfillment (Fulfillment fulfillmentToReplace) as Fulfillment
+{
+  Description: 'Create fulfillment from external supply to replace fulfillment from planned supply.'
+  TextBody:
+  [*
+    fulfillment := null( Fulfillment );
+    demand := fulfillmentToReplace.Demand();
+    externalSupply := this.ExternalSupply();
+    
+    // Creation of Product/Material fulfillments decided on demand subclasses
+    if( fulfillmentToReplace.IsFixedReservation() )
+    {
+      fulfillment := demand.CreateExternalFulfillment( externalSupply );
+    }
+    else
+    {
+      fulfillment := demand.CreatePlannedFulfillment( externalSupply );
+    }
+    
+    return fulfillment;
+  *]
+}

@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreAttributes_ShutdownType (CDSchedule cdschedule)
+{
+  Description: 'Restore attributes for shutdown type core data to planning object'
+  TextBody:
+  [*
+    // Restore ShutdownType
+    schedule := this.Schedule();
+    
+    traverse( cdschedule, CDEntity.astype( CDShutdownType ), cdshutdowntype )
+    {
+      shutdowntype := ShutdownType::Create( schedule, cdshutdowntype.ShutdownTypeID() );
+      CopyCorresponding::CopyFrom( cdshutdowntype ).CopyTo( shutdowntype );
+      
+      // Restore ShutdownTypeInResource owned by this ShutdownType
+      cdshutdowntypeinresources := selectset( cdschedule, CDEntity.astype( CDShutdownTypeInResource ), cdshutdowntypeinresource, 
+                                              cdshutdowntypeinresource.ShutdownTypeID() = cdshutdowntype.ShutdownTypeID() 
+                                            );
+      traverse( cdshutdowntypeinresources, Elements, cdshutdowntypeinresource )
+      {
+        shutdowntypeinresource := ShutdownTypeInResource::Create( shutdowntype, cdshutdowntypeinresource.ResourceID() );
+        CopyCorresponding::CopyFrom( cdshutdowntypeinresource ).CopyTo( shutdowntypeinresource );    
+      }
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

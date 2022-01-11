@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod GetUniqueFeedback (FeedbackObject feedbacklocal) const declarative remote
+{
+  Description: 'Get unique feedback messages. Remove duplicated or empty feedback messages.'
+  TextBody:
+  [*
+    // Remove duplicated and empty feedback messages
+    if( feedbacklocal.Feedback().Length() > 0 )
+    {
+      hardfeedbacks := feedbacklocal.HardFeedbackStrings().Unique();
+      softfeedbacks := feedbacklocal.SoftFeedbackStrings().Unique();
+      
+      // Clear all feedback messages on feedbacklocal
+      feedbacklocal.Clear();
+      
+      // Add back unique hard feedback messages on feedbacklocal object
+      traverse( hardfeedbacks, Elements, feedback, feedback.TrimBoth().Length() > 0 )
+      {
+        feedbacklocal.AddHard( false, feedback );
+      }
+      
+      // Add back unique soft feedback messages on feedbacklocal object
+      traverse( softfeedbacks, Elements, feedback, feedback.TrimBoth().Length() > 0 )
+      {
+        feedbacklocal.AddSoft( false, feedback );
+      }
+    }
+  *]
+}

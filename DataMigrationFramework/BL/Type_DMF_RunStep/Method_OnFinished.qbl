@@ -1,0 +1,49 @@
+Quintiq file version 2.0
+#parent: #root
+Method OnFinished
+{
+  Description: 'Post finish run step'
+  TextBody:
+  [*
+    // Once the step is done, update its status according to the feedback from other datasets upgrade job
+    status := DMF_Utility::ID_Finished();
+    
+    this.UpdateStatus ( status );
+    this.UpdateEnd    ( DateTime::Now(), OS::PrecisionCounter() );
+    this.UpdateMessage( DMF_Utility::ID_DisplayFinished() );
+    
+    // If it is finished, it means successful, we then have to check if
+    // there are any more steps to run for this dataset, if there is, 
+    // we continue running them, otherwise, report back to dataset
+    // If this is success and there isn't anymore step, we have succeeded
+    
+    if( not isnull( this.DatasetInConvertorVersion() ) ) //update the DatasetInConvertorVersion status and it will look for next run step
+    {
+      this.DatasetInConvertorVersion().OnFinished( this ); 
+    }
+    else if( not isnull( this.Dataset() ) ) // looking for next run when dataset's runstep is executed (runstep without DatasetInConvertorVersion )
+    {
+      nextRunStepInSequence := this.NextRunStepInSequence();
+      lastConvertedVersion  := guard( this.Dataset().LastDatasetInConverterVersion().ConvertorVersion(), null( DMF_ConvertorVersion ) );
+      
+      if( not isnull( nextRunStepInSequence ) ) //Still have next runsteps in datasets found, proceed to execute the next one (eg. PreProcesing will be able to find next)
+      {
+        nextRunStepInSequence.InitializeRunStep();
+      }
+      else// no next run step found but able to locate the last runstep in the dataset (eg. PostProcessing), so it will look for its last available convertor version
+      {
+        this.Dataset().OnFinished( status, lastConvertedVersion, this );
+        
+        if( isnull( lastConvertedVersion ) ) //no next run step and no last convertor version execution found during the execution, simply finished the execution.
+        {
+          this.Topic().ExecuteRunPoints();  
+        }
+      } 
+    }
+    else //Pre is executed, it will get back to the main to ensure datasets runstep/Post runstep execution
+    {
+      this.Topic().ExecuteRunPoints();
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

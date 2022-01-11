@@ -1,0 +1,42 @@
+Quintiq file version 2.0
+#parent: #root
+Method SendSC_PlanToMPS (LibDEF_DataRepository datarepository_i)
+{
+  Description: 'Exports SC_Plan to MPS system.'
+  TextBody:
+  [*
+    channelname := LibDEC_ChannelSC_Plan::CHANNEL_NAME();
+    channel := datarepository_i.FindChannel( channelname );
+    
+    if( not isnull( channel ) )
+    {
+      // Get the set type name
+      setTypeName := Constants::DEF_SC_Plan();
+      setName := Constants::DEF_SC_Plan();
+    
+      // 1. Create set type for SC_Plan if not exists
+      settype := select( channel, SetType, settype, settype.Name() = setTypeName );
+      if( isnull( settype ) )
+      {
+        settype := LibDEF_SetType::Create( datarepository_i,
+                                           channelname,
+                                           setTypeName );
+      }
+    
+      // 2. Create set for SC_Plan if not exists
+      set := select( settype, Set, set, set.Name() = setName );
+      if( isnull( set ) )
+      {
+        set := LibDEF_Set::Create( settype, setName );
+      }
+    
+      // 3. Update set of SC_Plan to send feedback tasks to CP
+      dtHandler := this.DataTransformationDefinition().GetDataTransformationHandler( channelname );
+      datarepository_i.CreateUpdateSet( settype.GUID(), setName, set.GUID(), dtHandler, "" );
+    }
+    else
+    {
+      LibDEF_Util::LogError( "Unable to get the '" + channelname + "' Channel. Please check if the Channel exist." );
+    }
+  *]
+}

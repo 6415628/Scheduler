@@ -1,0 +1,57 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Create (Task_SC owner, String subtaskid) as SubTask
+{
+  Description: 'Create SubTask based on the String subtaskid given'
+  TextBody:
+  [*
+    // alexandern May-12-2015 (created) QP #5356
+    subtask := null( SubTask );
+    
+    if( subtaskid = Constants::SubTask_Setup() )
+    {
+      subtask := owner.AddLast( construct( SetupSubTask ) );
+    }
+    else if( subtaskid = Constants::SubTask_Process() )
+    {
+      subtask := owner.AddLast( construct( ProcessSubTask ) );
+    }
+    else if( subtaskid = Constants::SubTask_CleanUp() )
+    {
+      subtask := owner.AddLast( construct( CleanUpSubTask ) );
+    }
+    else if( subtaskid = Constants::SubTask_NoBufferActionInput() )
+    {
+      subtask := owner.AddLast( construct( NoBufferActionInputSubTask ) );
+    }
+    else if( subtaskid = Constants::SubTask_NoBufferAction() )
+    {
+      subtask := owner.AddLast( construct( NoBufferActionSubTask ) );
+      owner.HasNoBufferWaitOrAction( true ); //ang1 26Feb2016 QP #6348
+    }
+    else if( subtaskid = Constants::SubTask_NoBufferOutflow() )
+    {
+      subtask := owner.AddLast( construct( NoBufferOutflowSubTask ) );
+      owner.HasNoBufferWaitOrAction( true ); //ang1 26Feb2016 QP #6348
+    }
+    else if( subtaskid = Constants::SubTask_NoBufferWait() )
+    {
+      subtask := owner.AddLast( construct( NoBufferWaitSubTask ) );
+      owner.HasNoBufferWaitOrAction( true );
+    }
+    else if( subtaskid = Constants::SubTask_Transfer() ) // AlexanderNg 31-Jul-2015 QP #5679
+    {
+      subtask := owner.AddTransfer( owner.Last() ); // AlexanderNg 10-Aug-2015 QP #5679
+    }
+    else if( subtaskid = Constants::SubTask_Receive() ) // AlexanderNg 31-Jul-2015 QP #5680
+    {
+      subtask := owner.AddReceive( owner.Last() ); // AlexanderNg 11-Aug-2015 QP *5680
+    }
+    else if( subtaskid = Constants::SubTask_Stoppage() ) // Add ShutdownSubTask
+    {
+      subtask := owner.AddLast( construct( StoppageSubTask ) );
+    }
+    
+    return subtask;
+  *]
+}

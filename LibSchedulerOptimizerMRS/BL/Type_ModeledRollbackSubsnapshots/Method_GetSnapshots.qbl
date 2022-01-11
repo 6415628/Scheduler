@@ -1,0 +1,28 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride GetSnapshots (LibOpt_Task task) as owning SnapshotReplannableKPIs
+{
+  TextBody:
+  [*
+    //mbr23, 2019-09-10 (overridden)
+    
+    root_snapshot := task.SnapshotComponent();
+    
+    transitive_cover := construct( LibOpt_Snapshots ); // of all descendant snapshots
+    last_added := construct( LibOpt_Snapshots ); // set of snapshots added to the transitive cover in the last iteration
+    
+    transitive_cover.Add( root_snapshot );
+    last_added.Add( root_snapshot );
+    
+    while( last_added.Size() > 0 )
+    {
+      new_to_add := selectset( last_added, Elements.Children, child, true );
+      last_added.Flush();
+      last_added.AddInPlace( new_to_add );
+      transitive_cover.AddInPlace( new_to_add );
+    }
+    
+    replannables := selectset( transitive_cover, Elements.astype( SnapshotReplannableKPI ), s, true );
+    return & replannables;
+  *]
+}

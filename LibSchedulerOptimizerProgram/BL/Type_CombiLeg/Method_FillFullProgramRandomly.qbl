@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method FillFullProgramRandomly (Operation_SCs operations, Boolean filltoendofphase)
+{
+  TextBody:
+  [*
+    // zyi1 Jul-14-2021 (created)
+    //if fillendofphase is false, then fill end of the complete programtype
+    settings := select( this.GetSchedule(), Optimization.OptimizerProgram.Settings.astype( SettingsProgram ), settings, settings.IsActive() );
+    maxop := guard( settings.MaxOperationsInLeg(), 100 );  //safe guard
+    
+    continue_to_add := true;
+    iter := 0;
+    opset := this.GetAllowedOperationRandomSet( operations );
+    
+    while( continue_to_add  and opset.Size() > 0 and iter < maxop)
+    {
+      op := opset.First();
+      oicp := this.AddCandidateAtEnd( op, true );
+      oicp.SynchronizeOperationInCombiProgramSets( true );
+      opset.Remove( op );
+      
+      iter ++;
+      if( filltoendofphase )
+      {
+        Transaction::Transaction().Propagate( attribute( OperationInCombiProgramSet, IsPhaseChanged ) )
+        continue_to_add := forall( this, 
+                                   LastOperation.OperationInCombiProgramSet, 
+                                   oicps, 
+                                   oicps.IsCumulativeRulesForProgramTypeOK() 
+                                   and ( not oicps.IsPhaseChanged() or iter = 1 ) );  //the first operation added for sure IsPhaseChanged, and so will skip the check
+      }
+      else
+      {
+        continue_to_add := forall( this, LastOperation.OperationInCombiProgramSet, oicps, oicps.IsCumulativeRulesForProgramTypeOK() );
+      }
+    }
+  *]
+}

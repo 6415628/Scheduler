@@ -1,0 +1,39 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test077_NeighborhoodCreator_SetupGroup (Schedule schedule)
+{
+  Description: "Tests the NeighborhoodCreatorDistanceMetric's 'Setup Group' dimension"
+  TextBody:
+  [*
+    // mbr23 Feb-14-2020 (created)
+    
+    anchor := minselect( schedule, Operation_SC, op, true, Real::Random() ); // select any anchor
+    neighborhood_size_operations := 15;
+    distancemetric := construct( SettingsSequencingDistanceMetricForSequencing ); 
+    // Set all values to 0
+    distancemetric.UTF_SetAllToZero();
+    distancemetric.ClosenessBySetupGroup( 1.0 ); // only enable the "setup group" dimension
+    
+    selector := this.Run_Test07x_NeighborhoodCreator( schedule, anchor, neighborhood_size_operations, distancemetric );
+    
+    minimum_output := construct( LibOpt_ScopeElements );
+    minimum_output.Add( anchor.GetOrCreateScopeElement() );
+    
+    maximum_output := construct( LibOpt_ScopeElements );
+    maximum_output.Add( anchor.GetOrCreateScopeElement() );
+    traverse( schedule, Operation_SC, op, op.SetupGroup() = anchor.SetupGroup() )
+    {
+      maximum_output.Add( op.GetOrCreateScopeElement() );
+    }
+    // Add all resources to the potential output scope
+    this.AddAllResourcesToScopeElements( schedule, &maximum_output );
+    
+    // assert that output is between `minimum_output` and `maximum_output`:
+    selector.Run().Start() ->| this->( o ) {
+      UTF_Optimizer_Regression_Test_OptimizerSequencing::AssertOutputScopeContains( minimum_output, this.Run(), selector );
+      UTF_Optimizer_Regression_Test_OptimizerSequencing::AssertOutputScopeIsSubsetOf( maximum_output, this.Run(), selector );
+    }->Exception()->(exception) {
+      this.Run().RegisterFailure( "post-optimization assert failed:\n" + exception.Message() );
+    };
+  *]
+}

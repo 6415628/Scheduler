@@ -1,0 +1,45 @@
+Quintiq file version 2.0
+#parent: #root
+Method Test012_Span_ScopeSpanningUpstream (Schedule schedule)
+{
+  Description: 'tests the span calculation\'s "spanning upstream" requirement.'
+  TextBody:
+  [*
+    // mbr23 Jan-10-2020 (created)
+    
+    // start scenario for test is empty schedule:
+    schedule.UnplanAll();
+    
+    scope := construct( LibOpt_ScopeElements );
+    upstreams_planned := construct( LibOpt_ScopeElements );
+    // Select operations
+    operations := this.GetMethodOperationsInScope( this.GetCurrentMethodShortName(), schedule );
+    traverse( operations, Elements, op )
+    {
+      scope.Add( op.GetOrCreateScopeElement() );
+      // and plan one of its most upstream operations:
+      most_upstream := op;
+      more_upstream := select( most_upstream, FromOperationDependency.FromOperation, o, true );
+      while( not isnull( more_upstream ) )
+      {
+        most_upstream := more_upstream;
+        more_upstream := select( most_upstream, FromOperationDependency.FromOperation, o, true );
+      }
+      if( most_upstream <> op )
+      {
+        most_upstream.Plan();
+        upstreams_planned.Add( most_upstream.GetOrCreateScopeElement() );
+      }
+    }
+    
+    run := UTF_Optimizer_Regression_Test_OptimizerSequencing::CreateSelectorScopeOnlyRun( UTF_Optimizer_Regression_Test_OptimizerSequencing::Optimizer( schedule ),
+                                                                                          scope,
+                                                                                          null( SettingsSequencingNeighborhoodCreatorForSpanCreator, owning ) );
+    selector := selectobject( run, Component, c, true );
+    
+    // assert that span contains `upstreams_planned`: 
+    run.Start() ->| upstreams_planned -> UTF_Optimizer_Regression_Test_OptimizerSequencing::AssertOutputScopeContains( this.Run(), selector )->Exception()->(exception) {
+      this.Run().RegisterFailure( "post-optimization assert failed:\n" + exception.Message() );
+    };
+  *]
+}

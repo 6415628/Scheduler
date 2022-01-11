@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method ToggleSelection (structured[FeedbackProgramType] selectedfeedbackprogramtypes) id:Method_DialogEditFeedbackTask_ToggleSelection
+{
+  #keys: '[155412.0.214863734]'
+  Body:
+  [*
+    currentselectedfeedbackprogramtypes := DataHolderSelectedFeedbackProgramTypes.Data().Copy();
+    
+    toremoveexisting := selectset( currentselectedfeedbackprogramtypes, Elements, ptc, exists( selectedfeedbackprogramtypes, Elements, pt, pt.ProgramSetConfigurationID() = ptc.ProgramSetConfigurationID() ) );
+    toberemoved := currentselectedfeedbackprogramtypes.Intersect( selectedfeedbackprogramtypes );
+    tobeadded := selectedfeedbackprogramtypes.Difference( currentselectedfeedbackprogramtypes );
+    
+    currentselectedfeedbackprogramtypes.Remove( toremoveexisting );   // Remove any program type with the same program set of the selected          
+    currentselectedfeedbackprogramtypes.Remove( toberemoved );
+    currentselectedfeedbackprogramtypes.AddInPlace( tobeadded );
+    
+    // Update DataHolderSelectedFeedbackProgramType
+    this.UpdateDataHolderSelectedFeedbackProgramType( currentselectedfeedbackprogramtypes );
+  *]
+}

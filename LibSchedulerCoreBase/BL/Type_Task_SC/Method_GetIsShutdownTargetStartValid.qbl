@@ -1,0 +1,22 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetIsShutdownTargetStartValid () declarative remote as Boolean
+{
+  Description: 'Checks whether the task shutdown start is aligned with shutdown target start ( Included max deviation )'
+  TextBody:
+  [*
+    // Only return TRUE with following conditions
+    // 1. Task does not linked to Shutdown
+    // 2. Shutdown does not have TargetStart enabled
+    // 3. ShutdownStart within the TargetStart allowed from and to based on the deviation
+    
+    // Rounded the shutdown start to 1 minute
+    shutdownstart := this.ShutdownStart().Round( Duration::Minutes( 1 ) );
+    
+    return isnull( this.Shutdown() )
+           or not this.Shutdown().IsTargetStartEnabled()
+           or ( this.Shutdown().TargetStart().IsFinite()
+                and shutdownstart >= this.Shutdown().TargetStartAllowedFrom()
+                and shutdownstart <= this.Shutdown().TargetStartAllowedTo() );
+  *]
+}

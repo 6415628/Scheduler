@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: DataHolderStatistic
+Response OnDataChanged () id:Response_LibOpt_FormStatisticDataPoints_DataHolderStatistic_OnDataChanged
+{
+  #keys: '[144996.0.1911552494]'
+  Body:
+  [*
+    // Create the set of UIDataPoints
+    
+    owner := construct( shadow[LibOpt_UIOwner] );
+    
+    if( not isnull( this.Data() ) )
+    {
+      reals := RealVector::Construct( this.Data().ValuesAsRealVector() ).AsValues();
+    
+      i := 0;  
+      traverse( reals.Sort(), Elements, real )
+      {
+        owner.UIDataPoint( relnew, X := i, Y := real,
+                           UpperThreshold := this.Data().UpperThreshold(),
+                           LowerThreshold := this.Data().LowerThreshold() );
+        i++;
+      }
+    }
+    
+    DataHolderOwner.Data( & owner );
+  *]
+  CanBindMultiple: false
+  DefinitionID: 'Responsedef_GUIComponent_OnDataChanged'
+}

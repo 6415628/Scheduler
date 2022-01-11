@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method CheckIsASAPLeadTimeStrategy (String type) declarative remote as Boolean
+{
+  Description: 'Checks whether this resource is using ASAP lead time strategy.'
+  TextBody:
+  [*
+    // Checks whether this resource is using ASAP lead time strategy.
+    feedbackobject := FeedbackObject::LocalFeedback();
+    
+    value := this.StrategyName() = Constants::StrategyASAP();
+    
+    if( not feedbackobject.CheckHard( value ) )
+    {
+      // Shutdown scheduling only supported for ASAP lead time strategy
+      feedbackobject.AddHard( Translations::SC_SchedulingOnlySupportASAPStrategy( type ) );
+    }
+    
+    return feedbackobject.IsAllowed();
+  *]
+}

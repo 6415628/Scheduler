@@ -1,0 +1,17 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetNextHighestPriorityShiftCalendarAssignment (DateTime time) as ImportedShiftPatternAssignment
+{
+  Description: "Returns the NEXT highest priority 3DSpace shift calendar assignment from an input time excluding 'current' shift calendar assignment."
+  TextBody:
+  [*
+    importedResource := ImportedResource_SC::FindImportedResourceTypeIndex( this.Resource_SC().ResourceID() );
+    
+    return maxselect( importedResource, 
+                      ImportedShiftPatternAssignment, 
+                      shiftPatternAssignment,
+                      shiftPatternAssignment.ChunkStartDate() <= time   // Can start AT or BEFORE reference time
+                      and shiftPatternAssignment.ChunkEndDate() > time, // Must end AFTER reference time
+                      shiftPatternAssignment.Priority() );
+  *]
+}

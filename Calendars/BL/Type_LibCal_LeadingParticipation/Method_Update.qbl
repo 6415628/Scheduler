@@ -1,0 +1,37 @@
+Quintiq file version 2.0
+#parent: #root
+Method Update (Date startDate_i, Date endDate_i)
+{
+  TextBody:
+  [*
+    // First validate the dates.
+    // Use a FeedbackObject to collect the validation feedback.
+    feedback := LibCal_Validate::FeedbackObject();
+    
+    LibCal_Validate::Participation_StartDate_EndDate( startDate_i, endDate_i );
+    
+    // Process the feedback that has been registered by the validation (if any).
+    LibCal_Util::ProcessFeedbackObject( feedback );
+    
+    // The below is only executed when no validation errors were encountered.
+    // Register if there are changes.
+    isChanged := this.StartDate() <> startDate_i
+              or this.EndDate()   <> endDate_i;
+    
+    if( isChanged )
+    {
+      this.IsChanged( true );
+    }
+    
+    this.StartDate( startDate_i );
+    this.EndDate(   endDate_i   );
+    
+    // Also update the Subscriptions
+    traverse( this, Subscription, subscription )
+    {
+      subscription.StartDate( startDate_i );
+      subscription.EndDate(   endDate_i   );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

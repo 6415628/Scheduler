@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CheckCanSplit (WorkOrders workOrders) declarative remote
+{
+  Description: 'Check if all work orders can be split'
+  TextBody:
+  [*
+    isSplit := true
+    
+    isAllInternalWorkOrders := WorkOrder::CheckIsAllInternalWorkOrders( workOrders, Constants::Function_Split() );
+    
+    if ( isAllInternalWorkOrders )
+    {
+      internalWorkOrders := selectset( workOrders, Elements.astype( InternalWorkOrder ), internalWorkOrders, true );
+      
+      InternalWorkOrder::CheckHasOnlyOneSelectedPlannedOrder( internalWorkOrders );
+      InternalWorkOrder::CheckHasNoFeedback( internalWorkOrders );
+      InternalWorkOrder::CheckHasOnlySinglePlanUnit( internalWorkOrders );
+      InternalWorkOrder::CheckHasNoMaterialReservedForIt( internalWorkOrders, isSplit );
+      InternalWorkOrder::CheckHasNoMaterialReservedForOthers( internalWorkOrders, isSplit );
+      InternalWorkOrder::CheckIsNotMarkedForRelease( internalWorkOrders, isSplit );
+      WorkOrder::CheckNotReleased( internalWorkOrders );
+    }
+  *]
+}

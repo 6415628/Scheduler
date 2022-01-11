@@ -1,0 +1,35 @@
+Quintiq file version 2.0
+#parent: #root
+Method InitGoal (SuboptimizerMPSetCovering_SelectCombis program, CombiLegs combilegs)
+{
+  TextBody:
+  [*
+    // yifei Aug-10-2021 (created)
+    goal := program.Goal();
+    
+    goal.Sense( MPGoalSense::Minimize().AsString() );
+    
+    traverse( combilegs, Elements.Leg, leg )
+    {
+      legslackvar := program.LegCombiSelectionSlackVariables().Get( leg );
+      goal.NewTerm( this.Settings().WeightLegSlack(), legslackvar );   
+    }
+    
+    traverse( combilegs, Elements, combileg1 )
+    {
+      combilegvar := program.IsCombiLegSelectedVariables().Get( combileg1 );
+      goal.NewTerm( combileg1.CostTotalOpt(), combilegvar );
+      
+      traverse( combilegs, Elements, combileg2, combileg1 <> combileg2 and combileg2.Leg() = combileg1.Leg().NextLegInProgramType())
+      {
+        isbothselectedvar := program.IsBothCombiLegSelectedVariables().Get( combileg1, combileg2 );
+        weight := combileg2.GetCostSequenceViolation( combileg1, false );
+        if( combileg2.GetCostSequenceViolation( combileg1, true ) > 0.0 ) //transiton not allowed by hard rules
+        {
+          weight := weight + OptimizerProgram::HardTransitionRuleViolationExtraFactor();
+        }
+        goal.NewTerm( weight, isbothselectedvar );
+      }
+    }
+  *]
+}

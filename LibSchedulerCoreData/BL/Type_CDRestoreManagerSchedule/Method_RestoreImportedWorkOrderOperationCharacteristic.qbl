@@ -1,0 +1,21 @@
+Quintiq file version 2.0
+#parent: #root
+Method RestoreImportedWorkOrderOperationCharacteristic (CDIntegration cdintegration)
+{
+  Description: 'Restore imported work order operation characteristic core data to staging object'
+  TextBody:
+  [*
+    // Restore ImportedWorkOrderOperationCharacteristic
+    schedule := this.Schedule();
+    
+    traverse( cdintegration, CDEntity.astype( CDImportedWorkOrderOperationCharacteristic ), cdwooc )
+    {
+      importedWorkOrderOperationCharacteristic := schedule.ImportedWorkOrderOperationCharacteristic( relnew, 
+                                                                                                     WorkOrderID := cdwooc.WorkOrderID(),
+                                                                                                     SequenceNr := cdwooc.SequenceNr()
+                                                                                                   );
+      CopyCorresponding::CopyFrom( cdwooc ).CopyTo( importedWorkOrderOperationCharacteristic );
+    }
+  *]
+  InterfaceProperties { Accessibility: 'Module' }
+}

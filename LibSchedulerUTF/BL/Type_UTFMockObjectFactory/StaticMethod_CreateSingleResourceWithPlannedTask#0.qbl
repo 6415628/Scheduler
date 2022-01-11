@@ -1,0 +1,29 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod CreateSingleResourceWithPlannedTask (Schedule schedule) as UTFSingleTask
+{
+  TextBody:
+  [*
+    // Create order and plan unit
+    planUnit := select( schedule, PlanUnit_SC, pu, pu.PlanUnitID() = 'plan unit' );
+    if( isnull( planUnit ) )
+    {
+      planUnit := UTFMockObjectFactory::CreateOrderAndPlanUnit( schedule, "plan unit", 1.0 );
+    }
+    
+    // Create operations
+    operation := UTFMockObjectFactory::CreateOperation( planUnit );
+    
+    // Create single resource
+    singleResource := select( schedule, ResourceGroup_SC.Resource_SC.astype( UTFSingleResource ), r, r.ResourceID() = 'singleResource' );
+    if( isnull( singleResource ) )
+    {
+      singleResource := UTFMockObjectFactory::CreateSingleResource( schedule, 'single resource' );
+    }
+    
+    // Create task
+    singleTask := UTFMockObjectFactory::CreateSingleTask( singleResource, operation, Duration::Hours( 1 ), Duration::Hours( 2 ), Duration::Hours( 3 ) );
+                                                                                                                  
+    return singleTask;
+  *]
+}

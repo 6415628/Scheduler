@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method InsertProgramChangeWithProgramChangeID (String programchangeid, Task_SC beforetask, ProgramTypeConfigurations programtypeconfigurations, 
+  Boolean hasprogramchangedurationuser, Duration programchangedurationuser) as ProgramChangeTask
+{
+  Description: 'Insert program change before the selected task'
+  TextBody:
+  [*
+    // Insert program change before the selected task
+    programchange := ProgramChange::Create( this.Schedule(), programchangeid );
+    programchange.Update( programtypeconfigurations, hasprogramchangedurationuser, programchangedurationuser );
+    
+    // Insert program change task before the selected task
+    programchangetask := this.ConstructProgramChangeTask();
+    programchangetask := this.AddBefore( &programchangetask, beforetask ).astype( ProgramChangeTask );
+    
+    // Set relation between ProgramChange and ProgramChangeTask
+    programchangetask.ProgramChange( relset, programchange );
+    
+    // Update FSPL operation in task and FSPL graph
+    this.UpdateFSPLOperationInTaskAndGraph( programchangetask, null( Task_SC ), null( Task_SC ), null( BatchSequenceElement ) );
+    
+    return programchangetask;
+  *]
+}

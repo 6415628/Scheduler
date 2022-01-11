@@ -1,0 +1,25 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetSessionID () as String
+{
+  TextBody:
+  [*
+    // Eric de Backer Nov-4-2019 (created)
+    optimizationSessionID := "Schedule-" + DateTime::Now().Format( "YM2D2-H2ms" );
+    idIsUnique := not exists( this, OptimizationSession, os, true, os.ID() = optimizationSessionID )
+    
+    seqNumber := 1; 
+    provisionalID := optimizationSessionID; 
+    
+    while( not idIsUnique )
+    {
+       provisionalID := optimizationSessionID + "-" + seqNumber.Format( "N" ); 
+       idIsUnique := not exists( this, OptimizationSession, os, true, os.ID() = provisionalID ); 
+       seqNumber := seqNumber + 1;
+    }
+    
+    optimizationSessionID := provisionalID; 
+    
+    return optimizationSessionID;
+  *]
+}

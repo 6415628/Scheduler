@@ -1,0 +1,50 @@
+Quintiq file version 2.0
+#parent: #root
+StaticMethod Delete (LibCal_ExplicitTimeIntervals timeIntervals_i, Boolean deleteOfParticipationAllowed_i)
+{
+  TextBody:
+  [*
+    if( timeIntervals_i.Size() > 0 )
+    {
+      // The intervals always belong to the same participation.
+      participation := timeIntervals_i.Element( 0 ).Participation();
+    
+      traverse( timeIntervals_i, Elements, timeInterval )
+      {
+        // If the TimeInterval belongs to the initiator of the Event, then the TimeInterval
+        // must be deleted for all subscribers to the Event.
+        if( participation.IsLeading() )
+        {
+          traverse( timeInterval, SubscribingETI, subscribingETI )
+          {
+            subscribingETI.Delete();
+          }
+        }
+    
+        timeInterval.Delete();
+      }
+    
+      // If deletion of the Participation is allowed, i.e. when the action is triggered by the user,
+      // then delete the Participations that have no TimeIntervals left.
+      // Delete _the_ Participation as last.
+      if( deleteOfParticipationAllowed_i )
+      {
+        traverse( participation.Event(), Participation, part, 
+                      part <> participation
+                  and not part.IsChanged()
+                  and not part.HasChangedRecurrencePeriod()
+                  and part.ExplicitTimeInterval( relsize ) = 0 )
+        {
+          part.Delete();
+        }
+        
+        // Delete _the_ Participation as last, because this might trigger the deletion of the whole Event
+        // if it is the last Participation of the Event.
+        if( participation.ExplicitTimeInterval( relsize ) = 0 )
+        {
+          participation.Delete();
+        }
+      }    
+    }
+  *]
+}

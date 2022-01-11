@@ -1,0 +1,24 @@
+Quintiq file version 2.0
+#parent: #root
+Method TestProgramChangeDuration (Schedule schedule)
+{
+  Description: 'Test program change duration'
+  TextBody:
+  [*
+    
+    // Transaction propagate program change related attributes before checking
+    Transaction::Transaction().Propagate( attribute( ProgramChange, ProgramChangeDuration ) );
+    Transaction::Transaction().Propagate( attribute( ProgramChange, TaskSequenceNr ) );
+    
+    firstprogramchange := minselect( schedule, ProgramChange, pc, true, pc.TaskSequenceNr() );
+    secondprogramchange := maxselect( schedule, ProgramChange, pc, true, pc.TaskSequenceNr() );
+    isfirstprogramchangedurationvalid := firstprogramchange.ProgramChangeDuration() = Duration::Hours( 2 );
+    issecondprogramchangedurationvalid := secondprogramchange.ProgramChangeDuration() = Duration::Hours( 1 );
+    
+    value := isfirstprogramchangedurationvalid
+             and issecondprogramchangedurationvalid;
+    
+    this.Run().AssertTrue( value,
+                           UTFUtility::GenerateFailedMessage( 'Program change duration calculation failed', this.Variant() ) );
+  *]
+}

@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method GetCleanUpDuration (Batch frombatch, Batch tobatch) declarative as Duration
+{
+  Description: 'Clean up duration value for each specialization of batchresource'
+  TextBody:
+  [*
+    // MODELING HANDLE SC
+    // This method should be implemented by the QS for each specialization of BatchResource
+    
+    value := Duration::Zero();
+    
+    if( this.ResourceGroup_SC().HasCleanUp()
+        and not isnull( frombatch )
+        and not isnull( tobatch ) )
+    {
+      // Clean up duration for product jump
+      cleanuprow := this.GetCleanUpRow( frombatch.First().Operation_SC().PlanUnit_SC().ProductType(),
+                                        frombatch.First().Operation_SC().PlanUnit_SC().ProductId(),
+                                        tobatch.First().Operation_SC().PlanUnit_SC().ProductType(),
+                                        tobatch.First().Operation_SC().PlanUnit_SC().ProductId() );
+      if( not isnull( cleanuprow ) )
+      {
+        value := cleanuprow.CleanUpDuration();
+      }
+    }
+    
+    return value;
+  *]
+}

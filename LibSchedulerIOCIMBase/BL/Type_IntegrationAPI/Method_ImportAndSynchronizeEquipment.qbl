@@ -1,0 +1,30 @@
+Quintiq file version 2.0
+#parent: #root
+Method ImportAndSynchronizeEquipment () as stream[LibDIF_IntegrationAPI]
+{
+  TextBody:
+  [*
+    path     := FileSystems::QFSPathToHardwarePath( DomainModel::GetDataDirectory().Path() );
+    fileName := path + "/" + Constants::Excel_Equipment();
+    xlsData := LibDIF_Util::ReadBinaryFile( fileName );
+    importStream := null( stream[LibDIF_IntegrationAPI] );
+    
+    // Get the Integration-dataset and trigger its ImportFromXLS...
+    if(this.Schedule().IntegrationConfiguration().UseCommonInformationDB())
+    {
+      importStream := this -> ImportFromDB( typeof( Broker_DII_CIM_DB_Import_Equipment ).Name(),
+                                            LibDII_DataTransformationEquipmentClass::ID() );
+    }
+    else
+    {
+      importStream := this -> ImportFromXLS( xlsData.AsBinaryValue(),
+                                          typeof( Broker_DII_CIM_XLS_Import_Equipment ).Name(),
+                                          LibDII_DataTransformationEquipmentClass::ID() );
+    }
+    
+    integrationStream := this -> After( importStream ) -> SynchronizeData( LibDII_DataTransformationEquipment::ID() );
+    integrationStream := this -> After( integrationStream ) -> SynchronizeData( LibDII_DataTransformationEquipmentClass::ID() );
+    
+    return integrationStream;
+  *]
+}

@@ -1,0 +1,36 @@
+Quintiq file version 2.0
+#parent: #root
+MethodOverride Update (ImportedFeedbackTask importedFeedbackTask, StoppageTask stoppageTask)
+{
+  TextBody:
+  [*
+    super.Update( importedFeedbackTask, stoppageTask );
+    
+    this.SchedulerStoppageTaskID( importedFeedbackTask.SchedulerStoppageTaskID() );
+    
+    // If program change is available, link feedback stoppage task to it. If not, create.
+    programChange := select( importedFeedbackTask, Schedule.ProgramChange, pc, pc.ProgramChangeID() = importedFeedbackTask.SchedulerStoppageTaskID()
+                                                                               or pc.ProgramChangeID() = importedFeedbackTask.ExternalStoppageTaskID() );
+    
+    if( not isnull( programChange ) )
+    {
+      this.ProgramChange( relset, programChange );
+      
+      // Update reported program to feedback program change task
+      feedbackprogramchangetask := programChange.FeedbackProgramChangeTask();
+      if( not isnull( feedbackprogramchangetask ) )
+      {
+        toprogramtypeconfigurations := selectset( programChange, FeedbackProgramType.ProgramTypeConfiguration, ptc, true ); 
+        feedbackprogramchangetask.UpdateReportedPrograms( toprogramtypeconfigurations );
+      }   
+      
+      // Remove existing program change task
+      programChange.UnplanProgramChangeTask();
+    }
+    
+    // Propagate to allow updating of program type duration after updating program
+    Transaction::Transaction().Propagate( attribute( ProgramChangeInType, ProgramTypeChangeDuration ) );
+    
+    this.DefaultDuration( this.GetStoppageDefaultDuration() );
+  *]
+}

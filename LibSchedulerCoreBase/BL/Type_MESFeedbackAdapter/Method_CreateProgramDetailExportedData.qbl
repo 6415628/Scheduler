@@ -1,0 +1,18 @@
+Quintiq file version 2.0
+#parent: #root
+Method CreateProgramDetailExportedData
+{
+  Description: 'Create exported data for each program detail on program change'
+  TextBody:
+  [*
+    exportedSchedule := this.FeedbackManager().ExportedSchedule();
+    
+    // find all program change tasks in scheduling horizon( to be exported ) 
+    programChangeTasks := selectset( this, FeedbackManager.TaskInSchedulingHorizon.astype( ProgramChangeTask ), t, true, not t.HasFeedbackTask() );
+    
+    traverse( programChangeTasks, Elements, pct )
+    {
+      GenericExportedProgramDetail::CreateUpdate( exportedSchedule, pct );
+    }
+  *]
+}

@@ -1,0 +1,41 @@
+Quintiq file version 2.0
+#parent: #root
+Method ExecuteEDIBroker (String brokerID_i, Boolean pingFirst_i)
+{
+  Description:
+  [*
+    Get the EDI-broker of which the ID is provided and call its Execute-method.
+    If applicable ping the database first to see if it can be reached.
+    NOTE: only EDI-brokers that are used for a database can be retrieved using this method.
+    For import/export using XLS methods DoImportFromXLS and DoExportToXLS must be used.
+  *]
+  TextBody:
+  [*
+    result := "";
+    
+    // See if the database can be reached (if applicable).
+    if( pingFirst_i )
+    {
+      result := this.CheckDatabaseConnection( brokerID_i );
+    }
+    
+    if( result = "" )  // OK
+    {
+      // Use the method that must be overridden and implemented at the Implementation Level to get the EDI-broker.
+      ediBroker := this.DoGetEDIBrokerForDB( brokerID_i );
+      
+      if( not isnull( ediBroker ) )
+      {
+        ediBroker.Execute();
+      }
+      else
+      {
+        LibDIF_Util::Error( this.DefinitionName() + ".DoGetEDIBrokerForDB() is not implemented for EDI-broker | BrokerID = '" + brokerID_i + "'" );
+      }
+    }
+    else
+    {
+      LibDIF_Util::Error( result );  // Database cannot be reached
+    }
+  *]
+}
